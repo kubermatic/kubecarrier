@@ -1,5 +1,5 @@
 /*
-Copyright YEAR The XXX Authors.
+Copyright 2019 The Kubecarrier Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -28,6 +28,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/google/go-cmp/cmp"
 )
 
 // regular expressions
@@ -70,24 +72,13 @@ const (
 var (
 	// skipped files and directories
 	skipped = map[string]struct{}{
-		"bin":                           struct{}{},
-		"Godeps":                        struct{}{},
-		".git":                          struct{}{},
-		"vendor":                        struct{}{},
-		"_gopath":                       struct{}{},
-		"_output":                       struct{}{},
-		"cluster/env.sh":                struct{}{},
-		"test/e2e/generated/bindata.go": struct{}{},
-		"staging/src/k8s.io/kubectl/pkg/generated/bindata.go": struct{}{},
-		"hack/boilerplate/test":                               struct{}{},
-		"pkg/apis/kubeadm/v1beta1/bootstraptokenstring.go":    struct{}{},
-		"pkg/apis/kubeadm/v1beta1/types.go":                   struct{}{},
-		"pkg/apis/kubeadm/v1beta1/zz_generated.deepcopy.go":   struct{}{},
-		// third_party folders
-		"third_party": struct{}{},
-		"staging/src/k8s.io/apimachinery/third_party":   struct{}{},
-		"staging/src/k8s.io/client-go/third_party":      struct{}{},
-		"staging/src/k8s.io/code-generator/third_party": struct{}{},
+		"bin":                   struct{}{},
+		"Godeps":                struct{}{},
+		".git":                  struct{}{},
+		"vendor":                struct{}{},
+		"_gopath":               struct{}{},
+		"_output":               struct{}{},
+		"hack/boilerplate/test": struct{}{},
 	}
 
 	// list all the files contain 'DO NOT EDIT', but are not generated
@@ -251,18 +242,15 @@ func filePasses(filename string, boilerplateMap map[string]string, out io.Writer
 		return false, nil
 	}
 
-	if !generated {
-		// replace the actual year eg. "2014" with "YEAR" to compare with the boilerplate file
-		fileContent = dateRe.ReplaceAll(fileContent, []byte("YEAR"))
-	}
+	fileContent = dateRe.ReplaceAll(fileContent, []byte("YEAR"))
 
 	// check if the file header matches the boilerplate
 	actual := strings.TrimSpace(string(fileContent))
 	expected := strings.TrimSpace(boilerplate)
-	if actual != expected {
+	if !cmp.Equal(actual, expected) {
 		if verbose {
 			fmt.Printf("tested %q with %q extension\n", filename, extension)
-			fmt.Fprintf(out, "%s: does not match reference\nis:     %q\nshould: %q\n\n", filename, actual, expected)
+			fmt.Fprintf(out, "%s: does not match reference\nis:     %q\nshould: %q\ndiff:\n%s\n\n", filename, actual, expected, cmp.Diff(expected, actual))
 		}
 		return false, nil
 	}

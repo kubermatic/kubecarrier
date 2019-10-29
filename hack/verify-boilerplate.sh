@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-# Copyright YEAR The XXX Authors.
+# Copyright 2019 The Kubecarrier Authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -21,4 +21,4 @@ set -o pipefail
 REPO_ROOT=$(dirname "${BASH_SOURCE}")/..
 
 boilerDir="${REPO_ROOT}/hack/boilerplate"
-go run ${boilerDir}/boilerplate.go
+go run ${boilerDir}/boilerplate.go -verbose
