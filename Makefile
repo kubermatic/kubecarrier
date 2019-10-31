@@ -17,3 +17,6 @@ test:
 
 e2e-test:
 	echo "running e2e tests"
+
+lint:
+	golangci-lint run ./...
