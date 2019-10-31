@@ -17,15 +17,18 @@ limitations under the License.
 package e2e
 
 import (
+	"bytes"
 	"flag"
-	"fmt"
+	"io/ioutil"
 	"log"
 	"math/rand"
 	"os"
 	"strconv"
 	"testing"
+	"time"
 
 	"sigs.k8s.io/kind/pkg/cluster"
+	"sigs.k8s.io/kind/pkg/cluster/create"
 )
 
 var (
@@ -38,10 +41,10 @@ var (
 	// Keep the existing test clusters after the test finishes
 	keep bool
 
-	masterKubeconfig          string
-	masterExternalKubeconfig  string
-	serviceKubeconfig         string
-	serviceExternalKubecongif string
+	masterKubeconfig          []byte
+	masterExternalKubeconfig  []byte
+	serviceKubeconfig         []byte
+	serviceExternalKubecongif []byte
 )
 
 func RandomID() string {
@@ -49,8 +52,7 @@ func RandomID() string {
 }
 
 func TestMain(m *testing.M) {
-
-	defaultTestID := os.ExpandEnv("BUILD_ID")
+	defaultTestID := os.ExpandEnv("${BUILD_ID}")
 	if defaultTestID == "" {
 		defaultTestID = RandomID()
 	}
@@ -75,10 +77,80 @@ func TestMain(m *testing.M) {
 	)
 	flag.Parse()
 
-	p := cluster.NewProvider()
-	clusters, err := p.List()
-	if err != nil {
-		log.Panic(err)
+	for _, cl := range []struct {
+		Name               string
+		internalKubeconfig []byte
+		externalKubeconfig []byte
+	}{
+		{
+			Name:               "sponson-" + testID,
+			internalKubeconfig: masterKubeconfig,
+			externalKubeconfig: masterExternalKubeconfig,
+		},
+		{
+			Name:               "sponson-svc-" + testID,
+			internalKubeconfig: serviceKubeconfig,
+			externalKubeconfig: serviceExternalKubecongif,
+		},
+	} {
+		know, err := cluster.IsKnown(cl.Name)
+		if err != nil {
+			log.Panic(err)
+		}
+		ctx := cluster.NewContext(cl.Name)
+		switch {
+		case !know:
+			log.Printf("creating cluster %s", ctx.Name())
+			if err := ctx.Create(
+				// To apply the defaults...
+				create.WithConfigFile(""),
+				create.Retain(keep),
+				create.WithNodeImage(""),
+				create.WaitForReady(time.Duration(0)),
+			); err != nil {
+				log.Panic(err)
+			}
+		case reuse && know:
+			log.Printf("found existing kind cluster %s, reusing it\n", ctx.Name())
+		case !reuse && know:
+			log.Printf("found existing kind cluster %s, but reuse is disabled\n", ctx.Name())
+			os.Exit(1)
+		default:
+		}
+
+		if !keep {
+			defer func() {
+				log.Printf("deleting cluster %s", ctx.Name())
+				if err := ctx.Delete(); err != nil {
+					log.Printf("cannot delete cluster %s", ctx.Name())
+				}
+
+			}()
+		}
+
+		log.Printf("for cluster %s kubeconifg is at %s", ctx.Name(), ctx.KubeConfigPath())
+
+		cl.externalKubeconfig, err = ioutil.ReadFile(ctx.KubeConfigPath())
+		if err != nil {
+			log.Panicf("cannot read kubeconfig: %v", err)
+		}
+
+		log.Printf("master internal Kubeconfig %v", string(masterKubeconfig))
+		log.Printf("master external Kubeconfig %v", string(masterExternalKubeconfig))
+
+		// List nodes by cluster context name
+		n, err := ctx.ListInternalNodes()
+		if err != nil {
+			log.Panicf("cannot list internal nodes: %v", err)
+		}
+
+		cmdNode := n[0].Command("cat", "/etc/kubernetes/admin.conf")
+		b := new(bytes.Buffer)
+		cmdNode.SetStdout(b)
+		if err := cmdNode.Run(); err != nil {
+			log.Panicf("cannot read the internal kubeconfig %v", err)
+		}
+		cl.internalKubeconfig = b.Bytes()
 	}
-	fmt.Print(clusters)
+
 }
