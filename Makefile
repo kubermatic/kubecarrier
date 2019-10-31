@@ -12,8 +12,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+BRANCH=$(shell git rev-parse --abbrev-ref HEAD)
+SHORT_SHA=$(shell git rev-parse --short HEAD)
+VERSION?=${BRANCH}-${SHORT_SHA}
+
+version:
+	echo ${VERSION}
+
 test:
 	echo "running unit tests"
 
 e2e-test:
-	echo "running e2e tests"
+	richgo test -v ./test/e2e/...
