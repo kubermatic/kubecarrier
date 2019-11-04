@@ -16,18 +16,14 @@ limitations under the License.
 
 package e2e_test
 
-import (
-	"github.com/spf13/cobra"
+import "github.com/spf13/cobra"
 
-	"github.com/kubermatic/kubecarrier/test/e2e"
-)
-
-func newRunCommand() *cobra.Command {
+func newTeardownCommand() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "run",
-		Short: "run all end2end test",
+		Use:   "kind-teardown",
+		Short: "teardown all kind cluster",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return e2e.Run()
+			return cfg.TeardownKindCluster()
 		},
 	}
 	return cmd

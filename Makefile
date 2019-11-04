@@ -20,7 +20,11 @@ version:
 	echo ${VERSION}
 
 test:
-	echo "running unit tests"
+	go test -race -v ./...
+.PHONY: test
 
 e2e-test:
+	go run ./cmd/anchor e2e-test kind-setup
 	go run ./cmd/anchor e2e-test run
+	go run ./cmd/anchor e2e-test kind-teardown
+.PHONY: e2e-test

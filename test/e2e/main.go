@@ -14,21 +14,17 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package e2e_test
+package e2e
 
 import (
-	"github.com/spf13/cobra"
-
-	"github.com/kubermatic/kubecarrier/test/e2e"
+	ctrl "sigs.k8s.io/controller-runtime"
 )
 
-func newRunCommand() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "run",
-		Short: "run all end2end test",
-		RunE: func(cmd *cobra.Command, args []string) error {
-			return e2e.Run()
-		},
-	}
-	return cmd
+var (
+	log = ctrl.Log.WithName("e2e-test runner")
+)
+
+func Run() error {
+	log.Info("running e2e tests")
+	return nil
 }
