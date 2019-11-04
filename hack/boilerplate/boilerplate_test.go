@@ -28,12 +28,12 @@ func Test_fileExtension(t *testing.T) {
 	}{
 		{
 			name:      "Simple extension",
-			file:      "test.go",
+			file:      "e2e-test.go",
 			extension: "go",
 		},
 		{
 			name:      "dot in between",
-			file:      "script.test.sh",
+			file:      "script.e2e-test.sh",
 			extension: "sh",
 		},
 		{
@@ -59,13 +59,13 @@ func Test_fileExtension(t *testing.T) {
 }
 
 var expected = `Boilerplate header is wrong for:
-test/fail.go
-test/fail.py`
+e2e-test/fail.go
+e2e-test/fail.py`
 
 func Test_run(t *testing.T) {
 	var buf bytes.Buffer
 
-	failed, err := run(&buf, "./test")
+	failed, err := run(&buf, "./e2e-test")
 	if err != nil {
 		t.Errorf("unexpected error: %v", err)
 		return

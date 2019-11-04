@@ -23,4 +23,4 @@ test:
 	echo "running unit tests"
 
 e2e-test:
-	richgo test -v ./test/e2e/...
+	go run ./cmd/anchor e2e-test run

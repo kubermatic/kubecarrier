@@ -32,13 +32,13 @@ import (
 )
 
 var (
-	// Current test id. The created clusters shall be prefixed accordingly
+	// Current e2e-test id. The created clusters shall be prefixed accordingly
 	testID string
 
-	// reuse existing test environment, if exists
+	// reuse existing e2e-test environment, if exists
 	reuse bool
 
-	// Keep the existing test clusters after the test finishes
+	// Keep the existing e2e-test clusters after the e2e-test finishes
 	keep bool
 
 	masterKubeconfig          []byte
@@ -59,21 +59,21 @@ func TestMain(m *testing.M) {
 
 	flag.StringVar(
 		&testID,
-		"test-id",
+		"e2e-test-id",
 		defaultTestID,
-		"test id to use",
+		"e2e-test id to use",
 	)
 	flag.BoolVar(
 		&reuse,
 		"reuse",
 		true,
-		"Reuse existing test environment if exists",
+		"Reuse existing e2e-test environment if exists",
 	)
 	flag.BoolVar(
 		&keep,
 		"keep",
 		true,
-		"Keep existing test clusters after tests finishes",
+		"Keep existing e2e-test clusters after tests finishes",
 	)
 	flag.Parse()
 
@@ -83,12 +83,12 @@ func TestMain(m *testing.M) {
 		externalKubeconfig []byte
 	}{
 		{
-			Name:               "sponson-" + testID,
+			Name:               "kubecarrier-" + testID,
 			internalKubeconfig: masterKubeconfig,
 			externalKubeconfig: masterExternalKubeconfig,
 		},
 		{
-			Name:               "sponson-svc-" + testID,
+			Name:               "kubecarrier-svc-" + testID,
 			internalKubeconfig: serviceKubeconfig,
 			externalKubeconfig: serviceExternalKubecongif,
 		},

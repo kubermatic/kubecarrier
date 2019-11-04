@@ -72,19 +72,19 @@ const (
 var (
 	// skipped files and directories
 	skipped = map[string]struct{}{
-		"bin":                   struct{}{},
-		"Godeps":                struct{}{},
-		".git":                  struct{}{},
-		"vendor":                struct{}{},
-		"_gopath":               struct{}{},
-		"_output":               struct{}{},
-		"hack/boilerplate/test": struct{}{},
+		"bin":                       {},
+		"Godeps":                    {},
+		".git":                      {},
+		"vendor":                    {},
+		"_gopath":                   {},
+		"_output":                   {},
+		"hack/boilerplate/e2e-test": {},
 	}
 
 	// list all the files contain 'DO NOT EDIT', but are not generated
 	skippedUngeneratedFiles = map[string]struct{}{
-		"hack/boilerplate/boilerplate.py": struct{}{},
-		"hack/lib/swagger.sh":             struct{}{},
+		"hack/boilerplate/boilerplate.py": {},
+		"hack/lib/swagger.sh":             {},
 	}
 )
 
@@ -218,7 +218,7 @@ func filePasses(filename string, boilerplateMap map[string]string, out io.Writer
 		fileContent = shebangRe.ReplaceAll(fileContent, nil)
 	}
 
-	// if our test file is smaller than the reference it surely fails!
+	// if our e2e-test file is smaller than the reference it surely fails!
 	if len(fileContent) < len(boilerplate) {
 		if verbose {
 			fmt.Fprintf(out, "%s: is smaller than reference (%d < %d)\n",
@@ -266,7 +266,7 @@ func fileExtension(filename string) string {
 		return ""
 	}
 
-	return base[i+1 : len(base)]
+	return base[i+1:]
 }
 
 // getBoilerplateForExtensions reads the boilerplate.*.txt files in the directory
