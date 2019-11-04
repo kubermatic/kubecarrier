@@ -17,7 +17,7 @@ SHORT_SHA=$(shell git rev-parse --short HEAD)
 VERSION?=${BRANCH}-${SHORT_SHA}
 
 version:
-	echo ${VERSION}
+	@echo -n ${VERSION}
 
 test:
 	go test -race -v ./...
