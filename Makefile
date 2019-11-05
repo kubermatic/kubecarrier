@@ -12,8 +12,22 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# Generate code
+generate: controller-gen
+	$(CONTROLLER_GEN) object:headerFile=./hack/boilerplate.go.txt paths=./pkg/apis/...
+
 test:
 	echo "running unit tests"
 
 e2e-test:
 	echo "running e2e tests"
+
+# find or download controller-gen
+# download controller-gen if necessary
+controller-gen:
+ifeq (, $(shell which controller-gen))
+	go get sigs.k8s.io/controller-tools/cmd/controller-gen@v0.2.1
+CONTROLLER_GEN=$(GOBIN)/controller-gen
+else
+CONTROLLER_GEN=$(shell which controller-gen)
+endif

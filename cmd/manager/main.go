@@ -14,4 +14,18 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package test
+package main
+
+import (
+	"os"
+
+	"github.com/kubermatic/kubecarrier/pkg/manager"
+)
+
+func main() {
+	command := manager.NewManagerCommand()
+
+	if err := command.Execute(); err != nil {
+		os.Exit(1)
+	}
+}

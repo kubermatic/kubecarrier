@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-# Copyright YEAR The XXX Authors.
+# Copyright 2019 The Kubecarrier Authors.
 #
 # failed
 #
