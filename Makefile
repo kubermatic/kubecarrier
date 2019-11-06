@@ -20,3 +20,7 @@ e2e-test:
 
 pre-commit:
 	pre-commit run -a
+
+# Run `go mod tidy`
+tidy:
+	go mod tidy
