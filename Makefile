@@ -21,6 +21,8 @@ e2e-test:
 pre-commit:
 	pre-commit run -a
 
-# Run `go mod tidy`
+lint:
+	golangci-lint run ./...
+
 tidy:
 	go mod tidy
