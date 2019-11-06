@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+DOCKER_TEST_IMAGE?=quay.io/kubecarrier/test
+
 test:
 	echo "running unit tests"
 
@@ -26,3 +28,13 @@ lint:
 
 tidy:
 	go mod tidy
+
+build-test-docker-image:
+	@docker build -f ./config/dockerfiles/test.Dockerfile -t ${DOCKER_TEST_IMAGE} ./
+	@echo built ${DOCKER_TEST_IMAGE}
+.PHONEY: build-test-docker-image
+
+push-test-docker-image: build-test-docker-image
+	@docker push ${DOCKER_TEST_IMAGE}
+	@echo pushed ${DOCKER_TEST_IMAGE}
+.PHONEY: push-test-docker-image
