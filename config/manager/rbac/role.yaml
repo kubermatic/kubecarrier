@@ -7,6 +7,18 @@ metadata:
   name: manager
 rules:
 - apiGroups:
+  - ""
+  resources:
+  - namespaces
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
   - catalog.kubecarrier.io
   resources:
   - tenants
