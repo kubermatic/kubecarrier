@@ -48,6 +48,16 @@ manifests: \
 manifests-%: controller-gen
 	$(CONTROLLER_GEN) $(CRD_OPTIONS) rbac:roleName=manager webhook paths="./..." output:crd:artifacts:config=config/$*/crd/bases output:rbac:artifacts:config=config/$*/rbac output:webhook:artifacts:config=config/$*/webhook
 
+# find or download controller-gen
+# download controller-gen if necessary
+controller-gen:
+ifeq (, $(shell which controller-gen))
+	go get sigs.k8s.io/controller-tools/cmd/controller-gen@v0.2.2
+CONTROLLER_GEN=$(GOBIN)/controller-gen
+else
+CONTROLLER_GEN=$(shell which controller-gen)
+endif
+
 # Run go fmt against code
 fmt:
 	go fmt ./...
@@ -62,12 +72,8 @@ test:
 e2e-test:
 	echo "running e2e tests"
 
-# find or download controller-gen
-# download controller-gen if necessary
-controller-gen:
-ifeq (, $(shell which controller-gen))
-	go get sigs.k8s.io/controller-tools/cmd/controller-gen@v0.2.2
-CONTROLLER_GEN=$(GOBIN)/controller-gen
-else
-CONTROLLER_GEN=$(shell which controller-gen)
-endif
+pre-commit:
+	pre-commit run -a
+
+lint:
+	golangci-lint run ./...
