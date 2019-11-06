@@ -20,6 +20,15 @@ test:
 e2e-test:
 	echo "running e2e tests"
 
+pre-commit:
+	pre-commit run -a
+
+lint:
+	golangci-lint run ./...
+
+tidy:
+	go mod tidy
+
 build-test-docker-image:
 	@docker build -f ./config/dockerfiles/test.Dockerfile -t ${DOCKER_TEST_IMAGE} ./
 	@echo built ${DOCKER_TEST_IMAGE}
