@@ -132,7 +132,12 @@ func (s *TenantStatus) SetCondition(condition TenantCondition) {
 	s.Conditions = append(s.Conditions, condition)
 }
 
-// Tenant is the Schema for the tenants API.
+// Tenant sets up permissions and references to allow a end-user group to interact with providers' services.
+// +kubebuilder:object:root=true
+// +kubebuilder:subresource:status
+// +kubebuilder:printcolumn:name="Status",type="string",JSONPath=".status.phase"
+// +kubebuilder:printcolumn:name="Age",type="date",JSONPath=".metadata.creationTimestamp"
+// +kubebuilder:resource:shortName=tn
 type Tenant struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
@@ -141,9 +146,8 @@ type Tenant struct {
 	Status TenantStatus `json:"status,omitempty"`
 }
 
-// +kubebuilder:object:root=true
-
 // TenantList contains a list of Tenant.
+// +kubebuilder:object:root=true
 type TenantList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
