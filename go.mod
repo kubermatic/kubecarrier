@@ -5,7 +5,7 @@ go 1.13
 require (
 	cloud.google.com/go v0.38.0 // indirect
 	github.com/go-logr/logr v0.1.0
-	github.com/google/go-cmp v0.3.0
+	github.com/google/go-cmp v0.3.1
 	github.com/spf13/cobra v0.0.5
 	github.com/stretchr/testify v1.3.0
 	golang.org/x/crypto v0.0.0-20190611184440-5c40567a22f8 // indirect
