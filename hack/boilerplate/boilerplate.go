@@ -72,13 +72,13 @@ const (
 var (
 	// skipped files and directories
 	skipped = map[string]struct{}{
-		"bin":                       {},
-		"Godeps":                    {},
-		".git":                      {},
-		"vendor":                    {},
-		"_gopath":                   {},
-		"_output":                   {},
-		"hack/boilerplate/e2e-test": {},
+		"bin":                   {},
+		"Godeps":                {},
+		".git":                  {},
+		"vendor":                {},
+		"_gopath":               {},
+		"_output":               {},
+		"hack/boilerplate/test": {},
 	}
 
 	// list all the files contain 'DO NOT EDIT', but are not generated
@@ -216,15 +216,6 @@ func filePasses(filename string, boilerplateMap map[string]string, out io.Writer
 		fileContent = goBuildConstraintsRe.ReplaceAll(fileContent, nil)
 	case "sh", "py":
 		fileContent = shebangRe.ReplaceAll(fileContent, nil)
-	}
-
-	// if our e2e-test file is smaller than the reference it surely fails!
-	if len(fileContent) < len(boilerplate) {
-		if verbose {
-			fmt.Fprintf(out, "%s: is smaller than reference (%d < %d)\n",
-				filename, len(fileContent), len(boilerplate))
-		}
-		return false, nil
 	}
 
 	// trim the file to the same length as our boilerplate header
