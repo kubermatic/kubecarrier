@@ -42,3 +42,10 @@ RUN curl -sL https://go.kubebuilder.io/dl/${kubebuilder_version}/linux/amd64 | t
 
 RUN go get golang.org/x/tools/cmd/goimports
 RUN pip3 install pre-commit
+
+WORKDIR /src
+COPY go.mod go.mod
+COPY go.sum go.sum
+# cache deps before building and copying source so that we don't need to re-download as much
+# and so that source changes don't invalidate our downloaded layer
+RUN go mod download

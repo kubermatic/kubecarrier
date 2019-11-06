@@ -21,7 +21,7 @@ e2e-test:
 	echo "running e2e tests"
 
 build-test-docker-image:
-	@docker build -f ./config/dockerfiles/test.Dockerfile -t ${DOCKER_TEST_IMAGE} ./config/dockerfiles/
+	@docker build -f ./config/dockerfiles/test.Dockerfile -t ${DOCKER_TEST_IMAGE} ./
 	@echo built ${DOCKER_TEST_IMAGE}
 .PHONEY: build-test-docker-image
 
