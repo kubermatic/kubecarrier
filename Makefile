@@ -22,9 +22,24 @@ else
 GOBIN=$(shell go env GOBIN)
 endif
 
+all: \
+	build-manager
+
+# Build manager binary
+build-%:
+	GOOS=linux go build -o bin/$* cmd/$*/main.go
+
+# Run the controller manager to against the kubernetes cluster.
+run-manager: generate fmt vet install-manager
+	go run ./cmd/manager/main.go
+
 # Generate code
 generate: controller-gen
 	$(CONTROLLER_GEN) object:headerFile=./hack/boilerplate.go.txt paths=./pkg/apis/...
+
+# Install CRDs into a cluster
+install-%: manifests-%
+	kubectl apply -f config/$*/crd/bases
 
 # Generate manifests e.g. CRD, RBAC etc.
 manifests: \
@@ -32,6 +47,14 @@ manifests: \
 
 manifests-%: controller-gen
 	$(CONTROLLER_GEN) $(CRD_OPTIONS) rbac:roleName=manager webhook paths="./..." output:crd:artifacts:config=config/$*/crd/bases output:rbac:artifacts:config=config/$*/rbac output:webhook:artifacts:config=config/$*/webhook
+
+# Run go fmt against code
+fmt:
+	go fmt ./...
+
+# Run go vet against code
+vet:
+	go vet ./...
 
 test:
 	echo "running unit tests"

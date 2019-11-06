@@ -19,8 +19,6 @@ package manager
 import (
 	"os"
 
-	"github.com/kubermatic/kubecarrier/pkg/manager/internal/controller"
-
 	"github.com/spf13/cobra"
 	"k8s.io/apimachinery/pkg/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
@@ -29,6 +27,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
 	catalogv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/catalog/v1alpha1"
+	"github.com/kubermatic/kubecarrier/pkg/manager/internal/controller"
 )
 
 type flags struct {
@@ -43,7 +42,6 @@ var (
 
 func init() {
 	_ = clientgoscheme.AddToScheme(scheme)
-
 	_ = catalogv1alpha1.AddToScheme(scheme)
 	// +kubebuilder:scaffold:scheme
 }
