@@ -20,27 +20,119 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
-// NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
+// TenantSpec defines the desired state of Tenant.
+type TenantSpec struct{}
 
-// TenantSpec defines the desired state of Tenant
-type TenantSpec struct {
-	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
-	// Important: Run "make" to regenerate code after modifying this file
-
-	// Foo is an example field of Tenant. Edit Tenant_types.go to remove/update
-	Foo string `json:"foo,omitempty"`
-}
-
-// TenantStatus defines the observed state of Tenant
+// TenantStatus defines the observed state of Tenant.
 type TenantStatus struct {
-	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
-	// Important: Run "make" to regenerate code after modifying this file
+	// NamespaceName is the name of the namespace that the Tenant manages.
+	NamespaceName string `json:"namespaceName,omitempty"`
+	// ObservedGeneration is the most recent generation observed for this Tenant by the controller.
+	ObservedGeneration int64 `json:"observedGeneration,omitempty"`
+	// Conditions represents the latest available observations of a Tenant's current state.
+	Conditions []TenantCondition `json:"conditions,omitempty"`
+	// DEPRECATED.
+	// Phase represents the current lifecycle state of this object.
+	// Consider this field DEPRECATED, it will be removed as soon as there
+	// is a mechanism to map conditions to strings when printing the property.
+	// This is only for display purpose, for everything else use conditions.
+	Phase TenantPhaseType `json:"phase,omitempty"`
 }
 
-// +kubebuilder:object:root=true
+// TenantPhaseType represents all conditions as a single string for printing by using kubectl commands.
+type TenantPhaseType string
 
-// Tenant is the Schema for the tenants API
+// Values of TenantPhaseType.
+const (
+	TenantPhaseReady   TenantPhaseType = "Ready"
+	TenantPhaseFailed  TenantPhaseType = "Failed"
+	TenantPhaseUnknown TenantPhaseType = "Unknown"
+)
+
+// updatePhase updates the phase property based on the current conditions
+// this method should be called every time the conditions are updated.
+func (s *TenantStatus) updatePhase() {
+	for _, condition := range s.Conditions {
+		if condition.Type != TenantReady {
+			continue
+		}
+
+		switch condition.Status {
+		case ConditionTrue:
+			s.Phase = TenantPhaseReady
+		case ConditionFalse:
+			s.Phase = TenantPhaseFailed
+		case ConditionUnknown:
+			s.Phase = TenantPhaseUnknown
+		}
+		return
+	}
+
+	s.Phase = TenantPhaseUnknown
+}
+
+// TenantConditionType represents a TenantCondition value.
+type TenantConditionType string
+
+const (
+	// TenantReady represents a Tenant condition is in ready state.
+	TenantReady TenantConditionType = "Ready"
+)
+
+// TenantCondition contains details for the current condition of this Tenant.
+type TenantCondition struct {
+	// Type is the type of the Tenant condition, currently ('Ready').
+	Type TenantConditionType `json:"type"`
+	// Status is the status of the condition, one of ('True', 'False', 'Unknown').
+	Status ConditionStatus `json:"status"`
+	// LastTransitionTime is the last time the condition transits from one status to another.
+	LastTransitionTime metav1.Time `json:"lastTransitionTime"`
+	// Reason is the (brief) reason for the condition's last transition.
+	Reason string `json:"reason"`
+	// Message is the human readable message indicating details about last transition.
+	Message string `json:"message"`
+}
+
+// GetCondition returns the Condition of the given condition type, if it exists.
+func (s *TenantStatus) GetCondition(t TenantConditionType) (condition TenantCondition, exists bool) {
+	for _, cond := range s.Conditions {
+		if cond.Type == t {
+			condition = cond
+			exists = true
+			return
+		}
+	}
+	return
+}
+
+// SetCondition replaces or adds the given condition.
+func (s *TenantStatus) SetCondition(condition TenantCondition) {
+	defer s.updatePhase()
+
+	if condition.LastTransitionTime.IsZero() {
+		condition.LastTransitionTime = metav1.Now()
+	}
+
+	for i := range s.Conditions {
+		if s.Conditions[i].Type == condition.Type {
+
+			// Only update the LastTransitionTime when the Status is changed.
+			if s.Conditions[i].Status != condition.Status {
+				s.Conditions[i].LastTransitionTime = condition.LastTransitionTime
+			}
+
+			s.Conditions[i].Status = condition.Status
+			s.Conditions[i].Reason = condition.Reason
+			s.Conditions[i].Message = condition.Message
+
+			return
+		}
+	}
+
+	s.Conditions = append(s.Conditions, condition)
+}
+
+// Tenant is the Schema for the tenants API.
 type Tenant struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
@@ -51,7 +143,7 @@ type Tenant struct {
 
 // +kubebuilder:object:root=true
 
-// TenantList contains a list of Tenant
+// TenantList contains a list of Tenant.
 type TenantList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
