@@ -18,5 +18,8 @@ test:
 e2e-test:
 	echo "running e2e tests"
 
+pre-commit:
+	pre-commit run -a
+
 lint:
 	golangci-lint run ./...
