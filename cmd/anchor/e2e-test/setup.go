@@ -21,7 +21,7 @@ import "github.com/spf13/cobra"
 func newSetupCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "kind-setup",
-		Short: "setup all kind cluster",
+		Short: "setup all kind clusters",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return cfg.SetupKindCluster()
 		},

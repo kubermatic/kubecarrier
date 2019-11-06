@@ -36,12 +36,9 @@ type Config struct {
 	// reuse existing e2e-test environment, if exists
 	reuse bool
 
-	// Keep the existing e2e-test clusters after the e2e-test finishes
-	keep bool
-
-	masterKubeconfigFile          string
+	masterInternalKubeconfigFile  string
 	masterExternalKubeconfigFile  string
-	serviceKubeconfigFile         string
+	serviceInternalKubeconfigFile string
 	serviceExternalKubeconfigFile string
 }
 
@@ -61,12 +58,12 @@ func (c *Config) SetupKindCluster() error {
 	}{
 		{
 			Name:               c.masterClusterName(),
-			internalKubeconfig: c.masterKubeconfigFile,
+			internalKubeconfig: c.masterInternalKubeconfigFile,
 			externalKubeconfig: c.masterExternalKubeconfigFile,
 		},
 		{
 			Name:               c.serviceClusterName(),
-			internalKubeconfig: c.serviceKubeconfigFile,
+			internalKubeconfig: c.serviceInternalKubeconfigFile,
 			externalKubeconfig: c.serviceExternalKubeconfigFile,
 		},
 	} {
@@ -79,10 +76,7 @@ func (c *Config) SetupKindCluster() error {
 		case !know:
 			log.Printf("creating cluster %s", ctx.Name())
 			if err := ctx.Create(
-				// To apply the defaults...
-				create.WithConfigFile(""),
-				create.Retain(c.keep),
-				create.WithNodeImage(""),
+				create.Retain(true),
 				create.WaitForReady(10*time.Minute),
 			); err != nil {
 				log.Panic(err)
@@ -148,15 +142,15 @@ func (c *Config) TeardownKindCluster() error {
 }
 
 func (c *Config) Default() error {
-	if c.serviceKubeconfigFile == "" {
-		c.serviceKubeconfigFile = os.ExpandEnv("${HOME}/.kube/internal-kind-config-" + c.serviceClusterName())
+	if c.serviceInternalKubeconfigFile == "" {
+		c.serviceInternalKubeconfigFile = os.ExpandEnv("${HOME}/.kube/internal-kind-config-" + c.serviceClusterName())
 	}
 	if c.serviceExternalKubeconfigFile == "" {
 		c.serviceExternalKubeconfigFile = os.ExpandEnv("${HOME}/.kube/kind-config-" + c.serviceClusterName())
 	}
 
-	if c.masterKubeconfigFile == "" {
-		c.masterKubeconfigFile = os.ExpandEnv("${HOME}/.kube/internal-kind-config-" + c.masterClusterName())
+	if c.masterInternalKubeconfigFile == "" {
+		c.masterInternalKubeconfigFile = os.ExpandEnv("${HOME}/.kube/internal-kind-config-" + c.masterClusterName())
 	}
 	if c.masterExternalKubeconfigFile == "" {
 		c.masterExternalKubeconfigFile = os.ExpandEnv("${HOME}/.kube/kind-config-" + c.masterClusterName())
@@ -175,6 +169,7 @@ func NewCommand() *cobra.Command {
 			return cfg.Default()
 		},
 	}
+
 	cmd.AddCommand(
 		newRunCommand(),
 		newSetupCommand(),
@@ -183,7 +178,5 @@ func NewCommand() *cobra.Command {
 
 	cmd.PersistentFlags().StringVar(&cfg.testID, "test-id", "", "unique e2e test id")
 	cmd.PersistentFlags().BoolVar(&cfg.reuse, "reuse", true, "Reuse existing e2e-test environment if exists")
-	cmd.PersistentFlags().BoolVar(&cfg.keep, "keep", true, "Keep existing e2e-test clusters after tests finishes")
-
 	return cmd
 }

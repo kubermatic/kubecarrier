@@ -27,7 +27,7 @@ test:
 
 e2e-test:
 	go run ./cmd/anchor e2e-test kind-setup
-	go run ./cmd/anchor e2e-test run
+	go run ./cmd/anchor e2e-test run --test.v | richgo testfilter
 	go run ./cmd/anchor e2e-test kind-teardown
 .PHONY: e2e-test
 

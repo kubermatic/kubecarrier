@@ -17,39 +17,85 @@ limitations under the License.
 package e2e
 
 import (
+	"context"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
-	ctrl "sigs.k8s.io/controller-runtime"
+	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/client-go/kubernetes/scheme"
+	"k8s.io/client-go/tools/clientcmd"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/client/apiutil"
 )
 
 var (
-	log = ctrl.Log.WithName("e2e-test runner")
+	AllTests []testing.InternalTest
+
+	MasterExternalKubeconfigPath  string
+	MasterInternalKubeconfigPath  string
+	ServiceExternalKubeconfigPath string
+	ServiceInternalKubeconfigPath string
 )
 
-// Define the suite, and absorb the built-in basic suite
-// functionality from testify - including a T() method which
-// returns the current testing context
-type ExampleTestSuite struct {
+type VerifyConfig struct {
 	suite.Suite
-	VariableThatShouldStartAtFive int
+	masterClient  client.Client
+	serviceClient client.Client
 }
 
-// Make sure that VariableThatShouldStartAtFive is set to five
-// before each test
-func (suite *ExampleTestSuite) SetupTest() {
-	suite.VariableThatShouldStartAtFive = 5
+func (suite *VerifyConfig) TestValidMasterKubeconfig() {
+	cm := &corev1.ConfigMap{}
+	require.NoError(suite.T(), suite.masterClient.Get(context.Background(), types.NamespacedName{
+		Name:      "cluster-info",
+		Namespace: "kube-public",
+	}, cm), "cannot fetch cluster-info")
+	suite.T().Logf("cluster-info kubeconfig:\n%s", cm.Data["kubeconfig"])
 }
 
-// All methods that begin with "Test" are run as tests within a
-// suite.
-func (suite *ExampleTestSuite) TestExample() {
-	assert.Equal(suite.T(), 5, suite.VariableThatShouldStartAtFive)
+func (suite *VerifyConfig) TestValidServiceKubeconfig() {
+	cm := &corev1.ConfigMap{}
+	require.NoError(suite.T(), suite.serviceClient.Get(context.Background(), types.NamespacedName{
+		Name:      "cluster-info",
+		Namespace: "kube-public",
+	}, cm), "cannot fetch cluster-info")
+	suite.T().Logf("cluster-info kubeconfig:\n%s", cm.Data["kubeconfig"])
 }
 
-// In order for 'go test' to run this suite, we need to create
-// a normal test function and pass our suite to suite.Run
-func TestExampleTestSuite(t *testing.T) {
-	suite.Run(t, new(ExampleTestSuite))
+func init() {
+	AllTests = append(AllTests, testing.InternalTest{
+		Name: "VerifyConfig",
+		F: func(t *testing.T) {
+			s := new(VerifyConfig)
+			sc := runtime.NewScheme()
+			require.NoError(t, scheme.AddToScheme(sc), "adding native k8s scheme")
+
+			{
+				cfg, err := clientcmd.BuildConfigFromFlags("", MasterExternalKubeconfigPath)
+				require.NoError(t, err, "building rest config")
+				mapper, err := apiutil.NewDiscoveryRESTMapper(cfg)
+				require.NoError(t, err)
+				s.masterClient, err = client.New(cfg, client.Options{
+					Scheme: sc,
+					Mapper: mapper,
+				})
+				require.NoError(t, err)
+			}
+
+			{
+				cfg, err := clientcmd.BuildConfigFromFlags("", ServiceExternalKubeconfigPath)
+				require.NoError(t, err, "building rest config")
+				mapper, err := apiutil.NewDiscoveryRESTMapper(cfg)
+				require.NoError(t, err)
+				s.serviceClient, err = client.New(cfg, client.Options{
+					Scheme: sc,
+					Mapper: mapper,
+				})
+				require.NoError(t, err)
+			}
+			suite.Run(t, s)
+		},
+	})
 }
