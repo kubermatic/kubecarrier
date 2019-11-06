@@ -20,3 +20,6 @@ e2e-test:
 
 pre-commit:
 	pre-commit run -a
+
+lint:
+	golangci-lint run ./...
