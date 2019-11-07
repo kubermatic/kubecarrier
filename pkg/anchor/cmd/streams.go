@@ -21,12 +21,13 @@ import (
 	"os"
 )
 
-// Streams wraps os.Stdin/Stdout and Stderr
+// Streams wraps os.Stdin/Stdout and Stderr.
 type Streams struct {
 	In       io.Reader
 	Out, Err io.Writer
 }
 
+// DefaultStreams returns an Streams from os.Stdin, os.Stdout, and os.Stderr.
 func DefaultStreams() Streams {
 	return Streams{
 		In:  os.Stdin,

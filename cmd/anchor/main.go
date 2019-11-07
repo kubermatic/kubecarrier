@@ -24,6 +24,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
 	"github.com/kubermatic/kubecarrier/pkg/anchor"
+	"github.com/kubermatic/kubecarrier/pkg/anchor/cmd"
 )
 
 func main() {
@@ -36,7 +37,7 @@ func main() {
 	log := ctrl.Log.WithName("anchor")
 	log.Info("Starting anchor command")
 
-	if err := anchor.NewAnchor().Execute(); err != nil {
+	if err := anchor.NewAnchor(log, cmd.DefaultStreams()).Execute(); err != nil {
 		log.Error(err, "cannot perform required action")
 		os.Exit(1)
 	}
