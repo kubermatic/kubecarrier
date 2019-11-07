@@ -71,6 +71,22 @@ func (r *TenantReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	}
 
 	// 3. reconcile the Tenant object.
+	// check/add the finali
+	// zer for the Tenant
+	if tenantControllerFinalizer.Insert(tenant) {
+		// Update the tenant with the finalizer
+		if err := r.Update(ctx, tenant); err != nil {
+			return ctrl.Result{}, fmt.Errorf("updating finalizers: %w", err)
+		}
+	}
+
+	// check/update the NamespaceName
+	if tenant.Status.NamespaceName == "" {
+		tenant.Status.NamespaceName = fmt.Sprintf("tenant-%s", tenant.Name)
+		if err := r.Update(ctx, tenant); err != nil {
+			return ctrl.Result{}, fmt.Errorf("updating NamespaceName: %w", err)
+		}
+	}
 
 	return ctrl.Result{}, nil
 }
