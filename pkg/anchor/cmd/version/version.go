@@ -23,7 +23,6 @@ import (
 	"github.com/spf13/cobra"
 	"sigs.k8s.io/yaml"
 
-	"github.com/kubermatic/kubecarrier/pkg/anchor/cmd"
 	"github.com/kubermatic/kubecarrier/pkg/version"
 )
 
@@ -32,7 +31,7 @@ type versionFlagpole struct {
 }
 
 // NewCommand returns the version subcommand for anchor.
-func NewCommand(log logr.Logger, streams cmd.Streams) *cobra.Command {
+func NewCommand(log logr.Logger) *cobra.Command {
 	var flags versionFlagpole
 	cmd := &cobra.Command{
 		Args:  cobra.NoArgs,
@@ -42,7 +41,7 @@ func NewCommand(log logr.Logger, streams cmd.Streams) *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) (err error) {
 			v := version.Get()
 			if !flags.Full {
-				fmt.Fprintln(streams.Out, v.Version)
+				fmt.Fprintln(cmd.OutOrStdout(), v.Version)
 				return
 			}
 
@@ -50,7 +49,7 @@ func NewCommand(log logr.Logger, streams cmd.Streams) *cobra.Command {
 			if err != nil {
 				return fmt.Errorf("marshalling version information: %w", err)
 			}
-			fmt.Fprintln(streams.Out, string(y))
+			fmt.Fprint(cmd.OutOrStdout(), string(y))
 			return
 		},
 	}

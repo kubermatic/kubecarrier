@@ -14,24 +14,21 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package cmd
+package testutil
 
 import (
-	"io"
-	"os"
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+
+	"github.com/stretchr/testify/require"
 )
 
-// Streams wraps os.Stdin/Stdout and Stderr.
-type Streams struct {
-	In       io.Reader
-	Out, Err io.Writer
-}
+func TestLoggerOutput(t *testing.T) {
+	l := NewLogger(t)
 
-// DefaultStreams returns an Streams from os.Stdin, os.Stdout, and os.Stderr.
-func DefaultStreams() Streams {
-	return Streams{
-		In:  os.Stdin,
-		Out: os.Stdout,
-		Err: os.Stderr,
-	}
+	g := l.WithName("a").WithName("b").WithValues("c", "d")
+	g.Info("msg")
+	require.Equal(t, []string{"a", "b"}, g.(*Logger).names)
+	assert.Equal(t, "d", g.(*Logger).values["c"])
 }

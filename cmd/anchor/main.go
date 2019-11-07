@@ -17,28 +17,25 @@ limitations under the License.
 package main
 
 import (
+	"fmt"
 	"os"
 
-	zapcore "go.uber.org/zap"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
 	"github.com/kubermatic/kubecarrier/pkg/anchor"
-	"github.com/kubermatic/kubecarrier/pkg/anchor/cmd"
 )
 
 func main() {
 	ctrl.SetLogger(zap.New(func(options *zap.Options) {
-		l := zapcore.NewAtomicLevelAt(zapcore.DebugLevel)
-		options.Level = &l
 		options.Development = true
 	}))
 
 	log := ctrl.Log.WithName("anchor")
 	log.Info("Starting anchor command")
 
-	if err := anchor.NewAnchor(log, cmd.DefaultStreams()).Execute(); err != nil {
-		log.Error(err, "cannot perform required action")
+	if err := anchor.NewAnchor(log).Execute(); err != nil {
+		fmt.Println(err)
 		os.Exit(1)
 	}
 }

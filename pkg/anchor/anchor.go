@@ -18,14 +18,13 @@ package anchor
 
 import (
 	"github.com/go-logr/logr"
-	"github.com/kubermatic/kubecarrier/pkg/anchor/cmd"
 	"github.com/spf13/cobra"
 
 	"github.com/kubermatic/kubecarrier/pkg/anchor/cmd/version"
 )
 
 // NewAnchor creates the root command for the anchor CLI.
-func NewAnchor(log logr.Logger, streams cmd.Streams) *cobra.Command {
+func NewAnchor(log logr.Logger) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "anchor",
 		Short: "Anchor is the CLI tool for managing Kubecarrier",
@@ -35,7 +34,7 @@ https://github.com/kubermatic/kubecarrier`,
 	}
 
 	cmd.AddCommand(
-		version.NewCommand(log, streams))
+		version.NewCommand(log))
 
 	return cmd
 }

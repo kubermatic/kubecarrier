@@ -18,22 +18,57 @@ package version
 
 import (
 	"bytes"
+	"fmt"
 	"testing"
 
-	"github.com/go-logr/logr"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
-	"github.com/kubermatic/kubecarrier/pkg/anchor/cmd"
+	"github.com/kubermatic/kubecarrier/pkg/testutil"
+	"github.com/kubermatic/kubecarrier/pkg/version"
 )
 
 func TestNewCommand(t *testing.T) {
-	var (
-		stdin, stdout, stderr bytes.Buffer
-	)
-	streams := cmd.Streams{
-		In:  &stdin,
-		Out: &stdout,
-		Err: &stderr,
-	}
+	// Override the version.Version property,
+	// to give a nice test output representation
+	version.Version = "v1.1.0"
 
-	log := logr.New()
+	t.Run("default output", func(t *testing.T) {
+		log := testutil.NewLogger(t)
+		var (
+			stdout, stderr bytes.Buffer
+		)
+		cmd := NewCommand(log)
+		cmd.SetOut(&stdout)
+		cmd.SetErr(&stderr)
+
+		err := cmd.Execute()
+		require.NoError(t, err, "execute returned an error")
+
+		assert.Equal(t, "v1.1.0\n", stdout.String())
+		assert.Equal(t, "", stderr.String())
+	})
+
+	t.Run("long output", func(t *testing.T) {
+		log := testutil.NewLogger(t)
+		var (
+			stdout, stderr bytes.Buffer
+		)
+		cmd := NewCommand(log)
+		cmd.SetOut(&stdout)
+		cmd.SetErr(&stderr)
+		cmd.SetArgs([]string{"--full"})
+		v := version.Get()
+
+		err := cmd.Execute()
+		require.NoError(t, err, "execute returned an error")
+
+		assert.Equal(t, fmt.Sprintf(`branch: was not build properly
+buildTime: "0001-01-01T00:00:00Z"
+commit: was not build properly
+goVersion: %s
+platform: %s
+version: v1.1.0
+`, v.GoVersion, v.Platform), stdout.String())
+	})
 }
