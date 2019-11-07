@@ -14,4 +14,32 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package test
+package version
+
+import (
+	"strconv"
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+)
+
+func TestDefault(t *testing.T) {
+	assert.Equal(t, Version, empty)
+	assert.Equal(t, Branch, empty)
+	assert.Equal(t, Commit, empty)
+	assert.Equal(t, BuildDate, empty)
+
+}
+
+func TestGet(t *testing.T) {
+	Version = "1.2.3"
+	Branch = "branch"
+	Commit = "commit"
+	BuildDate = "1573126751"
+
+	v := Get()
+	assert.Equal(t, Version, v.Version)
+	assert.Equal(t, Branch, v.Branch)
+	assert.Equal(t, Commit, v.Commit)
+	assert.Equal(t, BuildDate, strconv.Itoa(int(v.BuildDate.Unix())))
+}

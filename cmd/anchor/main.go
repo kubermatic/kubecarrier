@@ -14,4 +14,28 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package test
+package main
+
+import (
+	"fmt"
+	"os"
+
+	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/log/zap"
+
+	"github.com/kubermatic/kubecarrier/pkg/anchor"
+)
+
+func main() {
+	ctrl.SetLogger(zap.New(func(options *zap.Options) {
+		options.Development = true
+	}))
+
+	log := ctrl.Log.WithName("anchor")
+	log.Info("Starting anchor command")
+
+	if err := anchor.NewAnchor(log).Execute(); err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+}
