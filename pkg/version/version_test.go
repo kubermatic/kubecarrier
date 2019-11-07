@@ -17,16 +17,17 @@ limitations under the License.
 package version
 
 import (
-	"github.com/stretchr/testify/assert"
 	"strconv"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestDefault(t *testing.T) {
-	assert.Equal(t,Version,empty)
-	assert.Equal(t,Branch,empty)
-	assert.Equal(t,Commit,empty)
-	assert.Equal(t,BuildDate,empty)
+	assert.Equal(t, Version, empty)
+	assert.Equal(t, Branch, empty)
+	assert.Equal(t, Commit, empty)
+	assert.Equal(t, BuildDate, empty)
 
 }
 
@@ -37,8 +38,8 @@ func TestGet(t *testing.T) {
 	BuildDate = "1573126751"
 
 	v := Get()
-	assert.Equal(t,Version,v.Version)
-	assert.Equal(t,Branch,v.Branch)
-	assert.Equal(t,Commit,v.Commit)
-	assert.Equal(t,BuildDate,strconv.Itoa(int(v.BuildDate.Unix())))
+	assert.Equal(t, Version, v.Version)
+	assert.Equal(t, Branch, v.Branch)
+	assert.Equal(t, Commit, v.Commit)
+	assert.Equal(t, BuildDate, strconv.Itoa(int(v.BuildDate.Unix())))
 }
