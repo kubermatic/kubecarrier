@@ -20,6 +20,7 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/spf13/cobra"
 
+	"github.com/kubermatic/kubecarrier/pkg/anchor/cmd/setup"
 	"github.com/kubermatic/kubecarrier/pkg/anchor/cmd/version"
 )
 
@@ -34,7 +35,8 @@ https://github.com/kubermatic/kubecarrier`,
 	}
 
 	cmd.AddCommand(
-		version.NewCommand(log))
+		version.NewCommand(log),
+		setup.NewCommand(log))
 
 	return cmd
 }
