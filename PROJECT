@@ -1,0 +1,3 @@
+version: "2"
+domain: kubecarrier.io
+repo: github.com/kubermatic/kubecarrier

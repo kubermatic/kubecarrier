@@ -20,12 +20,60 @@ DOCKER_TEST_IMAGE?=quay.io/kubecarrier/test
 MODULE=github.com/kubermatic/kubecarrier
 LD_FLAGS="-w -X '$(MODULE)/pkg/version.Version=$(VERSION)' -X '$(MODULE)/pkg/version.Branch=$(BRANCH)' -X '$(MODULE)/pkg/version.Commit=$(SHORT_SHA)' -X '$(MODULE)/pkg/version.BuildDate=$(BUILD_DATE)'"
 
+# Produce CRDs that work back to Kubernetes 1.11 (no version conversion)
+CRD_OPTIONS ?= "crd:trivialVersions=true"
+
+# Get the currently used golang install path (in GOPATH/bin, unless GOBIN is set)
+ifeq (, $(shell go env GOBIN))
+GOBIN=$(shell go env GOPATH)/bin
+else
+GOBIN=$(shell go env GOBIN)
+endif
+
 all: \
-	build-anchor
+	build-anchor \
+	build-operator
 
 # Build binaries for components
 build-%:
 	go build -ldflags $(LD_FLAGS) -o bin/$* cmd/$*/main.go
+
+# Run the operator to against the kubernetes cluster.
+run-operator: generate fmt vet
+	go run -ldflags $(LD_FLAGS) ./cmd/operator/main.go
+
+# Generate code
+generate: controller-gen
+	$(CONTROLLER_GEN) object:headerFile=./hack/boilerplate.go.txt paths=./pkg/apis/...
+
+# Install CRDs into a cluster
+install-%: manifests-%
+	kubectl apply -f config/$*/crd/bases
+
+# Generate manifests e.g. CRD, RBAC etc.
+manifests: \
+	manifests-operator
+
+manifests-%: controller-gen
+	$(CONTROLLER_GEN) $(CRD_OPTIONS) rbac:roleName=manager webhook paths="./..." output:crd:artifacts:config=config/$*/crd/bases output:rbac:artifacts:config=config/$*/rbac output:webhook:artifacts:config=config/$*/webhook
+
+# find or download controller-gen
+# download controller-gen if necessary
+controller-gen:
+ifeq (, $(shell which controller-gen))
+	go get sigs.k8s.io/controller-tools/cmd/controller-gen@v0.2.2
+CONTROLLER_GEN=$(GOBIN)/controller-gen
+else
+CONTROLLER_GEN=$(shell which controller-gen)
+endif
+
+# Run go fmt against code
+fmt:
+	go fmt ./...
+
+# Run go vet against code
+vet:
+	go vet ./...
 
 test:
 	go test ./...
