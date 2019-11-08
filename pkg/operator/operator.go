@@ -19,12 +19,12 @@ package operator
 import (
 	"os"
 
+	"github.com/go-logr/logr"
 	"github.com/spf13/cobra"
 	"k8s.io/apimachinery/pkg/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 	ctrl "sigs.k8s.io/controller-runtime"
-	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 )
 
 type flags struct {
@@ -33,8 +33,7 @@ type flags struct {
 }
 
 var (
-	scheme   = runtime.NewScheme()
-	setupLog = ctrl.Log.WithName("setup")
+	scheme = runtime.NewScheme()
 )
 
 func init() {
@@ -46,14 +45,14 @@ const (
 	componentOperator = "operator"
 )
 
-func NewOperatorCommand() *cobra.Command {
+func NewOperatorCommand(log logr.Logger) *cobra.Command {
 	flags := &flags{}
 	cmd := &cobra.Command{
 		Args:  cobra.NoArgs,
 		Use:   componentOperator,
 		Short: "deploy kubecarrier operator",
 		Run: func(cmd *cobra.Command, args []string) {
-			run(flags)
+			run(flags, log)
 		},
 	}
 	cmd.Flags().StringVar(&flags.metricsAddr, "metrics-addr", ":8080", "The address the metric endpoint binds to.")
@@ -62,11 +61,7 @@ func NewOperatorCommand() *cobra.Command {
 	return cmd
 }
 
-func run(flags *flags) {
-	ctrl.SetLogger(zap.New(func(o *zap.Options) {
-		o.Development = true
-	}))
-
+func run(flags *flags, log logr.Logger) {
 	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
 		Scheme:             scheme,
 		MetricsBindAddress: flags.metricsAddr,
@@ -74,14 +69,14 @@ func run(flags *flags) {
 		Port:               9443,
 	})
 	if err != nil {
-		setupLog.Error(err, "unable to start manager")
+		log.Error(err, "unable to start manager")
 		os.Exit(1)
 	}
 	// +kubebuilder:scaffold:builder
 
-	setupLog.Info("starting operator")
+	log.Info("starting operator")
 	if err := mgr.Start(ctrl.SetupSignalHandler()); err != nil {
-		setupLog.Error(err, "problem running operator")
+		log.Error(err, "problem running operator")
 		os.Exit(1)
 	}
 }
