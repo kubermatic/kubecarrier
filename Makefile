@@ -26,7 +26,10 @@ test:
 .PHONY: test
 
 e2e-test:
+	docker ps > /dev/null 2>&1 || start-docker.sh || (echo "cannot find running docker daemon nor can start new one" && false)
 	go run ./cmd/anchor e2e-test kind-setup
+	echo "[PLACEHOLDER] building the images"
+	echo "[PLACEHOLDER] loading the images"
 	go run ./cmd/anchor e2e-test run --test.v | richgo testfilter
 	go run ./cmd/anchor e2e-test kind-teardown
 .PHONY: e2e-test
