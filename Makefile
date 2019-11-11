@@ -43,9 +43,6 @@ e2e-test:
 	go run ./cmd/anchor e2e-test kind-teardown
 .PHONY: e2e-test
 
-pre-commit:
-	pre-commit run -a
-
 lint:
 	pre-commit run -a
 	golangci-lint run ./...
