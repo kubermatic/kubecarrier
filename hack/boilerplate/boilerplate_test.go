@@ -17,6 +17,8 @@ limitations under the License.
 package main
 
 import (
+	"bytes"
+	"strings"
 	"testing"
 )
 
@@ -26,12 +28,12 @@ func Test_fileExtension(t *testing.T) {
 	}{
 		{
 			name:      "Simple extension",
-			file:      "e2e-test.go",
+			file:      "test.go",
 			extension: "go",
 		},
 		{
 			name:      "dot in between",
-			file:      "script.e2e-test.sh",
+			file:      "script.test.sh",
 			extension: "sh",
 		},
 		{
@@ -53,5 +55,26 @@ func Test_fileExtension(t *testing.T) {
 				t.Errorf("file extension should be %q, is: %q", test.extension, ext)
 			}
 		})
+	}
+}
+
+var expected = `Boilerplate header is wrong for:
+test/fail.go
+test/fail.py`
+
+func Test_run(t *testing.T) {
+	var buf bytes.Buffer
+
+	failed, err := run(&buf, "./test")
+	if err != nil {
+		t.Errorf("unexpected error: %v", err)
+		return
+	}
+	if !failed {
+		t.Errorf("should have failed")
+	}
+	output := strings.TrimSpace(buf.String())
+	if output != expected {
+		t.Errorf("unexpected messages printed:\n%s\nshould be:\n%s", output, expected)
 	}
 }
