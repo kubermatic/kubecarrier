@@ -20,9 +20,12 @@ import (
 	"bytes"
 	"fmt"
 	"io/ioutil"
-	"log"
 	"os"
 	"time"
+
+	ctrl "sigs.k8s.io/controller-runtime"
+
+	"github.com/go-logr/logr"
 
 	"github.com/spf13/cobra"
 	"sigs.k8s.io/kind/pkg/cluster"
@@ -30,6 +33,8 @@ import (
 )
 
 type Config struct {
+	log logr.Logger
+
 	// Current e2e-test id. The created clusters shall be prefixed accordingly
 	testID string
 
@@ -74,22 +79,20 @@ func (c *Config) SetupKindCluster() error {
 		ctx := cluster.NewContext(cl.Name)
 		switch {
 		case !know:
-			log.Printf("creating cluster %s", ctx.Name())
+			c.log.Info("creating cluster", "cluster", ctx.Name())
 			if err := ctx.Create(
 				create.Retain(true),
 				create.WaitForReady(10*time.Minute),
 			); err != nil {
-				log.Panic(err)
+				return fmt.Errorf("cannot create cluster %s: %w", ctx.Name(), err)
 			}
 		case c.reuse && know:
-			log.Printf("found existing kind cluster %s, reusing it\n", ctx.Name())
+			c.log.Info("found existing kind cluster reusing it", "cluster", ctx.Name())
 		case !c.reuse && know:
-			log.Printf("found existing kind cluster %s, but reuse is disabled\n", ctx.Name())
+			c.log.Info("found existing kind cluster but reuse is disabled", "cluster", ctx.Name())
 			return fmt.Errorf("found existing kind cluster %s, but reuse is disabled\n", ctx.Name())
 		default:
 		}
-
-		log.Printf("for cluster %s kubeconifg is at %s", ctx.Name(), ctx.KubeConfigPath())
 
 		externalKubeconfig, err := ioutil.ReadFile(ctx.KubeConfigPath())
 		if err != nil {
@@ -129,7 +132,7 @@ func (c *Config) TeardownKindCluster() error {
 			return fmt.Errorf("cannot find out if cluster name %s is known: %w", kindClusterName, err)
 		}
 		if !know {
-			log.Printf("cluster %s not known, skipping", kindClusterName)
+			c.log.Info("unknown cluster name, skipping", "cluster", kindClusterName)
 			continue
 		}
 		ctx := cluster.NewContext(kindClusterName)
@@ -155,17 +158,21 @@ func (c *Config) Default() error {
 	if c.masterExternalKubeconfigFile == "" {
 		c.masterExternalKubeconfigFile = os.ExpandEnv("${HOME}/.kube/kind-config-" + c.masterClusterName())
 	}
+	if c.log == nil {
+		c.log = ctrl.Log.WithValues("e2e-test")
+	}
 
 	return nil
 }
 
 var cfg Config
 
-func NewCommand() *cobra.Command {
+func NewCommand(log logr.Logger) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "e2e-test",
 		Short: "end2end testing utilities",
 		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
+			cfg.log = log.WithName("e2e-test")
 			return cfg.Default()
 		},
 	}

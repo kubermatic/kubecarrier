@@ -17,14 +17,14 @@ limitations under the License.
 package completion
 
 import (
+	"github.com/go-logr/logr"
 	"github.com/spf13/cobra"
-
-	"github.com/kubermatic/kubecarrier/cmd/anchor/completion/bash"
-	"github.com/kubermatic/kubecarrier/cmd/anchor/completion/zsh"
+	"sigs.k8s.io/kind/cmd/kind/completion/bash"
+	"sigs.k8s.io/kind/cmd/kind/completion/zsh"
 )
 
 // NewCommand returns a new cobra.Command for shell completion code generation
-func NewCommand() *cobra.Command {
+func NewCommand(log logr.Logger) *cobra.Command {
 	cmd := &cobra.Command{
 		Args:  cobra.NoArgs,
 		Use:   "completion",

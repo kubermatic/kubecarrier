@@ -20,6 +20,9 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/spf13/cobra"
 
+	"github.com/kubermatic/kubecarrier/pkg/anchor/cmd/completion"
+	e2e_test "github.com/kubermatic/kubecarrier/pkg/anchor/cmd/e2e-test"
+
 	"github.com/kubermatic/kubecarrier/pkg/anchor/cmd/version"
 )
 
@@ -34,7 +37,10 @@ https://github.com/kubermatic/kubecarrier`,
 	}
 
 	cmd.AddCommand(
-		version.NewCommand(log))
+		version.NewCommand(log),
+		e2e_test.NewCommand(log),
+		completion.NewCommand(log),
+	)
 
 	return cmd
 }

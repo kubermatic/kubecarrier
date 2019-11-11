@@ -20,13 +20,10 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/spf13/cobra"
 	zapcore "go.uber.org/zap"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
-	"github.com/kubermatic/kubecarrier/cmd/anchor/completion"
-	e2e_test "github.com/kubermatic/kubecarrier/cmd/anchor/e2e-test"
 	"github.com/kubermatic/kubecarrier/pkg/anchor"
 )
 
@@ -44,25 +41,4 @@ func main() {
 		fmt.Println(err)
 		os.Exit(1)
 	}
-
-	if err := newCommand().Execute(); err != nil {
-		log.Error(err, "cannot perform required action")
-		os.Exit(1)
-	}
-}
-
-func newCommand() *cobra.Command {
-	rootCmd := &cobra.Command{
-		Use:   "anchor",
-		Short: "Anchor is the CLI tool for managing Kubecarrier",
-		//Long: `Anchor is a CLI library for managing Kubecarrier,
-		// Documentation is available in the project's repository:
-		// https://github.com/kubermatic/kubecarrier`,
-	}
-
-	rootCmd.AddCommand(
-		e2e_test.NewCommand(),
-		completion.NewCommand(),
-	)
-	return rootCmd
 }
