@@ -118,11 +118,11 @@ func runE(flags *flags, log logr.Logger, cmd *cobra.Command) error {
 		},
 	}
 	if err := spinner.AttachSpinnerTo(s, "Create Kubecarrier System Namespace", createNamespace(ctx, c, ns)); err != nil {
-		return nil
+		return fmt.Errorf("creating Kubecarrier system namespace: %w", err)
 	}
 
 	if err := spinner.AttachSpinnerTo(s, "Deploy Kubecarrier Operator", reconcileOperator(ctx, log, c, ns)); err != nil {
-		return nil
+		return fmt.Errorf("deploying kubecarrier operator: %w", err)
 	}
 
 	return nil

@@ -90,9 +90,11 @@ func Service(
 		return desiredService, nil
 	}
 
-	if !equality.Semantic.DeepEqual(desiredService.Spec, currentService.Spec) {
+	if !equality.Semantic.DeepEqual(desiredService.Spec.Selector, currentService.Spec.Selector) &&
+		!equality.Semantic.DeepEqual(desiredService.Spec.Ports, currentService.Spec.Ports) {
 		// desired and current Service .Spec are not equal -> trigger an update
-		currentService.Spec = desiredService.Spec
+		currentService.Spec.Selector = desiredService.Spec.Selector
+		currentService.Spec.Ports = desiredService.Spec.Ports
 		if err = c.Update(ctx, currentService); err != nil {
 			return nil, fmt.Errorf("updating Service: %w", err)
 		}

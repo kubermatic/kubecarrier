@@ -12,10 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+export CGO_ENABLED:=0
+
 BRANCH=$(shell git rev-parse --abbrev-ref HEAD)
 SHORT_SHA=$(shell git rev-parse --short HEAD)
 VERSION?=${BRANCH}-${SHORT_SHA}
 BUILD_DATE=$(shell date +%s)
+IMAGE_ORG?=quay.io/kubecarrier
 DOCKER_TEST_IMAGE?=quay.io/kubecarrier/test
 MODULE=github.com/kubermatic/kubecarrier
 LD_FLAGS="-w -X '$(MODULE)/pkg/version.Version=$(VERSION)' -X '$(MODULE)/pkg/version.Branch=$(BRANCH)' -X '$(MODULE)/pkg/version.Commit=$(SHORT_SHA)' -X '$(MODULE)/pkg/version.BuildDate=$(BUILD_DATE)'"
@@ -30,21 +33,26 @@ else
 GOBIN=$(shell go env GOBIN)
 endif
 
-all: \
-	build-anchor \
-	build-operator
+bin/linux_amd64/%: GOARGS = GOOS=linux GOARCH=amd64
+bin/darwin_amd64/%: GOARGS = GOOS=darwin GOARCH=amd64
 
-# Build binaries for components
-build-%:
-	go build -ldflags $(LD_FLAGS) -o bin/$* cmd/$*/main.go
+bin/%: FORCE generate
+	$(eval COMPONENT=$(shell basename $*))
+	$(GOARGS) go build -ldflags $(LD_FLAGS) -o bin/$* cmd/$(COMPONENT)/main.go
 
-# Run the operator to against the kubernetes cluster.
-run-operator: generate fmt vet
-	go run -ldflags $(LD_FLAGS) ./cmd/operator/main.go
+FORCE:
+
+clean:
+	rm -rf bin/$*
+.PHONEY: clean
 
 # Generate code
 generate: controller-gen
+	go generate ./...
 	$(CONTROLLER_GEN) object:headerFile=./hack/boilerplate.go.txt paths=./pkg/apis/...
+
+install: \
+	install-operator
 
 # Install CRDs into a cluster
 install-%: manifests-%
@@ -97,3 +105,41 @@ push-test-docker-image: build-test-docker-image
 	@docker push ${DOCKER_TEST_IMAGE}
 	@echo pushed ${DOCKER_TEST_IMAGE}
 .PHONEY: push-test-docker-image
+
+
+push-images: \
+	push-image-operator
+
+# build all container images except the test image
+build-images: \
+	build-image-operator
+
+kind-load: \
+	kind-load-operator
+
+build-image-test:
+	# @echo test
+	@mkdir -p bin/image/test
+	@cp -a config/dockerfiles/test.Dockerfile bin/image/test/Dockerfile
+	@cp -a go.mod bin/image/test
+	@cp -a go.sum bin/image/test
+	@docker build -t ${IMAGE_ORG}/test bin/image/test
+
+push-image-test:
+	@docker push ${IMAGE_ORG}/test
+	@echo pushed ${IMAGE_ORG}/test
+
+.SECONDEXPANSION:
+# copy binary in new folder, so docker build is only sending the binary to the docker deamon
+build-image-%: bin/linux_amd64/$$*
+	@mkdir -p bin/image/$*
+	@mv bin/linux_amd64/$* bin/image/$*
+	@cp -a config/dockerfiles/$*.Dockerfile bin/image/$*/Dockerfile
+	@docker build -t ${IMAGE_ORG}/$*:${VERSION} bin/image/$*
+
+push-image-%: build-image-$$*
+	@docker push ${IMAGE_ORG}/$*:${VERSION}
+	@echo pushed ${IMAGE_ORG}/$*:${VERSION}
+
+kind-load-%: build-image-$$*
+	kind load docker-image ${IMAGE_ORG}/$*:${VERSION} --name=kind
