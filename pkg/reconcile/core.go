@@ -82,7 +82,7 @@ func Service(
 
 	if errors.IsNotFound(err) {
 		// Service needs to be created
-		log.Info("creating", "Service", name.String())
+		log.V(1).Info("creating", "Service", name.String())
 		if err = c.Create(ctx, desiredService); err != nil {
 			return nil, fmt.Errorf("creating Service: %w", err)
 		}
@@ -92,6 +92,7 @@ func Service(
 
 	if !equality.Semantic.DeepEqual(desiredService.Spec.Selector, currentService.Spec.Selector) &&
 		!equality.Semantic.DeepEqual(desiredService.Spec.Ports, currentService.Spec.Ports) {
+		log.V(1).Info("updating", "Service", name.String())
 		// desired and current Service .Spec are not equal -> trigger an update
 		currentService.Spec.Selector = desiredService.Spec.Selector
 		currentService.Spec.Ports = desiredService.Spec.Ports

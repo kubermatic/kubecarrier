@@ -21,17 +21,13 @@ import (
 	"fmt"
 	"os"
 	"strings"
-
-	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
-
-	"github.com/kubermatic/kubecarrier/pkg/kustomize"
-	"github.com/kubermatic/kubecarrier/pkg/reconcile"
-	"github.com/kubermatic/kubecarrier/pkg/resources/operator"
+	"time"
 
 	"github.com/gernest/wow"
 	"github.com/gernest/wow/spin"
 	"github.com/go-logr/logr"
 	"github.com/spf13/cobra"
+	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -40,8 +36,12 @@ import (
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/config"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
 	"github.com/kubermatic/kubecarrier/pkg/anchor/spinner"
+	"github.com/kubermatic/kubecarrier/pkg/kustomize"
+	"github.com/kubermatic/kubecarrier/pkg/reconcile"
+	"github.com/kubermatic/kubecarrier/pkg/resources/operator"
 )
 
 type flags struct {
@@ -54,8 +54,7 @@ var (
 )
 
 const (
-	kubeconfigEnv        = "KUBECONFIG"
-	kubecarrierNamespace = "kubecarrier-system"
+	kubecarrierNamespaceName = "kubecarrier-system"
 )
 
 func init() {
@@ -78,7 +77,7 @@ $ anchor setup --kubeconfig=<kubeconfig path>
 		},
 	}
 
-	cmd.Flags().StringVar(&flags.KubeConfig, "kubeconfig", "", "The absolute path of the kubeconfig of kubernetes cluster that set up with. if you don't specify the flag, it will read from the KUBECONFIG environment variable.")
+	cmd.Flags().StringVar(&flags.KubeConfig, "kubeconfig", os.Getenv("KUBECONFIG"), "The absolute path of the kubeconfig of kubernetes cluster that set up with. if you don't specify the flag, it will read from the KUBECONFIG environment variable.")
 	return cmd
 }
 
@@ -88,13 +87,12 @@ func runE(flags *flags, log logr.Logger, cmd *cobra.Command) error {
 
 	// Check the kubeconfig
 	if err := spinner.AttachSpinnerTo(s, "Check kubeconfig", func() error {
-		kubeconfigPath, err := checkKubeConfig(flags.KubeConfig)
-		if err != nil {
+		if err := checkKubeConfig(flags.KubeConfig); err != nil {
 			return err
 		}
 
 		// Set the kubeconfig environment variable so the client in the following can work with the cluster.
-		if err := os.Setenv(kubeconfigEnv, kubeconfigPath); err != nil {
+		if err := os.Setenv("KUBECONFIG", flags.KubeConfig); err != nil {
 			return nil
 		}
 		return nil
@@ -114,10 +112,10 @@ func runE(flags *flags, log logr.Logger, cmd *cobra.Command) error {
 
 	ns := &corev1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: kubecarrierNamespace,
+			Name: kubecarrierNamespaceName,
 		},
 	}
-	if err := spinner.AttachSpinnerTo(s, "Create Kubecarrier System Namespace", createNamespace(ctx, c, ns)); err != nil {
+	if err := spinner.AttachSpinnerTo(s, fmt.Sprintf("Create %q Namespace", kubecarrierNamespaceName), createNamespace(ctx, c, ns)); err != nil {
 		return fmt.Errorf("creating Kubecarrier system namespace: %w", err)
 	}
 
@@ -133,36 +131,32 @@ func createNamespace(ctx context.Context, c client.Client, ns *corev1.Namespace)
 		if err := c.Create(ctx, ns); err != nil {
 			if errors.IsAlreadyExists(err) {
 				if err := c.Get(ctx, types.NamespacedName{Name: ns.ObjectMeta.Name}, ns); err != nil {
-					return fmt.Errorf("getting Kubecarrier system namespace: %v", err)
+					return fmt.Errorf("getting Kubecarrier system namespace: %w", err)
 				}
 				return nil
 			} else {
-				return fmt.Errorf("creating Kubecarrier system namespace: %v", err)
+				return fmt.Errorf("creating Kubecarrier system namespace: %w", err)
 			}
 		}
 		return nil
 	}
 }
 
-func checkKubeConfig(kubeconfig string) (string, error) {
+func checkKubeConfig(kubeconfig string) error {
 	kubeConfigPath := strings.TrimSpace(kubeconfig)
 	if kubeConfigPath == "" {
-		kubeConfigPath = strings.TrimSpace(os.Getenv("KUBECONFIG"))
-	}
-
-	if kubeConfigPath == "" {
-		return "", fmt.Errorf("either $KUBECONFIG or --kubeconfig flag needs to be set")
+		return fmt.Errorf("either $KUBECONFIG or --kubeconfig flag needs to be set")
 	}
 
 	kubeConfigStat, err := os.Stat(kubeConfigPath)
 	if err != nil {
-		return "", fmt.Errorf("checking the kubeconfig path: %w", err)
+		return fmt.Errorf("checking the kubeconfig path: %w", err)
 	}
 	// Check the kubeconfig path points to a file
 	if !kubeConfigStat.Mode().IsRegular() {
-		return "", fmt.Errorf("kubeconfig path %s does not point to a file", kubeConfigPath)
+		return fmt.Errorf("kubeconfig path %s does not point to a file", kubeConfigPath)
 	}
-	return kubeConfigPath, nil
+	return nil
 }
 
 func reconcileOperator(ctx context.Context, log logr.Logger, c client.Client, kubecarrierNamespace *corev1.Namespace) func() error {
@@ -186,6 +180,49 @@ func reconcileOperator(ctx context.Context, log logr.Logger, c client.Client, ku
 				return fmt.Errorf("reconcile type: %s, err: %w", object.GroupVersionKind().Kind, err)
 			}
 		}
-		return nil
+
+		deployment := &appsv1.Deployment{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "kubecarrier-operator",
+				Namespace: kubecarrierNamespaceName,
+			},
+		}
+
+		retryTicker := time.NewTicker(2 * time.Second)
+		retryTimeDuration := 10 * time.Second
+		retryDeadlineCTx, cancel := context.WithDeadline(ctx, time.Now().Add(retryTimeDuration))
+		defer retryTicker.Stop()
+		defer cancel()
+		for {
+			select {
+			case <-retryTicker.C:
+				if err := c.Get(ctx, types.NamespacedName{
+					Name:      deployment.Name,
+					Namespace: deployment.Namespace,
+				}, deployment); err != nil {
+					return fmt.Errorf("geting Kubecarrier operator: %w", err)
+				}
+
+				if deploymentIsAvailable(deployment) {
+					return nil
+				}
+
+			case <-retryDeadlineCTx.Done():
+				return fmt.Errorf("deploying Kubecarrier operator: Kubecarrier operator deployment is not available after %v", retryTimeDuration)
+			}
+		}
 	}
+}
+
+func deploymentIsAvailable(deployment *appsv1.Deployment) bool {
+	if deployment.Status.ObservedGeneration != deployment.Generation {
+		return false
+	}
+	for _, condition := range deployment.Status.Conditions {
+		if condition.Type == appsv1.DeploymentAvailable &&
+			condition.Status == corev1.ConditionTrue {
+			return true
+		}
+	}
+	return false
 }
