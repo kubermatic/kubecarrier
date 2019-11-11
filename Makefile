@@ -19,9 +19,9 @@ SHORT_SHA=$(shell git rev-parse --short HEAD)
 VERSION?=${BRANCH}-${SHORT_SHA}
 BUILD_DATE=$(shell date +%s)
 IMAGE_ORG?=quay.io/kubecarrier
-DOCKER_TEST_IMAGE?=quay.io/kubecarrier/test
 MODULE=github.com/kubermatic/kubecarrier
 LD_FLAGS="-w -X '$(MODULE)/pkg/version.Version=$(VERSION)' -X '$(MODULE)/pkg/version.Branch=$(BRANCH)' -X '$(MODULE)/pkg/version.Commit=$(SHORT_SHA)' -X '$(MODULE)/pkg/version.BuildDate=$(BUILD_DATE)'"
+KIND_CLUSTER?=kubecarrier
 
 # Produce CRDs that work back to Kubernetes 1.11 (no version conversion)
 CRD_OPTIONS ?= "crd:trivialVersions=true"
@@ -96,17 +96,6 @@ lint:
 tidy:
 	go mod tidy
 
-build-test-docker-image:
-	@docker build -f ./config/dockerfiles/test.Dockerfile -t ${DOCKER_TEST_IMAGE} ./
-	@echo built ${DOCKER_TEST_IMAGE}
-.PHONEY: build-test-docker-image
-
-push-test-docker-image: build-test-docker-image
-	@docker push ${DOCKER_TEST_IMAGE}
-	@echo pushed ${DOCKER_TEST_IMAGE}
-.PHONEY: push-test-docker-image
-
-
 push-images: \
 	push-image-operator
 
@@ -121,8 +110,7 @@ build-image-test:
 	# @echo test
 	@mkdir -p bin/image/test
 	@cp -a config/dockerfiles/test.Dockerfile bin/image/test/Dockerfile
-	@cp -a go.mod bin/image/test
-	@cp -a go.sum bin/image/test
+	@cp -a go.mod go.sum hack/start-docker.sh bin/image/test
 	@docker build -t ${IMAGE_ORG}/test bin/image/test
 
 push-image-test:
@@ -142,4 +130,4 @@ push-image-%: build-image-$$*
 	@echo pushed ${IMAGE_ORG}/$*:${VERSION}
 
 kind-load-%: build-image-$$*
-	kind load docker-image ${IMAGE_ORG}/$*:${VERSION} --name=kind
+	kind load docker-image ${IMAGE_ORG}/$*:${VERSION} --name=${KIND_CLUSTER}

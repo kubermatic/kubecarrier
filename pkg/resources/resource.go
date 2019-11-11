@@ -16,26 +16,4 @@ limitations under the License.
 
 package resources
 
-import (
-	"strings"
-
-	"github.com/kubermatic/kubecarrier/pkg/version"
-)
-
 //go:generate bash -c "statik -src=../../config/operator -p operator -f -c \"$DOLLAR(cat ../../hack/boilerplate/boilerplate.go.txt | sed s/YEAR/2019/g )\""
-
-// default images
-const (
-	KubecarrierRegistry = "quay.io/kubermatic/kubecarrier"
-	operatorRepository  = KubecarrierRegistry + "/operator"
-)
-
-var (
-	DefaultImageTag string
-)
-
-func init() {
-	v := version.Get()
-	tag := v.Version
-	DefaultImageTag = strings.Replace(tag, "+", "_", -1)
-}
