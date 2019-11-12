@@ -14,21 +14,23 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package testutil
+package operator
 
 import (
-	"testing"
+	"net/http"
 
-	"github.com/stretchr/testify/assert"
-
-	"github.com/stretchr/testify/require"
+	statikfs "github.com/rakyll/statik/fs"
 )
 
-func TestLoggerOutput(t *testing.T) {
-	l := NewLogger(t)
+// vfs is a virtual file system to access the operator config.
+var vfs http.FileSystem
 
-	g := l.WithName("a").WithName("b").WithValues("c", "d")
-	g.Info("msg")
-	require.Equal(t, []string{"a", "b"}, g.(*Logger).names)
-	assert.Equal(t, "d", g.(*Logger).values["c"])
+// don't rename this file!
+// this init() function must be called after statik.go
+func init() {
+	var err error
+	vfs, err = statikfs.New()
+	if err != nil {
+		panic(err)
+	}
 }

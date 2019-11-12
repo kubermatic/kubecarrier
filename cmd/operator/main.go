@@ -17,36 +17,23 @@ limitations under the License.
 package main
 
 import (
-	"fmt"
 	"os"
 
-	"github.com/go-logr/logr"
-	"go.uber.org/zap"
 	ctrl "sigs.k8s.io/controller-runtime"
-	corezap "sigs.k8s.io/controller-runtime/pkg/log/zap"
+	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
-	"github.com/kubermatic/kubecarrier/pkg/anchor"
+	"github.com/kubermatic/kubecarrier/pkg/operator"
 )
 
 func main() {
-	level := zap.NewAtomicLevel()
-	ctrl.SetLogger(corezap.New(func(options *corezap.Options) {
-		options.Level = &level
+	ctrl.SetLogger(zap.New(func(options *zap.Options) {
 		options.Development = true
 	}))
 
-	log := ctrl.Log.WithName("anchor")
-	if err := anchor.NewAnchor(&logWrapper{Logger: log, level: &level}).Execute(); err != nil {
-		fmt.Println(err)
+	log := ctrl.Log.WithName("operator")
+	command := operator.NewOperatorCommand(log)
+
+	if err := command.Execute(); err != nil {
 		os.Exit(1)
 	}
-}
-
-type logWrapper struct {
-	logr.Logger
-	level *zap.AtomicLevel
-}
-
-func (w *logWrapper) GetLevel() *zap.AtomicLevel {
-	return w.level
 }

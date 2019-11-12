@@ -14,11 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package anchor
+package resources
 
-import (
-	"github.com/kubermatic/kubecarrier/pkg/anchor/internal/cmd"
-)
-
-// NewAnchor returns the Anchor root command with all subcommands initialized.
-var NewAnchor = cmd.NewAnchor
+//go:generate bash -c "statik -src=../../../config/operator -p operator -f -c ''"
+//go:generate bash -c "cat ../../../hack/boilerplate/boilerplate.generatego.txt | sed s/YEAR/2019/ | cat - operator/statik.go > operator/statik.go.tmp; mv operator/statik.go.tmp operator/statik.go"

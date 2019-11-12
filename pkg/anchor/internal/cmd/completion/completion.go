@@ -19,8 +19,9 @@ package completion
 import (
 	"github.com/go-logr/logr"
 	"github.com/spf13/cobra"
-	"sigs.k8s.io/kind/cmd/kind/completion/bash"
-	"sigs.k8s.io/kind/cmd/kind/completion/zsh"
+
+	"github.com/kubermatic/kubecarrier/pkg/anchor/internal/cmd/completion/bash"
+	"github.com/kubermatic/kubecarrier/pkg/anchor/internal/cmd/completion/zsh"
 )
 
 // NewCommand returns a new cobra.Command for shell completion code generation

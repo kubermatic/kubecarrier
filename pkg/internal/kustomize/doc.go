@@ -14,11 +14,5 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package anchor
-
-import (
-	"github.com/kubermatic/kubecarrier/pkg/anchor/internal/cmd"
-)
-
-// NewAnchor returns the Anchor root command with all subcommands initialized.
-var NewAnchor = cmd.NewAnchor
+// Package kustomize is a wrapper to call Kustomize directly from Go.
+package kustomize
