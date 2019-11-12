@@ -14,11 +14,20 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package anchor
+package testutil
 
 import (
-	"github.com/kubermatic/kubecarrier/pkg/anchor/internal/cmd"
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
-// NewAnchor returns the Anchor root command with all subcommands initialized.
-var NewAnchor = cmd.NewAnchor
+func TestLoggerOutput(t *testing.T) {
+	l := NewLogger(t)
+
+	g := l.WithName("a").WithName("b").WithValues("c", "d")
+	g.Info("msg")
+	require.Equal(t, []string{"a", "b"}, g.(*Logger).names)
+	assert.Equal(t, "d", g.(*Logger).values["c"])
+}
