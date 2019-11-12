@@ -20,30 +20,21 @@ import (
 	"flag"
 	"os"
 
-	"github.com/kubermatic/kubecarrier/controllers"
-
-	"github.com/kubermatic/kubecarrier/api/v1alpha1"
-	"github.com/kubermatic/kubecarrier/api/v1alpha2"
-
 	"k8s.io/apimachinery/pkg/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
-	// +kubebuilder:scaffold:imports
 )
 
 var (
 	scheme   = runtime.NewScheme()
 	setupLog = ctrl.Log.WithName("setup")
-	_        = v1alpha1.AddToScheme(scheme)
-	_        = v1alpha2.AddToScheme(scheme)
 )
 
 func init() {
 	_ = clientgoscheme.AddToScheme(scheme)
 
-	// +kubebuilder:scaffold:scheme
 }
 
 func main() {
@@ -69,15 +60,6 @@ func main() {
 		os.Exit(1)
 	}
 
-	if err := (&controllers.StatusReconciler{
-		Client: mgr.GetClient(),
-		Log:    ctrl.Log.WithName("controllers").WithName("Status"),
-		Scheme: scheme,
-	}).SetupWithManager(mgr); err != nil {
-		setupLog.Error(err, "unable to create controller", "controller", "Status")
-		os.Exit(1)
-
-	}
 	if err := mgr.Start(ctrl.SetupSignalHandler()); err != nil {
 		setupLog.Error(err, "problem running manager")
 		os.Exit(1)

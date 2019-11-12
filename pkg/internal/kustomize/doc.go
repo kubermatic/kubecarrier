@@ -14,4 +14,5 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package test
+// Package kustomize is a wrapper to call Kustomize directly from Go.
+package kustomize

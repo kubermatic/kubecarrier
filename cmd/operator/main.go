@@ -14,4 +14,26 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package test
+package main
+
+import (
+	"os"
+
+	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/log/zap"
+
+	"github.com/kubermatic/kubecarrier/pkg/operator"
+)
+
+func main() {
+	ctrl.SetLogger(zap.New(func(options *zap.Options) {
+		options.Development = true
+	}))
+
+	log := ctrl.Log.WithName("operator")
+	command := operator.NewOperatorCommand(log)
+
+	if err := command.Execute(); err != nil {
+		os.Exit(1)
+	}
+}

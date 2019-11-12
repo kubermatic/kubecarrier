@@ -14,4 +14,20 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package test
+package testutil
+
+import (
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+)
+
+func TestLoggerOutput(t *testing.T) {
+	l := NewLogger(t)
+
+	g := l.WithName("a").WithName("b").WithValues("c", "d")
+	g.Info("msg")
+	require.Equal(t, []string{"a", "b"}, g.(*Logger).names)
+	assert.Equal(t, "d", g.(*Logger).values["c"])
+}
