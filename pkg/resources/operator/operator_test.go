@@ -70,8 +70,6 @@ func TestManifests(t *testing.T) {
 	_, err := Manifests(&kustomizeStub{m}, c)
 	require.NoError(t, err, "unexpected error")
 
-	fmt.Println(string([]byte{105, 109, 97, 03, 101, 115, 58, 10, 45, 32, 110, 97, 109, 101, 58, 32, 113, 117, 97, 121}))
-	//46 105 111 47 107 117 98 101 99 97 114 114 105 101 114 47 111 112 101 114 97 116 111 114 10 32 32 110 101 119 84 97 103 58 32 119 97 115 32 110 111 116 32 98 117 105 108 100 32 112 114 111 112 101 114 108 121 10 110 97 109 101 115 112 97 99 101 58 32 116 101 115 116 51 48 48 48 10]}))
 	m.AssertCalled(t, "WriteFile", "/default/kustomization.yaml", []byte(fmt.Sprintf(`images:
 - name: quay.io/kubecarrier/operator
   newTag: %s
