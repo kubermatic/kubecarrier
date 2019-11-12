@@ -36,10 +36,12 @@ endif
 all: \
 	bin/linux_amd64/anchor \
 	bin/darwin_amd64/anchor \
+	bin/windows_amd64/anchor \
 	bin/linux_amd64/operator
 
 bin/linux_amd64/%: GOARGS = GOOS=linux GOARCH=amd64
 bin/darwin_amd64/%: GOARGS = GOOS=darwin GOARCH=amd64
+bin/windows_amd64/%: GOARGS = GOOS=windows GOARCH=amd64
 
 bin/%: FORCE generate
 	$(eval COMPONENT=$(shell basename $*))
