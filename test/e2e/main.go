@@ -43,10 +43,69 @@ var (
 	ServiceInternalKubeconfigPath string
 )
 
+func init() {
+	AllTests = append(AllTests, testing.InternalTest{
+		Name: "VerifyConfig",
+		F: func(t *testing.T) {
+			suite.Run(t, new(VerifyConfig))
+		},
+	})
+}
+
 type VerifyConfig struct {
 	suite.Suite
 	masterClient  client.Client
 	serviceClient client.Client
+}
+
+var _ suite.SetupAllSuite = (*VerifyConfig)(nil)
+
+func (suite *VerifyConfig) SetupSuite() {
+	t := suite.T()
+	t.Logf("master cluster external kubeconfig location: %s", MasterExternalKubeconfigPath)
+	t.Logf("master cluster internal kubeconfig location: %s", MasterInternalKubeconfigPath)
+	t.Logf("svc cluster external kubeconfig location: %s", ServiceExternalKubeconfigPath)
+	t.Logf("svc cluster internal kubeconfig location: %s", ServiceInternalKubeconfigPath)
+
+	t.Log("==== installing sponson in the master cluster ====")
+	out, err := exec.Command("git", "rev-parse", "--show-toplevel").Output()
+	require.NoError(t, err, "cannot query git root folder")
+
+	cmd := exec.Command("make", "install")
+	cmd.Env = append(os.Environ(), "KUBECONFIG="+MasterExternalKubeconfigPath)
+	cmd.Dir = strings.TrimSpace(string(out))
+	out, err = cmd.CombinedOutput()
+	t.Log("\n" + string(out))
+	require.NoError(t, err, "cannot install sponson in the master cluster")
+	t.Log("==== sucessfully installed sponson in the master cluster")
+
+	sc := runtime.NewScheme()
+	require.NoError(t, scheme.AddToScheme(sc), "adding native k8s scheme")
+
+	{
+		cfg, err := clientcmd.BuildConfigFromFlags("", MasterExternalKubeconfigPath)
+		t.Logf("master external kubeconfig location: %s", MasterExternalKubeconfigPath)
+		require.NoError(t, err, "building rest config")
+		mapper, err := apiutil.NewDiscoveryRESTMapper(cfg)
+		require.NoError(t, err)
+		suite.masterClient, err = client.New(cfg, client.Options{
+			Scheme: sc,
+			Mapper: mapper,
+		})
+		require.NoError(t, err)
+	}
+
+	{
+		cfg, err := clientcmd.BuildConfigFromFlags("", ServiceExternalKubeconfigPath)
+		require.NoError(t, err, "building rest config")
+		mapper, err := apiutil.NewDiscoveryRESTMapper(cfg)
+		require.NoError(t, err)
+		suite.serviceClient, err = client.New(cfg, client.Options{
+			Scheme: sc,
+			Mapper: mapper,
+		})
+		require.NoError(t, err)
+	}
 }
 
 func (suite *VerifyConfig) TestValidMasterKubeconfig() {
@@ -65,58 +124,4 @@ func (suite *VerifyConfig) TestValidServiceKubeconfig() {
 		Namespace: "kube-public",
 	}, cm), "cannot fetch cluster-info")
 	suite.T().Logf("cluster-info kubeconfig:\n%s", cm.Data["kubeconfig"])
-}
-
-func init() {
-	AllTests = append(AllTests, testing.InternalTest{
-		Name: "VerifyConfig",
-		F: func(t *testing.T) {
-			t.Logf("master cluster external kubeconfig location: %s", MasterExternalKubeconfigPath)
-			t.Logf("master cluster internal kubeconfig location: %s", MasterInternalKubeconfigPath)
-			t.Logf("svc cluster external kubeconfig location: %s", ServiceExternalKubeconfigPath)
-			t.Logf("svc cluster internal kubeconfig location: %s", ServiceInternalKubeconfigPath)
-
-			t.Log("==== installing sponson in the master cluster ====")
-			out, err := exec.Command("git", "rev-parse", "--show-toplevel").Output()
-			require.NoError(t, err, "cannot query git root folder")
-
-			cmd := exec.Command("make", "install")
-			cmd.Env = append(os.Environ(), "KUBECONFIG="+MasterExternalKubeconfigPath)
-			cmd.Dir = strings.TrimSpace(string(out))
-			out, err = cmd.CombinedOutput()
-			t.Log("\n" + string(out))
-			require.NoError(t, err, "cannot install sponson in the master cluster")
-			t.Log("==== sucessfully installed sponson in the master cluster")
-
-			s := new(VerifyConfig)
-			sc := runtime.NewScheme()
-			require.NoError(t, scheme.AddToScheme(sc), "adding native k8s scheme")
-
-			{
-				cfg, err := clientcmd.BuildConfigFromFlags("", MasterExternalKubeconfigPath)
-				t.Logf("master external kubeconfig location: %s", MasterExternalKubeconfigPath)
-				require.NoError(t, err, "building rest config")
-				mapper, err := apiutil.NewDiscoveryRESTMapper(cfg)
-				require.NoError(t, err)
-				s.masterClient, err = client.New(cfg, client.Options{
-					Scheme: sc,
-					Mapper: mapper,
-				})
-				require.NoError(t, err)
-			}
-
-			{
-				cfg, err := clientcmd.BuildConfigFromFlags("", ServiceExternalKubeconfigPath)
-				require.NoError(t, err, "building rest config")
-				mapper, err := apiutil.NewDiscoveryRESTMapper(cfg)
-				require.NoError(t, err)
-				s.serviceClient, err = client.New(cfg, client.Options{
-					Scheme: sc,
-					Mapper: mapper,
-				})
-				require.NoError(t, err)
-			}
-			suite.Run(t, s)
-		},
-	})
 }
