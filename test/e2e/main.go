@@ -68,12 +68,18 @@ func init() {
 	AllTests = append(AllTests, testing.InternalTest{
 		Name: "VerifyConfig",
 		F: func(t *testing.T) {
+			t.Logf("master cluster external kubeconfig location: %s", MasterExternalKubeconfigPath)
+			t.Logf("master cluster internal kubeconfig location: %s", MasterInternalKubeconfigPath)
+			t.Logf("svc cluster external kubeconfig location: %s", ServiceExternalKubeconfigPath)
+			t.Logf("svc cluster internal kubeconfig location: %s", ServiceInternalKubeconfigPath)
+
 			s := new(VerifyConfig)
 			sc := runtime.NewScheme()
 			require.NoError(t, scheme.AddToScheme(sc), "adding native k8s scheme")
 
 			{
 				cfg, err := clientcmd.BuildConfigFromFlags("", MasterExternalKubeconfigPath)
+				t.Logf("master external kubeconfig location: %s", MasterExternalKubeconfigPath)
 				require.NoError(t, err, "building rest config")
 				mapper, err := apiutil.NewDiscoveryRESTMapper(cfg)
 				require.NoError(t, err)

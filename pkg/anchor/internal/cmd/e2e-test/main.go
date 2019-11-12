@@ -17,19 +17,13 @@ limitations under the License.
 package e2e_test
 
 import (
-	"bytes"
-	"fmt"
-	"io/ioutil"
 	"os"
-	"time"
 
 	ctrl "sigs.k8s.io/controller-runtime"
 
 	"github.com/go-logr/logr"
 
 	"github.com/spf13/cobra"
-	"sigs.k8s.io/kind/pkg/cluster"
-	"sigs.k8s.io/kind/pkg/cluster/create"
 )
 
 type Config struct {
@@ -37,9 +31,6 @@ type Config struct {
 
 	// Current e2e-test id. The created clusters shall be prefixed accordingly
 	testID string
-
-	// reuse existing e2e-test environment, if exists
-	reuse bool
 
 	masterInternalKubeconfigFile  string
 	masterExternalKubeconfigFile  string
@@ -53,95 +44,6 @@ func (c *Config) masterClusterName() string {
 
 func (c *Config) serviceClusterName() string {
 	return "kubecarrier-svc-" + c.testID
-}
-
-func (c *Config) SetupKindCluster() error {
-	for _, cl := range []struct {
-		Name               string
-		internalKubeconfig string
-		externalKubeconfig string
-	}{
-		{
-			Name:               c.masterClusterName(),
-			internalKubeconfig: c.masterInternalKubeconfigFile,
-			externalKubeconfig: c.masterExternalKubeconfigFile,
-		},
-		{
-			Name:               c.serviceClusterName(),
-			internalKubeconfig: c.serviceInternalKubeconfigFile,
-			externalKubeconfig: c.serviceExternalKubeconfigFile,
-		},
-	} {
-		know, err := cluster.IsKnown(cl.Name)
-		if err != nil {
-			return fmt.Errorf("cannot find out if cluster name %s is known: %w", cl.Name, err)
-		}
-		ctx := cluster.NewContext(cl.Name)
-		switch {
-		case !know:
-			c.log.Info("creating cluster", "cluster", ctx.Name())
-			if err := ctx.Create(
-				create.Retain(true),
-				create.WaitForReady(10*time.Minute),
-			); err != nil {
-				return fmt.Errorf("cannot create cluster %s: %w", ctx.Name(), err)
-			}
-		case c.reuse && know:
-			c.log.Info("found existing kind cluster reusing it", "cluster", ctx.Name())
-		case !c.reuse && know:
-			c.log.Info("found existing kind cluster but reuse is disabled", "cluster", ctx.Name())
-			return fmt.Errorf("found existing kind cluster %s, but reuse is disabled\n", ctx.Name())
-		default:
-		}
-
-		externalKubeconfig, err := ioutil.ReadFile(ctx.KubeConfigPath())
-		if err != nil {
-			return fmt.Errorf("cannot read kubeconfig: %v", err)
-		}
-		if err := ioutil.WriteFile(cl.externalKubeconfig, externalKubeconfig, 0600); err != nil {
-			return fmt.Errorf("cannot write external kubeconfig: %v", err)
-		}
-
-		// List nodes by cluster context name
-		n, err := ctx.ListInternalNodes()
-		if err != nil {
-			return fmt.Errorf("cannot list internal nodes: %w", err)
-		}
-
-		cmdNode := n[0].Command("cat", "/etc/kubernetes/admin.conf")
-		b := new(bytes.Buffer)
-		cmdNode.SetStdout(b)
-		if err := cmdNode.Run(); err != nil {
-			return fmt.Errorf("cannot read the internal kubeconfig %w", err)
-		}
-
-		if err := ioutil.WriteFile(cl.internalKubeconfig, b.Bytes(), 0600); err != nil {
-			return fmt.Errorf("cannot write internal kubeconfig: %w", err)
-		}
-	}
-	return nil
-}
-
-func (c *Config) TeardownKindCluster() error {
-	for _, kindClusterName := range []string{
-		c.masterClusterName(),
-		c.serviceClusterName(),
-	} {
-		know, err := cluster.IsKnown(kindClusterName)
-		if err != nil {
-			return fmt.Errorf("cannot find out if cluster name %s is known: %w", kindClusterName, err)
-		}
-		if !know {
-			c.log.Info("unknown cluster name, skipping", "cluster", kindClusterName)
-			continue
-		}
-		ctx := cluster.NewContext(kindClusterName)
-		if err := ctx.Delete(); err != nil {
-			return fmt.Errorf("cannot delete cluster %s: %w", kindClusterName, err)
-		}
-
-	}
-	return nil
 }
 
 func (c *Config) Default() error {
@@ -179,11 +81,8 @@ func NewCommand(log logr.Logger) *cobra.Command {
 
 	cmd.AddCommand(
 		newRunCommand(),
-		newSetupCommand(),
-		newTeardownCommand(),
 	)
 
 	cmd.PersistentFlags().StringVar(&cfg.testID, "test-id", "", "unique e2e test id")
-	cmd.PersistentFlags().BoolVar(&cfg.reuse, "reuse", true, "Reuse existing e2e-test environment if exists")
 	return cmd
 }
