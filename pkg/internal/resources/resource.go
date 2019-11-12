@@ -16,4 +16,5 @@ limitations under the License.
 
 package resources
 
-//go:generate bash -c "statik -src=../../config/operator -p operator -f -c \"$DOLLAR(cat ../../hack/boilerplate/boilerplate.go.txt | sed s/YEAR/2019/g )\""
+//go:generate bash -c "statik -src=../../../config/operator -p operator -f -c ''"
+//go:generate bash -c "cat ../../../hack/boilerplate/boilerplate.generatego.txt | sed s/YEAR/2019/ | cat - operator/statik.go > operator/statik.go.tmp; mv operator/statik.go.tmp operator/statik.go"

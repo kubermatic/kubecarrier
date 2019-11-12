@@ -72,14 +72,13 @@ const (
 var (
 	// skipped files and directories
 	skipped = map[string]struct{}{
-		"bin":                              {},
-		"Godeps":                           {},
-		".git":                             {},
-		"vendor":                           {},
-		"_gopath":                          {},
-		"_output":                          {},
-		"hack/boilerplate/test":            {},
-		"pkg/resources/operator/statik.go": {},
+		"bin":                   {},
+		"Godeps":                {},
+		".git":                  {},
+		"vendor":                {},
+		"_gopath":               {},
+		"_output":               {},
+		"hack/boilerplate/test": {},
 	}
 
 	// list all the files contain 'DO NOT EDIT', but are not generated

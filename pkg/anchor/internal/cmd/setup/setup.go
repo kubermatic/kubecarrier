@@ -38,10 +38,10 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client/config"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
-	"github.com/kubermatic/kubecarrier/pkg/anchor/spinner"
-	"github.com/kubermatic/kubecarrier/pkg/kustomize"
-	"github.com/kubermatic/kubecarrier/pkg/reconcile"
-	"github.com/kubermatic/kubecarrier/pkg/resources/operator"
+	"github.com/kubermatic/kubecarrier/pkg/anchor/internal/spinner"
+	"github.com/kubermatic/kubecarrier/pkg/internal/kustomize"
+	"github.com/kubermatic/kubecarrier/pkg/internal/reconcile"
+	"github.com/kubermatic/kubecarrier/pkg/internal/resources/operator"
 )
 
 type flags struct {
