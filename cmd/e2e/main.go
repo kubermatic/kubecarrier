@@ -20,6 +20,9 @@ import (
 	"flag"
 	"os"
 
+	e2ev1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/e2e/v1alpha1"
+	e2ev1alpha2 "github.com/kubermatic/kubecarrier/pkg/apis/e2e/v1alpha2"
+
 	"k8s.io/apimachinery/pkg/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
@@ -34,7 +37,8 @@ var (
 
 func init() {
 	_ = clientgoscheme.AddToScheme(scheme)
-
+	_ = e2ev1alpha1.AddToScheme(scheme)
+	_ = e2ev1alpha2.AddToScheme(scheme)
 }
 
 func main() {

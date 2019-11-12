@@ -59,7 +59,8 @@ generate: controller-gen
 	$(CONTROLLER_GEN) object:headerFile=./hack/boilerplate/boilerplate.go.txt,year=$(shell date +%Y) paths=./pkg/apis/...
 
 install: \
-	install-operator
+	install-operator \
+	install-e2e
 
 # Install CRDs into a cluster
 install-%: manifests-%
@@ -104,14 +105,17 @@ tidy:
 	go mod tidy
 
 push-images: \
-	push-image-operator
+	push-image-operator \
+	push-image-e2e
 
 # build all container images except the test image
 build-images: \
-	build-image-operator
+	build-image-operator \
+	build-image-e2e
 
 kind-load: \
-	kind-load-operator
+	kind-load-operator \
+	kind-load-e2e
 
 build-image-test:
 	@mkdir -p bin/image/test
