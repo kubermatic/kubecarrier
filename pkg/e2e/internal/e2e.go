@@ -19,6 +19,8 @@ package e2e
 import (
 	"os"
 
+	"github.com/kubermatic/kubecarrier/pkg/e2e/internal/controllers"
+
 	"github.com/spf13/cobra"
 	"k8s.io/apimachinery/pkg/runtime"
 	corescheme "k8s.io/client-go/kubernetes/scheme"
@@ -62,10 +64,27 @@ func NewE2E() *cobra.Command {
 			os.Exit(1)
 		}
 
+		if err = (&controllers.JokeReconciler{
+			Client: mgr.GetClient(),
+			Log:    ctrl.Log.WithName("controllers").WithName("Joke"),
+		}).SetupWithManager(mgr); err != nil {
+			setupLog.Error(err, "unable to create controller", "controller", "Joke")
+			os.Exit(1)
+		}
+
+		// TODO --> try running this & test the conversion webhooks, etc
+		if os.Getenv("ENABLE_WEBHOOKS") != "" {
+			if err = (&e2ev1alpha2.Joke{}).SetupWebhookWithManager(mgr); err != nil {
+				setupLog.Error(err, "unable to create webhook", "webhook", "Joke")
+				os.Exit(1)
+			}
+		}
+
 		if err := mgr.Start(ctrl.SetupSignalHandler()); err != nil {
 			setupLog.Error(err, "problem running manager")
 			os.Exit(1)
 		}
+
 		return nil
 	}
 	return cmd

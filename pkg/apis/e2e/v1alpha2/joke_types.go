@@ -17,16 +17,18 @@ limitations under the License.
 package v1alpha2
 
 import (
+	"fmt"
+
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
+	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/webhook"
 )
 
 // JokeSpec defines the desired state of Joke
 type JokeSpec struct {
 	// JokeDatabase specifies all known jokes
 	JokeDatabase []JokeItem `json:"jokeDatabase,omitempty"`
-
-	// JokeTypeSelector defines valid joke types
-	JokeTypeSelector []string `json:"jokeTypeSelector,omitempty"`
 }
 
 // JokeCRDConfiguration holds static type information for the Joke instance.
@@ -153,8 +155,38 @@ type Joke struct {
 	Status JokeStatus `json:"status,omitempty"`
 }
 
+var _ webhook.Validator = &Joke{}
+var jokelog = ctrl.Log.WithName("joke-resource")
+
+func (in *Joke) ValidateCreate() error {
+	jokelog.Info("validate create", "name", in.Name)
+	if len(in.Spec.JokeDatabase) == 0 {
+		return fmt.Errorf("joke database cannot be empty")
+	}
+	return nil
+}
+
+func (in *Joke) ValidateUpdate(old runtime.Object) error {
+	jokelog.Info("validate update", "name", in.Name)
+	if len(in.Spec.JokeDatabase) == 0 {
+		return fmt.Errorf("joke database cannot be empty")
+	}
+	return nil
+}
+
+func (in *Joke) ValidateDelete() error {
+	jokelog.Info("validate delete", "name", in.Name)
+	return nil
+}
+
 // Hub marks this type as a conversion hub.
 func (*Joke) Hub() {}
+
+func (r *Joke) SetupWebhookWithManager(mgr ctrl.Manager) error {
+	return ctrl.NewWebhookManagedBy(mgr).
+		For(r).
+		Complete()
+}
 
 // +kubebuilder:object:root=true
 // JokeList contains a list of Joke

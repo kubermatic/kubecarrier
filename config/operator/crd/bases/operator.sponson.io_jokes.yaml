@@ -62,11 +62,6 @@ spec:
                   - type
                 type: object
               type: array
-            jokeTypeSelector:
-              description: JokeTypeSelector defines valid joke types
-              items:
-                type: string
-              type: array
           type: object
         status:
           description: JokeStatus defines the observed state of Joke
