@@ -177,7 +177,7 @@ func reconcileOperator(ctx context.Context, log logr.Logger, c client.Client, ku
 			}
 			_, err := reconcile.Unstructured(ctx, log, c, &object)
 			if err != nil {
-				return fmt.Errorf("reconcile type: %s, err: %w", object.GroupVersionKind().Kind, err)
+				return fmt.Errorf("reconcile kind: %s, err: %w", object.GroupVersionKind().Kind, err)
 			}
 		}
 
@@ -190,13 +190,13 @@ func reconcileOperator(ctx context.Context, log logr.Logger, c client.Client, ku
 
 		retryTicker := time.NewTicker(2 * time.Second)
 		retryTimeDuration := 10 * time.Second
-		retryDeadlineCTx, cancel := context.WithDeadline(ctx, time.Now().Add(retryTimeDuration))
+		retryDeadlineCtx, cancel := context.WithDeadline(ctx, time.Now().Add(retryTimeDuration))
 		defer retryTicker.Stop()
 		defer cancel()
 		for {
 			select {
 			case <-retryTicker.C:
-				if err := c.Get(ctx, types.NamespacedName{
+				if err := c.Get(retryDeadlineCtx, types.NamespacedName{
 					Name:      deployment.Name,
 					Namespace: deployment.Namespace,
 				}, deployment); err != nil {
@@ -207,7 +207,7 @@ func reconcileOperator(ctx context.Context, log logr.Logger, c client.Client, ku
 					return nil
 				}
 
-			case <-retryDeadlineCTx.Done():
+			case <-retryDeadlineCtx.Done():
 				return fmt.Errorf("deploying Kubecarrier operator: Kubecarrier operator deployment is not available after %v", retryTimeDuration)
 			}
 		}

@@ -112,7 +112,6 @@ kind-load: \
 	kind-load-operator
 
 build-image-test:
-	# @echo test
 	@mkdir -p bin/image/test
 	@cp -a config/dockerfiles/test.Dockerfile bin/image/test/Dockerfile
 	@cp -a go.mod go.sum hack/start-docker.sh bin/image/test

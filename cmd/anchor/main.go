@@ -23,14 +23,14 @@ import (
 	"github.com/go-logr/logr"
 	"go.uber.org/zap"
 	ctrl "sigs.k8s.io/controller-runtime"
-	crzap "sigs.k8s.io/controller-runtime/pkg/log/zap"
+	corezap "sigs.k8s.io/controller-runtime/pkg/log/zap"
 
 	"github.com/kubermatic/kubecarrier/pkg/anchor"
 )
 
 func main() {
 	level := zap.NewAtomicLevel()
-	ctrl.SetLogger(crzap.New(func(options *crzap.Options) {
+	ctrl.SetLogger(corezap.New(func(options *corezap.Options) {
 		options.Level = &level
 		options.Development = true
 	}))
