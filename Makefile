@@ -58,7 +58,10 @@ generate: controller-gen
 	go generate ./...
 	$(CONTROLLER_GEN) object:headerFile=./hack/boilerplate/boilerplate.go.txt,year=$(shell date +%Y) paths=./pkg/apis/...
 
-install: \
+install:
+	go run -ldflags $(LD_FLAGS) ./cmd/anchor/main.go setup
+
+install-crds: \
 	install-operator
 
 # Install CRDs into a cluster
@@ -91,7 +94,7 @@ vet:
 	go vet ./...
 
 test:
-	go test -race -v ./...
+	CGO_ENABLED=1 go test -race -v ./...
 .PHONY: test
 
 TEST_ID?=1
@@ -111,7 +114,7 @@ e2e-test:
 	@echo "Loading the images"
 	@$(MAKE) KIND_CLUSTER=${MASTER_KIND_CLUSTER} kind-load
 	@$(MAKE) KIND_CLUSTER=${SVC_KIND_CLUSTER} kind-load
-	@go run ./cmd/anchor e2e-test run --test.v --test-id=${TEST_ID} | richgo testfilter
+	@go run -ldflags $(LD_FLAGS) ./cmd/anchor e2e-test run --test.v --test-id=${TEST_ID} | richgo testfilter
 .PHONY: e2e-test
 
 e2e-test-clean:
