@@ -90,9 +90,6 @@ fmt:
 vet:
 	go vet ./...
 
-version:
-	@echo -n ${VERSION}
-
 test:
 	go test -race -v ./...
 .PHONY: test

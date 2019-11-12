@@ -16,13 +16,13 @@ spec:
         control-plane: operator
     spec:
       containers:
-        - image: quay.io/kubecarrier/operator:lastest
-          name: manager
-          resources:
-            limits:
-              cpu: 100m
-              memory: 30Mi
-            requests:
-              cpu: 100m
-              memory: 20Mi
+      - image: quay.io/kubecarrier/operator:lastest
+        name: manager
+        resources:
+          limits:
+            cpu: 100m
+            memory: 30Mi
+          requests:
+            cpu: 100m
+            memory: 20Mi
       terminationGracePeriodSeconds: 10
