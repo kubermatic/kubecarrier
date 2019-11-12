@@ -16,7 +16,7 @@
 # Refer to https://github.com/GoogleContainerTools/distroless for more details
 FROM gcr.io/distroless/static:nonroot
 WORKDIR /
-COPY operator .
+COPY e2e .
 USER nonroot:nonroot
 
 ENTRYPOINT ["/e2e"]
