@@ -68,7 +68,8 @@ install-%: manifests-%
 
 # Generate manifests e.g. CRD, RBAC etc.
 manifests: \
-	manifests-operator
+	manifests-operator \
+	manifests-e2e
 
 manifests-%: controller-gen
 	$(CONTROLLER_GEN) $(CRD_OPTIONS) rbac:roleName=manager webhook paths="./..." output:crd:artifacts:config=config/$*/crd/bases output:rbac:artifacts:config=config/$*/rbac output:webhook:artifacts:config=config/$*/webhook
