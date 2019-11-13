@@ -67,7 +67,7 @@ func (suite *VerifyConfig) SetupSuite() {
 	t.Logf("svc cluster external kubeconfig location: %s", ServiceExternalKubeconfigPath)
 	t.Logf("svc cluster internal kubeconfig location: %s", ServiceInternalKubeconfigPath)
 
-	t.Log("==== installing sponson in the master cluster ====")
+	t.Log("==== installing kubecarrier in the master cluster ====")
 	out, err := exec.Command("git", "rev-parse", "--show-toplevel").Output()
 	require.NoError(t, err, "cannot query git root folder")
 
@@ -76,8 +76,8 @@ func (suite *VerifyConfig) SetupSuite() {
 	cmd.Dir = strings.TrimSpace(string(out))
 	out, err = cmd.CombinedOutput()
 	t.Log("\n" + string(out))
-	require.NoError(t, err, "cannot install sponson in the master cluster")
-	t.Log("==== sucessfully installed sponson in the master cluster")
+	require.NoError(t, err, "cannot install kubecarrier in the master cluster")
+	t.Log("==== successfully installed kubecarrier in the master cluster")
 
 	sc := runtime.NewScheme()
 	require.NoError(t, scheme.AddToScheme(sc), "adding native k8s scheme")
