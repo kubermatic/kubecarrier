@@ -22,38 +22,28 @@ import (
 	"os"
 	"time"
 
-	apiextensionsv1beta1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
-
-	"k8s.io/apimachinery/pkg/api/errors"
-
-	appsv1 "k8s.io/api/apps/v1"
-	"k8s.io/apimachinery/pkg/types"
-	"k8s.io/apimachinery/pkg/util/wait"
-
-	"github.com/kubermatic/kubecarrier/pkg/internal/reconcile"
-
-	"github.com/ghodss/yaml"
-
-	"github.com/go-logr/logr"
-
-	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
-
-	"github.com/kubermatic/kubecarrier/pkg/internal/kustomize"
-	"github.com/kubermatic/kubecarrier/pkg/internal/resources/e2e"
-
-	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
-	"github.com/kubermatic/kubecarrier/pkg/anchor/internal/spinner"
-
-	"k8s.io/apimachinery/pkg/runtime"
-
 	"github.com/gernest/wow"
 	"github.com/gernest/wow/spin"
+	"github.com/ghodss/yaml"
+	"github.com/go-logr/logr"
 	"github.com/spf13/cobra"
+	appsv1 "k8s.io/api/apps/v1"
+	corev1 "k8s.io/api/core/v1"
+	apiextensionsv1beta1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
+	"k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/apimachinery/pkg/util/wait"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/config"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
+
+	"github.com/kubermatic/kubecarrier/pkg/anchor/internal/spinner"
+	"github.com/kubermatic/kubecarrier/pkg/internal/kustomize"
+	"github.com/kubermatic/kubecarrier/pkg/internal/reconcile"
+	"github.com/kubermatic/kubecarrier/pkg/internal/resources/e2e"
 )
 
 func newSetupE2EOperator(log logr.Logger) *cobra.Command {
@@ -145,19 +135,23 @@ func newSetupE2EOperator(log logr.Logger) *cobra.Command {
 			}
 
 			if err := spinner.AttachSpinnerTo(s, "waiting for available deployment", func() error {
-				return wait.PollImmediate(time.Second, 10*time.Second, func() (done bool, err error) {
+				log.Info("querying deployment")
+				return wait.Poll(time.Second, 10*time.Second, func() (done bool, err error) {
+					log.Info("querying deployment")
 					deployment := &appsv1.Deployment{}
 					err = c.Get(ctx, types.NamespacedName{
-						Name:      "kubecarrier-operator",
+						Name:      "kubecarrier-e2e-e2e",
 						Namespace: namespace.Name,
 					}, deployment)
 					switch {
 					case errors.IsNotFound(err):
+						log.V(6).Info("deployment yet not found")
 						return false, nil
 					case err != nil:
 						return false, err
 					default:
 						if deployment.Status.ObservedGeneration != deployment.Generation {
+							log.V(6).Info("deployment not in the latest generation")
 							return false, nil
 						}
 						for _, condition := range deployment.Status.Conditions {
@@ -166,6 +160,7 @@ func newSetupE2EOperator(log logr.Logger) *cobra.Command {
 								return true, nil
 							}
 						}
+						log.V(6).Info("deployment isn't available yet")
 						return false, nil
 					}
 				})
