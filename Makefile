@@ -49,7 +49,7 @@ bin/%: FORCE generate
 
 FORCE:
 
-clean:
+clean: e2e-test-clean
 	rm -rf bin/$*
 .PHONEY: clean
 
@@ -58,7 +58,10 @@ generate: controller-gen
 	go generate ./...
 	$(CONTROLLER_GEN) object:headerFile=./hack/boilerplate/boilerplate.go.txt,year=$(shell date +%Y) paths=./pkg/apis/...
 
-install: \
+install:
+	go install -ldflags $(LD_FLAGS) ./cmd/anchor
+
+install-crds: \
 	install-operator
 
 # Install CRDs into a cluster
@@ -91,10 +94,32 @@ vet:
 	go vet ./...
 
 test:
-	go test ./...
+	CGO_ENABLED=1 go test -race -v ./...
+.PHONY: test
+
+TEST_ID?=1
+MASTER_KIND_CLUSTER?=kubecarrier-${TEST_ID}
+SVC_KIND_CLUSTER?=kubecarrier-svc-${TEST_ID}
 
 e2e-test:
-	echo "running e2e tests"
+	@docker ps > /dev/null 2>&1 || start-docker.sh || (echo "cannot find running docker daemon nor can start new one" && false)
+	@kind create cluster --name=${MASTER_KIND_CLUSTER} || true
+	@kind create cluster --name=${SVC_KIND_CLUSTER} || true
+	@kind get kubeconfig --internal --name=${MASTER_KIND_CLUSTER} > "${HOME}/.kube/internal-kind-config-${MASTER_KIND_CLUSTER}"
+	@kind get kubeconfig --internal --name=${SVC_KIND_CLUSTER} > "${HOME}/.kube/internal-kind-config-${SVC_KIND_CLUSTER}"
+	@echo "kind clusters created"
+	@# external kubeconfig location
+	@# "${HOME}/.kube/kind-config-${MASTER_KIND_CLUSTER}"
+	@# "${HOME}/.kube/kind-config-${SVC_KIND_CLUSTER}"
+	@echo "Loading the images"
+	@$(MAKE) KIND_CLUSTER=${MASTER_KIND_CLUSTER} kind-load
+	@go run -ldflags $(LD_FLAGS) ./cmd/anchor e2e-test run --test.v --test-id=${TEST_ID} | richgo testfilter
+.PHONY: e2e-test
+
+e2e-test-clean:
+	@kind delete cluster --name=${MASTER_KIND_CLUSTER} || true
+	@kind delete cluster --name=${SVC_KIND_CLUSTER} || true
+.PHONY: e2e-test-clean
 
 lint:
 	pre-commit run -a

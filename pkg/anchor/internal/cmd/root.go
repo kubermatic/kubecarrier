@@ -22,6 +22,8 @@ import (
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 
+	"github.com/kubermatic/kubecarrier/pkg/anchor/internal/cmd/completion"
+	e2e_test "github.com/kubermatic/kubecarrier/pkg/anchor/internal/cmd/e2e-test"
 	"github.com/kubermatic/kubecarrier/pkg/anchor/internal/cmd/setup"
 	"github.com/kubermatic/kubecarrier/pkg/anchor/internal/cmd/version"
 )
@@ -55,8 +57,11 @@ https://github.com/kubermatic/kubecarrier`,
 	cmd.PersistentFlags().Int8VarP(&flags.Verbosity, "verbosity", "v", 0, "logging verbosity")
 
 	cmd.AddCommand(
+		completion.NewCommand(log),
+		e2e_test.NewCommand(log),
+		setup.NewCommand(log),
 		version.NewCommand(log),
-		setup.NewCommand(log))
+	)
 
 	return cmd
 }
