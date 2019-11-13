@@ -6,7 +6,7 @@ metadata:
   annotations:
     controller-gen.kubebuilder.io/version: (unknown)
   creationTimestamp: null
-  name: jokes.operator.sponson.io
+  name: jokes.e2e.kubecarrier.io
 spec:
   additionalPrinterColumns:
     - JSONPath: .status.selectedJoke.text
@@ -18,7 +18,7 @@ spec:
     - JSONPath: .metadata.creationTimestamp
       name: Age
       type: date
-  group: operator.sponson.io
+  group: e2e.kubecarrier.io
   names:
     kind: Joke
     listKind: JokeList
