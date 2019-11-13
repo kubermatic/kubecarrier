@@ -20,6 +20,15 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"time"
+
+	"k8s.io/apimachinery/pkg/api/errors"
+
+	appsv1 "k8s.io/api/apps/v1"
+	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/apimachinery/pkg/util/wait"
+
+	"github.com/kubermatic/kubecarrier/pkg/internal/reconcile"
 
 	"github.com/ghodss/yaml"
 
@@ -100,13 +109,6 @@ func newSetupE2EOperator(log logr.Logger) *cobra.Command {
 					return fmt.Errorf("creating operator manifests: %w", err)
 				}
 
-				log.V(9).Info("level 9\n")
-				log.V(3).Info("level 3\n")
-				log.V(0).Info("level 0\n")
-				fmt.Println("log enabled", log.Enabled())
-
-				//log.V(-3).Info("level -3")
-				// log.V(-9).Info("level -9")
 				for _, object := range objects {
 					if err := controllerutil.SetControllerReference(namespace, &object, scheme); err != nil {
 						return fmt.Errorf("set controller reference: %w", err)
@@ -117,12 +119,49 @@ func newSetupE2EOperator(log logr.Logger) *cobra.Command {
 						panic(err)
 					}
 					log.V(9).Info("Creating object\n" + string(b))
-					//_, err := reconcile.Unstructured(ctx, log, c, &object)
-					//if err != nil {
-					//return fmt.Errorf("reconcile kind: %s, err: %w", object.GroupVersionKind().Kind, err)
-					//}
+					_, err = reconcile.Unstructured(ctx, log, c, &object)
+					if err != nil {
+						return fmt.Errorf("reconcile kind: %s, err: %w", object.GroupVersionKind().Kind, err)
+					}
+					log.V(6).Info("reconciled",
+						"name", object.GetName(),
+						"namespace", object.GetNamespace(),
+						"kind", object.GroupVersionKind().Kind,
+						"group", object.GroupVersionKind().Group,
+						"version", object.GroupVersionKind().Version,
+					)
 				}
 				return nil
+			}); err != nil {
+				_, _ = fmt.Fprintf(os.Stderr, "%v", err)
+				os.Exit(1)
+			}
+
+			if err := spinner.AttachSpinnerTo(s, "waiting for available deployment", func() error {
+				return wait.PollImmediate(time.Second, 10*time.Second, func() (done bool, err error) {
+					deployment := &appsv1.Deployment{}
+					err = c.Get(ctx, types.NamespacedName{
+						Name:      "kubecarrier-operator",
+						Namespace: namespace.Name,
+					}, deployment)
+					switch {
+					case errors.IsNotFound(err):
+						return false, nil
+					case err != nil:
+						return false, err
+					default:
+						if deployment.Status.ObservedGeneration != deployment.Generation {
+							return false, nil
+						}
+						for _, condition := range deployment.Status.Conditions {
+							if condition.Type == appsv1.DeploymentAvailable &&
+								condition.Status == corev1.ConditionTrue {
+								return true, nil
+							}
+						}
+						return false, nil
+					}
+				})
 			}); err != nil {
 				_, _ = fmt.Fprintf(os.Stderr, "%v", err)
 				os.Exit(1)
@@ -134,74 +173,3 @@ func newSetupE2EOperator(log logr.Logger) *cobra.Command {
 	cmd.Flags().StringP("namespace", "n", "kubecarrier-e2e-operator", "namespace where to deploy operator")
 	return cmd
 }
-
-/*
-func reconcileOperator(ctx context.Context, log logr.Logger, c client.Client, kubecarrierNamespace *corev1.Namespace) func() error {
-	return func() error {
-		// Kustomize Build
-		objects, err := operator.Manifests(
-			kustomize.NewDefaultKustomize(),
-			operator.Config{
-				Namespace: kubecarrierNamespace.Name,
-			})
-		if err != nil {
-			return fmt.Errorf("creating operator manifests: %w", err)
-		}
-
-		for _, object := range objects {
-			if err := controllerutil.SetControllerReference(kubecarrierNamespace, &object, scheme); err != nil {
-				return fmt.Errorf("set controller reference: %w", err)
-			}
-			_, err := reconcile.Unstructured(ctx, log, c, &object)
-			if err != nil {
-				return fmt.Errorf("reconcile kind: %s, err: %w", object.GroupVersionKind().Kind, err)
-			}
-		}
-
-		deployment := &appsv1.Deployment{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "kubecarrier-operator",
-				Namespace: kubecarrierNamespaceName,
-			},
-		}
-
-		retryTicker := time.NewTicker(2 * time.Second)
-		retryTimeDuration := 10 * time.Second
-		retryDeadlineCtx, cancel := context.WithDeadline(ctx, time.Now().Add(retryTimeDuration))
-		defer retryTicker.Stop()
-		defer cancel()
-		for {
-			select {
-			case <-retryTicker.C:
-				if err := c.Get(retryDeadlineCtx, types.NamespacedName{
-					Name:      deployment.Name,
-					Namespace: deployment.Namespace,
-				}, deployment); err != nil {
-					return fmt.Errorf("geting Kubecarrier operator: %w", err)
-				}
-
-				if deploymentIsAvailable(deployment) {
-					return nil
-				}
-
-			case <-retryDeadlineCtx.Done():
-				return fmt.Errorf("deploying Kubecarrier operator: Kubecarrier operator deployment is not available after %v", retryTimeDuration)
-			}
-		}
-	}
-}
-
-func deploymentIsAvailable(deployment *appsv1.Deployment) bool {
-	if deployment.Status.ObservedGeneration != deployment.Generation {
-		return false
-	}
-	for _, condition := range deployment.Status.Conditions {
-		if condition.Type == appsv1.DeploymentAvailable &&
-			condition.Status == corev1.ConditionTrue {
-			return true
-		}
-	}
-	return false
-}
-
-*/

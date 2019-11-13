@@ -72,6 +72,20 @@ func NewCommand(log logr.Logger) *cobra.Command {
 		Use:   "e2e-test",
 		Short: "end2end testing utilities",
 		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
+			// hackery up to the 10th
+			p := cmd.Parent()
+			for p != nil && p.PersistentPreRunE != nil && p.PersistentPreRun != nil {
+				p = p.Parent()
+			}
+			if p != nil && p.PersistentPreRun != nil {
+				p.PersistentPreRun(p, args)
+			}
+			if p != nil && p.PersistentPreRunE != nil {
+				if err := p.PersistentPreRunE(p, args); err != nil {
+					return err
+				}
+			}
+
 			cfg.log = log.WithName("e2e-test")
 			return cfg.Default()
 		},
