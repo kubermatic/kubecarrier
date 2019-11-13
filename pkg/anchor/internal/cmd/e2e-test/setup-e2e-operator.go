@@ -22,6 +22,8 @@ import (
 	"os"
 	"time"
 
+	apiextensionsv1beta1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
+
 	"k8s.io/apimachinery/pkg/api/errors"
 
 	appsv1 "k8s.io/api/apps/v1"
@@ -77,9 +79,14 @@ func newSetupE2EOperator(log logr.Logger) *cobra.Command {
 				return fmt.Errorf("getting Kubernetes cluster config: %w", err)
 			}
 			scheme := runtime.NewScheme()
+
 			if err := clientgoscheme.AddToScheme(scheme); err != nil {
 				return fmt.Errorf("cannot add clientgo scheme: %w", err)
 			}
+			if err := apiextensionsv1beta1.AddToScheme(scheme); err != nil {
+				return fmt.Errorf("cannot add apiextenstions v1beta1 scheme: %w", err)
+			}
+
 			c, err := client.New(cfg, client.Options{Scheme: scheme})
 			if err != nil {
 				return fmt.Errorf("creating Kubernetes client: %w", err)

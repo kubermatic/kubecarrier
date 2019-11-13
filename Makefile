@@ -54,7 +54,7 @@ clean: e2e-test-clean
 .PHONEY: clean
 
 # Generate code
-generate: controller-gen
+generate: controller-gen manifests
 	statik -src=config -p resources -dest pkg/internal -f -c ''
 	cat hack/boilerplate/boilerplate.generatego.txt | sed s/YEAR/$(shell date +%Y)/ | cat - pkg/internal/resources/statik.go > pkg/internal/resources/statik.go.tmp
 	mv pkg/internal/resources/statik.go.tmp pkg/internal/resources/statik.go

@@ -19,6 +19,8 @@ package e2e
 import (
 	"os"
 
+	"k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
+
 	"github.com/kubermatic/kubecarrier/pkg/e2e/internal/controllers"
 
 	"github.com/spf13/cobra"
@@ -48,6 +50,7 @@ func NewE2E() *cobra.Command {
 		_ = e2ev1alpha1.AddToScheme(scheme)
 		_ = e2ev1alpha2.AddToScheme(scheme)
 		_ = corescheme.AddToScheme(scheme)
+		_ = v1beta1.AddToScheme(scheme)
 
 		ctrl.SetLogger(zap.New(func(o *zap.Options) {
 			o.Development = true

@@ -1,0 +1,2 @@
+resources:
+  - bases/e2e.kubecarrier.io_jokes.yaml
