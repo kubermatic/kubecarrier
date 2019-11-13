@@ -18,9 +18,7 @@ package e2e
 
 import (
 	"context"
-	"os"
 	"os/exec"
-	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -45,22 +43,22 @@ var (
 
 func init() {
 	AllTests = append(AllTests, testing.InternalTest{
-		Name: "VerifyConfig",
+		Name: "KubecarrierE2ESuite",
 		F: func(t *testing.T) {
-			suite.Run(t, new(VerifyConfig))
+			suite.Run(t, new(KubecarrierE2ESuite))
 		},
 	})
 }
 
-type VerifyConfig struct {
+type KubecarrierE2ESuite struct {
 	suite.Suite
 	masterClient  client.Client
 	serviceClient client.Client
 }
 
-var _ suite.SetupAllSuite = (*VerifyConfig)(nil)
+var _ suite.SetupAllSuite = (*KubecarrierE2ESuite)(nil)
 
-func (suite *VerifyConfig) SetupSuite() {
+func (suite *KubecarrierE2ESuite) SetupSuite() {
 	t := suite.T()
 	t.Logf("master cluster external kubeconfig location: %s", MasterExternalKubeconfigPath)
 	t.Logf("master cluster internal kubeconfig location: %s", MasterInternalKubeconfigPath)
@@ -68,13 +66,8 @@ func (suite *VerifyConfig) SetupSuite() {
 	t.Logf("svc cluster internal kubeconfig location: %s", ServiceInternalKubeconfigPath)
 
 	t.Log("==== installing kubecarrier in the master cluster ====")
-	out, err := exec.Command("git", "rev-parse", "--show-toplevel").Output()
-	require.NoError(t, err, "cannot query git root folder")
-
-	cmd := exec.Command("anchor", "setup")
-	cmd.Env = append(os.Environ(), "KUBECONFIG="+MasterExternalKubeconfigPath)
-	cmd.Dir = strings.TrimSpace(string(out))
-	out, err = cmd.CombinedOutput()
+	cmd := exec.Command("anchor", "setup", "--kubeconfig", MasterExternalKubeconfigPath)
+	out, err := cmd.CombinedOutput()
 	t.Log("\n" + string(out))
 	require.NoError(t, err, "cannot install kubecarrier in the master cluster")
 	t.Log("==== successfully installed kubecarrier in the master cluster")
@@ -105,7 +98,7 @@ func (suite *VerifyConfig) SetupSuite() {
 	}
 }
 
-func (suite *VerifyConfig) TestValidMasterKubeconfig() {
+func (suite *KubecarrierE2ESuite) TestValidMasterKubeconfig() {
 	cm := &corev1.ConfigMap{}
 	require.NoError(suite.T(), suite.masterClient.Get(context.Background(), types.NamespacedName{
 		Name:      "cluster-info",
@@ -114,7 +107,7 @@ func (suite *VerifyConfig) TestValidMasterKubeconfig() {
 	suite.T().Logf("cluster-info kubeconfig:\n%s", cm.Data["kubeconfig"])
 }
 
-func (suite *VerifyConfig) TestValidServiceKubeconfig() {
+func (suite *KubecarrierE2ESuite) TestValidServiceKubeconfig() {
 	cm := &corev1.ConfigMap{}
 	require.NoError(suite.T(), suite.serviceClient.Get(context.Background(), types.NamespacedName{
 		Name:      "cluster-info",

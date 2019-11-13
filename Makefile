@@ -54,12 +54,20 @@ clean: e2e-test-clean
 .PHONEY: clean
 
 # Generate code
-generate: controller-gen
-	go generate ./...
+generate: \
+	generate-e2e \
+	generate-operator \
+	controller-gen
 	$(CONTROLLER_GEN) object:headerFile=./hack/boilerplate/boilerplate.go.txt,year=$(shell date +%Y) paths=./pkg/apis/...
+
+generate-%:
+	statik -src=config/$* -p $* -dest pkg/internal/resources -f -c ''
+	cat hack/boilerplate/boilerplate.generatego.txt | sed s/YEAR/$(shell date +%Y)/ | cat - pkg/internal/resources/$*/statik.go > pkg/internal/resources/$*/statik.go.tmp
+	mv pkg/internal/resources/$*/statik.go.tmp pkg/internal/resources/$*/statik.go
 
 install:
 	go install -ldflags $(LD_FLAGS) ./cmd/anchor
+.PHONEY: install
 
 install-crds: \
 	install-operator
@@ -102,7 +110,7 @@ TEST_ID?=1
 MASTER_KIND_CLUSTER?=kubecarrier-${TEST_ID}
 SVC_KIND_CLUSTER?=kubecarrier-svc-${TEST_ID}
 
-e2e-test:
+e2e-test: install
 	@docker ps > /dev/null 2>&1 || start-docker.sh || (echo "cannot find running docker daemon nor can start new one" && false)
 	@kind create cluster --name=${MASTER_KIND_CLUSTER} || true
 	@kind create cluster --name=${SVC_KIND_CLUSTER} || true
