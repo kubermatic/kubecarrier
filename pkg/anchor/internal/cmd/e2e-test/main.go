@@ -19,11 +19,9 @@ package e2e_test
 import (
 	"os"
 
-	ctrl "sigs.k8s.io/controller-runtime"
-
 	"github.com/go-logr/logr"
-
 	"github.com/spf13/cobra"
+	ctrl "sigs.k8s.io/controller-runtime"
 )
 
 type Config struct {

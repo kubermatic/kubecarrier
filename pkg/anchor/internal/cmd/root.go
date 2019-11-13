@@ -24,7 +24,6 @@ import (
 
 	"github.com/kubermatic/kubecarrier/pkg/anchor/internal/cmd/completion"
 	e2e_test "github.com/kubermatic/kubecarrier/pkg/anchor/internal/cmd/e2e-test"
-
 	"github.com/kubermatic/kubecarrier/pkg/anchor/internal/cmd/setup"
 	"github.com/kubermatic/kubecarrier/pkg/anchor/internal/cmd/version"
 )
