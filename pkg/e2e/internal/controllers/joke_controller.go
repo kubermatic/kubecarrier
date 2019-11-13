@@ -36,6 +36,7 @@ type JokeReconciler struct {
 
 // +kubebuilder:rbac:groups=e2e.kubecarrier.io,resources=jokes,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=e2e.kubecarrier.io,resources=jokes/status,verbs=get;update;patch
+
 func (r *JokeReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	ctx := context.Background()
 	log := r.Log.WithValues("joke", req.NamespacedName)
