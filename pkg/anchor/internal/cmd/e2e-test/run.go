@@ -29,7 +29,7 @@ import (
 func newRunCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "run",
-		Short: "run all end2end test",
+		Short: "run all end2end tests",
 		PreRun: func(cmd *cobra.Command, args []string) {
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
