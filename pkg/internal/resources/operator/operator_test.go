@@ -63,14 +63,14 @@ func TestManifests(t *testing.T) {
 		Namespace: "test3000",
 	}
 	m := &kustomizeContextMock{}
-	m.On("ReadFile", "/default/kustomization.yaml").Return([]byte("namespace: default"), nil)
-	m.On("WriteFile", "/default/kustomization.yaml", mock.Anything).Return(nil)
+	m.On("ReadFile", "/operator/default/kustomization.yaml").Return([]byte("namespace: default"), nil)
+	m.On("WriteFile", "/operator/default/kustomization.yaml", mock.Anything).Return(nil)
 	m.On("Build", mock.Anything).Return([]unstructured.Unstructured{}, nil)
 
 	_, err := Manifests(&kustomizeStub{m}, c)
 	require.NoError(t, err, "unexpected error")
 
-	m.AssertCalled(t, "WriteFile", "/default/kustomization.yaml", []byte(fmt.Sprintf(`images:
+	m.AssertCalled(t, "WriteFile", "/operator/default/kustomization.yaml", []byte(fmt.Sprintf(`images:
 - name: quay.io/kubecarrier/operator
   newTag: %s
 namespace: test3000
