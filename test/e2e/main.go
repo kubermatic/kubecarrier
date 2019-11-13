@@ -28,7 +28,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
-	"k8s.io/client-go/kubernetes/scheme"
+	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/tools/clientcmd"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/apiutil"
@@ -71,7 +71,7 @@ func (suite *VerifyConfig) SetupSuite() {
 	out, err := exec.Command("git", "rev-parse", "--show-toplevel").Output()
 	require.NoError(t, err, "cannot query git root folder")
 
-	cmd := exec.Command("make", "install")
+	cmd := exec.Command("anchor", "setup")
 	cmd.Env = append(os.Environ(), "KUBECONFIG="+MasterExternalKubeconfigPath)
 	cmd.Dir = strings.TrimSpace(string(out))
 	out, err = cmd.CombinedOutput()
@@ -79,18 +79,15 @@ func (suite *VerifyConfig) SetupSuite() {
 	require.NoError(t, err, "cannot install kubecarrier in the master cluster")
 	t.Log("==== successfully installed kubecarrier in the master cluster")
 
-	sc := runtime.NewScheme()
-	require.NoError(t, scheme.AddToScheme(sc), "adding native k8s scheme")
+	scheme := runtime.NewScheme()
+	require.NoError(t, clientgoscheme.AddToScheme(scheme), "adding native k8s scheme")
 
 	{
 		cfg, err := clientcmd.BuildConfigFromFlags("", MasterExternalKubeconfigPath)
 		t.Logf("master external kubeconfig location: %s", MasterExternalKubeconfigPath)
 		require.NoError(t, err, "building rest config")
-		mapper, err := apiutil.NewDiscoveryRESTMapper(cfg)
-		require.NoError(t, err)
 		suite.masterClient, err = client.New(cfg, client.Options{
-			Scheme: sc,
-			Mapper: mapper,
+			Scheme: scheme,
 		})
 		require.NoError(t, err)
 	}
@@ -101,7 +98,7 @@ func (suite *VerifyConfig) SetupSuite() {
 		mapper, err := apiutil.NewDiscoveryRESTMapper(cfg)
 		require.NoError(t, err)
 		suite.serviceClient, err = client.New(cfg, client.Options{
-			Scheme: sc,
+			Scheme: scheme,
 			Mapper: mapper,
 		})
 		require.NoError(t, err)

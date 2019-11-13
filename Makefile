@@ -59,7 +59,7 @@ generate: controller-gen
 	$(CONTROLLER_GEN) object:headerFile=./hack/boilerplate/boilerplate.go.txt,year=$(shell date +%Y) paths=./pkg/apis/...
 
 install:
-	go run -ldflags $(LD_FLAGS) ./cmd/anchor/main.go setup
+	go install -ldflags $(LD_FLAGS) ./cmd/anchor
 
 install-crds: \
 	install-operator
@@ -113,7 +113,6 @@ e2e-test:
 	@# "${HOME}/.kube/kind-config-${SVC_KIND_CLUSTER}"
 	@echo "Loading the images"
 	@$(MAKE) KIND_CLUSTER=${MASTER_KIND_CLUSTER} kind-load
-	@$(MAKE) KIND_CLUSTER=${SVC_KIND_CLUSTER} kind-load
 	@go run -ldflags $(LD_FLAGS) ./cmd/anchor e2e-test run --test.v --test-id=${TEST_ID} | richgo testfilter
 .PHONY: e2e-test
 
