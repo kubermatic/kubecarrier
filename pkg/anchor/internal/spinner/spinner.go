@@ -20,12 +20,6 @@ import (
 	"fmt"
 
 	"github.com/gernest/wow"
-	"github.com/gernest/wow/spin"
-)
-
-const (
-	succeed = "✔ "
-	failed  = "✖ "
 )
 
 // AttachSpinnerTo attaches a spinner to a function with the message given.
@@ -40,9 +34,11 @@ func AttachSpinnerTo(spinner *wow.Wow, msg string, f func() error) error {
 	spinner.Text(fmt.Sprintf(" %s...", msg))
 	spinner.Start()
 	if err := f(); err != nil {
-		spinner.PersistWith(spin.Spinner{Frames: []string{failed}}, msg)
-		return err
+		spinner.Text(msg + " " + wow.ERROR.String())
+		spinner.Persist()
+		return fmt.Errorf("%s: %w", msg, err)
 	}
-	spinner.PersistWith(spin.Spinner{Frames: []string{succeed}}, msg)
+	spinner.Text(msg + " " + wow.SUCCESS.String())
+	spinner.Persist()
 	return nil
 }

@@ -17,6 +17,8 @@ limitations under the License.
 package cmd
 
 import (
+	"fmt"
+
 	"github.com/go-logr/logr"
 	"github.com/spf13/cobra"
 	"go.uber.org/zap"
@@ -46,10 +48,13 @@ func NewAnchor(log logr.Logger) *cobra.Command {
 Documentation is available in the project's repository:
 https://github.com/kubermatic/kubecarrier`,
 		PersistentPreRun: func(cmd *cobra.Command, args []string) {
+			fmt.Println("this is executed")
 			la, ok := log.(levelAccessor)
 			if !ok {
+				fmt.Println("not level Accessor")
 				return
 			}
+			fmt.Println("level Accessor")
 			la.GetLevel().SetLevel(zapcore.Level(-1 * flags.Verbosity))
 		},
 	}

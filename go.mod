@@ -6,12 +6,14 @@ replace k8s.io/client-go => k8s.io/client-go v0.0.0-20190918200256-06eb1244587a
 
 require (
 	github.com/gernest/wow v0.1.0
+	github.com/ghodss/yaml v1.0.0
 	github.com/go-logr/logr v0.1.0
 	github.com/google/go-cmp v0.3.1
 	github.com/rakyll/statik v0.1.6
 	github.com/spf13/cobra v0.0.5
 	github.com/stretchr/testify v1.4.0
 	go.uber.org/zap v1.10.0
+	gopkg.in/yaml.v1 v1.0.0-20140924161607-9f9df34309c0
 	k8s.io/api v0.0.0-20190918195907-bd6ac527cfd2
 	k8s.io/apimachinery v0.0.0-20190817020851-f2f3a405f61d
 	k8s.io/client-go v11.0.0+incompatible
