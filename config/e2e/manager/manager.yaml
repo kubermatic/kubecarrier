@@ -1,0 +1,28 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: e2e
+  namespace: system
+  labels:
+    control-plane: e2e
+spec:
+  selector:
+    matchLabels:
+      control-plane: e2e
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        control-plane: e2e
+    spec:
+      containers:
+        - image: quay.io/kubecarrier/e2e:lastest
+          name: manager
+          resources:
+            limits:
+              cpu: 100m
+              memory: 30Mi
+            requests:
+              cpu: 100m
+              memory: 20Mi
+      terminationGracePeriodSeconds: 10
