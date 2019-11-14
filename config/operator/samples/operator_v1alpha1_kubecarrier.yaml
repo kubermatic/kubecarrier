@@ -1,0 +1,7 @@
+apiVersion: operator.kubecarrier.io/v1alpha1
+kind: KubeCarrier
+metadata:
+  name: kubecarrier-sample
+spec:
+  # Add fields here
+  foo: bar

@@ -25,6 +25,8 @@ import (
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 	ctrl "sigs.k8s.io/controller-runtime"
+
+	"github.com/kubermatic/kubecarrier/pkg/operator/internal/controllers"
 )
 
 type flags struct {
@@ -70,6 +72,15 @@ func run(flags *flags, log logr.Logger) {
 	})
 	if err != nil {
 		log.Error(err, "unable to start manager")
+		os.Exit(1)
+	}
+
+	if err = (&controllers.KubeCarrierReconciler{
+		Client: mgr.GetClient(),
+		Log:    log.WithName("controllers").WithName("KubeCarrier"),
+		Scheme: mgr.GetScheme(),
+	}).SetupWithManager(mgr); err != nil {
+		log.Error(err, "unable to create controller", "controller", "KubeCarrier")
 		os.Exit(1)
 	}
 	// +kubebuilder:scaffold:builder
