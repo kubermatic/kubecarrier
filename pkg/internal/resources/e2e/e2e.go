@@ -25,8 +25,6 @@ import (
 
 	"github.com/kubermatic/kubecarrier/pkg/internal/kustomize"
 	"github.com/kubermatic/kubecarrier/pkg/internal/version"
-
-	statikfs "github.com/rakyll/statik/fs"
 )
 
 // Config holds the config information to generate the kubecarrier operator setup.
@@ -40,10 +38,6 @@ type kustomizeFactory interface {
 }
 
 func Manifests(k kustomizeFactory, c Config) ([]unstructured.Unstructured, error) {
-	vfs, err := statikfs.New()
-	if err != nil {
-		return nil, fmt.Errorf("cannot get statik fs: %w", err)
-	}
 	kc := k.ForHTTP(vfs)
 
 	// patch settings
