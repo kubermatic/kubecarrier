@@ -118,9 +118,9 @@ e2e-test: install
 	@# "${HOME}/.kube/kind-config-${MASTER_KIND_CLUSTER}"
 	@# "${HOME}/.kube/kind-config-${SVC_KIND_CLUSTER}"
 	@echo "Loading the images"
-	@$(MAKE) KIND_CLUSTER=${MASTER_KIND_CLUSTER} kind-load
-	@$(MAKE) KIND_CLUSTER=${SVC_KIND_CLUSTER} kind-load-e2e
-	@$(MAKE) e2e-test-runonly
+	@$(MAKE) --no-print-directory KIND_CLUSTER=${MASTER_KIND_CLUSTER} kind-load
+	@$(MAKE) --no-print-directory KIND_CLUSTER=${SVC_KIND_CLUSTER} kind-load-e2e
+	@$(MAKE) --no-print-directory e2e-test-runonly
 .PHONY: e2e-test
 
 e2e-test-runonly:
