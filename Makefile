@@ -58,7 +58,7 @@ generate: controller-gen manifests generate-statik-operator generate-statik-e2e
 	$(CONTROLLER_GEN) object:headerFile=./hack/boilerplate/boilerplate.go.txt,year=$(shell date +%Y) paths=./pkg/apis/...
 
 generate-statik-%:
-	statik -src=config -p $* -dest pkg/internal/resources -f -c ''
+	statik -src=config/$* -p $* -dest pkg/internal/resources -f -c ''
 	cat hack/boilerplate/boilerplate.generatego.txt | sed s/YEAR/$(shell date +%Y)/ | cat - pkg/internal/resources/$*/statik.go > pkg/internal/resources/$*/statik.go.tmp
 	mv pkg/internal/resources/$*/statik.go.tmp pkg/internal/resources/$*/statik.go
 
@@ -119,6 +119,7 @@ e2e-test: install
 	@# "${HOME}/.kube/kind-config-${SVC_KIND_CLUSTER}"
 	@echo "Loading the images"
 	@$(MAKE) KIND_CLUSTER=${MASTER_KIND_CLUSTER} kind-load
+	@$(MAKE) KIND_CLUSTER=${SVC_KIND_CLUSTER} kind-load-e2e
 	@go run -ldflags $(LD_FLAGS) ./cmd/anchor e2e-test run --test.v --test-id=${TEST_ID} | richgo testfilter
 .PHONY: e2e-test
 
@@ -144,8 +145,7 @@ build-images: \
 	build-image-e2e
 
 kind-load: \
-	kind-load-operator \
-	kind-load-e2e
+	kind-load-operator
 
 build-image-test:
 	@mkdir -p bin/image/test

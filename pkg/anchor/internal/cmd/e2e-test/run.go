@@ -19,14 +19,16 @@ package e2e_test
 import (
 	"flag"
 	"os"
+	"os/exec"
 	"testing"
 
+	"github.com/go-logr/logr"
 	"github.com/spf13/cobra"
 
 	"github.com/kubermatic/kubecarrier/test/e2e"
 )
 
-func newRunCommand() *cobra.Command {
+func newRunCommand(log logr.Logger) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "run",
 		Short: "run all end2end tests",
@@ -35,6 +37,21 @@ func newRunCommand() *cobra.Command {
 			e2e.MasterExternalKubeconfigPath = cfg.masterExternalKubeconfigFile
 			e2e.ServiceExternalKubeconfigPath = cfg.serviceExternalKubeconfigFile
 			e2e.ServiceInternalKubeconfigPath = cfg.serviceInternalKubeconfigFile
+
+			log.Info("installing kubecarrier in the master cluster")
+			c := exec.Command("anchor", "setup", "--kubeconfig", e2e.MasterExternalKubeconfigPath)
+			c.Stdout = os.Stdout
+			c.Stderr = os.Stderr
+			if err := c.Run(); err != nil {
+				log.Error(err, "cannot install kubecarrier in the master cluster")
+				os.Exit(2)
+			}
+			log.Info("installed kubecarrier in the master cluster")
+
+			if err := setupE2EOperator(log, e2e.ServiceExternalKubeconfigPath, "joke-operator", cmd.OutOrStdout()); err != nil {
+				log.Error(err, "cannot install joke e2e operator in the service cluster")
+				os.Exit(3)
+			}
 
 			testing.Main(func(pat, str string) (b bool, e error) {
 				return true, nil

@@ -18,7 +18,6 @@ package e2e
 
 import (
 	"context"
-	"os/exec"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -64,13 +63,6 @@ func (suite *KubeCarrierE2ESuite) SetupSuite() {
 	t.Logf("master cluster internal kubeconfig location: %s", MasterInternalKubeconfigPath)
 	t.Logf("svc cluster external kubeconfig location: %s", ServiceExternalKubeconfigPath)
 	t.Logf("svc cluster internal kubeconfig location: %s", ServiceInternalKubeconfigPath)
-
-	t.Log("==== installing kubecarrier in the master cluster ====")
-	cmd := exec.Command("anchor", "setup", "--kubeconfig", MasterExternalKubeconfigPath)
-	out, err := cmd.CombinedOutput()
-	t.Log("\n" + string(out))
-	require.NoError(t, err, "cannot install kubecarrier in the master cluster")
-	t.Log("==== successfully installed kubecarrier in the master cluster")
 
 	scheme := runtime.NewScheme()
 	require.NoError(t, clientgoscheme.AddToScheme(scheme), "adding native k8s scheme")

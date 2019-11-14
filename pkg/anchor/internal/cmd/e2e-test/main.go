@@ -92,7 +92,7 @@ func NewCommand(log logr.Logger) *cobra.Command {
 	}
 
 	cmd.AddCommand(
-		newRunCommand(),
+		newRunCommand(log),
 		newSetupE2EOperator(log),
 	)
 
