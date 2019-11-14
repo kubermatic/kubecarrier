@@ -75,7 +75,7 @@ manifests: \
 	manifests-manager
 
 manifests-%: controller-gen
-	$(CONTROLLER_GEN) $(CRD_OPTIONS) rbac:roleName=manager webhook paths="./..." output:crd:artifacts:config=config/$*/crd/bases output:rbac:artifacts:config=config/$*/rbac output:webhook:artifacts:config=config/$*/webhook
+	$(CONTROLLER_GEN) $(CRD_OPTIONS) rbac:roleName=manager-role webhook paths="./..." output:crd:artifacts:config=config/$*/crd/bases output:rbac:artifacts:config=config/$*/rbac output:webhook:artifacts:config=config/$*/webhook
 
 # find or download controller-gen
 # download controller-gen if necessary
@@ -138,7 +138,8 @@ build-images: \
 	build-image-operator
 
 kind-load: \
-	kind-load-operator
+	kind-load-operator \
+	kind-load-manager
 
 build-image-test:
 	@mkdir -p bin/image/test
