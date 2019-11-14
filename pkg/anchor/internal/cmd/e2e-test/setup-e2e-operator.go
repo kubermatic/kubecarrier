@@ -148,10 +148,9 @@ func setupE2EOperator(log logr.Logger, kubeconfig string, namespaceName string, 
 	if err := spinner.AttachSpinnerTo(s, "waiting for available deployment", func() error {
 		log.Info("querying deployment")
 		return wait.Poll(time.Second, 10*time.Second, func() (done bool, err error) {
-			log.Info("querying deployment")
 			deployment := &appsv1.Deployment{}
 			err = c.Get(ctx, types.NamespacedName{
-				Name:      "kubecarrier-e2e-e2e",
+				Name:      "e2e-e2e",
 				Namespace: namespace.Name,
 			}, deployment)
 			switch {

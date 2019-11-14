@@ -1,24 +1,14 @@
 # Adds namespace to all resources.
 namespace: kubecarrier-e2e-operator
-
-# Value of this field is prepended to the
-# names of all resources, e.g. a deployment named
-# "wordpress" becomes "alices-wordpress".
-# Note that it should also match with the prefix (text before '-') of the namespace
-# field above.
-namePrefix: kubecarrier-e2e-
-
-# Labels to add to all resources and selectors.
-#commonLabels:
-#  someName: someValue
+namePrefix: e2e-
 
 bases:
   - ../crd
   - ../rbac
   - ../manager
-  #- ../webhook
 # [CERTMANAGER] To enable cert-manager, uncomment all sections with 'CERTMANAGER'. 'WEBHOOK' components are required.
-#- ../certmanager
+#  - ../webhook
+#  - ../certmanager
 # [PROMETHEUS] To enable prometheus monitor, uncomment all sections with 'PROMETHEUS'.
 #- ../prometheus
 

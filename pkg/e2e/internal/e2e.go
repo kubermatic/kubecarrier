@@ -19,6 +19,10 @@ package e2e
 import (
 	"os"
 
+	"go.uber.org/zap/zapcore"
+
+	zap2 "go.uber.org/zap"
+
 	"k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
 
 	"github.com/kubermatic/kubecarrier/pkg/e2e/internal/controllers"
@@ -29,31 +33,36 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
-	e2ev1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/e2e/v1alpha1"
 	e2ev1alpha2 "github.com/kubermatic/kubecarrier/pkg/apis/e2e/v1alpha2"
 )
 
 func NewE2E() *cobra.Command {
-	var metricsAddr string
-	var enableLeaderElection bool
+	var (
+		metricsAddr          string
+		enableLeaderElection bool
+		verbosity            int8
+	)
 
 	cmd := &cobra.Command{}
 	cmd.Flags().StringVar(&metricsAddr, "metrics-addr", ":8080", "The address the metric endpoint binds to.")
 	cmd.Flags().BoolVar(&enableLeaderElection, "enable-leader-election", false,
 		"Enable leader election for controller manager. Enabling this will ensure there is only one active controller manager.")
-	cmd.RunE = func(cmd *cobra.Command, args []string) error {
+
+	cmd.Flags().Int8VarP(&verbosity, "verbosity", "v", 4, "log level version")
+	cmd.Run = func(cmd *cobra.Command, args []string) {
 		var (
 			scheme   = runtime.NewScheme()
 			setupLog = ctrl.Log.WithName("setup")
 		)
 
-		_ = e2ev1alpha1.AddToScheme(scheme)
 		_ = e2ev1alpha2.AddToScheme(scheme)
 		_ = corescheme.AddToScheme(scheme)
 		_ = v1beta1.AddToScheme(scheme)
 
 		ctrl.SetLogger(zap.New(func(o *zap.Options) {
 			o.Development = true
+			l := zap2.NewAtomicLevelAt(zapcore.Level(-verbosity))
+			o.Level = &l
 		}))
 
 		mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
@@ -87,8 +96,6 @@ func NewE2E() *cobra.Command {
 			setupLog.Error(err, "problem running manager")
 			os.Exit(1)
 		}
-
-		return nil
 	}
 	return cmd
 }

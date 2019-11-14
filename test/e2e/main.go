@@ -20,6 +20,9 @@ import (
 	"context"
 	"testing"
 
+	"github.com/kubermatic/kubecarrier/pkg/testutil"
+
+	"github.com/go-logr/logr"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 	corev1 "k8s.io/api/core/v1"
@@ -29,6 +32,8 @@ import (
 	"k8s.io/client-go/tools/clientcmd"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/apiutil"
+
+	e2ev1alpha2 "github.com/kubermatic/kubecarrier/pkg/apis/e2e/v1alpha2"
 )
 
 var (
@@ -53,6 +58,7 @@ type KubeCarrierE2ESuite struct {
 	suite.Suite
 	masterClient  client.Client
 	serviceClient client.Client
+	logr.Logger
 }
 
 var _ suite.SetupAllSuite = (*KubeCarrierE2ESuite)(nil)
@@ -64,8 +70,11 @@ func (suite *KubeCarrierE2ESuite) SetupSuite() {
 	t.Logf("svc cluster external kubeconfig location: %s", ServiceExternalKubeconfigPath)
 	t.Logf("svc cluster internal kubeconfig location: %s", ServiceInternalKubeconfigPath)
 
+	suite.Logger = testutil.NewLogger(t)
+
 	scheme := runtime.NewScheme()
 	require.NoError(t, clientgoscheme.AddToScheme(scheme), "adding native k8s scheme")
+	require.NoError(t, e2ev1alpha2.AddToScheme(scheme), "adding native k8s scheme")
 
 	{
 		cfg, err := clientcmd.BuildConfigFromFlags("", MasterExternalKubeconfigPath)

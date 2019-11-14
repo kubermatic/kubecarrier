@@ -120,8 +120,11 @@ e2e-test: install
 	@echo "Loading the images"
 	@$(MAKE) KIND_CLUSTER=${MASTER_KIND_CLUSTER} kind-load
 	@$(MAKE) KIND_CLUSTER=${SVC_KIND_CLUSTER} kind-load-e2e
-	@go run -ldflags $(LD_FLAGS) ./cmd/anchor e2e-test run --test.v --test-id=${TEST_ID} | richgo testfilter
+	@$(MAKE) e2e-test-runonly
 .PHONY: e2e-test
+
+e2e-test-runonly:
+	@go run -ldflags $(LD_FLAGS) ./cmd/anchor e2e-test run --test.v --test-id=${TEST_ID} | richgo testfilter
 
 e2e-test-clean:
 	@kind delete cluster --name=${MASTER_KIND_CLUSTER} || true

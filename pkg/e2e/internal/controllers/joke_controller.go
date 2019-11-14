@@ -19,13 +19,14 @@ package controllers
 import (
 	"context"
 	"fmt"
+	"math/rand"
 
 	"github.com/go-logr/logr"
 	"k8s.io/apimachinery/pkg/api/errors"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	"github.com/kubermatic/kubecarrier/pkg/apis/e2e/v1alpha2"
+	e2ev1alpha2 "github.com/kubermatic/kubecarrier/pkg/apis/e2e/v1alpha2"
 )
 
 // JokeReconciler reconciles a Joke object
@@ -39,22 +40,43 @@ type JokeReconciler struct {
 
 func (r *JokeReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	ctx := context.Background()
-	log := r.Log.WithValues("joke", req.NamespacedName)
-
-	joke := &v1alpha2.Joke{}
+	joke := &e2ev1alpha2.Joke{}
 	if err := r.Get(ctx, req.NamespacedName, joke); err != nil {
 		if errors.IsNotFound(err) {
 			return ctrl.Result{}, nil
 		}
 		return ctrl.Result{}, fmt.Errorf("cannot fetch joke: %w", err)
 	}
-	log.Info("doing some actual work...TODO")
-	// TODO --> finish this tomorrow
+
+	joke.Status.ObservedGeneration = joke.Generation
+	if len(joke.Spec.JokeDatabase) == 0 {
+		joke.Status.SelectedJoke = nil
+		joke.Status.SetCondition(e2ev1alpha2.JokeCondition{
+			Message: "No jokes were defined in the database",
+			Reason:  "EmptyDatabase",
+			Status:  e2ev1alpha2.ConditionFalse,
+			Type:    e2ev1alpha2.JokeReady,
+		})
+		if err := r.Status().Update(ctx, joke); err != nil {
+			return ctrl.Result{}, fmt.Errorf("cannot update joke: %w", err)
+		}
+		return ctrl.Result{}, nil
+	}
+	joke.Status.SelectedJoke = &joke.Spec.JokeDatabase[rand.Intn(len(joke.Spec.JokeDatabase))]
+	joke.Status.SetCondition(e2ev1alpha2.JokeCondition{
+		Message: "Joke has been found and setup",
+		Reason:  "JokeSetup",
+		Status:  e2ev1alpha2.ConditionTrue,
+		Type:    e2ev1alpha2.JokeReady,
+	})
+	if err := r.Status().Update(ctx, joke); err != nil {
+		return ctrl.Result{}, fmt.Errorf("cannot update joke: %w", err)
+	}
 	return ctrl.Result{}, nil
 }
 
 func (r *JokeReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
-		For(&v1alpha2.Joke{}).
+		For(&e2ev1alpha2.Joke{}).
 		Complete(r)
 }
