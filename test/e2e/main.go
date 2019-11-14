@@ -1,5 +1,5 @@
 /*
-Copyright 2019 The Kubecarrier Authors.
+Copyright 2019 The KubeCarrier Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -43,22 +43,22 @@ var (
 
 func init() {
 	AllTests = append(AllTests, testing.InternalTest{
-		Name: "KubecarrierE2ESuite",
+		Name: "KubeCarrierE2ESuite",
 		F: func(t *testing.T) {
-			suite.Run(t, new(KubecarrierE2ESuite))
+			suite.Run(t, new(KubeCarrierE2ESuite))
 		},
 	})
 }
 
-type KubecarrierE2ESuite struct {
+type KubeCarrierE2ESuite struct {
 	suite.Suite
 	masterClient  client.Client
 	serviceClient client.Client
 }
 
-var _ suite.SetupAllSuite = (*KubecarrierE2ESuite)(nil)
+var _ suite.SetupAllSuite = (*KubeCarrierE2ESuite)(nil)
 
-func (suite *KubecarrierE2ESuite) SetupSuite() {
+func (suite *KubeCarrierE2ESuite) SetupSuite() {
 	t := suite.T()
 	t.Logf("master cluster external kubeconfig location: %s", MasterExternalKubeconfigPath)
 	t.Logf("master cluster internal kubeconfig location: %s", MasterInternalKubeconfigPath)
@@ -98,7 +98,7 @@ func (suite *KubecarrierE2ESuite) SetupSuite() {
 	}
 }
 
-func (suite *KubecarrierE2ESuite) TestValidMasterKubeconfig() {
+func (suite *KubeCarrierE2ESuite) TestValidMasterKubeconfig() {
 	cm := &corev1.ConfigMap{}
 	require.NoError(suite.T(), suite.masterClient.Get(context.Background(), types.NamespacedName{
 		Name:      "cluster-info",
@@ -107,7 +107,7 @@ func (suite *KubecarrierE2ESuite) TestValidMasterKubeconfig() {
 	suite.T().Logf("cluster-info kubeconfig:\n%s", cm.Data["kubeconfig"])
 }
 
-func (suite *KubecarrierE2ESuite) TestValidServiceKubeconfig() {
+func (suite *KubeCarrierE2ESuite) TestValidServiceKubeconfig() {
 	cm := &corev1.ConfigMap{}
 	require.NoError(suite.T(), suite.serviceClient.Get(context.Background(), types.NamespacedName{
 		Name:      "cluster-info",

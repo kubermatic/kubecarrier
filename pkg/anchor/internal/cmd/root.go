@@ -1,5 +1,5 @@
 /*
-Copyright 2019 The Kubecarrier Authors.
+Copyright 2019 The KubeCarrier Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -41,8 +41,8 @@ func NewAnchor(log logr.Logger) *cobra.Command {
 	flags := &flagpole{}
 	cmd := &cobra.Command{
 		Use:   "anchor",
-		Short: "Anchor is the CLI tool for managing Kubecarrier",
-		Long: `Anchor is a CLI library for managing Kubecarrier,
+		Short: "Anchor is the CLI tool for managing KubeCarrier",
+		Long: `Anchor is a CLI library for managing KubeCarrier,
 Documentation is available in the project's repository:
 https://github.com/kubermatic/kubecarrier`,
 		PersistentPreRun: func(cmd *cobra.Command, args []string) {

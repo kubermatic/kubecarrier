@@ -1,5 +1,5 @@
 /*
-Copyright 2019 The Kubecarrier Authors.
+Copyright 2019 The KubeCarrier Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -116,10 +116,10 @@ func runE(flags *flags, log logr.Logger, cmd *cobra.Command) error {
 		},
 	}
 	if err := spinner.AttachSpinnerTo(s, fmt.Sprintf("Create %q Namespace", kubecarrierNamespaceName), createNamespace(ctx, c, ns)); err != nil {
-		return fmt.Errorf("creating Kubecarrier system namespace: %w", err)
+		return fmt.Errorf("creating KubeCarrier system namespace: %w", err)
 	}
 
-	if err := spinner.AttachSpinnerTo(s, "Deploy Kubecarrier Operator", reconcileOperator(ctx, log, c, ns)); err != nil {
+	if err := spinner.AttachSpinnerTo(s, "Deploy KubeCarrier Operator", reconcileOperator(ctx, log, c, ns)); err != nil {
 		return fmt.Errorf("deploying kubecarrier operator: %w", err)
 	}
 
@@ -131,11 +131,11 @@ func createNamespace(ctx context.Context, c client.Client, ns *corev1.Namespace)
 		if err := c.Create(ctx, ns); err != nil {
 			if errors.IsAlreadyExists(err) {
 				if err := c.Get(ctx, types.NamespacedName{Name: ns.ObjectMeta.Name}, ns); err != nil {
-					return fmt.Errorf("getting Kubecarrier system namespace: %w", err)
+					return fmt.Errorf("getting KubeCarrier system namespace: %w", err)
 				}
 				return nil
 			} else {
-				return fmt.Errorf("creating Kubecarrier system namespace: %w", err)
+				return fmt.Errorf("creating KubeCarrier system namespace: %w", err)
 			}
 		}
 		return nil
@@ -200,7 +200,7 @@ func reconcileOperator(ctx context.Context, log logr.Logger, c client.Client, ku
 					Name:      deployment.Name,
 					Namespace: deployment.Namespace,
 				}, deployment); err != nil {
-					return fmt.Errorf("geting Kubecarrier operator: %w", err)
+					return fmt.Errorf("geting KubeCarrier operator: %w", err)
 				}
 
 				if deploymentIsAvailable(deployment) {
@@ -208,7 +208,7 @@ func reconcileOperator(ctx context.Context, log logr.Logger, c client.Client, ku
 				}
 
 			case <-retryDeadlineCtx.Done():
-				return fmt.Errorf("deploying Kubecarrier operator: Kubecarrier operator deployment is not available after %v", retryTimeDuration)
+				return fmt.Errorf("deploying KubeCarrier operator: KubeCarrier operator deployment is not available after %v", retryTimeDuration)
 			}
 		}
 	}
