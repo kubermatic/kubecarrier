@@ -14,22 +14,22 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package resources
+package operator
 
 import (
 	"net/http"
 
-	"github.com/rakyll/statik/fs"
+	statikfs "github.com/rakyll/statik/fs"
 )
 
-// ConfigFileSystem is a virtual file system to access the operator config.
-var ConfigFileSystem http.FileSystem
+// vfs is a virtual file system to access the operator config.
+var vfs http.FileSystem
 
 // don't rename this file!
 // this init() function must be called after statik.go
 func init() {
 	var err error
-	ConfigFileSystem, err = fs.New()
+	vfs, err = statikfs.New()
 	if err != nil {
 		panic(err)
 	}

@@ -47,7 +47,7 @@ func Manifests(k kustomizeFactory, c Config) ([]unstructured.Unstructured, error
 	kc := k.ForHTTP(vfs)
 
 	// patch settings
-	kustomizePath := "/e2e/default/kustomization.yaml"
+	kustomizePath := "/default/kustomization.yaml"
 	kustomizeBytes, err := kc.ReadFile(kustomizePath)
 	if err != nil {
 		return nil, fmt.Errorf("reading %s: %w", kustomizePath, err)
@@ -77,7 +77,7 @@ func Manifests(k kustomizeFactory, c Config) ([]unstructured.Unstructured, error
 	}
 
 	// execute kustomize
-	objects, err := kc.Build("/e2e/default")
+	objects, err := kc.Build("/default")
 	if err != nil {
 		return nil, fmt.Errorf("running kustomize build: %w", err)
 	}

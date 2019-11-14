@@ -20,8 +20,6 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/kubermatic/kubecarrier/pkg/internal/resources"
-
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"sigs.k8s.io/yaml"
 
@@ -40,10 +38,10 @@ type kustomizeFactory interface {
 }
 
 func Manifests(k kustomizeFactory, c Config) ([]unstructured.Unstructured, error) {
-	kc := k.ForHTTP(resources.ConfigFileSystem)
+	kc := k.ForHTTP(vfs)
 
 	// patch settings
-	kustomizePath := "/operator/default/kustomization.yaml"
+	kustomizePath := "/default/kustomization.yaml"
 	kustomizeBytes, err := kc.ReadFile(kustomizePath)
 	if err != nil {
 		return nil, fmt.Errorf("reading %s: %w", kustomizePath, err)
@@ -73,7 +71,7 @@ func Manifests(k kustomizeFactory, c Config) ([]unstructured.Unstructured, error
 	}
 
 	// execute kustomize
-	objects, err := kc.Build("/operator/default")
+	objects, err := kc.Build("/default")
 	if err != nil {
 		return nil, fmt.Errorf("running kustomize build: %w", err)
 	}
