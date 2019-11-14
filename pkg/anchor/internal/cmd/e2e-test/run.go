@@ -40,8 +40,8 @@ func newRunCommand(log logr.Logger) *cobra.Command {
 
 			log.Info("running \"anchor setup\" to install KubeCarrier in the master cluster")
 			c := exec.Command("anchor", "setup", "--kubeconfig", e2e.MasterExternalKubeconfigPath)
-			c.Stdout = os.Stdout
-			c.Stderr = os.Stderr
+			c.Stdout = cmd.OutOrStdout()
+			c.Stderr = cmd.ErrOrStderr()
 			if err := c.Run(); err != nil {
 				log.Error(err, "cannot install kubecarrier in the master cluster")
 				os.Exit(2)
