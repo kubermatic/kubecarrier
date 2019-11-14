@@ -23,6 +23,8 @@ import (
 	"strings"
 	"time"
 
+	"k8s.io/client-go/rest"
+
 	"github.com/gernest/wow"
 	"github.com/gernest/wow/spin"
 	"github.com/go-logr/logr"
@@ -40,6 +42,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
 	"github.com/kubermatic/kubecarrier/pkg/anchor/internal/spinner"
+	operatorv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/operator/v1alpha1"
 	"github.com/kubermatic/kubecarrier/pkg/internal/kustomize"
 	"github.com/kubermatic/kubecarrier/pkg/internal/reconcile"
 	"github.com/kubermatic/kubecarrier/pkg/internal/resources/operator"
@@ -61,6 +64,7 @@ const (
 func init() {
 	_ = clientgoscheme.AddToScheme(scheme)
 	_ = apiextensionsv1beta1.AddToScheme(scheme)
+	_ = operatorv1alpha1.AddToScheme(scheme)
 }
 
 func NewCommand(log logr.Logger) *cobra.Command {
@@ -123,6 +127,10 @@ func runE(flags *flags, log logr.Logger, cmd *cobra.Command) error {
 
 	if err := spinner.AttachSpinnerTo(s, "Deploy KubeCarrier Operator", reconcileOperator(ctx, log, c, ns)); err != nil {
 		return fmt.Errorf("deploying kubecarrier operator: %w", err)
+	}
+
+	if err := spinner.AttachSpinnerTo(s, "Deploy KubeCarrier Controller Manager", deployKubeCarrier(ctx, ns, conf)); err != nil {
+		return fmt.Errorf("deploying kubecarrier controller manager: %w", err)
 	}
 
 	return nil
@@ -213,6 +221,31 @@ func reconcileOperator(ctx context.Context, log logr.Logger, c client.Client, ku
 				return fmt.Errorf("deploying KubeCarrier operator: KubeCarrier operator deployment is not available after %v", retryTimeDuration)
 			}
 		}
+	}
+}
+
+// deployKubeCarrier deploys the KubeCarrier Object in a kubernetes cluster.
+func deployKubeCarrier(ctx context.Context, kubeCarrierNamespace *corev1.Namespace, conf *rest.Config) func() error {
+	return func() error {
+		kubeCarrier := &operatorv1alpha1.KubeCarrier{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "kubecarrier",
+				Namespace: kubeCarrierNamespace.Name,
+			},
+		}
+		// Create another client due to some issues about the restmapper.
+		// The issue is that if you use the client that created before, and here try to create the kubeCarrier,
+		// it will complain about: `no matches for kind "KubeCarrier" in version "operator.kubecarrier.io/v1alpha1"`,
+		// but actually, the scheme is already added to the runtime scheme.
+		// And in the following, reinitializing the client solves the issue.
+		c, err := client.New(conf, client.Options{Scheme: scheme})
+		if err != nil {
+			return fmt.Errorf("creating Kubernetes client: %w", err)
+		}
+		if err = c.Create(ctx, kubeCarrier); err != nil {
+			return fmt.Errorf("creating KubeCarrier %w", err)
+		}
+		return nil
 	}
 }
 
