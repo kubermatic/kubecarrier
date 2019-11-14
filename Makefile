@@ -37,7 +37,8 @@ all: \
 	bin/linux_amd64/anchor \
 	bin/darwin_amd64/anchor \
 	bin/windows_amd64/anchor \
-	bin/linux_amd64/operator
+	bin/linux_amd64/operator \
+	bin/linux_amd64/manager
 
 bin/linux_amd64/%: GOARGS = GOOS=linux GOARCH=amd64
 bin/darwin_amd64/%: GOARGS = GOOS=darwin GOARCH=amd64
@@ -70,7 +71,8 @@ install-%: manifests-%
 
 # Generate manifests e.g. CRD, RBAC etc.
 manifests: \
-	manifests-operator
+	manifests-operator \
+	manifests-manager
 
 manifests-%: controller-gen
 	$(CONTROLLER_GEN) $(CRD_OPTIONS) rbac:roleName=manager webhook paths="./..." output:crd:artifacts:config=config/$*/crd/bases output:rbac:artifacts:config=config/$*/rbac output:webhook:artifacts:config=config/$*/webhook
