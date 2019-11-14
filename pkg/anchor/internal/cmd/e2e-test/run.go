@@ -38,7 +38,7 @@ func newRunCommand(log logr.Logger) *cobra.Command {
 			e2e.ServiceExternalKubeconfigPath = cfg.serviceExternalKubeconfigFile
 			e2e.ServiceInternalKubeconfigPath = cfg.serviceInternalKubeconfigFile
 
-			log.Info("installing kubecarrier in the master cluster")
+			log.Info("running \"anchor setup\" to install KubeCarrier in the master cluster")
 			c := exec.Command("anchor", "setup", "--kubeconfig", e2e.MasterExternalKubeconfigPath)
 			c.Stdout = os.Stdout
 			c.Stderr = os.Stderr
