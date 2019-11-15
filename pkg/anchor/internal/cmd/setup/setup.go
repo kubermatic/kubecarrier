@@ -23,6 +23,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/kubermatic/kubecarrier/pkg/internal/util"
+
 	"k8s.io/client-go/rest"
 
 	"github.com/gernest/wow"
@@ -213,7 +215,7 @@ func reconcileOperator(ctx context.Context, log logr.Logger, c client.Client, ku
 					return fmt.Errorf("geting KubeCarrier operator: %w", err)
 				}
 
-				if deploymentIsAvailable(deployment) {
+				if util.DeploymentIsAvailable(deployment) {
 					return nil
 				}
 
@@ -247,17 +249,4 @@ func deployKubeCarrier(ctx context.Context, kubeCarrierNamespace *corev1.Namespa
 		}
 		return nil
 	}
-}
-
-func deploymentIsAvailable(deployment *appsv1.Deployment) bool {
-	if deployment.Status.ObservedGeneration != deployment.Generation {
-		return false
-	}
-	for _, condition := range deployment.Status.Conditions {
-		if condition.Type == appsv1.DeploymentAvailable &&
-			condition.Status == corev1.ConditionTrue {
-			return true
-		}
-	}
-	return false
 }

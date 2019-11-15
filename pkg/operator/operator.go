@@ -17,10 +17,15 @@ limitations under the License.
 package operator
 
 import (
+	"fmt"
 	"os"
+
+	"github.com/kubermatic/kubecarrier/pkg/internal/kustomize"
+	"github.com/kubermatic/kubecarrier/pkg/internal/util"
 
 	"github.com/go-logr/logr"
 	"github.com/spf13/cobra"
+	rbacv1 "k8s.io/api/rbac/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
@@ -42,6 +47,7 @@ var (
 func init() {
 	_ = clientgoscheme.AddToScheme(scheme)
 	_ = operatorv1alpha1.AddToScheme(scheme)
+	_ = rbacv1.AddToScheme(scheme)
 	// +kubebuilder:scaffold:scheme
 }
 
@@ -77,10 +83,26 @@ func run(flags *flags, log logr.Logger) {
 		os.Exit(1)
 	}
 
+	// Field Index
+	if err := util.AddOwnerReverseFieldIndex(
+		mgr.GetFieldIndexer(), ctrl.Log.WithName("fieldindex"), &rbacv1.ClusterRole{},
+	); err != nil {
+		log.Error(fmt.Errorf("cannot add ClusterRole owner field indexer: %w", err), "unable to start manager")
+		os.Exit(1)
+	}
+	if err := util.AddOwnerReverseFieldIndex(
+		mgr.GetFieldIndexer(), ctrl.Log.WithName("fieldindex"), &rbacv1.ClusterRoleBinding{},
+	); err != nil {
+		log.Error(fmt.Errorf("cannot add ClusterRoleBinding owner field indexer: %w", err), "unable to start manager")
+		os.Exit(1)
+	}
+
+	kustomize := kustomize.NewDefaultKustomize()
 	if err = (&controllers.KubeCarrierReconciler{
-		Client: mgr.GetClient(),
-		Log:    log.WithName("controllers").WithName("KubeCarrier"),
-		Scheme: mgr.GetScheme(),
+		Client:    mgr.GetClient(),
+		Log:       log.WithName("controllers").WithName("KubeCarrier"),
+		Scheme:    mgr.GetScheme(),
+		Kustomize: kustomize,
 	}).SetupWithManager(mgr); err != nil {
 		log.Error(err, "unable to create controller", "controller", "KubeCarrier")
 		os.Exit(1)

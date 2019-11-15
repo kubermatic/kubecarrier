@@ -18,30 +18,29 @@ package util
 
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/util/sets"
 )
 
-// Finalizer implements helper methods to add/remove a finalizer to/from a metav1.Object.
-type Finalizer string
-
-// Insert inserts the Finalizer to the metav1.Object if the Finalizer is not present.
-func (c Finalizer) Insert(object metav1.Object) (changed bool) {
-	finalizers := sets.NewString(object.GetFinalizers()...)
-	if finalizers.Has(string(c)) {
-		return false
+// AddFinalizer adds the Finalizer to the metav1.Object if the Finalizer is not present.
+func AddFinalizer(object metav1.Object, finalizer string) (changed bool) {
+	finalizers := object.GetFinalizers()
+	for _, f := range finalizers {
+		if f == finalizer {
+			return false
+		}
 	}
-	finalizers.Insert(string(c))
-	object.SetFinalizers(finalizers.List())
+	object.SetFinalizers(append(finalizers, finalizer))
 	return true
 }
 
-// Delete deletes the finalizer from the metav1.Object if the Finalizer is present.
-func (c Finalizer) Delete(object metav1.Object) (changed bool) {
-	finalizers := sets.NewString(object.GetFinalizers()...)
-	if !finalizers.Has(string(c)) {
-		return false
+// RemoveFinalizer removes the finalizer from the metav1.Object if the Finalizer is present.
+func RemoveFinalizer(object metav1.Object, finalizer string) (changed bool) {
+	finalizers := object.GetFinalizers()
+	for i, f := range finalizers {
+		if f == finalizer {
+			finalizers = append(finalizers[:i], finalizers[i+1:]...)
+			object.SetFinalizers(finalizers)
+			return true
+		}
 	}
-	finalizers.Delete(string(c))
-	object.SetFinalizers(finalizers.List())
-	return true
+	return false
 }
