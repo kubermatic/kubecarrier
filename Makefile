@@ -101,7 +101,7 @@ TEST_ID?=1
 MASTER_KIND_CLUSTER?=kubecarrier-${TEST_ID}
 SVC_KIND_CLUSTER?=kubecarrier-svc-${TEST_ID}
 
-e2e-test:
+e2e-test: install
 	@docker ps > /dev/null 2>&1 || start-docker.sh || (echo "cannot find running docker daemon nor can start new one" && false)
 	@kind create cluster --name=${MASTER_KIND_CLUSTER} || true
 	@kind create cluster --name=${SVC_KIND_CLUSTER} || true

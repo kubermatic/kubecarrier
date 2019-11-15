@@ -24,9 +24,6 @@ iptables -t mangle -A POSTROUTING -p tcp --tcp-flags SYN,RST SYN -j TCPMSS --cla
 echo "Docker in Docker enabled, initializing..."
 printf '=%.0s' {1..80}; echo
 
-sed -i 's|^#DOCKER_OPTS.*$|DOCKER_OPTS="--data-root /var/lib/containers"|g' /etc/default/docker
-cat /etc/default/docker
-
 # If we have opted in to docker in docker, start the docker daemon,
 service docker start
 # the service can be started but the docker socket not ready, wait for ready
@@ -41,7 +38,7 @@ while true; do
         sleep ${WAIT_N}
     else
         echo "Reached maximum attempts, not waiting any longer..."
-        cat /var/log/docker
+        cat /var/log/docker.log
         exit 1
     fi
 done

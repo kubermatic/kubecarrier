@@ -58,3 +58,5 @@ COPY go.sum go.sum
 RUN go mod download
 
 COPY start-docker.sh /usr/local/bin/start-docker.sh
+
+VOLUME /var/lib/docker
