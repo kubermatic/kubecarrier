@@ -43,7 +43,7 @@ bin/linux_amd64/%: GOARGS = GOOS=linux GOARCH=amd64
 bin/darwin_amd64/%: GOARGS = GOOS=darwin GOARCH=amd64
 bin/windows_amd64/%: GOARGS = GOOS=windows GOARCH=amd64
 
-bin/%: FORCE generate
+bin/%: FORCE
 	$(eval COMPONENT=$(shell basename $*))
 	$(GOARGS) go build -ldflags $(LD_FLAGS) -o bin/$* cmd/$(COMPONENT)/main.go
 
@@ -145,7 +145,7 @@ build-image-test:
 	@cp -a go.mod go.sum hack/start-docker.sh bin/image/test
 	@docker build -t ${IMAGE_ORG}/test bin/image/test
 
-push-image-test:
+push-image-test: build-image-test
 	@docker push ${IMAGE_ORG}/test
 	@echo pushed ${IMAGE_ORG}/test
 
