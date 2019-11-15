@@ -141,6 +141,7 @@ kind-load: \
 build-image-test:
 	@mkdir -p bin/image/test
 	@cp -a config/dockerfiles/test.Dockerfile bin/image/test/Dockerfile
+	@cp -a .pre-commit-config.yaml bin/image/test
 	@cp -a go.mod go.sum hack/start-docker.sh bin/image/test
 	@docker build -t ${IMAGE_ORG}/test bin/image/test
 

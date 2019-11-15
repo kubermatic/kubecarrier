@@ -23,6 +23,10 @@ iptables -t mangle -A POSTROUTING -p tcp --tcp-flags SYN,RST SYN -j TCPMSS --cla
 
 echo "Docker in Docker enabled, initializing..."
 printf '=%.0s' {1..80}; echo
+
+sed -i 's/^#DOCKER_OPTS.*$/DOCKER_OPTS="--storage-driver overlay2"/g' /etc/default/docker
+cat /etc/default/docker
+
 # If we have opted in to docker in docker, start the docker daemon,
 service docker start
 # the service can be started but the docker socket not ready, wait for ready
