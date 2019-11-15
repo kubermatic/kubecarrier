@@ -195,7 +195,7 @@ func reconcileOperator(ctx context.Context, log logr.Logger, c client.Client, ku
 
 		deployment := &appsv1.Deployment{
 			ObjectMeta: metav1.ObjectMeta{
-				Name:      "kubecarrier-operator",
+				Name:      "kubecarrier-operator-operator",
 				Namespace: kubecarrierNamespaceName,
 			},
 		}
@@ -229,12 +229,6 @@ func reconcileOperator(ctx context.Context, log logr.Logger, c client.Client, ku
 // deployKubeCarrier deploys the KubeCarrier Object in a kubernetes cluster.
 func deployKubeCarrier(ctx context.Context, kubeCarrierNamespace *corev1.Namespace, conf *rest.Config) func() error {
 	return func() error {
-		kubeCarrier := &operatorv1alpha1.KubeCarrier{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "kubecarrier",
-				Namespace: kubeCarrierNamespace.Name,
-			},
-		}
 		// Create another client due to some issues about the restmapper.
 		// The issue is that if you use the client that created before, and here try to create the kubeCarrier,
 		// it will complain about: `no matches for kind "KubeCarrier" in version "operator.kubecarrier.io/v1alpha1"`,
@@ -244,8 +238,41 @@ func deployKubeCarrier(ctx context.Context, kubeCarrierNamespace *corev1.Namespa
 		if err != nil {
 			return fmt.Errorf("creating Kubernetes client: %w", err)
 		}
-		if err = c.Create(ctx, kubeCarrier); err != nil {
-			return fmt.Errorf("creating KubeCarrier %w", err)
+
+		kubeCarrier := &operatorv1alpha1.KubeCarrier{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "kubecarrier",
+				Namespace: kubeCarrierNamespace.Name,
+			},
+		}
+
+		retryTicker := time.NewTicker(2 * time.Second)
+		retryTimeDuration := 60 * time.Second
+		retryDeadlineCtx, cancel := context.WithDeadline(ctx, time.Now().Add(retryTimeDuration))
+		defer retryTicker.Stop()
+		defer cancel()
+		for {
+			select {
+			case <-retryTicker.C:
+				if err := c.Get(retryDeadlineCtx, types.NamespacedName{
+					Name:      kubeCarrier.Name,
+					Namespace: kubeCarrier.Namespace,
+				}, kubeCarrier); err != nil {
+					if errors.IsNotFound(err) {
+						if err := c.Create(ctx, kubeCarrier); err != nil {
+							return fmt.Errorf("creating KubeCarrier %w", err)
+						}
+					} else {
+						return fmt.Errorf("geting KubeCarrier: %w", err)
+					}
+				}
+
+				if kubeCarrier.IsReady() {
+					return nil
+				}
+			case <-retryDeadlineCtx.Done():
+				return fmt.Errorf("deploying KubeCarrier: KubeCarrier deployment is not available after %v", retryTimeDuration)
+			}
 		}
 		return nil
 	}
