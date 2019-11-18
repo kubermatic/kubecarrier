@@ -86,7 +86,7 @@ func (suite *KubeCarrierE2ESuite) TestJokeFailure() {
 	}
 	defer suite.Assert().NoError(c.Delete(ctx, joke))
 	suite.Require().NoError(c.Create(ctx, joke))
-	suite.Assert().NoError(wait.Poll(time.Second, 10*time.Second, func() (done bool, err error) {
+	suite.Require().NoError(wait.Poll(time.Second, 30*time.Second, func() (done bool, err error) {
 		if err := c.Get(ctx, types.NamespacedName{
 			Namespace: joke.Namespace,
 			Name:      joke.Name,
