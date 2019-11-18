@@ -274,6 +274,5 @@ func deployKubeCarrier(ctx context.Context, kubeCarrierNamespace *corev1.Namespa
 				return fmt.Errorf("deploying KubeCarrier: KubeCarrier deployment is not available after %v", retryTimeDuration)
 			}
 		}
-		return nil
 	}
 }
