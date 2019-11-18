@@ -23,6 +23,7 @@ iptables -t mangle -A POSTROUTING -p tcp --tcp-flags SYN,RST SYN -j TCPMSS --cla
 
 echo "Docker in Docker enabled, initializing..."
 printf '=%.0s' {1..80}; echo
+
 # If we have opted in to docker in docker, start the docker daemon,
 service docker start
 # the service can be started but the docker socket not ready, wait for ready
@@ -37,7 +38,8 @@ while true; do
         sleep ${WAIT_N}
     else
         echo "Reached maximum attempts, not waiting any longer..."
-        break
+        cat /var/log/docker.log
+        exit 1
     fi
 done
 printf '=%.0s' {1..80}; echo
