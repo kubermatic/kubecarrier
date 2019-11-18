@@ -18,9 +18,6 @@ package e2e
 
 import (
 	"context"
-	"os"
-	"os/exec"
-	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -66,18 +63,6 @@ func (suite *VerifyConfig) SetupSuite() {
 	t.Logf("master cluster internal kubeconfig location: %s", MasterInternalKubeconfigPath)
 	t.Logf("svc cluster external kubeconfig location: %s", ServiceExternalKubeconfigPath)
 	t.Logf("svc cluster internal kubeconfig location: %s", ServiceInternalKubeconfigPath)
-
-	t.Log("==== installing kubecarrier in the master cluster ====")
-	out, err := exec.Command("git", "rev-parse", "--show-toplevel").Output()
-	require.NoError(t, err, "cannot query git root folder")
-
-	cmd := exec.Command("anchor", "setup")
-	cmd.Env = append(os.Environ(), "KUBECONFIG="+MasterExternalKubeconfigPath)
-	cmd.Dir = strings.TrimSpace(string(out))
-	out, err = cmd.CombinedOutput()
-	t.Log("\n" + string(out))
-	require.NoError(t, err, "cannot install kubecarrier in the master cluster")
-	t.Log("==== successfully installed kubecarrier in the master cluster")
 
 	scheme := runtime.NewScheme()
 	require.NoError(t, clientgoscheme.AddToScheme(scheme), "adding native k8s scheme")
