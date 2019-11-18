@@ -146,6 +146,7 @@ build-image-test:
 	@docker build -t ${IMAGE_ORG}/test bin/image/test
 
 push-image-test: build-image-test
+	@[[ -z $${CI:-} ]] || ( start-docker.sh && docker login -u ${QUAY_IO_USERNAME} -p ${QUAY_IO_PASSWORD} quay.io )
 	@docker push ${IMAGE_ORG}/test
 	@echo pushed ${IMAGE_ORG}/test
 
