@@ -38,21 +38,20 @@ func newRunCommand(log logr.Logger) *cobra.Command {
 			e2e.ServiceExternalKubeconfigPath = cfg.serviceExternalKubeconfigFile
 			e2e.ServiceInternalKubeconfigPath = cfg.serviceInternalKubeconfigFile
 
-			log.Info("installing kubecarrier in the master cluster")
+			log.Info("running \"anchor setup\" to install KubeCarrier in the master cluster")
 			c := exec.Command("anchor", "setup", "--kubeconfig", e2e.MasterExternalKubeconfigPath)
-			c.Stdout = os.Stdout
-			c.Stderr = os.Stderr
+			c.Stdout = cmd.OutOrStdout()
+			c.Stderr = cmd.ErrOrStderr()
 			if err := c.Run(); err != nil {
 				log.Error(err, "cannot install kubecarrier in the master cluster")
 				os.Exit(2)
 			}
 			log.Info("installed kubecarrier in the master cluster")
-
 			if err := setupE2EOperator(log, e2e.ServiceExternalKubeconfigPath, "joke-operator", cmd.OutOrStdout()); err != nil {
 				log.Error(err, "cannot install joke e2e operator in the service cluster")
 				os.Exit(3)
 			}
-
+			log.Info("installed joke e2e operator in the service cluster")
 			testing.Main(func(pat, str string) (b bool, e error) {
 				return true, nil
 			}, e2e.AllTests, nil, nil)
