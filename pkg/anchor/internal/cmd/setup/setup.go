@@ -23,10 +23,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/kubermatic/kubecarrier/pkg/internal/util"
-
-	"k8s.io/client-go/rest"
-
 	"github.com/gernest/wow"
 	"github.com/gernest/wow/spin"
 	"github.com/go-logr/logr"
@@ -39,6 +35,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
+	"k8s.io/client-go/rest"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/config"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
@@ -48,6 +45,7 @@ import (
 	"github.com/kubermatic/kubecarrier/pkg/internal/kustomize"
 	"github.com/kubermatic/kubecarrier/pkg/internal/reconcile"
 	"github.com/kubermatic/kubecarrier/pkg/internal/resources/operator"
+	"github.com/kubermatic/kubecarrier/pkg/internal/util"
 )
 
 type flags struct {
