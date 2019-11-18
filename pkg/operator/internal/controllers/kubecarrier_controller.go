@@ -81,8 +81,7 @@ func (r *KubeCarrierReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error)
 	// 2. Handle the deletion of the KubeCarrier object (Remove the objects that the KubeCarrier owns, and remove the finalizer).
 	if !kubeCarrier.DeletionTimestamp.IsZero() {
 		if err := r.handleDeletion(ctx, kubeCarrier); err != nil {
-			// If the KubeCarrier object is already gone, we jsut ignore the NotFound error.
-			return ctrl.Result{}, client.IgnoreNotFound(err)
+			return ctrl.Result{}, fmt.Errorf("handle deletion: %w", err)
 		}
 		return ctrl.Result{}, nil
 	}
