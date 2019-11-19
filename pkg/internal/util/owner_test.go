@@ -31,7 +31,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 
-	"github.com/kubermatic/kubecarrier/pkg/internal/testutil"
+	"github.com/kubermatic/kubecarrier/pkg/testutil"
 )
 
 func TestOwnerReverseFieldIndex(t *testing.T) {

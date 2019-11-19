@@ -193,7 +193,7 @@ func reconcileOperator(ctx context.Context, log logr.Logger, c client.Client, ku
 
 		deployment := &appsv1.Deployment{
 			ObjectMeta: metav1.ObjectMeta{
-				Name:      "kubecarrier-operator-operator",
+				Name:      "kubecarrier-operator-manager",
 				Namespace: kubecarrierNamespaceName,
 			},
 		}

@@ -94,7 +94,7 @@ type KubeCarrierCondition struct {
 }
 
 // GetCondition returns the Condition of the given condition type, if it exists.
-func (s *KubeCarrierStatus) GetCondition(t KubeCarrierConditionType) (exists bool, condition KubeCarrierCondition) {
+func (s *KubeCarrierStatus) GetCondition(t KubeCarrierConditionType) (condition KubeCarrierCondition, exists bool) {
 	for _, cond := range s.Conditions {
 		if cond.Type == t {
 			condition = cond

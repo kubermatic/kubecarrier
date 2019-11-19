@@ -1,7 +1,0 @@
-version: "2"
-domain: kubecarrier.io
-repo: github.com/kubermatic/kubecarrier
-resources:
-- group: operator
-  version: v1alpha1
-  kind: KubeCarrier

@@ -193,7 +193,7 @@ func (r *KubeCarrierReconciler) reconcileOwnedObjects(ctx context.Context, log l
 // updateKubeCarrierStatus updates the Status of the KubeCarrier object if needed.
 func (r *KubeCarrierReconciler) updateKubeCarrierStatus(ctx context.Context, kubeCarrier *operatorv1alpha1.KubeCarrier, deploymentIsReady bool) error {
 	var updateStatus bool
-	_, readyCondition := kubeCarrier.Status.GetCondition(operatorv1alpha1.KubeCarrierReady)
+	readyCondition, _ := kubeCarrier.Status.GetCondition(operatorv1alpha1.KubeCarrierReady)
 	if !deploymentIsReady && readyCondition.Status != operatorv1alpha1.ConditionFalse {
 		updateStatus = true
 		kubeCarrier.Status.ObservedGeneration = kubeCarrier.Generation

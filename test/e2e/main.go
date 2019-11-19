@@ -20,15 +20,21 @@ import (
 	"context"
 	"testing"
 
+	"github.com/go-logr/logr"
+
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 	corev1 "k8s.io/api/core/v1"
+	rbacv1 "k8s.io/api/rbac/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/tools/clientcmd"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/client/apiutil"
+
+	operatorv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/operator/v1alpha1"
+	"github.com/kubermatic/kubecarrier/pkg/testutil"
+	//"sigs.k8s.io/controller-runtime/pkg/client/apiutil"
 )
 
 var (
@@ -42,55 +48,67 @@ var (
 
 func init() {
 	AllTests = append(AllTests, testing.InternalTest{
-		Name: "VerifyConfig",
+		Name: "E2ESuite",
 		F: func(t *testing.T) {
-			suite.Run(t, new(VerifyConfig))
+			suite.Run(t, new(E2ESuite))
 		},
 	})
 }
 
-type VerifyConfig struct {
+type E2ESuite struct {
 	suite.Suite
+	log logr.Logger
+
 	masterClient  client.Client
 	serviceClient client.Client
+
+	masterScheme  *runtime.Scheme
+	serviceScheme *runtime.Scheme
 }
 
-var _ suite.SetupAllSuite = (*VerifyConfig)(nil)
+var _ suite.SetupAllSuite = (*E2ESuite)(nil)
 
-func (suite *VerifyConfig) SetupSuite() {
+func (suite *E2ESuite) SetupSuite() {
 	t := suite.T()
 	t.Logf("master cluster external kubeconfig location: %s", MasterExternalKubeconfigPath)
 	t.Logf("master cluster internal kubeconfig location: %s", MasterInternalKubeconfigPath)
 	t.Logf("svc cluster external kubeconfig location: %s", ServiceExternalKubeconfigPath)
 	t.Logf("svc cluster internal kubeconfig location: %s", ServiceInternalKubeconfigPath)
 
-	scheme := runtime.NewScheme()
-	require.NoError(t, clientgoscheme.AddToScheme(scheme), "adding native k8s scheme")
+	suite.masterScheme = runtime.NewScheme()
+	require.NoError(t, clientgoscheme.AddToScheme(suite.masterScheme), "adding native k8s scheme")
+	require.NoError(t, operatorv1alpha1.AddToScheme(suite.masterScheme), "adding KubeCarrier operator scheme")
+	require.NoError(t, rbacv1.AddToScheme(suite.masterScheme), "adding KubeCarrier operator scheme")
+
+	//suite.serviceScheme = runtime.NewScheme()
+	//require.NoError(t, clientgoscheme.AddToScheme(suite.serviceScheme), "adding native k8s scheme")
 
 	{
 		cfg, err := clientcmd.BuildConfigFromFlags("", MasterExternalKubeconfigPath)
 		t.Logf("master external kubeconfig location: %s", MasterExternalKubeconfigPath)
 		require.NoError(t, err, "building rest config")
 		suite.masterClient, err = client.New(cfg, client.Options{
-			Scheme: scheme,
+			Scheme: suite.masterScheme,
 		})
 		require.NoError(t, err)
 	}
 
-	{
-		cfg, err := clientcmd.BuildConfigFromFlags("", ServiceExternalKubeconfigPath)
-		require.NoError(t, err, "building rest config")
-		mapper, err := apiutil.NewDiscoveryRESTMapper(cfg)
-		require.NoError(t, err)
-		suite.serviceClient, err = client.New(cfg, client.Options{
-			Scheme: scheme,
-			Mapper: mapper,
-		})
-		require.NoError(t, err)
-	}
+	//{
+	//	cfg, err := clientcmd.BuildConfigFromFlags("", ServiceExternalKubeconfigPath)
+	//	require.NoError(t, err, "building rest config")
+	//	mapper, err := apiutil.NewDiscoveryRESTMapper(cfg)
+	//	require.NoError(t, err)
+	//	suite.serviceClient, err = client.New(cfg, client.Options{
+	//		Scheme: suite.serviceScheme,
+	//		Mapper: mapper,
+	//	})
+	//	require.NoError(t, err)
+	//}
+	//
+	suite.log = testutil.NewLogger(t)
 }
 
-func (suite *VerifyConfig) TestValidMasterKubeconfig() {
+func (suite *E2ESuite) TestValidMasterKubeconfig() {
 	cm := &corev1.ConfigMap{}
 	require.NoError(suite.T(), suite.masterClient.Get(context.Background(), types.NamespacedName{
 		Name:      "cluster-info",
@@ -99,11 +117,11 @@ func (suite *VerifyConfig) TestValidMasterKubeconfig() {
 	suite.T().Logf("cluster-info kubeconfig:\n%s", cm.Data["kubeconfig"])
 }
 
-func (suite *VerifyConfig) TestValidServiceKubeconfig() {
-	cm := &corev1.ConfigMap{}
-	require.NoError(suite.T(), suite.serviceClient.Get(context.Background(), types.NamespacedName{
-		Name:      "cluster-info",
-		Namespace: "kube-public",
-	}, cm), "cannot fetch cluster-info")
-	suite.T().Logf("cluster-info kubeconfig:\n%s", cm.Data["kubeconfig"])
-}
+//func (suite *E2ESuite) TestValidServiceKubeconfig() {
+//	cm := &corev1.ConfigMap{}
+//	require.NoError(suite.T(), suite.serviceClient.Get(context.Background(), types.NamespacedName{
+//		Name:      "cluster-info",
+//		Namespace: "kube-public",
+//	}, cm), "cannot fetch cluster-info")
+//	suite.T().Logf("cluster-info kubeconfig:\n%s", cm.Data["kubeconfig"])
+//}

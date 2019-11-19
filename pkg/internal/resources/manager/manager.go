@@ -29,7 +29,7 @@ import (
 
 // Config holds the config information to generate the kubecarrier controller manager setup.
 type Config struct {
-	// Namespace the kubecarrier controller manager should be deployed into.
+	// Namespace is the kubecarrier controller manager should be deployed into.
 	Namespace string
 }
 
