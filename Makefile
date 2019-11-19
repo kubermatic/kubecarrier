@@ -103,14 +103,14 @@ SVC_KIND_CLUSTER?=kubecarrier-svc-${TEST_ID}
 
 e2e-test: install
 	@docker ps > /dev/null 2>&1 || start-docker.sh || (echo "cannot find running docker daemon nor can start new one" && false)
+	@unset KUBECONFIG
 	@kind create cluster --name=${MASTER_KIND_CLUSTER} || true
 	@kind create cluster --name=${SVC_KIND_CLUSTER} || true
 	@kind get kubeconfig --internal --name=${MASTER_KIND_CLUSTER} > "${HOME}/.kube/internal-kind-config-${MASTER_KIND_CLUSTER}"
 	@kind get kubeconfig --internal --name=${SVC_KIND_CLUSTER} > "${HOME}/.kube/internal-kind-config-${SVC_KIND_CLUSTER}"
+	@kind get kubeconfig --name=${MASTER_KIND_CLUSTER} > "${HOME}/.kube/kind-config-${MASTER_KIND_CLUSTER}"
+	@kind get kubeconfig --name=${SVC_KIND_CLUSTER} > "${HOME}/.kube/kind-config-${SVC_KIND_CLUSTER}"
 	@echo "kind clusters created"
-	@# external kubeconfig location
-	@# "${HOME}/.kube/kind-config-${MASTER_KIND_CLUSTER}"
-	@# "${HOME}/.kube/kind-config-${SVC_KIND_CLUSTER}"
 	@echo "Loading the images"
 	@$(MAKE) KIND_CLUSTER=${MASTER_KIND_CLUSTER} kind-load
 	@go run -ldflags $(LD_FLAGS) ./cmd/anchor e2e-test run --test.v --test-id=${TEST_ID} | richgo testfilter
@@ -146,6 +146,7 @@ build-image-test:
 	@docker build -t ${IMAGE_ORG}/test bin/image/test
 
 push-image-test: build-image-test
+	@env
 	@[[ -z $${CI:-} ]] || ( start-docker.sh && docker login -u ${QUAY_IO_USERNAME} -p ${QUAY_IO_PASSWORD} quay.io )
 	@docker push ${IMAGE_ORG}/test
 	@echo pushed ${IMAGE_ORG}/test
