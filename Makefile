@@ -145,8 +145,6 @@ build-image-test: require_docker
 	@docker build -t ${IMAGE_ORG}/test bin/image/test
 
 push-image-test: build-image-test require_docker
-	@env
-	@[[ -z $${CI:-} ]] || docker login -u ${QUAY_IO_USERNAME} -p ${QUAY_IO_PASSWORD} quay.io
 	@docker push ${IMAGE_ORG}/test
 	@echo pushed ${IMAGE_ORG}/test
 
@@ -167,4 +165,5 @@ kind-load-%: build-image-$$*
 
 require_docker:
 	@docker ps > /dev/null 2>&1 || start-docker.sh || (echo "cannot find running docker daemon nor can start new one" && false)
+	@[[ -z "${QUAY_IO_USERNAME}" ]] || ( echo "logging in to ${QUAY_IO_USERNAME}" && docker login -u ${QUAY_IO_USERNAME} -p ${QUAY_IO_PASSWORD} quay.io )
 .PHONEY: require_docker
