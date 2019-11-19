@@ -19,37 +19,27 @@ package e2e_test
 import (
 	"flag"
 	"os"
-	"os/exec"
 	"testing"
 
 	"github.com/go-logr/logr"
 	"github.com/spf13/cobra"
 
-	"github.com/kubermatic/kubecarrier/test/e2e"
+	"github.com/kubermatic/kubecarrier/test"
+	"github.com/kubermatic/kubecarrier/test/framework"
 )
 
-func newRunCommand(log logr.Logger) *cobra.Command {
+func newRunCommand(log logr.Logger, cfg *framework.Config) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "run",
 		Short: "run all end2end tests",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			e2e.MasterInternalKubeconfigPath = cfg.masterInternalKubeconfigFile
-			e2e.MasterExternalKubeconfigPath = cfg.masterExternalKubeconfigFile
-			e2e.ServiceExternalKubeconfigPath = cfg.serviceExternalKubeconfigFile
-			e2e.ServiceInternalKubeconfigPath = cfg.serviceInternalKubeconfigFile
-
-			log.Info("running \"anchor setup\" to install KubeCarrier in the master cluster")
-			c := exec.Command("anchor", "setup", "--kubeconfig", e2e.MasterExternalKubeconfigPath)
-			c.Stdout = cmd.OutOrStdout()
-			c.Stderr = cmd.ErrOrStderr()
-			if err := c.Run(); err != nil {
-				log.Error(err, "cannot install kubecarrier in the master cluster")
-				os.Exit(2)
+			tests, err := test.AllTests(*cfg)
+			if err != nil {
+				return err
 			}
-			log.Info("installed kubecarrier in the master cluster")
 			testing.Main(func(pat, str string) (b bool, e error) {
 				return true, nil
-			}, e2e.AllTests, nil, nil)
+			}, tests, nil, nil)
 			return nil
 		},
 	}
