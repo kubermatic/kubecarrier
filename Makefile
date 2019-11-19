@@ -150,13 +150,13 @@ push-image-test: build-image-test require_docker
 
 .SECONDEXPANSION:
 # copy binary in new folder, so docker build is only sending the binary to the docker deamon
-build-image-%: bin/linux_amd64/$$*
+build-image-%: bin/linux_amd64/$$* require_docker
 	@mkdir -p bin/image/$*
 	@mv bin/linux_amd64/$* bin/image/$*
 	@cp -a config/dockerfiles/$*.Dockerfile bin/image/$*/Dockerfile
 	@docker build -t ${IMAGE_ORG}/$*:${VERSION} bin/image/$*
 
-push-image-%: build-image-$$*
+push-image-%: build-image-$$* require_docker
 	@docker push ${IMAGE_ORG}/$*:${VERSION}
 	@echo pushed ${IMAGE_ORG}/$*:${VERSION}
 
