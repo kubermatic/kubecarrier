@@ -85,13 +85,13 @@ func run(flags *flags, log logr.Logger) {
 
 	// Field Index
 	if err := util.AddOwnerReverseFieldIndex(
-		mgr.GetFieldIndexer(), ctrl.Log.WithName("fieldindex"), &rbacv1.ClusterRole{},
+		mgr.GetFieldIndexer(), ctrl.Log.WithName("fieldindex").WithName("ClusterRole"), &rbacv1.ClusterRole{},
 	); err != nil {
 		log.Error(fmt.Errorf("cannot add ClusterRole owner field indexer: %w", err), "unable to start manager")
 		os.Exit(1)
 	}
 	if err := util.AddOwnerReverseFieldIndex(
-		mgr.GetFieldIndexer(), ctrl.Log.WithName("fieldindex"), &rbacv1.ClusterRoleBinding{},
+		mgr.GetFieldIndexer(), ctrl.Log.WithName("fieldindex").WithName("ClusterRoleBinding"), &rbacv1.ClusterRoleBinding{},
 	); err != nil {
 		log.Error(fmt.Errorf("cannot add ClusterRoleBinding owner field indexer: %w", err), "unable to start manager")
 		os.Exit(1)

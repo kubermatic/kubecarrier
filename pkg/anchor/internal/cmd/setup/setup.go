@@ -129,7 +129,7 @@ func runE(flags *flags, log logr.Logger, cmd *cobra.Command) error {
 		return fmt.Errorf("deploying kubecarrier operator: %w", err)
 	}
 
-	if err := spinner.AttachSpinnerTo(s, "Deploy KubeCarrier Controller Manager", deployKubeCarrier(ctx, ns, conf)); err != nil {
+	if err := spinner.AttachSpinnerTo(s, "Deploy KubeCarrier", deployKubeCarrier(ctx, ns, conf)); err != nil {
 		return fmt.Errorf("deploying kubecarrier controller manager: %w", err)
 	}
 
@@ -269,7 +269,7 @@ func deployKubeCarrier(ctx context.Context, kubeCarrierNamespace *corev1.Namespa
 					return nil
 				}
 			case <-retryDeadlineCtx.Done():
-				return fmt.Errorf("deploying KubeCarrier: KubeCarrier deployment is not available after %v", retryTimeDuration)
+				return fmt.Errorf("deploying KubeCarrier: KubeCarrier is not ready after %v", retryTimeDuration)
 			}
 		}
 	}
