@@ -14,7 +14,7 @@
 
 FROM ubuntu:18.04
 
-RUN apt-get update && apt-get -y install \
+RUN apt-get -qq update && apt-get -qqy install \
   apt-transport-https \
   build-essential \
   ca-certificates \
@@ -28,7 +28,7 @@ RUN apt-get update && apt-get -y install \
   && rm -rf /var/lib/apt/lists/*
 
 RUN curl -fsSL https://get.docker.com | sh
-RUN curl -L --output /usr/local/bin/kubectl https://storage.googleapis.com/kubernetes-release/release/v1.16.0/bin/linux/amd64/kubectl && chmod a+x /usr/local/bin/kubectl
+RUN curl -sL --output /usr/local/bin/kubectl https://storage.googleapis.com/kubernetes-release/release/v1.16.0/bin/linux/amd64/kubectl && chmod a+x /usr/local/bin/kubectl
 RUN curl -sL https://dl.google.com/go/go1.13.4.linux-amd64.tar.gz | tar -C /usr/local -xz
 ENV PATH=${PATH}:/usr/local/go/bin:/root/go/bin
 RUN go env
