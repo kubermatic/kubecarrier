@@ -33,12 +33,16 @@ else
 GOBIN=$(shell go env GOBIN)
 endif
 
+COMPONENTS = operator manager tender anchor
+
+ee: $(addprefix manifests-, $(COMPONENTS))
+	echo $(EE)
+
 all: \
 	bin/linux_amd64/anchor \
 	bin/darwin_amd64/anchor \
 	bin/windows_amd64/anchor \
 	bin/linux_amd64/operator \
-	bin/linux_amd64/manager
 
 bin/linux_amd64/%: GOARGS = GOOS=linux GOARCH=amd64
 bin/darwin_amd64/%: GOARGS = GOOS=darwin GOARCH=amd64
@@ -70,9 +74,7 @@ install-%: manifests-%
 	kubectl apply -f config/$*/crd/bases
 
 # Generate manifests e.g. CRD, RBAC etc.
-manifests: \
-	manifests-operator \
-	manifests-manager
+manifests: $(addprefix manifests-, $(COMPONENTS))
 
 manifests-%: controller-gen
 	$(CONTROLLER_GEN) $(CRD_OPTIONS) rbac:roleName=manager-role webhook paths="./..." output:crd:artifacts:config=config/$*/crd/bases output:rbac:artifacts:config=config/$*/rbac output:webhook:artifacts:config=config/$*/webhook
@@ -130,16 +132,12 @@ lint:
 tidy:
 	go mod tidy
 
-push-images: \
-	push-image-operator
+push-images: $(addprefix push-image-, $(COMPONENTS))
 
 # build all container images except the test image
-build-images: \
-	build-image-operator
+build-images: $(addprefix build-image-, $(COMPONENTS))
 
-kind-load: \
-	kind-load-operator \
-	kind-load-manager
+kind-load: $(addprefix kind-load-, $(COMPONENTS))
 
 build-image-test:
 	@mkdir -p bin/image/test
@@ -159,7 +157,8 @@ build-image-%: bin/linux_amd64/$$*
 	@mkdir -p bin/image/$*
 	@mv bin/linux_amd64/$* bin/image/$*
 	@cp -a config/dockerfiles/$*.Dockerfile bin/image/$*/Dockerfile
-	@docker build -t ${IMAGE_ORG}/$*:${VERSION} bin/image/$*
+	@docker build -q -t ${IMAGE_ORG}/$*:${VERSION} bin/image/$*
+	@echo built ${IMAGE_ORG}/$*:${VERSION}
 
 push-image-%: build-image-$$*
 	@docker push ${IMAGE_ORG}/$*:${VERSION}
