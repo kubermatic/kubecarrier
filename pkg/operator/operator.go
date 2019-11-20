@@ -20,9 +20,6 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/kubermatic/kubecarrier/pkg/internal/kustomize"
-	"github.com/kubermatic/kubecarrier/pkg/internal/util"
-
 	"github.com/go-logr/logr"
 	"github.com/spf13/cobra"
 	rbacv1 "k8s.io/api/rbac/v1"
@@ -32,6 +29,8 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 
 	operatorv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/operator/v1alpha1"
+	"github.com/kubermatic/kubecarrier/pkg/internal/kustomize"
+	"github.com/kubermatic/kubecarrier/pkg/internal/util"
 	"github.com/kubermatic/kubecarrier/pkg/operator/internal/controllers"
 )
 
