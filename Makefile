@@ -35,9 +35,6 @@ endif
 
 COMPONENTS = operator manager tender anchor
 
-ee: $(addprefix manifests-, $(COMPONENTS))
-	echo $(EE)
-
 all: \
 	bin/linux_amd64/anchor \
 	bin/darwin_amd64/anchor \
