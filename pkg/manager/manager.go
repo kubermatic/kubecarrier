@@ -14,24 +14,17 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package operator
+package manager
 
 import (
-	"fmt"
 	"os"
 
 	"github.com/go-logr/logr"
 	"github.com/spf13/cobra"
-	rbacv1 "k8s.io/api/rbac/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 	ctrl "sigs.k8s.io/controller-runtime"
-
-	operatorv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/operator/v1alpha1"
-	"github.com/kubermatic/kubecarrier/pkg/internal/kustomize"
-	"github.com/kubermatic/kubecarrier/pkg/internal/util"
-	"github.com/kubermatic/kubecarrier/pkg/operator/internal/controllers"
 )
 
 type flags struct {
@@ -45,28 +38,26 @@ var (
 
 func init() {
 	_ = clientgoscheme.AddToScheme(scheme)
-	_ = operatorv1alpha1.AddToScheme(scheme)
-	_ = rbacv1.AddToScheme(scheme)
 	// +kubebuilder:scaffold:scheme
 }
 
 const (
-	componentOperator = "operator"
+	componentManager = "manager"
 )
 
-func NewOperatorCommand(log logr.Logger) *cobra.Command {
+func NewManagerCommand(log logr.Logger) *cobra.Command {
 	flags := &flags{}
 	cmd := &cobra.Command{
 		Args:  cobra.NoArgs,
-		Use:   componentOperator,
-		Short: "deploy kubecarrier operator",
+		Use:   componentManager,
+		Short: "deploy kubecarrier controller manager",
 		Run: func(cmd *cobra.Command, args []string) {
 			run(flags, log)
 		},
 	}
 	cmd.Flags().StringVar(&flags.metricsAddr, "metrics-addr", ":8080", "The address the metric endpoint binds to.")
 	cmd.Flags().BoolVar(&flags.enableLeaderElection, "enable-leader-election", false,
-		"Enable leader election for operator. Enabling this will ensure there is only one active controller manager.")
+		"Enable leader election for controller manager. Enabling this will ensure there is only one active controller manager.")
 	return cmd
 }
 
@@ -82,35 +73,11 @@ func run(flags *flags, log logr.Logger) {
 		os.Exit(1)
 	}
 
-	// Field Index
-	if err := util.AddOwnerReverseFieldIndex(
-		mgr.GetFieldIndexer(), ctrl.Log.WithName("fieldindex").WithName("ClusterRole"), &rbacv1.ClusterRole{},
-	); err != nil {
-		log.Error(fmt.Errorf("cannot add ClusterRole owner field indexer: %w", err), "unable to start manager")
-		os.Exit(1)
-	}
-	if err := util.AddOwnerReverseFieldIndex(
-		mgr.GetFieldIndexer(), ctrl.Log.WithName("fieldindex").WithName("ClusterRoleBinding"), &rbacv1.ClusterRoleBinding{},
-	); err != nil {
-		log.Error(fmt.Errorf("cannot add ClusterRoleBinding owner field indexer: %w", err), "unable to start manager")
-		os.Exit(1)
-	}
-
-	kustomize := kustomize.NewDefaultKustomize()
-	if err = (&controllers.KubeCarrierReconciler{
-		Client:    mgr.GetClient(),
-		Log:       log.WithName("controllers").WithName("KubeCarrier"),
-		Scheme:    mgr.GetScheme(),
-		Kustomize: kustomize,
-	}).SetupWithManager(mgr); err != nil {
-		log.Error(err, "unable to create controller", "controller", "KubeCarrier")
-		os.Exit(1)
-	}
 	// +kubebuilder:scaffold:builder
 
-	log.Info("starting operator")
+	log.Info("starting manager")
 	if err := mgr.Start(ctrl.SetupSignalHandler()); err != nil {
-		log.Error(err, "problem running operator")
+		log.Error(err, "problem running manager")
 		os.Exit(1)
 	}
 }

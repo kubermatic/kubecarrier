@@ -37,7 +37,8 @@ all: \
 	bin/linux_amd64/anchor \
 	bin/darwin_amd64/anchor \
 	bin/windows_amd64/anchor \
-	bin/linux_amd64/operator
+	bin/linux_amd64/operator \
+	bin/linux_amd64/manager
 
 bin/linux_amd64/%: GOARGS = GOOS=linux GOARCH=amd64
 bin/darwin_amd64/%: GOARGS = GOOS=darwin GOARCH=amd64
@@ -76,10 +77,11 @@ install-%: manifests-%
 # Generate manifests e.g. CRD, RBAC etc.
 manifests: \
 	manifests-operator \
-	manifests-e2e
+	manifests-e2e \
+	manifests-manager
 
 manifests-%: controller-gen
-	$(CONTROLLER_GEN) $(CRD_OPTIONS) rbac:roleName=manager-role webhook paths="./pkg/$*/..." output:crd:artifacts:config=config/$*/crd/bases output:rbac:artifacts:config=config/$*/rbac output:webhook:artifacts:config=config/$*/webhook
+	$(CONTROLLER_GEN) $(CRD_OPTIONS) rbac:roleName=manager-role webhook paths="./..." output:crd:artifacts:config=config/$*/crd/bases output:rbac:artifacts:config=config/$*/rbac output:webhook:artifacts:config=config/$*/webhook
 
 # find or download controller-gen
 # download controller-gen if necessary
@@ -100,7 +102,7 @@ vet:
 	go vet ./...
 
 test:
-	CGO_ENABLED=1 richgo test -race -v ./...
+	CGO_ENABLED=1 go test -race -v ./...
 .PHONY: test
 
 TEST_ID?=1
@@ -148,7 +150,8 @@ build-images: \
 	build-image-e2e
 
 kind-load: \
-	kind-load-operator
+	kind-load-operator \
+	kind-load-manager
 
 build-image-test:
 	@mkdir -p bin/image/test

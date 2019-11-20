@@ -20,12 +20,11 @@ import (
 	"context"
 	"fmt"
 
-	apiextensionsv1beta1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
-
 	"github.com/go-logr/logr"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
+	apiextensionsv1beta1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -94,11 +93,13 @@ var unstructuredReconcilers = map[schema.GroupVersionKind]unstructuredReconcileF
 		Version: "v1",
 		Kind:    "ClusterRoleBinding",
 	}: unstructuredReconcileFn(unstructuredClusterRoleBinding),
+
+	// "apiextensions.k8s.io" group
 	schema.GroupVersionKind{
 		Group:   "apiextensions.k8s.io",
 		Version: "v1beta1",
 		Kind:    "CustomResourceDefinition",
-	}: unstructuredReconcileFn(unstructuredCRD),
+	}: unstructuredReconcileFn(unstructuredCustomResourceDefinition),
 }
 
 type unstructuredReconcileFn func(
@@ -219,7 +220,7 @@ func unstructuredClusterRoleBinding(
 	return ClusterRoleBinding(ctx, log, c, obj)
 }
 
-func unstructuredCRD(
+func unstructuredCustomResourceDefinition(
 	ctx context.Context,
 	log logr.Logger,
 	c client.Client,
@@ -232,4 +233,5 @@ func unstructuredCRD(
 	}
 
 	return CustomResourceDefinition(ctx, log, c, obj)
+
 }

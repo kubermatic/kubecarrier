@@ -29,19 +29,23 @@ import (
 	"github.com/spf13/cobra"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
+	apiextensionsv1beta1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
+	"k8s.io/client-go/rest"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/config"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
 	"github.com/kubermatic/kubecarrier/pkg/anchor/internal/spinner"
+	operatorv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/operator/v1alpha1"
 	"github.com/kubermatic/kubecarrier/pkg/internal/kustomize"
 	"github.com/kubermatic/kubecarrier/pkg/internal/reconcile"
 	"github.com/kubermatic/kubecarrier/pkg/internal/resources/operator"
+	"github.com/kubermatic/kubecarrier/pkg/internal/util"
 )
 
 type flags struct {
@@ -59,6 +63,8 @@ const (
 
 func init() {
 	_ = clientgoscheme.AddToScheme(scheme)
+	_ = apiextensionsv1beta1.AddToScheme(scheme)
+	_ = operatorv1alpha1.AddToScheme(scheme)
 }
 
 func NewCommand(log logr.Logger) *cobra.Command {
@@ -123,6 +129,10 @@ func runE(flags *flags, log logr.Logger, cmd *cobra.Command) error {
 		return fmt.Errorf("deploying kubecarrier operator: %w", err)
 	}
 
+	if err := spinner.AttachSpinnerTo(s, "Deploy KubeCarrier", deployKubeCarrier(ctx, ns, conf)); err != nil {
+		return fmt.Errorf("deploying kubecarrier controller manager: %w", err)
+	}
+
 	return nil
 }
 
@@ -183,7 +193,7 @@ func reconcileOperator(ctx context.Context, log logr.Logger, c client.Client, ku
 
 		deployment := &appsv1.Deployment{
 			ObjectMeta: metav1.ObjectMeta{
-				Name:      "kubecarrier-operator",
+				Name:      "kubecarrier-operator-manager",
 				Namespace: kubecarrierNamespaceName,
 			},
 		}
@@ -203,7 +213,7 @@ func reconcileOperator(ctx context.Context, log logr.Logger, c client.Client, ku
 					return fmt.Errorf("geting KubeCarrier operator: %w", err)
 				}
 
-				if deploymentIsAvailable(deployment) {
+				if util.DeploymentIsAvailable(deployment) {
 					return nil
 				}
 
@@ -214,15 +224,53 @@ func reconcileOperator(ctx context.Context, log logr.Logger, c client.Client, ku
 	}
 }
 
-func deploymentIsAvailable(deployment *appsv1.Deployment) bool {
-	if deployment.Status.ObservedGeneration != deployment.Generation {
-		return false
-	}
-	for _, condition := range deployment.Status.Conditions {
-		if condition.Type == appsv1.DeploymentAvailable &&
-			condition.Status == corev1.ConditionTrue {
-			return true
+// deployKubeCarrier deploys the KubeCarrier Object in a kubernetes cluster.
+func deployKubeCarrier(ctx context.Context, kubeCarrierNamespace *corev1.Namespace, conf *rest.Config) func() error {
+	return func() error {
+		// Create another client due to some issues about the restmapper.
+		// The issue is that if you use the client that created before, and here try to create the kubeCarrier,
+		// it will complain about: `no matches for kind "KubeCarrier" in version "operator.kubecarrier.io/v1alpha1"`,
+		// but actually, the scheme is already added to the runtime scheme.
+		// And in the following, reinitializing the client solves the issue.
+		c, err := client.New(conf, client.Options{Scheme: scheme})
+		if err != nil {
+			return fmt.Errorf("creating Kubernetes client: %w", err)
+		}
+
+		kubeCarrier := &operatorv1alpha1.KubeCarrier{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "kubecarrier",
+				Namespace: kubeCarrierNamespace.Name,
+			},
+		}
+
+		retryTicker := time.NewTicker(2 * time.Second)
+		retryTimeDuration := 60 * time.Second
+		retryDeadlineCtx, cancel := context.WithDeadline(ctx, time.Now().Add(retryTimeDuration))
+		defer retryTicker.Stop()
+		defer cancel()
+		for {
+			select {
+			case <-retryTicker.C:
+				if err := c.Get(retryDeadlineCtx, types.NamespacedName{
+					Name:      kubeCarrier.Name,
+					Namespace: kubeCarrier.Namespace,
+				}, kubeCarrier); err != nil {
+					if errors.IsNotFound(err) {
+						if err := c.Create(ctx, kubeCarrier); err != nil {
+							return fmt.Errorf("creating KubeCarrier %w", err)
+						}
+					} else {
+						return fmt.Errorf("geting KubeCarrier: %w", err)
+					}
+				}
+
+				if kubeCarrier.IsReady() {
+					return nil
+				}
+			case <-retryDeadlineCtx.Done():
+				return fmt.Errorf("deploying KubeCarrier: KubeCarrier is not ready after %v", retryTimeDuration)
+			}
 		}
 	}
-	return false
 }
