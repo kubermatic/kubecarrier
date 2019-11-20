@@ -101,7 +101,7 @@ TEST_ID?=1
 MASTER_KIND_CLUSTER?=kubecarrier-${TEST_ID}
 SVC_KIND_CLUSTER?=kubecarrier-svc-${TEST_ID}
 
-e2e-test: install require_docker
+e2e-test: install require-docker
 	@unset KUBECONFIG
 	@kind create cluster --name=${MASTER_KIND_CLUSTER} || true
 	@kind create cluster --name=${SVC_KIND_CLUSTER} || true
@@ -137,33 +137,33 @@ build-images: \
 kind-load: \
 	kind-load-operator
 
-build-image-test: require_docker
+build-image-test: require-docker
 	@mkdir -p bin/image/test
 	@cp -a config/dockerfiles/test.Dockerfile bin/image/test/Dockerfile
 	@cp -a .pre-commit-config.yaml bin/image/test
 	@cp -a go.mod go.sum hack/start-docker.sh bin/image/test
 	@docker build -t ${IMAGE_ORG}/test bin/image/test
 
-push-image-test: build-image-test require_docker
+push-image-test: build-image-test require-docker
 	@docker push ${IMAGE_ORG}/test
 	@echo pushed ${IMAGE_ORG}/test
 
 .SECONDEXPANSION:
 # copy binary in new folder, so docker build is only sending the binary to the docker deamon
-build-image-%: bin/linux_amd64/$$* require_docker
+build-image-%: bin/linux_amd64/$$* require-docker
 	@mkdir -p bin/image/$*
 	@mv bin/linux_amd64/$* bin/image/$*
 	@cp -a config/dockerfiles/$*.Dockerfile bin/image/$*/Dockerfile
 	@docker build -t ${IMAGE_ORG}/$*:${VERSION} bin/image/$*
 
-push-image-%: build-image-$$* require_docker
+push-image-%: build-image-$$* require-docker
 	@docker push ${IMAGE_ORG}/$*:${VERSION}
 	@echo pushed ${IMAGE_ORG}/$*:${VERSION}
 
 kind-load-%: build-image-$$*
 	kind load docker-image ${IMAGE_ORG}/$*:${VERSION} --name=${KIND_CLUSTER}
 
-require_docker:
+require-docker:
 	@docker ps > /dev/null 2>&1 || start-docker.sh || (echo "cannot find running docker daemon nor can start new one" && false)
 	@[[ -z "${QUAY_IO_USERNAME}" ]] || ( echo "logging in to ${QUAY_IO_USERNAME}" && docker login -u ${QUAY_IO_USERNAME} -p ${QUAY_IO_PASSWORD} quay.io )
-.PHONEY: require_docker
+.PHONEY: require-docker
