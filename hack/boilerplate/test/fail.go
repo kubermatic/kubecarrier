@@ -1,5 +1,5 @@
 /*
-Copyright 2019 The Kubecarrier Authors.
+Copyright YEAR The XXX Authors.
 
 fail
 
