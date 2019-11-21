@@ -1,5 +1,5 @@
 /*
-Copyright 2019 The Kubecarrier Authors.
+Copyright 2019 The KubeCarrier Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -19,15 +19,15 @@ package manager
 import (
 	"os"
 
+	"github.com/go-logr/logr"
 	"github.com/spf13/cobra"
 	"k8s.io/apimachinery/pkg/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 	ctrl "sigs.k8s.io/controller-runtime"
-	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
 	catalogv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/catalog/v1alpha1"
-	"github.com/kubermatic/kubecarrier/pkg/manager/internal/controller"
+	"github.com/kubermatic/kubecarrier/pkg/manager/internal/controllers"
 )
 
 type flags struct {
@@ -36,8 +36,7 @@ type flags struct {
 }
 
 var (
-	scheme   = runtime.NewScheme()
-	setupLog = ctrl.Log.WithName("setup")
+	scheme = runtime.NewScheme()
 )
 
 func init() {
@@ -50,14 +49,14 @@ const (
 	componentManager = "manager"
 )
 
-func NewManagerCommand() *cobra.Command {
+func NewManagerCommand(log logr.Logger) *cobra.Command {
 	flags := &flags{}
 	cmd := &cobra.Command{
 		Args:  cobra.NoArgs,
 		Use:   componentManager,
 		Short: "deploy kubecarrier controller manager",
 		Run: func(cmd *cobra.Command, args []string) {
-			run(flags)
+			run(flags, log)
 		},
 	}
 	cmd.Flags().StringVar(&flags.metricsAddr, "metrics-addr", ":8080", "The address the metric endpoint binds to.")
@@ -66,11 +65,7 @@ func NewManagerCommand() *cobra.Command {
 	return cmd
 }
 
-func run(flags *flags) {
-	ctrl.SetLogger(zap.New(func(o *zap.Options) {
-		o.Development = true
-	}))
-
+func run(flags *flags, log logr.Logger) {
 	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
 		Scheme:             scheme,
 		MetricsBindAddress: flags.metricsAddr,
@@ -78,23 +73,23 @@ func run(flags *flags) {
 		Port:               9443,
 	})
 	if err != nil {
-		setupLog.Error(err, "unable to start manager")
+		log.Error(err, "unable to start manager")
 		os.Exit(1)
 	}
 
-	if err = (&controller.TenantReconciler{
+	if err = (&controllers.TenantReconciler{
 		Client: mgr.GetClient(),
 		Log:    ctrl.Log.WithName("controllers").WithName("Tenant"),
 		Scheme: mgr.GetScheme(),
 	}).SetupWithManager(mgr); err != nil {
-		setupLog.Error(err, "unable to create controller", "controller", "Tenant")
+		log.Error(err, "unable to create controller", "controller", "Tenant")
 		os.Exit(1)
 	}
 	// +kubebuilder:scaffold:builder
 
-	setupLog.Info("starting manager")
+	log.Info("starting manager")
 	if err := mgr.Start(ctrl.SetupSignalHandler()); err != nil {
-		setupLog.Error(err, "problem running manager")
+		log.Error(err, "problem running manager")
 		os.Exit(1)
 	}
 }

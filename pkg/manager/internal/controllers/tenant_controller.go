@@ -1,5 +1,5 @@
 /*
-Copyright 2019 The Kubecarrier Authors.
+Copyright 2019 The KubeCarrier Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -14,11 +14,13 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package controller
+package controllers
 
 import (
 	"context"
 	"fmt"
+
+	"github.com/kubermatic/kubecarrier/pkg/internal/util"
 
 	"github.com/go-logr/logr"
 	corev1 "k8s.io/api/core/v1"
@@ -28,11 +30,10 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	catalogv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/catalog/v1alpha1"
-	"github.com/kubermatic/kubecarrier/pkg/manager/internal/util"
 )
 
 const (
-	tenantControllerFinalizer util.Finalizer = "tenant.kubecarrier.io/controller"
+	tenantControllerFinalizer string = "tenant.kubecarrier.io/controller"
 )
 
 // TenantReconciler reconciles a Tenant object
@@ -71,9 +72,9 @@ func (r *TenantReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	}
 
 	// 3. reconcile the Tenant object.
-	// check/add the finali
+	// check/add the finalizer
 	// zer for the Tenant
-	if tenantControllerFinalizer.Insert(tenant) {
+	if util.AddFinalizer(tenant, tenantControllerFinalizer) {
 		// Update the tenant with the finalizer
 		if err := r.Update(ctx, tenant); err != nil {
 			return ctrl.Result{}, fmt.Errorf("updating finalizers: %w", err)
@@ -108,7 +109,7 @@ func (r *TenantReconciler) handleDeletion(ctx context.Context, log logr.Logger, 
 	}
 
 	// 2. The Namespace is completely removed, then we remove the finalizer here.
-	if tenantControllerFinalizer.Delete(tenant) {
+	if util.RemoveFinalizer(tenant, tenantControllerFinalizer) {
 		if err := r.Update(ctx, tenant); err != nil {
 			return fmt.Errorf("updating Tenant Status: %w", err)
 		}

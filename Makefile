@@ -1,4 +1,4 @@
-# Copyright 2019 The Kubecarrier Authors.
+# Copyright 2019 The KubeCarrier Authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,6 +12,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+export CGO_ENABLED:=0
+
+BRANCH=$(shell git rev-parse --abbrev-ref HEAD)
+SHORT_SHA=$(shell git rev-parse --short HEAD)
+VERSION?=${BRANCH}-${SHORT_SHA}
+BUILD_DATE=$(shell date +%s)
+IMAGE_ORG?=quay.io/kubecarrier
+MODULE=github.com/kubermatic/kubecarrier
+LD_FLAGS="-w -X '$(MODULE)/pkg/internal/version.Version=$(VERSION)' -X '$(MODULE)/pkg/internal/version.Branch=$(BRANCH)' -X '$(MODULE)/pkg/internal/version.Commit=$(SHORT_SHA)' -X '$(MODULE)/pkg/internal/version.BuildDate=$(BUILD_DATE)'"
+KIND_CLUSTER?=kubecarrier
+
 # Produce CRDs that work back to Kubernetes 1.11 (no version conversion)
 CRD_OPTIONS ?= "crd:trivialVersions=true"
 
@@ -23,19 +34,36 @@ GOBIN=$(shell go env GOBIN)
 endif
 
 all: \
-	build-manager
+	bin/linux_amd64/anchor \
+	bin/darwin_amd64/anchor \
+	bin/windows_amd64/anchor \
+	bin/linux_amd64/operator \
+	bin/linux_amd64/manager
 
-# Build manager binary
-build-%:
-	GOOS=linux go build -o bin/$* cmd/$*/main.go
+bin/linux_amd64/%: GOARGS = GOOS=linux GOARCH=amd64
+bin/darwin_amd64/%: GOARGS = GOOS=darwin GOARCH=amd64
+bin/windows_amd64/%: GOARGS = GOOS=windows GOARCH=amd64
 
-# Run the controller manager to against the kubernetes cluster.
-run-manager: generate fmt vet install-manager
-	go run ./cmd/manager/main.go
+bin/%: FORCE
+	$(eval COMPONENT=$(shell basename $*))
+	$(GOARGS) go build -ldflags $(LD_FLAGS) -o bin/$* cmd/$(COMPONENT)/main.go
+
+FORCE:
+
+clean: e2e-test-clean
+	rm -rf bin/$*
+.PHONEY: clean
 
 # Generate code
 generate: controller-gen
-	$(CONTROLLER_GEN) object:headerFile=./hack/boilerplate.go.txt paths=./pkg/apis/...
+	go generate ./...
+	$(CONTROLLER_GEN) object:headerFile=./hack/boilerplate/boilerplate.go.txt,year=$(shell date +%Y) paths=./pkg/apis/...
+
+install:
+	go install -ldflags $(LD_FLAGS) ./cmd/anchor
+
+install-crds: \
+	install-operator
 
 # Install CRDs into a cluster
 install-%: manifests-%
@@ -43,10 +71,11 @@ install-%: manifests-%
 
 # Generate manifests e.g. CRD, RBAC etc.
 manifests: \
+	manifests-operator \
 	manifests-manager
 
 manifests-%: controller-gen
-	$(CONTROLLER_GEN) $(CRD_OPTIONS) rbac:roleName=manager webhook paths="./..." output:crd:artifacts:config=config/$*/crd/bases output:rbac:artifacts:config=config/$*/rbac output:webhook:artifacts:config=config/$*/webhook
+	$(CONTROLLER_GEN) $(CRD_OPTIONS) rbac:roleName=manager-role webhook paths="./..." output:crd:artifacts:config=config/$*/crd/bases output:rbac:artifacts:config=config/$*/rbac output:webhook:artifacts:config=config/$*/webhook
 
 # find or download controller-gen
 # download controller-gen if necessary
@@ -67,26 +96,77 @@ vet:
 	go vet ./...
 
 test:
-	echo "running unit tests"
+	CGO_ENABLED=1 go test -race -v ./...
+.PHONY: test
 
-e2e-test:
-	echo "running e2e tests"
+TEST_ID?=1
+MASTER_KIND_CLUSTER?=kubecarrier-${TEST_ID}
+SVC_KIND_CLUSTER?=kubecarrier-svc-${TEST_ID}
 
-pre-commit:
-	pre-commit run -a
+e2e-test: install require-docker
+	@unset KUBECONFIG
+	@kind create cluster --name=${MASTER_KIND_CLUSTER} || true
+	@kind create cluster --name=${SVC_KIND_CLUSTER} || true
+	@kind get kubeconfig --internal --name=${MASTER_KIND_CLUSTER} > "${HOME}/.kube/internal-kind-config-${MASTER_KIND_CLUSTER}"
+	@kind get kubeconfig --internal --name=${SVC_KIND_CLUSTER} > "${HOME}/.kube/internal-kind-config-${SVC_KIND_CLUSTER}"
+	@kind get kubeconfig --name=${MASTER_KIND_CLUSTER} > "${HOME}/.kube/kind-config-${MASTER_KIND_CLUSTER}"
+	@kind get kubeconfig --name=${SVC_KIND_CLUSTER} > "${HOME}/.kube/kind-config-${SVC_KIND_CLUSTER}"
+	@echo "kind clusters created"
+	@echo "Loading the images"
+	@$(MAKE) KIND_CLUSTER=${MASTER_KIND_CLUSTER} kind-load
+	@go run -ldflags $(LD_FLAGS) ./cmd/anchor e2e-test run --test.v --test-id=${TEST_ID} | richgo testfilter
+.PHONY: e2e-test
+
+e2e-test-clean:
+	@kind delete cluster --name=${MASTER_KIND_CLUSTER} || true
+	@kind delete cluster --name=${SVC_KIND_CLUSTER} || true
+.PHONY: e2e-test-clean
 
 lint:
+	pre-commit run -a
 	golangci-lint run ./...
 
 tidy:
 	go mod tidy
 
-build-test-docker-image:
-	@docker build -f ./config/dockerfiles/test.Dockerfile -t ${DOCKER_TEST_IMAGE} ./
-	@echo built ${DOCKER_TEST_IMAGE}
-.PHONEY: build-test-docker-image
+push-images: \
+	push-image-operator
 
-push-test-docker-image: build-test-docker-image
-	@docker push ${DOCKER_TEST_IMAGE}
-	@echo pushed ${DOCKER_TEST_IMAGE}
-.PHONEY: push-test-docker-image
+# build all container images except the test image
+build-images: \
+	build-image-operator
+
+kind-load: \
+	kind-load-operator \
+	kind-load-manager
+
+build-image-test: require-docker
+	@mkdir -p bin/image/test
+	@cp -a config/dockerfiles/test.Dockerfile bin/image/test/Dockerfile
+	@cp -a .pre-commit-config.yaml bin/image/test
+	@cp -a go.mod go.sum hack/start-docker.sh bin/image/test
+	@docker build -t ${IMAGE_ORG}/test bin/image/test
+
+push-image-test: build-image-test require-docker
+	@docker push ${IMAGE_ORG}/test
+	@echo pushed ${IMAGE_ORG}/test
+
+.SECONDEXPANSION:
+# copy binary in new folder, so docker build is only sending the binary to the docker deamon
+build-image-%: bin/linux_amd64/$$* require-docker
+	@mkdir -p bin/image/$*
+	@mv bin/linux_amd64/$* bin/image/$*
+	@cp -a config/dockerfiles/$*.Dockerfile bin/image/$*/Dockerfile
+	@docker build -t ${IMAGE_ORG}/$*:${VERSION} bin/image/$*
+
+push-image-%: build-image-$$* require-docker
+	@docker push ${IMAGE_ORG}/$*:${VERSION}
+	@echo pushed ${IMAGE_ORG}/$*:${VERSION}
+
+kind-load-%: build-image-$$*
+	kind load docker-image ${IMAGE_ORG}/$*:${VERSION} --name=${KIND_CLUSTER}
+
+require-docker:
+	@docker ps > /dev/null 2>&1 || start-docker.sh || (echo "cannot find running docker daemon nor can start new one" && false)
+	@[[ -z "${QUAY_IO_USERNAME}" ]] || ( echo "logging in to ${QUAY_IO_USERNAME}" && docker login -u ${QUAY_IO_USERNAME} -p ${QUAY_IO_PASSWORD} quay.io )
+.PHONEY: require-docker
