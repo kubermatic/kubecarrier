@@ -122,7 +122,7 @@ func (r *TenantReconciler) handleDeletion(ctx context.Context, log logr.Logger, 
 	// 1. Delete the Namespace.
 	namespace, namespaceFound, err := r.getTenantNamespace(ctx, tenant)
 	if err != nil {
-		return fmt.Errorf("getting namespace: %w", err)
+		return fmt.Errorf("getting Tenant namespace: %w", err)
 	}
 
 	if namespaceFound {
@@ -154,6 +154,9 @@ func (r *TenantReconciler) reconcileNamespace(ctx context.Context, log logr.Logg
 	}
 
 	_, namespaceFound, err := r.getTenantNamespace(ctx, tenant)
+	if err != nil {
+		return fmt.Errorf("getting Tenant namespace: %v", err)
+	}
 
 	if !namespaceFound {
 		// When the namespace is not there, we need to make sure to update our Status first,
