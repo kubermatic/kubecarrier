@@ -20,6 +20,8 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/kubermatic/kubecarrier/test/admin"
+
 	"github.com/stretchr/testify/suite"
 
 	"github.com/kubermatic/kubecarrier/test/framework"
@@ -42,9 +44,15 @@ func AllTests(config framework.Config) ([]testing.InternalTest, error) {
 			},
 		},
 		testing.InternalTest{
-			Name: "SetUpSuite",
+			Name: "InstallationSuite",
 			F: func(t *testing.T) {
-				suite.Run(t, &setup.SetUpSuite{Framework: f})
+				suite.Run(t, &setup.InstallationSuite{Framework: f})
+			},
+		},
+		testing.InternalTest{
+			Name: "AdminSuite",
+			F: func(t *testing.T) {
+				suite.Run(t, &admin.AdminSuite{Framework: f})
 			},
 		})
 
