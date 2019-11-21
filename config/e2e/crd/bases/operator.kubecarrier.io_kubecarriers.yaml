@@ -1,4 +1,3 @@
-
 ---
 apiVersion: apiextensions.k8s.io/v1beta1
 kind: CustomResourceDefinition
@@ -6,30 +5,28 @@ metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.2.2
   creationTimestamp: null
-  name: jokes.e2e.kubecarrier.io
+  name: kubecarriers.operator.kubecarrier.io
 spec:
   additionalPrinterColumns:
-    - JSONPath: .status.selectedJoke.text
-      name: Text
-      type: date
     - JSONPath: .status.phase
       name: Status
       type: string
     - JSONPath: .metadata.creationTimestamp
       name: Age
       type: date
-  group: e2e.kubecarrier.io
+  group: operator.kubecarrier.io
   names:
-    kind: Joke
-    listKind: JokeList
-    plural: jokes
-    singular: joke
+    kind: KubeCarrier
+    listKind: KubeCarrierList
+    plural: kubecarriers
+    singular: kubecarrier
   scope: ""
   subresources:
     status: {}
   validation:
     openAPIV3Schema:
-      description: Joke is core element in joke generation operator
+      description: KubeCarrier manages the deployment of the KubeCarrier controller
+        manager.
       properties:
         apiVersion:
           description: 'APIVersion defines the versioned schema of this representation
@@ -44,38 +41,21 @@ spec:
         metadata:
           type: object
         spec:
-          description: JokeSpec defines the desired state of Joke
-          properties:
-            jokeDatabase:
-              description: JokeDatabase specifies all known jokes
-              items:
-                description: JokeCRDConfiguration holds static type information for
-                  the Joke instance.
-                properties:
-                  text:
-                    description: Text of the joke
-                    type: string
-                  type:
-                    description: Type of the Joke
-                    type: string
-                required:
-                  - text
-                  - type
-                type: object
-              type: array
+          description: KubeCarrierSpec defines the desired state of KubeCarrier
           type: object
         status:
-          description: JokeStatus defines the observed state of Joke
+          description: KubeCarrierStatus defines the observed state of KubeCarrier
           properties:
             conditions:
-              description: Conditions is a list of all conditions this Joke is in.
+              description: Conditions represents the latest available observations
+                of a KubeCarrier's current state.
               items:
-                description: JokeCondition contains details for the current condition
-                  of this Joke.
+                description: KubeCarrierCondition contains details for the current
+                  condition of this KubeCarrier.
                 properties:
                   lastTransitionTime:
                     description: LastTransitionTime is the last time the condition
-                      transit from one status to another.
+                      transits from one status to another.
                     format: date-time
                     type: string
                   message:
@@ -87,11 +67,12 @@ spec:
                       last transition.
                     type: string
                   status:
-                    description: Status of the condition, one of ('True', 'False',
-                      'Unknown').
+                    description: Status is the status of the condition, one of ('True',
+                      'False', 'Unknown').
                     type: string
                   type:
-                    description: Type of the condition, currently ('Ready').
+                    description: Type is the type of the KubeCarrier condition, currently
+                      ('Ready').
                     type: string
                 required:
                   - lastTransitionTime
@@ -102,37 +83,24 @@ spec:
                 type: object
               type: array
             observedGeneration:
-              description: The most recent generation observed by the controller.
+              description: ObservedGeneration is the most recent generation observed
+                for this KubeCarrier by the controller.
               format: int64
               type: integer
             phase:
-              description: Phase represents the current lifecycle state of this object
-                consider this field DEPRECATED, it will be removed as soon as there
-                is a mechanism to map conditions to a string when printing the property
-                is only present for display purposes, for everything else use conditions
+              description: DEPRECATED. Phase represents the current lifecycle state
+                of this object. Consider this field DEPRECATED, it will be removed
+                as soon as there is a mechanism to map conditions to strings when
+                printing the property. This is only for display purpose, for everything
+                else use conditions.
               type: string
-            selectedJoke:
-              description: Selected joke represent currently selected joke
-              properties:
-                text:
-                  description: Text of the joke
-                  type: string
-                type:
-                  description: Type of the Joke
-                  type: string
-              required:
-                - text
-                - type
-              type: object
-          required:
-            - selectedJoke
           type: object
       type: object
-  version: v1alpha2
+  version: v1alpha1
   versions:
-  - name: v1alpha2
-    served: true
-    storage: true
+    - name: v1alpha1
+      served: true
+      storage: true
 status:
   acceptedNames:
     kind: ""

@@ -19,21 +19,17 @@ package e2e
 import (
 	"os"
 
-	"go.uber.org/zap/zapcore"
-
-	zap2 "go.uber.org/zap"
-
-	"k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
-
-	"github.com/kubermatic/kubecarrier/pkg/e2e/internal/controllers"
-
 	"github.com/spf13/cobra"
+	zap2 "go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
+	"k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
 	"k8s.io/apimachinery/pkg/runtime"
 	corescheme "k8s.io/client-go/kubernetes/scheme"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
 	e2ev1alpha2 "github.com/kubermatic/kubecarrier/pkg/apis/e2e/v1alpha2"
+	"github.com/kubermatic/kubecarrier/pkg/e2e/internal/controllers"
 )
 
 func NewE2E() *cobra.Command {
@@ -84,7 +80,6 @@ func NewE2E() *cobra.Command {
 			os.Exit(1)
 		}
 
-		// TODO --> try running this & test the conversion webhooks, etc
 		if os.Getenv("ENABLE_WEBHOOKS") != "" {
 			if err = (&e2ev1alpha2.Joke{}).SetupWebhookWithManager(mgr); err != nil {
 				setupLog.Error(err, "unable to create webhook", "webhook", "Joke")
