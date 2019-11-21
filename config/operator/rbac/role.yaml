@@ -43,37 +43,37 @@ rules:
   - update
   - watch
 - apiGroups:
-    - e2e.kubecarrier.io
+  - e2e.kubecarrier.io
   resources:
-    - jokes
+  - jokes
   verbs:
-    - create
-    - delete
-    - get
-    - list
-    - patch
-    - update
-    - watch
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
 - apiGroups:
-    - e2e.kubecarrier.io
+  - e2e.kubecarrier.io
   resources:
-    - jokes/status
+  - jokes/status
   verbs:
-    - get
-    - patch
-    - update
+  - get
+  - patch
+  - update
 - apiGroups:
-    - operator.kubecarrier.io
+  - operator.kubecarrier.io
   resources:
-    - kubecarriers
+  - kubecarriers
   verbs:
-    - create
-    - delete
-    - get
-    - list
-    - patch
-    - update
-    - watch
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
 - apiGroups:
   - operator.kubecarrier.io
   resources:

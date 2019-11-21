@@ -7,53 +7,53 @@ metadata:
   name: manager-role
 rules:
 - apiGroups:
-    - ""
+  - ""
   resources:
-    - serviceaccounts
+  - serviceaccounts
   verbs:
-    - create
-    - delete
-    - get
-    - list
-    - patch
-    - update
-    - watch
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
 - apiGroups:
-    - ""
+  - ""
   resources:
-    - services
+  - services
   verbs:
-    - create
-    - delete
-    - get
-    - list
-    - patch
-    - update
-    - watch
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
 - apiGroups:
-    - apps
+  - apps
   resources:
-    - deployments
+  - deployments
   verbs:
-    - create
-    - delete
-    - get
-    - list
-    - patch
-    - update
-    - watch
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
 - apiGroups:
-    - e2e.kubecarrier.io
+  - e2e.kubecarrier.io
   resources:
-    - jokes
+  - jokes
   verbs:
-    - create
-    - delete
-    - get
-    - list
-    - patch
-    - update
-    - watch
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
 - apiGroups:
   - e2e.kubecarrier.io
   resources:
@@ -63,74 +63,74 @@ rules:
   - patch
   - update
 - apiGroups:
-    - operator.kubecarrier.io
+  - operator.kubecarrier.io
   resources:
-    - kubecarriers
+  - kubecarriers
   verbs:
-    - create
-    - delete
-    - get
-    - list
-    - patch
-    - update
-    - watch
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
 - apiGroups:
-    - operator.kubecarrier.io
+  - operator.kubecarrier.io
   resources:
-    - kubecarriers/status
+  - kubecarriers/status
   verbs:
-    - get
-    - patch
-    - update
+  - get
+  - patch
+  - update
 - apiGroups:
-    - rbac.authorization.k8s.io
+  - rbac.authorization.k8s.io
   resources:
-    - clusterrolebindings
+  - clusterrolebindings
   verbs:
-    - create
-    - delete
-    - get
-    - list
-    - patch
-    - update
-    - watch
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
 - apiGroups:
-    - rbac.authorization.k8s.io
+  - rbac.authorization.k8s.io
   resources:
-    - clusterroles
+  - clusterroles
   verbs:
-    - bind
-    - create
-    - delete
-    - escalate
-    - get
-    - list
-    - patch
-    - update
-    - watch
+  - bind
+  - create
+  - delete
+  - escalate
+  - get
+  - list
+  - patch
+  - update
+  - watch
 - apiGroups:
-    - rbac.authorization.k8s.io
+  - rbac.authorization.k8s.io
   resources:
-    - rolebindings
+  - rolebindings
   verbs:
-    - create
-    - delete
-    - get
-    - list
-    - patch
-    - update
-    - watch
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
 - apiGroups:
-    - rbac.authorization.k8s.io
+  - rbac.authorization.k8s.io
   resources:
-    - roles
+  - roles
   verbs:
-    - bind
-    - create
-    - delete
-    - escalate
-    - get
-    - list
-    - patch
-    - update
-    - watch
+  - bind
+  - create
+  - delete
+  - escalate
+  - get
+  - list
+  - patch
+  - update
+  - watch
