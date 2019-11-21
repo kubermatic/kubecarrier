@@ -17,8 +17,16 @@ limitations under the License.
 package framework
 
 import (
+	"bytes"
 	"fmt"
 	"os"
+	"os/exec"
+	"strings"
+	"testing"
+
+	e2ev1alpha2 "github.com/kubermatic/kubecarrier/pkg/apis/e2e/v1alpha2"
+
+	"github.com/stretchr/testify/require"
 
 	"k8s.io/apimachinery/pkg/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
@@ -94,6 +102,9 @@ func New(c Config) (f *Framework, err error) {
 	if err := clientgoscheme.AddToScheme(f.serviceScheme); err != nil {
 		return nil, fmt.Errorf("adding clientgo scheme to service scheme: %w", err)
 	}
+	if err := e2ev1alpha2.AddToScheme(f.serviceScheme); err != nil {
+		return nil, fmt.Errorf("adding e2e v1alpha2 scheme to service scheme: %w", err)
+	}
 
 	f.serviceConfig, err = clientcmd.BuildConfigFromFlags("", f.config.ServiceExternalKubeconfigPath)
 	if err != nil {
@@ -119,4 +130,12 @@ func (f *Framework) ServiceClient() (client.Client, error) {
 
 func (f *Framework) Config() Config {
 	return f.config
+}
+
+func RunCommand(t *testing.T, name string, args ...string) {
+	cmd := exec.Command(name, args...)
+	out := &bytes.Buffer{}
+	cmd.Stdout = out
+	cmd.Stderr = out
+	require.NoError(t, cmd.Run(), "%s %s returned an error: %s", name, strings.Join(args, " "), out.String())
 }

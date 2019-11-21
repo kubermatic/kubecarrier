@@ -17,10 +17,8 @@ limitations under the License.
 package setup
 
 import (
-	"bytes"
 	"context"
 	"fmt"
-	"os/exec"
 	"time"
 
 	"github.com/stretchr/testify/suite"
@@ -56,17 +54,14 @@ func (s *SetUpSuite) SetupSuite() {
 }
 
 func (s *SetUpSuite) TestSetupAndTeardown() {
+	s.T().Parallel()
 	ctx := context.Background()
 	nn := "kubecarrier-system"
 	prefix := "kubecarrier-manager"
 	kubeCarrier := &operatorv1alpha1.KubeCarrier{}
 	s.Run("anchor setup", func() {
 		s.T().Logf("running \"anchor setup\" to install KubeCarrier in the master cluster")
-		var out bytes.Buffer
-		c := exec.Command("anchor", "setup", "--kubeconfig", s.Framework.Config().MasterExternalKubeconfigPath)
-		c.Stdout = &out
-		c.Stderr = &out
-		s.Require().NoError(c.Run(), "\"anchor setup\" returned an error: %s", out.String())
+		framework.RunCommand(s.T(), "anchor", "setup", "--kubeconfig", s.Framework.Config().MasterExternalKubeconfigPath)
 
 		// Create another client due to some issues about the restmapper.
 		// The issue is that if you use the client that created before, and here try to create the kubeCarrier,
