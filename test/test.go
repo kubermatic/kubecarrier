@@ -20,10 +20,9 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/kubermatic/kubecarrier/test/admin"
-
 	"github.com/stretchr/testify/suite"
 
+	"github.com/kubermatic/kubecarrier/test/admin"
 	"github.com/kubermatic/kubecarrier/test/framework"
 	"github.com/kubermatic/kubecarrier/test/setup"
 	"github.com/kubermatic/kubecarrier/test/verify"

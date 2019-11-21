@@ -20,8 +20,6 @@ import (
 	"context"
 	"testing"
 
-	"github.com/kubermatic/kubecarrier/pkg/testutil"
-
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	corev1 "k8s.io/api/core/v1"
@@ -32,6 +30,7 @@ import (
 	fakeclient "sigs.k8s.io/controller-runtime/pkg/client/fake"
 
 	catalogv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/catalog/v1alpha1"
+	"github.com/kubermatic/kubecarrier/pkg/testutil"
 )
 
 func TestTenantReconciler(t *testing.T) {
