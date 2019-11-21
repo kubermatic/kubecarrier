@@ -74,8 +74,14 @@ manifests: \
 	manifests-operator \
 	manifests-manager
 
-manifests-%: controller-gen
-	$(CONTROLLER_GEN) $(CRD_OPTIONS) rbac:roleName=manager-role webhook paths="./..." output:crd:artifacts:config=config/$*/crd/bases output:rbac:artifacts:config=config/$*/rbac output:webhook:artifacts:config=config/$*/webhook
+manifests-%: controller-gen crdgen-%
+	$(CONTROLLER_GEN) rbac:roleName=manager-role webhook paths="./pkg/$*/..." output:rbac:artifacts:config=config/$*/rbac output:webhook:artifacts:config=config/$*/webhook
+
+crdgen-manager:
+	$(CONTROLLER_GEN) $(CRD_OPTIONS) paths="./pkg/apis/catalog/..." output:crd:artifacts:config=config/manager/crd/bases
+
+crdgen-operator:
+	$(CONTROLLER_GEN) $(CRD_OPTIONS) paths="./pkg/apis/operator/..." output:crd:artifacts:config=config/operator/crd/bases
 
 # find or download controller-gen
 # download controller-gen if necessary
