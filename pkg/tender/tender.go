@@ -17,14 +17,22 @@ limitations under the License.
 package tender
 
 import (
+	"context"
 	"os"
+	"sync"
+	"time"
 
 	"github.com/go-logr/logr"
 	"github.com/spf13/cobra"
-	corev1 "k8s.io/api/core/v1"
 	apiextensionsv1beta1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
 	"k8s.io/apimachinery/pkg/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
+	"k8s.io/client-go/rest"
+	"k8s.io/client-go/tools/clientcmd"
+	ctrl "sigs.k8s.io/controller-runtime"
+
+	corev1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/core/v1alpha1"
+	"github.com/kubermatic/kubecarrier/pkg/tender/internal/controllers"
 )
 
 var (
@@ -49,8 +57,9 @@ type flags struct {
 
 func init() {
 	_ = apiextensionsv1beta1.AddToScheme(serviceScheme)
-	_ = corev1.AddToScheme(serviceScheme)
+	_ = clientgoscheme.AddToScheme(serviceScheme)
 	_ = clientgoscheme.AddToScheme(masterScheme)
+	_ = corev1alpha1.AddToScheme(masterScheme)
 }
 
 func NewTenderCommand(log logr.Logger) *cobra.Command {
@@ -85,5 +94,108 @@ func NewTenderCommand(log logr.Logger) *cobra.Command {
 }
 
 func run(flags *flags, log logr.Logger) {
-	log.Info("starting tender controller")
+	serviceClusterStatusUpdatePeriod, err := time.ParseDuration(flags.serviceClusterStatusUpdatePeriodString)
+	if err != nil {
+		log.Error(err, "unable to parse -heartbeat-period")
+		os.Exit(1)
+	}
+	if flags.serviceClusterName == "" {
+		log.Info("invalid flag", "error", "-service-cluster-name is required")
+		os.Exit(1)
+	}
+	if flags.providerNamespace == "" {
+		log.Info("invalid flag", "error", "-provider-namespace is required")
+		os.Exit(1)
+	}
+
+	// KubeCarrier cluster manager
+	masterCfg := ctrl.GetConfigOrDie()
+	var serviceCfg *rest.Config
+	if flags.serviceKubeConfig == "" {
+		log.Info("no serviceKubeConfig given, asuming same-cluster")
+		serviceCfg = masterCfg
+	} else {
+		serviceCfg, err = clientcmd.BuildConfigFromFlags(flags.serviceMaster, flags.serviceKubeConfig)
+		if err != nil {
+			log.Error(err, "unable to set up service cluster client config")
+			os.Exit(1)
+		}
+	}
+
+	// Service cluster setup
+	serviceMgr, err := ctrl.NewManager(serviceCfg, ctrl.Options{
+		Scheme:             serviceScheme,
+		MetricsBindAddress: flags.serviceMetricsAddr,
+	})
+	if err != nil {
+		log.Error(err, "unable to start manager for service cluster")
+		os.Exit(1)
+	}
+
+	// Master cluster setup
+	masterMgr, err := ctrl.NewManager(masterCfg, ctrl.Options{
+		Scheme:                  masterScheme,
+		MetricsBindAddress:      flags.masterMetricsAddr,
+		LeaderElection:          flags.enableLeaderElection,
+		LeaderElectionNamespace: flags.providerNamespace,
+		LeaderElectionID:        "tender-" + flags.serviceClusterName,
+		Namespace:               flags.providerNamespace,
+	})
+	if err != nil {
+		log.Error(err, "unable to start manager for master cluster")
+		os.Exit(1)
+	}
+
+	// Register Controllers
+
+	// ServiceCluster
+	if err = (&controllers.ServiceClusterReconciler{
+		Log: ctrl.Log.WithName("controllers").WithName("ServiceCluster"),
+
+		MasterClient:       masterMgr.GetClient(),
+		ServiceClient:      serviceMgr.GetClient(),
+		ProviderNamespace:  flags.providerNamespace,
+		ServiceClusterName: flags.serviceClusterName,
+		StatusUpdatePeriod: serviceClusterStatusUpdatePeriod,
+	}).SetupWithManagers(serviceMgr, masterMgr); err != nil {
+		log.Error(err, "unable to create controller", "controller", "ServiceCluster")
+		os.Exit(1)
+	}
+
+	var shutdownWG sync.WaitGroup
+	shutdownWG.Add(3)
+	signalHandler := ctrl.SetupSignalHandler()
+	ctx, cancel := context.WithCancel(context.Background())
+	go func() {
+		defer shutdownWG.Done()
+
+		select {
+		case <-signalHandler:
+			cancel()
+		case <-ctx.Done():
+		}
+	}()
+
+	go func() {
+		defer shutdownWG.Done()
+
+		log.Info("starting manager for master cluster")
+		if err := masterMgr.Start(ctx.Done()); err != nil {
+			log.Error(err, "problem running master cluster manager")
+			cancel()
+		}
+	}()
+
+	go func() {
+		defer shutdownWG.Done()
+
+		log.Info("starting manager for service cluster")
+		if err := serviceMgr.Start(ctx.Done()); err != nil {
+			log.Error(err, "problem running service cluster manager")
+			cancel()
+		}
+	}()
+
+	// wait for all go routines to stop, before exiting main
+	shutdownWG.Wait()
 }
