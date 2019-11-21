@@ -20,10 +20,15 @@ import (
 	"context"
 	"fmt"
 
+	"sigs.k8s.io/controller-runtime/pkg/source"
+
+	"k8s.io/apimachinery/pkg/api/errors"
+
 	"github.com/kubermatic/kubecarrier/pkg/internal/util"
 
 	"github.com/go-logr/logr"
 	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -72,8 +77,7 @@ func (r *TenantReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	}
 
 	// 3. reconcile the Tenant object.
-	// check/add the finalizer
-	// zer for the Tenant
+	// check/add the finalizer for the Tenant
 	if util.AddFinalizer(tenant, tenantControllerFinalizer) {
 		// Update the tenant with the finalizer
 		if err := r.Update(ctx, tenant); err != nil {
@@ -89,12 +93,24 @@ func (r *TenantReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 		}
 	}
 
+	// Reconcile the namespace for the tenant
+	if err := r.reconcileNamespace(ctx, log, tenant); err != nil {
+		return ctrl.Result{}, fmt.Errorf("reconciling namespace: %w", err)
+	}
+
 	return ctrl.Result{}, nil
 }
 
 func (r *TenantReconciler) SetupWithManager(mgr ctrl.Manager) error {
+	owner := &catalogv1alpha1.Tenant{}
+	enqueuer, err := util.EnqueueRequestForOwner(owner, mgr.GetScheme())
+	if err != nil {
+		return fmt.Errorf("cannot create enqueuer for Tenant: %w", err)
+	}
+
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&catalogv1alpha1.Tenant{}).
+		Watches(&source.Kind{Type: &corev1.Namespace{}}, enqueuer).
 		Complete(r)
 }
 
@@ -104,10 +120,19 @@ func (r *TenantReconciler) SetupWithManager(mgr ctrl.Manager) error {
 func (r *TenantReconciler) handleDeletion(ctx context.Context, log logr.Logger, tenant *catalogv1alpha1.Tenant) error {
 
 	// 1. Delete the Namespace.
-	if err := r.deleteNamespace(ctx, log, tenant); err != nil {
-		return err
+	namespace, namespaceFound, err := r.getTenantNamespace(ctx, tenant)
+	if err != nil {
+		return fmt.Errorf("getting namespace: %w", err)
 	}
 
+	if namespaceFound {
+		// If the namespace is found, then it need to be deleted.
+		if err := r.Delete(ctx, namespace); err != nil {
+			return fmt.Errorf("deleting Namespace: %w", err)
+		}
+		// Move to the next reconcile round
+		return nil
+	}
 	// 2. The Namespace is completely removed, then we remove the finalizer here.
 	if util.RemoveFinalizer(tenant, tenantControllerFinalizer) {
 		if err := r.Update(ctx, tenant); err != nil {
@@ -117,20 +142,70 @@ func (r *TenantReconciler) handleDeletion(ctx context.Context, log logr.Logger, 
 	return nil
 }
 
-// deleteNamespace deletes the Namespace completely from the cluster, if it is not completely removed, an error will be returned.
-func (r *TenantReconciler) deleteNamespace(ctx context.Context, log logr.Logger, tenant *catalogv1alpha1.Tenant) error {
-	ns := &corev1.Namespace{}
-	if err := r.Get(ctx, types.NamespacedName{Name: tenant.Status.NamespaceName}, ns); err != nil {
-		// If the namespace is already gone, then we don't return error.
-		return client.IgnoreNotFound(err)
+func (r *TenantReconciler) reconcileNamespace(ctx context.Context, log logr.Logger, tenant *catalogv1alpha1.Tenant) error {
+	ns := &corev1.Namespace{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: tenant.Status.NamespaceName,
+		},
 	}
 
-	// If the namespace is found, then it need to be deleted.
-	if err := r.Delete(ctx, ns); err != nil {
-		return fmt.Errorf("deleting Namespace: %w", err)
+	if _, err := util.InsertOwnerReference(tenant, ns, r.Scheme); err != nil {
+		return fmt.Errorf("setting cross-namespaceed owner reference: %w", err)
 	}
 
-	// We want to make sure the namespace is completely deleted, then we can remove the finalizer, so here we return an error
-	// to move to the next reconcile round.
-	return fmt.Errorf("deleting Namespace: waiting the namespace to be removed/shutdown completely")
+	_, namespaceFound, err := r.getTenantNamespace(ctx, tenant)
+
+	if !namespaceFound {
+		// When the namespace is not there, we need to make sure to update our Status first,
+		// so the rest of the system can act on it.
+		// This is especially important for Reconcilations that are prone to errors, or take a long time.
+		// In this case it's most likely overkill, but still strictly necessary.
+		if readyCondition, _ := tenant.Status.GetCondition(catalogv1alpha1.TenantReady); readyCondition.Status != catalogv1alpha1.ConditionFalse {
+			tenant.Status.ObservedGeneration = tenant.Generation
+			tenant.Status.SetCondition(catalogv1alpha1.TenantCondition{
+				Type:    catalogv1alpha1.TenantReady,
+				Status:  catalogv1alpha1.ConditionFalse,
+				Reason:  "SetupIncomplete",
+				Message: "Tenant setup is incomplete, namespace is missing.",
+			})
+
+			if err = r.Status().Update(ctx, tenant); err != nil {
+				return fmt.Errorf("updating Tenant status: %w", err)
+			}
+
+			// move to the next reconcile round
+			return nil
+		}
+		// Reconcile the namespace
+		if err = r.Create(ctx, ns); err != nil && !errors.IsAlreadyExists(err) {
+			return fmt.Errorf("creating Tenant namespace: %w", err)
+		}
+	}
+
+	if readyCondition, _ := tenant.Status.GetCondition(catalogv1alpha1.TenantReady); readyCondition.Status != catalogv1alpha1.ConditionTrue {
+		// Update Tenant Status
+		tenant.Status.ObservedGeneration = tenant.Generation
+		tenant.Status.SetCondition(catalogv1alpha1.TenantCondition{
+			Type:    catalogv1alpha1.TenantReady,
+			Status:  catalogv1alpha1.ConditionTrue,
+			Reason:  "SetupComplete",
+			Message: "Tenant setup is complete.",
+		})
+		if err := r.Status().Update(ctx, tenant); err != nil {
+			return fmt.Errorf("updating Tenant status: %w", err)
+		}
+	}
+	return nil
+}
+
+// getTenantNamespace is a helper function to perform the Namespace lookup.
+func (r *TenantReconciler) getTenantNamespace(ctx context.Context, tenant *catalogv1alpha1.Tenant) (ns *corev1.Namespace, found bool, err error) {
+	ns = &corev1.Namespace{}
+	if err = r.Get(ctx, types.NamespacedName{Name: tenant.Status.NamespaceName}, ns); err != nil {
+		if errors.IsNotFound(err) {
+			return ns, false, nil
+		}
+		return nil, false, err
+	}
+	return ns, true, nil
 }
