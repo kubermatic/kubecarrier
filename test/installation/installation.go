@@ -55,7 +55,7 @@ func (s *InstallationSuite) SetupSuite() {
 	s.Require().NoError(err, "creating service client")
 }
 
-func (s *InstallationSuite) TestSetupAndTeardown() {
+func (s *InstallationSuite) TestInstallAndTeardown() {
 	ctx := context.Background()
 	nn := "kubecarrier-system"
 	prefix := "kubecarrier-manager"
