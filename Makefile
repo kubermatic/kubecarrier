@@ -85,7 +85,7 @@ e2e-test-clean:
 
 lint:
 	pre-commit run -a
-	golangci-lint run ./...
+	golangci-lint run ./... --deadline=15m
 
 tidy:
 	go mod tidy
