@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package setup
+package installation
 
 import (
 	"bytes"
@@ -55,7 +55,7 @@ func (s *InstallationSuite) SetupSuite() {
 	s.Require().NoError(err, "creating service client")
 }
 
-func (s *InstallationSuite) TestSetupAndTeardown() {
+func (s *InstallationSuite) TestInstallAndTeardown() {
 	ctx := context.Background()
 	nn := "kubecarrier-system"
 	prefix := "kubecarrier-manager"
