@@ -71,7 +71,7 @@ func (s *AdminSuite) TestTenantCreationAndDeletion() {
 		},
 	}
 
-	s.Run("Tenant creation", func() {
+	if !s.Run("Tenant creation", func() {
 		s.Require().NoError(s.masterClient.Create(ctx, tenant), "creating tenant error")
 
 		// Try to get the namespace that created for this tenant.
@@ -88,7 +88,9 @@ func (s *AdminSuite) TestTenantCreationAndDeletion() {
 			}
 			return true, nil
 		}), "getting the namespace for the Tenant error")
-	})
+	}) {
+		s.FailNow("Tenant creation e2e test failed.")
+	}
 
 	s.Run("Tenant deletion", func() {
 		s.Require().NoError(wait.Poll(time.Second, 10*time.Second, func() (done bool, err error) {

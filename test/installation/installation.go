@@ -60,7 +60,7 @@ func (s *InstallationSuite) TestInstallAndTeardown() {
 	nn := "kubecarrier-system"
 	prefix := "kubecarrier-manager"
 	kubeCarrier := &operatorv1alpha1.KubeCarrier{}
-	s.Run("anchor setup", func() {
+	if !s.Run("anchor setup", func() {
 		s.T().Logf("running \"anchor setup\" to install KubeCarrier in the master cluster")
 		var out bytes.Buffer
 		c := exec.Command("anchor", "setup", "--kubeconfig", s.Framework.Config().MasterExternalKubeconfigPath)
@@ -134,7 +134,9 @@ func (s *InstallationSuite) TestInstallAndTeardown() {
 			Namespace: nn,
 		}, service), "get the Service that owned by KubeCarrier object")
 
-	})
+	}) {
+		s.FailNow("anchor setup e2e test failed")
+	}
 
 	s.Run("kubeCarrier teardown", func() {
 		// Delete the KubeCarrier object.
