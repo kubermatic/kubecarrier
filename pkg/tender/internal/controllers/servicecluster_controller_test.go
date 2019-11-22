@@ -53,7 +53,7 @@ func TestServiceClusterReconciler(t *testing.T) {
 		Namespace: "my-provider",
 	}
 
-	t.Run("service cluster registration", func(t *testing.T) {
+	if !t.Run("service cluster registration", func(t *testing.T) {
 		scc.Log = testutil.NewLogger(t)
 		res, err := scc.Reconcile(ctrl.Request{
 			NamespacedName: serviceClusterNN,
@@ -70,9 +70,11 @@ func TestServiceClusterReconciler(t *testing.T) {
 		if assert.True(t, present, "cluster ready condition missing") {
 			assert.Equal(t, corev1alpha1.ConditionTrue, cond.Status)
 		}
-	})
+	}) {
+		t.FailNow()
+	}
 
-	t.Run("service cluster unreachable", func(t *testing.T) {
+	if !t.Run("service cluster unreachable", func(t *testing.T) {
 		scc.Log = testutil.NewLogger(t)
 		ctx := context.Background()
 		require.NoError(t, scc.ServiceClient.Delete(ctx, clusterInfo))
@@ -91,6 +93,8 @@ func TestServiceClusterReconciler(t *testing.T) {
 			assert.Equal(t, "NotFound", cond.Reason)
 			assert.Equal(t, `configmaps "cluster-info" not found`, cond.Message)
 		}
-	})
+	}) {
+		t.FailNow()
+	}
 
 }
