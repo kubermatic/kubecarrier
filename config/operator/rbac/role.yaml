@@ -9,6 +9,18 @@ rules:
 - apiGroups:
   - ""
   resources:
+  - namespaces
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - ""
+  resources:
   - serviceaccounts
   verbs:
   - create
@@ -58,6 +70,26 @@ rules:
   - core.kubecarrier.io
   resources:
   - serviceclusters/status
+  verbs:
+  - get
+  - patch
+  - update
+- apiGroups:
+  - core.kubecarrier.io
+  resources:
+  - tenantassignments
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - core.kubecarrier.io
+  resources:
+  - tenantassignments/status
   verbs:
   - get
   - patch
