@@ -24,6 +24,7 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/spf13/cobra"
+	corev1 "k8s.io/api/core/v1"
 	apiextensionsv1beta1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
 	"k8s.io/apimachinery/pkg/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
@@ -32,6 +33,7 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 
 	corev1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/core/v1alpha1"
+	"github.com/kubermatic/kubecarrier/pkg/internal/util"
 	"github.com/kubermatic/kubecarrier/pkg/tender/internal/controllers"
 )
 
@@ -146,9 +148,16 @@ func run(flags *flags, log logr.Logger) {
 		os.Exit(1)
 	}
 
-	// Register Controllers
+	if err := util.AddOwnerReverseFieldIndex(
+		serviceMgr.GetFieldIndexer(),
+		log.WithName("reverseIndex").WithName("namespace"),
+		&corev1.Namespace{},
+	); err != nil {
+		log.Error(err, "cannot add Namespace owner field indexer")
+		os.Exit(2)
+	}
 
-	// ServiceCluster
+	// Register Controllers
 	if err = (&controllers.ServiceClusterReconciler{
 		Log: ctrl.Log.WithName("controllers").WithName("ServiceCluster"),
 
@@ -159,6 +168,31 @@ func run(flags *flags, log logr.Logger) {
 		StatusUpdatePeriod: serviceClusterStatusUpdatePeriod,
 	}).SetupWithManagers(serviceMgr, masterMgr); err != nil {
 		log.Error(err, "unable to create controller", "controller", "ServiceCluster")
+		os.Exit(1)
+	}
+
+	if err = (&controllers.CRDReferenceReconciler{
+		Log: ctrl.Log.WithName("controllers").WithName("CRDReference"),
+
+		MasterClient: masterMgr.GetClient(),
+		MasterScheme: masterMgr.GetScheme(),
+
+		ServiceClient:      serviceMgr.GetClient(),
+		ServiceClusterName: flags.serviceClusterName,
+	}).SetupWithManagers(serviceMgr, masterMgr); err != nil {
+		log.Error(err, "unable to create controller", "controller", "CRDReference")
+		os.Exit(1)
+	}
+
+	if err = (&controllers.TenantAssignmentReconciler{
+		Log:          ctrl.Log.WithName("controllers").WithName("TenantAssignment"),
+		MasterClient: masterMgr.GetClient(),
+		MasterScheme: masterMgr.GetScheme(),
+
+		ServiceClient:      serviceMgr.GetClient(),
+		ServiceClusterName: flags.serviceClusterName,
+	}).SetupWithManagers(serviceMgr, masterMgr); err != nil {
+		log.Error(err, "unable to create controller", "controller", "TenantAssignment")
 		os.Exit(1)
 	}
 

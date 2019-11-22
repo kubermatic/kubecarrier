@@ -161,4 +161,23 @@ func TestCRUDOwnerMethods(t *testing.T) {
 		assert.False(t, changed)
 		check()
 	}
+
+	for i, own := range []*corev1.Pod{ownerA, ownerB} {
+		t.Logf("===== Removing owner %s =====", own.Name)
+		check := func() {
+			refs, err := getRefs(obj)
+			require.NoError(t, err, "getRefs")
+			assert.Len(t, refs, 1-i, "getRefs")
+		}
+		changed, err := RemoveOwnerReference(own, obj, sc)
+		require.NoError(t, err, "removed owner reference")
+		assert.True(t, changed, "obj changed status")
+		check()
+
+		t.Log("======== idempotent repeat =====")
+		changed, err = RemoveOwnerReference(own, obj, sc)
+		require.NoError(t, err, "removed owner reference")
+		assert.False(t, changed)
+		check()
+	}
 }

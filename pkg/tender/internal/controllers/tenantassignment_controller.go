@@ -20,10 +20,6 @@ import (
 	"context"
 	"fmt"
 
-	"k8s.io/apimachinery/pkg/types"
-
-	"sigs.k8s.io/controller-runtime/pkg/handler"
-
 	corev1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/core/v1alpha1"
 
 	"github.com/kubermatic/kubecarrier/pkg/internal/util"
@@ -53,29 +49,25 @@ type TenantAssignmentReconciler struct {
 // +kubebuilder:rbac:groups="",resources=namespaces,verbs=get;list;watch;create;update;patch;delete
 
 func (r *TenantAssignmentReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
-	var (
-		result ctrl.Result
-		err    error
-		ctx    = context.Background()
-		log    = r.Log.WithValues("tenantassignment", req.NamespacedName)
-	)
+	ctx := context.Background()
+	log := r.Log.WithValues("tenantassignment", req.NamespacedName)
 
 	tenantAssignment := &corev1alpha1.TenantAssignment{}
-	if err = r.MasterClient.Get(ctx, req.NamespacedName, tenantAssignment); err != nil {
-		return result, client.IgnoreNotFound(err)
+	if err := r.MasterClient.Get(ctx, req.NamespacedName, tenantAssignment); err != nil {
+		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
 
 	// handle Deletion
 	if !tenantAssignment.DeletionTimestamp.IsZero() {
-		if err = r.handleDeletion(ctx, log, tenantAssignment); err != nil {
-			return result, fmt.Errorf("handling deletion: %w", err)
+		if err := r.handleDeletion(ctx, log, tenantAssignment); err != nil {
+			return ctrl.Result{}, fmt.Errorf("handling deletion: %w", err)
 		}
-		return result, nil
+		return ctrl.Result{}, nil
 	}
 
 	if util.AddFinalizer(tenantAssignment, tenantAssignmentControllerFinalizer) {
-		if err = r.MasterClient.Update(ctx, tenantAssignment); err != nil {
-			return result, fmt.Errorf("updating %s finalizers: %w", tenantAssignment.Kind, err)
+		if err := r.MasterClient.Update(ctx, tenantAssignment); err != nil {
+			return ctrl.Result{}, fmt.Errorf("updating %s finalizers: %w", tenantAssignment.Kind, err)
 		}
 	}
 
@@ -89,7 +81,7 @@ func (r *TenantAssignmentReconciler) Reconcile(req ctrl.Request) (ctrl.Result, e
 			Reason:  "CreatingNamespace",
 		})
 		if err = r.MasterClient.Status().Update(ctx, tenantAssignment); err != nil {
-			return result, fmt.Errorf("updating TenantAssignment Status: %w", err)
+			return ctrl.Result{}, fmt.Errorf("updating TenantAssignment Status: %w", err)
 		}
 		return ctrl.Result{}, fmt.Errorf("cannot create tenant Assigenment namespace: %w", err)
 	}
@@ -103,9 +95,9 @@ func (r *TenantAssignmentReconciler) Reconcile(req ctrl.Request) (ctrl.Result, e
 		Reason:  "SetupComplete",
 	})
 	if err = r.MasterClient.Status().Update(ctx, tenantAssignment); err != nil {
-		return result, fmt.Errorf("updating TenantAssignment Status: %w", err)
+		return ctrl.Result{}, fmt.Errorf("updating TenantAssignment Status: %w", err)
 	}
-	return result, nil
+	return ctrl.Result{}, nil
 }
 
 func (r *TenantAssignmentReconciler) handleDeletion(ctx context.Context, log logr.Logger, tenantAssignment *corev1alpha1.TenantAssignment) error {
@@ -147,30 +139,16 @@ func (r *TenantAssignmentReconciler) SetupWithManagers(serviceMgr, masterMgr ctr
 		return fmt.Errorf("creating TenantAssignment enqueuer: %w", err)
 	}
 
-	if err := util.AddOwnerReverseFieldIndex(
-		serviceMgr.GetFieldIndexer(),
-		r.Log,
-		&corev1.Namespace{},
-	); err != nil {
-		return fmt.Errorf("cannot add Namespace owner field indexer: %w", err)
-	}
-
 	return ctrl.NewControllerManagedBy(masterMgr).
-		Watches(
-			&source.Kind{Type: &corev1alpha1.TenantAssignment{}},
-			&handler.EnqueueRequestsFromMapFunc{ToRequests: handler.ToRequestsFunc(func(obj handler.MapObject) []ctrl.Request {
-				if tenantAssignment, ok := obj.Object.(*corev1alpha1.TenantAssignment); ok {
-					if tenantAssignment.Spec.ServiceCluster.Name == r.ServiceClusterName {
-						return []ctrl.Request{{types.NamespacedName{
-							Name:      obj.Meta.GetName(),
-							Namespace: obj.Meta.GetNamespace(),
-						}}}
-					}
-					return nil
+		For(&corev1alpha1.TenantAssignment{}).
+		Watches(source.Func(namespaceSource.Start), enqueuer).
+		WithEventFilter(&util.Predicate{Accept: func(obj runtime.Object) bool {
+			if tenantAssignment, ok := obj.(*corev1alpha1.TenantAssignment); ok {
+				if tenantAssignment.Spec.ServiceCluster.Name == r.ServiceClusterName {
+					return true
 				}
-				return nil
-			})},
-		).
-		Watches(namespaceSource, enqueuer).
+			}
+			return false
+		}}).
 		Complete(r)
 }
