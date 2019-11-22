@@ -56,9 +56,13 @@ clean: e2e-test-clean
 .PHONEY: clean
 
 # Generate code
-generate: controller-gen
-	go generate ./...
+generate: controller-gen manifests generate-statik-operator generate-statik-manager
 	$(CONTROLLER_GEN) object:headerFile=./hack/boilerplate/boilerplate.go.txt,year=$(shell date +%Y) paths=./pkg/apis/...
+
+generate-statik-%:
+	statik -src=config/$* -p $* -dest pkg/internal/resources -f -c ''
+	cat hack/boilerplate/boilerplate.generatego.txt | sed s/YEAR/$(shell date +%Y)/ | cat - pkg/internal/resources/$*/statik.go > pkg/internal/resources/$*/statik.go.tmp
+	mv pkg/internal/resources/$*/statik.go.tmp pkg/internal/resources/$*/statik.go
 
 install:
 	go install -ldflags $(LD_FLAGS) ./cmd/anchor
