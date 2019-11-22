@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package setup
+package installation
 
 import (
 	"bytes"
@@ -36,10 +36,10 @@ import (
 	"github.com/kubermatic/kubecarrier/test/framework"
 )
 
-var _ suite.SetupAllSuite = (*SetUpSuite)(nil)
+var _ suite.SetupAllSuite = (*InstallationSuite)(nil)
 
-// SetUpSuite verifies if the KubeCarrier operator and KubeCarrier can be deployed.
-type SetUpSuite struct {
+// InstallationSuite verifies if the KubeCarrier operator and KubeCarrier can be deployed.
+type InstallationSuite struct {
 	suite.Suite
 	*framework.Framework
 
@@ -47,7 +47,7 @@ type SetUpSuite struct {
 	serviceClient client.Client
 }
 
-func (s *SetUpSuite) SetupSuite() {
+func (s *InstallationSuite) SetupSuite() {
 	var err error
 	s.masterClient, err = s.MasterClient()
 	s.Require().NoError(err, "creating master client")
@@ -55,7 +55,7 @@ func (s *SetUpSuite) SetupSuite() {
 	s.Require().NoError(err, "creating service client")
 }
 
-func (s *SetUpSuite) TestSetupAndTeardown() {
+func (s *InstallationSuite) TestSetupAndTeardown() {
 	ctx := context.Background()
 	nn := "kubecarrier-system"
 	prefix := "kubecarrier-manager"
