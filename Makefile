@@ -34,7 +34,7 @@ bin/linux_amd64/%: GOARGS = GOOS=linux GOARCH=amd64
 bin/darwin_amd64/%: GOARGS = GOOS=darwin GOARCH=amd64
 bin/windows_amd64/%: GOARGS = GOOS=windows GOARCH=amd64
 
-bin/%: FORCE generate
+bin/%: FORCE
 	$(eval COMPONENT=$(shell basename $*))
 	$(GOARGS) go build -ldflags $(LD_FLAGS) -o bin/$* cmd/$(COMPONENT)/main.go
 
