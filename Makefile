@@ -12,6 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+SHELL=/bin/bash
+.SHELLFLAGS=-euo pipefail -c
+
 export CGO_ENABLED:=0
 
 BRANCH=$(shell git rev-parse --abbrev-ref HEAD)
@@ -60,11 +63,15 @@ test:
 	CGO_ENABLED=1 go test -race -v ./...
 .PHONY: test
 
+install:
+	go install -ldflags $(LD_FLAGS) ./cmd/anchor
+.PHONY: install
+
 TEST_ID?=1
 MASTER_KIND_CLUSTER?=kubecarrier-${TEST_ID}
 SVC_KIND_CLUSTER?=kubecarrier-svc-${TEST_ID}
 
-e2e-test: require-docker
+e2e-test: install require-docker
 	@unset KUBECONFIG
 	@kind create cluster --name=${MASTER_KIND_CLUSTER} || true
 	@kind create cluster --name=${SVC_KIND_CLUSTER} || true
