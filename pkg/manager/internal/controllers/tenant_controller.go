@@ -85,7 +85,7 @@ func (r *TenantReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	// check/update the NamespaceName
 	if tenant.Status.NamespaceName == "" {
 		tenant.Status.NamespaceName = fmt.Sprintf("tenant-%s", tenant.Name)
-		if err := r.Update(ctx, tenant); err != nil {
+		if err := r.Status().Update(ctx, tenant); err != nil {
 			return ctrl.Result{}, fmt.Errorf("updating NamespaceName: %w", err)
 		}
 	}
@@ -116,20 +116,20 @@ func (r *TenantReconciler) SetupWithManager(mgr ctrl.Manager) error {
 // 2. Remove the finalizer from the tenant object.
 func (r *TenantReconciler) handleDeletion(ctx context.Context, log logr.Logger, tenant *catalogv1alpha1.Tenant) error {
 
-	// 1. Delete the Namespace.
-	namespace, namespaceFound, err := r.getTenantNamespace(ctx, tenant)
-	if err != nil {
-		return fmt.Errorf("getting Tenant namespace: %w", err)
+	ns := &corev1.Namespace{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: tenant.Status.NamespaceName,
+		},
 	}
 
-	if namespaceFound {
-		// If the namespace is found, then it need to be deleted.
-		if err := r.Delete(ctx, namespace); err != nil {
-			return fmt.Errorf("deleting Namespace: %w", err)
-		}
+	if err := r.Delete(ctx, ns); err == nil {
 		// Move to the next reconcile round
 		return nil
+	} else if !errors.IsNotFound(err) {
+		return fmt.Errorf("deleting namespace: %w", err)
 	}
+	// else the error is IsNotFound, so the namespace is gone, and then we remove the finalizer.
+
 	// 2. The Namespace is completely removed, then we remove the finalizer here.
 	if util.RemoveFinalizer(tenant, tenantControllerFinalizer) {
 		if err := r.Update(ctx, tenant); err != nil {
@@ -140,48 +140,44 @@ func (r *TenantReconciler) handleDeletion(ctx context.Context, log logr.Logger, 
 }
 
 func (r *TenantReconciler) reconcileNamespace(ctx context.Context, log logr.Logger, tenant *catalogv1alpha1.Tenant) error {
-	ns := &corev1.Namespace{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: tenant.Status.NamespaceName,
-		},
-	}
+	ns := &corev1.Namespace{}
+	if err := r.Get(ctx, types.NamespacedName{Name: tenant.Status.NamespaceName}, ns); err != nil {
+		if errors.IsNotFound(err) {
+			// When the namespace is not there, we need to make sure to update our Status first,
+			// so the rest of the system can act on it.
+			// This is especially important for Reconcilations that are prone to errors, or take a long time.
+			// In this case it's most likely overkill, but still strictly necessary.
+			if readyCondition, _ := tenant.Status.GetCondition(catalogv1alpha1.TenantReady); readyCondition.Status != catalogv1alpha1.ConditionFalse {
+				tenant.Status.ObservedGeneration = tenant.Generation
+				tenant.Status.SetCondition(catalogv1alpha1.TenantCondition{
+					Type:    catalogv1alpha1.TenantReady,
+					Status:  catalogv1alpha1.ConditionFalse,
+					Reason:  "SetupIncomplete",
+					Message: "Tenant setup is incomplete, namespace is missing.",
+				})
 
-	if _, err := util.InsertOwnerReference(tenant, ns, r.Scheme); err != nil {
-		return fmt.Errorf("setting cross-namespaceed owner reference: %w", err)
-	}
+				if err = r.Status().Update(ctx, tenant); err != nil {
+					return fmt.Errorf("updating Tenant status: %w", err)
+				}
 
-	_, namespaceFound, err := r.getTenantNamespace(ctx, tenant)
-	if err != nil {
-		return fmt.Errorf("getting Tenant namespace: %v", err)
-	}
-
-	if !namespaceFound {
-		// When the namespace is not there, we need to make sure to update our Status first,
-		// so the rest of the system can act on it.
-		// This is especially important for Reconcilations that are prone to errors, or take a long time.
-		// In this case it's most likely overkill, but still strictly necessary.
-		if readyCondition, _ := tenant.Status.GetCondition(catalogv1alpha1.TenantReady); readyCondition.Status != catalogv1alpha1.ConditionFalse {
-			tenant.Status.ObservedGeneration = tenant.Generation
-			tenant.Status.SetCondition(catalogv1alpha1.TenantCondition{
-				Type:    catalogv1alpha1.TenantReady,
-				Status:  catalogv1alpha1.ConditionFalse,
-				Reason:  "SetupIncomplete",
-				Message: "Tenant setup is incomplete, namespace is missing.",
-			})
-
-			if err = r.Status().Update(ctx, tenant); err != nil {
-				return fmt.Errorf("updating Tenant status: %w", err)
+				// move to the next reconcile round
+				return nil
 			}
 
-			// move to the next reconcile round
-			return nil
-		}
-		// Reconcile the namespace
-		if err = r.Create(ctx, ns); err != nil && !errors.IsAlreadyExists(err) {
-			return fmt.Errorf("creating Tenant namespace: %w", err)
+			ns.Name = tenant.Status.NamespaceName
+			if _, err := util.InsertOwnerReference(tenant, ns, r.Scheme); err != nil {
+				return fmt.Errorf("setting cross-namespaceed owner reference: %w", err)
+			}
+			// Reconcile the namespace
+			if err = r.Create(ctx, ns); err != nil && !errors.IsAlreadyExists(err) {
+				return fmt.Errorf("creating Tenant namespace: %w", err)
+			}
+		} else {
+			return fmt.Errorf("getting Tenant namepsace: %w", err)
 		}
 	}
 
+	// No error from the Get, so we update the Tenant Status.
 	if readyCondition, _ := tenant.Status.GetCondition(catalogv1alpha1.TenantReady); readyCondition.Status != catalogv1alpha1.ConditionTrue {
 		// Update Tenant Status
 		tenant.Status.ObservedGeneration = tenant.Generation

@@ -37,7 +37,7 @@ func TestTenantReconciler(t *testing.T) {
 	tenant := &catalogv1alpha1.Tenant{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "test-tenant",
-			Namespace: "test-ns",
+			Namespace: "kubecarrier-system",
 		},
 	}
 
@@ -87,16 +87,16 @@ func TestTenantReconciler(t *testing.T) {
 	t.Run("delete Tenant", func(t *testing.T) {
 		// Setup
 		ts := metav1.Now()
-		tenant.DeletionTimestamp = &ts
-		require.NoError(t, client.Update(ctx, tenant), "unexpected error updating tenant")
+		tenantFound.DeletionTimestamp = &ts
+		require.NoError(t, client.Update(ctx, tenantFound), "unexpected error updating tenant")
 
 		for i := 0; i < 5; i++ {
 			// Run Reconcile multiple times, because
 			// the reconcilation stops after changing the Tenant
 			_, err := r.Reconcile(ctrl.Request{
 				NamespacedName: types.NamespacedName{
-					Name:      tenant.Name,
-					Namespace: tenant.Namespace,
+					Name:      tenantFound.Name,
+					Namespace: tenantFound.Namespace,
 				},
 			})
 			require.NoError(t, err, "unexpected error returned by Reconcile")
@@ -109,7 +109,8 @@ func TestTenantReconciler(t *testing.T) {
 
 		tenantCheck := &catalogv1alpha1.Tenant{}
 		require.NoError(t, client.Get(ctx, types.NamespacedName{
-			Name: tenantFound.Name,
+			Name:      tenantFound.Name,
+			Namespace: tenantFound.Namespace,
 		}, tenantCheck), "cannot check Tenant")
 		assert.Len(t, tenantCheck.Finalizers, 0, "finalizers should have been removed")
 	})
