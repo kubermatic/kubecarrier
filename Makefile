@@ -22,6 +22,8 @@ IMAGE_ORG?=quay.io/kubecarrier
 MODULE=github.com/kubermatic/kubecarrier
 LD_FLAGS="-w -X '$(MODULE)/pkg/internal/version.Version=$(VERSION)' -X '$(MODULE)/pkg/internal/version.Branch=$(BRANCH)' -X '$(MODULE)/pkg/internal/version.Commit=$(SHORT_SHA)' -X '$(MODULE)/pkg/internal/version.BuildDate=$(BUILD_DATE)'"
 KIND_CLUSTER?=kubecarrier
+SHELL=/bin/bash
+.SHELLFLAGS=-euo pipefail -c
 
 all: \
 	bin/linux_amd64/anchor \
@@ -33,6 +35,9 @@ all: \
 bin/linux_amd64/%: GOARGS = GOOS=linux GOARCH=amd64
 bin/darwin_amd64/%: GOARGS = GOOS=darwin GOARCH=amd64
 bin/windows_amd64/%: GOARGS = GOOS=windows GOARCH=amd64
+
+install-cli:
+	$(GOARGS) go install -ldflags $(LD_FLAGS) ./cmd/anchor
 
 bin/%: FORCE
 	$(eval COMPONENT=$(shell basename $*))
@@ -64,7 +69,8 @@ TEST_ID?=1
 MASTER_KIND_CLUSTER?=kubecarrier-${TEST_ID}
 SVC_KIND_CLUSTER?=kubecarrier-svc-${TEST_ID}
 
-e2e-test: require-docker
+e2e-test: install-cli require-docker
+	@set -euo pipefail
 	@unset KUBECONFIG
 	@kind create cluster --name=${MASTER_KIND_CLUSTER} || true
 	@kind create cluster --name=${SVC_KIND_CLUSTER} || true
@@ -118,10 +124,11 @@ build-image-%: bin/linux_amd64/$$* require-docker
 	@mkdir -p bin/image/$*
 	@mv bin/linux_amd64/$* bin/image/$*
 	@cp -a config/dockerfiles/$*.Dockerfile bin/image/$*/Dockerfile
-	@docker build -t ${IMAGE_ORG}/$*:${VERSION} bin/image/$*
+	@docker build -qt ${IMAGE_ORG}/$*:${VERSION} bin/image/$*
+	@echo "built ${IMAGE_ORG}/$*:${VERSION}"
 
 push-image-%: build-image-$$* require-docker
-	@docker push ${IMAGE_ORG}/$*:${VERSION}
+	@docker push -q ${IMAGE_ORG}/$*:${VERSION}
 	@echo pushed ${IMAGE_ORG}/$*:${VERSION}
 
 kind-load-%: build-image-$$*
