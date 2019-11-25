@@ -74,7 +74,9 @@ SVC_KIND_CLUSTER?=kubecarrier-svc-${TEST_ID}
 e2e-test: install require-docker
 	go env
 	echo $${PATH}
-	which anchor || true
+	id
+	echo $${HOME}
+	which anchor
 	@unset KUBECONFIG
 	@kind create cluster --name=${MASTER_KIND_CLUSTER} || true
 	@kind create cluster --name=${SVC_KIND_CLUSTER} || true
