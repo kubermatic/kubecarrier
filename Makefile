@@ -16,6 +16,9 @@ SHELL=/bin/bash
 .SHELLFLAGS=-euo pipefail -c
 
 export CGO_ENABLED:=0
+ifdef CI
+	export GOPATH:=/root/go
+endif
 
 BRANCH=$(shell git rev-parse --abbrev-ref HEAD)
 SHORT_SHA=$(shell git rev-parse --short HEAD)
@@ -64,7 +67,14 @@ test:
 .PHONY: test
 
 install:
+	go env
+	@echo path = $${PATH}
+	@echo GOPATH = $${GOPATH:-GOPATH not defined}
+	pwd
+	id
+	echo $${HOME}
 	go install -ldflags $(LD_FLAGS) ./cmd/anchor
+	which anchor
 .PHONY: install
 
 TEST_ID?=1
@@ -72,14 +82,6 @@ MASTER_KIND_CLUSTER?=kubecarrier-${TEST_ID}
 SVC_KIND_CLUSTER?=kubecarrier-svc-${TEST_ID}
 
 e2e-test: install require-docker
-	go env
-	echo $${GOPATH} || true
-	echo $${GOBIN} || true
-	echo $${PATH}
-	pwd
-	id
-	echo $${HOME}
-	which anchor
 	@unset KUBECONFIG
 	@kind create cluster --name=${MASTER_KIND_CLUSTER} || true
 	@kind create cluster --name=${SVC_KIND_CLUSTER} || true
