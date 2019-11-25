@@ -76,6 +76,7 @@ e2e-test: install require-docker
 	echo $${GOPATH} || true
 	echo $${GOBIN} || true
 	echo $${PATH}
+	pwd
 	id
 	echo $${HOME}
 	which anchor
