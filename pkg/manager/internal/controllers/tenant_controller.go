@@ -193,15 +193,3 @@ func (r *TenantReconciler) reconcileNamespace(ctx context.Context, log logr.Logg
 	}
 	return nil
 }
-
-// getTenantNamespace is a helper function to perform the Namespace lookup.
-func (r *TenantReconciler) getTenantNamespace(ctx context.Context, tenant *catalogv1alpha1.Tenant) (ns *corev1.Namespace, found bool, err error) {
-	ns = &corev1.Namespace{}
-	if err = r.Get(ctx, types.NamespacedName{Name: tenant.Status.NamespaceName}, ns); err != nil {
-		if errors.IsNotFound(err) {
-			return ns, false, nil
-		}
-		return nil, false, err
-	}
-	return ns, true, nil
-}
