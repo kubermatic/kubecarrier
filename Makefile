@@ -73,6 +73,8 @@ SVC_KIND_CLUSTER?=kubecarrier-svc-${TEST_ID}
 
 e2e-test: install require-docker
 	go env
+	echo $${GOPATH} || true
+	echo $${GOBIN} || true
 	echo $${PATH}
 	id
 	echo $${HOME}
