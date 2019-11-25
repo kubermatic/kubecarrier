@@ -18,8 +18,8 @@ SHELL=/bin/bash
 export CGO_ENABLED:=0
 ifdef CI
 	# prow sets up GOPATH really helpfully:
-    # https://github.com/kubernetes/test-infra/issues/9469
-    # https://github.com/kubernetes/test-infra/blob/895df89b7e4238125063157842c191dac6f7e58f/prow/pod-utils/decorate/podspec.go#L474
+	# https://github.com/kubernetes/test-infra/issues/9469
+	# https://github.com/kubernetes/test-infra/blob/895df89b7e4238125063157842c191dac6f7e58f/prow/pod-utils/decorate/podspec.go#L474
 	export GOPATH:=${HOME}/go
 endif
 
