@@ -52,7 +52,7 @@ func TestTenantReconciler(t *testing.T) {
 
 	tenantFound := &catalogv1alpha1.Tenant{}
 	namespaceFound := &corev1.Namespace{}
-	t.Run("create/update Tenant", func(t *testing.T) {
+	if !t.Run("create/update Tenant", func(t *testing.T) {
 		for i := 0; i < 5; i++ {
 			// Run Reconcile multiple times, because
 			// the reconcilation stops after changing the Tenant
@@ -82,7 +82,9 @@ func TestTenantReconciler(t *testing.T) {
 		require.NoError(t, client.Get(ctx, types.NamespacedName{
 			Name: "tenant-" + tenant.Name,
 		}, namespaceFound), "getting namespace error")
-	})
+	}) {
+		t.FailNow()
+	}
 
 	t.Run("delete Tenant", func(t *testing.T) {
 		// Setup

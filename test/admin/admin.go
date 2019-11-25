@@ -37,7 +37,7 @@ import (
 
 var _ suite.SetupAllSuite = (*AdminSuite)(nil)
 
-// SetUpSuite verifies if the KubeCarrier operator and KubeCarrier can be deployed.
+// AdminSuite checks the Tenant/Provider creations and deletions.
 type AdminSuite struct {
 	suite.Suite
 	*framework.Framework
