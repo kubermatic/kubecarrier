@@ -17,7 +17,10 @@ SHELL=/bin/bash
 
 export CGO_ENABLED:=0
 ifdef CI
-	export GOPATH:=/root/go
+	# prow sets up GOPATH really helpfully:
+    # https://github.com/kubernetes/test-infra/issues/9469
+    # https://github.com/kubernetes/test-infra/blob/895df89b7e4238125063157842c191dac6f7e58f/prow/pod-utils/decorate/podspec.go#L474
+	export GOPATH:=${HOME}/go
 endif
 
 BRANCH=$(shell git rev-parse --abbrev-ref HEAD)
@@ -67,14 +70,7 @@ test:
 .PHONY: test
 
 install:
-	go env
-	@echo path = $${PATH}
-	@echo GOPATH = $${GOPATH:-GOPATH not defined}
-	pwd
-	id
-	echo $${HOME}
 	go install -ldflags $(LD_FLAGS) ./cmd/anchor
-	which anchor
 .PHONY: install
 
 TEST_ID?=1
