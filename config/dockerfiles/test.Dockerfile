@@ -57,9 +57,6 @@ COPY go.sum go.sum
 # and so that source changes don't invalidate our downloaded layer
 RUN go mod download
 
-# To allow unprivileged users modifying root's GOPATH if non-root user is using this container
-RUN chmod -R a+rw $(go env GOPATH)
-
 COPY start-docker.sh /usr/local/bin/start-docker.sh
 
 VOLUME /var/lib/docker
