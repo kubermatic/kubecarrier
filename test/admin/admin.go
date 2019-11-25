@@ -17,10 +17,8 @@ limitations under the License.
 package admin
 
 import (
-	"bytes"
 	"context"
 	"fmt"
-	"os/exec"
 	"time"
 
 	"github.com/stretchr/testify/suite"
@@ -50,14 +48,6 @@ func (s *AdminSuite) SetupSuite() {
 	var err error
 	s.serviceClient, err = s.ServiceClient()
 	s.Require().NoError(err, "creating service client")
-
-	s.T().Logf("running \"anchor setup\" to install KubeCarrier in the master cluster")
-	var out bytes.Buffer
-	c := exec.Command("anchor", "setup", "--kubeconfig", s.Framework.Config().MasterExternalKubeconfigPath)
-	c.Stdout = &out
-	c.Stderr = &out
-	s.Require().NoError(c.Run(), "\"anchor setup\" returned an error: %s", out.String())
-
 	s.masterClient, err = s.MasterClient()
 	s.Require().NoError(err, "creating master client")
 }

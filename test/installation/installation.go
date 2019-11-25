@@ -199,3 +199,13 @@ func (s *InstallationSuite) TestInstallAndTeardown() {
 		}, service)), "get the Service that owned by KubeCarrier object")
 	})
 }
+
+func (s *InstallationSuite) TearDownAllSuite() {
+	// reinstall KubeCarrier controller manager for other test phases.
+	s.T().Logf("running \"anchor setup\" to install KubeCarrier in the master cluster")
+	var out bytes.Buffer
+	c := exec.Command("anchor", "setup", "--kubeconfig", s.Framework.Config().MasterExternalKubeconfigPath)
+	c.Stdout = &out
+	c.Stderr = &out
+	s.Require().NoError(c.Run(), "\"anchor setup\" returned an error: %s", out.String())
+}
