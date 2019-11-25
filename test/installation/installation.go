@@ -200,7 +200,7 @@ func (s *InstallationSuite) TestInstallAndTeardown() {
 	})
 }
 
-func (s *InstallationSuite) TearDownAllSuite() {
+func (s *InstallationSuite) TearDownSuite() {
 	// reinstall KubeCarrier controller manager for other test phases.
 	s.T().Logf("running \"anchor setup\" to install KubeCarrier in the master cluster")
 	var out bytes.Buffer
