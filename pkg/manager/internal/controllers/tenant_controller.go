@@ -141,7 +141,7 @@ func (r *TenantReconciler) handleDeletion(ctx context.Context, log logr.Logger, 
 func (r *TenantReconciler) reconcileNamespace(ctx context.Context, log logr.Logger, tenant *catalogv1alpha1.Tenant) error {
 	ns := &corev1.Namespace{}
 	err := r.Get(ctx, types.NamespacedName{Name: tenant.Status.NamespaceName}, ns)
-	if err != nil {
+	if err == nil {
 		// No error from the Get, so we update the Tenant Status.
 		if readyCondition, _ := tenant.Status.GetCondition(catalogv1alpha1.TenantReady); readyCondition.Status != catalogv1alpha1.ConditionTrue {
 			// Update Tenant Status
