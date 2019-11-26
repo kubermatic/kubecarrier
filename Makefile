@@ -70,7 +70,7 @@ test:
 	CGO_ENABLED=1 go test -race -v ./...
 .PHONY: test
 
-install:
+install: generate
 	go install -ldflags $(LD_FLAGS) ./cmd/anchor
 .PHONY: install
 
@@ -94,7 +94,7 @@ e2e-test: install require-docker
 .PHONY: e2e-test
 
 e2e-test-runonly:
-	@go run -ldflags $(LD_FLAGS) ./cmd/anchor e2e-test run --test.v --test-id=${TEST_ID} | richgo testfilter
+	@go run -ldflags $(LD_FLAGS) ./cmd/anchor e2e-test run --test.v --test.failfast --test-id=${TEST_ID} | richgo testfilter
 
 e2e-test-clean:
 	@kind delete cluster --name=${MASTER_KIND_CLUSTER} || true

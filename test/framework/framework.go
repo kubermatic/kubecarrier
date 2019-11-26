@@ -143,3 +143,7 @@ func RunCommand(t *testing.T, name string, args ...string) {
 	cmd.Stderr = out
 	require.NoError(t, cmd.Run(), "%s %s returned an error: %s", name, strings.Join(args, " "), out.String())
 }
+
+func (f *Framework) EnsureJokeOperator(t *testing.T) {
+	RunCommand(t, "anchor", "e2e-test", "setup-e2e-operator", "--kubeconfig", f.Config().ServiceExternalKubeconfigPath)
+}

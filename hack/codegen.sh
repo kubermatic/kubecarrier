@@ -64,3 +64,19 @@ else \
   mv pkg/internal/resources/manager/statik.go.tmp pkg/internal/resources/manager/statik.go
   echo manager: statik regenerated
 fi
+
+# E2E
+# -------
+# CRDs/Webhooks
+$CONTROLLER_GEN crd webhook paths="./pkg/apis/e2e/..." output:crd:artifacts:config=config/internal/e2e/crd/bases output:webhook:artifacts:config=config/internal/e2e/webhook
+# RBAC
+$CONTROLLER_GEN rbac:roleName=e2e-role paths="./pkg/e2e/..." output:rbac:artifacts:config=config/internal/e2e/rbac
+# Statik (run only when file CONTENT has changed)
+if [ -z "$(git status --porcelain config/internal/e2e)" ]; then
+  echo e2e: statik up-to-date
+else \
+  statik -src=config/internal/e2e -p e2e -dest pkg/internal/resources -f -c ''
+  cat hack/boilerplate/boilerplate.generatego.txt | sed s/YEAR/$(date +%Y)/ | cat - pkg/internal/resources/e2e/statik.go > pkg/internal/resources/e2e/statik.go.tmp
+  mv pkg/internal/resources/e2e/statik.go.tmp pkg/internal/resources/e2e/statik.go
+  echo e2e: statik regenerated
+fi

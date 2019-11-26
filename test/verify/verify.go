@@ -20,6 +20,8 @@ import (
 	"context"
 	"time"
 
+	"k8s.io/client-go/tools/clientcmd"
+
 	"github.com/stretchr/testify/suite"
 	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -58,13 +60,21 @@ func (s *VerifySuite) SetupSuite() {
 	s.Require().NoError(err, "creating service client")
 }
 
+func (s *VerifySuite) logHost(kubeconfig []byte) {
+	cfg, err := clientcmd.NewClientConfigFromBytes(kubeconfig)
+	s.Require().NoError(err)
+	c, err := cfg.ClientConfig()
+	s.Require().NoError(err)
+	s.T().Logf("cluster-info kubeconfig host: %s", c.Host)
+}
+
 func (s *VerifySuite) TestValidMasterKubeconfig() {
 	cm := &corev1.ConfigMap{}
 	s.Require().NoError(s.masterClient.Get(context.Background(), types.NamespacedName{
 		Name:      "cluster-info",
 		Namespace: "kube-public",
 	}, cm), "cannot fetch cluster-info")
-	s.T().Logf("cluster-info kubeconfig:\n%s", cm.Data["kubeconfig"])
+	s.logHost([]byte(cm.Data["kubeconfig"]))
 }
 
 func (s *VerifySuite) TestValidServiceKubeconfig() {
@@ -73,12 +83,13 @@ func (s *VerifySuite) TestValidServiceKubeconfig() {
 		Name:      "cluster-info",
 		Namespace: "kube-public",
 	}, cm), "cannot fetch cluster-info")
-	s.T().Logf("cluster-info kubeconfig:\n%s", cm.Data["kubeconfig"])
+	s.logHost([]byte(cm.Data["kubeconfig"]))
 }
 
 func (s *VerifySuite) TestJokeOperatorSuccess() {
 	s.T().Parallel()
-	framework.RunCommand(s.T(), "anchor", "e2e-test", "setup-e2e-operator", "--kubeconfig", s.Framework.Config().ServiceExternalKubeconfigPath)
+	s.EnsureJokeOperator(s.T())
+
 	jokes := []e2ev1alpha2.JokeItem{
 		{
 			// https://twitter.com/wm/status/1172654176742105089?lang=en
@@ -105,7 +116,7 @@ func (s *VerifySuite) TestJokeOperatorSuccess() {
 	}
 	defer s.Assert().NoError(c.Delete(ctx, joke))
 	s.Require().NoError(c.Create(ctx, joke))
-	s.Assert().NoError(wait.Poll(time.Second, 30*time.Second, func() (done bool, err error) {
+	s.Assert().NoError(wait.Poll(time.Second, 5*time.Second, func() (done bool, err error) {
 		if err := c.Get(ctx, types.NamespacedName{
 			Namespace: joke.Namespace,
 			Name:      joke.Name,
@@ -135,7 +146,7 @@ func (s *VerifySuite) TestJokeFailure() {
 	}
 	defer s.Assert().NoError(c.Delete(ctx, joke))
 	s.Require().NoError(c.Create(ctx, joke))
-	s.Require().NoError(wait.Poll(time.Second, 30*time.Second, func() (done bool, err error) {
+	s.Require().NoError(wait.Poll(time.Second, 5*time.Second, func() (done bool, err error) {
 		if err := c.Get(ctx, types.NamespacedName{
 			Namespace: joke.Namespace,
 			Name:      joke.Name,
