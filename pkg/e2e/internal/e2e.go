@@ -80,13 +80,6 @@ func NewE2E() *cobra.Command {
 			os.Exit(1)
 		}
 
-		if os.Getenv("ENABLE_WEBHOOKS") != "" {
-			if err = (&e2ev1alpha2.Joke{}).SetupWebhookWithManager(mgr); err != nil {
-				setupLog.Error(err, "unable to create webhook", "webhook", "Joke")
-				os.Exit(1)
-			}
-		}
-
 		if err := mgr.Start(ctrl.SetupSignalHandler()); err != nil {
 			setupLog.Error(err, "problem running manager")
 			os.Exit(1)
