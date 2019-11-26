@@ -63,7 +63,6 @@ func (s *VerifySuite) TestJokeOperator() {
 				JokeDatabase: jokes,
 			},
 		}
-		defer s.Assert().NoError(c.Delete(ctx, joke))
 		require.NoError(t, c.Create(ctx, joke))
 		assert.NoError(t, wait.Poll(time.Second, 15*time.Second, func() (done bool, err error) {
 			if err := c.Get(ctx, types.NamespacedName{
