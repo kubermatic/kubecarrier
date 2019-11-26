@@ -18,7 +18,11 @@ package verify
 
 import (
 	"context"
+	"testing"
 	"time"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
@@ -28,10 +32,12 @@ import (
 )
 
 func (s *VerifySuite) TestJokeOperator() {
-	s.T().Parallel()
-	s.EnsureJokeOperator(s.T())
+	t := s.T()
+	t.Parallel()
+	s.EnsureJokeOperator(t)
 
-	if !s.Run("success", func() {
+	t.Run("success", func(t *testing.T) {
+		t.Parallel()
 		jokes := []e2ev1alpha2.JokeItem{
 			{
 				// https://twitter.com/wm/status/1172654176742105089?lang=en
@@ -57,8 +63,8 @@ func (s *VerifySuite) TestJokeOperator() {
 			},
 		}
 		defer s.Assert().NoError(c.Delete(ctx, joke))
-		s.Require().NoError(c.Create(ctx, joke))
-		s.Assert().NoError(wait.Poll(time.Second, 30*time.Second, func() (done bool, err error) {
+		require.NoError(t, c.Create(ctx, joke))
+		assert.NoError(t, wait.Poll(time.Second, 30*time.Second, func() (done bool, err error) {
 			if err := c.Get(ctx, types.NamespacedName{
 				Namespace: joke.Namespace,
 				Name:      joke.Name,
@@ -68,12 +74,11 @@ func (s *VerifySuite) TestJokeOperator() {
 			cond, ok := joke.Status.GetCondition(e2ev1alpha2.JokeReady)
 			return ok && cond.Status == e2ev1alpha2.ConditionTrue && joke.Status.ObservedGeneration == joke.Generation, nil
 		}), "joke wasn't ready within the timeframe")
-		s.T().Log("selected joke: " + joke.Status.SelectedJoke.Text)
-	}) {
-		s.T().FailNow()
-	}
+		t.Log("selected joke: " + joke.Status.SelectedJoke.Text)
+	})
 
-	s.Run("failure", func() {
+	t.Run("failure", func(t *testing.T) {
+		t.Parallel()
 		jokes := []e2ev1alpha2.JokeItem{}
 
 		ctx := context.Background()
@@ -88,8 +93,8 @@ func (s *VerifySuite) TestJokeOperator() {
 			},
 		}
 		defer s.Assert().NoError(c.Delete(ctx, joke))
-		s.Require().NoError(c.Create(ctx, joke))
-		s.Require().NoError(wait.Poll(time.Second, 30*time.Second, func() (done bool, err error) {
+		require.NoError(t, c.Create(ctx, joke))
+		require.NoError(t, wait.Poll(time.Second, 30*time.Second, func() (done bool, err error) {
 			if err := c.Get(ctx, types.NamespacedName{
 				Namespace: joke.Namespace,
 				Name:      joke.Name,
@@ -100,6 +105,6 @@ func (s *VerifySuite) TestJokeOperator() {
 			return ok && cond.Status == e2ev1alpha2.ConditionFalse && joke.Status.ObservedGeneration == joke.Generation, nil
 		}), "joke wasn't marked as failed within the timeframe")
 		cond, _ := joke.Status.GetCondition(e2ev1alpha2.JokeReady)
-		s.T().Log("joke status message" + cond.Message)
+		t.Log("joke status message" + cond.Message)
 	})
 }
