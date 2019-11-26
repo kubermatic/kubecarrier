@@ -17,7 +17,7 @@ limitations under the License.
 package manager
 
 import (
-	"os"
+	"fmt"
 
 	"github.com/go-logr/logr"
 	"github.com/spf13/cobra"
@@ -42,7 +42,6 @@ var (
 func init() {
 	_ = clientgoscheme.AddToScheme(scheme)
 	_ = catalogv1alpha1.AddToScheme(scheme)
-	// +kubebuilder:scaffold:scheme
 }
 
 const (
@@ -55,8 +54,8 @@ func NewManagerCommand(log logr.Logger) *cobra.Command {
 		Args:  cobra.NoArgs,
 		Use:   componentManager,
 		Short: "deploy kubecarrier controller manager",
-		Run: func(cmd *cobra.Command, args []string) {
-			run(flags, log)
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return run(flags, log)
 		},
 	}
 	cmd.Flags().StringVar(&flags.metricsAddr, "metrics-addr", ":8080", "The address the metric endpoint binds to.")
@@ -65,7 +64,7 @@ func NewManagerCommand(log logr.Logger) *cobra.Command {
 	return cmd
 }
 
-func run(flags *flags, log logr.Logger) {
+func run(flags *flags, log logr.Logger) error {
 	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
 		Scheme:             scheme,
 		MetricsBindAddress: flags.metricsAddr,
@@ -73,8 +72,7 @@ func run(flags *flags, log logr.Logger) {
 		Port:               9443,
 	})
 	if err != nil {
-		log.Error(err, "unable to start manager")
-		os.Exit(1)
+		return fmt.Errorf("starting manager: %w", err)
 	}
 
 	if err = (&controllers.TenantReconciler{
@@ -82,14 +80,12 @@ func run(flags *flags, log logr.Logger) {
 		Log:    log.WithName("controllers").WithName("Tenant"),
 		Scheme: mgr.GetScheme(),
 	}).SetupWithManager(mgr); err != nil {
-		log.Error(err, "unable to create controller", "controller", "Tenant")
-		os.Exit(1)
+		return fmt.Errorf("creating Tenant controller: %w", err)
 	}
-	// +kubebuilder:scaffold:builder
 
 	log.Info("starting manager")
 	if err := mgr.Start(ctrl.SetupSignalHandler()); err != nil {
-		log.Error(err, "problem running manager")
-		os.Exit(1)
+		return fmt.Errorf("running manager: %w", err)
 	}
+	return nil
 }
