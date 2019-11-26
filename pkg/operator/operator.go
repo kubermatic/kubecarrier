@@ -18,7 +18,6 @@ package operator
 
 import (
 	"fmt"
-	"os"
 
 	"github.com/go-logr/logr"
 	"github.com/spf13/cobra"
@@ -49,7 +48,6 @@ func init() {
 	_ = operatorv1alpha1.AddToScheme(scheme)
 	_ = rbacv1.AddToScheme(scheme)
 	_ = apiextensionsv1beta1.AddToScheme(scheme)
-	// +kubebuilder:scaffold:scheme
 }
 
 const (
@@ -62,8 +60,8 @@ func NewOperatorCommand(log logr.Logger) *cobra.Command {
 		Args:  cobra.NoArgs,
 		Use:   componentOperator,
 		Short: "deploy kubecarrier operator",
-		Run: func(cmd *cobra.Command, args []string) {
-			run(flags, log)
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return run(flags, log)
 		},
 	}
 	cmd.Flags().StringVar(&flags.metricsAddr, "metrics-addr", ":8080", "The address the metric endpoint binds to.")
@@ -72,7 +70,7 @@ func NewOperatorCommand(log logr.Logger) *cobra.Command {
 	return cmd
 }
 
-func run(flags *flags, log logr.Logger) {
+func run(flags *flags, log logr.Logger) error {
 	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
 		Scheme:             scheme,
 		MetricsBindAddress: flags.metricsAddr,
@@ -80,22 +78,19 @@ func run(flags *flags, log logr.Logger) {
 		Port:               9443,
 	})
 	if err != nil {
-		log.Error(err, "unable to start manager")
-		os.Exit(1)
+		return fmt.Errorf("starting manager: %w", err)
 	}
 
 	// Field Index
 	if err := util.AddOwnerReverseFieldIndex(
 		mgr.GetFieldIndexer(), ctrl.Log.WithName("fieldindex").WithName("ClusterRole"), &rbacv1.ClusterRole{},
 	); err != nil {
-		log.Error(fmt.Errorf("cannot add ClusterRole owner field indexer: %w", err), "unable to start manager")
-		os.Exit(1)
+		return fmt.Errorf("cannot add ClusterRole owner field indexer: %w", err)
 	}
 	if err := util.AddOwnerReverseFieldIndex(
 		mgr.GetFieldIndexer(), ctrl.Log.WithName("fieldindex").WithName("ClusterRoleBinding"), &rbacv1.ClusterRoleBinding{},
 	); err != nil {
-		log.Error(fmt.Errorf("cannot add ClusterRoleBinding owner field indexer: %w", err), "unable to start manager")
-		os.Exit(1)
+		return fmt.Errorf("cannot add ClusterRoleBinding owner field indexer: %w", err)
 	}
 
 	kustomize := kustomize.NewDefaultKustomize()
@@ -105,14 +100,12 @@ func run(flags *flags, log logr.Logger) {
 		Scheme:    mgr.GetScheme(),
 		Kustomize: kustomize,
 	}).SetupWithManager(mgr); err != nil {
-		log.Error(err, "unable to create controller", "controller", "KubeCarrier")
-		os.Exit(1)
+		return fmt.Errorf("creating KubeCarrier controller: %w", err)
 	}
-	// +kubebuilder:scaffold:builder
 
 	log.Info("starting operator")
 	if err := mgr.Start(ctrl.SetupSignalHandler()); err != nil {
-		log.Error(err, "problem running operator")
-		os.Exit(1)
+		return fmt.Errorf("running manager: %w", err)
 	}
+	return nil
 }
