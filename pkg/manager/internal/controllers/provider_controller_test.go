@@ -115,5 +115,11 @@ func TestProviderReconciler(t *testing.T) {
 			Namespace: providerFound.Namespace,
 		}, providerCheck), "cannot check Provider")
 		assert.Len(t, providerCheck.Finalizers, 0, "finalizers should have been removed")
+
+		// Check Provider Conditions
+		readyCondition, readyConditionExists := providerCheck.Status.GetCondition(catalogv1alpha1.ProviderReady)
+		assert.True(t, readyConditionExists, "Ready Condition is not set")
+		assert.Equal(t, catalogv1alpha1.ConditionFalse, readyCondition.Status, "Wrong Ready condition.Status")
+		assert.Equal(t, catalogv1alpha1.ProviderTerminatingReason, readyCondition.Reason, "Wrong Reason condition.Status")
 	})
 }

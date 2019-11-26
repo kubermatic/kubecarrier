@@ -54,9 +54,14 @@ type ProviderPhaseType string
 
 // Values of ProviderPhaseType.
 const (
-	ProviderPhaseReady   ProviderPhaseType = "Ready"
-	ProviderPhaseFailed  ProviderPhaseType = "Failed"
-	ProviderPhaseUnknown ProviderPhaseType = "Unknown"
+	ProviderPhaseReady       ProviderPhaseType = "Ready"
+	ProviderPhaseNotReady    ProviderPhaseType = "NotReady"
+	ProviderPhaseUnknown     ProviderPhaseType = "Unknown"
+	ProviderPhaseTerminating ProviderPhaseType = "Terminating"
+)
+
+const (
+	ProviderTerminatingReason = "Deleting"
 )
 
 // updatePhase updates the phase property based on the current conditions
@@ -71,7 +76,11 @@ func (s *ProviderStatus) updatePhase() {
 		case ConditionTrue:
 			s.Phase = ProviderPhaseReady
 		case ConditionFalse:
-			s.Phase = ProviderPhaseFailed
+			if condition.Reason == ProviderTerminatingReason {
+				s.Phase = ProviderPhaseTerminating
+			} else {
+				s.Phase = ProviderPhaseNotReady
+			}
 		case ConditionUnknown:
 			s.Phase = ProviderPhaseUnknown
 		}

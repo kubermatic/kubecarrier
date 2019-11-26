@@ -115,6 +115,22 @@ func (r *ProviderReconciler) SetupWithManager(mgr ctrl.Manager) error {
 // 1. Delete the Namespace that the provider owns.
 // 2. Remove the finalizer from the provider object.
 func (r *ProviderReconciler) handleDeletion(ctx context.Context, log logr.Logger, provider *catalogv1alpha1.Provider) error {
+	// Update the Provider Status to Terminating.
+	readyCondition, _ := provider.Status.GetCondition(catalogv1alpha1.ProviderReady)
+	if readyCondition.Status != catalogv1alpha1.ConditionFalse ||
+		readyCondition.Status == catalogv1alpha1.ConditionFalse && readyCondition.Reason != catalogv1alpha1.ProviderTerminatingReason {
+		provider.Status.ObservedGeneration = provider.Generation
+		provider.Status.SetCondition(catalogv1alpha1.ProviderCondition{
+			Type:    catalogv1alpha1.ProviderReady,
+			Status:  catalogv1alpha1.ConditionFalse,
+			Reason:  catalogv1alpha1.ProviderTerminatingReason,
+			Message: "Provider is being terminated",
+		})
+		if err := r.Status().Update(ctx, provider); err != nil {
+			return fmt.Errorf("updating Provider status: %w", err)
+		}
+	}
+
 	ns := &corev1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: provider.Status.NamespaceName,
