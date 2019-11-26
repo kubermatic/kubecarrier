@@ -75,21 +75,20 @@ func run(flags *flags, log logr.Logger) error {
 		return fmt.Errorf("starting manager: %w", err)
 	}
 
-	if err = (&controllers.ProviderReconciler{
-		Client: mgr.GetClient(),
-		Log:    log.WithName("controllers").WithName("Provider"),
-		Scheme: mgr.GetScheme(),
-	}).SetupWithManager(mgr); err != nil {
-		log.Error(err, "unable to create controller", "controller", "Provider")
-		os.Exit(1)
-	}
-
 	if err = (&controllers.TenantReconciler{
 		Client: mgr.GetClient(),
 		Log:    log.WithName("controllers").WithName("Tenant"),
 		Scheme: mgr.GetScheme(),
 	}).SetupWithManager(mgr); err != nil {
 		return fmt.Errorf("creating Tenant controller: %w", err)
+	}
+
+	if err = (&controllers.ProviderReconciler{
+		Client: mgr.GetClient(),
+		Log:    log.WithName("controllers").WithName("Provider"),
+		Scheme: mgr.GetScheme(),
+	}).SetupWithManager(mgr); err != nil {
+		return fmt.Errorf("creating Provider controller: %w", err)
 	}
 
 	log.Info("starting manager")
