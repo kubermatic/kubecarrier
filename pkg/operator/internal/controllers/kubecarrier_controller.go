@@ -259,14 +259,13 @@ func cleanupClusterRoles(ctx context.Context, c client.Client, ownedBy util.Gene
 // cleanupClusterRoleBindings deletes owned ClusterRoleBindings
 // cleaned is true when all ClusterRoleBindings have been cleaned up.
 func cleanupClusterRoleBindings(ctx context.Context, c client.Client, ownedBy util.GeneralizedListOption) (cleaned bool, err error) {
+	if err := c.DeleteAllOf(ctx, &rbacv1.ClusterRoleBinding{}, ownedBy); err != nil {
+		return false, fmt.Errorf("deleting ClusterRoleBinding: %w", err)
+	}
+
 	clusterRoleBindingList := &rbacv1.ClusterRoleBindingList{}
 	if err := c.List(ctx, clusterRoleBindingList, ownedBy); err != nil {
 		return false, fmt.Errorf("listing ClusterRoleBindings: %w", err)
-	}
-	for _, clusterRoleBinding := range clusterRoleBindingList.Items {
-		if err := c.Delete(ctx, &clusterRoleBinding); err != nil && !errors.IsNotFound(err) {
-			return false, fmt.Errorf("deleting ClusterRoleBinding: %w", err)
-		}
 	}
 	return len(clusterRoleBindingList.Items) == 0, nil
 }

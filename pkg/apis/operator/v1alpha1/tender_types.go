@@ -58,6 +58,10 @@ const (
 	TenderReady TenderConditionType = "Ready"
 )
 
+const (
+	TenderTerminatingReason string = "Terminating"
+)
+
 // TenderCondition contains details for the current condition of this Tender.
 type TenderCondition struct {
 	// LastTransitionTime is the last time the condition transit from one status to another.
@@ -84,7 +88,11 @@ func (s *TenderStatus) updatePhase() {
 		case ConditionTrue:
 			s.Phase = TenderPhaseReady
 		case ConditionFalse:
-			s.Phase = TenderPhaseNotReady
+			if condition.Reason == TenderTerminatingReason {
+				s.Phase = TenderPhaseTerminating
+			} else {
+				s.Phase = TenderPhaseNotReady
+			}
 		case ConditionUnknown:
 			s.Phase = TenderPhaseUnknown
 		}
