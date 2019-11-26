@@ -48,7 +48,7 @@ type JokeStatus struct {
 	ObservedGeneration int64 `json:"observedGeneration,omitempty"`
 
 	// Selected joke represent currently selected joke
-	SelectedJoke *JokeItem `json:"selectedJoke"`
+	SelectedJoke *JokeItem `json:"selectedJoke,omitempty"`
 }
 
 // JokePhaseType represents all conditions as a single string for printing in kubectl
@@ -139,7 +139,7 @@ func (s *JokeStatus) GetCondition(t JokeConditionType) (condition JokeCondition,
 // +kubebuilder:object:root=true
 // +kubebuilder:subresource:status
 // +kubebuilder:storageversion
-// +kubebuilder:printcolumn:name="Text",type="date",JSONPath=".status.selectedJoke.text"
+// +kubebuilder:printcolumn:name="Text",type="string",JSONPath=".status.selectedJoke.text"
 // +kubebuilder:printcolumn:name="Status",type="string",JSONPath=".status.phase"
 // +kubebuilder:printcolumn:name="Age",type="date",JSONPath=".metadata.creationTimestamp"
 type Joke struct {

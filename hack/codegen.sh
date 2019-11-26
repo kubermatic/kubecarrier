@@ -70,7 +70,7 @@ fi
 # CRDs/Webhooks
 $CONTROLLER_GEN crd webhook paths="./pkg/apis/e2e/..." output:crd:artifacts:config=config/internal/e2e/crd/bases output:webhook:artifacts:config=config/internal/e2e/webhook
 # RBAC
-$CONTROLLER_GEN rbac:roleName=e2e-role paths="./pkg/e2e/..." output:rbac:artifacts:config=config/internal/e2e/rbac
+$CONTROLLER_GEN rbac:roleName=manager-role paths="./pkg/e2e/..." output:rbac:artifacts:config=config/internal/e2e/rbac
 # Statik (run only when file CONTENT has changed)
 if [ -z "$(git status --porcelain config/internal/e2e)" ]; then
   echo e2e: statik up-to-date

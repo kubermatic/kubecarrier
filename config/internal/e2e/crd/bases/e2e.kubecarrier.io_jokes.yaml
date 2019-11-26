@@ -11,7 +11,7 @@ spec:
   additionalPrinterColumns:
   - JSONPath: .status.selectedJoke.text
     name: Text
-    type: date
+    type: string
   - JSONPath: .status.phase
     name: Status
     type: string
@@ -124,8 +124,6 @@ spec:
               - text
               - type
               type: object
-          required:
-          - selectedJoke
           type: object
       type: object
   version: v1alpha2

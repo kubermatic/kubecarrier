@@ -29,7 +29,7 @@ func DeploymentIsAvailable(deployment *appsv1.Deployment) bool {
 	for _, condition := range deployment.Status.Conditions {
 		if condition.Type == appsv1.DeploymentAvailable &&
 			condition.Status == corev1.ConditionTrue &&
-			deployment.Status.ReadyReplicas == deployment.Status.Replicas {
+			deployment.Status.ReadyReplicas == *deployment.Spec.Replicas {
 			return true
 		}
 	}

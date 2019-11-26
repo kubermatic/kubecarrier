@@ -23,6 +23,8 @@ import (
 	"os"
 	"time"
 
+	"github.com/kubermatic/kubecarrier/pkg/internal/util"
+
 	"github.com/gernest/wow"
 	"github.com/gernest/wow/spin"
 	"github.com/ghodss/yaml"
@@ -147,10 +149,10 @@ func setupE2EOperator(log logr.Logger, kubeconfig string, namespaceName string, 
 
 	if err := spinner.AttachSpinnerTo(s, "waiting for available deployment", func() error {
 		log.Info("querying deployment")
-		return wait.Poll(time.Second, 10*time.Second, func() (done bool, err error) {
+		return wait.Poll(time.Second, 30*time.Second, func() (done bool, err error) {
 			deployment := &appsv1.Deployment{}
 			err = c.Get(ctx, types.NamespacedName{
-				Name:      "e2e-e2e",
+				Name:      "e2e-controller-manager",
 				Namespace: namespace.Name,
 			}, deployment)
 			switch {
@@ -160,18 +162,7 @@ func setupE2EOperator(log logr.Logger, kubeconfig string, namespaceName string, 
 			case err != nil:
 				return false, err
 			default:
-				if deployment.Status.ObservedGeneration != deployment.Generation {
-					log.V(6).Info("deployment not in the latest generation")
-					return false, nil
-				}
-				for _, condition := range deployment.Status.Conditions {
-					if condition.Type == appsv1.DeploymentAvailable &&
-						condition.Status == corev1.ConditionTrue {
-						return true, nil
-					}
-				}
-				log.V(6).Info("deployment isn't available yet")
-				return false, nil
+				return util.DeploymentIsAvailable(deployment), nil
 			}
 		})
 	}); err != nil {

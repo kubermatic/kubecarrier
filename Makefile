@@ -126,7 +126,7 @@ build-image-test: require-docker
 	@cp -a config/dockerfiles/test.Dockerfile bin/image/test/Dockerfile
 	@cp -a .pre-commit-config.yaml bin/image/test
 	@cp -a go.mod go.sum hack/start-docker.sh bin/image/test
-	@docker build -t ${IMAGE_ORG}/test bin/image/test
+	@docker build -q -t ${IMAGE_ORG}/test bin/image/test
 
 push-image-test: build-image-test require-docker
 	@docker push ${IMAGE_ORG}/test
@@ -138,7 +138,7 @@ build-image-%: bin/linux_amd64/$$* require-docker
 	@mkdir -p bin/image/$*
 	@mv bin/linux_amd64/$* bin/image/$*
 	@cp -a config/dockerfiles/$*.Dockerfile bin/image/$*/Dockerfile
-	@docker build -t ${IMAGE_ORG}/$*:${VERSION} bin/image/$*
+	@docker build -q -t ${IMAGE_ORG}/$*:${VERSION} bin/image/$*
 
 push-image-%: build-image-$$* require-docker
 	@docker push ${IMAGE_ORG}/$*:${VERSION}

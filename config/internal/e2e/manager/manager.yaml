@@ -1,19 +1,19 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: e2e
+  name: controller-manager
   namespace: system
   labels:
-    control-plane: e2e
+    control-plane: controller-manager
 spec:
   selector:
     matchLabels:
-      control-plane: e2e
+      control-plane: controller-manager
   replicas: 1
   template:
     metadata:
       labels:
-        control-plane: e2e
+        control-plane: controller-manager
     spec:
       containers:
         - image: quay.io/kubecarrier/e2e:lastest
