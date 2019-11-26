@@ -77,7 +77,7 @@ func NewTenderCommand(log logr.Logger) *cobra.Command {
 
 	flags := &flags{}
 
-	cmd.Flags().StringVar(&flags.providerNamespace, "provider-namespace", os.Getenv("KUBERNETES_NAMESPACE"), "Name of the providers namespace in the master cluster.")
+	cmd.Flags().StringVar(&flags.providerNamespace, "provider-namespace", "", "Name of the providers namespace in the master cluster.")
 	cmd.Flags().BoolVar(&flags.enableLeaderElection, "enable-leader-election", true,
 		"Enable leader election for controller manager. Enabling this will ensure there is only one active controller manager.")
 	cmd.Flags().StringVar(&flags.serviceClusterStatusUpdatePeriodString, "service-cluster-status-update-period", "10s", "Specifies how often the tender posts service cluster status to master. Note: must work with service-cluster-monitor-grace-period in kubecarrier-controller-manager.")
@@ -88,10 +88,7 @@ func NewTenderCommand(log logr.Logger) *cobra.Command {
 	// service cluster client settings
 	cmd.Flags().StringVar(&flags.serviceMetricsAddr, "service-cluster-metrics-addr", ":8081", "The address the metric endpoint binds to.")
 	cmd.Flags().StringVar(&flags.serviceKubeConfig, "service-cluster-kubeconfig", "", "Path to the Service Cluster kubeconfig.")
-	cmd.Flags().StringVar(&flags.serviceMaster, "service-cluster-master", "", "The address of the Service Clusters Kubernetes API server. Overrides any value in kubeconfig. "+
-		"Only required if out-of-cluster.")
 	cmd.Flags().StringVar(&flags.serviceClusterName, "service-cluster-name", "", "Name of the Service Cluster the tender is operating on.")
-
 	return cmd
 }
 

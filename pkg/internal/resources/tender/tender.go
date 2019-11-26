@@ -30,7 +30,7 @@ import (
 // Config holds the config information to generate the kubecarrier operator setup.
 type Config struct {
 	// Namespace the tender operator should be deployed into.
-	Namespace string
+	ProviderNamespace string
 }
 
 type kustomizeFactory interface {
