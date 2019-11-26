@@ -14,18 +14,20 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package setup
+package installation
 
 import (
+	"bytes"
 	"context"
 	"fmt"
+	"os/exec"
 	"time"
 
 	"github.com/stretchr/testify/suite"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -34,10 +36,10 @@ import (
 	"github.com/kubermatic/kubecarrier/test/framework"
 )
 
-var _ suite.SetupAllSuite = (*SetUpSuite)(nil)
+var _ suite.SetupAllSuite = (*InstallationSuite)(nil)
 
-// SetUpSuite verifies if the KubeCarrier operator and KubeCarrier can be deployed.
-type SetUpSuite struct {
+// InstallationSuite verifies if the KubeCarrier operator and KubeCarrier can be deployed.
+type InstallationSuite struct {
 	suite.Suite
 	*framework.Framework
 
@@ -45,7 +47,7 @@ type SetUpSuite struct {
 	serviceClient client.Client
 }
 
-func (s *SetUpSuite) SetupSuite() {
+func (s *InstallationSuite) SetupSuite() {
 	var err error
 	s.masterClient, err = s.MasterClient()
 	s.Require().NoError(err, "creating master client")
@@ -53,15 +55,18 @@ func (s *SetUpSuite) SetupSuite() {
 	s.Require().NoError(err, "creating service client")
 }
 
-func (s *SetUpSuite) TestSetupAndTeardown() {
-	s.T().Parallel()
+func (s *InstallationSuite) TestInstallAndTeardown() {
 	ctx := context.Background()
 	nn := "kubecarrier-system"
 	prefix := "kubecarrier-manager"
 	kubeCarrier := &operatorv1alpha1.KubeCarrier{}
-	s.Run("anchor setup", func() {
+	if !s.Run("anchor setup", func() {
 		s.T().Logf("running \"anchor setup\" to install KubeCarrier in the master cluster")
-		framework.RunCommand(s.T(), "anchor", "setup", "--kubeconfig", s.Framework.Config().MasterExternalKubeconfigPath)
+		var out bytes.Buffer
+		c := exec.Command("anchor", "setup", "--kubeconfig", s.Framework.Config().MasterExternalKubeconfigPath)
+		c.Stdout = &out
+		c.Stderr = &out
+		s.Require().NoError(c.Run(), "\"anchor setup\" returned an error: %s", out.String())
 
 		// Create another client due to some issues about the restmapper.
 		// The issue is that if you use the client that created before, and here try to create the kubeCarrier,
@@ -129,13 +134,15 @@ func (s *SetUpSuite) TestSetupAndTeardown() {
 			Namespace: nn,
 		}, service), "get the Service that owned by KubeCarrier object")
 
-	})
+	}) {
+		s.FailNow("anchor setup e2e test failed")
+	}
 
 	s.Run("kubeCarrier teardown", func() {
 		// Delete the KubeCarrier object.
 		s.Require().NoError(wait.Poll(time.Second, 10*time.Second, func() (done bool, err error) {
 			if err = s.masterClient.Delete(ctx, kubeCarrier); err != nil {
-				if apierrors.IsNotFound(err) {
+				if errors.IsNotFound(err) {
 					return true, nil
 				}
 				return false, err
@@ -145,42 +152,60 @@ func (s *SetUpSuite) TestSetupAndTeardown() {
 
 		// Deployment
 		deployment := &appsv1.Deployment{}
-		s.True(apierrors.IsNotFound(s.masterClient.Get(ctx, types.NamespacedName{
-			Name:      fmt.Sprintf("%s-controller-manager", prefix),
-			Namespace: nn,
-		}, deployment)), "get the Deployment that owned by KubeCarrier object")
+		s.NoError(wait.Poll(time.Second, 10*time.Second, func() (done bool, err error) {
+			if err = s.masterClient.Get(ctx, types.NamespacedName{
+				Name:      fmt.Sprintf("%s-controller-manager", prefix),
+				Namespace: nn,
+			}, deployment); err != nil {
+				if errors.IsNotFound(err) {
+					return true, nil
+				}
+				return false, err
+			}
+			return false, nil
+		}), "get the Deployment that owned by KubeCarrier object")
 
 		// ClusterRoleBinding
 		clusterRoleBinding := &rbacv1.ClusterRoleBinding{}
-		s.True(apierrors.IsNotFound(s.masterClient.Get(ctx, types.NamespacedName{
+		s.True(errors.IsNotFound(s.masterClient.Get(ctx, types.NamespacedName{
 			Name: fmt.Sprintf("%s-proxy-rolebinding", prefix),
 		}, clusterRoleBinding)), "get the ClusterRoleBinding that owned by KubeCarrier object")
 
 		// ClusterRole
 		clusterRole := &rbacv1.ClusterRole{}
-		s.True(apierrors.IsNotFound(s.masterClient.Get(ctx, types.NamespacedName{
+		s.True(errors.IsNotFound(s.masterClient.Get(ctx, types.NamespacedName{
 			Name: fmt.Sprintf("%s-proxy-role", prefix),
 		}, clusterRole)), "get the ClusterRole that owned by KubeCarrier object")
 
 		// RoleBinding
 		roleBinding := &rbacv1.RoleBinding{}
-		s.True(apierrors.IsNotFound(s.masterClient.Get(ctx, types.NamespacedName{
+		s.True(errors.IsNotFound(s.masterClient.Get(ctx, types.NamespacedName{
 			Name:      fmt.Sprintf("%s-leader-election-rolebinding", prefix),
 			Namespace: nn,
 		}, roleBinding)), "get the RoleBinding that owned by KubeCarrier object")
 
 		// Role
 		role := &rbacv1.Role{}
-		s.True(apierrors.IsNotFound(s.masterClient.Get(ctx, types.NamespacedName{
+		s.True(errors.IsNotFound(s.masterClient.Get(ctx, types.NamespacedName{
 			Name:      fmt.Sprintf("%s-leader-election-role", prefix),
 			Namespace: nn,
 		}, role)), "get the Role that owned by KubeCarrier object")
 
 		// Service
 		service := &corev1.Service{}
-		s.True(apierrors.IsNotFound(s.masterClient.Get(ctx, types.NamespacedName{
+		s.True(errors.IsNotFound(s.masterClient.Get(ctx, types.NamespacedName{
 			Name:      fmt.Sprintf("%s-controller-manager-metrics-service", prefix),
 			Namespace: nn,
 		}, service)), "get the Service that owned by KubeCarrier object")
 	})
+}
+
+func (s *InstallationSuite) TearDownSuite() {
+	// reinstall KubeCarrier controller manager for other test phases.
+	s.T().Logf("running \"anchor setup\" to install KubeCarrier in the master cluster")
+	var out bytes.Buffer
+	c := exec.Command("anchor", "setup", "--kubeconfig", s.Framework.Config().MasterExternalKubeconfigPath)
+	c.Stdout = &out
+	c.Stderr = &out
+	s.Require().NoError(c.Run(), "\"anchor setup\" returned an error: %s", out.String())
 }

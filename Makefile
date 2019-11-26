@@ -12,7 +12,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+SHELL=/bin/bash
+.SHELLFLAGS=-euo pipefail -c
+
 export CGO_ENABLED:=0
+ifdef CI
+	# prow sets up GOPATH really helpfully:
+	# https://github.com/kubernetes/test-infra/issues/9469
+	# https://github.com/kubernetes/test-infra/blob/895df89b7e4238125063157842c191dac6f7e58f/prow/pod-utils/decorate/podspec.go#L474
+	export GOPATH:=${HOME}/go
+	export PATH:=${PATH}:${GOPATH}/bin
+endif
 
 BRANCH=$(shell git rev-parse --abbrev-ref HEAD)
 SHORT_SHA=$(shell git rev-parse --short HEAD)
@@ -22,16 +32,6 @@ IMAGE_ORG?=quay.io/kubecarrier
 MODULE=github.com/kubermatic/kubecarrier
 LD_FLAGS="-w -X '$(MODULE)/pkg/internal/version.Version=$(VERSION)' -X '$(MODULE)/pkg/internal/version.Branch=$(BRANCH)' -X '$(MODULE)/pkg/internal/version.Commit=$(SHORT_SHA)' -X '$(MODULE)/pkg/internal/version.BuildDate=$(BUILD_DATE)'"
 KIND_CLUSTER?=kubecarrier
-
-# Produce CRDs that work back to Kubernetes 1.11 (no version conversion)
-CRD_OPTIONS ?= "crd:trivialVersions=true"
-
-# Get the currently used golang install path (in GOPATH/bin, unless GOBIN is set)
-ifeq (, $(shell go env GOBIN))
-GOBIN=$(shell go env GOPATH)/bin
-else
-GOBIN=$(shell go env GOBIN)
-endif
 
 all: \
 	bin/linux_amd64/anchor \
@@ -55,43 +55,8 @@ clean: e2e-test-clean
 .PHONEY: clean
 
 # Generate code
-generate: controller-gen manifests generate-statik-operator generate-statik-e2e
-	$(CONTROLLER_GEN) object:headerFile=./hack/boilerplate/boilerplate.go.txt,year=$(shell date +%Y) paths=./pkg/apis/...
-
-generate-statik-%:
-	statik -src=config/$* -p $* -dest pkg/internal/resources -f -c ''
-	cat hack/boilerplate/boilerplate.generatego.txt | sed s/YEAR/$(shell date +%Y)/ | cat - pkg/internal/resources/$*/statik.go > pkg/internal/resources/$*/statik.go.tmp
-	mv pkg/internal/resources/$*/statik.go.tmp pkg/internal/resources/$*/statik.go
-
-install:
-	go install -ldflags $(LD_FLAGS) ./cmd/anchor
-.PHONEY: install
-
-install-crds: \
-	install-operator
-
-# Install CRDs into a cluster
-install-%: manifests-%
-	kubectl apply -f config/$*/crd/bases
-
-# Generate manifests e.g. CRD, RBAC etc.
-manifests: \
-	manifests-operator \
-	manifests-e2e \
-	manifests-manager
-
-manifests-%: controller-gen
-	$(CONTROLLER_GEN) $(CRD_OPTIONS) rbac:roleName=manager-role webhook paths="./..." output:crd:artifacts:config=config/$*/crd/bases output:rbac:artifacts:config=config/$*/rbac output:webhook:artifacts:config=config/$*/webhook
-
-# find or download controller-gen
-# download controller-gen if necessary
-controller-gen:
-ifeq (, $(shell which controller-gen))
-	go get sigs.k8s.io/controller-tools/cmd/controller-gen@v0.2.2
-CONTROLLER_GEN=$(GOBIN)/controller-gen
-else
-CONTROLLER_GEN=$(shell which controller-gen)
-endif
+generate:
+	@hack/codegen.sh
 
 # Run go fmt against code
 fmt:
@@ -104,6 +69,10 @@ vet:
 test:
 	CGO_ENABLED=1 go test -race -v ./...
 .PHONY: test
+
+install:
+	go install -ldflags $(LD_FLAGS) ./cmd/anchor
+.PHONY: install
 
 TEST_ID?=1
 MASTER_KIND_CLUSTER?=kubecarrier-${TEST_ID}
@@ -134,7 +103,7 @@ e2e-test-clean:
 
 lint:
 	pre-commit run -a
-	golangci-lint run ./...
+	golangci-lint run ./... --deadline=15m
 
 tidy:
 	go mod tidy

@@ -34,6 +34,7 @@ import (
 	"k8s.io/client-go/tools/clientcmd"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
+	catalogv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/catalog/v1alpha1"
 	operatorv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/operator/v1alpha1"
 )
 
@@ -90,6 +91,9 @@ func New(c Config) (f *Framework, err error) {
 	}
 	if err = operatorv1alpha1.AddToScheme(f.masterScheme); err != nil {
 		return nil, fmt.Errorf("adding operatorv1alpha1 scheme to master scheme: %w", err)
+	}
+	if err = catalogv1alpha1.AddToScheme(f.masterScheme); err != nil {
+		return nil, fmt.Errorf("adding catalogv1alpha1 scheme to master scheme: %w", err)
 	}
 
 	f.masterConfig, err = clientcmd.BuildConfigFromFlags("", f.config.MasterExternalKubeconfigPath)
