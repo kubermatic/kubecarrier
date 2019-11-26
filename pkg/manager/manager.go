@@ -25,6 +25,9 @@ import (
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 	ctrl "sigs.k8s.io/controller-runtime"
+
+	catalogv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/catalog/v1alpha1"
+	"github.com/kubermatic/kubecarrier/pkg/manager/internal/controllers"
 )
 
 type flags struct {
@@ -38,6 +41,7 @@ var (
 
 func init() {
 	_ = clientgoscheme.AddToScheme(scheme)
+	_ = catalogv1alpha1.AddToScheme(scheme)
 	// +kubebuilder:scaffold:scheme
 }
 
@@ -73,6 +77,14 @@ func run(flags *flags, log logr.Logger) {
 		os.Exit(1)
 	}
 
+	if err = (&controllers.TenantReconciler{
+		Client: mgr.GetClient(),
+		Log:    log.WithName("controllers").WithName("Tenant"),
+		Scheme: mgr.GetScheme(),
+	}).SetupWithManager(mgr); err != nil {
+		log.Error(err, "unable to create controller", "controller", "Tenant")
+		os.Exit(1)
+	}
 	// +kubebuilder:scaffold:builder
 
 	log.Info("starting manager")
