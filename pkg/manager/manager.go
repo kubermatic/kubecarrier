@@ -77,6 +77,15 @@ func run(flags *flags, log logr.Logger) {
 		os.Exit(1)
 	}
 
+	if err = (&controllers.ProviderReconciler{
+		Client: mgr.GetClient(),
+		Log:    log.WithName("controllers").WithName("Provider"),
+		Scheme: mgr.GetScheme(),
+	}).SetupWithManager(mgr); err != nil {
+		log.Error(err, "unable to create controller", "controller", "Provider")
+		os.Exit(1)
+	}
+
 	if err = (&controllers.TenantReconciler{
 		Client: mgr.GetClient(),
 		Log:    log.WithName("controllers").WithName("Tenant"),
