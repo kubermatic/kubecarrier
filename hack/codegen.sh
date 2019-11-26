@@ -39,7 +39,7 @@ $CONTROLLER_GEN crd webhook paths="./pkg/apis/operator/..." output:crd:artifacts
 # RBAC
 $CONTROLLER_GEN rbac:roleName=manager-role paths="./pkg/operator/..." output:rbac:artifacts:config=config/operator/rbac
 # Statik (run only when file CONTENT has changed)
-if [ -z "$(git status --porcelain config/operator)" ]; then
+if [ -z "$(git status --porcelain config/operator)" ] && [[ -z ${FORCE_STATIK-} ]]; then
   echo operator: statik up-to-date
 else \
   statik -src=config/operator -p operator -dest pkg/internal/resources -f -c ''
@@ -56,7 +56,7 @@ $CONTROLLER_GEN crd webhook paths="./pkg/apis/catalog/..." output:crd:artifacts:
 # RBAC
 $CONTROLLER_GEN rbac:roleName=manager-role paths="./pkg/manager/..." output:rbac:artifacts:config=config/internal/manager/rbac
 # Statik (run only when file CONTENT has changed)
-if [ -z "$(git status --porcelain config/internal/manager)" ]; then
+if [ -z "$(git status --porcelain config/internal/manager)" ] && [[ -z ${FORCE_STATIK-} ]]; then
   echo manager: statik up-to-date
 else \
   statik -src=config/internal/manager -p manager -dest pkg/internal/resources -f -c ''
@@ -72,7 +72,7 @@ $CONTROLLER_GEN crd webhook paths="./pkg/apis/e2e/..." output:crd:artifacts:conf
 # RBAC
 $CONTROLLER_GEN rbac:roleName=manager-role paths="./pkg/e2e/..." output:rbac:artifacts:config=config/internal/e2e/rbac
 # Statik (run only when file CONTENT has changed)
-if [ -z "$(git status --porcelain config/internal/e2e)" ]; then
+if [ -z "$(git status --porcelain config/internal/e2e)" ] && [[ -z ${FORCE_STATIK-} ]]; then
   echo e2e: statik up-to-date
 else \
   statik -src=config/internal/e2e -p e2e -dest pkg/internal/resources -f -c ''
