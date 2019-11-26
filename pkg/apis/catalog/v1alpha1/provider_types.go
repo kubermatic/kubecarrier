@@ -142,7 +142,7 @@ func (s *ProviderStatus) SetCondition(condition ProviderCondition) {
 	s.Conditions = append(s.Conditions, condition)
 }
 
-// Provider sets up permissions and references to allow a end-user group to interact with providers' services.
+// Provider is the service provider representation in the KubeCarrier control-plane.
 // +kubebuilder:object:root=true
 // +kubebuilder:subresource:status
 // +kubebuilder:printcolumn:name="Provider Namespace",type="string",JSONPath=".status.namespaceName"
