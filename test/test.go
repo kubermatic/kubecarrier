@@ -22,6 +22,7 @@ import (
 
 	"github.com/stretchr/testify/suite"
 
+	"github.com/kubermatic/kubecarrier/test/admin"
 	"github.com/kubermatic/kubecarrier/test/framework"
 	"github.com/kubermatic/kubecarrier/test/installation"
 	"github.com/kubermatic/kubecarrier/test/verify"
@@ -45,6 +46,12 @@ func AllTests(config framework.Config) ([]testing.InternalTest, error) {
 			Name: "InstallationSuite",
 			F: func(t *testing.T) {
 				suite.Run(t, &installation.InstallationSuite{Framework: f})
+			},
+		},
+		testing.InternalTest{
+			Name: "AdminSuite",
+			F: func(t *testing.T) {
+				suite.Run(t, &admin.AdminSuite{Framework: f})
 			},
 		})
 

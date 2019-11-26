@@ -9,18 +9,6 @@ rules:
 - apiGroups:
   - ""
   resources:
-  - namespaces
-  verbs:
-  - create
-  - delete
-  - get
-  - list
-  - patch
-  - update
-  - watch
-- apiGroups:
-  - ""
-  resources:
   - serviceaccounts
   verbs:
   - create
@@ -47,8 +35,11 @@ rules:
   resources:
   - customresourcedefinitions
   verbs:
+  - create
+  - delete
   - get
   - list
+  - patch
   - update
   - watch
 - apiGroups:
@@ -63,66 +54,6 @@ rules:
   - patch
   - update
   - watch
-- apiGroups:
-  - core.kubecarrier.io
-  resources:
-  - crdreferences
-  verbs:
-  - create
-  - delete
-  - get
-  - list
-  - patch
-  - update
-  - watch
-- apiGroups:
-  - core.kubecarrier.io
-  resources:
-  - crdreferences/status
-  verbs:
-  - get
-  - patch
-  - update
-- apiGroups:
-  - core.kubecarrier.io
-  resources:
-  - serviceclusters
-  verbs:
-  - create
-  - delete
-  - get
-  - list
-  - patch
-  - update
-  - watch
-- apiGroups:
-  - core.kubecarrier.io
-  resources:
-  - serviceclusters/status
-  verbs:
-  - get
-  - patch
-  - update
-- apiGroups:
-  - core.kubecarrier.io
-  resources:
-  - tenantassignments
-  verbs:
-  - create
-  - delete
-  - get
-  - list
-  - patch
-  - update
-  - watch
-- apiGroups:
-  - core.kubecarrier.io
-  resources:
-  - tenantassignments/status
-  verbs:
-  - get
-  - patch
-  - update
 - apiGroups:
   - operator.kubecarrier.io
   resources:
