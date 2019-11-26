@@ -44,9 +44,14 @@ type TenantPhaseType string
 
 // Values of TenantPhaseType.
 const (
-	TenantPhaseReady   TenantPhaseType = "Ready"
-	TenantPhaseFailed  TenantPhaseType = "Failed"
-	TenantPhaseUnknown TenantPhaseType = "Unknown"
+	TenantPhaseReady       TenantPhaseType = "Ready"
+	TenantPhaseNotReady    TenantPhaseType = "NotReady"
+	TenantPhaseUnknown     TenantPhaseType = "Unknown"
+	TenantPhaseTerminating TenantPhaseType = "Terminating"
+)
+
+const (
+	TenantTerminatingReason = "Deleting"
 )
 
 // updatePhase updates the phase property based on the current conditions
@@ -61,7 +66,11 @@ func (s *TenantStatus) updatePhase() {
 		case ConditionTrue:
 			s.Phase = TenantPhaseReady
 		case ConditionFalse:
-			s.Phase = TenantPhaseFailed
+			if condition.Reason == TenantTerminatingReason {
+				s.Phase = TenantPhaseTerminating
+			} else {
+				s.Phase = TenantPhaseNotReady
+			}
 		case ConditionUnknown:
 			s.Phase = TenantPhaseUnknown
 		}

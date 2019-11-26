@@ -115,5 +115,11 @@ func TestTenantReconciler(t *testing.T) {
 			Namespace: tenantFound.Namespace,
 		}, tenantCheck), "cannot check Tenant")
 		assert.Len(t, tenantCheck.Finalizers, 0, "finalizers should have been removed")
+
+		// Check Tenant Conditions
+		readyCondition, readyConditionExists := tenantCheck.Status.GetCondition(catalogv1alpha1.TenantReady)
+		assert.True(t, readyConditionExists, "Ready Condition is not set")
+		assert.Equal(t, catalogv1alpha1.ConditionFalse, readyCondition.Status, "Wrong Ready condition.Status")
+		assert.Equal(t, catalogv1alpha1.TenantTerminatingReason, readyCondition.Reason, "Wrong Reason condition.Status")
 	})
 }
