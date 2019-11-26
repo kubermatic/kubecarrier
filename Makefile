@@ -70,7 +70,7 @@ test:
 	CGO_ENABLED=1 go test -race -v ./...
 .PHONY: test
 
-install: generate
+install:
 	go install -ldflags $(LD_FLAGS) ./cmd/anchor
 .PHONY: install
 
