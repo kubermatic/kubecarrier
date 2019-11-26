@@ -58,9 +58,6 @@ clean: e2e-test-clean
 generate:
 	@hack/codegen.sh
 
-install:
-	go install -ldflags $(LD_FLAGS) ./cmd/anchor
-
 # Run go fmt against code
 fmt:
 	go fmt ./...
