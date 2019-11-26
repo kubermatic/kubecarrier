@@ -149,7 +149,7 @@ func setupE2EOperator(log logr.Logger, kubeconfig string, namespaceName string, 
 
 	if err := spinner.AttachSpinnerTo(s, "waiting for available deployment", func() error {
 		log.Info("querying deployment")
-		return wait.Poll(time.Second, 30*time.Second, func() (done bool, err error) {
+		return wait.Poll(time.Second, 60*time.Second, func() (done bool, err error) {
 			deployment := &appsv1.Deployment{}
 			err = c.Get(ctx, types.NamespacedName{
 				Name:      "e2e-controller-manager",
@@ -162,6 +162,7 @@ func setupE2EOperator(log logr.Logger, kubeconfig string, namespaceName string, 
 			case err != nil:
 				return false, err
 			default:
+				log.Info("deployment fot but not yet available")
 				return util.DeploymentIsAvailable(deployment), nil
 			}
 		})

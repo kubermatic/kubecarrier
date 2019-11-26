@@ -23,7 +23,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-
+	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/wait"
@@ -35,6 +35,7 @@ func (s *VerifySuite) TestJokeOperator() {
 	t := s.T()
 	t.Parallel()
 	s.EnsureJokeOperator(t)
+	s.SetupSuite() // requires client reinit due to new CRDs
 
 	t.Run("success", func(t *testing.T) {
 		t.Parallel()
@@ -64,11 +65,15 @@ func (s *VerifySuite) TestJokeOperator() {
 		}
 		defer s.Assert().NoError(c.Delete(ctx, joke))
 		require.NoError(t, c.Create(ctx, joke))
-		assert.NoError(t, wait.Poll(time.Second, 30*time.Second, func() (done bool, err error) {
+		assert.NoError(t, wait.Poll(time.Second, 15*time.Second, func() (done bool, err error) {
 			if err := c.Get(ctx, types.NamespacedName{
 				Namespace: joke.Namespace,
 				Name:      joke.Name,
 			}, joke); err != nil {
+				if errors.IsNotFound(err) {
+					t.Log("joke not yet found")
+					return false, nil
+				}
 				return false, err
 			}
 			cond, ok := joke.Status.GetCondition(e2ev1alpha2.JokeReady)
@@ -92,13 +97,16 @@ func (s *VerifySuite) TestJokeOperator() {
 				JokeDatabase: jokes,
 			},
 		}
-		defer s.Assert().NoError(c.Delete(ctx, joke))
 		require.NoError(t, c.Create(ctx, joke))
-		require.NoError(t, wait.Poll(time.Second, 30*time.Second, func() (done bool, err error) {
+		require.NoError(t, wait.Poll(time.Second, 15*time.Second, func() (done bool, err error) {
 			if err := c.Get(ctx, types.NamespacedName{
 				Namespace: joke.Namespace,
 				Name:      joke.Name,
 			}, joke); err != nil {
+				t.Log("joke not yet found")
+				if errors.IsNotFound(err) {
+					return false, nil
+				}
 				return false, err
 			}
 			cond, ok := joke.Status.GetCondition(e2ev1alpha2.JokeReady)
