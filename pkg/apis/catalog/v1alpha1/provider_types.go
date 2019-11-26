@@ -145,9 +145,11 @@ func (s *ProviderStatus) SetCondition(condition ProviderCondition) {
 // Provider sets up permissions and references to allow a end-user group to interact with providers' services.
 // +kubebuilder:object:root=true
 // +kubebuilder:subresource:status
+// +kubebuilder:printcolumn:name="Provider Namespace",type="string",JSONPath=".status.namespaceName"
+// +kubebuilder:printcolumn:name="Display Name",type="string",JSONPath=".spec.displayName"
 // +kubebuilder:printcolumn:name="Status",type="string",JSONPath=".status.phase"
 // +kubebuilder:printcolumn:name="Age",type="date",JSONPath=".metadata.creationTimestamp"
-// +kubebuilder:resource:shortName=tn
+// +kubebuilder:resource:shortName=pdr
 type Provider struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`

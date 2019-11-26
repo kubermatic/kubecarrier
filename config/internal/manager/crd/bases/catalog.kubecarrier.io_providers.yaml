@@ -9,6 +9,12 @@ metadata:
   name: providers.catalog.kubecarrier.io
 spec:
   additionalPrinterColumns:
+  - JSONPath: .status.namespaceName
+    name: Provider Namespace
+    type: string
+  - JSONPath: .spec.displayName
+    name: Display Name
+    type: string
   - JSONPath: .status.phase
     name: Status
     type: string
@@ -21,7 +27,7 @@ spec:
     listKind: ProviderList
     plural: providers
     shortNames:
-    - tn
+    - pdr
     singular: provider
   scope: Namespaced
   subresources:
