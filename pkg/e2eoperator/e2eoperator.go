@@ -13,8 +13,86 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
+
 package e2eoperator
 
-import e2e "github.com/kubermatic/kubecarrier/pkg/e2eoperator/internal"
+import (
+	"fmt"
 
-var NewE2E = e2e.NewE2E
+	"github.com/go-logr/logr"
+	"github.com/spf13/cobra"
+	zap2 "go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
+	"k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
+	"k8s.io/apimachinery/pkg/runtime"
+	corescheme "k8s.io/client-go/kubernetes/scheme"
+	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/log/zap"
+
+	e2ev1alpha2 "github.com/kubermatic/kubecarrier/pkg/apis/e2e/v1alpha2"
+	"github.com/kubermatic/kubecarrier/pkg/e2eoperator/internal/controllers"
+)
+
+type flags struct {
+	metricsAddr          string
+	enableLeaderElection bool
+	verbosity            int8
+}
+
+func NewE2E() *cobra.Command {
+	flags := flags{}
+
+	cmd := &cobra.Command{
+		Args:  cobra.NoArgs,
+		Use:   "e2e-operator",
+		Short: "e2e-operator runs the dummy joke operator for e2e testing purposes",
+	}
+
+	cmd.Flags().StringVar(&flags.metricsAddr, "metrics-addr", ":8080", "The address the metric endpoint binds to.")
+	cmd.Flags().BoolVar(&flags.enableLeaderElection, "enable-leader-election", false,
+		"Enable leader election for controller manager. Enabling this will ensure there is only one active controller manager.")
+	cmd.Flags().Int8VarP(&flags.verbosity, "verbosity", "v", 4, "log level version")
+	cmd.RunE = func(cmd *cobra.Command, args []string) error {
+		return run(flags, ctrl.Log.WithName("setup"))
+	}
+	return cmd
+}
+
+func run(flags flags, log logr.Logger) error {
+	var (
+		scheme = runtime.NewScheme()
+	)
+
+	_ = e2ev1alpha2.AddToScheme(scheme)
+	_ = corescheme.AddToScheme(scheme)
+	_ = v1beta1.AddToScheme(scheme)
+
+	ctrl.SetLogger(zap.New(func(o *zap.Options) {
+		o.Development = true
+		l := zap2.NewAtomicLevelAt(zapcore.Level(-flags.verbosity))
+		o.Level = &l
+	}))
+
+	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
+		Scheme:             scheme,
+		MetricsBindAddress: flags.metricsAddr,
+		LeaderElection:     flags.enableLeaderElection,
+		Port:               9443,
+	})
+	if err != nil {
+		return fmt.Errorf("new manager creation: %w", err)
+	}
+
+	if err = (&controllers.JokeReconciler{
+		Client: mgr.GetClient(),
+		Log:    ctrl.Log.WithName("controllers").WithName("Joke"),
+	}).SetupWithManager(mgr); err != nil {
+		return fmt.Errorf("setup Joke controller: %w", err)
+	}
+
+	if err := mgr.Start(ctrl.SetupSignalHandler()); err != nil {
+		return fmt.Errorf("manager-runtime: %w", err)
+	}
+	return nil
+
+}
