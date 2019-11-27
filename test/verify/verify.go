@@ -19,11 +19,10 @@ package verify
 import (
 	"context"
 
-	"k8s.io/client-go/tools/clientcmd"
-
 	"github.com/stretchr/testify/suite"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/client-go/tools/clientcmd"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/kubermatic/kubecarrier/test/framework"
