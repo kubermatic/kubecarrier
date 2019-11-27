@@ -29,7 +29,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
 	e2ev1alpha2 "github.com/kubermatic/kubecarrier/pkg/apis/e2e/v1alpha2"
-	"github.com/kubermatic/kubecarrier/pkg/e2e/internal/controllers"
+	"github.com/kubermatic/kubecarrier/pkg/e2eoperator/internal/controllers"
 )
 
 func NewE2E() *cobra.Command {

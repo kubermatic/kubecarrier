@@ -46,7 +46,7 @@ import (
 	"github.com/kubermatic/kubecarrier/pkg/anchor/internal/spinner"
 	"github.com/kubermatic/kubecarrier/pkg/internal/kustomize"
 	"github.com/kubermatic/kubecarrier/pkg/internal/reconcile"
-	"github.com/kubermatic/kubecarrier/pkg/internal/resources/e2e"
+	"github.com/kubermatic/kubecarrier/pkg/internal/resources/e2eoperator"
 )
 
 func newSetupE2EOperator(log logr.Logger) *cobra.Command {
@@ -111,9 +111,9 @@ func setupE2EOperator(log logr.Logger, kubeconfig string, namespaceName string, 
 	}
 
 	if err := spinner.AttachSpinnerTo(s, "deploy e2e-operator", func() error {
-		objects, err := e2e.Manifests(
+		objects, err := e2eoperator.Manifests(
 			kustomize.NewDefaultKustomize(),
-			e2e.Config{
+			e2eoperator.Config{
 				Namespace: namespace.Name,
 			})
 		if err != nil {
@@ -157,12 +157,10 @@ func setupE2EOperator(log logr.Logger, kubeconfig string, namespaceName string, 
 			}, deployment)
 			switch {
 			case errors.IsNotFound(err):
-				log.V(6).Info("deployment yet not found")
 				return false, nil
 			case err != nil:
 				return false, err
 			default:
-				log.Info("deployment fot but not yet available")
 				return util.DeploymentIsAvailable(deployment), nil
 			}
 		})

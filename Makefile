@@ -32,6 +32,7 @@ IMAGE_ORG?=quay.io/kubecarrier
 MODULE=github.com/kubermatic/kubecarrier
 LD_FLAGS="-w -X '$(MODULE)/pkg/internal/version.Version=$(VERSION)' -X '$(MODULE)/pkg/internal/version.Branch=$(BRANCH)' -X '$(MODULE)/pkg/internal/version.Commit=$(SHORT_SHA)' -X '$(MODULE)/pkg/internal/version.BuildDate=$(BUILD_DATE)'"
 KIND_CLUSTER?=kubecarrier
+TEST_FLAGS?= failfast v
 
 all: \
 	bin/linux_amd64/anchor \
@@ -74,6 +75,9 @@ install:
 	go install -ldflags $(LD_FLAGS) ./cmd/anchor
 .PHONY: install
 
+anchor:
+	go run -ldflags $(LD_FLAGS) ./cmd/anchor $${ARGS:-}
+
 TEST_ID?=1
 MASTER_KIND_CLUSTER?=kubecarrier-${TEST_ID}
 SVC_KIND_CLUSTER?=kubecarrier-svc-${TEST_ID}
@@ -89,12 +93,12 @@ e2e-test: install require-docker
 	@echo "kind clusters created"
 	@echo "Loading the images"
 	@$(MAKE) --no-print-directory KIND_CLUSTER=${MASTER_KIND_CLUSTER} kind-load
-	@$(MAKE) --no-print-directory KIND_CLUSTER=${SVC_KIND_CLUSTER} kind-load-e2e
+	@$(MAKE) --no-print-directory KIND_CLUSTER=${SVC_KIND_CLUSTER} kind-load-e2e-operator
 	@$(MAKE) --no-print-directory e2e-test-runonly
 .PHONY: e2e-test
 
-e2e-test-runonly:
-	@go run -ldflags $(LD_FLAGS) ./cmd/anchor e2e-test run --test.v --test.failfast --test-id=${TEST_ID} | richgo testfilter
+e2e-test-runonly: install
+	go run -ldflags $(LD_FLAGS) ./cmd/anchor e2e-test run $(addprefix --test., $(TEST_FLAGS)) --test-id=${TEST_ID} | richgo testfilter
 
 e2e-test-clean:
 	@kind delete cluster --name=${MASTER_KIND_CLUSTER} || true
@@ -110,12 +114,14 @@ tidy:
 
 push-images: \
 	push-image-operator \
-	push-image-e2e
+	push-image-manager \
+	push-image-e2e-operator
 
 # build all container images except the test image
 build-images: \
 	build-image-operator \
-	build-image-e2e
+	build-image-manager \
+	build-image-e2e-operator
 
 kind-load: \
 	kind-load-operator \

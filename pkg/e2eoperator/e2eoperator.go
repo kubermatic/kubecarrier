@@ -13,19 +13,8 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
+package e2eoperator
 
-package main
+import e2e "github.com/kubermatic/kubecarrier/pkg/e2eoperator/internal"
 
-import (
-	"log"
-	"os"
-
-	"github.com/kubermatic/kubecarrier/pkg/e2e"
-)
-
-func main() {
-	if err := e2e.NewE2E().Execute(); err != nil {
-		log.Print(err)
-		os.Exit(2)
-	}
-}
+var NewE2E = e2e.NewE2E

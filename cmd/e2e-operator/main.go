@@ -14,23 +14,18 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package e2e
+package main
 
 import (
-	"net/http"
+	"log"
+	"os"
 
-	statikfs "github.com/rakyll/statik/fs"
+	"github.com/kubermatic/kubecarrier/pkg/e2eoperator"
 )
 
-// vfs is a virtual file system to access the operator config.
-var vfs http.FileSystem
-
-// don't rename this file!
-// this init() function must be called after statik.go
-func init() {
-	var err error
-	vfs, err = statikfs.New()
-	if err != nil {
-		panic(err)
+func main() {
+	if err := e2eoperator.NewE2E().Execute(); err != nil {
+		log.Print(err)
+		os.Exit(2)
 	}
 }

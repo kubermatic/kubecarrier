@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package e2e
+package e2eoperator
 
 import (
 	"fmt"
@@ -57,7 +57,7 @@ func Manifests(k kustomizeFactory, c Config) ([]unstructured.Unstructured, error
 	v := version.Get()
 	kmap["images"] = []map[string]string{
 		{
-			"name":   "quay.io/kubecarrier/e2e",
+			"name":   "quay.io/kubecarrier/e2e-operator",
 			"newTag": v.Version,
 		},
 	}

@@ -21,6 +21,8 @@ import (
 	"testing"
 	"time"
 
+	"sigs.k8s.io/controller-runtime/pkg/client"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -63,6 +65,7 @@ func (s *VerifySuite) TestJokeOperator() {
 				JokeDatabase: jokes,
 			},
 		}
+		assert.NoError(t, client.IgnoreNotFound(c.Delete(ctx, joke.DeepCopy())))
 		require.NoError(t, c.Create(ctx, joke))
 		assert.NoError(t, wait.Poll(time.Second, 15*time.Second, func() (done bool, err error) {
 			if err := c.Get(ctx, types.NamespacedName{
@@ -81,7 +84,7 @@ func (s *VerifySuite) TestJokeOperator() {
 		t.Log("selected joke: " + joke.Status.SelectedJoke.Text)
 	})
 
-	t.Run("failure", func(t *testing.T) {
+	t.Run("InvalidJokesDatabase", func(t *testing.T) {
 		t.Parallel()
 		jokes := []e2ev1alpha2.JokeItem{}
 
@@ -96,6 +99,7 @@ func (s *VerifySuite) TestJokeOperator() {
 				JokeDatabase: jokes,
 			},
 		}
+		assert.NoError(t, client.IgnoreNotFound(c.Delete(ctx, joke.DeepCopy())))
 		require.NoError(t, c.Create(ctx, joke))
 		require.NoError(t, wait.Poll(time.Second, 15*time.Second, func() (done bool, err error) {
 			if err := c.Get(ctx, types.NamespacedName{

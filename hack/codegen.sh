@@ -68,15 +68,15 @@ fi
 # E2E
 # -------
 # CRDs/Webhooks
-$CONTROLLER_GEN crd webhook paths="./pkg/apis/e2e/..." output:crd:artifacts:config=config/internal/e2e/crd/bases output:webhook:artifacts:config=config/internal/e2e/webhook
+$CONTROLLER_GEN crd webhook paths="./pkg/apis/e2eoperator/..." output:crd:artifacts:config=config/internal/e2eoperator/crd/bases output:webhook:artifacts:config=config/internal/e2eoperator/webhook
 # RBAC
-$CONTROLLER_GEN rbac:roleName=manager-role paths="./pkg/e2e/..." output:rbac:artifacts:config=config/internal/e2e/rbac
+$CONTROLLER_GEN rbac:roleName=manager-role paths="./pkg/e2eoperator/..." output:rbac:artifacts:config=config/internal/e2eoperator/rbac
 # Statik (run only when file CONTENT has changed)
-if [ -z "$(git status --porcelain config/internal/e2e)" ] && [[ -z ${FORCE_STATIK-} ]]; then
-  echo e2e: statik up-to-date
+if [ -z "$(git status --porcelain config/internal/e2eoperator)" ] && [[ -z ${FORCE_STATIK-} ]]; then
+  echo e2eoperator: statik up-to-date
 else \
-  statik -src=config/internal/e2e -p e2e -dest pkg/internal/resources -f -c ''
-  cat hack/boilerplate/boilerplate.generatego.txt | sed s/YEAR/$(date +%Y)/ | cat - pkg/internal/resources/e2e/statik.go > pkg/internal/resources/e2e/statik.go.tmp
-  mv pkg/internal/resources/e2e/statik.go.tmp pkg/internal/resources/e2e/statik.go
-  echo e2e: statik regenerated
+  statik -src=config/internal/e2eoperator -p e2eoperator -dest pkg/internal/resources -f -c ''
+  cat hack/boilerplate/boilerplate.generatego.txt | sed s/YEAR/$(date +%Y)/ | cat - pkg/internal/resources/e2eoperator/statik.go > pkg/internal/resources/e2eoperator/statik.go.tmp
+  mv pkg/internal/resources/e2eoperator/statik.go.tmp pkg/internal/resources/e2eoperator/statik.go
+  echo e2eoperator: statik regenerated
 fi
