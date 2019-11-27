@@ -75,9 +75,6 @@ install:
 	go install -ldflags $(LD_FLAGS) ./cmd/anchor
 .PHONY: install
 
-anchor:
-	go run -ldflags $(LD_FLAGS) ./cmd/anchor $${ARGS:-}
-
 TEST_ID?=1
 MASTER_KIND_CLUSTER?=kubecarrier-${TEST_ID}
 SVC_KIND_CLUSTER?=kubecarrier-svc-${TEST_ID}

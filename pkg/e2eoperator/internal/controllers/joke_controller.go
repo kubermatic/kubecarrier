@@ -50,7 +50,7 @@ func (r *JokeReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 
 	joke.Status.ObservedGeneration = joke.Generation
 	validJokes := make([]e2ev1alpha2.JokeItem, 0)
-	for _, it := range joke.Spec.JokeDatabase {
+	for _, it := range joke.Spec.Jokes {
 		if it.Type == joke.Spec.JokeType {
 			validJokes = append(validJokes, it)
 		}

@@ -60,8 +60,8 @@ func (s *VerifySuite) TestJokeOperator() {
 				Namespace: "default",
 			},
 			Spec: e2ev1alpha2.JokeSpec{
-				JokeDatabase: jokes,
-				JokeType:     "kubernetes",
+				Jokes:    jokes,
+				JokeType: "kubernetes",
 			},
 		}
 		assert.NoError(t, client.IgnoreNotFound(c.Delete(ctx, joke.DeepCopy())))
@@ -93,8 +93,8 @@ func (s *VerifySuite) TestJokeOperator() {
 				Namespace: "default",
 			},
 			Spec: e2ev1alpha2.JokeSpec{
-				JokeDatabase: jokes,
-				JokeType:     "none",
+				Jokes:    jokes,
+				JokeType: "none",
 			},
 		}
 		assert.NoError(t, client.IgnoreNotFound(c.Delete(ctx, joke.DeepCopy())))

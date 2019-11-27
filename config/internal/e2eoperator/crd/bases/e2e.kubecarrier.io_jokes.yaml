@@ -46,8 +46,11 @@ spec:
         spec:
           description: JokeSpec defines the desired state of Joke
           properties:
-            jokeDatabase:
-              description: JokeDatabase specifies all known jokes
+            jokeType:
+              description: JokeType to select
+              type: string
+            jokes:
+              description: Jokes specifies all known jokes
               items:
                 description: JokeCRDConfiguration holds static type information for
                   the Joke instance.
@@ -63,9 +66,6 @@ spec:
                 - type
                 type: object
               type: array
-            jokeType:
-              description: JokeType to select
-              type: string
           required:
           - jokeType
           type: object

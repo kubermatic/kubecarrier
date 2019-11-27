@@ -22,8 +22,8 @@ import (
 
 // JokeSpec defines the desired state of Joke
 type JokeSpec struct {
-	// JokeDatabase specifies all known jokes
-	JokeDatabase []JokeItem `json:"jokeDatabase,omitempty"`
+	// Jokes specifies all known jokes
+	Jokes []JokeItem `json:"jokes,omitempty"`
 
 	// JokeType to select
 	JokeType string `json:"jokeType"`

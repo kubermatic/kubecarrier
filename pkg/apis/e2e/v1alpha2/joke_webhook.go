@@ -30,7 +30,7 @@ var jokelog = controllerruntime.Log.WithName("joke-resource")
 
 func (in *Joke) ValidateCreate() error {
 	jokelog.Info("validate create", "name", in.Name)
-	if len(in.Spec.JokeDatabase) == 0 {
+	if len(in.Spec.Jokes) == 0 {
 		return fmt.Errorf("joke database cannot be empty")
 	}
 	return nil
@@ -38,7 +38,7 @@ func (in *Joke) ValidateCreate() error {
 
 func (in *Joke) ValidateUpdate(old runtime.Object) error {
 	jokelog.Info("validate update", "name", in.Name)
-	if len(in.Spec.JokeDatabase) == 0 {
+	if len(in.Spec.Jokes) == 0 {
 		return fmt.Errorf("joke database cannot be empty")
 	}
 	return nil
