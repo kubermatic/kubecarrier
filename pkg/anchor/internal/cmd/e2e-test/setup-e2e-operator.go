@@ -53,13 +53,13 @@ func newSetupE2EOperator(log logr.Logger) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "setup-e2e-operator",
 		Short: "install e2e operator in the given cluster",
-		Run: func(cmd *cobra.Command, args []string) {
+		RunE: func(cmd *cobra.Command, args []string) error {
 			kubeconfig := cmd.Flag("kubeconfig").Value.String()
 			namespaceName := cmd.Flag("namespace").Value.String()
 			if err := setupE2EOperator(log, kubeconfig, namespaceName, cmd.OutOrStdout()); err != nil {
-				log.Error(err, "cannot setup e2e operator")
-				os.Exit(2)
+				return fmt.Errorf("setup-e2e: %w", err)
 			}
+			return nil
 		},
 	}
 	cmd.Flags().String("kubeconfig", os.Getenv("KUBECONFIG"), "cluster kubeconfig where to install")
