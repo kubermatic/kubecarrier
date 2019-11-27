@@ -3,6 +3,7 @@
 # It should be run by config/default
 resources:
 - bases/catalog.kubecarrier.io_tenants.yaml
+- bases/catalog.kubecarrier.io_providers.yaml
 # +kubebuilder:scaffold:crdkustomizeresource
 
 patchesStrategicMerge:

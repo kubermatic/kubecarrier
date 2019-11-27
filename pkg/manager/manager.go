@@ -83,6 +83,14 @@ func run(flags *flags, log logr.Logger) error {
 		return fmt.Errorf("creating Tenant controller: %w", err)
 	}
 
+	if err = (&controllers.ProviderReconciler{
+		Client: mgr.GetClient(),
+		Log:    log.WithName("controllers").WithName("Provider"),
+		Scheme: mgr.GetScheme(),
+	}).SetupWithManager(mgr); err != nil {
+		return fmt.Errorf("creating Provider controller: %w", err)
+	}
+
 	log.Info("starting manager")
 	if err := mgr.Start(ctrl.SetupSignalHandler()); err != nil {
 		return fmt.Errorf("running manager: %w", err)
