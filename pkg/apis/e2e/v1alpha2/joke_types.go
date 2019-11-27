@@ -22,17 +22,17 @@ import (
 
 // JokeSpec defines the desired state of Joke
 type JokeSpec struct {
-	// JokeDatabase specifies all known jokes
-	JokeDatabase []JokeItem `json:"jokeDatabase,omitempty"`
+	// Jokes specifies all known jokes
+	Jokes []JokeItem `json:"jokes,omitempty"`
+
+	//Disabled marks this joke as disabled; thus making this object unready
+	Disabled bool `json:"disabled"`
 }
 
 // JokeCRDConfiguration holds static type information for the Joke instance.
 type JokeItem struct {
 	// Text of the joke
 	Text string `json:"text"`
-
-	// Type of the Joke
-	Type string `json:"type"`
 }
 
 // JokeStatus defines the observed state of Joke

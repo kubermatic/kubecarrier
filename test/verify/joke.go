@@ -39,21 +39,19 @@ func (s *VerifySuite) TestJokeOperator() {
 	s.EnsureJokeOperator(t)
 	s.SetupSuite() // requires client reinit due to new CRDs
 
+	jokes := []e2ev1alpha2.JokeItem{
+		{
+			// https://twitter.com/wm/status/1172654176742105089?lang=en
+			Text: "A devops engineer walks into a bar, puts the bartender in a docker container, put kubernetes behind the bar, spins up 1000 bartenders, orders 1 beer.",
+		},
+		{
+			// https://www.reddit.com/r/sysadmin/comments/625mk9/sysadmindevops_jokes/dfjwac5/
+			Text: "I'd tell you the one about UDP, but you wouldn't get it.",
+		},
+	}
+
 	t.Run("success", func(t *testing.T) {
 		t.Parallel()
-		jokes := []e2ev1alpha2.JokeItem{
-			{
-				// https://twitter.com/wm/status/1172654176742105089?lang=en
-				Text: "A devops engineer walks into a bar, puts the bartender in a docker container, put kubernetes behind the bar, spins up 1000 bartenders, orders 1 beer.",
-				Type: "kubernetes",
-			},
-			{
-				// https://www.reddit.com/r/sysadmin/comments/625mk9/sysadmindevops_jokes/dfjwac5/
-				Text: "I'd tell you the one about UDP, but you wouldn't get it.",
-				Type: "devops",
-			},
-		}
-
 		ctx := context.Background()
 		c := s.serviceClient
 		joke := &e2ev1alpha2.Joke{
@@ -62,7 +60,7 @@ func (s *VerifySuite) TestJokeOperator() {
 				Namespace: "default",
 			},
 			Spec: e2ev1alpha2.JokeSpec{
-				JokeDatabase: jokes,
+				Jokes: jokes,
 			},
 		}
 		assert.NoError(t, client.IgnoreNotFound(c.Delete(ctx, joke.DeepCopy())))
@@ -84,10 +82,8 @@ func (s *VerifySuite) TestJokeOperator() {
 		t.Log("selected joke: " + joke.Status.SelectedJoke.Text)
 	})
 
-	t.Run("InvalidJokesDatabase", func(t *testing.T) {
+	t.Run("DisabledJoke", func(t *testing.T) {
 		t.Parallel()
-		jokes := []e2ev1alpha2.JokeItem{}
-
 		ctx := context.Background()
 		c := s.serviceClient
 		joke := &e2ev1alpha2.Joke{
@@ -96,7 +92,8 @@ func (s *VerifySuite) TestJokeOperator() {
 				Namespace: "default",
 			},
 			Spec: e2ev1alpha2.JokeSpec{
-				JokeDatabase: jokes,
+				Jokes:    jokes,
+				Disabled: true,
 			},
 		}
 		assert.NoError(t, client.IgnoreNotFound(c.Delete(ctx, joke.DeepCopy())))

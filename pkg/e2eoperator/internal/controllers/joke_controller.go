@@ -49,7 +49,23 @@ func (r *JokeReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	}
 
 	joke.Status.ObservedGeneration = joke.Generation
-	if len(joke.Spec.JokeDatabase) == 0 {
+	if joke.Spec.Disabled {
+		joke.Status.SelectedJoke = nil
+		joke.Status.SetCondition(e2ev1alpha2.JokeCondition{
+			Message: "Joke object is disabled",
+			Reason:  "Disabled",
+			Status:  e2ev1alpha2.ConditionFalse,
+			Type:    e2ev1alpha2.JokeReady,
+		})
+		if err := r.Status().Update(ctx, joke); err != nil {
+			return ctrl.Result{}, fmt.Errorf("cannot update joke: %w", err)
+		}
+		return ctrl.Result{}, nil
+
+	}
+
+	// This should be handled by the validation webhook
+	if len(joke.Spec.Jokes) == 0 {
 		joke.Status.SelectedJoke = nil
 		joke.Status.SetCondition(e2ev1alpha2.JokeCondition{
 			Message: "No jokes were defined in the database",
@@ -62,7 +78,8 @@ func (r *JokeReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 		}
 		return ctrl.Result{}, nil
 	}
-	joke.Status.SelectedJoke = &joke.Spec.JokeDatabase[rand.Intn(len(joke.Spec.JokeDatabase))]
+
+	joke.Status.SelectedJoke = &joke.Spec.Jokes[rand.Intn(len(joke.Spec.Jokes))]
 	joke.Status.SetCondition(e2ev1alpha2.JokeCondition{
 		Message: "Joke has been found and setup",
 		Reason:  "JokeSetup",
