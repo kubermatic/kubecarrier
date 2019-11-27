@@ -49,11 +49,17 @@ func (r *JokeReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	}
 
 	joke.Status.ObservedGeneration = joke.Generation
-	if len(joke.Spec.JokeDatabase) == 0 {
+	validJokes := make([]e2ev1alpha2.JokeItem, 0)
+	for _, it := range joke.Spec.JokeDatabase {
+		if it.Type == joke.Spec.JokeType {
+			validJokes = append(validJokes, it)
+		}
+	}
+	if len(validJokes) == 0 {
 		joke.Status.SelectedJoke = nil
 		joke.Status.SetCondition(e2ev1alpha2.JokeCondition{
-			Message: "No jokes were defined in the database",
-			Reason:  "EmptyDatabase",
+			Message: "No jokes of the appropriate type were found in the jokes database",
+			Reason:  "NoValidJokes",
 			Status:  e2ev1alpha2.ConditionFalse,
 			Type:    e2ev1alpha2.JokeReady,
 		})
@@ -62,7 +68,7 @@ func (r *JokeReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 		}
 		return ctrl.Result{}, nil
 	}
-	joke.Status.SelectedJoke = &joke.Spec.JokeDatabase[rand.Intn(len(joke.Spec.JokeDatabase))]
+	joke.Status.SelectedJoke = &validJokes[rand.Intn(len(validJokes))]
 	joke.Status.SetCondition(e2ev1alpha2.JokeCondition{
 		Message: "Joke has been found and setup",
 		Reason:  "JokeSetup",

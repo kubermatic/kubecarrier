@@ -38,22 +38,20 @@ func (s *VerifySuite) TestJokeOperator() {
 	t.Parallel()
 	s.EnsureJokeOperator(t)
 	s.SetupSuite() // requires client reinit due to new CRDs
-
+	jokes := []e2ev1alpha2.JokeItem{
+		{
+			// https://twitter.com/wm/status/1172654176742105089?lang=en
+			Text: "A devops engineer walks into a bar, puts the bartender in a docker container, put kubernetes behind the bar, spins up 1000 bartenders, orders 1 beer.",
+			Type: "kubernetes",
+		},
+		{
+			// https://www.reddit.com/r/sysadmin/comments/625mk9/sysadmindevops_jokes/dfjwac5/
+			Text: "I'd tell you the one about UDP, but you wouldn't get it.",
+			Type: "devops",
+		},
+	}
 	t.Run("success", func(t *testing.T) {
 		t.Parallel()
-		jokes := []e2ev1alpha2.JokeItem{
-			{
-				// https://twitter.com/wm/status/1172654176742105089?lang=en
-				Text: "A devops engineer walks into a bar, puts the bartender in a docker container, put kubernetes behind the bar, spins up 1000 bartenders, orders 1 beer.",
-				Type: "kubernetes",
-			},
-			{
-				// https://www.reddit.com/r/sysadmin/comments/625mk9/sysadmindevops_jokes/dfjwac5/
-				Text: "I'd tell you the one about UDP, but you wouldn't get it.",
-				Type: "devops",
-			},
-		}
-
 		ctx := context.Background()
 		c := s.serviceClient
 		joke := &e2ev1alpha2.Joke{
@@ -63,11 +61,12 @@ func (s *VerifySuite) TestJokeOperator() {
 			},
 			Spec: e2ev1alpha2.JokeSpec{
 				JokeDatabase: jokes,
+				JokeType:     "kubernetes",
 			},
 		}
 		assert.NoError(t, client.IgnoreNotFound(c.Delete(ctx, joke.DeepCopy())))
 		require.NoError(t, c.Create(ctx, joke))
-		assert.NoError(t, wait.Poll(time.Second, 15*time.Second, func() (done bool, err error) {
+		require.NoError(t, wait.Poll(time.Second, 15*time.Second, func() (done bool, err error) {
 			if err := c.Get(ctx, types.NamespacedName{
 				Namespace: joke.Namespace,
 				Name:      joke.Name,
@@ -84,10 +83,8 @@ func (s *VerifySuite) TestJokeOperator() {
 		t.Log("selected joke: " + joke.Status.SelectedJoke.Text)
 	})
 
-	t.Run("InvalidJokesDatabase", func(t *testing.T) {
+	t.Run("NoValidJokes", func(t *testing.T) {
 		t.Parallel()
-		jokes := []e2ev1alpha2.JokeItem{}
-
 		ctx := context.Background()
 		c := s.serviceClient
 		joke := &e2ev1alpha2.Joke{
@@ -97,6 +94,7 @@ func (s *VerifySuite) TestJokeOperator() {
 			},
 			Spec: e2ev1alpha2.JokeSpec{
 				JokeDatabase: jokes,
+				JokeType:     "none",
 			},
 		}
 		assert.NoError(t, client.IgnoreNotFound(c.Delete(ctx, joke.DeepCopy())))

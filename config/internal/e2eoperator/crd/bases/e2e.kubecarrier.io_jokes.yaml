@@ -63,6 +63,11 @@ spec:
                 - type
                 type: object
               type: array
+            jokeType:
+              description: JokeType to select
+              type: string
+          required:
+          - jokeType
           type: object
         status:
           description: JokeStatus defines the observed state of Joke

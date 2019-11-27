@@ -24,6 +24,9 @@ import (
 type JokeSpec struct {
 	// JokeDatabase specifies all known jokes
 	JokeDatabase []JokeItem `json:"jokeDatabase,omitempty"`
+
+	// JokeType to select
+	JokeType string `json:"jokeType"`
 }
 
 // JokeCRDConfiguration holds static type information for the Joke instance.
