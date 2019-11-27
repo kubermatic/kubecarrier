@@ -137,11 +137,28 @@ func (r *KubeCarrierReconciler) SetupWithManager(mgr ctrl.Manager) error {
 }
 
 // handleDeletion handles the deletion of the KubeCarrier object. Currently, it does:
-// 1. Delete the objects that the KubeCarrier object owns.
-// 2. Remove the finalizer from the KubeCarrier object.
+// 1. Update the KubeCarrier status to Terminating.
+// 2. Delete the objects that the KubeCarrier object owns.
+// 3. Remove the finalizer from the KubeCarrier object.
 func (r *KubeCarrierReconciler) handleDeletion(ctx context.Context, kubeCarrier *operatorv1alpha1.KubeCarrier) error {
 
-	// 1. Delete Objects.
+	// 1. Update the KubeCarrier Status to Terminating.
+	readyCondition, _ := kubeCarrier.Status.GetCondition(operatorv1alpha1.KubeCarrierReady)
+	if readyCondition.Status != operatorv1alpha1.ConditionFalse ||
+		readyCondition.Status == operatorv1alpha1.ConditionFalse && readyCondition.Reason != operatorv1alpha1.KubeCarrierTerminatingReason {
+		kubeCarrier.Status.ObservedGeneration = kubeCarrier.Generation
+		kubeCarrier.Status.SetCondition(operatorv1alpha1.KubeCarrierCondition{
+			Type:    operatorv1alpha1.KubeCarrierReady,
+			Status:  operatorv1alpha1.ConditionFalse,
+			Reason:  operatorv1alpha1.KubeCarrierTerminatingReason,
+			Message: "KubeCarrier is being terminated",
+		})
+		if err := r.Status().Update(ctx, kubeCarrier); err != nil {
+			return fmt.Errorf("updating KubeCarrier status: %w", err)
+		}
+	}
+
+	// 2. Delete Objects.
 	ownedBy, err := util.OwnedBy(kubeCarrier, r.Scheme)
 	if err != nil {
 		return fmt.Errorf("getting ownedBy list option: %w", err)
@@ -162,7 +179,7 @@ func (r *KubeCarrierReconciler) handleDeletion(ctx context.Context, kubeCarrier 
 		return nil
 	}
 
-	// 2. Remove the Finalizer.
+	// 3. Remove the Finalizer.
 	if util.RemoveFinalizer(kubeCarrier, kubeCarrierControllerFinalizer) {
 		if err := r.Update(ctx, kubeCarrier); err != nil {
 			return fmt.Errorf("updating KubeCarrier finalizers: %w", err)
