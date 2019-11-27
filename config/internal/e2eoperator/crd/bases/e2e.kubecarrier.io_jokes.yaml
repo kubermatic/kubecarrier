@@ -46,12 +46,8 @@ spec:
         spec:
           description: JokeSpec defines the desired state of Joke
           properties:
-            disabled:
-              description: Disabled marks this joke as disabled; thus making this
-                object unready
-              type: boolean
-            jokes:
-              description: Jokes specifies all known jokes
+            jokeDatabase:
+              description: JokeDatabase specifies all known jokes
               items:
                 description: JokeCRDConfiguration holds static type information for
                   the Joke instance.
@@ -59,12 +55,14 @@ spec:
                   text:
                     description: Text of the joke
                     type: string
+                  type:
+                    description: Type of the Joke
+                    type: string
                 required:
                 - text
+                - type
                 type: object
               type: array
-          required:
-          - disabled
           type: object
         status:
           description: JokeStatus defines the observed state of Joke
@@ -119,8 +117,12 @@ spec:
                 text:
                   description: Text of the joke
                   type: string
+                type:
+                  description: Type of the Joke
+                  type: string
               required:
               - text
+              - type
               type: object
           type: object
       type: object

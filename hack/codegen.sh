@@ -68,7 +68,7 @@ fi
 # E2E
 # -------
 # CRDs/Webhooks
-$CONTROLLER_GEN crd webhook paths="./pkg/apis/e2e/..." output:crd:artifacts:config=config/internal/e2eoperator/crd/bases output:webhook:artifacts:config=config/internal/e2eoperator/webhook
+$CONTROLLER_GEN crd webhook paths="./pkg/apis/e2eoperator/..." output:crd:artifacts:config=config/internal/e2eoperator/crd/bases output:webhook:artifacts:config=config/internal/e2eoperator/webhook
 # RBAC
 $CONTROLLER_GEN rbac:roleName=manager-role paths="./pkg/e2eoperator/..." output:rbac:artifacts:config=config/internal/e2eoperator/rbac
 # Statik (run only when file CONTENT has changed)
