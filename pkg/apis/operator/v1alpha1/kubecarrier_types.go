@@ -43,9 +43,14 @@ type KubeCarrierPhaseType string
 
 // Values of KubeCarrierPhaseType.
 const (
-	KubeCarrierPhaseReady   KubeCarrierPhaseType = "Ready"
-	KubeCarrierPhaseFailed  KubeCarrierPhaseType = "Failed"
-	KubeCarrierPhaseUnknown KubeCarrierPhaseType = "Unknown"
+	KubeCarrierPhaseReady       KubeCarrierPhaseType = "Ready"
+	KubeCarrierPhaseNotReady    KubeCarrierPhaseType = "NotReady"
+	KubeCarrierPhaseUnknown     KubeCarrierPhaseType = "Unknown"
+	KubeCarrierPhaseTerminating KubeCarrierPhaseType = "Terminating"
+)
+
+const (
+	KubeCarrierTerminatingReason = "Deleting"
 )
 
 // updatePhase updates the phase property based on the current conditions
@@ -61,7 +66,11 @@ func (s *KubeCarrierStatus) updatePhase() {
 		case ConditionTrue:
 			s.Phase = KubeCarrierPhaseReady
 		case ConditionFalse:
-			s.Phase = KubeCarrierPhaseFailed
+			if condition.Reason == KubeCarrierTerminatingReason {
+				s.Phase = KubeCarrierPhaseTerminating
+			} else {
+				s.Phase = KubeCarrierPhaseNotReady
+			}
 		case ConditionUnknown:
 			s.Phase = KubeCarrierPhaseUnknown
 		}

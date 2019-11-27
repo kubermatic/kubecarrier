@@ -33,72 +33,72 @@ import (
 	"github.com/kubermatic/kubecarrier/pkg/testutil"
 )
 
-func TestTenantReconciler(t *testing.T) {
-	tenant := &catalogv1alpha1.Tenant{
+func TestProviderReconciler(t *testing.T) {
+	provider := &catalogv1alpha1.Provider{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      "test-tenant",
+			Name:      "test-provider",
 			Namespace: "kubecarrier-system",
 		},
 	}
 
-	client := fakeclient.NewFakeClientWithScheme(testScheme, tenant)
+	client := fakeclient.NewFakeClientWithScheme(testScheme, provider)
 	log := testutil.NewLogger(t)
-	r := &TenantReconciler{
+	r := &ProviderReconciler{
 		Client: client,
 		Log:    log,
 		Scheme: testScheme,
 	}
 	ctx := context.Background()
 
-	tenantFound := &catalogv1alpha1.Tenant{}
+	providerFound := &catalogv1alpha1.Provider{}
 	namespaceFound := &corev1.Namespace{}
-	if !t.Run("create/update Tenant", func(t *testing.T) {
+	if !t.Run("create/update Provider", func(t *testing.T) {
 		for i := 0; i < 5; i++ {
 			// Run Reconcile multiple times, because
-			// the reconcilation stops after changing the Tenant
+			// the reconcilation stops after changing the Provider
 			_, err := r.Reconcile(ctrl.Request{
 				NamespacedName: types.NamespacedName{
-					Name:      tenant.Name,
-					Namespace: tenant.Namespace,
+					Name:      provider.Name,
+					Namespace: provider.Namespace,
 				},
 			})
 			require.NoError(t, err, "unexpected error returned by Reconcile")
 		}
 
-		// Check Tenant
+		// Check Provider
 		require.NoError(t, client.Get(ctx, types.NamespacedName{
-			Name:      tenant.Name,
-			Namespace: tenant.Namespace,
-		}, tenantFound), "error when getting tenant")
-		assert.Len(t, tenantFound.Finalizers, 1, "finalizer should be added to Tenant")
-		assert.NotEmpty(t, tenantFound.Status.NamespaceName, ".Status.NamespaceName should be set")
+			Name:      provider.Name,
+			Namespace: provider.Namespace,
+		}, providerFound), "error when getting provider")
+		assert.Len(t, providerFound.Finalizers, 1, "finalizer should be added to Provider")
+		assert.NotEmpty(t, providerFound.Status.NamespaceName, ".Status.NamespaceName should be set")
 
-		// Check Tenant Conditions
-		readyCondition, readyConditionExists := tenantFound.Status.GetCondition(catalogv1alpha1.TenantReady)
+		// Check Provider Conditions
+		readyCondition, readyConditionExists := providerFound.Status.GetCondition(catalogv1alpha1.ProviderReady)
 		assert.True(t, readyConditionExists, "Ready Condition is not set")
 		assert.Equal(t, catalogv1alpha1.ConditionTrue, readyCondition.Status, "Wrong Ready condition.Status")
 
 		// Check Namespace
 		require.NoError(t, client.Get(ctx, types.NamespacedName{
-			Name: "tenant-" + tenant.Name,
+			Name: "provider-" + provider.Name,
 		}, namespaceFound), "getting namespace error")
 	}) {
 		t.FailNow()
 	}
 
-	t.Run("delete Tenant", func(t *testing.T) {
+	t.Run("delete Provider", func(t *testing.T) {
 		// Setup
 		ts := metav1.Now()
-		tenantFound.DeletionTimestamp = &ts
-		require.NoError(t, client.Update(ctx, tenantFound), "unexpected error updating tenant")
+		providerFound.DeletionTimestamp = &ts
+		require.NoError(t, client.Update(ctx, providerFound), "unexpected error updating provider")
 
 		for i := 0; i < 5; i++ {
 			// Run Reconcile multiple times, because
-			// the reconcilation stops after changing the Tenant
+			// the reconcilation stops after changing the Provider
 			_, err := r.Reconcile(ctrl.Request{
 				NamespacedName: types.NamespacedName{
-					Name:      tenantFound.Name,
-					Namespace: tenantFound.Namespace,
+					Name:      providerFound.Name,
+					Namespace: providerFound.Namespace,
 				},
 			})
 			require.NoError(t, err, "unexpected error returned by Reconcile")
@@ -109,17 +109,17 @@ func TestTenantReconciler(t *testing.T) {
 			Name: namespaceFound.Name,
 		}, namespaceCheck)), "Namespace should be gone")
 
-		tenantCheck := &catalogv1alpha1.Tenant{}
+		providerCheck := &catalogv1alpha1.Provider{}
 		require.NoError(t, client.Get(ctx, types.NamespacedName{
-			Name:      tenantFound.Name,
-			Namespace: tenantFound.Namespace,
-		}, tenantCheck), "cannot check Tenant")
-		assert.Len(t, tenantCheck.Finalizers, 0, "finalizers should have been removed")
+			Name:      providerFound.Name,
+			Namespace: providerFound.Namespace,
+		}, providerCheck), "cannot check Provider")
+		assert.Len(t, providerCheck.Finalizers, 0, "finalizers should have been removed")
 
-		// Check Tenant Conditions
-		readyCondition, readyConditionExists := tenantCheck.Status.GetCondition(catalogv1alpha1.TenantReady)
+		// Check Provider Conditions
+		readyCondition, readyConditionExists := providerCheck.Status.GetCondition(catalogv1alpha1.ProviderReady)
 		assert.True(t, readyConditionExists, "Ready Condition is not set")
 		assert.Equal(t, catalogv1alpha1.ConditionFalse, readyCondition.Status, "Wrong Ready condition.Status")
-		assert.Equal(t, catalogv1alpha1.TenantTerminatingReason, readyCondition.Reason, "Wrong Reason condition.Status")
+		assert.Equal(t, catalogv1alpha1.ProviderTerminatingReason, readyCondition.Reason, "Wrong Reason condition.Status")
 	})
 }

@@ -20,78 +20,88 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// TenantSpec defines the desired state of Tenant.
-type TenantSpec struct{}
+// ProviderSpec defines the desired state of Provider.
+type ProviderSpec struct {
+	Metadata ProviderMetadata `json:"metadata,omitempty"`
+}
 
-// TenantStatus defines the observed state of Tenant.
-type TenantStatus struct {
-	// NamespaceName is the name of the namespace that the Tenant manages.
+// ProviderMetadata contains the metadata (display name, description, etc) of the Provider.
+type ProviderMetadata struct {
+	// DisplayName shows the human-readable name of this Provider.
+	DisplayName string `json:"displayName,omitempty"`
+	// Description shows the human-readable description of this Provider.
+	Description string `json:"description,omitempty"`
+}
+
+// ProviderStatus defines the observed state of Provider.
+type ProviderStatus struct {
+	// NamespaceName is the name of the namespace that the Provider manages.
 	NamespaceName string `json:"namespaceName,omitempty"`
-	// ObservedGeneration is the most recent generation observed for this Tenant by the controller.
+	// ObservedGeneration is the most recent generation observed for this Provider by the controller.
 	ObservedGeneration int64 `json:"observedGeneration,omitempty"`
-	// Conditions represents the latest available observations of a Tenant's current state.
-	Conditions []TenantCondition `json:"conditions,omitempty"`
+	// Conditions represents the latest available observations of a Provider's current state.
+	Conditions []ProviderCondition `json:"conditions,omitempty"`
 	// DEPRECATED.
 	// Phase represents the current lifecycle state of this object.
 	// Consider this field DEPRECATED, it will be removed as soon as there
 	// is a mechanism to map conditions to strings when printing the property.
 	// This is only for display purpose, for everything else use conditions.
-	Phase TenantPhaseType `json:"phase,omitempty"`
+	Phase ProviderPhaseType `json:"phase,omitempty"`
 }
 
-// TenantPhaseType represents all conditions as a single string for printing by using kubectl commands.
-type TenantPhaseType string
+// ProviderPhaseType represents all conditions as a single string for printing by using kubectl commands.
+type ProviderPhaseType string
 
-// Values of TenantPhaseType.
+// Values of ProviderPhaseType.
 const (
-	TenantPhaseReady       TenantPhaseType = "Ready"
-	TenantPhaseNotReady    TenantPhaseType = "NotReady"
-	TenantPhaseUnknown     TenantPhaseType = "Unknown"
-	TenantPhaseTerminating TenantPhaseType = "Terminating"
+	ProviderPhaseReady       ProviderPhaseType = "Ready"
+	ProviderPhaseNotReady    ProviderPhaseType = "NotReady"
+	ProviderPhaseUnknown     ProviderPhaseType = "Unknown"
+	ProviderPhaseTerminating ProviderPhaseType = "Terminating"
 )
 
 const (
-	TenantTerminatingReason = "Deleting"
+	ProviderTerminatingReason = "Deleting"
 )
 
 // updatePhase updates the phase property based on the current conditions
 // this method should be called every time the conditions are updated.
-func (s *TenantStatus) updatePhase() {
+func (s *ProviderStatus) updatePhase() {
 	for _, condition := range s.Conditions {
-		if condition.Type != TenantReady {
+		if condition.Type != ProviderReady {
 			continue
 		}
 
 		switch condition.Status {
 		case ConditionTrue:
-			s.Phase = TenantPhaseReady
+			s.Phase = ProviderPhaseReady
 		case ConditionFalse:
-			if condition.Reason == TenantTerminatingReason {
-				s.Phase = TenantPhaseTerminating
+			if condition.Reason == ProviderTerminatingReason {
+				s.Phase = ProviderPhaseTerminating
 			} else {
-				s.Phase = TenantPhaseNotReady
+				s.Phase = ProviderPhaseNotReady
 			}
 		case ConditionUnknown:
-			s.Phase = TenantPhaseUnknown
+			s.Phase = ProviderPhaseUnknown
 		}
 		return
 	}
 
-	s.Phase = TenantPhaseUnknown
+	s.Phase = ProviderPhaseUnknown
 }
 
-// TenantConditionType represents a TenantCondition value.
-type TenantConditionType string
+// ProviderConditionType represents a ProviderCondition value.
+type ProviderConditionType string
 
 const (
-	// TenantReady represents a Tenant condition is in ready state.
-	TenantReady TenantConditionType = "Ready"
+	// ProviderReady represents a Provider condition is in ready state.
+	ProviderReady ProviderConditionType = "Ready"
 )
 
-// TenantCondition contains details for the current condition of this Tenant.
-type TenantCondition struct {
-	// Type is the type of the Tenant condition, currently ('Ready').
-	Type TenantConditionType `json:"type"`
+// ProviderCondition contains details for the current condition of this Provider.
+type ProviderCondition struct {
+	// Type is the type of the Provider condition, currently ('Ready').
+	Type ProviderConditionType `json:"type"`
 	// Status is the status of the condition, one of ('True', 'False', 'Unknown').
 	Status ConditionStatus `json:"status"`
 	// LastTransitionTime is the last time the condition transits from one status to another.
@@ -103,7 +113,7 @@ type TenantCondition struct {
 }
 
 // GetCondition returns the Condition of the given condition type, if it exists.
-func (s *TenantStatus) GetCondition(t TenantConditionType) (condition TenantCondition, exists bool) {
+func (s *ProviderStatus) GetCondition(t ProviderConditionType) (condition ProviderCondition, exists bool) {
 	for _, cond := range s.Conditions {
 		if cond.Type == t {
 			condition = cond
@@ -115,7 +125,7 @@ func (s *TenantStatus) GetCondition(t TenantConditionType) (condition TenantCond
 }
 
 // SetCondition replaces or adds the given condition.
-func (s *TenantStatus) SetCondition(condition TenantCondition) {
+func (s *ProviderStatus) SetCondition(condition ProviderCondition) {
 	defer s.updatePhase()
 
 	if condition.LastTransitionTime.IsZero() {
@@ -141,28 +151,30 @@ func (s *TenantStatus) SetCondition(condition TenantCondition) {
 	s.Conditions = append(s.Conditions, condition)
 }
 
-// Tenant sets up permissions and references to allow a end-user group to interact with providers' services.
+// Provider is the service provider representation in the KubeCarrier control-plane.
 // +kubebuilder:object:root=true
 // +kubebuilder:subresource:status
+// +kubebuilder:printcolumn:name="Provider Namespace",type="string",JSONPath=".status.namespaceName"
+// +kubebuilder:printcolumn:name="Display Name",type="string",JSONPath=".spec.displayName"
 // +kubebuilder:printcolumn:name="Status",type="string",JSONPath=".status.phase"
 // +kubebuilder:printcolumn:name="Age",type="date",JSONPath=".metadata.creationTimestamp"
-// +kubebuilder:resource:shortName=tn
-type Tenant struct {
+// +kubebuilder:resource:shortName=pdr
+type Provider struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec   TenantSpec   `json:"spec,omitempty"`
-	Status TenantStatus `json:"status,omitempty"`
+	Spec   ProviderSpec   `json:"spec,omitempty"`
+	Status ProviderStatus `json:"status,omitempty"`
 }
 
-// TenantList contains a list of Tenant.
+// ProviderList contains a list of Provider.
 // +kubebuilder:object:root=true
-type TenantList struct {
+type ProviderList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
-	Items           []Tenant `json:"items"`
+	Items           []Provider `json:"items"`
 }
 
 func init() {
-	SchemeBuilder.Register(&Tenant{}, &TenantList{})
+	SchemeBuilder.Register(&Provider{}, &ProviderList{})
 }
