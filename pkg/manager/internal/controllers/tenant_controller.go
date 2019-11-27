@@ -115,6 +115,22 @@ func (r *TenantReconciler) SetupWithManager(mgr ctrl.Manager) error {
 // 1. Delete the Namespace that the tenant owns.
 // 2. Remove the finalizer from the tenant object.
 func (r *TenantReconciler) handleDeletion(ctx context.Context, log logr.Logger, tenant *catalogv1alpha1.Tenant) error {
+	// Update the Tenant Status to Terminating.
+	readyCondition, _ := tenant.Status.GetCondition(catalogv1alpha1.TenantReady)
+	if readyCondition.Status != catalogv1alpha1.ConditionFalse ||
+		readyCondition.Status == catalogv1alpha1.ConditionFalse && readyCondition.Reason != catalogv1alpha1.TenantTerminatingReason {
+		tenant.Status.ObservedGeneration = tenant.Generation
+		tenant.Status.SetCondition(catalogv1alpha1.TenantCondition{
+			Type:    catalogv1alpha1.TenantReady,
+			Status:  catalogv1alpha1.ConditionFalse,
+			Reason:  catalogv1alpha1.TenantTerminatingReason,
+			Message: "Tenant is being terminated",
+		})
+		if err := r.Status().Update(ctx, tenant); err != nil {
+			return fmt.Errorf("updating Tenant status: %w", err)
+		}
+	}
+
 	ns := &corev1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: tenant.Status.NamespaceName,
