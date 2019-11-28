@@ -16,7 +16,7 @@ spec:
         control-plane: controller-manager
     spec:
       containers:
-        - image: quay.io/kubecarrier/e2e-operator:latest
+        - image: quay.io/kubecarrier/fake-operator:latest
           name: manager
           resources:
             limits:

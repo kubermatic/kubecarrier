@@ -90,7 +90,7 @@ e2e-test: install require-docker
 	@echo "kind clusters created"
 	@echo "Loading the images"
 	@$(MAKE) --no-print-directory KIND_CLUSTER=${MASTER_KIND_CLUSTER} kind-load
-	@$(MAKE) --no-print-directory KIND_CLUSTER=${SVC_KIND_CLUSTER} kind-load-e2e-operator
+	@$(MAKE) --no-print-directory KIND_CLUSTER=${SVC_KIND_CLUSTER} kind-load-fake-operator
 	@$(MAKE) --no-print-directory e2e-test-runonly
 .PHONY: e2e-test
 
@@ -112,13 +112,13 @@ tidy:
 push-images: \
 	push-image-operator \
 	push-image-manager \
-	push-image-e2e-operator
+	push-image-fake-operator
 
 # build all container images except the test image
 build-images: \
 	build-image-operator \
 	build-image-manager \
-	build-image-e2e-operator
+	build-image-fake-operator
 
 kind-load: \
 	kind-load-operator \

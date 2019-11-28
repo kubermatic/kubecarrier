@@ -23,7 +23,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/kubermatic/kubecarrier/pkg/internal/util"
+	"github.com/kubermatic/kubecarrier/pkg/internal/resources/fakeoperator"
 
 	"github.com/gernest/wow"
 	"github.com/gernest/wow/spin"
@@ -43,10 +43,11 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client/config"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
+	"github.com/kubermatic/kubecarrier/pkg/internal/util"
+
 	"github.com/kubermatic/kubecarrier/pkg/anchor/internal/spinner"
 	"github.com/kubermatic/kubecarrier/pkg/internal/kustomize"
 	"github.com/kubermatic/kubecarrier/pkg/internal/reconcile"
-	"github.com/kubermatic/kubecarrier/pkg/internal/resources/e2eoperator"
 )
 
 func newSetupE2EOperator(log logr.Logger) *cobra.Command {
@@ -111,9 +112,9 @@ func setupE2EOperator(log logr.Logger, kubeconfig string, namespaceName string, 
 	}
 
 	if err := spinner.AttachSpinnerTo(s, "deploy e2e-operator", func() error {
-		objects, err := e2eoperator.Manifests(
+		objects, err := fakeoperator.Manifests(
 			kustomize.NewDefaultKustomize(),
-			e2eoperator.Config{
+			fakeoperator.Config{
 				Namespace: namespace.Name,
 			})
 		if err != nil {
@@ -152,7 +153,7 @@ func setupE2EOperator(log logr.Logger, kubeconfig string, namespaceName string, 
 		return wait.Poll(time.Second, 60*time.Second, func() (done bool, err error) {
 			deployment := &appsv1.Deployment{}
 			err = c.Get(ctx, types.NamespacedName{
-				Name:      "e2e-controller-manager",
+				Name:      "fake-controller-manager",
 				Namespace: namespace.Name,
 			}, deployment)
 			switch {

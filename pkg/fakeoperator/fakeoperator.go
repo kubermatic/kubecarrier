@@ -14,10 +14,12 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package e2eoperator
+package fakeoperator
 
 import (
 	"fmt"
+
+	fakev1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/fake/v1alpha1"
 
 	"github.com/go-logr/logr"
 	"github.com/spf13/cobra"
@@ -29,8 +31,7 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
-	e2ev1alpha2 "github.com/kubermatic/kubecarrier/pkg/apis/e2e/v1alpha2"
-	"github.com/kubermatic/kubecarrier/pkg/e2eoperator/internal/controllers"
+	"github.com/kubermatic/kubecarrier/pkg/fakeoperator/internal/controllers"
 )
 
 type flags struct {
@@ -39,7 +40,7 @@ type flags struct {
 	verbosity            int8
 }
 
-func NewE2E() *cobra.Command {
+func NewFakeOperator() *cobra.Command {
 	flags := flags{}
 
 	cmd := &cobra.Command{
@@ -53,6 +54,7 @@ func NewE2E() *cobra.Command {
 		"Enable leader election for controller manager. Enabling this will ensure there is only one active controller manager.")
 	cmd.Flags().Int8VarP(&flags.verbosity, "verbosity", "v", 4, "log level version")
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
+		fmt.Print("myyyy sharona!")
 		return run(flags, ctrl.Log.WithName("setup"))
 	}
 	return cmd
@@ -63,7 +65,7 @@ func run(flags flags, log logr.Logger) error {
 		scheme = runtime.NewScheme()
 	)
 
-	_ = e2ev1alpha2.AddToScheme(scheme)
+	_ = fakev1alpha1.AddToScheme(scheme)
 	_ = corescheme.AddToScheme(scheme)
 	_ = v1beta1.AddToScheme(scheme)
 
@@ -83,7 +85,7 @@ func run(flags flags, log logr.Logger) error {
 		return fmt.Errorf("new manager creation: %w", err)
 	}
 
-	if err = (&controllers.JokeReconciler{
+	if err = (&controllers.DBReconciler{
 		Client: mgr.GetClient(),
 		Log:    ctrl.Log.WithName("controllers").WithName("Joke"),
 	}).SetupWithManager(mgr); err != nil {

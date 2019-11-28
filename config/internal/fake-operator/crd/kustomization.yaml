@@ -1,5 +1,5 @@
 resources:
-  - bases/e2e.kubecarrier.io_jokes.yaml
+  - bases/fake.kubecarrier.io_dbs.yaml
 patchesStrategicMerge:
 # [WEBHOOK] To enable webhook, uncomment all the sections with [WEBHOOK] prefix.
 # patches here are for enabling the conversion webhook for each CRD

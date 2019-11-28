@@ -14,66 +14,84 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package v1alpha2
+package v1alpha1
 
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// JokeSpec defines the desired state of Joke
-type JokeSpec struct {
-	// Jokes specifies all known jokes
-	Jokes []JokeItem `json:"jokes,omitempty"`
+// DBSpec defines the desired state of DB
+type DBSpec struct {
+	// RootPassword is root account password for this data. Leave blank for auto-generation
+	RootPassword string `json:"rootPassword"`
 
-	// JokeType to select
-	JokeType string `json:"jokeType"`
+	// DatabaseName of the created database at start up
+	DatabaseName string `json:"databaseName"`
+
+	// DatabaseUser for created database
+	DatabaseUser string `json:"databaseUser"`
+
+	// DatabasePassword for the created database. Leave blank for auto-generation
+	DatabasePassword string `json:"databasePassword"`
+
+	// Size of this database instance
+	Size string `json:"size"`
 }
 
-// JokeCRDConfiguration holds static type information for the Joke instance.
-type JokeItem struct {
-	// Text of the joke
-	Text string `json:"text"`
-
-	// Type of the Joke
-	Type string `json:"type"`
-}
-
-// JokeStatus defines the observed state of Joke
-type JokeStatus struct {
+// DBStatus defines the observed state of DB
+type DBStatus struct {
 	// Phase represents the current lifecycle state of this object
 	// consider this field DEPRECATED, it will be removed as soon as there
 	// is a mechanism to map conditions to a string when printing the property
 	// is only present for display purposes, for everything else use conditions
-	Phase JokePhaseType `json:"phase,omitempty"`
-	// Conditions is a list of all conditions this Joke is in.
-	Conditions []JokeCondition `json:"conditions,omitempty"`
+	Phase DBPhaseType `json:"phase,omitempty"`
+	// Conditions is a list of all conditions this DB is in.
+	Conditions []DBCondition `json:"conditions,omitempty"`
 	// The most recent generation observed by the controller.
 	ObservedGeneration int64 `json:"observedGeneration,omitempty"`
 
-	// Selected joke represent currently selected joke
-	SelectedJoke *JokeItem `json:"selectedJoke,omitempty"`
+	// RootCredentials for this database
+	RootCredentials *Connection `json:"rootCredentials,omitempty"`
+
+	// UserCredentials for this database
+	UserCredentials *Connection `json:"userCredentials,omitempty"`
 }
 
-// JokePhaseType represents all conditions as a single string for printing in kubectl
-type JokePhaseType string
+// Connection defines necessary endpoints and credential for DB usage
+type Connection struct {
+	// Endpoint for this database
+	Endpoint string `json:"endpoint"`
 
-// Values of JokePhaseType
+	// Database name
+	Name string `json:"name"`
+
+	// Username for this database
+	Username string `json:"username"`
+
+	// Password for this database
+	Password string `json:"password"`
+}
+
+// DBPhaseType represents all conditions as a single string for printing in kubectl
+type DBPhaseType string
+
+// Values of DBPhaseType
 const (
-	JokePhaseReady    JokePhaseType = "Ready"
-	JokePhaseNotReady JokePhaseType = "NotReady"
-	JokePhaseUnknown  JokePhaseType = "Unknown"
+	DBPhaseReady    DBPhaseType = "Ready"
+	DBPhaseNotReady DBPhaseType = "NotReady"
+	DBPhaseUnknown  DBPhaseType = "Unknown"
 )
 
-// JokeConditionType represents a JokeCondition value.
-type JokeConditionType string
+// DBConditionType represents a DBCondition value.
+type DBConditionType string
 
 const (
-	// JokeReady represents a Joke condition is in ready state.
-	JokeReady JokeConditionType = "Ready"
+	// DBReady represents a DB condition is in ready state.
+	DBReady DBConditionType = "Ready"
 )
 
-// JokeCondition contains details for the current condition of this Joke.
-type JokeCondition struct {
+// DBCondition contains details for the current condition of this DB.
+type DBCondition struct {
 	// LastTransitionTime is the last time the condition transit from one status to another.
 	LastTransitionTime metav1.Time `json:"lastTransitionTime"`
 	// Message is the human readable message indicating details about last transition.
@@ -83,32 +101,32 @@ type JokeCondition struct {
 	// Status of the condition, one of ('True', 'False', 'Unknown').
 	Status ConditionStatus `json:"status"`
 	// Type of the condition, currently ('Ready').
-	Type JokeConditionType `json:"type"`
+	Type DBConditionType `json:"type"`
 }
 
 // UpdatePhase updates the phase property based on the current conditions
 // this method should be called everytime the conditions are updated
-func (s *JokeStatus) updatePhase() {
+func (s *DBStatus) updatePhase() {
 	for _, condition := range s.Conditions {
-		if condition.Type != JokeReady {
+		if condition.Type != DBReady {
 			continue
 		}
 
 		switch condition.Status {
 		case ConditionTrue:
-			s.Phase = JokePhaseReady
+			s.Phase = DBPhaseReady
 		case ConditionFalse:
-			s.Phase = JokePhaseNotReady
+			s.Phase = DBPhaseNotReady
 		case ConditionUnknown:
-			s.Phase = JokePhaseUnknown
+			s.Phase = DBPhaseUnknown
 		}
 		return
 	}
-	s.Phase = JokePhaseUnknown
+	s.Phase = DBPhaseUnknown
 }
 
 // SetCondition replaces or adds the given condition
-func (s *JokeStatus) SetCondition(condition JokeCondition) {
+func (s *DBStatus) SetCondition(condition DBCondition) {
 	defer s.updatePhase()
 
 	for i := range s.Conditions {
@@ -127,7 +145,7 @@ func (s *JokeStatus) SetCondition(condition JokeCondition) {
 }
 
 // GetCondition returns the Condition of the given type, if it exists
-func (s *JokeStatus) GetCondition(t JokeConditionType) (condition JokeCondition, exists bool) {
+func (s *DBStatus) GetCondition(t DBConditionType) (condition DBCondition, exists bool) {
 	for _, cond := range s.Conditions {
 		if cond.Type == t {
 			condition = cond
@@ -138,29 +156,25 @@ func (s *JokeStatus) GetCondition(t JokeConditionType) (condition JokeCondition,
 	return
 }
 
-// Joke is core element in joke generation operator
+// DB is core element in joke generation operator
 // +kubebuilder:object:root=true
 // +kubebuilder:subresource:status
-// +kubebuilder:storageversion
-// +kubebuilder:printcolumn:name="Text",type="string",JSONPath=".status.selectedJoke.text"
-// +kubebuilder:printcolumn:name="Status",type="string",JSONPath=".status.phase"
-// +kubebuilder:printcolumn:name="Age",type="date",JSONPath=".metadata.creationTimestamp"
-type Joke struct {
+type DB struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec   JokeSpec   `json:"spec,omitempty"`
-	Status JokeStatus `json:"status,omitempty"`
+	Spec   DBSpec   `json:"spec,omitempty"`
+	Status DBStatus `json:"status,omitempty"`
 }
 
 // +kubebuilder:object:root=true
-// JokeList contains a list of Joke
-type JokeList struct {
+// DBList contains a list of DB
+type DBList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
-	Items           []Joke `json:"items"`
+	Items           []DB `json:"items"`
 }
 
 func init() {
-	SchemeBuilder.Register(&Joke{}, &JokeList{})
+	SchemeBuilder.Register(&DB{}, &DBList{})
 }

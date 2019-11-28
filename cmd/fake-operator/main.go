@@ -20,11 +20,11 @@ import (
 	"log"
 	"os"
 
-	"github.com/kubermatic/kubecarrier/pkg/e2eoperator"
+	"github.com/kubermatic/kubecarrier/pkg/fakeoperator"
 )
 
 func main() {
-	if err := e2eoperator.NewE2E().Execute(); err != nil {
+	if err := fakeoperator.NewFakeOperator().Execute(); err != nil {
 		log.Print(err)
 		os.Exit(2)
 	}

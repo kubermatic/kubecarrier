@@ -16,7 +16,7 @@
 # Refer to https://github.com/GoogleContainerTools/distroless for more details
 FROM gcr.io/distroless/static:nonroot
 WORKDIR /
-COPY e2e-operator .
+COPY fake-operator .
 USER nonroot:nonroot
 
-ENTRYPOINT ["/e2e-operator"]
+ENTRYPOINT ["/fake-operator"]

@@ -1,6 +1,6 @@
 # Adds namespace to all resources.
-namespace: kubecarrier-e2e-operator
-namePrefix: e2e-
+namespace: kubecarrier-system
+namePrefix: fake-
 
 bases:
   - ../crd

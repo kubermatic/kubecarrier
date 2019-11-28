@@ -16,8 +16,8 @@ limitations under the License.
 
 // Package v1alpha1 contains API Schema definitions for the operator v1alpha1 API group
 // +kubebuilder:object:generate=true
-// +groupName=e2e.kubecarrier.io
-package v1alpha2
+// +groupName=fake.kubecarrier.io
+package v1alpha1
 
 import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -26,7 +26,7 @@ import (
 
 var (
 	// GroupVersion is group version used to register these objects
-	GroupVersion = schema.GroupVersion{Group: "e2e.kubecarrier.io", Version: "v1alpha2"}
+	GroupVersion = schema.GroupVersion{Group: "fake.kubecarrier.io", Version: "v1alpha1"}
 
 	// SchemeBuilder is used to add go types to the GroupVersionKind scheme
 	SchemeBuilder = &scheme.Builder{GroupVersion: GroupVersion}

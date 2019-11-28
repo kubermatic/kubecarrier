@@ -6,30 +6,20 @@ metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.2.2
   creationTimestamp: null
-  name: jokes.e2e.kubecarrier.io
+  name: dbs.fake.kubecarrier.io
 spec:
-  additionalPrinterColumns:
-  - JSONPath: .status.selectedJoke.text
-    name: Text
-    type: string
-  - JSONPath: .status.phase
-    name: Status
-    type: string
-  - JSONPath: .metadata.creationTimestamp
-    name: Age
-    type: date
-  group: e2e.kubecarrier.io
+  group: fake.kubecarrier.io
   names:
-    kind: Joke
-    listKind: JokeList
-    plural: jokes
-    singular: joke
+    kind: DB
+    listKind: DBList
+    plural: dbs
+    singular: db
   scope: ""
   subresources:
     status: {}
   validation:
     openAPIV3Schema:
-      description: Joke is core element in joke generation operator
+      description: DB is core element in joke generation operator
       properties:
         apiVersion:
           description: 'APIVersion defines the versioned schema of this representation
@@ -44,39 +34,40 @@ spec:
         metadata:
           type: object
         spec:
-          description: JokeSpec defines the desired state of Joke
+          description: DBSpec defines the desired state of DB
           properties:
-            jokeType:
-              description: JokeType to select
+            databaseName:
+              description: DatabaseName of the created database at start up
               type: string
-            jokes:
-              description: Jokes specifies all known jokes
-              items:
-                description: JokeCRDConfiguration holds static type information for
-                  the Joke instance.
-                properties:
-                  text:
-                    description: Text of the joke
-                    type: string
-                  type:
-                    description: Type of the Joke
-                    type: string
-                required:
-                - text
-                - type
-                type: object
-              type: array
+            databasePassword:
+              description: DatabasePassword for the created database. Leave blank
+                for auto-generation
+              type: string
+            databaseUser:
+              description: DatabaseUser for created database
+              type: string
+            rootPassword:
+              description: RootPassword is root account password for this data. Leave
+                blank for auto-generation
+              type: string
+            size:
+              description: Size of this database instance
+              type: string
           required:
-          - jokeType
+          - databaseName
+          - databasePassword
+          - databaseUser
+          - rootPassword
+          - size
           type: object
         status:
-          description: JokeStatus defines the observed state of Joke
+          description: DBStatus defines the observed state of DB
           properties:
             conditions:
-              description: Conditions is a list of all conditions this Joke is in.
+              description: Conditions is a list of all conditions this DB is in.
               items:
-                description: JokeCondition contains details for the current condition
-                  of this Joke.
+                description: DBCondition contains details for the current condition
+                  of this DB.
                 properties:
                   lastTransitionTime:
                     description: LastTransitionTime is the last time the condition
@@ -116,24 +107,53 @@ spec:
                 is a mechanism to map conditions to a string when printing the property
                 is only present for display purposes, for everything else use conditions
               type: string
-            selectedJoke:
-              description: Selected joke represent currently selected joke
+            rootCredentials:
+              description: RootCredentials for this database
               properties:
-                text:
-                  description: Text of the joke
+                endpoint:
+                  description: Endpoint for this database
                   type: string
-                type:
-                  description: Type of the Joke
+                name:
+                  description: Database name
+                  type: string
+                password:
+                  description: Password for this database
+                  type: string
+                username:
+                  description: Username for this database
                   type: string
               required:
-              - text
-              - type
+              - endpoint
+              - name
+              - password
+              - username
+              type: object
+            userCredentials:
+              description: UserCredentials for this database
+              properties:
+                endpoint:
+                  description: Endpoint for this database
+                  type: string
+                name:
+                  description: Database name
+                  type: string
+                password:
+                  description: Password for this database
+                  type: string
+                username:
+                  description: Username for this database
+                  type: string
+              required:
+              - endpoint
+              - name
+              - password
+              - username
               type: object
           type: object
       type: object
-  version: v1alpha2
+  version: v1alpha1
   versions:
-  - name: v1alpha2
+  - name: v1alpha1
     served: true
     storage: true
 status:

@@ -32,7 +32,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	catalogv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/catalog/v1alpha1"
-	e2ev1alpha2 "github.com/kubermatic/kubecarrier/pkg/apis/e2e/v1alpha2"
+	fakev1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/fake/v1alpha1"
 	operatorv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/operator/v1alpha1"
 )
 
@@ -104,7 +104,7 @@ func New(c Config) (f *Framework, err error) {
 	if err := clientgoscheme.AddToScheme(f.serviceScheme); err != nil {
 		return nil, fmt.Errorf("adding clientgo scheme to service scheme: %w", err)
 	}
-	if err := e2ev1alpha2.AddToScheme(f.serviceScheme); err != nil {
+	if err := fakev1alpha1.AddToScheme(f.serviceScheme); err != nil {
 		return nil, fmt.Errorf("adding e2e v1alpha2 scheme to service scheme: %w", err)
 	}
 
@@ -142,6 +142,6 @@ func RunCommand(t *testing.T, name string, args ...string) {
 	require.NoError(t, cmd.Run(), "%s %s returned an error: %s", name, strings.Join(args, " "), out.String())
 }
 
-func (f *Framework) EnsureJokeOperator(t *testing.T) {
+func (f *Framework) EnsureFakeOperator(t *testing.T) {
 	RunCommand(t, "anchor", "e2e-test", "setup-e2e-operator", "--kubeconfig", f.Config().ServiceExternalKubeconfigPath)
 }

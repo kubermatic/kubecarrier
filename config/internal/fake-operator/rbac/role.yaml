@@ -7,9 +7,9 @@ metadata:
   name: manager-role
 rules:
 - apiGroups:
-  - e2e.kubecarrier.io
+  - fake.kubecarrier.io
   resources:
-  - jokes
+  - dbs
   verbs:
   - create
   - delete
@@ -19,9 +19,9 @@ rules:
   - update
   - watch
 - apiGroups:
-  - e2e.kubecarrier.io
+  - fake.kubecarrier.io
   resources:
-  - jokes/status
+  - dbs/status
   verbs:
   - get
   - patch
