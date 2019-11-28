@@ -20,6 +20,9 @@ import (
 	"context"
 	"fmt"
 
+	"sigs.k8s.io/controller-runtime/pkg/handler"
+	"sigs.k8s.io/controller-runtime/pkg/reconcile"
+
 	"github.com/go-logr/logr"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -52,7 +55,7 @@ type TenantReconciler struct {
 // Reconcile function reconciles the Tenant object which specified by the request. Currently, it does the following:
 // 1. Fetch the Tenant object.
 // 2. Handle the deletion of the Tenant object (Remove the namespace that the tenant owns, and remove the finalizer).
-// 3. Handle the creation/update of the Tenant object (Create/reconcile the namespace and insert the finalizer).
+// 3. Handle the creation/update of the Tenant object (Create/reconcile the namespace and TenantReferences and insert the finalizer).
 // 4. Update the status of the Tenant object.
 func (r *TenantReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	ctx := context.Background()
@@ -95,6 +98,11 @@ func (r *TenantReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 		return ctrl.Result{}, fmt.Errorf("reconciling namespace: %w", err)
 	}
 
+	// Reconcile the TenantReferences for the tenant
+	if err := r.reconcileTenantReferences(ctx, log, tenant); err != nil {
+		return ctrl.Result{}, fmt.Errorf("reconciling TenantReferences: %w", err)
+	}
+
 	return ctrl.Result{}, nil
 }
 
@@ -108,12 +116,33 @@ func (r *TenantReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&catalogv1alpha1.Tenant{}).
 		Watches(&source.Kind{Type: &corev1.Namespace{}}, enqueuer).
+		Watches(&source.Kind{Type: &catalogv1alpha1.TenantReference{}}, enqueuer).
+		Watches(&source.Kind{Type: &catalogv1alpha1.Provider{}}, &handler.EnqueueRequestsFromMapFunc{
+			ToRequests: handler.ToRequestsFunc(func(mapObject handler.MapObject) (out []reconcile.Request) {
+				tenants := &catalogv1alpha1.TenantList{}
+				// NOTICE: if this call fails there's no retry. Under this condition some providers might not
+				// get TenantReference created in them until tenants gets periodically resynced (by default 10h)
+				if err := r.List(context.Background(), tenants); err != nil {
+					r.Log.Error(err, "cannot list all tenants")
+				}
+				for _, t := range tenants.Items {
+					out = append(out, reconcile.Request{
+						NamespacedName: types.NamespacedName{
+							Name:      t.Name,
+							Namespace: t.Namespace,
+						},
+					})
+				}
+				return
+			}),
+		}).
 		Complete(r)
 }
 
 // handleDeletion handles the deletion of the Tenant object. Currently, it does:
 // 1. Delete the Namespace that the tenant owns.
-// 2. Remove the finalizer from the tenant object.
+// 2. Delete the TenantReferences that this tenant owns.
+// 3. Remove the finalizer from the tenant object.
 func (r *TenantReconciler) handleDeletion(ctx context.Context, log logr.Logger, tenant *catalogv1alpha1.Tenant) error {
 	// Update the Tenant Status to Terminating.
 	readyCondition, _ := tenant.Status.GetCondition(catalogv1alpha1.TenantReady)
@@ -143,9 +172,40 @@ func (r *TenantReconciler) handleDeletion(ctx context.Context, log logr.Logger, 
 	} else if !errors.IsNotFound(err) {
 		return fmt.Errorf("deleting namespace: %w", err)
 	}
-	// else the error is IsNotFound, so the namespace is gone, and then we remove the finalizer.
+	// else the error is IsNotFound, so the namespace is gone, and then we can remove the TenantReferences and finalizer.
 
-	// 2. The Namespace is completely removed, then we remove the finalizer here.
+	// Clean up TenantReferences.
+	providerList := &catalogv1alpha1.ProviderList{}
+	if err := r.List(ctx, providerList, client.InNamespace("kubecarrier-system")); err != nil {
+		return fmt.Errorf("listing Providers: %w", err)
+	}
+
+	var tenantReferenceCleanedUp int
+	for _, provider := range providerList.Items {
+
+		tenantReference := &catalogv1alpha1.TenantReference{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      tenant.Name,
+				Namespace: provider.Status.NamespaceName,
+			},
+		}
+
+		if err := r.Delete(ctx, tenantReference); err != nil {
+			if errors.IsNotFound(err) {
+				tenantReferenceCleanedUp++
+				continue
+			}
+			return fmt.Errorf("deleting TenantReference: %w", err)
+		}
+	}
+
+	if tenantReferenceCleanedUp != len(providerList.Items) {
+		// Not everything has been cleaned up yet
+		// move to the next reconcile call
+		return nil
+	}
+
+	// 3. The Namespace and TenantReferences are completely removed, then we remove the finalizer here.
 	if util.RemoveFinalizer(tenant, tenantControllerFinalizer) {
 		if err := r.Update(ctx, tenant); err != nil {
 			return fmt.Errorf("updating Tenant Status: %w", err)
@@ -207,6 +267,45 @@ func (r *TenantReconciler) reconcileNamespace(ctx context.Context, log logr.Logg
 	// Reconcile the namespace
 	if err = r.Create(ctx, ns); err != nil && !errors.IsAlreadyExists(err) {
 		return fmt.Errorf("creating Tenant namespace: %w", err)
+	}
+	return nil
+}
+
+func (r *TenantReconciler) reconcileTenantReferences(ctx context.Context, log logr.Logger, tenant *catalogv1alpha1.Tenant) error {
+	providerList := &catalogv1alpha1.ProviderList{}
+	if err := r.List(ctx, providerList, client.InNamespace("kubecarrier-system")); err != nil {
+		return fmt.Errorf("listing Providers: %w", err)
+	}
+
+	for _, provider := range providerList.Items {
+		if condition, _ := provider.Status.GetCondition(catalogv1alpha1.ProviderReady); condition.Status != catalogv1alpha1.ConditionTrue {
+			// skip NotReady providers.
+			continue
+		}
+
+		tenantReference := &catalogv1alpha1.TenantReference{}
+		err := r.Get(ctx, types.NamespacedName{
+			Name:      tenant.Name,
+			Namespace: provider.Status.NamespaceName,
+		}, tenantReference)
+		if err == nil {
+			// No error from the Get, so TenantReference has already been created.
+			continue
+		}
+		if !errors.IsNotFound(err) {
+			return fmt.Errorf("getting TenantReference: %w", err)
+		}
+
+		// The TenantReference is not found, then we just create it.
+		tenantReference.Name = tenant.Name
+		tenantReference.Namespace = provider.Status.NamespaceName
+		if _, err := util.InsertOwnerReference(tenant, tenantReference, r.Scheme); err != nil {
+			return fmt.Errorf("setting cross-namespaceed owner reference: %w", err)
+		}
+		// Create the TenantReference
+		if err = r.Create(ctx, tenantReference); err != nil && !errors.IsAlreadyExists(err) {
+			return fmt.Errorf("creating TenantReference: %w", err)
+		}
 	}
 	return nil
 }
