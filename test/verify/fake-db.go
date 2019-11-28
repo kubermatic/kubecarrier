@@ -31,7 +31,7 @@ import (
 	fakev1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/fake/v1alpha1"
 )
 
-func (s *VerifySuite) TestJokeOperator() {
+func (s *VerifySuite) TestFakeDBOperator() {
 	t := s.T()
 	t.Parallel()
 	s.EnsureFakeOperator(t)
