@@ -50,6 +50,7 @@ type TenantReconciler struct {
 
 // +kubebuilder:rbac:groups=catalog.kubecarrier.io,resources=tenants,verbs=get;list;watch;update;
 // +kubebuilder:rbac:groups=catalog.kubecarrier.io,resources=tenants/status,verbs=get;update;patch
+// +kubebuilder:rbac:groups=catalog.kubecarrier.io,resources=tenantreferences,verbs=get;list;watch;create;update;delete
 // +kubebuilder:rbac:groups="",resources=namespaces,verbs=get;list;watch;create;update;patch;delete
 
 // Reconcile function reconciles the Tenant object which specified by the request. Currently, it does the following:
@@ -262,7 +263,7 @@ func (r *TenantReconciler) reconcileNamespace(ctx context.Context, log logr.Logg
 
 	ns.Name = tenant.Status.NamespaceName
 	if _, err := util.InsertOwnerReference(tenant, ns, r.Scheme); err != nil {
-		return fmt.Errorf("setting cross-namespaceed owner reference: %w", err)
+		return fmt.Errorf("setting cross-namespaced owner reference: %w", err)
 	}
 	// Reconcile the namespace
 	if err = r.Create(ctx, ns); err != nil && !errors.IsAlreadyExists(err) {
@@ -300,7 +301,7 @@ func (r *TenantReconciler) reconcileTenantReferences(ctx context.Context, log lo
 		tenantReference.Name = tenant.Name
 		tenantReference.Namespace = provider.Status.NamespaceName
 		if _, err := util.InsertOwnerReference(tenant, tenantReference, r.Scheme); err != nil {
-			return fmt.Errorf("setting cross-namespaceed owner reference: %w", err)
+			return fmt.Errorf("setting cross-namespaced owner reference: %w", err)
 		}
 		// Create the TenantReference
 		if err = r.Create(ctx, tenantReference); err != nil && !errors.IsAlreadyExists(err) {
