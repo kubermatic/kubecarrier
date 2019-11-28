@@ -31,8 +31,9 @@ import (
 )
 
 type flags struct {
-	metricsAddr          string
-	enableLeaderElection bool
+	kubeCarrierSystemNamespace string
+	metricsAddr                string
+	enableLeaderElection       bool
 }
 
 var (
@@ -61,6 +62,7 @@ func NewManagerCommand(log logr.Logger) *cobra.Command {
 	cmd.Flags().StringVar(&flags.metricsAddr, "metrics-addr", ":8080", "The address the metric endpoint binds to.")
 	cmd.Flags().BoolVar(&flags.enableLeaderElection, "enable-leader-election", false,
 		"Enable leader election for controller manager. Enabling this will ensure there is only one active controller manager.")
+	cmd.Flags().StringVar(&flags.kubeCarrierSystemNamespace, "kubeCarrier-system-namespace", "kubecarrier-system", "The namespace that KubeCarrier controller manager deploys to.")
 	return cmd
 }
 
@@ -76,9 +78,10 @@ func run(flags *flags, log logr.Logger) error {
 	}
 
 	if err = (&controllers.TenantReconciler{
-		Client: mgr.GetClient(),
-		Log:    log.WithName("controllers").WithName("Tenant"),
-		Scheme: mgr.GetScheme(),
+		Client:                     mgr.GetClient(),
+		Log:                        log.WithName("controllers").WithName("Tenant"),
+		Scheme:                     mgr.GetScheme(),
+		KubeCarrierSystemNamespace: flags.kubeCarrierSystemNamespace,
 	}).SetupWithManager(mgr); err != nil {
 		return fmt.Errorf("creating Tenant controller: %w", err)
 	}
