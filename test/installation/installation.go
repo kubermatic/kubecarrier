@@ -144,13 +144,13 @@ func (s *InstallationSuite) TestInstallAndTeardown() {
 
 		// This test tries to check if the Status of the KubeCarrier object will be set to `Terminating`
 		// when it is being deleted, the test tries to get the KubeCarrier object and check the Status after deletion.
-		s.NoError(wait.Poll(100*time.Millisecond, 10*time.Second, func() (done bool, err error) {
+		s.NoError(wait.Poll(time.Second, 10*time.Second, func() (done bool, err error) {
 			if err := s.masterClient.Get(ctx, types.NamespacedName{
 				Name:      "kubecarrier",
 				Namespace: nn,
 			}, kubeCarrier); err != nil {
 				if errors.IsNotFound(err) {
-					return false, err
+					return true, nil
 				}
 				return false, err
 			}
