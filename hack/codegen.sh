@@ -33,12 +33,12 @@ function statik-gen {
   local component=$1
   local src=$2
   if [ -z "$(git status --porcelain ${src})" ] && [[ -z ${FORCE_STATIK:-} ]]; then
-    echo $1: statik up-to-date
+    echo ${component}: statik up-to-date
   else
-    statik -src=${src} -p $1 -dest pkg/internal/resources -f -c ''
-    cat hack/boilerplate/boilerplate.generatego.txt | sed s/YEAR/$(date +%Y)/ | cat - pkg/internal/resources/$1/statik.go > pkg/internal/resources/$1/statik.go.tmp
-    mv pkg/internal/resources/$1/statik.go.tmp pkg/internal/resources/$1/statik.go
-    echo $1: statik regenerated
+    statik -src=${src} -p ${component} -dest pkg/internal/resources -f -c ''
+    cat hack/boilerplate/boilerplate.generatego.txt | sed s/YEAR/$(date +%Y)/ | cat - pkg/internal/resources/${component}/statik.go > pkg/internal/resources/${component}/statik.go.tmp
+    mv pkg/internal/resources/${component}/statik.go.tmp pkg/internal/resources/${component}/statik.go
+    echo ${component}: statik regenerated
   fi
 }
 
