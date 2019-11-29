@@ -154,16 +154,6 @@ func (s *InstallationSuite) TestInstallAndTeardown() {
 				}
 				return false, err
 			}
-
-			// Since the Deployment is not deleted, here check if the KubeCarrier status is Terminating.
-			if s.NoError(s.masterClient.Get(ctx, types.NamespacedName{
-				Name:      "kubecarrier",
-				Namespace: nn,
-			}, kubeCarrier), "getting the KubeCarrier error") {
-				readyCondition, readyConditionExists := kubeCarrier.Status.GetCondition(operatorv1alpha1.KubeCarrierReady)
-				s.True(readyConditionExists, "Ready Condition is not set")
-				s.Equal(operatorv1alpha1.ConditionTrue, readyCondition.Status, "Wrong Ready condition.Status")
-			}
 			return false, nil
 		}), "get the Deployment that owned by KubeCarrier object")
 
