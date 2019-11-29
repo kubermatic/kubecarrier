@@ -98,8 +98,6 @@ func setupE2EOperator(log logr.Logger, kubeconfig string, namespaceName string, 
 		return fmt.Errorf("creating Kubernetes client: %w", err)
 	}
 	s := wow.New(output, spin.Get(spin.Dots), "spinner text")
-	s.Start()
-	defer s.Stop()
 
 	if err := spinner.AttachSpinnerTo(s, "creating namespace", func() error {
 		_, err := controllerutil.CreateOrUpdate(ctx, c, namespace, func() error {
