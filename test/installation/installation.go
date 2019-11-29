@@ -142,27 +142,6 @@ func (s *InstallationSuite) TestInstallAndTeardown() {
 		// Delete the KubeCarrier object.
 		s.Require().NoError(s.masterClient.Delete(ctx, kubeCarrier), "deleting the KubeCarrier object")
 
-		// This test tries to check if the Status of the KubeCarrier object will be set to `Terminating`
-		// when it is being deleted, the test tries to get the KubeCarrier object and check the Status after deletion.
-		s.NoError(wait.Poll(time.Second, 10*time.Second, func() (done bool, err error) {
-			if err := s.masterClient.Get(ctx, types.NamespacedName{
-				Name:      "kubecarrier",
-				Namespace: nn,
-			}, kubeCarrier); err != nil {
-				if errors.IsNotFound(err) {
-					return true, nil
-				}
-				return false, err
-			}
-			readyCondition, readyConditionExists := kubeCarrier.Status.GetCondition(operatorv1alpha1.KubeCarrierReady)
-			s.True(readyConditionExists, "Ready condition is not set")
-			if s.Equal(operatorv1alpha1.ConditionFalse, readyCondition.Status, "Wrong Ready condition.Status") &&
-				s.Equal(operatorv1alpha1.KubeCarrierTerminatingReason, readyCondition.Reason, "Wrong Reason condition.Status") {
-				return true, nil
-			}
-			return false, nil
-		}))
-
 		// Deployment
 		deployment := &appsv1.Deployment{}
 		s.NoError(wait.Poll(time.Second, 10*time.Second, func() (done bool, err error) {
