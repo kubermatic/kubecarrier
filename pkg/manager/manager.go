@@ -18,6 +18,7 @@ package manager
 
 import (
 	"fmt"
+	"os"
 
 	"github.com/go-logr/logr"
 	"github.com/spf13/cobra"
@@ -62,7 +63,7 @@ func NewManagerCommand(log logr.Logger) *cobra.Command {
 	cmd.Flags().StringVar(&flags.metricsAddr, "metrics-addr", ":8080", "The address the metric endpoint binds to.")
 	cmd.Flags().BoolVar(&flags.enableLeaderElection, "enable-leader-election", false,
 		"Enable leader election for controller manager. Enabling this will ensure there is only one active controller manager.")
-	cmd.Flags().StringVar(&flags.kubeCarrierSystemNamespace, "kubecarrier-system-namespace", "kubecarrier-system", "The namespace that KubeCarrier controller manager deploys to.")
+	cmd.Flags().StringVar(&flags.kubeCarrierSystemNamespace, "kubecarrier-system-namespace", os.Getenv("KUBECARRIER_NAMESPACE"), "The namespace that KubeCarrier controller manager deploys to.")
 	return cmd
 }
 
@@ -75,6 +76,10 @@ func run(flags *flags, log logr.Logger) error {
 	})
 	if err != nil {
 		return fmt.Errorf("starting manager: %w", err)
+	}
+
+	if flags.kubeCarrierSystemNamespace == "" {
+		return fmt.Errorf("-kubecarrier-system-namespace or ENVVAR KUBECARRIER_NAMESPACE must be set")
 	}
 
 	if err = (&controllers.TenantReconciler{
