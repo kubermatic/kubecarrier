@@ -67,7 +67,6 @@ statik-gen manager config/internal/manager
 # CRDs/Webhooks
 $CONTROLLER_GEN crd webhook paths="./pkg/apis/fake/..." output:crd:artifacts:config=config/internal/fake-operator/crd/bases output:webhook:artifacts:config=config/internal/fake-operator/webhook
 # RBAC
-
 $CONTROLLER_GEN rbac:roleName=manager-role paths="./pkg/fakeoperator/..." output:rbac:artifacts:config=config/internal/fake-operator/rbac
 # Statik (run only when file CONTENT has changed)
 statik-gen fakeoperator config/internal/fake-operator
