@@ -19,8 +19,6 @@ package fakeoperator
 import (
 	"fmt"
 
-	fakev1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/fake/v1alpha1"
-
 	"github.com/go-logr/logr"
 	"github.com/spf13/cobra"
 	zap2 "go.uber.org/zap"
@@ -31,6 +29,7 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
+	fakev1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/fake/v1alpha1"
 	"github.com/kubermatic/kubecarrier/pkg/fakeoperator/internal/controllers"
 )
 
