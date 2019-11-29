@@ -121,10 +121,9 @@ func (r *TenantReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		Watches(&source.Kind{Type: &catalogv1alpha1.Provider{}}, &handler.EnqueueRequestsFromMapFunc{
 			ToRequests: handler.ToRequestsFunc(func(mapObject handler.MapObject) (out []reconcile.Request) {
 				tenants := &catalogv1alpha1.TenantList{}
-				// NOTICE: if this call fails there's no retry. Under this condition some providers might not
-				// get TenantReference created in them until tenants gets periodically resynced (by default 10h)
-				if err := r.List(context.Background(), tenants); err != nil {
-					r.Log.Error(err, "cannot list all tenants")
+				if err := r.List(context.Background(), tenants, client.InNamespace(mapObject.Meta.GetNamespace())); err != nil {
+					// This will makes the manager crashes, and it will restart and reconcile all objects again.
+					panic(fmt.Errorf("listting tenant: %w", err))
 				}
 				for _, t := range tenants.Items {
 					out = append(out, reconcile.Request{
