@@ -22,8 +22,8 @@ import (
 
 // TenderSpec defines the desired state of Tender
 type TenderSpec struct {
-	// KubeConfigSecret specifies the KubeConfig to use when connecting to the ServiceCluster.
-	KubeConfigSecret ObjectReference `json:"kubeConfigSecret"`
+	// KubeconfigSecret specifies the KubeConfig to use when connecting to the ServiceCluster.
+	KubeconfigSecret ObjectReference `json:"kubeconfigSecret"`
 }
 
 // TenderStatus defines the observed state of Tender

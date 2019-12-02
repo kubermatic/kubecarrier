@@ -20,27 +20,21 @@ import (
 	"context"
 	"fmt"
 
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"sigs.k8s.io/controller-runtime/pkg/client/apiutil"
-
-	corev1 "k8s.io/api/core/v1"
-	rbacv1 "k8s.io/api/rbac/v1"
-
-	"github.com/kubermatic/kubecarrier/pkg/internal/reconcile"
-
-	"github.com/kubermatic/kubecarrier/pkg/internal/kustomize"
-
-	tender2 "github.com/kubermatic/kubecarrier/pkg/internal/resources/tender"
-
-	operatorv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/operator/v1alpha1"
-	"github.com/kubermatic/kubecarrier/pkg/internal/util"
-
 	"github.com/go-logr/logr"
 	appsv1 "k8s.io/api/apps/v1"
+	corev1 "k8s.io/api/core/v1"
+	rbacv1 "k8s.io/api/rbac/v1"
+	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/source"
+
+	operatorv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/operator/v1alpha1"
+	"github.com/kubermatic/kubecarrier/pkg/internal/kustomize"
+	"github.com/kubermatic/kubecarrier/pkg/internal/reconcile"
+	tenderresource "github.com/kubermatic/kubecarrier/pkg/internal/resources/tender"
+	"github.com/kubermatic/kubecarrier/pkg/internal/util"
 )
 
 const (
@@ -65,8 +59,6 @@ type TenderReconciler struct {
 	Kustomize *kustomize.Kustomize
 }
 
-// +kubebuilder:rbac:groups=operator.kubecarrier.io,resources=kubecarriers,verbs=get;list;watch;create;update;patch;delete
-// +kubebuilder:rbac:groups=operator.kubecarrier.io,resources=kubecarriers/status,verbs=get;update;patch
 // +kubebuilder:rbac:groups=rbac.authorization.k8s.io,resources=clusterrolebindings,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=rbac.authorization.k8s.io,resources=clusterroles,verbs=get;list;watch;create;update;patch;delete;escalate;bind
 // +kubebuilder:rbac:groups=rbac.authorization.k8s.io,resources=roles,verbs=get;list;watch;create;update;patch;delete;escalate;bind
@@ -74,10 +66,14 @@ type TenderReconciler struct {
 // +kubebuilder:rbac:groups=apps,resources=deployments,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups="",resources=services,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups="",resources=serviceaccounts,verbs=get;list;watch;create;update;patch;delete
-// +kubebuilder:rbac:groups=apiextensions.k8s.io,resources=customresourcedefinitions,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=operator.kubecarrier.io,resources=tenders,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=operator.kubecarrier.io,resources=tenders/status,verbs=get;update;patch
 
+// Reconcile function reconciles the Tender object which specified by the request. Currently, it does the following:
+// * fetches the Tender object
+// * handles object deletion if neccessary
+// * create all necessary objects from resource
+// * Updates the tender status
 func (r *TenderReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	ctx := context.Background()
 	log := r.Log.WithValues("tender", req.NamespacedName)
@@ -106,7 +102,7 @@ func (r *TenderReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	var deploymentReady bool
 
 	// Build the manifests of the Tender controller manager.
-	objects, err := tender2.Manifests(r.Kustomize, tender2.Config{ProviderNamespace: req.Namespace})
+	objects, err := tenderresource.Manifests(r.Kustomize, tenderConfigurationForObject(tender))
 	for _, object := range objects {
 		if _, err := util.InsertOwnerReference(tender, &object, r.Scheme); err != nil {
 			return ctrl.Result{}, err
@@ -122,6 +118,7 @@ func (r *TenderReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 		}
 	}
 
+	// Update the tender status
 	if deploymentReady {
 		tender.Status.SetCondition(operatorv1alpha1.TenderCondition{
 			Type:    operatorv1alpha1.TenderReady,
@@ -159,27 +156,18 @@ func (r *TenderReconciler) handleDeletion(ctx context.Context, log logr.Logger, 
 
 	// 2. Delete Objects.
 	allCleared := true
-	ownedBy, err := util.OwnedBy(tender, r.Scheme)
+	objects, err := tenderresource.Manifests(r.Kustomize, tenderConfigurationForObject(tender))
 	if err != nil {
-		return fmt.Errorf("getting ownedBy list option: %w", err)
+		return fmt.Errorf("deletion: manifests: %w", err)
 	}
-
-	for _, obj := range tenderControllerObjects {
-		if err := r.Client.DeleteAllOf(ctx, obj, ownedBy); err != nil {
-			return fmt.Errorf("deleteAllOf: %w", err)
+	for _, obj := range objects {
+		err := r.Client.Delete(ctx, &obj)
+		if errors.IsNotFound(err) {
+			continue
 		}
-		gvk, err := apiutil.GVKForObject(obj, r.Scheme)
+		allCleared = false
 		if err != nil {
-			return fmt.Errorf("gvk: %w", err)
-		}
-
-		lst := &unstructured.UnstructuredList{}
-		lst.SetGroupVersionKind(gvk)
-		if err := r.Client.List(ctx, lst, ownedBy); err != nil {
-			return fmt.Errorf("list: %w", err)
-		}
-		if len(lst.Items) > 0 {
-			allCleared = false
+			return fmt.Errorf("deleting %s: %w", obj, err)
 		}
 	}
 
@@ -209,4 +197,10 @@ func (r *TenderReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	}
 
 	return cm.Complete(r)
+}
+
+func tenderConfigurationForObject(tender *operatorv1alpha1.Tender) tenderresource.Config {
+	return tenderresource.Config{
+		ProviderNamespace: tender.Namespace,
+	}
 }

@@ -18,6 +18,7 @@ package tender
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"sync"
 	"time"
@@ -43,9 +44,9 @@ var (
 )
 
 type flags struct {
-	providerNamespace                      string
-	enableLeaderElection                   bool
-	serviceClusterStatusUpdatePeriodString string
+	providerNamespace                string
+	enableLeaderElection             bool
+	serviceClusterStatusUpdatePeriod time.Duration
 
 	// master
 	masterMetricsAddr string
@@ -71,7 +72,7 @@ func NewTenderCommand(log logr.Logger) *cobra.Command {
 		Short: "Tender controller manager",
 		Run: func(cmd *cobra.Command, args []string) {
 			flags := &flags{}
-			run(flags, log)
+			runE(flags, log)
 		},
 	}
 
@@ -80,7 +81,7 @@ func NewTenderCommand(log logr.Logger) *cobra.Command {
 	cmd.Flags().StringVar(&flags.providerNamespace, "provider-namespace", "", "Name of the providers namespace in the master cluster.")
 	cmd.Flags().BoolVar(&flags.enableLeaderElection, "enable-leader-election", true,
 		"Enable leader election for controller manager. Enabling this will ensure there is only one active controller manager.")
-	cmd.Flags().StringVar(&flags.serviceClusterStatusUpdatePeriodString, "service-cluster-status-update-period", "10s", "Specifies how often the tender posts service cluster status to master. Note: must work with service-cluster-monitor-grace-period in kubecarrier-controller-manager.")
+	cmd.Flags().DurationVar(&flags.serviceClusterStatusUpdatePeriod, "service-cluster-status-update-period", 10*time.Second, "Specifies how often the tender posts service cluster status to master. Note: must work with service-cluster-monitor-grace-period in kubecarrier-controller-manager.")
 
 	// master
 	cmd.Flags().StringVar(&flags.masterMetricsAddr, "master-metrics-addr", ":8080", "The address the metric endpoint binds to.")
@@ -89,24 +90,16 @@ func NewTenderCommand(log logr.Logger) *cobra.Command {
 	cmd.Flags().StringVar(&flags.serviceMetricsAddr, "service-cluster-metrics-addr", ":8081", "The address the metric endpoint binds to.")
 	cmd.Flags().StringVar(&flags.serviceKubeConfig, "service-cluster-kubeconfig", "", "Path to the Service Cluster kubeconfig.")
 	cmd.Flags().StringVar(&flags.serviceClusterName, "service-cluster-name", "", "Name of the Service Cluster the tender is operating on.")
+	if err := cmd.MarkFlagRequired("service-cluster-name"); err != nil {
+		panic(fmt.Errorf("req flag service-cluster-name: %w", err))
+	}
+	if err := cmd.MarkFlagRequired("provider-namespace"); err != nil {
+		panic(fmt.Errorf("req flag provider-namespace: %w", err))
+	}
 	return cmd
 }
 
-func run(flags *flags, log logr.Logger) {
-	serviceClusterStatusUpdatePeriod, err := time.ParseDuration(flags.serviceClusterStatusUpdatePeriodString)
-	if err != nil {
-		log.Error(err, "unable to parse -heartbeat-period")
-		os.Exit(1)
-	}
-	if flags.serviceClusterName == "" {
-		log.Info("invalid flag", "error", "-service-cluster-name is required")
-		os.Exit(1)
-	}
-	if flags.providerNamespace == "" {
-		log.Info("invalid flag", "error", "-provider-namespace is required")
-		os.Exit(1)
-	}
-
+func runE(flags *flags, log logr.Logger) error {
 	// KubeCarrier cluster manager
 	masterCfg := ctrl.GetConfigOrDie()
 	var serviceCfg *rest.Config
@@ -114,10 +107,10 @@ func run(flags *flags, log logr.Logger) {
 		log.Info("no serviceKubeConfig given, asuming same-cluster")
 		serviceCfg = masterCfg
 	} else {
+		var err error
 		serviceCfg, err = clientcmd.BuildConfigFromFlags(flags.serviceMaster, flags.serviceKubeConfig)
 		if err != nil {
-			log.Error(err, "unable to set up service cluster client config")
-			os.Exit(1)
+			return fmt.Errorf("unable to set up service cluster client config: %w", err)
 		}
 	}
 
@@ -127,8 +120,7 @@ func run(flags *flags, log logr.Logger) {
 		MetricsBindAddress: flags.serviceMetricsAddr,
 	})
 	if err != nil {
-		log.Error(err, "unable to start manager for service cluster")
-		os.Exit(1)
+		return fmt.Errorf("unable to start manager for service cluster: %w", err)
 	}
 
 	// Master cluster setup
@@ -141,8 +133,7 @@ func run(flags *flags, log logr.Logger) {
 		Namespace:               flags.providerNamespace,
 	})
 	if err != nil {
-		log.Error(err, "unable to start manager for master cluster")
-		os.Exit(1)
+		return fmt.Errorf("unable to start manager for master cluster: %w", err)
 	}
 
 	if err := util.AddOwnerReverseFieldIndex(
@@ -162,7 +153,7 @@ func run(flags *flags, log logr.Logger) {
 		ServiceClient:      serviceMgr.GetClient(),
 		ProviderNamespace:  flags.providerNamespace,
 		ServiceClusterName: flags.serviceClusterName,
-		StatusUpdatePeriod: serviceClusterStatusUpdatePeriod,
+		StatusUpdatePeriod: flags.serviceClusterStatusUpdatePeriod,
 	}).SetupWithManagers(serviceMgr, masterMgr); err != nil {
 		log.Error(err, "unable to create controller", "controller", "ServiceCluster")
 		os.Exit(1)
@@ -229,4 +220,5 @@ func run(flags *flags, log logr.Logger) {
 
 	// wait for all go routines to stop, before exiting main
 	shutdownWG.Wait()
+	return nil
 }

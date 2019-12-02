@@ -2,7 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: controller-manager
-  namespace: system
+  namespace: default #system
   labels:
     control-plane: controller-manager
 spec:
@@ -17,7 +17,21 @@ spec:
     spec:
       containers:
       - image: quay.io/kubecarrier/tender:lastest
+        args:
+        - "--service-cluster-name=$(SERVICE_CLUSTER)"
+        - "--service-cluster-kubeconfig=/kubeconfig"
+        - "--provider-namespace=$(KUBERNETES_NAMESPACE)"
         name: manager
+        env:
+          - name: SERVICE_CLUSTER
+            value: "__SERVICE_CLUSTER_NAME__"
+          - name: KUBERNETES_NAMESPACE
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.namespace
+        volumeMounts:
+          - mountPath: /kubeconfig
+            name: kubeconfig
         resources:
           limits:
             cpu: 100m
@@ -26,3 +40,11 @@ spec:
             cpu: 100m
             memory: 20Mi
       terminationGracePeriodSeconds: 10
+      volumes:
+        - name: kubeconfig
+          secret:
+            optional: false
+            secretName: "__KUBECONFIG_SECRET_NAME__"
+            items:
+              - key: "kubeconfig"
+                path: "kubeconfig"
