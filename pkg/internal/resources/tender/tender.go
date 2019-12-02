@@ -52,7 +52,7 @@ func Manifests(k kustomizeFactory, c Config) ([]unstructured.Unstructured, error
 	}
 
 	// patch namespace
-	kmap["namespace"] = c.Namespace
+	kmap["namespace"] = c.ProviderNamespace
 	// patch image tag
 	v := version.Get()
 	kmap["images"] = []map[string]string{
