@@ -41,7 +41,23 @@ func TestTenantReconciler(t *testing.T) {
 		},
 	}
 
-	client := fakeclient.NewFakeClientWithScheme(testScheme, tenant)
+	provider := &catalogv1alpha1.Provider{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "test-provider",
+			Namespace: "kubecarrier-system",
+		},
+		Status: catalogv1alpha1.ProviderStatus{
+			NamespaceName: "provider-test-provider",
+			Conditions: []catalogv1alpha1.ProviderCondition{
+				{
+					Type:   catalogv1alpha1.ProviderReady,
+					Status: catalogv1alpha1.ConditionTrue,
+				},
+			},
+		},
+	}
+
+	client := fakeclient.NewFakeClientWithScheme(testScheme, tenant, provider)
 	log := testutil.NewLogger(t)
 	r := &TenantReconciler{
 		Client: client,
@@ -52,6 +68,7 @@ func TestTenantReconciler(t *testing.T) {
 
 	tenantFound := &catalogv1alpha1.Tenant{}
 	namespaceFound := &corev1.Namespace{}
+	tenantReferenceFound := &catalogv1alpha1.TenantReference{}
 	if !t.Run("create/update Tenant", func(t *testing.T) {
 		for i := 0; i < 5; i++ {
 			// Run Reconcile multiple times, because
@@ -82,6 +99,13 @@ func TestTenantReconciler(t *testing.T) {
 		require.NoError(t, client.Get(ctx, types.NamespacedName{
 			Name: "tenant-" + tenant.Name,
 		}, namespaceFound), "getting namespace error")
+
+		// Check TenantReference
+		require.NoError(t, client.Get(ctx, types.NamespacedName{
+			Name:      tenant.Name,
+			Namespace: provider.Status.NamespaceName,
+		}, tenantReferenceFound), "getting TenantReference error")
+
 	}) {
 		t.FailNow()
 	}
@@ -104,11 +128,6 @@ func TestTenantReconciler(t *testing.T) {
 			require.NoError(t, err, "unexpected error returned by Reconcile")
 		}
 
-		namespaceCheck := &corev1.Namespace{}
-		assert.True(t, errors.IsNotFound(client.Get(ctx, types.NamespacedName{
-			Name: namespaceFound.Name,
-		}, namespaceCheck)), "Namespace should be gone")
-
 		tenantCheck := &catalogv1alpha1.Tenant{}
 		require.NoError(t, client.Get(ctx, types.NamespacedName{
 			Name:      tenantFound.Name,
@@ -121,5 +140,18 @@ func TestTenantReconciler(t *testing.T) {
 		assert.True(t, readyConditionExists, "Ready Condition is not set")
 		assert.Equal(t, catalogv1alpha1.ConditionFalse, readyCondition.Status, "Wrong Ready condition.Status")
 		assert.Equal(t, catalogv1alpha1.TenantTerminatingReason, readyCondition.Reason, "Wrong Reason condition.Status")
+
+		// Check Namespace
+		namespaceCheck := &corev1.Namespace{}
+		assert.True(t, errors.IsNotFound(client.Get(ctx, types.NamespacedName{
+			Name: namespaceFound.Name,
+		}, namespaceCheck)), "Namespace should be gone")
+
+		// Check TenantReference
+		tenantReferenceCheck := &catalogv1alpha1.TenantReference{}
+		assert.True(t, errors.IsNotFound(client.Get(ctx, types.NamespacedName{
+			Name:      tenantReferenceFound.Name,
+			Namespace: tenantReferenceFound.Namespace,
+		}, tenantReferenceCheck)), "TenantReference should be gone")
 	})
 }

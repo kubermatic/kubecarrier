@@ -29,22 +29,21 @@ else
   CONTROLLER_GEN=$(which controller-gen)
 fi
 
-# DeepCopy functions
-$CONTROLLER_GEN object:headerFile=./hack/boilerplate/boilerplate.go.txt,year=$(date +%Y) paths=./pkg/apis/...
-
 function statik-gen {
-  set -x
   local component=$1
   local src=$2
-  if [ -z "$(git status --porcelain ${src})" ]; then
-    echo $1: statik up-to-date
+  if [ -z "$(git status --porcelain ${src})" ] && [[ -z ${FORCE_STATIK:-} ]]; then
+    echo ${component}: statik up-to-date
   else
-    statik -src=${src} -p $1 -dest pkg/internal/resources -f -c ''
-    cat hack/boilerplate/boilerplate.generatego.txt | sed s/YEAR/$(date +%Y)/ | cat - pkg/internal/resources/$1/statik.go > pkg/internal/resources/$1/statik.go.tmp
-    mv pkg/internal/resources/$1/statik.go.tmp pkg/internal/resources/$1/statik.go
-    echo $1: statik regenerated
+    statik -src=${src} -p ${component} -dest pkg/internal/resources -f -c ''
+    cat hack/boilerplate/boilerplate.generatego.txt | sed s/YEAR/$(date +%Y)/ | cat - pkg/internal/resources/${component}/statik.go > pkg/internal/resources/${component}/statik.go.tmp
+    mv pkg/internal/resources/${component}/statik.go.tmp pkg/internal/resources/${component}/statik.go
+    echo ${component}: statik regenerated
   fi
 }
+
+# DeepCopy functions
+$CONTROLLER_GEN object:headerFile=./hack/boilerplate/boilerplate.go.txt,year=$(date +%Y) paths=./pkg/apis/...
 
 # Operator
 # --------
@@ -52,7 +51,6 @@ function statik-gen {
 $CONTROLLER_GEN crd webhook paths="./pkg/apis/operator/..." output:crd:artifacts:config=config/operator/crd/bases output:webhook:artifacts:config=config/operator/webhook
 # RBAC
 $CONTROLLER_GEN rbac:roleName=manager-role paths="./pkg/operator/..." output:rbac:artifacts:config=config/operator/rbac
-# Statik (run only when file CONTENT has changed)
 statik-gen operator config/operator
 
 # Manager
@@ -62,7 +60,6 @@ $CONTROLLER_GEN crd webhook paths="./pkg/apis/core/..." output:crd:artifacts:con
 $CONTROLLER_GEN crd webhook paths="./pkg/apis/catalog/..." output:crd:artifacts:config=config/internal/manager/crd/bases output:webhook:artifacts:config=config/internal/manager/webhook
 # RBAC
 $CONTROLLER_GEN rbac:roleName=manager-role paths="./pkg/manager/..." output:rbac:artifacts:config=config/internal/manager/rbac
-# Statik (run only when file CONTENT has changed)
 statik-gen manager config/internal/manager
 
 # Tender

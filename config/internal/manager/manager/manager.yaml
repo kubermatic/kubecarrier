@@ -18,6 +18,11 @@ spec:
       containers:
       - image: quay.io/kubecarrier/manager:lastest
         name: manager
+        env:
+        - name: KUBECARRIER_NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
         resources:
           limits:
             cpu: 100m
