@@ -66,17 +66,15 @@ func init() {
 }
 
 func NewTenderCommand(log logr.Logger) *cobra.Command {
+	flags := &flags{}
 	cmd := &cobra.Command{
 		Args:  cobra.NoArgs,
 		Use:   "tender",
 		Short: "Tender controller manager",
-		Run: func(cmd *cobra.Command, args []string) {
-			flags := &flags{}
-			runE(flags, log)
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return runE(flags, log)
 		},
 	}
-
-	flags := &flags{}
 
 	cmd.Flags().StringVar(&flags.providerNamespace, "provider-namespace", "", "Name of the providers namespace in the master cluster.")
 	cmd.Flags().BoolVar(&flags.enableLeaderElection, "enable-leader-election", true,
@@ -90,11 +88,15 @@ func NewTenderCommand(log logr.Logger) *cobra.Command {
 	cmd.Flags().StringVar(&flags.serviceMetricsAddr, "service-cluster-metrics-addr", ":8081", "The address the metric endpoint binds to.")
 	cmd.Flags().StringVar(&flags.serviceKubeConfig, "service-cluster-kubeconfig", "", "Path to the Service Cluster kubeconfig.")
 	cmd.Flags().StringVar(&flags.serviceClusterName, "service-cluster-name", "", "Name of the Service Cluster the tender is operating on.")
-	if err := cmd.MarkFlagRequired("service-cluster-name"); err != nil {
-		panic(fmt.Errorf("req flag service-cluster-name: %w", err))
-	}
-	if err := cmd.MarkFlagRequired("provider-namespace"); err != nil {
-		panic(fmt.Errorf("req flag provider-namespace: %w", err))
+	for _, flagName := range []string{
+		"provider-namespace",
+		"service-cluster-name",
+		"service-cluster-kubeconfig",
+	} {
+		if err := cmd.MarkFlagRequired(flagName); err != nil {
+			panic(fmt.Errorf("req flag %s: %w", flagName, err))
+		}
+
 	}
 	return cmd
 }

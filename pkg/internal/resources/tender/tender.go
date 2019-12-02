@@ -17,20 +17,32 @@ limitations under the License.
 package tender
 
 import (
+	"bytes"
 	"fmt"
-	"net/http"
-
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"net/http"
 	"sigs.k8s.io/yaml"
 
 	"github.com/kubermatic/kubecarrier/pkg/internal/kustomize"
 	"github.com/kubermatic/kubecarrier/pkg/internal/version"
 )
 
+const (
+	ServiceClusterName   = "__SERVICE_CLUSTER_NAME__"
+	KubeconifgSecretName = "__KUBECONFIG_SECRET_NAME__"
+	// TODO: finish later in the morning!!!
+)
+
 // Config holds the config information to generate the kubecarrier operator setup.
 type Config struct {
 	// Namespace the tender operator should be deployed into.
 	ProviderNamespace string
+
+	// Name of this tender
+	Name string
+
+	// KubeconfigSecretName
+	KubeconfigSecretName string
 }
 
 type kustomizeFactory interface {
@@ -46,6 +58,7 @@ func Manifests(k kustomizeFactory, c Config) ([]unstructured.Unstructured, error
 	if err != nil {
 		return nil, fmt.Errorf("reading %s: %w", kustomizePath, err)
 	}
+	kustomizeBytes = bytes.ReplaceAll(kustomizeBytes, []byte(), []byte(c.Name))
 	kmap := map[string]interface{}{}
 	if err := yaml.Unmarshal(kustomizeBytes, &kmap); err != nil {
 		return nil, fmt.Errorf("unmarshal %s: %w", kustomizePath, err)

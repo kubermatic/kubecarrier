@@ -1,10 +1,13 @@
-# This kustomization.yaml is not intended to be run by itself,
+# This kustomization.yaml is not intended to be run by itselfcode,
 # since it depends on service name and namespace that are out of this kustomize package.
 # It should be run by config/default
 resources:
 - bases/catalog.kubecarrier.io_tenants.yaml
 - bases/catalog.kubecarrier.io_providers.yaml
 - bases/catalog.kubecarrier.io_tenantreferences.yaml
+- bases/core.kubecarrier.io_crdreferences.yaml
+- bases/core.kubecarrier.io_serviceclusters.yaml
+- bases/core.kubecarrier.io_tenantassignments.yaml
 # +kubebuilder:scaffold:crdkustomizeresource
 
 patchesStrategicMerge:
