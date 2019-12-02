@@ -38,6 +38,17 @@ rules:
 - apiGroups:
   - catalog.kubecarrier.io
   resources:
+  - tenantreferences
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - update
+  - watch
+- apiGroups:
+  - catalog.kubecarrier.io
+  resources:
   - tenants
   verbs:
   - get
