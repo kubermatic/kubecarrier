@@ -19,8 +19,12 @@ package tender
 import (
 	"bytes"
 	"fmt"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"net/http"
+
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+
+	"k8s.io/apimachinery/pkg/runtime"
+
 	"sigs.k8s.io/yaml"
 
 	"github.com/kubermatic/kubecarrier/pkg/internal/kustomize"
@@ -30,7 +34,6 @@ import (
 const (
 	ServiceClusterName   = "__SERVICE_CLUSTER_NAME__"
 	KubeconifgSecretName = "__KUBECONFIG_SECRET_NAME__"
-	// TODO: finish later in the morning!!!
 )
 
 // Config holds the config information to generate the kubecarrier operator setup.
@@ -49,7 +52,7 @@ type kustomizeFactory interface {
 	ForHTTP(fs http.FileSystem) kustomize.KustomizeContext
 }
 
-func Manifests(k kustomizeFactory, c Config) ([]unstructured.Unstructured, error) {
+func Manifests(k kustomizeFactory, c Config, scheme *runtime.Scheme) ([]unstructured.Unstructured, error) {
 	kc := k.ForHTTP(vfs)
 
 	// patch settings
@@ -58,15 +61,15 @@ func Manifests(k kustomizeFactory, c Config) ([]unstructured.Unstructured, error
 	if err != nil {
 		return nil, fmt.Errorf("reading %s: %w", kustomizePath, err)
 	}
-	kustomizeBytes = bytes.ReplaceAll(kustomizeBytes, []byte(), []byte(c.Name))
+	// kustomizeBytes = bytes.ReplaceAll(kustomizeBytes, []byte(), []byte(c.Name))
 	kmap := map[string]interface{}{}
 	if err := yaml.Unmarshal(kustomizeBytes, &kmap); err != nil {
 		return nil, fmt.Errorf("unmarshal %s: %w", kustomizePath, err)
 	}
 
-	// patch namespace
 	kmap["namespace"] = c.ProviderNamespace
-	// patch image tag
+	kmap["namePrefix"] = fmt.Sprintf("tender-%s-", c.Name)
+
 	v := version.Get()
 	kmap["images"] = []map[string]string{
 		{
@@ -83,10 +86,36 @@ func Manifests(k kustomizeFactory, c Config) ([]unstructured.Unstructured, error
 		return nil, fmt.Errorf("writing %s: %w", kustomizePath, err)
 	}
 
+	managerPath := "/manager/manager.yaml"
+	managerBytes, err := kc.ReadFile(managerPath)
+	if err != nil {
+		return nil, fmt.Errorf("reading %s: %w", managerPath, err)
+	}
+
+	managerBytes = bytes.ReplaceAll(managerBytes, []byte(ServiceClusterName), []byte(c.Name))
+	managerBytes = bytes.ReplaceAll(managerBytes, []byte(KubeconifgSecretName), []byte(c.KubeconfigSecretName))
+	if err := kc.WriteFile(managerPath, managerBytes); err != nil {
+		return nil, fmt.Errorf("writing %s: %w", managerPath, err)
+	}
 	// execute kustomize
-	objects, err := kc.Build("/default")
+	unstructuredObjects, err := kc.Build("/default")
 	if err != nil {
 		return nil, fmt.Errorf("running kustomize build: %w", err)
 	}
-	return objects, nil
+	return unstructuredObjects, nil
+
+	/*
+		objects := make([]runtime.Object, len(unstructuredObjects))
+		for i, obj := range unstructuredObjects {
+			var err error
+			objects[i], err = scheme.New(obj.GroupVersionKind())
+			if err != nil {
+				return nil, fmt.Errorf("cannot create new object of gvk %s: %w", obj.GroupVersionKind(), err)
+			}
+			if err := scheme.Convert(obj, objects[i], nil); err != nil {
+				return nil, fmt.Errorf("cannot convert unstructured gvk=%s: %w", obj.GroupVersionKind(), err)
+			}
+		}
+		return objects, nil
+	*/
 }

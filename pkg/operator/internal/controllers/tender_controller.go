@@ -102,7 +102,10 @@ func (r *TenderReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	var deploymentReady bool
 
 	// Build the manifests of the Tender controller manager.
-	objects, err := tenderresource.Manifests(r.Kustomize, tenderConfigurationForObject(tender))
+	objects, err := tenderresource.Manifests(r.Kustomize, tenderConfigurationForObject(tender), r.Scheme)
+	if err != nil {
+		return ctrl.Result{}, fmt.Errorf("tender manifests: %w", err)
+	}
 	for _, object := range objects {
 		if _, err := util.InsertOwnerReference(tender, &object, r.Scheme); err != nil {
 			return ctrl.Result{}, err
@@ -112,9 +115,9 @@ func (r *TenderReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 		if err != nil {
 			return ctrl.Result{}, fmt.Errorf("reconcile type: %w", err)
 		}
-		switch currObj.(type) {
+		switch obj := currObj.(type) {
 		case *appsv1.Deployment:
-			deploymentReady = util.DeploymentIsAvailable(currObj.(*appsv1.Deployment))
+			deploymentReady = util.DeploymentIsAvailable(obj)
 		}
 	}
 
@@ -156,7 +159,7 @@ func (r *TenderReconciler) handleDeletion(ctx context.Context, log logr.Logger, 
 
 	// 2. Delete Objects.
 	allCleared := true
-	objects, err := tenderresource.Manifests(r.Kustomize, tenderConfigurationForObject(tender))
+	objects, err := tenderresource.Manifests(r.Kustomize, tenderConfigurationForObject(tender), r.Scheme)
 	if err != nil {
 		return fmt.Errorf("deletion: manifests: %w", err)
 	}
@@ -201,6 +204,8 @@ func (r *TenderReconciler) SetupWithManager(mgr ctrl.Manager) error {
 
 func tenderConfigurationForObject(tender *operatorv1alpha1.Tender) tenderresource.Config {
 	return tenderresource.Config{
-		ProviderNamespace: tender.Namespace,
+		ProviderNamespace:    tender.Namespace,
+		Name:                 tender.Name,
+		KubeconfigSecretName: tender.Spec.KubeconfigSecret.Name,
 	}
 }
