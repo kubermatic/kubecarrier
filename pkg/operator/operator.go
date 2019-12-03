@@ -19,8 +19,6 @@ package operator
 import (
 	"fmt"
 
-	"sigs.k8s.io/controller-runtime/pkg/client/apiutil"
-
 	"github.com/go-logr/logr"
 	"github.com/spf13/cobra"
 	rbacv1 "k8s.io/api/rbac/v1"
@@ -29,6 +27,7 @@ import (
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/client/apiutil"
 
 	operatorv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/operator/v1alpha1"
 	"github.com/kubermatic/kubecarrier/pkg/internal/kustomize"
