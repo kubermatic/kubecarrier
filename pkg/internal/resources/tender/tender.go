@@ -101,19 +101,4 @@ func Manifests(k kustomizeFactory, c Config, scheme *runtime.Scheme) ([]unstruct
 		return nil, fmt.Errorf("running kustomize build: %w", err)
 	}
 	return unstructuredObjects, nil
-
-	/*
-		objects := make([]runtime.Object, len(unstructuredObjects))
-		for i, obj := range unstructuredObjects {
-			var err error
-			objects[i], err = scheme.New(obj.GroupVersionKind())
-			if err != nil {
-				return nil, fmt.Errorf("cannot create new object of gvk %s: %w", obj.GroupVersionKind(), err)
-			}
-			if err := scheme.Convert(obj, objects[i], nil); err != nil {
-				return nil, fmt.Errorf("cannot convert unstructured gvk=%s: %w", obj.GroupVersionKind(), err)
-			}
-		}
-		return objects, nil
-	*/
 }

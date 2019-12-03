@@ -124,6 +124,7 @@ func (r *TenderReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	}
 
 	// Update the tender status
+	tender.Status.ObservedGeneration = tender.Generation
 	if deploymentReady {
 		tender.Status.SetCondition(operatorv1alpha1.TenderCondition{
 			Type:    operatorv1alpha1.TenderReady,
@@ -154,7 +155,7 @@ func (r *TenderReconciler) handleDeletion(ctx context.Context, log logr.Logger, 
 			Status:  operatorv1alpha1.ConditionFalse,
 			Type:    operatorv1alpha1.TenderReady,
 		})
-		if err := r.Update(ctx, tender); err != nil {
+		if err := r.Status().Update(ctx, tender); err != nil {
 			return fmt.Errorf("updating Tender: %v", err)
 		}
 	}
