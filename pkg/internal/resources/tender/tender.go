@@ -34,7 +34,7 @@ const (
 	KubeconifgSecretName = "__KUBECONFIG_SECRET_NAME__"
 )
 
-// Config holds the config information to generate the kubecarrier operator setup.
+// Config holds the config information to generate the kubecarrier tender setup.
 type Config struct {
 	// Namespace the tender operator should be deployed into.
 	ProviderNamespace string
@@ -42,7 +42,7 @@ type Config struct {
 	// Name of this tender
 	Name string
 
-	// KubeconfigSecretName
+	// KubeconfigSecretName of the secret holding the service cluster kubeconfig under the "kubeconfig" key
 	KubeconfigSecretName string
 }
 
