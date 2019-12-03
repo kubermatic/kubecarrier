@@ -19,8 +19,6 @@ package operator
 import (
 	"fmt"
 
-	corev1 "k8s.io/api/core/v1"
-
 	"sigs.k8s.io/controller-runtime/pkg/client/apiutil"
 
 	"github.com/go-logr/logr"
@@ -89,8 +87,6 @@ func run(flags *flags, log logr.Logger) error {
 	for _, obj := range []runtime.Object{
 		&rbacv1.ClusterRole{},
 		&rbacv1.ClusterRoleBinding{},
-		&corev1.Service{},
-		&operatorv1alpha1.Tender{},
 	} {
 		gvk, err := apiutil.GVKForObject(obj, mgr.GetScheme())
 		if err != nil {

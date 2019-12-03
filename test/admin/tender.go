@@ -22,6 +22,10 @@ import (
 	"io/ioutil"
 	"time"
 
+	"k8s.io/apimachinery/pkg/api/errors"
+
+	"sigs.k8s.io/controller-runtime/pkg/client"
+
 	"github.com/stretchr/testify/assert"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/wait"
@@ -35,6 +39,7 @@ import (
 
 func (s *AdminSuite) TestTenderCreationAndDeletion() {
 	t := s.T()
+	t.Parallel()
 	ctx := context.Background()
 	const (
 		namespace = "default"
@@ -43,7 +48,7 @@ func (s *AdminSuite) TestTenderCreationAndDeletion() {
 	serviceKubeconfig, err := ioutil.ReadFile(s.Framework.Config().ServiceInternalKubeconfigPath)
 	require.NoError(t, err, "cannot read service internal kubeconfig")
 
-	sec := corev1.Secret{
+	sec := &corev1.Secret{
 		ObjectMeta: v1.ObjectMeta{
 			Name:      "eu-west-1",
 			Namespace: namespace,
@@ -63,11 +68,17 @@ func (s *AdminSuite) TestTenderCreationAndDeletion() {
 			},
 		},
 	}
-	_ = s.masterClient.Delete(ctx, sec.DeepCopy())
-	_ = s.masterClient.Delete(ctx, tender.DeepCopy())
+	require.NoError(t, client.IgnoreNotFound(s.masterClient.Delete(ctx, sec.DeepCopy())))
+	require.NoError(t, client.IgnoreNotFound(s.masterClient.Delete(ctx, tender.DeepCopy())))
+
+	require.NoError(t, s.masterClient.Create(ctx, sec))
 	require.NoError(t, s.masterClient.Create(ctx, tender))
+
 	assert.NoError(t, wait.Poll(time.Second, 30*time.Second, func() (done bool, err error) {
-		if err := s.masterClient.Get(ctx, types.NamespacedName{}, tender); err != nil {
+		if err := s.masterClient.Get(ctx, types.NamespacedName{
+			Name:      tender.Name,
+			Namespace: tender.Namespace,
+		}, tender); err != nil {
 			return false, fmt.Errorf("get: %w", err)
 		}
 		cond, ok := tender.Status.GetCondition(operatorv1alpha1.TenderReady)
@@ -75,5 +86,22 @@ func (s *AdminSuite) TestTenderCreationAndDeletion() {
 			return false, nil
 		}
 		return cond.Status == operatorv1alpha1.ConditionTrue, nil
-	}))
+	}), "tender object not ready within time limit")
+
+	require.NoError(t, s.masterClient.Delete(ctx, tender))
+	assert.NoError(t, wait.Poll(time.Second, 30*time.Second, func() (done bool, err error) {
+		err = s.masterClient.Get(ctx, types.NamespacedName{
+			Name:      tender.Name,
+			Namespace: tender.Namespace,
+		}, tender)
+		switch {
+		case err == nil:
+			return false, nil
+		case errors.IsNotFound(err):
+			return true, nil
+		default:
+			return false, err
+		}
+	}), "tender object not cleared within time limit")
+	assert.NoError(t, s.masterClient.Delete(ctx, sec))
 }

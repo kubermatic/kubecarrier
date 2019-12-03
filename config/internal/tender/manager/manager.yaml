@@ -19,7 +19,7 @@ spec:
       - image: quay.io/kubecarrier/tender:lastest
         args:
         - "--service-cluster-name=$(SERVICE_CLUSTER)"
-        - "--service-cluster-kubeconfig=/kubeconfig"
+        - "--service-cluster-kubeconfig=/kubeconfig/kubeconfig"
         - "--provider-namespace=$(KUBERNETES_NAMESPACE)"
         name: manager
         env:

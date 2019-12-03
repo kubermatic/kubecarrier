@@ -28,6 +28,8 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
+	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/source"
 
 	operatorv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/operator/v1alpha1"
@@ -98,7 +100,7 @@ func (r *TenderReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 		}
 	}
 
-	// 3. Reconcile the objects that owned by Tender object.
+	// Reconcile the objects that owned by Tender object.
 	var deploymentReady bool
 
 	// Build the manifests of the Tender controller manager.
@@ -107,8 +109,8 @@ func (r *TenderReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 		return ctrl.Result{}, fmt.Errorf("tender manifests: %w", err)
 	}
 	for _, object := range objects {
-		if _, err := util.InsertOwnerReference(tender, &object, r.Scheme); err != nil {
-			return ctrl.Result{}, err
+		if err := controllerutil.SetControllerReference(tender, &object, r.Scheme); err != nil {
+			return ctrl.Result{}, fmt.Errorf("setting controller reference: %w", err)
 		}
 
 		currObj, err := reconcile.Unstructured(ctx, log, r.Client, &object)
@@ -186,17 +188,11 @@ func (r *TenderReconciler) handleDeletion(ctx context.Context, log logr.Logger, 
 }
 
 func (r *TenderReconciler) SetupWithManager(mgr ctrl.Manager) error {
-	owner := &operatorv1alpha1.Tender{}
-	ownerHandler, err := util.EnqueueRequestForOwner(owner, r.Scheme)
-	if err != nil {
-		return fmt.Errorf("create owner handler: %w", err)
-	}
-
 	cm := ctrl.NewControllerManagedBy(mgr).
 		For(&operatorv1alpha1.Tender{})
 
 	for _, obj := range tenderControllerObjects {
-		cm = cm.Watches(&source.Kind{Type: obj}, ownerHandler)
+		cm = cm.Watches(&source.Kind{Type: obj}, &handler.EnqueueRequestForOwner{OwnerType: &operatorv1alpha1.Tender{}})
 	}
 
 	return cm.Complete(r)
