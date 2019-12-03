@@ -79,6 +79,33 @@ func InsertOwnerReference(owner, object metav1.Object, scheme *runtime.Scheme) (
 	return true, nil
 }
 
+// RemoveOwnerReference adds an OwnerReference to the given object.
+func RemoveOwnerReference(owner, object metav1.Object, scheme *runtime.Scheme) (changed bool, err error) {
+	oref, err := toOwnerReference(owner, scheme)
+	if err != nil {
+		return false, err
+	}
+
+	refs, err := getRefs(object)
+	if err != nil {
+		return false, err
+	}
+
+	newRefs := make([]ownerReference, 0, len(refs))
+	for _, ref := range refs {
+		if ref == oref {
+			changed = true
+		} else {
+			newRefs = append(newRefs, ref)
+		}
+	}
+	err = setRefs(object, newRefs)
+	if err != nil {
+		return false, err
+	}
+	return changed, nil
+}
+
 // EnqueueRequestForOwner enqueues requests for all owners of an object.
 //
 // It implements the same behavior as handler.EnqueueRequestForOwner, but for our custom ownerReference.

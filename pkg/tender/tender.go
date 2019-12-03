@@ -35,6 +35,7 @@ import (
 
 	corev1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/core/v1alpha1"
 	"github.com/kubermatic/kubecarrier/pkg/internal/util"
+	"github.com/kubermatic/kubecarrier/pkg/tender/internal/controllers"
 )
 
 var (
@@ -144,6 +145,45 @@ func runE(flags *flags, log logr.Logger) error {
 	); err != nil {
 		log.Error(err, "cannot add Namespace owner field indexer")
 		os.Exit(2)
+	}
+
+	// Register Controllers
+	if err = (&controllers.ServiceClusterReconciler{
+		Log: ctrl.Log.WithName("controllers").WithName("ServiceCluster"),
+
+		MasterClient:       masterMgr.GetClient(),
+		ServiceClient:      serviceMgr.GetClient(),
+		ProviderNamespace:  flags.providerNamespace,
+		ServiceClusterName: flags.serviceClusterName,
+		StatusUpdatePeriod: flags.serviceClusterStatusUpdatePeriod,
+	}).SetupWithManagers(serviceMgr, masterMgr); err != nil {
+		log.Error(err, "unable to create controller", "controller", "ServiceCluster")
+		os.Exit(1)
+	}
+
+	if err = (&controllers.CRDReferenceReconciler{
+		Log: ctrl.Log.WithName("controllers").WithName("CRDReference"),
+
+		MasterClient: masterMgr.GetClient(),
+		MasterScheme: masterMgr.GetScheme(),
+
+		ServiceClient:      serviceMgr.GetClient(),
+		ServiceClusterName: flags.serviceClusterName,
+	}).SetupWithManagers(serviceMgr, masterMgr); err != nil {
+		log.Error(err, "unable to create controller", "controller", "CRDReference")
+		os.Exit(1)
+	}
+
+	if err = (&controllers.TenantAssignmentReconciler{
+		Log:          ctrl.Log.WithName("controllers").WithName("TenantAssignment"),
+		MasterClient: masterMgr.GetClient(),
+		MasterScheme: masterMgr.GetScheme(),
+
+		ServiceClient:      serviceMgr.GetClient(),
+		ServiceClusterName: flags.serviceClusterName,
+	}).SetupWithManagers(serviceMgr, masterMgr); err != nil {
+		log.Error(err, "unable to create controller", "controller", "TenantAssignment")
+		os.Exit(1)
 	}
 
 	var shutdownWG sync.WaitGroup
