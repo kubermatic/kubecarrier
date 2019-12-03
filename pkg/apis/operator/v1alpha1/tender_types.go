@@ -132,7 +132,18 @@ func (s *TenderStatus) GetCondition(t TenderConditionType) (condition TenderCond
 	return
 }
 
-// Tender is the Schema for the tenders API
+// Tender represents single kubernetes cluster belonging to the provider
+//
+// Tender lives in the provider namespace. For each tender the kubecarrier operator spins up
+// the tender controller deployment, necessary roles, service accounts, and role bindings
+//
+// The reason for tender controller deployment are multiples:
+// * security --> kubecarrier operator has greater privileges then tender controller
+// * resource isolation --> each tender controller pod operates only on a single service cluster,
+// 		thus resource allocation and monitoring is separate per tenders. This allows finer grade
+// 		resource tuning and monitoring
+// * flexibility --> If needed different tenders could have different deployments depending on
+// 		their specific need (e.g. kubecarrier image version for gradual rolling upgrade, different resource allocation, etc),
 // +kubebuilder:object:root=true
 // +kubebuilder:subresource:status
 // +kubebuilder:printcolumn:name="Status",type="string",JSONPath=".status.phase"
