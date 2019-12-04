@@ -33,6 +33,7 @@ type CRDReferenceSpec struct {
 type CRDReferenceStatus struct {
 	// CRDSpec defines the original CRD specification from the service cluster
 	CRDSpec *runtime.RawExtension `json:"crdSpec,omitempty"`
+	// DEPRECATED.
 	// Phase represents the current lifecycle state of this object
 	// consider this field DEPRECATED, it will be removed as soon as there
 	// is a mechanism to map conditions to a string when printing the property
