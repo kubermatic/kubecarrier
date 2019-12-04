@@ -6,7 +6,7 @@ metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.2.4
   creationTimestamp: null
-  name: tenants.catalog.kubecarrier.io
+  name: serviceclusters.core.kubecarrier.io
 spec:
   additionalPrinterColumns:
   - JSONPath: .status.phase
@@ -15,21 +15,20 @@ spec:
   - JSONPath: .metadata.creationTimestamp
     name: Age
     type: date
-  group: catalog.kubecarrier.io
+  group: core.kubecarrier.io
   names:
-    kind: Tenant
-    listKind: TenantList
-    plural: tenants
+    kind: ServiceCluster
+    listKind: ServiceClusterList
+    plural: serviceclusters
     shortNames:
-    - tn
-    singular: tenant
+    - sc
+    singular: servicecluster
   scope: Namespaced
   subresources:
     status: {}
   validation:
     openAPIV3Schema:
-      description: Tenant sets up permissions and references to allow a end-user group
-        to interact with providers' services.
+      description: ServiceCluster is a providers Kubernetes Cluster.
       properties:
         apiVersion:
           description: 'APIVersion defines the versioned schema of this representation
@@ -44,21 +43,39 @@ spec:
         metadata:
           type: object
         spec:
-          description: TenantSpec defines the desired state of Tenant.
+          description: ServiceClusterSpec defines the desired state of ServiceCluster
+          properties:
+            metadata:
+              description: ServiceClusterMetadata contains the metadata (display name,
+                description, etc) of the ServiceCluster.
+              properties:
+                description:
+                  description: Description shows the human-readable description of
+                    this ServiceCluster.
+                  type: string
+                displayName:
+                  description: DisplayName shows the human-readable name of this ServiceCluster.
+                  type: string
+              type: object
           type: object
         status:
-          description: TenantStatus defines the observed state of Tenant.
+          description: ServiceClusterStatus defines the observed state of ServiceCluster
           properties:
             conditions:
-              description: Conditions represents the latest available observations
-                of a Tenant's current state.
+              description: Conditions is a list of all conditions this ServiceCluster
+                is in.
               items:
-                description: TenantCondition contains details for the current condition
-                  of this Tenant.
+                description: ServiceClusterCondition contains details for the current
+                  condition of this ServiceCluster.
                 properties:
+                  lastHeartbeatTime:
+                    description: LastHeartbeatTime is the timestamp corresponding
+                      to the last update of this condition.
+                    format: date-time
+                    type: string
                   lastTransitionTime:
                     description: LastTransitionTime is the last time the condition
-                      transits from one status to another.
+                      transit from one status to another.
                     format: date-time
                     type: string
                   message:
@@ -70,14 +87,14 @@ spec:
                       last transition.
                     type: string
                   status:
-                    description: Status is the status of the condition, one of ('True',
-                      'False', 'Unknown').
+                    description: Status of the condition, one of ('True', 'False',
+                      'Unknown').
                     type: string
                   type:
-                    description: Type is the type of the Tenant condition, currently
-                      ('Ready').
+                    description: Type of the condition, currently ('Ready').
                     type: string
                 required:
+                - lastHeartbeatTime
                 - lastTransitionTime
                 - message
                 - reason
@@ -85,21 +102,16 @@ spec:
                 - type
                 type: object
               type: array
-            namespaceName:
-              description: NamespaceName is the name of the namespace that the Tenant
-                manages.
-              type: string
             observedGeneration:
-              description: ObservedGeneration is the most recent generation observed
-                for this Tenant by the controller.
+              description: The most recent generation observed by the controller.
               format: int64
               type: integer
             phase:
               description: DEPRECATED. Phase represents the current lifecycle state
-                of this object. Consider this field DEPRECATED, it will be removed
-                as soon as there is a mechanism to map conditions to strings when
-                printing the property. This is only for display purpose, for everything
-                else use conditions.
+                of this object consider this field DEPRECATED, it will be removed
+                as soon as there is a mechanism to map conditions to a string when
+                printing the property is only present for display purposes, for everything
+                else use conditions
               type: string
           type: object
       type: object

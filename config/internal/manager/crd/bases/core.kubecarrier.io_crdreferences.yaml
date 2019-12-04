@@ -6,30 +6,28 @@ metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.2.4
   creationTimestamp: null
-  name: tenants.catalog.kubecarrier.io
+  name: crdreferences.core.kubecarrier.io
 spec:
   additionalPrinterColumns:
-  - JSONPath: .status.phase
-    name: Status
+  - JSONPath: .spec.crd.name
+    name: CRD
     type: string
-  - JSONPath: .metadata.creationTimestamp
-    name: Age
-    type: date
-  group: catalog.kubecarrier.io
+  - JSONPath: .spec.serviceCluster.name
+    name: Service Cluster
+    type: string
+  group: core.kubecarrier.io
   names:
-    kind: Tenant
-    listKind: TenantList
-    plural: tenants
-    shortNames:
-    - tn
-    singular: tenant
+    kind: CRDReference
+    listKind: CRDReferenceList
+    plural: crdreferences
+    singular: crdreference
   scope: Namespaced
   subresources:
     status: {}
   validation:
     openAPIV3Schema:
-      description: Tenant sets up permissions and references to allow a end-user group
-        to interact with providers' services.
+      description: CRDReference is used inside KubeCarrier to fetch a CRD from another
+        cluster and to offload cross cluster access to another component.
       properties:
         apiVersion:
           description: 'APIVersion defines the versioned schema of this representation
@@ -44,21 +42,42 @@ spec:
         metadata:
           type: object
         spec:
-          description: TenantSpec defines the desired state of Tenant.
+          description: CRDReferenceSpec defines the desired state of crdreference
+          properties:
+            crd:
+              description: CRD references a CustomResourceDefinition within the ServiceCluster.
+              properties:
+                name:
+                  type: string
+              required:
+              - name
+              type: object
+            serviceCluster:
+              description: ServiceCluster references a ServiceCluster to search the
+                CRD on.
+              properties:
+                name:
+                  type: string
+              required:
+              - name
+              type: object
+          required:
+          - crd
+          - serviceCluster
           type: object
         status:
-          description: TenantStatus defines the observed state of Tenant.
+          description: CRDReferenceStatus defines the observed state of crdreference
           properties:
             conditions:
-              description: Conditions represents the latest available observations
-                of a Tenant's current state.
+              description: Conditions is a list of all conditions this CRDReference
+                is in.
               items:
-                description: TenantCondition contains details for the current condition
-                  of this Tenant.
+                description: CRDReferenceCondition contains details for the current
+                  condition of this CRDReference.
                 properties:
                   lastTransitionTime:
                     description: LastTransitionTime is the last time the condition
-                      transits from one status to another.
+                      transit from one status to another.
                     format: date-time
                     type: string
                   message:
@@ -70,12 +89,11 @@ spec:
                       last transition.
                     type: string
                   status:
-                    description: Status is the status of the condition, one of ('True',
-                      'False', 'Unknown').
+                    description: Status of the condition, one of ('True', 'False',
+                      'Unknown').
                     type: string
                   type:
-                    description: Type is the type of the Tenant condition, currently
-                      ('Ready').
+                    description: Type of the condition, currently ('Ready').
                     type: string
                 required:
                 - lastTransitionTime
@@ -85,21 +103,20 @@ spec:
                 - type
                 type: object
               type: array
-            namespaceName:
-              description: NamespaceName is the name of the namespace that the Tenant
-                manages.
-              type: string
+            crdSpec:
+              description: CRDSpec defines the original CRD specification from the
+                service cluster
+              type: object
             observedGeneration:
-              description: ObservedGeneration is the most recent generation observed
-                for this Tenant by the controller.
+              description: The most recent generation observed by the controller.
               format: int64
               type: integer
             phase:
               description: DEPRECATED. Phase represents the current lifecycle state
-                of this object. Consider this field DEPRECATED, it will be removed
-                as soon as there is a mechanism to map conditions to strings when
-                printing the property. This is only for display purpose, for everything
-                else use conditions.
+                of this object consider this field DEPRECATED, it will be removed
+                as soon as there is a mechanism to map conditions to a string when
+                printing the property is only present for display purposes, for everything
+                else use conditions
               type: string
           type: object
       type: object
