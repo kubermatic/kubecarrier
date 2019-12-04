@@ -25,6 +25,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -48,8 +49,6 @@ var tenderControllerObjects = []runtime.Object{
 	&corev1.ServiceAccount{},
 	&rbacv1.Role{},
 	&rbacv1.RoleBinding{},
-	&rbacv1.ClusterRole{},
-	&rbacv1.ClusterRoleBinding{},
 	&appsv1.Deployment{},
 }
 
@@ -84,6 +83,7 @@ func (r *TenderReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	if err := r.Get(ctx, req.NamespacedName, tender); err != nil {
 		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
+	tender.Status.ObservedGeneration = tender.Generation
 
 	// handle Deletion
 	if !tender.DeletionTimestamp.IsZero() {
@@ -109,11 +109,10 @@ func (r *TenderReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 		return ctrl.Result{}, fmt.Errorf("tender manifests: %w", err)
 	}
 	for _, object := range objects {
-		if err := controllerutil.SetControllerReference(tender, &object, r.Scheme); err != nil {
+		if err := controllerutil.SetControllerReference(tender, object.(metav1.Object), r.Scheme); err != nil {
 			return ctrl.Result{}, fmt.Errorf("setting controller reference: %w", err)
 		}
-
-		currObj, err := reconcile.Unstructured(ctx, log, r.Client, &object)
+		currObj, err := reconcile.Object(ctx, log, r.Client, object)
 		if err != nil {
 			return ctrl.Result{}, fmt.Errorf("reconcile type: %w", err)
 		}
@@ -124,7 +123,6 @@ func (r *TenderReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	}
 
 	// Update the tender status
-	tender.Status.ObservedGeneration = tender.Generation
 	if deploymentReady {
 		tender.Status.SetCondition(operatorv1alpha1.TenderCondition{
 			Type:    operatorv1alpha1.TenderReady,
@@ -167,7 +165,7 @@ func (r *TenderReconciler) handleDeletion(ctx context.Context, log logr.Logger, 
 		return fmt.Errorf("deletion: manifests: %w", err)
 	}
 	for _, obj := range objects {
-		err := r.Client.Delete(ctx, &obj)
+		err := r.Client.Delete(ctx, obj)
 		if errors.IsNotFound(err) {
 			continue
 		}

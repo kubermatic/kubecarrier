@@ -21,7 +21,6 @@ import (
 	"fmt"
 	"net/http"
 
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/yaml"
 
@@ -50,7 +49,7 @@ type kustomizeFactory interface {
 	ForHTTP(fs http.FileSystem) kustomize.KustomizeContext
 }
 
-func Manifests(k kustomizeFactory, c Config, scheme *runtime.Scheme) ([]unstructured.Unstructured, error) {
+func Manifests(k kustomizeFactory, c Config, scheme *runtime.Scheme) ([]runtime.Object, error) {
 	kc := k.ForHTTP(vfs)
 
 	// patch settings
@@ -59,7 +58,6 @@ func Manifests(k kustomizeFactory, c Config, scheme *runtime.Scheme) ([]unstruct
 	if err != nil {
 		return nil, fmt.Errorf("reading %s: %w", kustomizePath, err)
 	}
-	// kustomizeBytes = bytes.ReplaceAll(kustomizeBytes, []byte(), []byte(c.Name))
 	kmap := map[string]interface{}{}
 	if err := yaml.Unmarshal(kustomizeBytes, &kmap); err != nil {
 		return nil, fmt.Errorf("unmarshal %s: %w", kustomizePath, err)
@@ -100,5 +98,17 @@ func Manifests(k kustomizeFactory, c Config, scheme *runtime.Scheme) ([]unstruct
 	if err != nil {
 		return nil, fmt.Errorf("running kustomize build: %w", err)
 	}
-	return unstructuredObjects, nil
+
+	objects := make([]runtime.Object, len(unstructuredObjects))
+	for i, obj := range unstructuredObjects {
+		var err error
+		objects[i], err = scheme.New(obj.GroupVersionKind())
+		if err != nil {
+			return nil, fmt.Errorf("cannot create new object of gvk %s: %w", obj.GroupVersionKind(), err)
+		}
+		if err := scheme.Convert(obj, objects[i], nil); err != nil {
+			return nil, fmt.Errorf("cannot convert unstructured gvk=%s: %w", obj.GroupVersionKind(), err)
+		}
+	}
+	return objects, nil
 }
