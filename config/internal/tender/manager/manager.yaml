@@ -1,19 +1,19 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: controller-manager
+  name: manager
   namespace: system
   labels:
-    control-plane: controller-manager
+    control-plane: manager
 spec:
   selector:
     matchLabels:
-      control-plane: controller-manager
+      control-plane: manager
   replicas: 1
   template:
     metadata:
       labels:
-        control-plane: controller-manager
+        control-plane: manager
     spec:
       containers:
       - image: quay.io/kubecarrier/tender:lastest

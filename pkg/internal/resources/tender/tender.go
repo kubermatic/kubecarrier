@@ -106,9 +106,10 @@ func Manifests(k kustomizeFactory, c Config, scheme *runtime.Scheme) ([]runtime.
 		if err != nil {
 			return nil, fmt.Errorf("cannot create new object of gvk %s: %w", obj.GroupVersionKind(), err)
 		}
-		if err := scheme.Convert(obj, objects[i], nil); err != nil {
+		if err := scheme.Convert(&obj, objects[i], nil); err != nil {
 			return nil, fmt.Errorf("cannot convert unstructured gvk=%s: %w", obj.GroupVersionKind(), err)
 		}
+		objects[i].GetObjectKind().SetGroupVersionKind(obj.GroupVersionKind())
 	}
 	return objects, nil
 }

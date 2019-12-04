@@ -26,17 +26,27 @@ spec:
     status: {}
   validation:
     openAPIV3Schema:
-      description: Tender is the Schema for the tenders API
+      description: "Tender represents single kubernetes cluster belonging to the provider
+        \n Tender lives in the provider namespace. For each tender the kubecarrier
+        operator spins up the tender controller deployment, necessary roles, service
+        accounts, and role bindings \n The reason for tender controller deployment
+        are multiples: * security --> kubecarrier operator has greater privileges
+        then tender controller * resource isolation --> each tender controller pod
+        operates only on a single service cluster, \t\tthus resource allocation and
+        monitoring is separate per tenders. This allows finer grade \t\tresource tuning
+        and monitoring * flexibility --> If needed different tenders could have different
+        deployments depending on \t\ttheir specific need (e.g. kubecarrier image version
+        for gradual rolling upgrade, different resource allocation, etc),"
       properties:
         apiVersion:
           description: 'APIVersion defines the versioned schema of this representation
             of an object. Servers should convert recognized schemas to the latest
-            internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+            internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#resources'
           type: string
         kind:
           description: 'Kind is a string value representing the REST resource this
             object represents. Servers may infer this from the endpoint the client
-            submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+            submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#types-kinds'
           type: string
         metadata:
           type: object
