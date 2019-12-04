@@ -4,7 +4,7 @@ apiVersion: apiextensions.k8s.io/v1beta1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.2.2
+    controller-gen.kubebuilder.io/version: v0.2.4
   creationTimestamp: null
   name: serviceclusters.core.kubecarrier.io
 spec:
@@ -107,10 +107,11 @@ spec:
               format: int64
               type: integer
             phase:
-              description: Phase represents the current lifecycle state of this object
-                consider this field DEPRECATED, it will be removed as soon as there
-                is a mechanism to map conditions to a string when printing the property
-                is only present for display purposes, for everything else use conditions
+              description: DEPRECATED. Phase represents the current lifecycle state
+                of this object consider this field DEPRECATED, it will be removed
+                as soon as there is a mechanism to map conditions to a string when
+                printing the property is only present for display purposes, for everything
+                else use conditions
               type: string
           type: object
       type: object

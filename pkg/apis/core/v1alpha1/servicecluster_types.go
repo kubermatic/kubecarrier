@@ -35,6 +35,7 @@ type ServiceClusterMetadata struct {
 
 // ServiceClusterStatus defines the observed state of ServiceCluster
 type ServiceClusterStatus struct {
+	// DEPRECATED.
 	// Phase represents the current lifecycle state of this object
 	// consider this field DEPRECATED, it will be removed as soon as there
 	// is a mechanism to map conditions to a string when printing the property

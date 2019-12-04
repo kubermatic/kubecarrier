@@ -4,7 +4,7 @@ apiVersion: apiextensions.k8s.io/v1beta1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.2.2
+    controller-gen.kubebuilder.io/version: v0.2.4
   creationTimestamp: null
   name: tenders.operator.kubecarrier.io
 spec:
@@ -21,12 +21,22 @@ spec:
     listKind: TenderList
     plural: tenders
     singular: tender
-  scope: ""
+  scope: Namespaced
   subresources:
     status: {}
   validation:
     openAPIV3Schema:
-      description: Tender is the Schema for the tenders API
+      description: "Tender represents single kubernetes cluster belonging to the provider
+        \n Tender lives in the provider namespace. For each tender the kubecarrier
+        operator spins up the tender controller deployment, necessary roles, service
+        accounts, and role bindings \n The reason for tender controller deployment
+        are multiples: * security --> kubecarrier operator has greater privileges
+        then tender controller * resource isolation --> each tender controller pod
+        operates only on a single service cluster, \t\tthus resource allocation and
+        monitoring is separate per tenders. This allows finer grade \t\tresource tuning
+        and monitoring * flexibility --> If needed different tenders could have different
+        deployments depending on \t\ttheir specific need (e.g. kubecarrier image version
+        for gradual rolling upgrade, different resource allocation, etc),"
       properties:
         apiVersion:
           description: 'APIVersion defines the versioned schema of this representation

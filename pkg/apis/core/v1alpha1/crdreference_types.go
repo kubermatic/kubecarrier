@@ -18,6 +18,7 @@ package v1alpha1
 
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 )
 
 // CRDReferenceSpec defines the desired state of crdreference
@@ -30,7 +31,9 @@ type CRDReferenceSpec struct {
 
 // CRDReferenceStatus defines the observed state of crdreference
 type CRDReferenceStatus struct {
-	// CRDSpec *apiextensionsv1beta1.CustomResourceDefinitionSpec `json:"crdSpec,omitempty"`
+	// CRDSpec defines the original CRD specification from the service cluster
+	CRDSpec *runtime.RawExtension `json:"crdSpec,omitempty"`
+	// DEPRECATED.
 	// Phase represents the current lifecycle state of this object
 	// consider this field DEPRECATED, it will be removed as soon as there
 	// is a mechanism to map conditions to a string when printing the property
@@ -47,26 +50,27 @@ type CRDReferencePhaseType string
 
 // Values of CRDReferencePhaseType
 const (
-	CRDReferencePhaseReady   CRDReferencePhaseType = "Ready"
-	CRDReferencePhaseFailed  CRDReferencePhaseType = "Failed"
-	CRDReferencePhaseUnknown CRDReferencePhaseType = "Unknown"
+	CRDReferencePhaseReady    CRDReferencePhaseType = "Ready"
+	CRDReferencePhaseNotReady CRDReferencePhaseType = "NotReady"
+	CRDReferencePhaseUnknown  CRDReferencePhaseType = "Unknown"
 )
 
 // updatePhase updates the phase property based on the current conditions
 // this method should be called everytime the conditions are updated
 func (s *CRDReferenceStatus) updatePhase() {
 	for _, condition := range s.Conditions {
-		if condition.Type == CRDReferenceReady &&
-			condition.Status == ConditionTrue {
+		if condition.Type != CRDReferenceReady {
+			continue
+		}
+		switch condition.Status {
+		case ConditionTrue:
 			s.Phase = CRDReferencePhaseReady
-			return
+		case ConditionFalse:
+			s.Phase = CRDReferencePhaseNotReady
+		default:
+			s.Phase = CRDReferencePhaseUnknown
 		}
-
-		if condition.Type == CRDReferenceReady &&
-			condition.Status == ConditionFalse {
-			s.Phase = CRDReferencePhaseFailed
-			return
-		}
+		return
 	}
 
 	s.Phase = CRDReferencePhaseUnknown
@@ -75,19 +79,22 @@ func (s *CRDReferenceStatus) updatePhase() {
 // SetCondition replaces or adds the given condition
 func (s *CRDReferenceStatus) SetCondition(condition CRDReferenceCondition) {
 	defer s.updatePhase()
+	if condition.LastTransitionTime.IsZero() {
+		condition.LastTransitionTime = metav1.Now()
+	}
 
 	for i := range s.Conditions {
 		if s.Conditions[i].Type == condition.Type {
-
+			if s.Conditions[i].Status != condition.Status {
+				s.Conditions[i].LastTransitionTime = metav1.Now()
+			}
 			s.Conditions[i].Status = condition.Status
 			s.Conditions[i].Reason = condition.Reason
 			s.Conditions[i].Message = condition.Message
-			s.Conditions[i].LastTransitionTime = metav1.Now()
 			return
 		}
 	}
 
-	condition.LastTransitionTime = metav1.Now()
 	s.Conditions = append(s.Conditions, condition)
 }
 
