@@ -120,7 +120,6 @@ func (s *TenderStatus) SetCondition(condition TenderCondition) {
 		}
 	}
 
-	condition.LastTransitionTime = metav1.Now()
 	s.Conditions = append(s.Conditions, condition)
 }
 
