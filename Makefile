@@ -148,4 +148,3 @@ require-docker:
 
 generate-intelij-tasks:
 	@./hack/gen-intelij-tasks.sh ${LD_FLAGS}
-
