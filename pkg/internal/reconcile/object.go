@@ -27,7 +27,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-// Unstructured reconciles a unstructured.Unstructured object,
+// Object reconciles a runtime.Object object,
 // by calling the right typed reconcile function for the given GVK.
 // Returns the "real" type, e.g.: *corev1.Service, *appsv1.Deployment.
 func Object(

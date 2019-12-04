@@ -104,14 +104,18 @@ func (s *TenderStatus) updatePhase() {
 // SetCondition replaces or adds the given condition
 func (s *TenderStatus) SetCondition(condition TenderCondition) {
 	defer s.updatePhase()
+	if condition.LastTransitionTime.IsZero() {
+		condition.LastTransitionTime = metav1.Now()
+	}
 
 	for i := range s.Conditions {
 		if s.Conditions[i].Type == condition.Type {
-
+			if s.Conditions[i].Status != condition.Status {
+				s.Conditions[i].LastTransitionTime = condition.LastTransitionTime
+			}
 			s.Conditions[i].Status = condition.Status
 			s.Conditions[i].Reason = condition.Reason
 			s.Conditions[i].Message = condition.Message
-			s.Conditions[i].LastTransitionTime = metav1.Now()
 			return
 		}
 	}
