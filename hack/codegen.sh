@@ -69,3 +69,11 @@ $CONTROLLER_GEN rbac:roleName=manager-role paths="./pkg/tender/..." output:rbac:
 sed -i 's/ClusterRole/Role/g' config/internal/tender/rbac/role.yaml
 # Statik (run only when file CONTENT has changed)
 statik-gen tender config/internal/tender
+
+# Dinghy
+# -------
+# RBAC
+$CONTROLLER_GEN rbac:roleName=manager-role paths="./pkg/dinghy/..." output:rbac:artifacts:config=config/internal/dinghy/rbac
+sed -i 's/ClusterRole/Role/g' config/internal/dinghy/rbac/role.yaml
+# Statik (run only when file CONTENT has changed)
+statik-gen dinghy config/internal/dinghy
