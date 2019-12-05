@@ -66,6 +66,6 @@ statik-gen manager config/internal/manager
 # -------
 # RBAC
 $CONTROLLER_GEN rbac:roleName=manager-role paths="./pkg/tender/..." output:rbac:artifacts:config=config/internal/tender/rbac
-sed -i 's/ClusterRole/Role/g' config/internal/tender/rbac/role.yaml
+sed -i'' 's/ClusterRole/Role/g' config/internal/tender/rbac/role.yaml
 # Statik (run only when file CONTENT has changed)
 statik-gen tender config/internal/tender

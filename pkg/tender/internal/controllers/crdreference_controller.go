@@ -18,6 +18,7 @@ package controllers
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 
 	"github.com/go-logr/logr"
@@ -58,6 +59,7 @@ func (r *CRDReferenceReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error
 	if err := r.MasterClient.Get(ctx, req.NamespacedName, crdReference); err != nil {
 		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
+	crdReference.Status.ObservedGeneration = crdReference.Generation
 
 	if !crdReference.DeletionTimestamp.IsZero() {
 		if err := r.handleDeletion(ctx, log, crdReference); err != nil {
@@ -72,20 +74,15 @@ func (r *CRDReferenceReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error
 		}
 	}
 
-	crdReference.Status.ObservedGeneration = crdReference.Generation
-
 	// Lookup CRD
 	crd := &apiextensionsv1beta1.CustomResourceDefinition{}
 	err := r.ServiceClient.Get(ctx, types.NamespacedName{
 		Name: crdReference.Spec.CRD.Name,
 	}, crd)
-	if err != nil && !errors.IsNotFound(err) {
-		return ctrl.Result{}, fmt.Errorf("getting CRD: %w", err)
-	}
 
-	if errors.IsNotFound(err) {
-		// TODO: Actually use the CRDSpec
-		// crdReference.Status.CRDSpec = nil
+	switch {
+	case errors.IsNotFound(err):
+		crdReference.Status.CRDSpec = nil
 		crdReference.Status.SetCondition(corev1alpha1.CRDReferenceCondition{
 			Type:    corev1alpha1.CRDReferenceReady,
 			Status:  corev1alpha1.ConditionFalse,
@@ -97,31 +94,40 @@ func (r *CRDReferenceReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error
 		}
 		// requeue until the CRD is found
 		return ctrl.Result{Requeue: true}, nil
-	}
-
-	// Add owner ref on CRD in the service cluster
-	changed, err := util.InsertOwnerReference(crd, crdReference, r.MasterScheme)
-	if err != nil {
-		return ctrl.Result{}, fmt.Errorf("inserting OwnerReference: %w", err)
-	}
-	if changed {
-		if err := r.ServiceClient.Update(ctx, crd); err != nil {
-			return ctrl.Result{}, fmt.Errorf("updating CRD: %w", err)
+	case err == nil:
+		// Add owner ref on CRD in the service cluster
+		changed, err := util.InsertOwnerReference(crd, crdReference, r.MasterScheme)
+		if err != nil {
+			return ctrl.Result{}, fmt.Errorf("inserting OwnerReference: %w", err)
 		}
-	}
+		if changed {
+			if err := r.ServiceClient.Update(ctx, crd); err != nil {
+				return ctrl.Result{}, fmt.Errorf("updating CRD: %w", err)
+			}
+		}
 
-	// TODO: Actually use the CRDSpec
-	// crdReference.Status.CRDSpec = &crd.Spec
-	crdReference.Status.SetCondition(corev1alpha1.CRDReferenceCondition{
-		Type:    corev1alpha1.CRDReferenceReady,
-		Status:  corev1alpha1.ConditionTrue,
-		Message: "CRD was found on the cluster.",
-		Reason:  "CRDFound",
-	})
-	if err = r.MasterClient.Status().Update(ctx, crdReference); err != nil {
-		return ctrl.Result{}, fmt.Errorf("updating CRDReference Status: %w", err)
+		crdReference.Status.CRDSpec = new(runtime.RawExtension)
+		b, err := json.Marshal(crd.Spec)
+		if err != nil {
+			return ctrl.Result{}, fmt.Errorf("marshall crd spec: %w", err)
+		}
+		if err := crdReference.Status.CRDSpec.UnmarshalJSON(b); err != nil {
+			return ctrl.Result{}, fmt.Errorf("unmarshall crd spec: %w", err)
+		}
+
+		crdReference.Status.SetCondition(corev1alpha1.CRDReferenceCondition{
+			Type:    corev1alpha1.CRDReferenceReady,
+			Status:  corev1alpha1.ConditionTrue,
+			Message: "CRD was found on the cluster.",
+			Reason:  "CRDFound",
+		})
+		if err = r.MasterClient.Status().Update(ctx, crdReference); err != nil {
+			return ctrl.Result{}, fmt.Errorf("updating CRDReference Status: %w", err)
+		}
+		return ctrl.Result{}, nil
+	default:
+		return ctrl.Result{}, fmt.Errorf("getting CRD: %w", err)
 	}
-	return ctrl.Result{}, nil
 }
 
 func (r *CRDReferenceReconciler) handleDeletion(ctx context.Context, log logr.Logger, crdReference *corev1alpha1.CRDReference) error {
