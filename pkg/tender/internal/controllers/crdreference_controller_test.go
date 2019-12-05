@@ -24,6 +24,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	apiextensionsv1beta1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
+	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -94,7 +95,7 @@ func TestCRDReferenceReconciler(t *testing.T) {
 	}) {
 		t.FailNow()
 	}
-	if !t.Run("deletion", func(t *testing.T) {
+	if !t.Run("CRD deletion", func(t *testing.T) {
 		r.Log = testutil.NewLogger(t)
 		require.NoError(t, r.ServiceClient.Delete(context.Background(), crd))
 		for i := 0; i < 2; i++ {
@@ -108,6 +109,29 @@ func TestCRDReferenceReconciler(t *testing.T) {
 		testutil.AssertConditionStatus(t, crdRef, corev1alpha1.CRDReferenceReady, corev1alpha1.ConditionFalse)
 		testutil.LogObject(t, crdRef)
 		assert.Equal(t, nil, crdRef.Status.CRDSpec)
+	}) {
+		t.FailNow()
+	}
+	if !t.Run("CRDRef deletion", func(t *testing.T) {
+		r.Log = testutil.NewLogger(t)
+		require.NoError(t, r.ServiceClient.Create(context.Background(), crd))
+		for i := 0; i < 2; i++ {
+			_, err := r.Reconcile(ctrl.Request{
+				NamespacedName: crdRefNN,
+			})
+			require.NoError(t, err, "cannot reconcile the CRD Reference")
+		}
+		require.NoError(t, r.MasterClient.Get(context.Background(), crdRefNN, crdRef))
+		testutil.AssertConditionStatus(t, crdRef, corev1alpha1.CRDReferenceReady, corev1alpha1.ConditionTrue)
+
+		require.NoError(t, r.MasterClient.Delete(context.Background(), crdRef))
+		for i := 0; i < 2; i++ {
+			_, err := r.Reconcile(ctrl.Request{
+				NamespacedName: crdRefNN,
+			})
+			require.NoError(t, err, "cannot reconcile the CRD Reference")
+		}
+		require.True(t, errors.IsNotFound(r.MasterClient.Get(context.Background(), crdRefNN, crdRef)))
 	}) {
 		t.FailNow()
 	}
