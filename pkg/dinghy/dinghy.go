@@ -132,6 +132,9 @@ func runE(f *flags, log logr.Logger) error {
 		return fmt.Errorf("create manager for master cluster: %w", err)
 	}
 
+	// underlying serviceMgr manager implementation, controllerManager doesn't implement any InjectX
+	// interfaces, thus the masterMgr shall only start it, and kill it accordingly
+	// It makes for way simpler code then doing this manually
 	if err := masterMgr.Add(serviceMgr); err != nil {
 		return fmt.Errorf("cannot add service mgr to master: %w", err)
 	}
