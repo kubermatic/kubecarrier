@@ -18,20 +18,16 @@ package admin
 
 import (
 	"context"
-	"fmt"
 	"io/ioutil"
-	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/api/errors"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/types"
-	"k8s.io/apimachinery/pkg/util/wait"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	operatorv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/operator/v1alpha1"
+	"github.com/kubermatic/kubecarrier/pkg/testutil"
 )
 
 func (s *AdminSuite) TestTenderCreationAndDeletion() {
@@ -71,34 +67,14 @@ func (s *AdminSuite) TestTenderCreationAndDeletion() {
 	require.NoError(t, s.masterClient.Create(ctx, sec))
 	require.NoError(t, s.masterClient.Create(ctx, tender))
 
-	assert.NoError(t, wait.Poll(time.Second, 30*time.Second, func() (done bool, err error) {
-		if err := s.masterClient.Get(ctx, types.NamespacedName{
-			Name:      tender.Name,
-			Namespace: tender.Namespace,
-		}, tender); err != nil {
-			return false, fmt.Errorf("get: %w", err)
-		}
-		cond, ok := tender.Status.GetCondition(operatorv1alpha1.TenderReady)
-		if !ok {
-			return false, nil
-		}
-		return cond.Status == operatorv1alpha1.ConditionTrue, nil
-	}), "tender object not ready within time limit")
+	require.NoError(t, testutil.WaitUntilCondition(
+		s.masterClient,
+		tender,
+		operatorv1alpha1.TenderReady,
+		operatorv1alpha1.ConditionTrue,
+	), "tender object not ready within time limit")
 
 	require.NoError(t, s.masterClient.Delete(ctx, tender))
-	assert.NoError(t, wait.Poll(time.Second, 30*time.Second, func() (done bool, err error) {
-		err = s.masterClient.Get(ctx, types.NamespacedName{
-			Name:      tender.Name,
-			Namespace: tender.Namespace,
-		}, tender)
-		switch {
-		case err == nil:
-			return false, nil
-		case errors.IsNotFound(err):
-			return true, nil
-		default:
-			return false, err
-		}
-	}), "tender object not cleared within time limit")
+	require.NoError(t, testutil.WaitUntilNotFound(s.masterClient, tender), "tender object not cleared within time limit")
 	assert.NoError(t, s.masterClient.Delete(ctx, sec))
 }

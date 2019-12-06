@@ -17,40 +17,101 @@ limitations under the License.
 package testutil
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
-	"reflect"
 	"testing"
+	"time"
 
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/apimachinery/pkg/util/wait"
+	"k8s.io/client-go/util/jsonpath"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-func AssertConditionStatus(t *testing.T, obj runtime.Object, ConditionType interface{}, ConditionStatus interface{}, msgAndArgs ...interface{}) {
-	t.Helper()
-	status := reflect.ValueOf(obj).Elem().FieldByName("Status").Addr()
-	method := status.MethodByName("GetCondition")
-	require.False(t, method.IsZero())
-	require.Equal(t, 1, method.Type().NumIn())
-	require.Equal(t, 2, method.Type().NumOut())
-	res := method.Call([]reflect.Value{reflect.ValueOf(ConditionType)})
-
-	cond, ok := res[0], res[1]
-	if !assert.True(t, ok.Bool(), "condition not found") {
-		return
+func ConditionStatusEqual(obj runtime.Object, ConditionType, ConditionStatus interface{}) error {
+	jp := jsonpath.New("condition")
+	if err := jp.Parse(fmt.Sprintf(`{.status.conditions[?(@.type=="%s")].status}`, ConditionType)); err != nil {
+		return err
 	}
-	require.Equal(t, cond.FieldByName("Status").Type().String(), reflect.ValueOf(ConditionStatus).Type().String(), "wrong status type")
-	if fmt.Sprint(ConditionStatus) != cond.FieldByName("Status").String() {
-		assert.Fail(t,
-			fmt.Sprintf(
-				"condition %s: expected %s, got %s", reflect.ValueOf(ConditionType).Type().String(), ConditionStatus, cond.FieldByName("Status"),
-			), msgAndArgs...)
+	res, err := jp.FindResults(obj)
+	if err != nil {
+		return fmt.Errorf("cannot find results: %w", err)
 	}
+	if len(res) != 1 {
+		return fmt.Errorf("found %d values, expected 1", len(res))
+	}
+	rr := res[0]
+	if len(rr) != 1 {
+		return fmt.Errorf("found %d values, expected 1", len(rr))
+	}
+	status := rr[0].String()
+	if status != fmt.Sprint(ConditionStatus) {
+		return fmt.Errorf("expected %s, got %s", ConditionStatus, status)
+	}
+	return nil
 }
 
 func LogObject(t *testing.T, obj interface{}) {
 	b, err := json.MarshalIndent(obj, "", "\t")
 	require.NoError(t, err)
 	t.Log("\n", string(b))
+}
+
+func WaitUntilNotFound(c client.Client, obj runtime.Object) error {
+	o, ok := obj.(metav1.Object)
+	if !ok {
+		return fmt.Errorf("%T does not implement metav1.Object", obj)
+	}
+
+	return wait.Poll(time.Second, 30*time.Second, func() (done bool, err error) {
+		err = c.Get(context.Background(), types.NamespacedName{
+			Namespace: o.GetNamespace(),
+			Name:      o.GetName(),
+		}, obj)
+		switch {
+		case errors.IsNotFound(err):
+			return true, nil
+		case err == nil:
+			return false, nil
+		default:
+			return false, err
+
+		}
+	})
+}
+
+func WaitUntilCondition(c client.Client, obj runtime.Object, ConditionType, ConditionStatus interface{}) error {
+	o, ok := obj.(metav1.Object)
+	if !ok {
+		return fmt.Errorf("%T does not implement metav1.Object", obj)
+	}
+	var lastErr error
+	err := wait.Poll(time.Second, 30*time.Second, func() (done bool, err error) {
+		err = c.Get(context.Background(), types.NamespacedName{
+			Namespace: o.GetNamespace(),
+			Name:      o.GetName(),
+		}, obj)
+		switch {
+		case errors.IsNotFound(err):
+			return false, nil
+		case err == nil:
+			lastErr = ConditionStatusEqual(obj, ConditionType, ConditionStatus)
+			return lastErr == nil, nil
+		default:
+			return false, err
+		}
+	})
+
+	if err != nil {
+		if lastErr != nil {
+			return lastErr
+		}
+		return err
+	}
+	return nil
 }

@@ -84,7 +84,7 @@ func TestCRDReferenceReconciler(t *testing.T) {
 		}
 		crdRef = &corev1alpha1.CRDReference{}
 		require.NoError(t, r.MasterClient.Get(context.Background(), crdRefNN, crdRef))
-		testutil.AssertConditionStatus(t, crdRef, corev1alpha1.CRDReferenceReady, corev1alpha1.ConditionTrue)
+		require.NoError(t, testutil.ConditionStatusEqual(crdRef, corev1alpha1.CRDReferenceReady, corev1alpha1.ConditionTrue))
 
 		crdSpec := &apiextensionsv1beta1.CustomResourceDefinitionSpec{}
 		b, err := crdRef.Status.CRDSpec.MarshalJSON()
@@ -109,7 +109,7 @@ func TestCRDReferenceReconciler(t *testing.T) {
 		}
 		crdRef = &corev1alpha1.CRDReference{}
 		require.NoError(t, r.MasterClient.Get(context.Background(), crdRefNN, crdRef))
-		testutil.AssertConditionStatus(t, crdRef, corev1alpha1.CRDReferenceReady, corev1alpha1.ConditionFalse)
+		assert.NoError(t, testutil.ConditionStatusEqual(crdRef, corev1alpha1.CRDReferenceReady, corev1alpha1.ConditionFalse))
 		assert.Equal(t, (*runtime.RawExtension)(nil), crdRef.Status.CRDSpec)
 	}) {
 		t.FailNow()
@@ -125,7 +125,7 @@ func TestCRDReferenceReconciler(t *testing.T) {
 		}
 		crdRef = &corev1alpha1.CRDReference{}
 		require.NoError(t, r.MasterClient.Get(context.Background(), crdRefNN, crdRef))
-		testutil.AssertConditionStatus(t, crdRef, corev1alpha1.CRDReferenceReady, corev1alpha1.ConditionTrue)
+		require.NoError(t, testutil.ConditionStatusEqual(crdRef, corev1alpha1.CRDReferenceReady, corev1alpha1.ConditionTrue))
 
 		require.NoError(t, r.MasterClient.Delete(context.Background(), crdRef))
 		for i := 0; i < 2; i++ {
