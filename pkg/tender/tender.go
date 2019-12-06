@@ -17,10 +17,7 @@ limitations under the License.
 package tender
 
 import (
-	"context"
 	"fmt"
-	"os"
-	"sync"
 	"time"
 
 	"github.com/go-logr/logr"
@@ -35,6 +32,7 @@ import (
 
 	corev1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/core/v1alpha1"
 	"github.com/kubermatic/kubecarrier/pkg/internal/util"
+	"github.com/kubermatic/kubecarrier/pkg/tender/internal/controllers"
 )
 
 var (
@@ -142,45 +140,46 @@ func runE(flags *flags, log logr.Logger) error {
 		log.WithName("reverseIndex").WithName("namespace"),
 		&corev1.Namespace{},
 	); err != nil {
-		log.Error(err, "cannot add Namespace owner field indexer")
-		os.Exit(2)
+		return fmt.Errorf("cannot add Namespace owner field indexer: %w", err)
 	}
 
-	var shutdownWG sync.WaitGroup
-	shutdownWG.Add(3)
-	signalHandler := ctrl.SetupSignalHandler()
-	ctx, cancel := context.WithCancel(context.Background())
-	go func() {
-		defer shutdownWG.Done()
+	if err := (&controllers.ServiceClusterReconciler{
+		Log:                log.WithName("controllers").WithName("ServiceCluster"),
+		MasterClient:       masterMgr.GetClient(),
+		ServiceClient:      serviceMgr.GetClient(),
+		ProviderNamespace:  flags.providerNamespace,
+		ServiceClusterName: flags.serviceClusterName,
+		StatusUpdatePeriod: flags.serviceClusterStatusUpdatePeriod,
+	}).SetupWithManagers(serviceMgr, masterMgr); err != nil {
+		return fmt.Errorf("cannot add %s controller: %w", "ServiceCluster", err)
+	}
 
-		select {
-		case <-signalHandler:
-			cancel()
-		case <-ctx.Done():
-		}
-	}()
+	if err := (&controllers.TenantAssignmentReconciler{
+		Log:                log.WithName("controllers").WithName("TenantAssignment"),
+		MasterClient:       masterMgr.GetClient(),
+		ServiceClient:      serviceMgr.GetClient(),
+		MasterScheme:       masterMgr.GetScheme(),
+		ServiceClusterName: flags.serviceClusterName,
+	}).SetupWithManagers(serviceMgr, masterMgr); err != nil {
+		return fmt.Errorf("cannot add %s controller: %w", "TenantAssignment", err)
+	}
 
-	go func() {
-		defer shutdownWG.Done()
+	if err := (&controllers.CRDReferenceReconciler{
+		Log:                log.WithName("controllers").WithName("CRDReference"),
+		MasterClient:       masterMgr.GetClient(),
+		ServiceClient:      serviceMgr.GetClient(),
+		MasterScheme:       masterMgr.GetScheme(),
+		ServiceClusterName: flags.serviceClusterName,
+	}).SetupWithManagers(serviceMgr, masterMgr); err != nil {
+		return fmt.Errorf("cannot add %s controller: %w", "CRDReference", err)
+	}
 
-		log.Info("starting manager for master cluster")
-		if err := masterMgr.Start(ctx.Done()); err != nil {
-			log.Error(err, "problem running master cluster manager")
-			cancel()
-		}
-	}()
+	if err := masterMgr.Add(serviceMgr); err != nil {
+		return fmt.Errorf("cannot add service mgr to master manager's dep: %w", err)
+	}
 
-	go func() {
-		defer shutdownWG.Done()
-
-		log.Info("starting manager for service cluster")
-		if err := serviceMgr.Start(ctx.Done()); err != nil {
-			log.Error(err, "problem running service cluster manager")
-			cancel()
-		}
-	}()
-
-	// wait for all go routines to stop, before exiting main
-	shutdownWG.Wait()
+	if err := masterMgr.Start(ctrl.SetupSignalHandler()); err != nil {
+		return fmt.Errorf("problem running master cluster manager: %w", err)
+	}
 	return nil
 }

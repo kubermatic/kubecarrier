@@ -115,3 +115,7 @@ func WaitUntilCondition(c client.Client, obj runtime.Object, ConditionType, Cond
 	}
 	return nil
 }
+
+func WaitUntilReady(c client.Client, obj runtime.Object) error {
+	return WaitUntilCondition(c, obj, "Ready", "True")
+}

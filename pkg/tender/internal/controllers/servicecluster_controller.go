@@ -91,15 +91,9 @@ func (r *ServiceClusterReconciler) Reconcile(req ctrl.Request) (res ctrl.Result,
 			Name:      r.ServiceClusterName,
 			Namespace: r.ProviderNamespace,
 		},
-		Status: corev1alpha1.ServiceClusterStatus{
-			ObservedGeneration: 1,
-		},
 	}
-	serviceCluster.Status.SetCondition(cond)
 
 	op, err := controllerutil.CreateOrUpdate(ctx, r.MasterClient, serviceCluster, func() error {
-		serviceCluster.Status.ObservedGeneration = serviceCluster.Generation
-		serviceCluster.Status.SetCondition(cond)
 		return nil
 	})
 	if err != nil {
@@ -107,10 +101,16 @@ func (r *ServiceClusterReconciler) Reconcile(req ctrl.Request) (res ctrl.Result,
 	}
 	log.Info(string(op))
 
+	serviceCluster.Status.ObservedGeneration = serviceCluster.Generation
+	serviceCluster.Status.SetCondition(cond)
+
+	if err := r.MasterClient.Status().Update(ctx, serviceCluster); err != nil {
+		return ctrl.Result{}, fmt.Errorf("status update: %w", err)
+	}
+
 	if svcErr != nil {
 		return ctrl.Result{}, svcErr
 	}
-
 	return ctrl.Result{RequeueAfter: r.StatusUpdatePeriod}, nil
 }
 

@@ -26,6 +26,7 @@ import (
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
+	corev1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/core/v1alpha1"
 	operatorv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/operator/v1alpha1"
 	"github.com/kubermatic/kubecarrier/pkg/testutil"
 )
@@ -63,16 +64,20 @@ func (s *AdminSuite) TestTenderCreationAndDeletion() {
 	}
 	require.NoError(t, client.IgnoreNotFound(s.masterClient.Delete(ctx, sec.DeepCopy())))
 	require.NoError(t, client.IgnoreNotFound(s.masterClient.Delete(ctx, tender.DeepCopy())))
+	require.NoError(t, testutil.WaitUntilNotFound(s.masterClient, tender.DeepCopy()))
 
 	require.NoError(t, s.masterClient.Create(ctx, sec))
 	require.NoError(t, s.masterClient.Create(ctx, tender))
 
-	require.NoError(t, testutil.WaitUntilCondition(
+	require.NoError(t, testutil.WaitUntilReady(
 		s.masterClient,
 		tender,
-		operatorv1alpha1.TenderReady,
-		operatorv1alpha1.ConditionTrue,
 	), "tender object not ready within time limit")
+
+	serviceCluster := &corev1alpha1.ServiceCluster{}
+	serviceCluster.SetName(tender.GetName())
+	serviceCluster.SetNamespace(namespace)
+	require.NoError(t, testutil.WaitUntilReady(s.masterClient, serviceCluster))
 
 	require.NoError(t, s.masterClient.Delete(ctx, tender))
 	require.NoError(t, testutil.WaitUntilNotFound(s.masterClient, tender), "tender object not cleared within time limit")
