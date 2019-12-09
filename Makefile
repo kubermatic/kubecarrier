@@ -32,7 +32,6 @@ IMAGE_ORG?=quay.io/kubecarrier
 MODULE=github.com/kubermatic/kubecarrier
 LD_FLAGS="-w -X '$(MODULE)/pkg/internal/version.Version=$(VERSION)' -X '$(MODULE)/pkg/internal/version.Branch=$(BRANCH)' -X '$(MODULE)/pkg/internal/version.Commit=$(SHORT_SHA)' -X '$(MODULE)/pkg/internal/version.BuildDate=$(BUILD_DATE)'"
 KIND_CLUSTER?=kubecarrier
-COMPONENTS = operator manager tender
 
 all: \
 	bin/linux_amd64/anchor \
@@ -40,9 +39,6 @@ all: \
 	bin/windows_amd64/anchor \
 	bin/linux_amd64/operator \
 	bin/linux_amd64/manager
-
-ld_flags:
-	@echo -n ${LD_FLAGS}
 
 bin/linux_amd64/%: GOARGS = GOOS=linux GOARCH=amd64
 bin/darwin_amd64/%: GOARGS = GOOS=darwin GOARCH=amd64
@@ -108,12 +104,16 @@ lint:
 tidy:
 	go mod tidy
 
-push-images: $(addprefix push-image-, $(COMPONENTS))
+push-images: \
+	push-image-operator
 
 # build all container images except the test image
-build-images: $(addprefix build-image-, $(COMPONENTS))
+build-images: \
+	build-image-operator
 
-kind-load: $(addprefix kind-load-, $(COMPONENTS))
+kind-load: \
+	kind-load-operator \
+	kind-load-manager
 
 build-image-test: require-docker
 	@mkdir -p bin/image/test

@@ -23,7 +23,7 @@ GOBIN=$(go env GOBIN)
 fi
 
 if [ -z $(which controller-gen) ]; then
-	go get sigs.k8s.io/controller-tools/cmd/controller-gen@v0.2.4
+	go get sigs.k8s.io/controller-tools/cmd/controller-gen@v0.2.2
   CONTROLLER_GEN=$GOBIN/controller-gen
 else
   CONTROLLER_GEN=$(which controller-gen)
@@ -61,11 +61,3 @@ $CONTROLLER_GEN crd webhook paths="./pkg/apis/catalog/..." output:crd:artifacts:
 # RBAC
 $CONTROLLER_GEN rbac:roleName=manager-role paths="./pkg/manager/..." output:rbac:artifacts:config=config/internal/manager/rbac
 statik-gen manager config/internal/manager
-
-# Tender
-# -------
-# RBAC
-$CONTROLLER_GEN rbac:roleName=manager-role paths="./pkg/tender/..." output:rbac:artifacts:config=config/internal/tender/rbac
-sed -i 's/ClusterRole/Role/g' config/internal/tender/rbac/role.yaml
-# Statik (run only when file CONTENT has changed)
-statik-gen tender config/internal/tender

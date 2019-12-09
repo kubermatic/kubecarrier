@@ -218,10 +218,8 @@ func filePasses(filename string, boilerplateMap map[string]string, out io.Writer
 		fileContent = shebangRe.ReplaceAll(fileContent, nil)
 	}
 
-	if len(boilerplate) <= len(fileContent) {
-		// trim the file to the same length as our boilerplate header
-		fileContent = fileContent[0:len(boilerplate)]
-	}
+	// trim the file to the same length as our boilerplate header
+	fileContent = fileContent[0:len(boilerplate)]
 
 	// is YEAR in the file
 	if yearRe.Match(fileContent) {
