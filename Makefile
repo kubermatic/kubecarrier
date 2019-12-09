@@ -32,6 +32,7 @@ IMAGE_ORG?=quay.io/kubecarrier
 MODULE=github.com/kubermatic/kubecarrier
 LD_FLAGS="-w -X '$(MODULE)/pkg/internal/version.Version=$(VERSION)' -X '$(MODULE)/pkg/internal/version.Branch=$(BRANCH)' -X '$(MODULE)/pkg/internal/version.Commit=$(SHORT_SHA)' -X '$(MODULE)/pkg/internal/version.BuildDate=$(BUILD_DATE)'"
 KIND_CLUSTER?=kubecarrier
+COMPONENTS = operator manager
 
 all: \
 	bin/linux_amd64/anchor \
@@ -104,16 +105,12 @@ lint:
 tidy:
 	go mod tidy
 
-push-images: \
-	push-image-operator
+push-images: $(addprefix push-image-, $(COMPONENTS))
 
 # build all container images except the test image
-build-images: \
-	build-image-operator
+build-images: $(addprefix build-image-, $(COMPONENTS))
 
-kind-load: \
-	kind-load-operator \
-	kind-load-manager
+kind-load: $(addprefix kind-load-, $(COMPONENTS))
 
 build-image-test: require-docker
 	@mkdir -p bin/image/test
