@@ -23,7 +23,7 @@ GOBIN=$(go env GOBIN)
 fi
 
 if [ -z $(which controller-gen) ]; then
-	go get sigs.k8s.io/controller-tools/cmd/controller-gen@v0.2.2
+	go get sigs.k8s.io/controller-tools/cmd/controller-gen@v0.2.4
   CONTROLLER_GEN=$GOBIN/controller-gen
 else
   CONTROLLER_GEN=$(which controller-gen)

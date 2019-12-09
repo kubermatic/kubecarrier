@@ -4,7 +4,7 @@ apiVersion: apiextensions.k8s.io/v1beta1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.2.2
+    controller-gen.kubebuilder.io/version: v0.2.4
   creationTimestamp: null
   name: kubecarriers.operator.kubecarrier.io
 spec:
@@ -21,7 +21,7 @@ spec:
     listKind: KubeCarrierList
     plural: kubecarriers
     singular: kubecarrier
-  scope: ""
+  scope: Namespaced
   subresources:
     status: {}
   validation:
