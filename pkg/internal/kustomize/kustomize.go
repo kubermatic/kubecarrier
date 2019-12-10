@@ -106,6 +106,9 @@ func (k *Kustomize) ForHTTPWithReplacement(httpFS http.FileSystem, replacementMa
 
 	kustomizeFs := fs.MakeFsInMemory()
 	if err := statikfs.Walk(httpFS, "/", func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
 		if info.IsDir() {
 			return kustomizeFs.Mkdir(path)
 		}
