@@ -29,11 +29,11 @@ else
   CONTROLLER_GEN=$(which controller-gen)
 fi
 
-CONTROLLER_GEN_VERION=$(${CONTROLLER_GEN} --version)
-CONTROLLER_GEN_WANT_VERION="Version: v0.2.4"
+CONTROLLER_GEN_VERSION=$(${CONTROLLER_GEN} --version)
+CONTROLLER_GEN_WANT_VERSION="Version: v0.2.4"
 
-if [[  ${CONTROLLER_GEN_VERION} != ${CONTROLLER_GEN_WANT_VERION} ]]; then
-  echo "Wrong controller gen verion. Wants ${CONTROLLER_GEN_WANT_VERION} found ${CONTROLLER_GEN_VERION}"
+if [[  ${CONTROLLER_GEN_VERSION} != ${CONTROLLER_GEN_WANT_VERSION} ]]; then
+  echo "Wrong controller-gen version. Wants ${CONTROLLER_GEN_WANT_VERSION} found ${CONTROLLER_GEN_VERSION}"
   exit 1
 fi
 
