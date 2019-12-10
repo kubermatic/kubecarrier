@@ -18,13 +18,8 @@ package manager
 
 import (
 	"fmt"
-	"io"
-	"os"
 
-	statikfs "github.com/rakyll/statik/fs"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"sigs.k8s.io/kustomize/v3/pkg/fs"
-	"sigs.k8s.io/yaml"
 
 	"github.com/kubermatic/kubecarrier/pkg/internal/kustomize"
 	"github.com/kubermatic/kubecarrier/pkg/internal/version"
@@ -39,62 +34,13 @@ type Config struct {
 var k = kustomize.NewDefaultKustomize()
 
 func Manifests(c Config) ([]unstructured.Unstructured, error) {
-	kustomizeFs := fs.MakeFsInMemory()
-	if err := statikfs.Walk(vfs, "/", func(path string, info os.FileInfo, err error) error {
-		if info.IsDir() {
-			return kustomizeFs.Mkdir(path)
-		}
-		Fout, err := kustomizeFs.Create(path)
-		if err != nil {
-			return err
-		}
-		Fin, err := vfs.Open(path)
-		if err != nil {
-			return err
-		}
-		if _, err := io.Copy(Fout, Fin); err != nil {
-			return err
-		}
-		if err := Fout.Close(); err != nil {
-			return err
-		}
-		if err := Fin.Close(); err != nil {
-			return err
-		}
-		return nil
-	}); err != nil {
-		return nil, fmt.Errorf("fs creation: %w", err)
-	}
-	kc := k.For(kustomizeFs)
-
-	// patch settings
-	kustomizePath := "/default/kustomization.yaml"
-	kustomizeBytes, err := kc.ReadFile(kustomizePath)
-	if err != nil {
-		return nil, fmt.Errorf("reading %s: %w", kustomizePath, err)
-	}
-	kmap := map[string]interface{}{}
-	if err := yaml.Unmarshal(kustomizeBytes, &kmap); err != nil {
-		return nil, fmt.Errorf("unmarshal %s: %w", kustomizePath, err)
-	}
-
-	// patch namespace
-	kmap["namespace"] = c.Namespace
-	// patch image tag
 	v := version.Get()
-	kmap["images"] = []map[string]string{
-		{
-			"name":   "quay.io/kubecarrier/manager",
-			"newTag": v.Version,
-		},
-	}
-
-	kustomizeBytes, err = yaml.Marshal(kmap)
+	kc, err := k.ForHTTPWithReplacement(vfs, map[string]string{
+		"__NAMESPACE__": c.Namespace,
+		"__IMAGE__":     "quay.io/kubecarrier/manager:" + v.Version,
+	})
 	if err != nil {
-		return nil, fmt.Errorf("remarshal %s: %w", kustomizePath, err)
-	}
-	if err := kc.WriteFile(kustomizePath, kustomizeBytes); err != nil {
-		return nil, fmt.Errorf("writing %s: %w", kustomizePath, err)
+		return nil, err
 	}
 
 	// execute kustomize

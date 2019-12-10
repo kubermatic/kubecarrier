@@ -17,9 +17,14 @@ limitations under the License.
 package kustomize
 
 import (
+	"bytes"
 	"fmt"
+	"io/ioutil"
 	"net/http"
+	"os"
+	"strings"
 
+	statikfs "github.com/rakyll/statik/fs"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"sigs.k8s.io/kustomize/v3/k8sdeps/kunstruct"
 	"sigs.k8s.io/kustomize/v3/k8sdeps/transformer"
@@ -79,13 +84,83 @@ func (k *Kustomize) For(fs fs.FileSystem) KustomizeContext {
 
 // ForHTTP returns a new KustomizeContext using the given http.FileSystem.
 func (k *Kustomize) ForHTTP(httpFS http.FileSystem) KustomizeContext {
-	fs, err := httpFSToKustomizeFS(httpFS)
+	kustomizeContext, err := k.ForHTTPWithReplacement(httpFS, nil)
 	if err != nil {
 		// as we are working on two in-memory FS, this should never happen
 		panic(err)
 	}
+	return kustomizeContext
+}
 
-	return k.For(fs)
+// ForHTTPWithReplacement returns a new KustomizeContext using the given http.Filesystem
+//
+// Each file in the httpFS is first run through search and replace phase where each key defined in the
+// replacementMap is replaced by its value.
+//
+// Providing unused keys is considered an error
+func (k *Kustomize) ForHTTPWithReplacement(httpFS http.FileSystem, replacementMap map[string]string) (KustomizeContext, error) {
+	usedReplacements := make(map[string]struct{}, len(replacementMap))
+	for k := range replacementMap {
+		usedReplacements[k] = struct{}{}
+	}
+
+	kustomizeFs := fs.MakeFsInMemory()
+	if err := statikfs.Walk(httpFS, "/", func(path string, info os.FileInfo, err error) error {
+		if info.IsDir() {
+			return kustomizeFs.Mkdir(path)
+		}
+
+		// Read data. It should not error since it's in memory FS
+		Fin, err := httpFS.Open(path)
+		if err != nil {
+			return err
+		}
+		data, err := ioutil.ReadAll(Fin)
+		if err != nil {
+			return err
+		}
+		if err := Fin.Close(); err != nil {
+			return err
+		}
+
+		// Perform sed like search & replace
+		// Performance wise this should be good enough and there's no
+		// need to roll something heavier like Aho-Corasick or similar
+		for k := range usedReplacements {
+			if bytes.Contains(data, []byte(k)) {
+				delete(usedReplacements, k)
+			}
+		}
+		for k, v := range replacementMap {
+			data = bytes.ReplaceAll(data, []byte(k), []byte(v))
+		}
+
+		// Write modified data. It should not error since it's in memory FS
+		Fout, err := kustomizeFs.Create(path)
+		if err != nil {
+			return err
+		}
+		if n, err := Fout.Write(data); n != len(data) || err != nil {
+			return fmt.Errorf("cannot write whole file: %w", err)
+		}
+		if err := Fout.Close(); err != nil {
+			return err
+		}
+
+		return nil
+	}); err != nil {
+		return nil, fmt.Errorf("fs creation: %w", err)
+	}
+
+	if len(usedReplacements) > 0 {
+		unusedReplacements := make([]string, 0, len(usedReplacements))
+		for k := range usedReplacements {
+			unusedReplacements = append(unusedReplacements, k)
+		}
+		return nil, fmt.Errorf("some replacements were unused: %s", strings.Join(unusedReplacements, ","))
+	}
+
+	return k.For(kustomizeFs), nil
 }
 
 // kustomizeContext combines a Kustomize instance with a FileSystem to operate on.

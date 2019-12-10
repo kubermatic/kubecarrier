@@ -18,48 +18,15 @@ package manager
 
 import (
 	"io/ioutil"
-	"net/http"
 	"os"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
-	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"sigs.k8s.io/yaml"
 
-	"github.com/kubermatic/kubecarrier/pkg/internal/kustomize"
 	"github.com/kubermatic/kubecarrier/pkg/testutil"
 )
-
-type kustomizeContextMock struct {
-	mock.Mock
-}
-
-var _ kustomize.KustomizeContext = (*kustomizeContextMock)(nil)
-
-func (k *kustomizeContextMock) ReadFile(path string) ([]byte, error) {
-	args := k.Called(path)
-	return args.Get(0).([]byte), args.Error(1)
-}
-
-func (k *kustomizeContextMock) WriteFile(path string, content []byte) error {
-	args := k.Called(path, content)
-	return args.Error(0)
-}
-
-func (k *kustomizeContextMock) Build(path string) ([]unstructured.Unstructured, error) {
-	args := k.Called(path)
-	return args.Get(0).([]unstructured.Unstructured), args.Error(1)
-}
-
-type kustomizeStub struct {
-	*kustomizeContextMock
-}
-
-func (k *kustomizeStub) ForHTTP(fs http.FileSystem) kustomize.KustomizeContext {
-	return k
-}
 
 func TestManifests(t *testing.T) {
 	const (
@@ -75,8 +42,9 @@ func TestManifests(t *testing.T) {
 	require.NoError(t, err, "cannot marshall given manifests")
 
 	if _, present := os.LookupEnv(testutil.OverrideGoldenEnv); present {
-		require.NoError(t, ioutil.WriteFile(goldenFile, yManifest, 0440))
+		require.NoError(t, ioutil.WriteFile(goldenFile, yManifest, 0640))
 	}
+
 	yGoldenManifest, err := ioutil.ReadFile(goldenFile)
 	require.NoError(t, err)
 	if string(yManifest) != string(yGoldenManifest) {

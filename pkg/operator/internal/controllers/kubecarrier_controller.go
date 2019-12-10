@@ -97,7 +97,6 @@ func (r *KubeCarrierReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error)
 	// 3. Reconcile the objects that owned by KubeCarrier object.
 	// Build the manifests of the KubeCarrier controller manager.
 	objects, err := manager.Manifests(
-		r.Kustomize,
 		manager.Config{
 			Namespace: kubeCarrier.Namespace,
 		})
