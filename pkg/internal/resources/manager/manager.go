@@ -18,9 +18,12 @@ package manager
 
 import (
 	"fmt"
-	"net/http"
+	"io"
+	"os"
 
+	statikfs "github.com/rakyll/statik/fs"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"sigs.k8s.io/kustomize/v3/pkg/fs"
 	"sigs.k8s.io/yaml"
 
 	"github.com/kubermatic/kubecarrier/pkg/internal/kustomize"
@@ -33,12 +36,36 @@ type Config struct {
 	Namespace string
 }
 
-type kustomizeFactory interface {
-	ForHTTP(fs http.FileSystem) kustomize.KustomizeContext
-}
+var k = kustomize.NewDefaultKustomize()
 
-func Manifests(k kustomizeFactory, c Config) ([]unstructured.Unstructured, error) {
-	kc := k.ForHTTP(vfs)
+func Manifests(c Config) ([]unstructured.Unstructured, error) {
+	kustomizeFs := fs.MakeFsInMemory()
+	if err := statikfs.Walk(vfs, "/", func(path string, info os.FileInfo, err error) error {
+		if info.IsDir() {
+			return kustomizeFs.Mkdir(path)
+		}
+		Fout, err := kustomizeFs.Create(path)
+		if err != nil {
+			return err
+		}
+		Fin, err := vfs.Open(path)
+		if err != nil {
+			return err
+		}
+		if _, err := io.Copy(Fout, Fin); err != nil {
+			return err
+		}
+		if err := Fout.Close(); err != nil {
+			return err
+		}
+		if err := Fin.Close(); err != nil {
+			return err
+		}
+		return nil
+	}); err != nil {
+		return nil, fmt.Errorf("fs creation: %w", err)
+	}
+	kc := k.For(kustomizeFs)
 
 	// patch settings
 	kustomizePath := "/default/kustomization.yaml"

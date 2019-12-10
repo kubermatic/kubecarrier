@@ -17,16 +17,19 @@ limitations under the License.
 package manager
 
 import (
-	"fmt"
+	"io/ioutil"
 	"net/http"
+	"os"
 	"testing"
 
+	"github.com/google/go-cmp/cmp"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"sigs.k8s.io/yaml"
 
 	"github.com/kubermatic/kubecarrier/pkg/internal/kustomize"
-	"github.com/kubermatic/kubecarrier/pkg/internal/version"
+	"github.com/kubermatic/kubecarrier/pkg/testutil"
 )
 
 type kustomizeContextMock struct {
@@ -59,20 +62,26 @@ func (k *kustomizeStub) ForHTTP(fs http.FileSystem) kustomize.KustomizeContext {
 }
 
 func TestManifests(t *testing.T) {
+	const (
+		goldenFile = "manager.golden"
+	)
 	c := Config{
 		Namespace: "test3000",
 	}
-	m := &kustomizeContextMock{}
-	m.On("ReadFile", "/default/kustomization.yaml").Return([]byte("namespace: default"), nil)
-	m.On("WriteFile", "/default/kustomization.yaml", mock.Anything).Return(nil)
-	m.On("Build", mock.Anything).Return([]unstructured.Unstructured{}, nil)
 
-	_, err := Manifests(&kustomizeStub{m}, c)
+	manifests, err := Manifests(c)
 	require.NoError(t, err, "unexpected error")
+	yManifest, err := yaml.Marshal(manifests)
+	require.NoError(t, err, "cannot marshall given manifests")
 
-	m.AssertCalled(t, "WriteFile", "/default/kustomization.yaml", []byte(fmt.Sprintf(`images:
-- name: quay.io/kubecarrier/manager
-  newTag: %s
-namespace: test3000
-`, version.Get().Version)))
+	if _, present := os.LookupEnv(testutil.OverrideGoldenEnv); present {
+		require.NoError(t, ioutil.WriteFile(goldenFile, yManifest, 0440))
+	}
+	yGoldenManifest, err := ioutil.ReadFile(goldenFile)
+	require.NoError(t, err)
+	if string(yManifest) != string(yGoldenManifest) {
+		t.Logf("generated manifests differ from the golden file:\n%s", cmp.Diff(
+			string(yGoldenManifest), string(yManifest)))
+		t.FailNow()
+	}
 }
