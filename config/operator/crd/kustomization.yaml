@@ -3,6 +3,7 @@
 # It should be run by config/default
 resources:
 - bases/operator.kubecarrier.io_kubecarriers.yaml
+- bases/operator.kubecarrier.io_serviceclusterregistrations.yaml
 # +kubebuilder:scaffold:crdkustomizeresource
 
 patchesStrategicMerge:
