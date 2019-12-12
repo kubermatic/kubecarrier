@@ -99,6 +99,14 @@ func run(flags *flags, log logr.Logger) error {
 		return fmt.Errorf("creating Provider controller: %w", err)
 	}
 
+	if err = (&controllers.CatalogEntryReconciler{
+		Client: mgr.GetClient(),
+		Log:    log.WithName("controllers").WithName("CatalogEntry"),
+		Scheme: mgr.GetScheme(),
+	}).SetupWithManager(mgr); err != nil {
+		return fmt.Errorf("creating CatalogEntry controller: %w", err)
+	}
+
 	log.Info("starting manager")
 	if err := mgr.Start(ctrl.SetupSignalHandler()); err != nil {
 		return fmt.Errorf("running manager: %w", err)

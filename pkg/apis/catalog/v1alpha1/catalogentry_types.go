@@ -156,13 +156,15 @@ func (s *CatalogEntryStatus) SetCondition(condition CatalogEntryCondition) {
 
 // CatalogEntry adds additional metadata to a set of CRD's and groups the same Kind for multiple ServiceClusters
 // +kubebuilder:object:root=true
+// +kubebuilder:subresource:status
 // +kubebuilder:printcolumn:name="Age",type="date",JSONPath=".metadata.creationTimestamp"
 // +kubebuilder:resource:shortName=ce
 type CatalogEntry struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec CatalogEntrySpec `json:"spec,omitempty"`
+	Spec   CatalogEntrySpec   `json:"spec,omitempty"`
+	Status CatalogEntryStatus `json:"status,omitempty"`
 }
 
 // CatalogEntryList contains a list of CatalogEntry

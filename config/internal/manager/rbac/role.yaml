@@ -21,6 +21,23 @@ rules:
 - apiGroups:
   - catalog.kubecarrier.io
   resources:
+  - catalogentries
+  verbs:
+  - get
+  - list
+  - update
+  - watch
+- apiGroups:
+  - catalog.kubecarrier.io
+  resources:
+  - catalogentries/status
+  verbs:
+  - get
+  - patch
+  - update
+- apiGroups:
+  - catalog.kubecarrier.io
+  resources:
   - providers
   verbs:
   - get
