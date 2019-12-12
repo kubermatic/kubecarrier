@@ -9,7 +9,7 @@ metadata:
   name: offerings.catalog.kubecarrier.io
 spec:
   additionalPrinterColumns:
-  - JSONPath: .spec.displayName
+  - JSONPath: .offering.displayName
     name: Display Name
     type: string
   - JSONPath: .metadata.creationTimestamp
@@ -40,8 +40,9 @@ spec:
           type: string
         metadata:
           type: object
-        spec:
-          description: OfferingSpec defines the desired state of Offering.
+        offering:
+          description: OfferingData defines the data (metadata, provider, crds, etc.)
+            of Offering.
           properties:
             crds:
               description: CRDs holds the information about the underlying CRDs that

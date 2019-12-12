@@ -20,8 +20,8 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// OfferingSpec defines the desired state of Offering.
-type OfferingSpec struct {
+// OfferingData defines the data (metadata, provider, crds, etc.) of Offering.
+type OfferingData struct {
 	Metadata OfferingMetadata `json:"metadata,omitempty"`
 	// Provider references a ProviderReference of this Offering.
 	Provider ObjectReference `json:"provider"`
@@ -39,13 +39,13 @@ type OfferingMetadata struct {
 
 // Offering is used for Tenants to discover services that have been made available to them.
 // +kubebuilder:object:root=true
-// +kubebuilder:printcolumn:name="Display Name",type="string",JSONPath=".spec.displayName"
+// +kubebuilder:printcolumn:name="Display Name",type="string",JSONPath=".offering.displayName"
 // +kubebuilder:printcolumn:name="Age",type="date",JSONPath=".metadata.creationTimestamp"
 type Offering struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec OfferingSpec `json:"spec,omitempty"`
+	Offering OfferingData `json:"offering,omitempty"`
 }
 
 // OfferingList contains a list of Offering.
