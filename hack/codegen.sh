@@ -29,6 +29,14 @@ else
   CONTROLLER_GEN=$(which controller-gen)
 fi
 
+CONTROLLER_GEN_VERSION=$(${CONTROLLER_GEN} --version)
+CONTROLLER_GEN_WANT_VERSION="Version: v0.2.4"
+
+if [[  ${CONTROLLER_GEN_VERSION} != ${CONTROLLER_GEN_WANT_VERSION} ]]; then
+  echo "Wrong controller-gen version. Wants ${CONTROLLER_GEN_WANT_VERSION} found ${CONTROLLER_GEN_VERSION}"
+  exit 1
+fi
+
 function statik-gen {
   local component=$1
   local src=$2
@@ -61,11 +69,3 @@ $CONTROLLER_GEN crd webhook paths="./pkg/apis/catalog/..." output:crd:artifacts:
 # RBAC
 $CONTROLLER_GEN rbac:roleName=manager-role paths="./pkg/manager/..." output:rbac:artifacts:config=config/internal/manager/rbac
 statik-gen manager config/internal/manager
-
-# Tender
-# -------
-# RBAC
-$CONTROLLER_GEN rbac:roleName=manager-role paths="./pkg/tender/..." output:rbac:artifacts:config=config/internal/tender/rbac
-sed -i 's/ClusterRole/Role/g' config/internal/tender/rbac/role.yaml
-# Statik (run only when file CONTENT has changed)
-statik-gen tender config/internal/tender
