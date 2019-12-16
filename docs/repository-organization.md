@@ -39,7 +39,7 @@ Here is an overview of the KubeCarrier repository organization:
     - **core**: kubecarrier.io api group
     - **catalog**: catalog.kubecarrier.io api group
 - **internal**: internal packages used across components.
-- `**<component>**`: source code for KubeCarrier components.
+- **component (anchor, manager, operator, tender)**: source code for KubeCarrier components.
     - **internal**: internal packages for every component (controller, etc).
 
 **test** contains KubeCarrier e2e tests.
