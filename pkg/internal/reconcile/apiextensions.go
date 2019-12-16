@@ -21,14 +21,14 @@ import (
 	"fmt"
 
 	"github.com/go-logr/logr"
-	apiextensionsv1beta1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
+	apiextensionsv1beta1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/api/equality"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-// CustomResourceDefinition reconciles a apiextensions.k8s.io/v1beta1, Kind=CustomResourceDefinition.
+// CustomResourceDefinition reconciles a apiextensions.k8s.io/v1, Kind=CustomResourceDefinition.
 func CustomResourceDefinition(
 	ctx context.Context,
 	log logr.Logger,
