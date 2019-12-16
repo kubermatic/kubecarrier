@@ -32,7 +32,7 @@ IMAGE_ORG?=quay.io/kubecarrier
 MODULE=github.com/kubermatic/kubecarrier
 LD_FLAGS="-w -X '$(MODULE)/pkg/internal/version.Version=$(VERSION)' -X '$(MODULE)/pkg/internal/version.Branch=$(BRANCH)' -X '$(MODULE)/pkg/internal/version.Commit=$(SHORT_SHA)' -X '$(MODULE)/pkg/internal/version.BuildDate=$(BUILD_DATE)'"
 KIND_CLUSTER?=kubecarrier
-COMPONENTS = operator manager tender
+COMPONENTS = operator manager
 
 all: \
 	bin/linux_amd64/anchor \
@@ -40,9 +40,6 @@ all: \
 	bin/windows_amd64/anchor \
 	bin/linux_amd64/operator \
 	bin/linux_amd64/manager
-
-ld_flags:
-	@echo -n ${LD_FLAGS}
 
 bin/linux_amd64/%: GOARGS = GOOS=linux GOARCH=amd64
 bin/darwin_amd64/%: GOARGS = GOOS=darwin GOARCH=amd64
@@ -145,3 +142,6 @@ require-docker:
 	@docker ps > /dev/null 2>&1 || start-docker.sh || (echo "cannot find running docker daemon nor can start new one" && false)
 	@[[ -z "${QUAY_IO_USERNAME}" ]] || ( echo "logging in to ${QUAY_IO_USERNAME}" && docker login -u ${QUAY_IO_USERNAME} -p ${QUAY_IO_PASSWORD} quay.io )
 .PHONEY: require-docker
+
+generate-intelij-tasks:
+	@./hack/gen-intelij-tasks.sh ${LD_FLAGS}
