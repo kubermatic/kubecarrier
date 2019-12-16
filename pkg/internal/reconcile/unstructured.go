@@ -97,7 +97,7 @@ var unstructuredReconcilers = map[schema.GroupVersionKind]unstructuredReconcileF
 	// "apiextensions.k8s.io" group
 	schema.GroupVersionKind{
 		Group:   "apiextensions.k8s.io",
-		Version: "v1beta1",
+		Version: "v1",
 		Kind:    "CustomResourceDefinition",
 	}: unstructuredReconcileFn(unstructuredCustomResourceDefinition),
 }
