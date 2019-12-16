@@ -27,7 +27,6 @@ import (
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 	ctrl "sigs.k8s.io/controller-runtime"
-	"sigs.k8s.io/controller-runtime/pkg/client/apiutil"
 
 	operatorv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/operator/v1alpha1"
 	"github.com/kubermatic/kubecarrier/pkg/internal/kustomize"
@@ -83,19 +82,15 @@ func run(flags *flags, log logr.Logger) error {
 	}
 
 	// Field Index
-	for _, obj := range []runtime.Object{
-		&rbacv1.ClusterRole{},
-		&rbacv1.ClusterRoleBinding{},
-	} {
-		gvk, err := apiutil.GVKForObject(obj, mgr.GetScheme())
-		if err != nil {
-			return fmt.Errorf("gvk: %T, %w", obj, err)
-		}
-		if err := util.AddOwnerReverseFieldIndex(
-			mgr.GetFieldIndexer(), ctrl.Log.WithName("fieldindex").WithName(gvk.Kind), obj,
-		); err != nil {
-			return fmt.Errorf("cannot add %s owner field indexer: %w", gvk.Kind, err)
-		}
+	if err := util.AddOwnerReverseFieldIndex(
+		mgr.GetFieldIndexer(), ctrl.Log.WithName("fieldindex").WithName("ClusterRole"), &rbacv1.ClusterRole{},
+	); err != nil {
+		return fmt.Errorf("cannot add ClusterRole owner field indexer: %w", err)
+	}
+	if err := util.AddOwnerReverseFieldIndex(
+		mgr.GetFieldIndexer(), ctrl.Log.WithName("fieldindex").WithName("ClusterRoleBinding"), &rbacv1.ClusterRoleBinding{},
+	); err != nil {
+		return fmt.Errorf("cannot add ClusterRoleBinding owner field indexer: %w", err)
 	}
 
 	kustomize := kustomize.NewDefaultKustomize()
@@ -106,14 +101,6 @@ func run(flags *flags, log logr.Logger) error {
 		Kustomize: kustomize,
 	}).SetupWithManager(mgr); err != nil {
 		return fmt.Errorf("creating KubeCarrier controller: %w", err)
-	}
-	if err = (&controllers.TenderReconciler{
-		Client:    mgr.GetClient(),
-		Scheme:    mgr.GetScheme(),
-		Log:       log.WithName("controllers").WithName("tender"),
-		Kustomize: kustomize,
-	}).SetupWithManager(mgr); err != nil {
-		return fmt.Errorf("creating Tender controller: %w", err)
 	}
 
 	log.Info("starting operator")
