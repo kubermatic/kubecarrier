@@ -21,7 +21,7 @@ import (
 	"fmt"
 
 	"github.com/go-logr/logr"
-	apiextensionsv1beta1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
+	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/api/equality"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/types"
@@ -33,15 +33,15 @@ func CustomResourceDefinition(
 	ctx context.Context,
 	log logr.Logger,
 	c client.Client,
-	desiredCRD *apiextensionsv1beta1.CustomResourceDefinition,
-) (currentCRD *apiextensionsv1beta1.CustomResourceDefinition, err error) {
+	desiredCRD *apiextensionsv1.CustomResourceDefinition,
+) (currentCRD *apiextensionsv1.CustomResourceDefinition, err error) {
 	nn := types.NamespacedName{
 		Name:      desiredCRD.Name,
 		Namespace: desiredCRD.Namespace,
 	}
 
 	// Lookup current version of the object
-	currentCRD = &apiextensionsv1beta1.CustomResourceDefinition{}
+	currentCRD = &apiextensionsv1.CustomResourceDefinition{}
 	err = c.Get(ctx, nn, currentCRD)
 	if err != nil && !errors.IsNotFound(err) {
 		return nil, fmt.Errorf("getting CustomResourceDefinition: %w", err)
