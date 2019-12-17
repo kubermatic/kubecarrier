@@ -33,11 +33,13 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/source"
 
 	catalogv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/catalog/v1alpha1"
+	"github.com/kubermatic/kubecarrier/pkg/internal/util"
 )
 
 const (
 	// This annotation is used to make sure a CRD can only be referenced by a single CatalogEntry object.
 	catalogEntryReferenceAnnotation = "kubecarrier.io/catalog-entry"
+	catalogEntryControllerFinalizer = "catalogentry.kubecarrier.io/controller"
 
 	serviceClusterAnnotation = "kubecarrier.io/service-cluster"
 )
@@ -49,14 +51,15 @@ type CatalogEntryReconciler struct {
 	Scheme *runtime.Scheme
 }
 
-// +kubebuilder:rbac:groups=catalog.kubecarrier.io,resources=catalogentries,verbs=get;list;watch;update;
+// +kubebuilder:rbac:groups=catalog.kubecarrier.io,resources=catalogentries,verbs=get;list;watch;update
 // +kubebuilder:rbac:groups=catalog.kubecarrier.io,resources=catalogentries/status,verbs=get;update;patch
-// +kubebuilder:rbac:groups=apiextensions.k8s.io,resources=customresourcedefinitions,verbs=get;list;watch
+// +kubebuilder:rbac:groups=apiextensions.k8s.io,resources=customresourcedefinitions,verbs=get;list;watch;update
 
 // Reconcile function reconciles the CatalogEntry object which specified by the request. Currently, it does the following:
 func (r *CatalogEntryReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	ctx := context.Background()
 	log := r.Log.WithValues("catalogEntry", req.NamespacedName)
+	namespacedName := req.NamespacedName.String()
 
 	// 1. Fetch the CatalogEntry object.
 	catalogEntry := &catalogv1alpha1.CatalogEntry{}
@@ -67,13 +70,21 @@ func (r *CatalogEntryReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error
 
 	// 2. Handle the deletion of the CatalogEntry object.
 	if !catalogEntry.DeletionTimestamp.IsZero() {
-		if err := r.handleDeletion(ctx, log, catalogEntry); err != nil {
+		if err := r.handleDeletion(ctx, log, catalogEntry, namespacedName); err != nil {
 			return ctrl.Result{}, fmt.Errorf("handling deletion: %w", err)
 		}
 		return ctrl.Result{}, nil
 	}
 
-	namespacedName := req.NamespacedName.String()
+	// check/add the finalizer for the CatalogEntry.
+	if util.AddFinalizer(catalogEntry, catalogEntryControllerFinalizer) {
+		// Update the CatalogEntry with the finalizer
+		if err := r.Update(ctx, catalogEntry); err != nil {
+			return ctrl.Result{}, fmt.Errorf("updating finalizers: %w", err)
+		}
+	}
+
+	// 3.Manipulate the CRD information to CatalogEntry status.
 	if err := r.manipulateCRDInfo(ctx, log, catalogEntry, namespacedName); err != nil {
 		return ctrl.Result{}, fmt.Errorf("reconciling CRDInfo: %w", err)
 	}
@@ -105,7 +116,7 @@ func (r *CatalogEntryReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		Complete(r)
 }
 
-func (r *CatalogEntryReconciler) handleDeletion(ctx context.Context, log logr.Logger, catalogEntry *catalogv1alpha1.CatalogEntry) error {
+func (r *CatalogEntryReconciler) handleDeletion(ctx context.Context, log logr.Logger, catalogEntry *catalogv1alpha1.CatalogEntry, namespacedName string) error {
 	// Update the CatalogEntry Status to Terminating.
 	readyCondition, _ := catalogEntry.Status.GetCondition(catalogv1alpha1.CatalogEntryReady)
 	if readyCondition.Status != catalogv1alpha1.ConditionFalse ||
@@ -121,6 +132,51 @@ func (r *CatalogEntryReconciler) handleDeletion(ctx context.Context, log logr.Lo
 			return fmt.Errorf("updating CatalogEntry status: %w", err)
 		}
 	}
+
+	// Clean up annotations for the CRD
+	crdSelector, err := metav1.LabelSelectorAsSelector(catalogEntry.Spec.CRDSelector)
+	if err != nil {
+		return fmt.Errorf("crd selector: %w", err)
+	}
+
+	var (
+		crdReferencedOther   int
+		crdReferencedCleanUp int
+	)
+
+	crdList := &apiextensionsv1beta1.CustomResourceDefinitionList{}
+	if err := r.Client.List(ctx, crdList, client.MatchingLabelsSelector{Selector: crdSelector}); err != nil {
+		return fmt.Errorf("listing CRD: %w", err)
+	}
+	for _, crd := range crdList.Items {
+		annotations := crd.GetAnnotations()
+		if catalogEntryNamespacedName, present := annotations[catalogEntryReferenceAnnotation]; present {
+			if catalogEntryNamespacedName == namespacedName {
+				delete(annotations, catalogEntryReferenceAnnotation)
+				crd.SetAnnotations(annotations)
+				if err := r.Update(ctx, &crd); err != nil {
+					return fmt.Errorf("updating CRD: %w", err)
+				}
+			} else {
+				crdReferencedOther++
+			}
+		} else {
+			crdReferencedCleanUp++
+		}
+
+	}
+
+	if crdReferencedOther+crdReferencedCleanUp != len(crdList.Items) {
+		return nil
+	}
+
+	// The annotation of the CRD is completely removed, then we remove the finalizer here.
+	if util.RemoveFinalizer(catalogEntry, catalogEntryControllerFinalizer) {
+		if err := r.Update(ctx, catalogEntry); err != nil {
+			return fmt.Errorf("updating CatalogEntry: %w", err)
+		}
+	}
+
 	return nil
 }
 
@@ -144,60 +200,30 @@ func (r *CatalogEntryReconciler) manipulateCRDInfo(ctx context.Context, log logr
 	for _, crd := range crdList.Items {
 
 		// check the annotation of the CRD
-		catalogEntryName, present := crd.Annotations[catalogEntryReferenceAnnotation]
-		if !present {
+		annotations := crd.GetAnnotations()
+		if catalogEntryName, present := annotations[catalogEntryReferenceAnnotation]; present {
+			if catalogEntryName == namespacedName {
+				crdReferenced++
+				crdInfo, err := getCRDInformation(crd)
+				if err != nil {
+					return err
+				}
+				crdInfos = append(crdInfos, crdInfo)
+
+			} else {
+				// Since a CRD only can be referenced by one CatalogEntry, if this CRD is referenced by
+				// another CatalogEntry, we just skip it.
+				crdReferencedOther++
+
+			}
+		} else {
 			// The reference annotation is not set yet, we just set it and update the CRD
-			crd.Annotations[catalogEntryReferenceAnnotation] = namespacedName
+			annotations[catalogEntryReferenceAnnotation] = namespacedName
+			crd.SetAnnotations(annotations)
 			if err := r.Update(ctx, &crd); err != nil {
 				return fmt.Errorf("updating CRD annotation: %w", err)
 			}
-			continue
 		}
-
-		// Since a CRD only can be referenced by one CatalogEntry, if this CRD is referenced by
-		// another CatalogEntry, we just skip it.
-		if catalogEntryName != namespacedName {
-			crdReferencedOther++
-			continue
-		}
-		crdReferenced++
-
-		crdInfo := catalogv1alpha1.CRDInformation{
-			Name:     crd.Name,
-			APIGroup: crd.Spec.Group,
-			Kind:     crd.Spec.Names.Kind,
-		}
-
-		for _, ver := range crd.Spec.Versions {
-			schema := ver.Schema
-			if schema == nil {
-				schema = crd.Spec.Validation
-			}
-			crdInfo.Versions = append(crdInfo.Versions, catalogv1alpha1.CRDVersion{
-				Name:   ver.Name,
-				Schema: schema,
-			})
-		}
-
-		// legacy Schema handling
-		if crd.Spec.Version != "" && len(crd.Spec.Versions) == 0 {
-			crdInfo.Versions = append(crdInfo.Versions, catalogv1alpha1.CRDVersion{
-				Name:   crd.Spec.Version,
-				Schema: crd.Spec.Validation,
-			})
-		}
-
-		// Service Cluster
-		serviceCluster, present := crd.Annotations[serviceClusterAnnotation]
-		if !present {
-			return fmt.Errorf("getting ServiceCluster of the CRD error: CRD should have an annotation to indicate the ServiceCluster")
-		}
-
-		crdInfo.ServiceCluster = catalogv1alpha1.ObjectReference{
-			Name: serviceCluster,
-		}
-
-		crdInfos = append(crdInfos, crdInfo)
 	}
 
 	if crdReferencedOther+crdReferenced == len(crdList.Items) {
@@ -222,4 +248,43 @@ func (r *CatalogEntryReconciler) manipulateCRDInfo(ctx context.Context, log logr
 		return fmt.Errorf("updating Catalog Status: %w", err)
 	}
 	return nil
+}
+
+func getCRDInformation(crd apiextensionsv1beta1.CustomResourceDefinition) (catalogv1alpha1.CRDInformation, error) {
+	crdInfo := catalogv1alpha1.CRDInformation{
+		Name:     crd.Name,
+		APIGroup: crd.Spec.Group,
+		Kind:     crd.Spec.Names.Kind,
+	}
+
+	for _, ver := range crd.Spec.Versions {
+		schema := ver.Schema
+		if schema == nil {
+			schema = crd.Spec.Validation
+		}
+		crdInfo.Versions = append(crdInfo.Versions, catalogv1alpha1.CRDVersion{
+			Name:   ver.Name,
+			Schema: schema,
+		})
+	}
+
+	// legacy Schema handling
+	if crd.Spec.Version != "" && len(crd.Spec.Versions) == 0 {
+		crdInfo.Versions = append(crdInfo.Versions, catalogv1alpha1.CRDVersion{
+			Name:   crd.Spec.Version,
+			Schema: crd.Spec.Validation,
+		})
+	}
+
+	// Service Cluster
+	serviceCluster, present := crd.Annotations[serviceClusterAnnotation]
+	if !present {
+		return catalogv1alpha1.CRDInformation{}, fmt.Errorf("getting ServiceCluster of the CRD error: CRD should have an annotation to indicate the ServiceCluster")
+	}
+
+	crdInfo.ServiceCluster = catalogv1alpha1.ObjectReference{
+		Name: serviceCluster,
+	}
+
+	return crdInfo, nil
 }
