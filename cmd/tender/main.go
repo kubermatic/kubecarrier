@@ -20,22 +20,13 @@ import (
 	"fmt"
 	"os"
 
-	"go.uber.org/zap"
 	ctrl "sigs.k8s.io/controller-runtime"
-	corezap "sigs.k8s.io/controller-runtime/pkg/log/zap"
 
 	"github.com/kubermatic/kubecarrier/pkg/tender"
 )
 
 func main() {
-	level := zap.NewAtomicLevel()
-	ctrl.SetLogger(corezap.New(func(options *corezap.Options) {
-		options.Level = &level
-		options.Development = true
-	}))
-
-	log := ctrl.Log.WithName("tender")
-	if err := tender.NewTenderCommand(log).Execute(); err != nil {
+	if err := tender.NewTenderCommand(ctrl.Log.WithName("tender")).Execute(); err != nil {
 		fmt.Println(err)
 		os.Exit(1)
 	}

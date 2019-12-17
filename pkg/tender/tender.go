@@ -95,7 +95,7 @@ func NewTenderCommand(log logr.Logger) *cobra.Command {
 		}
 
 	}
-	return cmd
+	return util.CmdLogMixin(cmd)
 }
 
 func runE(flags *flags, log logr.Logger) error {
