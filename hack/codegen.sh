@@ -29,6 +29,14 @@ else
   CONTROLLER_GEN=$(which controller-gen)
 fi
 
+CONTROLLER_GEN_VERSION=$(${CONTROLLER_GEN} --version)
+CONTROLLER_GEN_WANT_VERSION="Version: v0.2.4"
+
+if [[  ${CONTROLLER_GEN_VERSION} != ${CONTROLLER_GEN_WANT_VERSION} ]]; then
+  echo "Wrong controller-gen version. Wants ${CONTROLLER_GEN_WANT_VERSION} found ${CONTROLLER_GEN_VERSION}"
+  exit 1
+fi
+
 function statik-gen {
   local component=$1
   local src=$2
