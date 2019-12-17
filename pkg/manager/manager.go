@@ -28,6 +28,7 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 
 	catalogv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/catalog/v1alpha1"
+	"github.com/kubermatic/kubecarrier/pkg/internal/util"
 	"github.com/kubermatic/kubecarrier/pkg/manager/internal/controllers"
 )
 
@@ -64,7 +65,7 @@ func NewManagerCommand(log logr.Logger) *cobra.Command {
 	cmd.Flags().BoolVar(&flags.enableLeaderElection, "enable-leader-election", false,
 		"Enable leader election for controller manager. Enabling this will ensure there is only one active controller manager.")
 	cmd.Flags().StringVar(&flags.kubeCarrierSystemNamespace, "kubecarrier-system-namespace", os.Getenv("KUBECARRIER_NAMESPACE"), "The namespace that KubeCarrier controller manager deploys to.")
-	return cmd
+	return util.CmdLogMixin(cmd)
 }
 
 func run(flags *flags, log logr.Logger) error {
