@@ -43,14 +43,6 @@ const (
 	serviceclusterregistrationControllerFinalizer string = "serviceclusterregistration.kubecarrier.io/controller"
 )
 
-var serviceclusterregistrationControllerObjects = []runtime.Object{
-	&corev1.Service{},
-	&corev1.ServiceAccount{},
-	&rbacv1.Role{},
-	&rbacv1.RoleBinding{},
-	&appsv1.Deployment{},
-}
-
 // ServiceClusterRegistrationReconciler reconciles a ServiceClusterRegistration object
 type ServiceClusterRegistrationReconciler struct {
 	client.Client
@@ -181,6 +173,14 @@ func (r *ServiceClusterRegistrationReconciler) handleDeletion(ctx context.Contex
 		}
 	}
 	return nil
+}
+
+var serviceclusterregistrationControllerObjects = []runtime.Object{
+	&corev1.Service{},
+	&corev1.ServiceAccount{},
+	&rbacv1.Role{},
+	&rbacv1.RoleBinding{},
+	&appsv1.Deployment{},
 }
 
 func (r *ServiceClusterRegistrationReconciler) SetupWithManager(mgr ctrl.Manager) error {
