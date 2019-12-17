@@ -51,6 +51,7 @@ type CatalogEntryReconciler struct {
 
 // +kubebuilder:rbac:groups=catalog.kubecarrier.io,resources=catalogentries,verbs=get;list;watch;update;
 // +kubebuilder:rbac:groups=catalog.kubecarrier.io,resources=catalogentries/status,verbs=get;update;patch
+// +kubebuilder:rbac:groups=apiextensions.k8s.io,resources=customresourcedefinitions,verbs=get;list;watch
 
 // Reconcile function reconciles the CatalogEntry object which specified by the request. Currently, it does the following:
 func (r *CatalogEntryReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
