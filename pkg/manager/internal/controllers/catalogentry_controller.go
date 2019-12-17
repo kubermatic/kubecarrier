@@ -56,6 +56,10 @@ type CatalogEntryReconciler struct {
 // +kubebuilder:rbac:groups=apiextensions.k8s.io,resources=customresourcedefinitions,verbs=get;list;watch;update
 
 // Reconcile function reconciles the CatalogEntry object which specified by the request. Currently, it does the following:
+// 1. Fetch the CatalogEntry object.
+// 2. Handle the deletion of the CatalogEntry object (Remove the annotations from the CRDs, and remove the finalizer).
+// 3. Manipulate/Update the CRDInformation in the CatalogEntry status.
+// 4. Update the status of the CatalogEntry object.
 func (r *CatalogEntryReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	ctx := context.Background()
 	log := r.Log.WithValues("catalogEntry", req.NamespacedName)
@@ -116,7 +120,7 @@ func (r *CatalogEntryReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		Complete(r)
 }
 
-func (r *CatalogEntryReconciler) handleDeletion(ctx context.Context, log logr.Logger, catalogEntry *catalogv1alpha1.CatalogEntry, namespacedName string) error {
+func (r *CatalogEntryReconciler) handleDeletion(ctx context.Context, log logr.Logger, catalogEntry *catalogv1alpha1.CatalogEntry, desiredNamespacedName string) error {
 	// Update the CatalogEntry Status to Terminating.
 	readyCondition, _ := catalogEntry.Status.GetCondition(catalogv1alpha1.CatalogEntryReady)
 	if readyCondition.Status != catalogv1alpha1.ConditionFalse ||
@@ -151,7 +155,7 @@ func (r *CatalogEntryReconciler) handleDeletion(ctx context.Context, log logr.Lo
 	for _, crd := range crdList.Items {
 		annotations := crd.GetAnnotations()
 		if catalogEntryNamespacedName, present := annotations[catalogEntryReferenceAnnotation]; present {
-			if catalogEntryNamespacedName == namespacedName {
+			if catalogEntryNamespacedName == desiredNamespacedName {
 				delete(annotations, catalogEntryReferenceAnnotation)
 				crd.SetAnnotations(annotations)
 				if err := r.Update(ctx, &crd); err != nil {
@@ -180,7 +184,7 @@ func (r *CatalogEntryReconciler) handleDeletion(ctx context.Context, log logr.Lo
 	return nil
 }
 
-func (r *CatalogEntryReconciler) manipulateCRDInfo(ctx context.Context, log logr.Logger, catalogEntry *catalogv1alpha1.CatalogEntry, namespacedName string) error {
+func (r *CatalogEntryReconciler) manipulateCRDInfo(ctx context.Context, log logr.Logger, catalogEntry *catalogv1alpha1.CatalogEntry, desiredNamespacedName string) error {
 	crdSelector, err := metav1.LabelSelectorAsSelector(catalogEntry.Spec.CRDSelector)
 	if err != nil {
 		return fmt.Errorf("crd selector: %w", err)
@@ -201,8 +205,8 @@ func (r *CatalogEntryReconciler) manipulateCRDInfo(ctx context.Context, log logr
 
 		// check the annotation of the CRD
 		annotations := crd.GetAnnotations()
-		if catalogEntryName, present := annotations[catalogEntryReferenceAnnotation]; present {
-			if catalogEntryName == namespacedName {
+		if catalogEntryNamespacedName, present := annotations[catalogEntryReferenceAnnotation]; present {
+			if catalogEntryNamespacedName == desiredNamespacedName {
 				crdReferenced++
 				crdInfo, err := getCRDInformation(crd)
 				if err != nil {
@@ -218,7 +222,7 @@ func (r *CatalogEntryReconciler) manipulateCRDInfo(ctx context.Context, log logr
 			}
 		} else {
 			// The reference annotation is not set yet, we just set it and update the CRD
-			annotations[catalogEntryReferenceAnnotation] = namespacedName
+			annotations[catalogEntryReferenceAnnotation] = desiredNamespacedName
 			crd.SetAnnotations(annotations)
 			if err := r.Update(ctx, &crd); err != nil {
 				return fmt.Errorf("updating CRD annotation: %w", err)
