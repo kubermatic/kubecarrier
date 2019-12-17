@@ -20,20 +20,14 @@ import (
 	"os"
 
 	ctrl "sigs.k8s.io/controller-runtime"
-	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
 	"github.com/kubermatic/kubecarrier/pkg/operator"
 )
 
 func main() {
-	ctrl.SetLogger(zap.New(func(options *zap.Options) {
-		options.Development = true
-	}))
+	cmd := operator.NewOperatorCommand(ctrl.Log.WithName("operator"))
 
-	log := ctrl.Log.WithName("operator")
-	command := operator.NewOperatorCommand(log)
-
-	if err := command.Execute(); err != nil {
+	if err := cmd.Execute(); err != nil {
 		os.Exit(1)
 	}
 }
