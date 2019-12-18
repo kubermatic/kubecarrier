@@ -16,10 +16,6 @@ limitations under the License.
 
 package v1alpha1
 
-import (
-	apiextensionsv1beta1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
-)
-
 // CRDInformation contains type information about the CRD.
 type CRDInformation struct {
 	Name     string       `json:"name"`
@@ -33,6 +29,5 @@ type CRDInformation struct {
 
 // CRDVersion holds CRD version specific details.
 type CRDVersion struct {
-	Name   string                                         `json:"name"`
-	Schema *apiextensionsv1beta1.CustomResourceValidation `json:"schema,omitempty"`
+	Name string `json:"name"`
 }

@@ -262,21 +262,15 @@ func getCRDInformation(crd apiextensionsv1beta1.CustomResourceDefinition) (catal
 	}
 
 	for _, ver := range crd.Spec.Versions {
-		schema := ver.Schema
-		if schema == nil {
-			schema = crd.Spec.Validation
-		}
 		crdInfo.Versions = append(crdInfo.Versions, catalogv1alpha1.CRDVersion{
-			Name:   ver.Name,
-			Schema: schema,
+			Name: ver.Name,
 		})
 	}
 
 	// legacy Schema handling
 	if crd.Spec.Version != "" && len(crd.Spec.Versions) == 0 {
 		crdInfo.Versions = append(crdInfo.Versions, catalogv1alpha1.CRDVersion{
-			Name:   crd.Spec.Version,
-			Schema: crd.Spec.Validation,
+			Name: crd.Spec.Version,
 		})
 	}
 
