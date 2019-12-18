@@ -24,7 +24,7 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
-	apiextensionsv1beta1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
+	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -134,7 +134,7 @@ func (r *KubeCarrierReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		Owns(&rbacv1.RoleBinding{}).
 		Watches(&source.Kind{Type: &rbacv1.ClusterRole{}}, enqueuer).
 		Watches(&source.Kind{Type: &rbacv1.ClusterRoleBinding{}}, enqueuer).
-		Watches(&source.Kind{Type: &apiextensionsv1beta1.CustomResourceDefinition{}}, enqueuer).
+		Watches(&source.Kind{Type: &apiextensionsv1.CustomResourceDefinition{}}, enqueuer).
 		Complete(r)
 }
 
@@ -298,7 +298,7 @@ func cleanupClusterRoleBindings(ctx context.Context, c client.Client, ownedBy ut
 // cleanupCustomResourceDefinitions deletes owned CustomResourceDefinitions
 // cleaned is true when all CustomResourceDefinitions have been cleaned up.
 func cleanupCustomResourceDefinitions(ctx context.Context, c client.Client, ownedBy util.GeneralizedListOption) (cleaned bool, err error) {
-	customResourceDefinitionList := &apiextensionsv1beta1.CustomResourceDefinitionList{}
+	customResourceDefinitionList := &apiextensionsv1.CustomResourceDefinitionList{}
 	if err := c.List(ctx, customResourceDefinitionList, ownedBy); err != nil {
 		return false, fmt.Errorf("listing CustomResourceDefinitions: %w", err)
 	}

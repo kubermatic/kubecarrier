@@ -20,7 +20,7 @@ import (
 	"fmt"
 	"os"
 
-	apiextensionsv1beta1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
+	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	restclient "k8s.io/client-go/rest"
@@ -82,8 +82,8 @@ func New(c Config) (f *Framework, err error) {
 	if err = clientgoscheme.AddToScheme(f.masterScheme); err != nil {
 		return nil, fmt.Errorf("adding clientgo scheme to master scheme: %w", err)
 	}
-	if err = apiextensionsv1beta1.AddToScheme(f.masterScheme); err != nil {
-		return nil, fmt.Errorf("adding apiextensionsv1beta1 scheme to master scheme: %w", err)
+	if err = apiextensionsv1.AddToScheme(f.masterScheme); err != nil {
+		return nil, fmt.Errorf("adding apiextensionsv1 scheme to master scheme: %w", err)
 	}
 	if err = operatorv1alpha1.AddToScheme(f.masterScheme); err != nil {
 		return nil, fmt.Errorf("adding operatorv1alpha1 scheme to master scheme: %w", err)

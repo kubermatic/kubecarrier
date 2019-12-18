@@ -27,7 +27,7 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
-	apiextensionsv1beta1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
+	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/wait"
@@ -136,7 +136,7 @@ func (s *InstallationSuite) TestInstallAndTeardown() {
 		}, service), "get the Service that owned by KubeCarrier object")
 
 		// CRD
-		crd := &apiextensionsv1beta1.CustomResourceDefinition{}
+		crd := &apiextensionsv1.CustomResourceDefinition{}
 		s.NoError(s.masterClient.Get(ctx, types.NamespacedName{
 			Name: "providers.catalog.kubecarrier.io",
 		}, crd), "get the CRD that owned by KubeCarrier object")
@@ -198,7 +198,7 @@ func (s *InstallationSuite) TestInstallAndTeardown() {
 		}, service)), "get the Service that owned by KubeCarrier object")
 
 		// CRD
-		crd := &apiextensionsv1beta1.CustomResourceDefinition{}
+		crd := &apiextensionsv1.CustomResourceDefinition{}
 		s.True(errors.IsNotFound(s.masterClient.Get(ctx, types.NamespacedName{
 			Name: "providers.catalog.kubecarrier.io",
 		}, crd)), "get the CRD that owned by KubeCarrier object")
