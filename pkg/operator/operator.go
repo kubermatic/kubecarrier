@@ -29,7 +29,6 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 
 	operatorv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/operator/v1alpha1"
-	"github.com/kubermatic/kubecarrier/pkg/internal/kustomize"
 	"github.com/kubermatic/kubecarrier/pkg/internal/util"
 	"github.com/kubermatic/kubecarrier/pkg/operator/internal/controllers"
 )
@@ -98,12 +97,10 @@ func run(flags *flags, log logr.Logger) error {
 		return fmt.Errorf("cannot add CustomResourceDefinition owner field indexer: %w", err)
 	}
 
-	kustomize := kustomize.NewDefaultKustomize()
 	if err = (&controllers.KubeCarrierReconciler{
-		Client:    mgr.GetClient(),
-		Log:       log.WithName("controllers").WithName("KubeCarrier"),
-		Scheme:    mgr.GetScheme(),
-		Kustomize: kustomize,
+		Client: mgr.GetClient(),
+		Log:    log.WithName("controllers").WithName("KubeCarrier"),
+		Scheme: mgr.GetScheme(),
 	}).SetupWithManager(mgr); err != nil {
 		return fmt.Errorf("creating KubeCarrier controller: %w", err)
 	}

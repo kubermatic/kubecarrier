@@ -18,12 +18,10 @@ package manager
 
 import (
 	"fmt"
-	"net/http"
 
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"sigs.k8s.io/yaml"
 
-	"github.com/kubermatic/kubecarrier/pkg/internal/kustomize"
+	"github.com/kubermatic/kubecarrier/pkg/internal/resources/internal/kustomize"
 	"github.com/kubermatic/kubecarrier/pkg/internal/version"
 )
 
@@ -33,41 +31,16 @@ type Config struct {
 	Namespace string
 }
 
-type kustomizeFactory interface {
-	ForHTTP(fs http.FileSystem) kustomize.KustomizeContext
-}
+var k = kustomize.NewDefaultKustomize()
 
-func Manifests(k kustomizeFactory, c Config) ([]unstructured.Unstructured, error) {
-	kc := k.ForHTTP(vfs)
-
-	// patch settings
-	kustomizePath := "/default/kustomization.yaml"
-	kustomizeBytes, err := kc.ReadFile(kustomizePath)
-	if err != nil {
-		return nil, fmt.Errorf("reading %s: %w", kustomizePath, err)
-	}
-	kmap := map[string]interface{}{}
-	if err := yaml.Unmarshal(kustomizeBytes, &kmap); err != nil {
-		return nil, fmt.Errorf("unmarshal %s: %w", kustomizePath, err)
-	}
-
-	// patch namespace
-	kmap["namespace"] = c.Namespace
-	// patch image tag
+func Manifests(c Config) ([]unstructured.Unstructured, error) {
 	v := version.Get()
-	kmap["images"] = []map[string]string{
-		{
-			"name":   "quay.io/kubecarrier/manager",
-			"newTag": v.Version,
-		},
-	}
-
-	kustomizeBytes, err = yaml.Marshal(kmap)
+	kc, err := k.ForHTTPWithReplacement(vfs, map[string]string{
+		"kubecarrier-system":                  c.Namespace,
+		"quay.io/kubecarrier/manager:lastest": "quay.io/kubecarrier/manager:" + v.Version,
+	})
 	if err != nil {
-		return nil, fmt.Errorf("remarshal %s: %w", kustomizePath, err)
-	}
-	if err := kc.WriteFile(kustomizePath, kustomizeBytes); err != nil {
-		return nil, fmt.Errorf("writing %s: %w", kustomizePath, err)
+		return nil, err
 	}
 
 	// execute kustomize

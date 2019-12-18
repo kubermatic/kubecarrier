@@ -42,7 +42,6 @@ import (
 
 	"github.com/kubermatic/kubecarrier/pkg/anchor/internal/spinner"
 	operatorv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/operator/v1alpha1"
-	"github.com/kubermatic/kubecarrier/pkg/internal/kustomize"
 	"github.com/kubermatic/kubecarrier/pkg/internal/reconcile"
 	"github.com/kubermatic/kubecarrier/pkg/internal/resources/operator"
 	"github.com/kubermatic/kubecarrier/pkg/internal/util"
@@ -173,7 +172,6 @@ func reconcileOperator(ctx context.Context, log logr.Logger, c client.Client, ku
 	return func() error {
 		// Kustomize Build
 		objects, err := operator.Manifests(
-			kustomize.NewDefaultKustomize(),
 			operator.Config{
 				Namespace: kubecarrierNamespace.Name,
 			})
