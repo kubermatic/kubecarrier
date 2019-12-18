@@ -22,7 +22,7 @@ import (
 	"strings"
 
 	"github.com/go-logr/logr"
-	apiextensionsv1beta1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
+	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
@@ -99,13 +99,13 @@ func (r *CatalogEntryReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error
 func (r *CatalogEntryReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&catalogv1alpha1.CatalogEntry{}).
-		Watches(&source.Kind{Type: &apiextensionsv1beta1.CustomResourceDefinition{}}, &handler.EnqueueRequestsFromMapFunc{
+		Watches(&source.Kind{Type: &apiextensionsv1.CustomResourceDefinition{}}, &handler.EnqueueRequestsFromMapFunc{
 			ToRequests: handler.ToRequestsFunc(func(o handler.MapObject) (requests []reconcile.Request) {
 				annotations := o.Meta.GetAnnotations()
 				if annotations == nil {
 					return
 				}
-				if val, present := annotations[catalogEntryReferenceAnnotation]; !present {
+				if val, present := annotations[catalogEntryReferenceAnnotation]; present {
 					namespacedName := strings.SplitN(val, string(types.Separator), 2)
 					requests = append(requests, reconcile.Request{
 						NamespacedName: types.NamespacedName{
@@ -148,7 +148,7 @@ func (r *CatalogEntryReconciler) handleDeletion(ctx context.Context, log logr.Lo
 		crdReferencedCleanUp int
 	)
 
-	crdList := &apiextensionsv1beta1.CustomResourceDefinitionList{}
+	crdList := &apiextensionsv1.CustomResourceDefinitionList{}
 	if err := r.Client.List(ctx, crdList, client.MatchingLabelsSelector{Selector: crdSelector}); err != nil {
 		return fmt.Errorf("listing CRD: %w", err)
 	}
@@ -197,7 +197,7 @@ func (r *CatalogEntryReconciler) manipulateCRDInfo(ctx context.Context, log logr
 		crdInfos []catalogv1alpha1.CRDInformation
 	)
 
-	crdList := &apiextensionsv1beta1.CustomResourceDefinitionList{}
+	crdList := &apiextensionsv1.CustomResourceDefinitionList{}
 	if err := r.Client.List(ctx, crdList, client.MatchingLabelsSelector{Selector: crdSelector}); err != nil {
 		return fmt.Errorf("listing CRD: %w", err)
 	}
@@ -254,7 +254,7 @@ func (r *CatalogEntryReconciler) manipulateCRDInfo(ctx context.Context, log logr
 	return nil
 }
 
-func getCRDInformation(crd apiextensionsv1beta1.CustomResourceDefinition) (catalogv1alpha1.CRDInformation, error) {
+func getCRDInformation(crd apiextensionsv1.CustomResourceDefinition) (catalogv1alpha1.CRDInformation, error) {
 	crdInfo := catalogv1alpha1.CRDInformation{
 		Name:     crd.Name,
 		APIGroup: crd.Spec.Group,
@@ -264,13 +264,6 @@ func getCRDInformation(crd apiextensionsv1beta1.CustomResourceDefinition) (catal
 	for _, ver := range crd.Spec.Versions {
 		crdInfo.Versions = append(crdInfo.Versions, catalogv1alpha1.CRDVersion{
 			Name: ver.Name,
-		})
-	}
-
-	// legacy Schema handling
-	if crd.Spec.Version != "" && len(crd.Spec.Versions) == 0 {
-		crdInfo.Versions = append(crdInfo.Versions, catalogv1alpha1.CRDVersion{
-			Name: crd.Spec.Version,
 		})
 	}
 
