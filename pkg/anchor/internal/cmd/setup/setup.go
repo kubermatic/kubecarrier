@@ -29,7 +29,7 @@ import (
 	"github.com/spf13/cobra"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
-	apiextensionsv1beta1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
+	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -42,7 +42,6 @@ import (
 
 	"github.com/kubermatic/kubecarrier/pkg/anchor/internal/spinner"
 	operatorv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/operator/v1alpha1"
-	"github.com/kubermatic/kubecarrier/pkg/internal/kustomize"
 	"github.com/kubermatic/kubecarrier/pkg/internal/reconcile"
 	"github.com/kubermatic/kubecarrier/pkg/internal/resources/operator"
 	"github.com/kubermatic/kubecarrier/pkg/internal/util"
@@ -63,7 +62,7 @@ const (
 
 func init() {
 	_ = clientgoscheme.AddToScheme(scheme)
-	_ = apiextensionsv1beta1.AddToScheme(scheme)
+	_ = apiextensionsv1.AddToScheme(scheme)
 	_ = operatorv1alpha1.AddToScheme(scheme)
 }
 
@@ -173,7 +172,6 @@ func reconcileOperator(ctx context.Context, log logr.Logger, c client.Client, ku
 	return func() error {
 		// Kustomize Build
 		objects, err := operator.Manifests(
-			kustomize.NewDefaultKustomize(),
 			operator.Config{
 				Namespace: kubecarrierNamespace.Name,
 			})

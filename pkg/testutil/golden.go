@@ -14,20 +14,9 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package main
+package testutil
 
-import (
-	"os"
-
-	ctrl "sigs.k8s.io/controller-runtime"
-
-	"github.com/kubermatic/kubecarrier/pkg/manager"
+const (
+	// OverrideGoldenEnv is the environment variable signalling the golden files should be overwritten
+	OverrideGoldenEnv = "FIX_GOLDEN"
 )
-
-func main() {
-	command := manager.NewManagerCommand(ctrl.Log.WithName("manager"))
-
-	if err := command.Execute(); err != nil {
-		os.Exit(1)
-	}
-}
