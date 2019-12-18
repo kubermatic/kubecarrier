@@ -92,6 +92,11 @@ func run(flags *flags, log logr.Logger) error {
 	); err != nil {
 		return fmt.Errorf("cannot add ClusterRoleBinding owner field indexer: %w", err)
 	}
+	if err := util.AddOwnerReverseFieldIndex(
+		mgr.GetFieldIndexer(), ctrl.Log.WithName("fieldindex").WithName("CustomResourceDefinition"), &apiextensionsv1beta1.CustomResourceDefinition{},
+	); err != nil {
+		return fmt.Errorf("cannot add CustomResourceDefinition owner field indexer: %w", err)
+	}
 
 	kustomize := kustomize.NewDefaultKustomize()
 	if err = (&controllers.KubeCarrierReconciler{
