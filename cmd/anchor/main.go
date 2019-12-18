@@ -20,33 +20,14 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/go-logr/logr"
-	"go.uber.org/zap"
 	ctrl "sigs.k8s.io/controller-runtime"
-	corezap "sigs.k8s.io/controller-runtime/pkg/log/zap"
 
 	"github.com/kubermatic/kubecarrier/pkg/anchor"
 )
 
 func main() {
-	level := zap.NewAtomicLevel()
-	ctrl.SetLogger(corezap.New(func(options *corezap.Options) {
-		options.Level = &level
-		options.Development = true
-	}))
-
-	log := ctrl.Log.WithName("anchor")
-	if err := anchor.NewAnchor(&logWrapper{Logger: log, level: &level}).Execute(); err != nil {
+	if err := anchor.NewAnchor(ctrl.Log.WithName("anchor")).Execute(); err != nil {
 		fmt.Println(err)
 		os.Exit(1)
 	}
-}
-
-type logWrapper struct {
-	logr.Logger
-	level *zap.AtomicLevel
-}
-
-func (w *logWrapper) GetLevel() *zap.AtomicLevel {
-	return w.level
 }
