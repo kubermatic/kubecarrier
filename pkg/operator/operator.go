@@ -67,7 +67,7 @@ func NewOperatorCommand(log logr.Logger) *cobra.Command {
 	cmd.Flags().StringVar(&flags.metricsAddr, "metrics-addr", ":8080", "The address the metric endpoint binds to.")
 	cmd.Flags().BoolVar(&flags.enableLeaderElection, "enable-leader-election", false,
 		"Enable leader election for operator. Enabling this will ensure there is only one active controller manager.")
-	return cmd
+	return util.CmdLogMixin(cmd)
 }
 
 func run(flags *flags, log logr.Logger) error {
