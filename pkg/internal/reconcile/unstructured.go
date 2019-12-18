@@ -25,12 +25,20 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
+	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/client-go/kubernetes/scheme"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
+
+func init() {
+	_ = scheme.AddToScheme(scheme.Scheme)
+	_ = apiextensionsv1.AddToScheme(scheme.Scheme)
+}
 
 // Unstructured reconciles a unstructured.Unstructured object,
 // by calling the right typed reconcile function for the given GVK.
@@ -40,16 +48,39 @@ func Unstructured(
 	log logr.Logger,
 	c client.Client,
 	desiredObject *unstructured.Unstructured,
-) (current metav1.Object, err error) {
+) (metav1.Object, error) {
 
 	// lookup reconcile function
 	gvk := desiredObject.GroupVersionKind()
-	fn, ok := unstructuredReconcilers[gvk]
-	if !ok {
-		return nil, fmt.Errorf("cannot reconcile unknown type: %s, GVK needs to be registered in the 'unstructuredReconcilers' map in pkg/reconcile/unstructured.go", gvk)
+	obj, err := scheme.Scheme.New(gvk)
+	if err != nil {
+		return nil, err
+	}
+	if err := scheme.Scheme.Convert(desiredObject, obj, nil); err != nil {
+		return nil, err
 	}
 
-	return fn(ctx, log, c, desiredObject)
+	err = c.Get(ctx, types.NamespacedName{
+		Namespace: desiredObject.GetNamespace(),
+		Name:      desiredObject.GetName(),
+	}, obj)
+	obj.GetObjectKind().SetGroupVersionKind(gvk)
+
+	fo := client.FieldOwner("kubecarrier")
+
+	switch {
+	case errors.IsNotFound(err):
+		err := c.Create(ctx, obj, fo)
+		log.Info("created", "kind", gvk.Kind, "version", gvk.Version)
+		return obj.(metav1.Object), err
+	case err == nil:
+		// Server side apply
+		err := c.Patch(ctx, obj, client.Apply, fo)
+		log.Info("server-side-apply", "kind", gvk.Kind, "version", gvk.Version)
+		return obj.(metav1.Object), err
+	default:
+		return nil, err
+	}
 }
 
 var unstructuredReconcilers = map[schema.GroupVersionKind]unstructuredReconcileFn{
