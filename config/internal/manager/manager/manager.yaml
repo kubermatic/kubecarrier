@@ -16,7 +16,7 @@ spec:
         control-plane: controller-manager
     spec:
       containers:
-      - image: __IMAGE__
+      - image: quay.io/kubecarrier/manager:lastest
         name: manager
         env:
         - name: KUBECARRIER_NAMESPACE

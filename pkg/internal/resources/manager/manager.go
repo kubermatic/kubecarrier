@@ -21,7 +21,7 @@ import (
 
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 
-	"github.com/kubermatic/kubecarrier/pkg/internal/kustomize"
+	"github.com/kubermatic/kubecarrier/pkg/internal/resources/internal/kustomize"
 	"github.com/kubermatic/kubecarrier/pkg/internal/version"
 )
 
@@ -36,8 +36,8 @@ var k = kustomize.NewDefaultKustomize()
 func Manifests(c Config) ([]unstructured.Unstructured, error) {
 	v := version.Get()
 	kc, err := k.ForHTTPWithReplacement(vfs, map[string]string{
-		"__NAMESPACE__": c.Namespace,
-		"__IMAGE__":     "quay.io/kubecarrier/manager:" + v.Version,
+		"kubecarrier-system":                  c.Namespace,
+		"quay.io/kubecarrier/manager:lastest": "quay.io/kubecarrier/manager:" + v.Version,
 	})
 	if err != nil {
 		return nil, err
