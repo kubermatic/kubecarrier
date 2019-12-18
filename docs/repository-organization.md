@@ -4,21 +4,22 @@
 Here is an overview of the KubeCarrier repository organization:
 ```
 ├── cmd
-│   ├── {anchor, manager, operator, tender}
+│   ├── {anchor, manager, operator}
 │   │   └── main.go
 ├── config
 │   ├── dockerfiles
 │   ├── internal
-│   │   ├── {manager, tender}
+│   │   ├── {manager}
 │   └── operator
 ├── docs
 ├── hack
 ├── pkg
-│   ├── {anchor, manager, operator, tender}
+│   ├── {anchor, manager, operator}
 │   │   └── internal
 │   ├── apis
 │   │   ├── core
 │   │   ├── catalog
+│   │   ├── operator
 │   ├── internal
 └── test
 ```
@@ -38,8 +39,9 @@ Here is an overview of the KubeCarrier repository organization:
 - **apis**: KubeCarrier APIs.
     - **core**: kubecarrier.io api group
     - **catalog**: catalog.kubecarrier.io api group
+    - **operator**: operator.kubecarrier.io api group
 - **internal**: internal packages used across components.
-- **component (anchor, manager, operator, tender)**: source code for KubeCarrier components.
+- **component (anchor, manager, operator)**: source code for KubeCarrier components.
     - **internal**: internal packages for every component (controller, etc).
 
 **test** contains KubeCarrier e2e tests.
