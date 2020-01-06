@@ -66,13 +66,21 @@ func (s *TenantOperationSuite) SetupSuite() {
 			Spec: apiextensionsv1.CustomResourceDefinitionSpec{
 				Group: "eu-west-1.example.cloud",
 				Names: apiextensionsv1.CustomResourceDefinitionNames{
-					Kind: "CouchDB",
+					Plural: "couchdbs",
+					Kind:   "CouchDB",
 				},
 				Versions: []apiextensionsv1.CustomResourceDefinitionVersion{
 					{
-						Name: "v1alpha1",
+						Name:    "v1alpha1",
+						Storage: true,
+						Schema: &apiextensionsv1.CustomResourceValidation{
+							OpenAPIV3Schema: &apiextensionsv1.JSONSchemaProps{
+								Type: "object",
+							},
+						},
 					},
 				},
+				Scope: apiextensionsv1.ClusterScoped,
 			},
 		}
 
@@ -89,13 +97,21 @@ func (s *TenantOperationSuite) SetupSuite() {
 			Spec: apiextensionsv1.CustomResourceDefinitionSpec{
 				Group: "us-east-1.example.cloud",
 				Names: apiextensionsv1.CustomResourceDefinitionNames{
-					Kind: "CouchDB",
+					Plural: "couchdbs",
+					Kind:   "CouchDB",
 				},
 				Versions: []apiextensionsv1.CustomResourceDefinitionVersion{
 					{
-						Name: "v1",
+						Name:    "v1",
+						Storage: true,
+						Schema: &apiextensionsv1.CustomResourceValidation{
+							OpenAPIV3Schema: &apiextensionsv1.JSONSchemaProps{
+								Type: "object",
+							},
+						},
 					},
 				},
+				Scope: apiextensionsv1.ClusterScoped,
 			},
 		}
 
