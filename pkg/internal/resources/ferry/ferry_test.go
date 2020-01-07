@@ -30,7 +30,7 @@ import (
 
 func TestManifests(t *testing.T) {
 	const (
-		goldenFile = "ferry.golden"
+		goldenFile = "ferry.golden.yaml"
 	)
 	var c = Config{
 		ProviderNamespace:    "provider-1000",
