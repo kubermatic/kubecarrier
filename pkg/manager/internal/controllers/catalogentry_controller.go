@@ -263,7 +263,8 @@ func getCRDInformation(crd apiextensionsv1.CustomResourceDefinition) (catalogv1a
 
 	for _, ver := range crd.Spec.Versions {
 		crdInfo.Versions = append(crdInfo.Versions, catalogv1alpha1.CRDVersion{
-			Name: ver.Name,
+			Name:   ver.Name,
+			Schema: ver.Schema,
 		})
 	}
 

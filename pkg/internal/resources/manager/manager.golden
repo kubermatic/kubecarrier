@@ -471,7 +471,13 @@
                           description: CRDVersion holds CRD version specific details.
                           properties:
                             name:
+                              description: 'Name of this version, for example: v1,
+                                v1alpha1, v1beta1'
                               type: string
+                            schema:
+                              description: Schema of this CRD version.
+                              type: object
+                              x-kubernetes-preserve-unknown-fields: true
                           required:
                           - name
                           type: object
