@@ -76,7 +76,7 @@ func Manifests(c Config) ([]unstructured.Unstructured, error) {
 		}},
 		Resources: []string{"../default"},
 	}); err != nil {
-		return nil, fmt.Errorf("cannot mkdir: %w", err)
+		return nil, fmt.Errorf("cannot MkLayer: %w", err)
 	}
 
 	// execute kustomize
