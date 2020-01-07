@@ -97,7 +97,32 @@ func TestCatalogEntryReconciler(t *testing.T) {
 		},
 	}
 
-	client := fakeclient.NewFakeClientWithScheme(testScheme, catalogEntry, crd1, crd2)
+	// This CRD is used to test that one crd can only be referenced by one CatalogEntry.
+	crd3 := &apiextensionsv1.CustomResourceDefinition{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "test-crd-3.test-crd-group-3.test",
+			Annotations: map[string]string{
+				"kubecarrier.io/service-cluster": "test-service-cluster-3",
+				catalogEntryReferenceAnnotation:  "test-catalogentry",
+			},
+			Labels: map[string]string{
+				"kubecarrier.io/provider": "example.provider",
+			},
+		},
+		Spec: apiextensionsv1.CustomResourceDefinitionSpec{
+			Group: "test-crd-group-3",
+			Names: apiextensionsv1.CustomResourceDefinitionNames{
+				Kind: "TestCRD3",
+			},
+			Versions: []apiextensionsv1.CustomResourceDefinitionVersion{
+				{
+					Name: "v1",
+				},
+			},
+		},
+	}
+
+	client := fakeclient.NewFakeClientWithScheme(testScheme, catalogEntry, crd1, crd2, crd3)
 	log := testutil.NewLogger(t)
 	r := &CatalogEntryReconciler{
 		Client: client,

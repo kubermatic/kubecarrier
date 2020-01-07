@@ -56,23 +56,23 @@ type CatalogEntryReconciler struct {
 // +kubebuilder:rbac:groups=apiextensions.k8s.io,resources=customresourcedefinitions,verbs=get;list;watch;update
 
 // Reconcile function reconciles the CatalogEntry object which specified by the request. Currently, it does the following:
-// 1. Fetch the CatalogEntry object.
-// 2. Handle the deletion of the CatalogEntry object (Remove the annotations from the CRDs, and remove the finalizer).
-// 3. Manipulate/Update the CRDInformation in the CatalogEntry status.
-// 4. Update the status of the CatalogEntry object.
+// - Fetch the CatalogEntry object.
+// - Handle the deletion of the CatalogEntry object (Remove the annotations from the CRDs, and remove the finalizer).
+// - Manipulate/Update the CRDInformation in the CatalogEntry status.
+// - Update the status of the CatalogEntry object.
 func (r *CatalogEntryReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	ctx := context.Background()
 	log := r.Log.WithValues("catalogEntry", req.NamespacedName)
 	namespacedName := req.NamespacedName.String()
 
-	// 1. Fetch the CatalogEntry object.
+	// Fetch the CatalogEntry object.
 	catalogEntry := &catalogv1alpha1.CatalogEntry{}
 	if err := r.Get(ctx, req.NamespacedName, catalogEntry); err != nil {
 		// If the CatalogEntry object is already gone, we just ignore the NotFound error.
 		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
 
-	// 2. Handle the deletion of the CatalogEntry object.
+	// Handle the deletion of the CatalogEntry object.
 	if !catalogEntry.DeletionTimestamp.IsZero() {
 		if err := r.handleDeletion(ctx, log, catalogEntry, namespacedName); err != nil {
 			return ctrl.Result{}, fmt.Errorf("handling deletion: %w", err)
@@ -88,7 +88,7 @@ func (r *CatalogEntryReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error
 		}
 	}
 
-	// 3.Manipulate the CRD information to CatalogEntry status.
+	// Manipulate the CRD information to CatalogEntry status, and update the status of the CatalogEntry.
 	if err := r.manipulateCRDInfo(ctx, log, catalogEntry, namespacedName); err != nil {
 		return ctrl.Result{}, fmt.Errorf("reconciling CRDInfo: %w", err)
 	}
