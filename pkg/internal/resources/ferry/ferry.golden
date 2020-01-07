@@ -86,13 +86,11 @@
           - --provider-namespace=$(KUBERNETES_NAMESPACE)
           env:
           - name: SERVICE_CLUSTER
-            value: __SERVICE_CLUSTER_NAME__
+            value: hans
           - name: KUBERNETES_NAMESPACE
             valueFrom:
               fieldRef:
                 fieldPath: metadata.namespace
-          - name: SERVICE_CLUSTER
-            value: hans
           image: quay.io/kubecarrier/ferry:was not build properly
           name: manager
           resources:

@@ -23,8 +23,9 @@ spec:
         - "--provider-namespace=$(KUBERNETES_NAMESPACE)"
         name: manager
         env:
-          - name: SERVICE_CLUSTER
-            value: "__SERVICE_CLUSTER_NAME__"
+          # Inserted during manifest generation in resouce
+          #- name: SERVICE_CLUSTER
+          #  value: "__SERVICE_CLUSTER_NAME__"
           - name: KUBERNETES_NAMESPACE
             valueFrom:
               fieldRef:
@@ -44,6 +45,7 @@ spec:
         - name: kubeconfig
           secret:
             optional: false
+            # Inserted during manifest generation in resouce
             secretName: "__KUBECONFIG_SECRET_NAME__"
             items:
               - key: "kubeconfig"

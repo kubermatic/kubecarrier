@@ -69,7 +69,7 @@ func Manifests(c Config) ([]unstructured.Unstructured, error) {
 			},
 			Patch: strings.TrimSpace(fmt.Sprintf(`
 			 [
-{ "op": "add", "path": "/spec/template/spec/containers/0/env/-", "value": {"name": "SERVICE_CLUSTER", "value": "%s"}},
+{ "op": "add", "path": "/spec/template/spec/containers/0/env/0", "value": {"name": "SERVICE_CLUSTER", "value": "%s"}},
 { "op": "add", "path": "/spec/template/spec/volumes/0/secret/secretName", "value": "%s"}
 ]
 `, c.Name, c.KubeconfigSecretName)),
