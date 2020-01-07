@@ -117,6 +117,7 @@ func (k *Kustomize) ForHTTP(httpFS http.FileSystem) KustomizeContext {
 
 		return nil
 	}); err != nil {
+		// We're handling in memory data systems, this should NEVER happen
 		panic(err)
 	}
 
