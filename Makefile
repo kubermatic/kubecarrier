@@ -58,6 +58,8 @@ clean: e2e-test-clean
 # Generate code
 generate:
 	@hack/codegen.sh
+	# regenerate golden files to update tests
+	FIX_GOLDEN=1 go test ./pkg/internal/resources/...
 
 # Run go fmt against code
 fmt:
