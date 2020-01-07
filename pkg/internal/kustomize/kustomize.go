@@ -17,12 +17,10 @@ limitations under the License.
 package kustomize
 
 import (
-	"bytes"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"os"
-	"strings"
 
 	statikfs "github.com/rakyll/statik/fs"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -36,6 +34,8 @@ import (
 	"sigs.k8s.io/kustomize/v3/pkg/resmap"
 	"sigs.k8s.io/kustomize/v3/pkg/resource"
 	"sigs.k8s.io/kustomize/v3/pkg/target"
+	"sigs.k8s.io/kustomize/v3/pkg/types"
+	"sigs.k8s.io/yaml"
 )
 
 // Kustomize holds factories and config options.
@@ -71,6 +71,7 @@ func NewDefaultKustomize() *Kustomize {
 type KustomizeContext interface {
 	ReadFile(path string) ([]byte, error)
 	WriteFile(path string, content []byte) error
+	MkLayer(name string, kustomization types.Kustomization) error
 	Build(path string) ([]unstructured.Unstructured, error)
 }
 
@@ -84,26 +85,6 @@ func (k *Kustomize) For(fs fs.FileSystem) KustomizeContext {
 
 // ForHTTP returns a new KustomizeContext using the given http.FileSystem.
 func (k *Kustomize) ForHTTP(httpFS http.FileSystem) KustomizeContext {
-	kustomizeContext, err := k.ForHTTPWithReplacement(httpFS, nil)
-	if err != nil {
-		// as we are working on two in-memory FS, this should never happen
-		panic(err)
-	}
-	return kustomizeContext
-}
-
-// ForHTTPWithReplacement returns a new KustomizeContext using the given http.Filesystem
-//
-// Each file in the httpFS is first run through search and replace phase where each key defined in the
-// replacementMap is replaced by its value.
-//
-// Providing unused keys is considered an error
-func (k *Kustomize) ForHTTPWithReplacement(httpFS http.FileSystem, replacementMap map[string]string) (KustomizeContext, error) {
-	usedReplacements := make(map[string]struct{}, len(replacementMap))
-	for k := range replacementMap {
-		usedReplacements[k] = struct{}{}
-	}
-
 	kustomizeFs := fs.MakeFsInMemory()
 	if err := statikfs.Walk(httpFS, "/", func(path string, info os.FileInfo, err error) error {
 		if err != nil {
@@ -118,33 +99,17 @@ func (k *Kustomize) ForHTTPWithReplacement(httpFS http.FileSystem, replacementMa
 		if err != nil {
 			return err
 		}
-		data, err := ioutil.ReadAll(Fin)
-		if err != nil {
-			return err
-		}
-		if err := Fin.Close(); err != nil {
-			return err
-		}
-
-		// Perform sed like search & replace
-		// Performance wise this should be good enough and there's no
-		// need to roll something heavier like Aho-Corasick or similar
-		for k := range usedReplacements {
-			if bytes.Contains(data, []byte(k)) {
-				delete(usedReplacements, k)
-			}
-		}
-		for k, v := range replacementMap {
-			data = bytes.ReplaceAll(data, []byte(k), []byte(v))
-		}
-
 		// Write modified data. It should not error since it's in memory FS
 		Fout, err := kustomizeFs.Create(path)
 		if err != nil {
 			return err
 		}
-		if n, err := Fout.Write(data); n != len(data) || err != nil {
-			return fmt.Errorf("cannot write whole file: %w", err)
+		if _, err := io.Copy(Fout, Fin); err != nil {
+			return fmt.Errorf("cannot copy data: %w", err)
+		}
+
+		if err := Fin.Close(); err != nil {
+			return err
 		}
 		if err := Fout.Close(); err != nil {
 			return err
@@ -152,18 +117,14 @@ func (k *Kustomize) ForHTTPWithReplacement(httpFS http.FileSystem, replacementMa
 
 		return nil
 	}); err != nil {
-		return nil, fmt.Errorf("fs creation: %w", err)
+		// We're handling in memory data systems, this should NEVER happen
+		panic(err)
 	}
 
-	if len(usedReplacements) > 0 {
-		unusedReplacements := make([]string, 0, len(usedReplacements))
-		for k := range usedReplacements {
-			unusedReplacements = append(unusedReplacements, k)
-		}
-		return nil, fmt.Errorf("some replacements were unused: %s", strings.Join(unusedReplacements, ","))
+	return &kustomizeContext{
+		Kustomize: k,
+		fs:        kustomizeFs,
 	}
-
-	return k.For(kustomizeFs), nil
 }
 
 // kustomizeContext combines a Kustomize instance with a FileSystem to operate on.
@@ -177,6 +138,23 @@ var _ KustomizeContext = (*kustomizeContext)(nil)
 // ReadFile reads the file's content from the underlying FS.
 func (k *kustomizeContext) ReadFile(path string) ([]byte, error) {
 	return k.fs.ReadFile(path)
+}
+
+// MkLayer makes directory in the underlying FS, and initialize its kustomization.yaml
+func (k *kustomizeContext) MkLayer(name string, kustomization types.Kustomization) error {
+	if err := k.fs.Mkdir(name); err != nil {
+		return fmt.Errorf("cannot create dir: %w", err)
+	}
+
+	kustomizationBytes, err := yaml.Marshal(kustomization)
+	if err != nil {
+		return fmt.Errorf("cannot yaml marshal: %w", err)
+	}
+
+	if err := k.WriteFile("/"+name+"/kustomization.yaml", kustomizationBytes); err != nil {
+		return fmt.Errorf("cannot write marshal: %w", err)
+	}
+	return nil
 }
 
 // WriteFile writes the given content to the underlying FS.
