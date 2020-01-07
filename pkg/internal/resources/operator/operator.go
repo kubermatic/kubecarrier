@@ -20,8 +20,10 @@ import (
 	"fmt"
 
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"sigs.k8s.io/kustomize/v3/pkg/image"
+	"sigs.k8s.io/kustomize/v3/pkg/types"
 
-	"github.com/kubermatic/kubecarrier/pkg/internal/resources/internal/kustomize"
+	"github.com/kubermatic/kubecarrier/pkg/internal/kustomize"
 	"github.com/kubermatic/kubecarrier/pkg/internal/version"
 )
 
@@ -37,16 +39,22 @@ var k = kustomize.NewDefaultKustomize()
 // See https://github.com/kubermatic/kubecarrier/issues/95 for discussion
 func Manifests(c Config) ([]unstructured.Unstructured, error) {
 	v := version.Get()
-	kc, err := k.ForHTTPWithReplacement(vfs, map[string]string{
-		"kubecarrier-system":                   c.Namespace,
-		"quay.io/kubecarrier/operator:lastest": "quay.io/kubecarrier/operator:" + v.Version,
-	})
-	if err != nil {
-		return nil, err
+	kc := k.ForHTTP(vfs)
+	if err := kc.MkLayer("man", types.Kustomization{
+		Namespace: c.Namespace,
+		Images: []image.Image{
+			{
+				Name:   "quay.io/kubecarrier/operator",
+				NewTag: v.Version,
+			},
+		},
+		Resources: []string{"../default"},
+	}); err != nil {
+		return nil, fmt.Errorf("cannot mkdir: %w", err)
 	}
 
 	// execute kustomize
-	objects, err := kc.Build("/default")
+	objects, err := kc.Build("/man")
 	if err != nil {
 		return nil, fmt.Errorf("running kustomize build: %w", err)
 	}
