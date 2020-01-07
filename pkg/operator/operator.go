@@ -112,7 +112,7 @@ func run(flags *flags, log logr.Logger) error {
 	if err = (&controllers.ServiceClusterRegistrationReconciler{
 		Client: mgr.GetClient(),
 		Scheme: mgr.GetScheme(),
-		Log:    log.WithName("controllers").WithName("tender"),
+		Log:    log.WithName("controllers").WithName("ferry"),
 	}).SetupWithManager(mgr); err != nil {
 		return fmt.Errorf("creating ServiceClusterRegistration controller: %w", err)
 	}

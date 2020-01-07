@@ -34,7 +34,7 @@ import (
 	operatorv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/operator/v1alpha1"
 )
 
-func (s *AdminSuite) TestTenderCreationAndDeletion() {
+func (s *AdminSuite) TestFerryCreationAndDeletion() {
 	t := s.T()
 	t.Parallel()
 	ctx := context.Background()
@@ -54,7 +54,7 @@ func (s *AdminSuite) TestTenderCreationAndDeletion() {
 			"kubeconfig": serviceKubeconfig,
 		},
 	}
-	tender := &operatorv1alpha1.ServiceClusterRegistration{
+	scr := &operatorv1alpha1.ServiceClusterRegistration{
 		ObjectMeta: v1.ObjectMeta{
 			Name:      "eu-west-1",
 			Namespace: namespace,
@@ -66,31 +66,31 @@ func (s *AdminSuite) TestTenderCreationAndDeletion() {
 		},
 	}
 	require.NoError(t, client.IgnoreNotFound(s.masterClient.Delete(ctx, sec.DeepCopy())))
-	require.NoError(t, client.IgnoreNotFound(s.masterClient.Delete(ctx, tender.DeepCopy())))
+	require.NoError(t, client.IgnoreNotFound(s.masterClient.Delete(ctx, scr.DeepCopy())))
 
 	require.NoError(t, s.masterClient.Create(ctx, sec))
-	require.NoError(t, s.masterClient.Create(ctx, tender))
+	require.NoError(t, s.masterClient.Create(ctx, scr))
 
 	assert.NoError(t, wait.Poll(time.Second, 30*time.Second, func() (done bool, err error) {
 		if err := s.masterClient.Get(ctx, types.NamespacedName{
-			Name:      tender.Name,
-			Namespace: tender.Namespace,
-		}, tender); err != nil {
+			Name:      scr.Name,
+			Namespace: scr.Namespace,
+		}, scr); err != nil {
 			return false, fmt.Errorf("get: %w", err)
 		}
-		cond, ok := tender.Status.GetCondition(operatorv1alpha1.ServiceClusterRegistrationReady)
+		cond, ok := scr.Status.GetCondition(operatorv1alpha1.ServiceClusterRegistrationReady)
 		if !ok {
 			return false, nil
 		}
 		return cond.Status == operatorv1alpha1.ConditionTrue, nil
-	}), "tender object not ready within time limit")
+	}), "scr object not ready within time limit")
 
-	require.NoError(t, s.masterClient.Delete(ctx, tender))
+	require.NoError(t, s.masterClient.Delete(ctx, scr))
 	assert.NoError(t, wait.Poll(time.Second, 30*time.Second, func() (done bool, err error) {
 		err = s.masterClient.Get(ctx, types.NamespacedName{
-			Name:      tender.Name,
-			Namespace: tender.Namespace,
-		}, tender)
+			Name:      scr.Name,
+			Namespace: scr.Namespace,
+		}, scr)
 		switch {
 		case err == nil:
 			return false, nil
@@ -99,6 +99,6 @@ func (s *AdminSuite) TestTenderCreationAndDeletion() {
 		default:
 			return false, err
 		}
-	}), "tender object not cleared within time limit")
+	}), "scr object not cleared within time limit")
 	assert.NoError(t, s.masterClient.Delete(ctx, sec))
 }

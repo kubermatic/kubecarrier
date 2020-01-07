@@ -34,7 +34,7 @@ import (
 
 	operatorv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/operator/v1alpha1"
 	"github.com/kubermatic/kubecarrier/pkg/internal/reconcile"
-	"github.com/kubermatic/kubecarrier/pkg/internal/resources/tender"
+	"github.com/kubermatic/kubecarrier/pkg/internal/resources/ferry"
 	"github.com/kubermatic/kubecarrier/pkg/internal/util"
 )
 
@@ -91,7 +91,7 @@ func (r *ServiceClusterRegistrationReconciler) Reconcile(req ctrl.Request) (ctrl
 	var deploymentReady bool
 
 	// Build the manifests of the ServiceClusterRegistration controller manager.
-	objects, err := tender.Manifests(serviceclusterregistrationConfigurationForObject(serviceclusterregistration))
+	objects, err := ferry.Manifests(serviceclusterregistrationConfigurationForObject(serviceclusterregistration))
 	if err != nil {
 		return ctrl.Result{}, fmt.Errorf("serviceclusterregistration manifests: %w", err)
 	}
@@ -147,7 +147,7 @@ func (r *ServiceClusterRegistrationReconciler) handleDeletion(ctx context.Contex
 
 	// 2. Delete Objects.
 	allCleared := true
-	objects, err := tender.Manifests(serviceclusterregistrationConfigurationForObject(serviceclusterregistration))
+	objects, err := ferry.Manifests(serviceclusterregistrationConfigurationForObject(serviceclusterregistration))
 	if err != nil {
 		return fmt.Errorf("deletion: manifests: %w", err)
 	}
@@ -192,8 +192,8 @@ func (r *ServiceClusterRegistrationReconciler) SetupWithManager(mgr ctrl.Manager
 	return cm.Complete(r)
 }
 
-func serviceclusterregistrationConfigurationForObject(serviceclusterregistration *operatorv1alpha1.ServiceClusterRegistration) tender.Config {
-	return tender.Config{
+func serviceclusterregistrationConfigurationForObject(serviceclusterregistration *operatorv1alpha1.ServiceClusterRegistration) ferry.Config {
+	return ferry.Config{
 		ProviderNamespace:    serviceclusterregistration.Namespace,
 		Name:                 serviceclusterregistration.Name,
 		KubeconfigSecretName: serviceclusterregistration.Spec.KubeconfigSecret.Name,

@@ -22,11 +22,11 @@ import (
 
 	ctrl "sigs.k8s.io/controller-runtime"
 
-	"github.com/kubermatic/kubecarrier/pkg/tender"
+	"github.com/kubermatic/kubecarrier/pkg/ferry"
 )
 
 func main() {
-	if err := tender.NewTenderCommand(ctrl.Log.WithName("tender")).Execute(); err != nil {
+	if err := ferry.NewFerryCommand(ctrl.Log.WithName("ferry")).Execute(); err != nil {
 		fmt.Println(err)
 		os.Exit(1)
 	}

@@ -134,16 +134,16 @@
         openAPIV3Schema:
           description: "ServiceClusterRegistration represents single kubernetes cluster
             belonging to the provider \n ServiceClusterRegistration lives in the provider
-            namespace. For each tender the kubecarrier operator spins up the tender
+            namespace. For each ferry the kubecarrier operator spins up the ferry
             controller deployment, necessary roles, service accounts, and role bindings
-            \n The reason for tender controller deployment are multiples: * security
-            --> kubecarrier operator has greater privileges then tender controller
-            * resource isolation --> each tender controller pod operates only on a
+            \n The reason for ferry controller deployment are multiples: * security
+            --> kubecarrier operator has greater privileges then ferry controller
+            * resource isolation --> each ferry controller pod operates only on a
             single service cluster, \t\tthus resource allocation and monitoring is
-            separate per tenders. This allows finer grade \t\tresource tuning and
-            monitoring * flexibility --> If needed different tenders could have different
-            deployments depending on \t\ttheir specific need (e.g. kubecarrier image
-            version for gradual rolling upgrade, different resource allocation, etc),"
+            separate per ferrys. This allows finer grade \t\tresource tuning and monitoring
+            * flexibility --> If needed different ferrys could have different deployments
+            depending on \t\ttheir specific need (e.g. kubecarrier image version for
+            gradual rolling upgrade, different resource allocation, etc),"
           properties:
             apiVersion:
               description: 'APIVersion defines the versioned schema of this representation

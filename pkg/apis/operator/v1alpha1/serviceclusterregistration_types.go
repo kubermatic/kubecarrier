@@ -137,15 +137,15 @@ func (s *ServiceClusterRegistrationStatus) GetCondition(t ServiceClusterRegistra
 
 // ServiceClusterRegistration represents single kubernetes cluster belonging to the provider
 //
-// ServiceClusterRegistration lives in the provider namespace. For each tender the kubecarrier operator spins up
-// the tender controller deployment, necessary roles, service accounts, and role bindings
+// ServiceClusterRegistration lives in the provider namespace. For each ferry the kubecarrier operator spins up
+// the ferry controller deployment, necessary roles, service accounts, and role bindings
 //
-// The reason for tender controller deployment are multiples:
-// * security --> kubecarrier operator has greater privileges then tender controller
-// * resource isolation --> each tender controller pod operates only on a single service cluster,
-// 		thus resource allocation and monitoring is separate per tenders. This allows finer grade
+// The reason for ferry controller deployment are multiples:
+// * security --> kubecarrier operator has greater privileges then ferry controller
+// * resource isolation --> each ferry controller pod operates only on a single service cluster,
+// 		thus resource allocation and monitoring is separate per ferrys. This allows finer grade
 // 		resource tuning and monitoring
-// * flexibility --> If needed different tenders could have different deployments depending on
+// * flexibility --> If needed different ferrys could have different deployments depending on
 // 		their specific need (e.g. kubecarrier image version for gradual rolling upgrade, different resource allocation, etc),
 // +kubebuilder:object:root=true
 // +kubebuilder:subresource:status

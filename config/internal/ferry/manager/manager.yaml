@@ -16,7 +16,7 @@ spec:
         control-plane: manager
     spec:
       containers:
-      - image: quay.io/kubecarrier/tender:lastest
+      - image: quay.io/kubecarrier/ferry:lastest
         args:
         - "--service-cluster-name=$(SERVICE_CLUSTER)"
         - "--service-cluster-kubeconfig=/kubeconfig/kubeconfig"

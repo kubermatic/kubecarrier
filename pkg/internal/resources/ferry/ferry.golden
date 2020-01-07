@@ -1,18 +1,18 @@
 - apiVersion: rbac.authorization.k8s.io/v1
   kind: Role
   metadata:
-    name: tender-hanskubecarrier-manager-manager-role
+    name: ferry-hanskubecarrier-manager-manager-role
     namespace: provider-1000
   rules: []
 - apiVersion: rbac.authorization.k8s.io/v1
   kind: RoleBinding
   metadata:
-    name: tender-hanskubecarrier-manager-manager-rolebinding
+    name: ferry-hanskubecarrier-manager-manager-rolebinding
     namespace: provider-1000
   roleRef:
     apiGroup: rbac.authorization.k8s.io
     kind: Role
-    name: tender-hanskubecarrier-manager-manager-role
+    name: ferry-hanskubecarrier-manager-manager-role
   subjects:
   - kind: ServiceAccount
     name: default
@@ -20,7 +20,7 @@
 - apiVersion: rbac.authorization.k8s.io/v1
   kind: Role
   metadata:
-    name: tender-hanskubecarrier-manager-leader-election-role
+    name: ferry-hanskubecarrier-manager-leader-election-role
     namespace: provider-1000
   rules:
   - apiGroups:
@@ -52,12 +52,12 @@
 - apiVersion: rbac.authorization.k8s.io/v1
   kind: RoleBinding
   metadata:
-    name: tender-hanskubecarrier-manager-leader-election-rolebinding
+    name: ferry-hanskubecarrier-manager-leader-election-rolebinding
     namespace: provider-1000
   roleRef:
     apiGroup: rbac.authorization.k8s.io
     kind: Role
-    name: tender-hanskubecarrier-manager-leader-election-role
+    name: ferry-hanskubecarrier-manager-leader-election-role
   subjects:
   - kind: ServiceAccount
     name: default
@@ -67,7 +67,7 @@
   metadata:
     labels:
       control-plane: manager
-    name: tender-hanskubecarrier-manager-manager
+    name: ferry-hanskubecarrier-manager-manager
     namespace: provider-1000
   spec:
     replicas: 1
@@ -85,13 +85,15 @@
           - --service-cluster-kubeconfig=/kubeconfig/kubeconfig
           - --provider-namespace=$(KUBERNETES_NAMESPACE)
           env:
+          - name: SERVICE_CLUSTER
+            value: __SERVICE_CLUSTER_NAME__
           - name: KUBERNETES_NAMESPACE
             valueFrom:
               fieldRef:
                 fieldPath: metadata.namespace
           - name: SERVICE_CLUSTER
             value: hans
-          image: quay.io/kubecarrier/tender:was not build properly
+          image: quay.io/kubecarrier/ferry:was not build properly
           name: manager
           resources:
             limits:

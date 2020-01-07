@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package tender
+package ferry
 
 import (
 	"context"
@@ -62,11 +62,11 @@ func init() {
 	_ = clientgoscheme.AddToScheme(masterScheme)
 }
 
-func NewTenderCommand(log logr.Logger) *cobra.Command {
+func NewFerryCommand(log logr.Logger) *cobra.Command {
 	flags := &flags{}
 	cmd := &cobra.Command{
 		Args:  cobra.NoArgs,
-		Use:   "tender",
+		Use:   "ferry",
 		Short: "ServiceClusterRegistration controller manager",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return runE(flags, log)
@@ -76,7 +76,7 @@ func NewTenderCommand(log logr.Logger) *cobra.Command {
 	cmd.Flags().StringVar(&flags.providerNamespace, "provider-namespace", "", "Name of the providers namespace in the master cluster.")
 	cmd.Flags().BoolVar(&flags.enableLeaderElection, "enable-leader-election", true,
 		"Enable leader election for controller manager. Enabling this will ensure there is only one active controller manager.")
-	cmd.Flags().DurationVar(&flags.serviceClusterStatusUpdatePeriod, "service-cluster-status-update-period", 10*time.Second, "Specifies how often the tender posts service cluster status to master. Note: must work with service-cluster-monitor-grace-period in kubecarrier-controller-manager.")
+	cmd.Flags().DurationVar(&flags.serviceClusterStatusUpdatePeriod, "service-cluster-status-update-period", 10*time.Second, "Specifies how often the ferry posts service cluster status to master. Note: must work with service-cluster-monitor-grace-period in kubecarrier-controller-manager.")
 
 	// master
 	cmd.Flags().StringVar(&flags.masterMetricsAddr, "master-metrics-addr", ":8080", "The address the metric endpoint binds to.")
@@ -84,7 +84,7 @@ func NewTenderCommand(log logr.Logger) *cobra.Command {
 	// service cluster client settings
 	cmd.Flags().StringVar(&flags.serviceMetricsAddr, "service-cluster-metrics-addr", ":8081", "The address the metric endpoint binds to.")
 	cmd.Flags().StringVar(&flags.serviceKubeConfig, "service-cluster-kubeconfig", "", "Path to the Service Cluster kubeconfig.")
-	cmd.Flags().StringVar(&flags.serviceClusterName, "service-cluster-name", "", "Name of the Service Cluster the tender is operating on.")
+	cmd.Flags().StringVar(&flags.serviceClusterName, "service-cluster-name", "", "Name of the Service Cluster the ferry is operating on.")
 	for _, flagName := range []string{
 		"provider-namespace",
 		"service-cluster-name",
@@ -128,7 +128,7 @@ func runE(flags *flags, log logr.Logger) error {
 		MetricsBindAddress:      flags.masterMetricsAddr,
 		LeaderElection:          flags.enableLeaderElection,
 		LeaderElectionNamespace: flags.providerNamespace,
-		LeaderElectionID:        "tender-" + flags.serviceClusterName,
+		LeaderElectionID:        "ferry-" + flags.serviceClusterName,
 		Namespace:               flags.providerNamespace,
 	})
 	if err != nil {

@@ -16,7 +16,7 @@
 # Refer to https://github.com/GoogleContainerTools/distroless for more details
 FROM gcr.io/distroless/static:nonroot
 WORKDIR /
-COPY tender .
+COPY ferry .
 USER nonroot:nonroot
 
-ENTRYPOINT ["/tender"]
+ENTRYPOINT ["/ferry"]

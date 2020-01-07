@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package tender
+package ferry
 
 import (
 	"fmt"
@@ -29,17 +29,12 @@ import (
 	"github.com/kubermatic/kubecarrier/pkg/internal/version"
 )
 
-const (
-	ServiceClusterName   = "__SERVICE_CLUSTER_NAME__"
-	KubeconifgSecretName = "__KUBECONFIG_SECRET_NAME__"
-)
-
-// Config holds the config information to generate the kubecarrier tender setup.
+// Config holds the config information to generate the kubecarrier ferry setup.
 type Config struct {
-	// Namespace the tender operator should be deployed into.
+	// Namespace the ferry operator should be deployed into.
 	ProviderNamespace string
 
-	// Name of this tender
+	// Name of this ferry
 	Name string
 
 	// KubeconfigSecretName of the secret holding the service cluster kubeconfig under the "kubeconfig" key
@@ -55,10 +50,10 @@ func Manifests(c Config) ([]unstructured.Unstructured, error) {
 	kc := k.ForHTTP(vfs)
 	if err := kc.MkLayer("man", types.Kustomization{
 		Namespace:  c.ProviderNamespace,
-		NamePrefix: fmt.Sprintf("tender-%s", c.Name),
+		NamePrefix: fmt.Sprintf("ferry-%s", c.Name),
 		Images: []image.Image{
 			{
-				Name:   "quay.io/kubecarrier/tender",
+				Name:   "quay.io/kubecarrier/ferry",
 				NewTag: v.Version,
 			},
 		},
