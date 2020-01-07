@@ -19,13 +19,11 @@ package main
 import (
 	"os"
 
-	ctrl "sigs.k8s.io/controller-runtime"
-
 	"github.com/kubermatic/kubecarrier/pkg/operator"
 )
 
 func main() {
-	cmd := operator.NewOperatorCommand(ctrl.Log.WithName("operator"))
+	cmd := operator.NewOperatorCommand()
 
 	if err := cmd.Execute(); err != nil {
 		os.Exit(1)

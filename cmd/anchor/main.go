@@ -20,13 +20,11 @@ import (
 	"fmt"
 	"os"
 
-	ctrl "sigs.k8s.io/controller-runtime"
-
 	"github.com/kubermatic/kubecarrier/pkg/anchor"
 )
 
 func main() {
-	if err := anchor.NewAnchor(ctrl.Log.WithName("anchor")).Execute(); err != nil {
+	if err := anchor.NewAnchor().Execute(); err != nil {
 		fmt.Println(err)
 		os.Exit(1)
 	}

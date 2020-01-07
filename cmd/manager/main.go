@@ -19,13 +19,11 @@ package main
 import (
 	"os"
 
-	ctrl "sigs.k8s.io/controller-runtime"
-
 	"github.com/kubermatic/kubecarrier/pkg/manager"
 )
 
 func main() {
-	command := manager.NewManagerCommand(ctrl.Log.WithName("manager"))
+	command := manager.NewManagerCommand()
 
 	if err := command.Execute(); err != nil {
 		os.Exit(1)
