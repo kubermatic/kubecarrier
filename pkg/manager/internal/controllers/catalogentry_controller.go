@@ -40,15 +40,16 @@ const (
 	// This annotation is used to make sure a CRD can only be referenced by a single CatalogEntry object.
 	catalogEntryReferenceAnnotation = "kubecarrier.io/catalog-entry"
 	catalogEntryControllerFinalizer = "catalogentry.kubecarrier.io/controller"
-
-	serviceClusterAnnotation = "kubecarrier.io/service-cluster"
+	providerLabel                   = "kubecarrier.io/provider"
+	serviceClusterAnnotation        = "kubecarrier.io/service-cluster"
 )
 
 // CatalogEntryReconciler reconciles a CatalogEntry object
 type CatalogEntryReconciler struct {
 	client.Client
-	Log    logr.Logger
-	Scheme *runtime.Scheme
+	Log                        logr.Logger
+	Scheme                     *runtime.Scheme
+	KubeCarrierSystemNamespace string
 }
 
 // +kubebuilder:rbac:groups=catalog.kubecarrier.io,resources=catalogentries,verbs=get;list;watch;update
@@ -86,6 +87,20 @@ func (r *CatalogEntryReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error
 		if err := r.Update(ctx, catalogEntry); err != nil {
 			return ctrl.Result{}, fmt.Errorf("updating finalizers: %w", err)
 		}
+	}
+
+	provider, err := getProviderByProviderNamespace(ctx, r.Client, r.KubeCarrierSystemNamespace, catalogEntry.Namespace)
+	if err != nil {
+		return ctrl.Result{}, fmt.Errorf("getting the Provider by Provider Namespace: %w", err)
+	}
+
+	catalogEntry.Spec.CRDSelector = &metav1.LabelSelector{
+		MatchLabels: map[string]string{
+			providerLabel: provider.Name,
+		},
+	}
+	if err := r.Update(ctx, catalogEntry); err != nil {
+		return ctrl.Result{}, fmt.Errorf("updating the provider matchLabel: %w", err)
 	}
 
 	// Manipulate the CRD information to CatalogEntry status, and update the status of the CatalogEntry.
@@ -279,4 +294,27 @@ func getCRDInformation(crd apiextensionsv1.CustomResourceDefinition) (catalogv1a
 	}
 
 	return crdInfo, nil
+}
+
+func getProviderByProviderNamespace(ctx context.Context, c client.Client, kubecarrierNamespace, providerNamespace string) (*catalogv1alpha1.Provider, error) {
+	providerList := &catalogv1alpha1.ProviderList{}
+	if err := c.List(ctx, providerList,
+		client.InNamespace(kubecarrierNamespace),
+		client.MatchingFields{
+			catalogv1alpha1.ProviderNamespaceFieldIndex: providerNamespace,
+		},
+	); err != nil {
+		return nil, err
+	}
+	switch len(providerList.Items) {
+	case 0:
+		// not found
+		return nil, fmt.Errorf("providers.catalog.kubecarrier.io with index %q not found", catalogv1alpha1.ProviderNamespaceFieldIndex)
+	case 1:
+		// found!
+		return &providerList.Items[0], nil
+	default:
+		// found too many
+		return nil, fmt.Errorf("multiple providers.catalog.kubecarrier.io with index %q found", catalogv1alpha1.ProviderNamespaceFieldIndex)
+	}
 }

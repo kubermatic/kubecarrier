@@ -102,10 +102,16 @@ func run(flags *flags, log logr.Logger) error {
 		return fmt.Errorf("creating Provider controller: %w", err)
 	}
 
+	// Register a field index for Provider.Status.NamespaceName
+	if err := catalogv1alpha1.RegisterProviderNamespaceFieldIndex(mgr); err != nil {
+		return fmt.Errorf("registering ProviderNamespace field index: %w", err)
+	}
+
 	if err = (&controllers.CatalogEntryReconciler{
-		Client: mgr.GetClient(),
-		Log:    log.WithName("controllers").WithName("CatalogEntry"),
-		Scheme: mgr.GetScheme(),
+		Client:                     mgr.GetClient(),
+		Log:                        log.WithName("controllers").WithName("CatalogEntry"),
+		Scheme:                     mgr.GetScheme(),
+		KubeCarrierSystemNamespace: flags.kubeCarrierSystemNamespace,
 	}).SetupWithManager(mgr); err != nil {
 		return fmt.Errorf("creating CatalogEntry controller: %w", err)
 	}

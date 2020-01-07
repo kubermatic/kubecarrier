@@ -18,9 +18,11 @@ package tenantoperation
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/stretchr/testify/suite"
+	corev1 "k8s.io/api/core/v1"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -52,6 +54,33 @@ func (s *TenantOperationSuite) SetupSuite() {
 	s.serviceClient, err = s.ServiceClient()
 	s.Require().NoError(err, "creating service client")
 
+	if !s.Run("Provider creation", func() {
+		provider := &catalogv1alpha1.Provider{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "example-cloud",
+				Namespace: "kubecarrier-system",
+			},
+		}
+		s.Require().NoError(s.masterClient.Create(ctx, provider), "creating provider error")
+
+		// Try to get the namespace that created for this provider.
+		namespace := &corev1.Namespace{}
+		s.NoError(wait.Poll(time.Second, 10*time.Second, func() (done bool, err error) {
+			if err := s.masterClient.Get(ctx, types.NamespacedName{
+				Name: fmt.Sprintf("provider-%s", provider.Name),
+			}, namespace); err != nil {
+				if errors.IsNotFound(err) {
+					return false, nil
+				}
+				return true, err
+
+			}
+			return true, nil
+		}), "getting the namespace for the Provider error")
+	}) {
+		s.FailNow("Provider creation e2e test failed.")
+	}
+
 	if !s.Run("CRD creation", func() {
 		couchDB1 := &apiextensionsv1.CustomResourceDefinition{
 			ObjectMeta: metav1.ObjectMeta{
@@ -60,7 +89,7 @@ func (s *TenantOperationSuite) SetupSuite() {
 					"kubecarrier.io/service-cluster": "eu-west-1",
 				},
 				Labels: map[string]string{
-					"kubecarrier.io/provider": "example.cloud",
+					"kubecarrier.io/provider": "example-cloud",
 				},
 			},
 			Spec: apiextensionsv1.CustomResourceDefinitionSpec{
@@ -91,7 +120,7 @@ func (s *TenantOperationSuite) SetupSuite() {
 					"kubecarrier.io/service-cluster": "us-east-1",
 				},
 				Labels: map[string]string{
-					"kubecarrier.io/provider": "example.cloud",
+					"kubecarrier.io/provider": "example-cloud",
 				},
 			},
 			Spec: apiextensionsv1.CustomResourceDefinitionSpec{
@@ -128,17 +157,12 @@ func (s *TenantOperationSuite) TestCatalogEntryCreationAndDeletion() {
 	catalogEntry := &catalogv1alpha1.CatalogEntry{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "couchdbs",
-			Namespace: "kubecarrier-system",
+			Namespace: "provider-example-cloud",
 		},
 		Spec: catalogv1alpha1.CatalogEntrySpec{
 			Metadata: catalogv1alpha1.CatalogEntryMetadata{
 				DisplayName: "Couch DB",
 				Description: "The comfy nosql database",
-			},
-			CRDSelector: &metav1.LabelSelector{
-				MatchLabels: map[string]string{
-					"kubecarrier.io/provider": "example.cloud",
-				},
 			},
 		},
 	}
@@ -151,7 +175,7 @@ func (s *TenantOperationSuite) TestCatalogEntryCreationAndDeletion() {
 		s.NoError(wait.Poll(time.Second, 10*time.Second, func() (done bool, err error) {
 			if err := s.masterClient.Get(ctx, types.NamespacedName{
 				Name:      catalogEntry.Name,
-				Namespace: "kubecarrier-system",
+				Namespace: catalogEntry.Namespace,
 			}, catalogEntryFound); err != nil {
 				if errors.IsNotFound(err) {
 					return false, nil
@@ -193,6 +217,16 @@ func (s *TenantOperationSuite) TearDownSuite() {
 			Name: "couchdbs.us-east-1.example.cloud",
 		},
 	}
+
+	// Remove the provider for testing.
+	provider := &catalogv1alpha1.Provider{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "example-cloud",
+			Namespace: "kubecarrier-system",
+		},
+	}
+
 	s.Require().NoError(s.masterClient.Delete(ctx, couchDB1), "deleting CRD error")
 	s.Require().NoError(s.masterClient.Delete(ctx, couchDB2), "deleting CRD error")
+	s.Require().NoError(s.masterClient.Delete(ctx, provider), "deleting Provider error")
 }

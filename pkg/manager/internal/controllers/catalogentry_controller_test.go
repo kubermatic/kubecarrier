@@ -33,20 +33,22 @@ import (
 )
 
 func TestCatalogEntryReconciler(t *testing.T) {
+	provider := &catalogv1alpha1.Provider{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "example.provider",
+			Namespace: "kubecarrier-system",
+		},
+	}
+
 	catalogEntry := &catalogv1alpha1.CatalogEntry{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "test-catalogEntry",
-			Namespace: "kubecarrier-system",
+			Namespace: "test-provider-namespace",
 		},
 		Spec: catalogv1alpha1.CatalogEntrySpec{
 			Metadata: catalogv1alpha1.CatalogEntryMetadata{
 				DisplayName: "Test CatalogEntry",
 				Description: "Test CatalogEntry",
-			},
-			CRDSelector: &metav1.LabelSelector{
-				MatchLabels: map[string]string{
-					"kubecarrier.io/provider": "example.provider",
-				},
 			},
 		},
 	}
@@ -122,7 +124,7 @@ func TestCatalogEntryReconciler(t *testing.T) {
 		},
 	}
 
-	client := fakeclient.NewFakeClientWithScheme(testScheme, catalogEntry, crd1, crd2, crd3)
+	client := fakeclient.NewFakeClientWithScheme(testScheme, catalogEntry, crd1, crd2, crd3, provider)
 	log := testutil.NewLogger(t)
 	r := &CatalogEntryReconciler{
 		Client: client,
