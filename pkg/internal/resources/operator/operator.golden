@@ -1,0 +1,362 @@
+- apiVersion: apiextensions.k8s.io/v1
+  kind: CustomResourceDefinition
+  metadata:
+    annotations:
+      controller-gen.kubebuilder.io/version: v0.2.4
+    creationTimestamp: null
+    name: kubecarriers.operator.kubecarrier.io
+  spec:
+    group: operator.kubecarrier.io
+    names:
+      kind: KubeCarrier
+      listKind: KubeCarrierList
+      plural: kubecarriers
+      singular: kubecarrier
+    scope: Namespaced
+    versions:
+    - additionalPrinterColumns:
+      - jsonPath: .status.phase
+        name: Status
+        type: string
+      - jsonPath: .metadata.creationTimestamp
+        name: Age
+        type: date
+      name: v1alpha1
+      schema:
+        openAPIV3Schema:
+          description: KubeCarrier manages the deployment of the KubeCarrier controller
+            manager.
+          properties:
+            apiVersion:
+              description: 'APIVersion defines the versioned schema of this representation
+                of an object. Servers should convert recognized schemas to the latest
+                internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+              type: string
+            kind:
+              description: 'Kind is a string value representing the REST resource
+                this object represents. Servers may infer this from the endpoint the
+                client submits requests to. Cannot be updated. In CamelCase. More
+                info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+              type: string
+            metadata:
+              type: object
+            spec:
+              description: KubeCarrierSpec defines the desired state of KubeCarrier
+              type: object
+            status:
+              description: KubeCarrierStatus defines the observed state of KubeCarrier
+              properties:
+                conditions:
+                  description: Conditions represents the latest available observations
+                    of a KubeCarrier's current state.
+                  items:
+                    description: KubeCarrierCondition contains details for the current
+                      condition of this KubeCarrier.
+                    properties:
+                      lastTransitionTime:
+                        description: LastTransitionTime is the last time the condition
+                          transits from one status to another.
+                        format: date-time
+                        type: string
+                      message:
+                        description: Message is the human readable message indicating
+                          details about last transition.
+                        type: string
+                      reason:
+                        description: Reason is the (brief) reason for the condition's
+                          last transition.
+                        type: string
+                      status:
+                        description: Status is the status of the condition, one of
+                          ('True', 'False', 'Unknown').
+                        type: string
+                      type:
+                        description: Type is the type of the KubeCarrier condition,
+                          currently ('Ready').
+                        type: string
+                    required:
+                    - lastTransitionTime
+                    - message
+                    - reason
+                    - status
+                    - type
+                    type: object
+                  type: array
+                observedGeneration:
+                  description: ObservedGeneration is the most recent generation observed
+                    for this KubeCarrier by the controller.
+                  format: int64
+                  type: integer
+                phase:
+                  description: DEPRECATED. Phase represents the current lifecycle
+                    state of this object. Consider this field DEPRECATED, it will
+                    be removed as soon as there is a mechanism to map conditions to
+                    strings when printing the property. This is only for display purpose,
+                    for everything else use conditions.
+                  type: string
+              type: object
+          type: object
+      served: true
+      storage: true
+      subresources:
+        status: {}
+  status:
+    acceptedNames:
+      kind: ""
+      plural: ""
+    conditions: []
+    storedVersions: []
+- apiVersion: rbac.authorization.k8s.io/v1
+  kind: ClusterRole
+  metadata:
+    creationTimestamp: null
+    name: kubecarrier-operator-manager-role
+  rules:
+  - apiGroups:
+    - ""
+    resources:
+    - serviceaccounts
+    verbs:
+    - create
+    - delete
+    - get
+    - list
+    - patch
+    - update
+    - watch
+  - apiGroups:
+    - ""
+    resources:
+    - services
+    verbs:
+    - create
+    - delete
+    - get
+    - list
+    - patch
+    - update
+    - watch
+  - apiGroups:
+    - apiextensions.k8s.io
+    resources:
+    - customresourcedefinitions
+    verbs:
+    - create
+    - delete
+    - get
+    - list
+    - patch
+    - update
+    - watch
+  - apiGroups:
+    - apps
+    resources:
+    - deployments
+    verbs:
+    - create
+    - delete
+    - get
+    - list
+    - patch
+    - update
+    - watch
+  - apiGroups:
+    - operator.kubecarrier.io
+    resources:
+    - kubecarriers
+    verbs:
+    - create
+    - delete
+    - get
+    - list
+    - patch
+    - update
+    - watch
+  - apiGroups:
+    - operator.kubecarrier.io
+    resources:
+    - kubecarriers/status
+    verbs:
+    - get
+    - patch
+    - update
+  - apiGroups:
+    - rbac.authorization.k8s.io
+    resources:
+    - clusterrolebindings
+    verbs:
+    - create
+    - delete
+    - get
+    - list
+    - patch
+    - update
+    - watch
+  - apiGroups:
+    - rbac.authorization.k8s.io
+    resources:
+    - clusterroles
+    verbs:
+    - bind
+    - create
+    - delete
+    - escalate
+    - get
+    - list
+    - patch
+    - update
+    - watch
+  - apiGroups:
+    - rbac.authorization.k8s.io
+    resources:
+    - rolebindings
+    verbs:
+    - create
+    - delete
+    - get
+    - list
+    - patch
+    - update
+    - watch
+  - apiGroups:
+    - rbac.authorization.k8s.io
+    resources:
+    - roles
+    verbs:
+    - bind
+    - create
+    - delete
+    - escalate
+    - get
+    - list
+    - patch
+    - update
+    - watch
+- apiVersion: rbac.authorization.k8s.io/v1
+  kind: ClusterRoleBinding
+  metadata:
+    name: kubecarrier-operator-manager-rolebinding
+  roleRef:
+    apiGroup: rbac.authorization.k8s.io
+    kind: ClusterRole
+    name: kubecarrier-operator-manager-role
+  subjects:
+  - kind: ServiceAccount
+    name: default
+    namespace: test3000
+- apiVersion: rbac.authorization.k8s.io/v1
+  kind: Role
+  metadata:
+    name: kubecarrier-operator-leader-election-role
+    namespace: test3000
+  rules:
+  - apiGroups:
+    - ""
+    resources:
+    - configmaps
+    verbs:
+    - get
+    - list
+    - watch
+    - create
+    - update
+    - patch
+    - delete
+  - apiGroups:
+    - ""
+    resources:
+    - configmaps/status
+    verbs:
+    - get
+    - update
+    - patch
+  - apiGroups:
+    - ""
+    resources:
+    - events
+    verbs:
+    - create
+- apiVersion: rbac.authorization.k8s.io/v1
+  kind: RoleBinding
+  metadata:
+    name: kubecarrier-operator-leader-election-rolebinding
+    namespace: test3000
+  roleRef:
+    apiGroup: rbac.authorization.k8s.io
+    kind: Role
+    name: kubecarrier-operator-leader-election-role
+  subjects:
+  - kind: ServiceAccount
+    name: default
+    namespace: test3000
+- apiVersion: v1
+  kind: Service
+  metadata:
+    labels:
+      control-plane: operator
+    name: kubecarrier-operator-operator-metrics-service
+    namespace: test3000
+  spec:
+    ports:
+    - name: https
+      port: 8443
+      targetPort: https
+    selector:
+      control-plane: operator
+- apiVersion: rbac.authorization.k8s.io/v1
+  kind: ClusterRole
+  metadata:
+    name: kubecarrier-operator-proxy-role
+  rules:
+  - apiGroups:
+    - authentication.k8s.io
+    resources:
+    - tokenreviews
+    verbs:
+    - create
+  - apiGroups:
+    - authorization.k8s.io
+    resources:
+    - subjectaccessreviews
+    verbs:
+    - create
+- apiVersion: rbac.authorization.k8s.io/v1
+  kind: ClusterRoleBinding
+  metadata:
+    name: kubecarrier-operator-proxy-rolebinding
+  roleRef:
+    apiGroup: rbac.authorization.k8s.io
+    kind: ClusterRole
+    name: kubecarrier-operator-proxy-role
+  subjects:
+  - kind: ServiceAccount
+    name: default
+    namespace: test3000
+- apiVersion: apps/v1
+  kind: Deployment
+  metadata:
+    labels:
+      control-plane: operator
+    name: kubecarrier-operator-manager
+    namespace: test3000
+  spec:
+    replicas: 1
+    selector:
+      matchLabels:
+        control-plane: operator
+    template:
+      metadata:
+        labels:
+          control-plane: operator
+      spec:
+        containers:
+        - image: quay.io/kubecarrier/operator:was not build properly
+          name: manager
+          resources:
+            limits:
+              cpu: 100m
+              memory: 30Mi
+            requests:
+              cpu: 100m
+              memory: 20Mi
+        terminationGracePeriodSeconds: 10

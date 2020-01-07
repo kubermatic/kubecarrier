@@ -14,27 +14,9 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package controllers
+package testutil
 
-import (
-	corev1 "k8s.io/api/core/v1"
-	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
-	"k8s.io/apimachinery/pkg/runtime"
-
-	catalogv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/catalog/v1alpha1"
+const (
+	// OverrideGoldenEnv is the environment variable signalling the golden files should be overwritten
+	OverrideGoldenEnv = "FIX_GOLDEN"
 )
-
-var testScheme = runtime.NewScheme()
-
-func init() {
-	// setup scheme for all tests
-	if err := corev1.AddToScheme(testScheme); err != nil {
-		panic(err)
-	}
-	if err := catalogv1alpha1.AddToScheme(testScheme); err != nil {
-		panic(err)
-	}
-	if err := apiextensionsv1.AddToScheme(testScheme); err != nil {
-		panic(err)
-	}
-}

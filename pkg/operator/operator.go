@@ -22,7 +22,7 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/spf13/cobra"
 	rbacv1 "k8s.io/api/rbac/v1"
-	apiextensionsv1beta1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
+	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
@@ -30,7 +30,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client/apiutil"
 
 	operatorv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/operator/v1alpha1"
-	"github.com/kubermatic/kubecarrier/pkg/internal/kustomize"
 	"github.com/kubermatic/kubecarrier/pkg/internal/util"
 	"github.com/kubermatic/kubecarrier/pkg/operator/internal/controllers"
 )
@@ -48,7 +47,7 @@ func init() {
 	_ = clientgoscheme.AddToScheme(scheme)
 	_ = operatorv1alpha1.AddToScheme(scheme)
 	_ = rbacv1.AddToScheme(scheme)
-	_ = apiextensionsv1beta1.AddToScheme(scheme)
+	_ = apiextensionsv1.AddToScheme(scheme)
 }
 
 const (
@@ -97,13 +96,16 @@ func run(flags *flags, log logr.Logger) error {
 			return fmt.Errorf("cannot add %s owner field indexer: %w", gvk.Kind, err)
 		}
 	}
+	if err := util.AddOwnerReverseFieldIndex(
+		mgr.GetFieldIndexer(), ctrl.Log.WithName("fieldindex").WithName("CustomResourceDefinition"), &apiextensionsv1.CustomResourceDefinition{},
+	); err != nil {
+		return fmt.Errorf("cannot add CustomResourceDefinition owner field indexer: %w", err)
+	}
 
-	kustomize := kustomize.NewDefaultKustomize()
 	if err = (&controllers.KubeCarrierReconciler{
-		Client:    mgr.GetClient(),
-		Log:       log.WithName("controllers").WithName("KubeCarrier"),
-		Scheme:    mgr.GetScheme(),
-		Kustomize: kustomize,
+		Client: mgr.GetClient(),
+		Log:    log.WithName("controllers").WithName("KubeCarrier"),
+		Scheme: mgr.GetScheme(),
 	}).SetupWithManager(mgr); err != nil {
 		return fmt.Errorf("creating KubeCarrier controller: %w", err)
 	}

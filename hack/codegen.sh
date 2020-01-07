@@ -53,10 +53,12 @@ function statik-gen {
 # DeepCopy functions
 $CONTROLLER_GEN object:headerFile=./hack/boilerplate/boilerplate.go.txt,year=$(date +%Y) paths=./pkg/apis/...
 
+CRD_VERSION="v1"
+
 # Operator
 # --------
 # CRDs/Webhooks
-$CONTROLLER_GEN crd webhook paths="./pkg/apis/operator/..." output:crd:artifacts:config=config/operator/crd/bases output:webhook:artifacts:config=config/operator/webhook
+$CONTROLLER_GEN crd:crdVersions=${CRD_VERSION} webhook paths="./pkg/apis/operator/..." output:crd:artifacts:config=config/operator/crd/bases output:webhook:artifacts:config=config/operator/webhook
 # RBAC
 $CONTROLLER_GEN rbac:roleName=manager-role paths="./pkg/operator/..." output:rbac:artifacts:config=config/operator/rbac
 statik-gen operator config/operator
@@ -64,8 +66,8 @@ statik-gen operator config/operator
 # Manager
 # -------
 # CRDs/Webhooks
-$CONTROLLER_GEN crd webhook paths="./pkg/apis/core/..." output:crd:artifacts:config=config/internal/manager/crd/bases output:webhook:artifacts:config=config/internal/manager/webhook
-$CONTROLLER_GEN crd webhook paths="./pkg/apis/catalog/..." output:crd:artifacts:config=config/internal/manager/crd/bases output:webhook:artifacts:config=config/internal/manager/webhook
+$CONTROLLER_GEN crd:crdVersions=${CRD_VERSION} webhook paths="./pkg/apis/core/..." output:crd:artifacts:config=config/internal/manager/crd/bases output:webhook:artifacts:config=config/internal/manager/webhook
+$CONTROLLER_GEN crd:crdVersions=${CRD_VERSION} webhook paths="./pkg/apis/catalog/..." output:crd:artifacts:config=config/internal/manager/crd/bases output:webhook:artifacts:config=config/internal/manager/webhook
 # RBAC
 $CONTROLLER_GEN rbac:roleName=manager-role paths="./pkg/manager/..." output:rbac:artifacts:config=config/internal/manager/rbac
 statik-gen manager config/internal/manager

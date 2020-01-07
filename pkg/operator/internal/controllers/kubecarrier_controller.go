@@ -24,6 +24,7 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
+	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -34,7 +35,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/source"
 
 	operatorv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/operator/v1alpha1"
-	"github.com/kubermatic/kubecarrier/pkg/internal/kustomize"
 	"github.com/kubermatic/kubecarrier/pkg/internal/reconcile"
 	"github.com/kubermatic/kubecarrier/pkg/internal/resources/manager"
 	"github.com/kubermatic/kubecarrier/pkg/internal/util"
@@ -47,9 +47,8 @@ const (
 // KubeCarrierReconciler reconciles a KubeCarrier object
 type KubeCarrierReconciler struct {
 	client.Client
-	Log       logr.Logger
-	Scheme    *runtime.Scheme
-	Kustomize *kustomize.Kustomize
+	Log    logr.Logger
+	Scheme *runtime.Scheme
 }
 
 // +kubebuilder:rbac:groups=operator.kubecarrier.io,resources=kubecarriers,verbs=get;list;watch;create;update;patch;delete
@@ -97,7 +96,6 @@ func (r *KubeCarrierReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error)
 	// 3. Reconcile the objects that owned by KubeCarrier object.
 	// Build the manifests of the KubeCarrier controller manager.
 	objects, err := manager.Manifests(
-		r.Kustomize,
 		manager.Config{
 			Namespace: kubeCarrier.Namespace,
 		})
@@ -133,6 +131,7 @@ func (r *KubeCarrierReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		Owns(&rbacv1.RoleBinding{}).
 		Watches(&source.Kind{Type: &rbacv1.ClusterRole{}}, enqueuer).
 		Watches(&source.Kind{Type: &rbacv1.ClusterRoleBinding{}}, enqueuer).
+		Watches(&source.Kind{Type: &apiextensionsv1.CustomResourceDefinition{}}, enqueuer).
 		Complete(r)
 }
 
@@ -174,8 +173,13 @@ func (r *KubeCarrierReconciler) handleDeletion(ctx context.Context, kubeCarrier 
 		return fmt.Errorf("cleaning ClusterRoles: %w", err)
 	}
 
-	// Make sure all the ClusterRoleBindings and ClusterRoleCleaned are deleted.
-	if !clusterRoleBindingsCleaned || !clusterRolesCleaned {
+	customResourceDefinitionsCleaned, err := cleanupCustomResourceDefinitions(ctx, r.Client, ownedBy)
+	if err != nil {
+		return fmt.Errorf("cleaning CustomResourceDefinitions: %w", err)
+	}
+
+	// Make sure all the ClusterRoleBindings, ClusterRoles and CustomResourceDefinitions are deleted.
+	if !clusterRoleBindingsCleaned || !clusterRolesCleaned || !customResourceDefinitionsCleaned {
 		return nil
 	}
 
@@ -245,7 +249,7 @@ func (r *KubeCarrierReconciler) updateKubeCarrierStatus(ctx context.Context, kub
 // addOwnerReference adds an OwnerReference to an object.
 func addOwnerReference(owner metav1.Object, object *unstructured.Unstructured, scheme *runtime.Scheme) error {
 	switch object.GetKind() {
-	case "ClusterRole", "ClusterRoleBinding":
+	case "ClusterRole", "ClusterRoleBinding", "CustomResourceDefinition":
 		// Non-Namespaced objects
 		if _, err := util.InsertOwnerReference(owner, object, scheme); err != nil {
 			return fmt.Errorf("insert corss-namespaced ownerReference: %w", err)
@@ -286,4 +290,19 @@ func cleanupClusterRoleBindings(ctx context.Context, c client.Client, ownedBy ut
 		}
 	}
 	return len(clusterRoleBindingList.Items) == 0, nil
+}
+
+// cleanupCustomResourceDefinitions deletes owned CustomResourceDefinitions
+// cleaned is true when all CustomResourceDefinitions have been cleaned up.
+func cleanupCustomResourceDefinitions(ctx context.Context, c client.Client, ownedBy util.GeneralizedListOption) (cleaned bool, err error) {
+	customResourceDefinitionList := &apiextensionsv1.CustomResourceDefinitionList{}
+	if err := c.List(ctx, customResourceDefinitionList, ownedBy); err != nil {
+		return false, fmt.Errorf("listing CustomResourceDefinitions: %w", err)
+	}
+	for _, customResourceDefinition := range customResourceDefinitionList.Items {
+		if err := c.Delete(ctx, &customResourceDefinition); err != nil && !errors.IsNotFound(err) {
+			return false, fmt.Errorf("deleting CustomResourceDefinition: %w", err)
+		}
+	}
+	return len(customResourceDefinitionList.Items) == 0, nil
 }
