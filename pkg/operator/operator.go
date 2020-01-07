@@ -110,10 +110,9 @@ func run(flags *flags, log logr.Logger) error {
 		return fmt.Errorf("creating KubeCarrier controller: %w", err)
 	}
 	if err = (&controllers.ServiceClusterRegistrationReconciler{
-		Client:    mgr.GetClient(),
-		Scheme:    mgr.GetScheme(),
-		Log:       log.WithName("controllers").WithName("tender"),
-		Kustomize: kustomize,
+		Client: mgr.GetClient(),
+		Scheme: mgr.GetScheme(),
+		Log:    log.WithName("controllers").WithName("tender"),
 	}).SetupWithManager(mgr); err != nil {
 		return fmt.Errorf("creating ServiceClusterRegistration controller: %w", err)
 	}

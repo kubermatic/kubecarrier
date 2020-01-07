@@ -17,12 +17,13 @@ limitations under the License.
 package tender
 
 import (
-	"bytes"
 	"fmt"
-	"net/http"
+	"strings"
 
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"sigs.k8s.io/yaml"
+	"sigs.k8s.io/kustomize/v3/pkg/gvk"
+	"sigs.k8s.io/kustomize/v3/pkg/image"
+	"sigs.k8s.io/kustomize/v3/pkg/types"
 
 	"github.com/kubermatic/kubecarrier/pkg/internal/kustomize"
 	"github.com/kubermatic/kubecarrier/pkg/internal/version"
@@ -45,58 +46,48 @@ type Config struct {
 	KubeconfigSecretName string
 }
 
-type kustomizeFactory interface {
-	ForHTTP(fs http.FileSystem) kustomize.KustomizeContext
-}
+var k = kustomize.NewDefaultKustomize()
 
-func Manifests(k kustomizeFactory, c Config) ([]unstructured.Unstructured, error) {
-	kc := k.ForHTTP(vfs)
-
-	// patch settings
-	kustomizePath := "/default/kustomization.yaml"
-	kustomizeBytes, err := kc.ReadFile(kustomizePath)
-	if err != nil {
-		return nil, fmt.Errorf("reading %s: %w", kustomizePath, err)
-	}
-	kmap := map[string]interface{}{}
-	if err := yaml.Unmarshal(kustomizeBytes, &kmap); err != nil {
-		return nil, fmt.Errorf("unmarshal %s: %w", kustomizePath, err)
-	}
-
-	kmap["namespace"] = c.ProviderNamespace
-	kmap["namePrefix"] = fmt.Sprintf("tender-%s-", c.Name)
-
+// Manifests generate all required manifests for the Operator
+// See https://github.com/kubermatic/kubecarrier/issues/95 for discussion
+func Manifests(c Config) ([]unstructured.Unstructured, error) {
 	v := version.Get()
-	kmap["images"] = []map[string]string{
-		{
-			"name":   "quay.io/kubecarrier/tender",
-			"newTag": v.Version,
+	kc := k.ForHTTP(vfs)
+	if err := kc.MkLayer("man", types.Kustomization{
+		Namespace:  c.ProviderNamespace,
+		NamePrefix: fmt.Sprintf("tender-%s", c.Name),
+		Images: []image.Image{
+			{
+				Name:   "quay.io/kubecarrier/tender",
+				NewTag: v.Version,
+			},
 		},
+		PatchesJson6902: []types.PatchJson6902{{
+			Target: &types.PatchTarget{
+				Gvk: gvk.Gvk{
+					Group:   "apps",
+					Kind:    "Deployment",
+					Version: "v1",
+				},
+				Name:      "manager",
+				Namespace: "system",
+			},
+			Patch: strings.TrimSpace(fmt.Sprintf(`
+			 [
+{ "op": "add", "path": "/spec/template/spec/containers/0/env/-", "value": {"name": "SERVICE_CLUSTER", "value": "%s"}},
+{ "op": "add", "path": "/spec/template/spec/volumes/0/secret/secretName", "value": "%s"}
+]
+`, c.Name, c.KubeconfigSecretName)),
+		}},
+		Resources: []string{"../default"},
+	}); err != nil {
+		return nil, fmt.Errorf("cannot mkdir: %w", err)
 	}
 
-	kustomizeBytes, err = yaml.Marshal(kmap)
-	if err != nil {
-		return nil, fmt.Errorf("remarshal %s: %w", kustomizePath, err)
-	}
-	if err := kc.WriteFile(kustomizePath, kustomizeBytes); err != nil {
-		return nil, fmt.Errorf("writing %s: %w", kustomizePath, err)
-	}
-
-	managerPath := "/manager/manager.yaml"
-	managerBytes, err := kc.ReadFile(managerPath)
-	if err != nil {
-		return nil, fmt.Errorf("reading %s: %w", managerPath, err)
-	}
-
-	managerBytes = bytes.ReplaceAll(managerBytes, []byte(ServiceClusterName), []byte(c.Name))
-	managerBytes = bytes.ReplaceAll(managerBytes, []byte(KubeconifgSecretName), []byte(c.KubeconfigSecretName))
-	if err := kc.WriteFile(managerPath, managerBytes); err != nil {
-		return nil, fmt.Errorf("writing %s: %w", managerPath, err)
-	}
 	// execute kustomize
-	unstructuredObjects, err := kc.Build("/default")
+	objects, err := kc.Build("/man")
 	if err != nil {
 		return nil, fmt.Errorf("running kustomize build: %w", err)
 	}
-	return unstructuredObjects, err
+	return objects, nil
 }

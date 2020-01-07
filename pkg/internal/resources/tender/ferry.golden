@@ -1,0 +1,114 @@
+- apiVersion: rbac.authorization.k8s.io/v1
+  kind: Role
+  metadata:
+    name: tender-hanskubecarrier-manager-manager-role
+    namespace: provider-1000
+  rules: []
+- apiVersion: rbac.authorization.k8s.io/v1
+  kind: RoleBinding
+  metadata:
+    name: tender-hanskubecarrier-manager-manager-rolebinding
+    namespace: provider-1000
+  roleRef:
+    apiGroup: rbac.authorization.k8s.io
+    kind: Role
+    name: tender-hanskubecarrier-manager-manager-role
+  subjects:
+  - kind: ServiceAccount
+    name: default
+    namespace: provider-1000
+- apiVersion: rbac.authorization.k8s.io/v1
+  kind: Role
+  metadata:
+    name: tender-hanskubecarrier-manager-leader-election-role
+    namespace: provider-1000
+  rules:
+  - apiGroups:
+    - ""
+    resources:
+    - configmaps
+    verbs:
+    - get
+    - list
+    - watch
+    - create
+    - update
+    - patch
+    - delete
+  - apiGroups:
+    - ""
+    resources:
+    - configmaps/status
+    verbs:
+    - get
+    - update
+    - patch
+  - apiGroups:
+    - ""
+    resources:
+    - events
+    verbs:
+    - create
+- apiVersion: rbac.authorization.k8s.io/v1
+  kind: RoleBinding
+  metadata:
+    name: tender-hanskubecarrier-manager-leader-election-rolebinding
+    namespace: provider-1000
+  roleRef:
+    apiGroup: rbac.authorization.k8s.io
+    kind: Role
+    name: tender-hanskubecarrier-manager-leader-election-role
+  subjects:
+  - kind: ServiceAccount
+    name: default
+    namespace: provider-1000
+- apiVersion: apps/v1
+  kind: Deployment
+  metadata:
+    labels:
+      control-plane: manager
+    name: tender-hanskubecarrier-manager-manager
+    namespace: provider-1000
+  spec:
+    replicas: 1
+    selector:
+      matchLabels:
+        control-plane: manager
+    template:
+      metadata:
+        labels:
+          control-plane: manager
+      spec:
+        containers:
+        - args:
+          - --service-cluster-name=$(SERVICE_CLUSTER)
+          - --service-cluster-kubeconfig=/kubeconfig/kubeconfig
+          - --provider-namespace=$(KUBERNETES_NAMESPACE)
+          env:
+          - name: KUBERNETES_NAMESPACE
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.namespace
+          - name: SERVICE_CLUSTER
+            value: hans
+          image: quay.io/kubecarrier/tender:was not build properly
+          name: manager
+          resources:
+            limits:
+              cpu: 100m
+              memory: 30Mi
+            requests:
+              cpu: 100m
+              memory: 20Mi
+          volumeMounts:
+          - mountPath: /kubeconfig
+            name: kubeconfig
+        terminationGracePeriodSeconds: 10
+        volumes:
+        - name: kubeconfig
+          secret:
+            items:
+            - key: kubeconfig
+              path: kubeconfig
+            optional: false
+            secretName: service-cluster-100

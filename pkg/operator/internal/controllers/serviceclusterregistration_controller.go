@@ -33,7 +33,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/source"
 
 	operatorv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/operator/v1alpha1"
-	"github.com/kubermatic/kubecarrier/pkg/internal/kustomize"
 	"github.com/kubermatic/kubecarrier/pkg/internal/reconcile"
 	"github.com/kubermatic/kubecarrier/pkg/internal/resources/tender"
 	"github.com/kubermatic/kubecarrier/pkg/internal/util"
@@ -46,9 +45,8 @@ const (
 // ServiceClusterRegistrationReconciler reconciles a ServiceClusterRegistration object
 type ServiceClusterRegistrationReconciler struct {
 	client.Client
-	Scheme    *runtime.Scheme
-	Log       logr.Logger
-	Kustomize *kustomize.Kustomize
+	Scheme *runtime.Scheme
+	Log    logr.Logger
 }
 
 // +kubebuilder:rbac:groups=rbac.authorization.k8s.io,resources=roles,verbs=get;list;watch;create;update;patch;delete;escalate;bind
@@ -93,7 +91,7 @@ func (r *ServiceClusterRegistrationReconciler) Reconcile(req ctrl.Request) (ctrl
 	var deploymentReady bool
 
 	// Build the manifests of the ServiceClusterRegistration controller manager.
-	objects, err := tender.Manifests(r.Kustomize, serviceclusterregistrationConfigurationForObject(serviceclusterregistration))
+	objects, err := tender.Manifests(serviceclusterregistrationConfigurationForObject(serviceclusterregistration))
 	if err != nil {
 		return ctrl.Result{}, fmt.Errorf("serviceclusterregistration manifests: %w", err)
 	}
@@ -149,7 +147,7 @@ func (r *ServiceClusterRegistrationReconciler) handleDeletion(ctx context.Contex
 
 	// 2. Delete Objects.
 	allCleared := true
-	objects, err := tender.Manifests(r.Kustomize, serviceclusterregistrationConfigurationForObject(serviceclusterregistration))
+	objects, err := tender.Manifests(serviceclusterregistrationConfigurationForObject(serviceclusterregistration))
 	if err != nil {
 		return fmt.Errorf("deletion: manifests: %w", err)
 	}
