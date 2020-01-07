@@ -302,6 +302,214 @@
       plural: ""
     conditions: []
     storedVersions: []
+- apiVersion: apiextensions.k8s.io/v1
+  kind: CustomResourceDefinition
+  metadata:
+    annotations:
+      controller-gen.kubebuilder.io/version: v0.2.4
+    creationTimestamp: null
+    name: catalogentries.catalog.kubecarrier.io
+  spec:
+    group: catalog.kubecarrier.io
+    names:
+      kind: CatalogEntry
+      listKind: CatalogEntryList
+      plural: catalogentries
+      shortNames:
+      - ce
+      singular: catalogentry
+    scope: Namespaced
+    versions:
+    - additionalPrinterColumns:
+      - jsonPath: .metadata.creationTimestamp
+        name: Age
+        type: date
+      name: v1alpha1
+      schema:
+        openAPIV3Schema:
+          description: CatalogEntry adds additional metadata to a set of CRD's and
+            groups the same Kind for multiple ServiceClusters
+          properties:
+            apiVersion:
+              description: 'APIVersion defines the versioned schema of this representation
+                of an object. Servers should convert recognized schemas to the latest
+                internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+              type: string
+            kind:
+              description: 'Kind is a string value representing the REST resource
+                this object represents. Servers may infer this from the endpoint the
+                client submits requests to. Cannot be updated. In CamelCase. More
+                info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+              type: string
+            metadata:
+              type: object
+            spec:
+              description: CatalogEntrySpec defines the desired state of CatalogEntry
+              properties:
+                crdSelector:
+                  description: CRDSelector selects CRD objects that should be part
+                    of this catalog.
+                  properties:
+                    matchExpressions:
+                      description: matchExpressions is a list of label selector requirements.
+                        The requirements are ANDed.
+                      items:
+                        description: A label selector requirement is a selector that
+                          contains values, a key, and an operator that relates the
+                          key and values.
+                        properties:
+                          key:
+                            description: key is the label key that the selector applies
+                              to.
+                            type: string
+                          operator:
+                            description: operator represents a key's relationship
+                              to a set of values. Valid operators are In, NotIn, Exists
+                              and DoesNotExist.
+                            type: string
+                          values:
+                            description: values is an array of string values. If the
+                              operator is In or NotIn, the values array must be non-empty.
+                              If the operator is Exists or DoesNotExist, the values
+                              array must be empty. This array is replaced during a
+                              strategic merge patch.
+                            items:
+                              type: string
+                            type: array
+                        required:
+                        - key
+                        - operator
+                        type: object
+                      type: array
+                    matchLabels:
+                      additionalProperties:
+                        type: string
+                      description: matchLabels is a map of {key,value} pairs. A single
+                        {key,value} in the matchLabels map is equivalent to an element
+                        of matchExpressions, whose key field is "key", the operator
+                        is "In", and the values array contains only "value". The requirements
+                        are ANDed.
+                      type: object
+                  type: object
+                metadata:
+                  description: CatalogEntryMetadata contains the metadata (display
+                    name, description, etc) of the CatalogEntry.
+                  properties:
+                    description:
+                      description: Description shows the human-readable description
+                        of this CatalogEntry.
+                      type: string
+                    displayName:
+                      description: DisplayName shows the human-readable name of this
+                        CatalogEntry.
+                      type: string
+                  type: object
+              type: object
+            status:
+              description: CatalogEntryStatus defines the observed state of CatalogEntry.
+              properties:
+                conditions:
+                  description: Conditions represents the latest available observations
+                    of a CatalogEntry's current state.
+                  items:
+                    description: CatalogEntryCondition contains details for the current
+                      condition of this CatalogEntry.
+                    properties:
+                      lastTransitionTime:
+                        description: LastTransitionTime is the last time the condition
+                          transits from one status to another.
+                        format: date-time
+                        type: string
+                      message:
+                        description: Message is the human readable message indicating
+                          details about last transition.
+                        type: string
+                      reason:
+                        description: Reason is the (brief) reason for the condition's
+                          last transition.
+                        type: string
+                      status:
+                        description: Status is the status of the condition, one of
+                          ('True', 'False', 'Unknown').
+                        type: string
+                      type:
+                        description: Type is the type of the CatalogEntry condition,
+                          currently ('Ready').
+                        type: string
+                    required:
+                    - lastTransitionTime
+                    - message
+                    - reason
+                    - status
+                    - type
+                    type: object
+                  type: array
+                crds:
+                  description: CRDs holds the information about the underlying CRDs
+                    that are offered by this CatalogEntry.
+                  items:
+                    description: CRDInformation contains type information about the
+                      CRD.
+                    properties:
+                      apiGroup:
+                        type: string
+                      kind:
+                        type: string
+                      name:
+                        type: string
+                      serviceCluster:
+                        description: ServiceCluster references a ServiceClusterReference
+                          of this CRD.
+                        properties:
+                          name:
+                            type: string
+                        required:
+                        - name
+                        type: object
+                      versions:
+                        items:
+                          description: CRDVersion holds CRD version specific details.
+                          properties:
+                            name:
+                              type: string
+                          required:
+                          - name
+                          type: object
+                        type: array
+                    required:
+                    - apiGroup
+                    - kind
+                    - name
+                    - serviceCluster
+                    - versions
+                    type: object
+                  type: array
+                observedGeneration:
+                  description: ObservedGeneration is the most recent generation observed
+                    for this CatalogEntry by the controller.
+                  format: int64
+                  type: integer
+                phase:
+                  description: DEPRECATED. Phase represents the current lifecycle
+                    state of this object. Consider this field DEPRECATED, it will
+                    be removed as soon as there is a mechanism to map conditions to
+                    strings when printing the property. This is only for display purpose,
+                    for everything else use conditions.
+                  type: string
+              required:
+              - crds
+              type: object
+          type: object
+      served: true
+      storage: true
+      subresources:
+        status: {}
+  status:
+    acceptedNames:
+      kind: ""
+      plural: ""
+    conditions: []
+    storedVersions: []
 - apiVersion: rbac.authorization.k8s.io/v1
   kind: ClusterRole
   metadata:
