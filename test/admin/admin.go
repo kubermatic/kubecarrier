@@ -62,11 +62,23 @@ func (s *AdminSuite) TestTenantProviderCreationAndDeletion() {
 		},
 	}
 
-	provider := &catalogv1alpha1.Provider{
+	// this provider will be persisted for next test-steps
+	provider1 := &catalogv1alpha1.Provider{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "test-provider1",
 			Namespace: "kubecarrier-system",
 		},
+	}
+
+	// throwaway provider to test deletion
+	provider2 := &catalogv1alpha1.Provider{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "test-provider2",
+			Namespace: "kubecarrier-system",
+		},
+	}
+	providers := []*catalogv1alpha1.Provider{
+		provider1, provider2,
 	}
 
 	if !s.Run("Tenant creation", func() {
@@ -90,41 +102,43 @@ func (s *AdminSuite) TestTenantProviderCreationAndDeletion() {
 		s.FailNow("Tenant creation e2e test failed.")
 	}
 
-	if !s.Run("Provider creation", func() {
-		s.Require().NoError(s.masterClient.Create(ctx, provider), "creating provider error")
+	for _, provider := range providers {
+		if !s.Run("Provider creation/"+provider.Name, func() {
+			s.Require().NoError(s.masterClient.Create(ctx, provider), "creating provider error")
 
-		// Try to get the namespace that created for this provider.
-		namespace := &corev1.Namespace{}
-		s.NoError(wait.Poll(time.Second, 10*time.Second, func() (done bool, err error) {
-			if err := s.masterClient.Get(ctx, types.NamespacedName{
-				Name: fmt.Sprintf("provider-%s", provider.Name),
-			}, namespace); err != nil {
-				if errors.IsNotFound(err) {
-					return false, nil
+			// Try to get the namespace that created for this provider.
+			namespace := &corev1.Namespace{}
+			s.NoError(wait.Poll(time.Second, 10*time.Second, func() (done bool, err error) {
+				if err := s.masterClient.Get(ctx, types.NamespacedName{
+					Name: fmt.Sprintf("provider-%s", provider.Name),
+				}, namespace); err != nil {
+					if errors.IsNotFound(err) {
+						return false, nil
+					}
+					return true, err
+
 				}
-				return true, err
+				return true, nil
+			}), "getting the namespace for the Provider error")
 
-			}
-			return true, nil
-		}), "getting the namespace for the Provider error")
+			// Try to get the TenantReference that created for this provider from the tenant.
+			tenantReference := &catalogv1alpha1.TenantReference{}
+			s.NoError(wait.Poll(time.Second, 10*time.Second, func() (done bool, err error) {
+				if err := s.masterClient.Get(ctx, types.NamespacedName{
+					Name:      tenant.Name,
+					Namespace: fmt.Sprintf("provider-%s", provider.Name),
+				}, tenantReference); err != nil {
+					if errors.IsNotFound(err) {
+						return false, nil
+					}
+					return true, err
 
-		// Try to get the TenantReference that created for this provider from the tenant.
-		tenantReference := &catalogv1alpha1.TenantReference{}
-		s.NoError(wait.Poll(time.Second, 10*time.Second, func() (done bool, err error) {
-			if err := s.masterClient.Get(ctx, types.NamespacedName{
-				Name:      tenant.Name,
-				Namespace: fmt.Sprintf("provider-%s", provider.Name),
-			}, tenantReference); err != nil {
-				if errors.IsNotFound(err) {
-					return false, nil
 				}
-				return true, err
-
-			}
-			return true, nil
-		}), "getting the tenantReference for the Provider error")
-	}) {
-		s.FailNow("Provider creation e2e test failed.")
+				return true, nil
+			}), "getting the tenantReference for the Provider error")
+		}) {
+			s.FailNow("Provider creation e2e test failed.")
+		}
 	}
 
 	if !s.Run("Tenant deletion", func() {
@@ -148,15 +162,15 @@ func (s *AdminSuite) TestTenantProviderCreationAndDeletion() {
 		tenantReference := &catalogv1alpha1.TenantReference{}
 		s.True(errors.IsNotFound(s.masterClient.Get(ctx, types.NamespacedName{
 			Name:      tenant.Name,
-			Namespace: fmt.Sprintf("provider-%s", provider.Name),
-		}, tenantReference)), "namespace should also be deleted.")
+			Namespace: fmt.Sprintf("provider-%s", provider1.Name),
+		}, tenantReference)), "TenantReference for provider1 should also be deleted.")
 	}) {
 		s.FailNow("Tenant deletion e2e test failed.")
 	}
 
 	s.Run("Provider deletion", func() {
 		s.Require().NoError(wait.Poll(time.Second, 10*time.Second, func() (done bool, err error) {
-			if err = s.masterClient.Delete(ctx, provider); err != nil {
+			if err = s.masterClient.Delete(ctx, provider2); err != nil {
 				if errors.IsNotFound(err) {
 					return true, nil
 				}
@@ -168,7 +182,7 @@ func (s *AdminSuite) TestTenantProviderCreationAndDeletion() {
 		// Try to check the namespace that created for this provider.
 		namespace := &corev1.Namespace{}
 		s.True(errors.IsNotFound(s.masterClient.Get(ctx, types.NamespacedName{
-			Name: fmt.Sprintf("provider-%s", provider.Name),
+			Name: fmt.Sprintf("provider-%s", provider2.Name),
 		}, namespace)), "namespace should also be deleted.")
 	})
 

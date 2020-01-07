@@ -25,6 +25,7 @@ import (
 	"github.com/kubermatic/kubecarrier/test/admin"
 	"github.com/kubermatic/kubecarrier/test/framework"
 	"github.com/kubermatic/kubecarrier/test/installation"
+	"github.com/kubermatic/kubecarrier/test/provider"
 	"github.com/kubermatic/kubecarrier/test/verify"
 )
 
@@ -52,6 +53,12 @@ func AllTests(config framework.Config) ([]testing.InternalTest, error) {
 			Name: "AdminSuite",
 			F: func(t *testing.T) {
 				suite.Run(t, &admin.AdminSuite{Framework: f})
+			},
+		},
+		testing.InternalTest{
+			Name: "ProviderSuite",
+			F: func(t *testing.T) {
+				suite.Run(t, &provider.ProviderSuite{Framework: f})
 			},
 		})
 
