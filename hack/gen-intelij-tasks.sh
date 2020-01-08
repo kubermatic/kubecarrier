@@ -49,3 +49,19 @@ cat << EOF > ${GIT_ROOT}/.idea/runConfigurations/kubecarrier_ferry.xml
   </configuration>
 </component>
 EOF
+
+cat << EOF > ${GIT_ROOT}/.idea/runConfigurations/kubecarrier_e2e.xml
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="kubecarrier:e2e" type="GoApplicationRunConfiguration" factoryName="Go Application">
+    <module name="kubecarrier" />
+    <working_directory value="\$PROJECT_DIR\$/" />
+    <go_parameters value="-i -ldflags &quot;${LD_FLAGS}&quot;" />
+    <kind value="DIRECTORY" />
+    <filePath value="\$PROJECT_DIR\$/|\$PROJECT_DIR\$/cmd/anchor/main.go" />
+    <package value="github.com/kubermatic/kubecarrier" />
+    <directory value="\$PROJECT_DIR\$/cmd/anchor" />
+    <parameters value="e2e-test run --test.v --test-id=1" />
+    <method v="2" />
+  </configuration>
+</component>
+EOF
