@@ -23,8 +23,12 @@ import (
 	"github.com/go-logr/logr"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/types"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/handler"
+	"sigs.k8s.io/controller-runtime/pkg/reconcile"
+	"sigs.k8s.io/controller-runtime/pkg/source"
 
 	catalogv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/catalog/v1alpha1"
 	"github.com/kubermatic/kubecarrier/pkg/internal/util"
@@ -124,8 +128,28 @@ func (r *CatalogReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 }
 
 func (r *CatalogReconciler) SetupWithManager(mgr ctrl.Manager) error {
+	enqueueAllCatalogsInNamespace := &handler.EnqueueRequestsFromMapFunc{
+		ToRequests: handler.ToRequestsFunc(func(mapObject handler.MapObject) (out []reconcile.Request) {
+			catalogList := &catalogv1alpha1.CatalogList{}
+			if err := r.List(context.Background(), catalogList, client.InNamespace(mapObject.Meta.GetNamespace())); err != nil {
+				// This will makes the manager crashes, and it will restart and reconcile all objects again.
+				panic(fmt.Errorf("listting Catalog: %w", err))
+			}
+			for _, catalog := range catalogList.Items {
+				out = append(out, reconcile.Request{
+					NamespacedName: types.NamespacedName{
+						Name:      catalog.Name,
+						Namespace: catalog.Namespace,
+					},
+				})
+			}
+			return
+		}),
+	}
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&catalogv1alpha1.Catalog{}).
+		Watches(&source.Kind{Type: &catalogv1alpha1.TenantReference{}}, enqueueAllCatalogsInNamespace).
+		Watches(&source.Kind{Type: &catalogv1alpha1.CatalogEntry{}}, enqueueAllCatalogsInNamespace).
 		Complete(r)
 }
 
