@@ -49,3 +49,19 @@ cat << EOF > ${GIT_ROOT}/.idea/runConfigurations/kubecarrier_ferry.xml
   </configuration>
 </component>
 EOF
+
+cat << EOF > ${GIT_ROOT}/.idea/runConfigurations/kubecarrier_catapult.xml
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="kubecarrier:catapult" type="GoApplicationRunConfiguration" factoryName="Go Application">
+    <module name="kubecarrier" />
+    <working_directory value="\$PROJECT_DIR\$/" />
+    <go_parameters value="-i -ldflags &quot;${LD_FLAGS}&quot;" />
+    <parameters value="--provider-namespace=default --service-cluster-name=default --service-cluster-kubeconfig=\$USER_HOME\$/.kube/internal-kind-config-kubecarrier-svc-1" />
+    <kind value="DIRECTORY" />
+    <filePath value="\$PROJECT_DIR\$/|\$PROJECT_DIR\$/cmd/catapult/main.go" />
+    <package value="github.com/kubermatic/kubecarrier" />
+    <directory value="\$PROJECT_DIR\$/cmd/catapult" />
+    <method v="2" />
+  </configuration>
+</component>
+EOF
