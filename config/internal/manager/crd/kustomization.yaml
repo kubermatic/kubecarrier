@@ -5,6 +5,7 @@ resources:
 - bases/catalog.kubecarrier.io_tenants.yaml
 - bases/catalog.kubecarrier.io_providers.yaml
 - bases/catalog.kubecarrier.io_tenantreferences.yaml
+- bases/core.kubecarrier.io_serviceclusters.yaml
 # +kubebuilder:scaffold:crdkustomizeresource
 
 patchesStrategicMerge:
