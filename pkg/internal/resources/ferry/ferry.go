@@ -50,7 +50,7 @@ func Manifests(c Config) ([]unstructured.Unstructured, error) {
 	kc := k.ForHTTP(vfs)
 	if err := kc.MkLayer("man", types.Kustomization{
 		Namespace:  c.ProviderNamespace,
-		NamePrefix: fmt.Sprintf("ferry-%s", c.Name),
+		NamePrefix: fmt.Sprintf("%s-", c.Name),
 		Images: []image.Image{
 			{
 				Name:   "quay.io/kubecarrier/ferry",

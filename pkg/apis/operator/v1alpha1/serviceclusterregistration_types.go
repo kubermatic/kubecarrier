@@ -28,10 +28,11 @@ type ServiceClusterRegistrationSpec struct {
 
 // ServiceClusterRegistrationStatus defines the observed state of ServiceClusterRegistration
 type ServiceClusterRegistrationStatus struct {
-	// Phase represents the current lifecycle state of this object
-	// consider this field DEPRECATED, it will be removed as soon as there
-	// is a mechanism to map conditions to a string when printing the property
-	// is only present for display purposes, for everything else use conditions
+	// DEPRECATED.
+	// Phase represents the current lifecycle state of this object.
+	// Consider this field DEPRECATED, it will be removed as soon as there
+	// is a mechanism to map conditions to strings when printing the property.
+	// This is only for display purpose, for everything else use conditions.
 	Phase ServiceClusterRegistrationPhaseType `json:"phase,omitempty"`
 	// Conditions is a list of all conditions this ServiceClusterRegistration is in.
 	Conditions []ServiceClusterRegistrationCondition `json:"conditions,omitempty"`
