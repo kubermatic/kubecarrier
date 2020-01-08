@@ -84,4 +84,5 @@ statik-gen ferry config/internal/ferry
 # -------
 # RBAC
 $CONTROLLER_GEN rbac:roleName=manager-role paths="./pkg/catapult/..." output:rbac:artifacts:config=config/internal/catapult/rbac
+sed -i 's/ClusterRole/Role/g' config/internal/catapult/rbac/role.yaml
 statik-gen catapult config/internal/catapult
