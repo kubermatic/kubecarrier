@@ -30,7 +30,7 @@ import (
 
 func TestManifests(t *testing.T) {
 	const (
-		goldenFile = "operator.golden"
+		goldenFile = "operator.golden.yaml"
 	)
 	c := Config{
 		Namespace: "test3000",
