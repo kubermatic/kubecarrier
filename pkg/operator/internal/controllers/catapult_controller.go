@@ -32,7 +32,7 @@ import (
 
 	operatorv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/operator/v1alpha1"
 	"github.com/kubermatic/kubecarrier/pkg/internal/reconcile"
-	"github.com/kubermatic/kubecarrier/pkg/internal/resources/catapult"
+	resourcescatapult "github.com/kubermatic/kubecarrier/pkg/internal/resources/catapult"
 	"github.com/kubermatic/kubecarrier/pkg/internal/util"
 )
 
@@ -64,47 +64,47 @@ type CatapultReconciler struct {
 // 4. Update the status of the Catapult object.
 func (r *CatapultReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	ctx := context.Background()
-	log := r.Log.WithValues("kubecarrier", req.NamespacedName)
+	log := r.Log.WithValues("catapult", req.NamespacedName)
 
 	// 1. Fetch the Catapult object.
-	kubeCarrier := &operatorv1alpha1.Catapult{}
-	if err := r.Get(ctx, req.NamespacedName, kubeCarrier); err != nil {
+	catapult := &operatorv1alpha1.Catapult{}
+	if err := r.Get(ctx, req.NamespacedName, catapult); err != nil {
 		// If the Catapult object is already gone, we just ignore the NotFound error.
 		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
 
 	// 2. Handle the deletion of the Catapult object (Remove the objects that the Catapult owns, and remove the finalizer).
-	if !kubeCarrier.DeletionTimestamp.IsZero() {
-		if err := r.handleDeletion(ctx, kubeCarrier); err != nil {
+	if !catapult.DeletionTimestamp.IsZero() {
+		if err := r.handleDeletion(ctx, catapult); err != nil {
 			return ctrl.Result{}, fmt.Errorf("handle deletion: %w", err)
 		}
 		return ctrl.Result{}, nil
 	}
 
 	// Add finalizer
-	if util.AddFinalizer(kubeCarrier, catapultControllerFinalizer) {
-		if err := r.Update(ctx, kubeCarrier); err != nil {
+	if util.AddFinalizer(catapult, catapultControllerFinalizer) {
+		if err := r.Update(ctx, catapult); err != nil {
 			return ctrl.Result{}, fmt.Errorf("updating Catapult finalizers: %w", err)
 		}
 	}
 
 	// 3. Reconcile the objects that owned by Catapult object.
 	// Build the manifests of the Catapult controller manager.
-	objects, err := catapult.Manifests(
-		catapult.Config{
-			Namespace: kubeCarrier.Namespace,
+	objects, err := resourcescatapult.Manifests(
+		resourcescatapult.Config{
+			Namespace: catapult.Namespace,
 		})
 	if err != nil {
 		return ctrl.Result{}, fmt.Errorf("creating catapult manifests: %w", err)
 	}
 
-	deploymentIsReady, err := r.reconcileOwnedObjects(ctx, log, kubeCarrier, objects)
+	deploymentIsReady, err := r.reconcileOwnedObjects(ctx, log, catapult, objects)
 	if err != nil {
 		return ctrl.Result{}, err
 	}
 
 	// 4. Update the status of the Catapult object.
-	if err := r.updateCatapultStatus(ctx, kubeCarrier, deploymentIsReady); err != nil {
+	if err := r.updateCatapultStatus(ctx, catapult, deploymentIsReady); err != nil {
 		return ctrl.Result{}, err
 	}
 

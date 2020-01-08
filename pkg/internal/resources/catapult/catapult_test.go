@@ -30,7 +30,7 @@ import (
 
 func TestManifests(t *testing.T) {
 	const (
-		goldenFile = "catapult.golden"
+		goldenFile = "catapult.golden.yaml"
 	)
 	c := Config{
 		Name:      "db.eu-west-1",
