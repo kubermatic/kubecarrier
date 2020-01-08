@@ -53,7 +53,8 @@ const (
 	componentOperator = "operator"
 )
 
-func NewOperatorCommand(log logr.Logger) *cobra.Command {
+func NewOperatorCommand() *cobra.Command {
+	log := ctrl.Log.WithName("operator")
 	flags := &flags{}
 	cmd := &cobra.Command{
 		Args:  cobra.NoArgs,

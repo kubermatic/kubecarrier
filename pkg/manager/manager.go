@@ -51,7 +51,8 @@ const (
 	componentManager = "manager"
 )
 
-func NewManagerCommand(log logr.Logger) *cobra.Command {
+func NewManagerCommand() *cobra.Command {
+	log := ctrl.Log.WithName("manager")
 	flags := &flags{}
 	cmd := &cobra.Command{
 		Args:  cobra.NoArgs,
