@@ -33,7 +33,10 @@ import (
 	"github.com/kubermatic/kubecarrier/test/framework"
 )
 
-var _ suite.SetupAllSuite = (*ProviderSuite)(nil)
+var (
+	_ suite.SetupAllSuite    = (*ProviderSuite)(nil)
+	_ suite.TearDownAllSuite = (*ProviderSuite)(nil)
+)
 
 // ProviderSuite verifies if the provider actions are working.
 // - atm it just deploys a catapult instance
@@ -75,6 +78,11 @@ func (s *ProviderSuite) SetupSuite() {
 		cond, _ := s.provider.Status.GetCondition(catalogv1alpha1.ProviderReady)
 		return cond.Status == catalogv1alpha1.ConditionTrue, nil
 	}), "waiting for provider to be ready")
+}
+
+func (s *ProviderSuite) TearDownSuite() {
+	ctx := context.Background()
+	s.Require().NoError(s.masterClient.Delete(ctx, s.provider), "could not delete Provider")
 }
 
 func (s *ProviderSuite) TestCatapultDeployAndTeardown() {
