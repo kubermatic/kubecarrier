@@ -19,15 +19,11 @@ package main
 import (
 	"os"
 
-	ctrl "sigs.k8s.io/controller-runtime"
-
 	"github.com/kubermatic/kubecarrier/pkg/catapult"
 )
 
 func main() {
-	command := catapult.NewCatapultCommand(ctrl.Log.WithName("catapult"))
-
-	if err := command.Execute(); err != nil {
+	if err := catapult.NewCatapult().Execute(); err != nil {
 		os.Exit(1)
 	}
 }

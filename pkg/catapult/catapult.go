@@ -48,7 +48,8 @@ const (
 	componentCatapult = "Catapult"
 )
 
-func NewCatapultCommand(log logr.Logger) *cobra.Command {
+func NewCatapult() *cobra.Command {
+	log := ctrl.Log.WithName("catapult")
 	flags := &flags{}
 	cmd := &cobra.Command{
 		Args:  cobra.NoArgs,
