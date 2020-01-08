@@ -81,7 +81,6 @@ func (r *CatalogEntryReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error
 		return ctrl.Result{}, nil
 	}
 
-	// check/add the finalizer for the CatalogEntry.
 	if util.AddFinalizer(catalogEntry, catalogEntryControllerFinalizer) {
 		// Update the CatalogEntry with the finalizer
 		if err := r.Update(ctx, catalogEntry); err != nil {
@@ -94,11 +93,21 @@ func (r *CatalogEntryReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error
 		return ctrl.Result{}, fmt.Errorf("getting the Provider by Provider Namespace: %w", err)
 	}
 
-	catalogEntry.Spec.CRDSelector = &metav1.LabelSelector{
-		MatchLabels: map[string]string{
+	// Defaulting the `kubecarrier.io/provider` matchlabel
+	if catalogEntry.Spec.CRDSelector == nil {
+		catalogEntry.Spec.CRDSelector = &metav1.LabelSelector{
+			MatchLabels: map[string]string{
+				providerLabel: provider.Name,
+			},
+		}
+	} else if catalogEntry.Spec.CRDSelector.MatchLabels == nil {
+		catalogEntry.Spec.CRDSelector.MatchLabels = map[string]string{
 			providerLabel: provider.Name,
-		},
+		}
+	} else {
+		catalogEntry.Spec.CRDSelector.MatchLabels[providerLabel] = provider.Name
 	}
+
 	if err := r.Update(ctx, catalogEntry); err != nil {
 		return ctrl.Result{}, fmt.Errorf("updating the provider matchLabel: %w", err)
 	}
