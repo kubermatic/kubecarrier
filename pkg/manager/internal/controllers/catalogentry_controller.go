@@ -95,21 +95,16 @@ func (r *CatalogEntryReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error
 
 	// Defaulting the `kubecarrier.io/provider` matchlabel
 	if catalogEntry.Spec.CRDSelector == nil {
-		catalogEntry.Spec.CRDSelector = &metav1.LabelSelector{
-			MatchLabels: map[string]string{
-				providerLabel: provider.Name,
-			},
-		}
-	} else if catalogEntry.Spec.CRDSelector.MatchLabels == nil {
-		catalogEntry.Spec.CRDSelector.MatchLabels = map[string]string{
-			providerLabel: provider.Name,
-		}
-	} else {
-		catalogEntry.Spec.CRDSelector.MatchLabels[providerLabel] = provider.Name
+		catalogEntry.Spec.CRDSelector = &metav1.LabelSelector{}
 	}
-
-	if err := r.Update(ctx, catalogEntry); err != nil {
-		return ctrl.Result{}, fmt.Errorf("updating the provider matchLabel: %w", err)
+	if catalogEntry.Spec.CRDSelector.MatchLabels == nil {
+		catalogEntry.Spec.CRDSelector.MatchLabels = map[string]string{}
+	}
+	if catalogEntry.Spec.CRDSelector.MatchLabels[providerLabel] != provider.Name {
+		catalogEntry.Spec.CRDSelector.MatchLabels[providerLabel] = provider.Name
+		if err := r.Update(ctx, catalogEntry); err != nil {
+			return ctrl.Result{}, fmt.Errorf("updating the provider matchLabel: %w", err)
+		}
 	}
 
 	// Manipulate the CRD information to CatalogEntry status, and update the status of the CatalogEntry.
@@ -198,7 +193,6 @@ func (r *CatalogEntryReconciler) handleDeletion(ctx context.Context, log logr.Lo
 		return nil
 	}
 
-	// The annotation of the CRD is completely removed, then we remove the finalizer here.
 	if util.RemoveFinalizer(catalogEntry, catalogEntryControllerFinalizer) {
 		if err := r.Update(ctx, catalogEntry); err != nil {
 			return fmt.Errorf("updating CatalogEntry: %w", err)
