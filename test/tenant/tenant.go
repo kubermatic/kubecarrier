@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package tenantoperation
+package tenant
 
 import (
 	"context"
@@ -34,11 +34,11 @@ import (
 	"github.com/kubermatic/kubecarrier/test/framework"
 )
 
-var _ suite.SetupAllSuite = (*TenantOperationSuite)(nil)
-var _ suite.TearDownAllSuite = (*TenantOperationSuite)(nil)
+var _ suite.SetupAllSuite = (*TenantSuite)(nil)
+var _ suite.TearDownAllSuite = (*TenantSuite)(nil)
 
-// TenantOperationSuite verify Tenant related operations (CatalogEntries, creating service instances).
-type TenantOperationSuite struct {
+// TenantSuite verify Tenant related operations (CatalogEntries, creating service instances).
+type TenantSuite struct {
 	suite.Suite
 	*framework.Framework
 
@@ -46,7 +46,7 @@ type TenantOperationSuite struct {
 	serviceClient client.Client
 }
 
-func (s *TenantOperationSuite) SetupSuite() {
+func (s *TenantSuite) SetupSuite() {
 	var err error
 	ctx := context.Background()
 	s.masterClient, err = s.MasterClient()
@@ -152,7 +152,7 @@ func (s *TenantOperationSuite) SetupSuite() {
 
 }
 
-func (s *TenantOperationSuite) TestCatalogEntryCreationAndDeletion() {
+func (s *TenantSuite) TestCatalogEntryCreationAndDeletion() {
 	ctx := context.Background()
 	catalogEntry := &catalogv1alpha1.CatalogEntry{
 		ObjectMeta: metav1.ObjectMeta{
@@ -203,7 +203,7 @@ func (s *TenantOperationSuite) TestCatalogEntryCreationAndDeletion() {
 	}
 }
 
-func (s *TenantOperationSuite) TearDownSuite() {
+func (s *TenantSuite) TearDownSuite() {
 	ctx := context.Background()
 	// Remove the CRDs for testing.
 	couchDB1 := &apiextensionsv1.CustomResourceDefinition{

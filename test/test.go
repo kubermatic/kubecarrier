@@ -25,7 +25,7 @@ import (
 	"github.com/kubermatic/kubecarrier/test/admin"
 	"github.com/kubermatic/kubecarrier/test/framework"
 	"github.com/kubermatic/kubecarrier/test/installation"
-	"github.com/kubermatic/kubecarrier/test/tenantoperation"
+	"github.com/kubermatic/kubecarrier/test/tenant"
 	"github.com/kubermatic/kubecarrier/test/verify"
 )
 
@@ -56,9 +56,9 @@ func AllTests(config framework.Config) ([]testing.InternalTest, error) {
 			},
 		},
 		testing.InternalTest{
-			Name: "TenantOperationSuite",
+			Name: "TenantSuite",
 			F: func(t *testing.T) {
-				suite.Run(t, &tenantoperation.TenantOperationSuite{Framework: f})
+				suite.Run(t, &tenant.TenantSuite{Framework: f})
 			},
 		})
 
