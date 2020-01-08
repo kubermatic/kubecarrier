@@ -2,16 +2,16 @@
   kind: ClusterRole
   metadata:
     creationTimestamp: null
-    name: catapult-manager-role
+    name: db-eu-west-1-catapult-manager-role
   rules: []
 - apiVersion: rbac.authorization.k8s.io/v1
   kind: ClusterRoleBinding
   metadata:
-    name: catapult-manager-rolebinding
+    name: db-eu-west-1-catapult-manager-rolebinding
   roleRef:
     apiGroup: rbac.authorization.k8s.io
     kind: ClusterRole
-    name: catapult-manager-role
+    name: db-eu-west-1-catapult-manager-role
   subjects:
   - kind: ServiceAccount
     name: default
@@ -19,7 +19,7 @@
 - apiVersion: rbac.authorization.k8s.io/v1
   kind: Role
   metadata:
-    name: catapult-leader-election-role
+    name: db-eu-west-1-catapult-leader-election-role
     namespace: test3000
   rules:
   - apiGroups:
@@ -51,12 +51,12 @@
 - apiVersion: rbac.authorization.k8s.io/v1
   kind: RoleBinding
   metadata:
-    name: catapult-leader-election-rolebinding
+    name: db-eu-west-1-catapult-leader-election-rolebinding
     namespace: test3000
   roleRef:
     apiGroup: rbac.authorization.k8s.io
     kind: Role
-    name: catapult-leader-election-role
+    name: db-eu-west-1-catapult-leader-election-role
   subjects:
   - kind: ServiceAccount
     name: default
@@ -66,7 +66,7 @@
   metadata:
     labels:
       control-plane: manager
-    name: catapult-manager-metrics-service
+    name: db-eu-west-1-catapult-manager-metrics-service
     namespace: test3000
   spec:
     ports:
@@ -78,7 +78,7 @@
 - apiVersion: rbac.authorization.k8s.io/v1
   kind: ClusterRole
   metadata:
-    name: catapult-proxy-role
+    name: db-eu-west-1-catapult-proxy-role
   rules:
   - apiGroups:
     - authentication.k8s.io
@@ -95,11 +95,11 @@
 - apiVersion: rbac.authorization.k8s.io/v1
   kind: ClusterRoleBinding
   metadata:
-    name: catapult-proxy-rolebinding
+    name: db-eu-west-1-catapult-proxy-rolebinding
   roleRef:
     apiGroup: rbac.authorization.k8s.io
     kind: ClusterRole
-    name: catapult-proxy-role
+    name: db-eu-west-1-catapult-proxy-role
   subjects:
   - kind: ServiceAccount
     name: default
@@ -109,7 +109,7 @@
   metadata:
     labels:
       control-plane: manager
-    name: catapult-manager
+    name: db-eu-west-1-catapult-manager
     namespace: test3000
   spec:
     replicas: 1

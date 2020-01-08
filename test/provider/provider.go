@@ -60,7 +60,7 @@ func (s *ProviderSuite) TestCatapultDeployAndTeardown() {
 
 	catapult := &operatorv1alpha1.Catapult{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      "test-crd",
+			Name:      "db.eu-west-1",
 			Namespace: s.providerNamespace,
 		},
 	}
@@ -83,7 +83,7 @@ func (s *ProviderSuite) TestCatapultDeployAndTeardown() {
 	// Check created objects
 	catapultDeployment := &appsv1.Deployment{}
 	s.Require().NoError(s.masterClient.Get(ctx, types.NamespacedName{
-		Name:      "catapult-manager",
+		Name:      "db-eu-west-1-catapult-manager",
 		Namespace: catapult.Namespace,
 	}, catapultDeployment), "getting the Catapult manager deployment error")
 

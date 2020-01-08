@@ -18,6 +18,7 @@ package catapult
 
 import (
 	"fmt"
+	"strings"
 
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"sigs.k8s.io/kustomize/v3/pkg/image"
@@ -29,7 +30,9 @@ import (
 
 // Config holds the config information to generate the kubecarrier controller manager setup.
 type Config struct {
-	// Namespace is the kubecarrier controller manager should be deployed into.
+	// Name is the name of the Catapult instance.
+	Name string
+	// Namespace that the Catapult instance should be deployed into.
 	Namespace string
 }
 
@@ -39,7 +42,9 @@ func Manifests(c Config) ([]unstructured.Unstructured, error) {
 	v := version.Get()
 	kc := k.ForHTTP(vfs)
 	if err := kc.MkLayer("man", types.Kustomization{
-		Namespace: c.Namespace,
+		// "." needs to be replaced, because it's forbidden for Deployment and Pod names
+		NamePrefix: strings.Replace(c.Name, ".", "-", -1) + "-",
+		Namespace:  c.Namespace,
 		Images: []image.Image{
 			{
 				Name:   "quay.io/kubecarrier/catapult",

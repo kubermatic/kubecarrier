@@ -33,6 +33,7 @@ func TestManifests(t *testing.T) {
 		goldenFile = "catapult.golden"
 	)
 	c := Config{
+		Name:      "db.eu-west-1",
 		Namespace: "test3000",
 	}
 
