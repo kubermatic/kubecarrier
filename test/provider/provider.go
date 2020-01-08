@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package provideroperation
+package provider
 
 import (
 	"context"
@@ -33,11 +33,11 @@ import (
 	"github.com/kubermatic/kubecarrier/test/framework"
 )
 
-var _ suite.SetupAllSuite = (*ProviderOperationSuite)(nil)
-var _ suite.TearDownAllSuite = (*ProviderOperationSuite)(nil)
+var _ suite.SetupAllSuite = (*ProviderSuite)(nil)
+var _ suite.TearDownAllSuite = (*ProviderSuite)(nil)
 
-// ProviderOperationSuite verify Provider related operations (ServiceCluster, Catalog, etc).
-type ProviderOperationSuite struct {
+// ProviderSuite verify Provider related operations (ServiceCluster, Catalog, etc).
+type ProviderSuite struct {
 	suite.Suite
 	*framework.Framework
 
@@ -45,7 +45,7 @@ type ProviderOperationSuite struct {
 	serviceClient client.Client
 }
 
-func (s *ProviderOperationSuite) SetupSuite() {
+func (s *ProviderSuite) SetupSuite() {
 	var err error
 	ctx := context.Background()
 	s.masterClient, err = s.MasterClient()
@@ -161,7 +161,7 @@ func (s *ProviderOperationSuite) SetupSuite() {
 
 }
 
-func (s *ProviderOperationSuite) TestCatalogCreationAndDeletion() {
+func (s *ProviderSuite) TestCatalogCreationAndDeletion() {
 	ctx := context.Background()
 	catalog := &catalogv1alpha1.Catalog{
 		ObjectMeta: metav1.ObjectMeta{
@@ -210,7 +210,7 @@ func (s *ProviderOperationSuite) TestCatalogCreationAndDeletion() {
 	}
 }
 
-func (s *ProviderOperationSuite) TearDownSuite() {
+func (s *ProviderSuite) TearDownSuite() {
 	ctx := context.Background()
 	// Remove the provider for testing.
 	provider := &catalogv1alpha1.Provider{
