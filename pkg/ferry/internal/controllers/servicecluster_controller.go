@@ -79,8 +79,8 @@ func (r *ServiceClusterReconciler) Reconcile(req ctrl.Request) (res ctrl.Result,
 		}
 	} else {
 		cond = corev1alpha1.ServiceClusterCondition{
-			Message: "tender is posting ready status",
-			Reason:  "TenderReady",
+			Message: "service cluster is posting ready status",
+			Reason:  "ServiceClusterReady",
 			Status:  corev1alpha1.ConditionTrue,
 			Type:    corev1alpha1.ServiceClusterReady,
 		}
