@@ -17,8 +17,8 @@ limitations under the License.
 package cmd
 
 import (
-	"github.com/go-logr/logr"
 	"github.com/spf13/cobra"
+	ctrl "sigs.k8s.io/controller-runtime"
 
 	"github.com/kubermatic/kubecarrier/pkg/anchor/internal/cmd/completion"
 	e2e_test "github.com/kubermatic/kubecarrier/pkg/anchor/internal/cmd/e2e-test"
@@ -28,7 +28,8 @@ import (
 )
 
 // NewAnchor creates the root command for the anchor CLI.
-func NewAnchor(log logr.Logger) *cobra.Command {
+func NewAnchor() *cobra.Command {
+	log := ctrl.Log.WithName("anchor")
 	cmd := &cobra.Command{
 		Use:   "anchor",
 		Short: "Anchor is the CLI tool for managing KubeCarrier",
