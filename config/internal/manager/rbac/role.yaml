@@ -21,6 +21,13 @@ rules:
 - apiGroups:
   - catalog.kubecarrier.io
   resources:
+  - catalogentries
+  verbs:
+  - list
+  - watch
+- apiGroups:
+  - catalog.kubecarrier.io
+  resources:
   - catalogs
   verbs:
   - get
