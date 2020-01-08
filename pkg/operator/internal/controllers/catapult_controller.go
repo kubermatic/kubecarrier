@@ -92,6 +92,7 @@ func (r *CatapultReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	// Build the manifests of the Catapult controller manager.
 	objects, err := resourcescatapult.Manifests(
 		resourcescatapult.Config{
+			Name:      catapult.Name,
 			Namespace: catapult.Namespace,
 		})
 	if err != nil {

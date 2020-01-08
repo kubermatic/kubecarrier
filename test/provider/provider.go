@@ -28,6 +28,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
+	catalogv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/catalog/v1alpha1"
 	operatorv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/operator/v1alpha1"
 	"github.com/kubermatic/kubecarrier/test/framework"
 )
@@ -40,9 +41,9 @@ type ProviderSuite struct {
 	suite.Suite
 	*framework.Framework
 
-	masterClient      client.Client
-	serviceClient     client.Client
-	providerNamespace string
+	masterClient  client.Client
+	serviceClient client.Client
+	provider      *catalogv1alpha1.Provider
 }
 
 func (s *ProviderSuite) SetupSuite() {
@@ -52,7 +53,28 @@ func (s *ProviderSuite) SetupSuite() {
 	s.serviceClient, err = s.ServiceClient()
 	s.Require().NoError(err, "creating service client")
 
-	s.providerNamespace = "provider-test-provider1"
+	// Create a Provider to execute our tests in
+	s.provider = &catalogv1alpha1.Provider{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "example-cloud",
+			Namespace: "kubecarrier-system",
+		},
+	}
+	ctx := context.Background()
+	s.Require().NoError(s.masterClient.Create(ctx, s.provider), "could not create Provider")
+
+	// wait for provider to be ready
+	s.Require().NoError(wait.Poll(time.Second, 10*time.Second, func() (done bool, err error) {
+		if err := s.masterClient.Get(ctx, types.NamespacedName{
+			Name:      s.provider.Name,
+			Namespace: s.provider.Namespace,
+		}, s.provider); err != nil {
+			return true, err
+		}
+
+		cond, _ := s.provider.Status.GetCondition(catalogv1alpha1.ProviderReady)
+		return cond.Status == catalogv1alpha1.ConditionTrue, nil
+	}), "waiting for provider to be ready")
 }
 
 func (s *ProviderSuite) TestCatapultDeployAndTeardown() {
@@ -61,7 +83,7 @@ func (s *ProviderSuite) TestCatapultDeployAndTeardown() {
 	catapult := &operatorv1alpha1.Catapult{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "db.eu-west-1",
-			Namespace: s.providerNamespace,
+			Namespace: s.provider.Status.NamespaceName,
 		},
 	}
 
@@ -82,7 +104,7 @@ func (s *ProviderSuite) TestCatapultDeployAndTeardown() {
 
 	// Check created objects
 	catapultDeployment := &appsv1.Deployment{}
-	s.Require().NoError(s.masterClient.Get(ctx, types.NamespacedName{
+	s.NoError(s.masterClient.Get(ctx, types.NamespacedName{
 		Name:      "db-eu-west-1-catapult-manager",
 		Namespace: catapult.Namespace,
 	}, catapultDeployment), "getting the Catapult manager deployment error")
