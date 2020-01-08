@@ -264,7 +264,7 @@ func (r *CatalogEntryReconciler) manipulateCRDInfo(ctx context.Context, log logr
 		})
 	}
 	if err := r.Status().Update(ctx, catalogEntry); err != nil {
-		return fmt.Errorf("updating Catalog Status: %w", err)
+		return fmt.Errorf("updating CatalogEntry Status: %w", err)
 	}
 	return nil
 }
