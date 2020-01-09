@@ -18,17 +18,11 @@ package admin
 
 import (
 	"context"
-	"fmt"
-	"io/ioutil"
-	"time"
-
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"io/ioutil"
 	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/api/errors"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/types"
-	"k8s.io/apimachinery/pkg/util/wait"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	corev1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/core/v1alpha1"
@@ -83,36 +77,9 @@ func (s *AdminSuite) TestFerryCreationAndDeletion() {
 	serviceCluster.SetNamespace(namespace)
 	require.NoError(t, testutil.WaitUntilReady(s.masterClient, serviceCluster))
 
-	require.NoError(t, s.masterClient.Delete(ctx, scr))
-	require.NoError(t, testutil.WaitUntilNotFound(s.masterClient, scr), "serviceClusterRegistration object not cleared within time limit")
-	assert.NoError(t, wait.Poll(time.Second, 30*time.Second, func() (done bool, err error) {
-		if err := s.masterClient.Get(ctx, types.NamespacedName{
-			Name:      scr.Name,
-			Namespace: scr.Namespace,
-		}, scr); err != nil {
-			return false, fmt.Errorf("get: %w", err)
-		}
-		cond, ok := scr.Status.GetCondition(operatorv1alpha1.ServiceClusterRegistrationReady)
-		if !ok {
-			return false, nil
-		}
-		return cond.Status == operatorv1alpha1.ConditionTrue, nil
-	}), "scr object not ready within time limit")
+	assert.NoError(t, testutil.WaitUntilReady(s.masterClient, scr), "scr object not ready within the time limit")
 
 	require.NoError(t, s.masterClient.Delete(ctx, scr))
-	assert.NoError(t, wait.Poll(time.Second, 30*time.Second, func() (done bool, err error) {
-		err = s.masterClient.Get(ctx, types.NamespacedName{
-			Name:      scr.Name,
-			Namespace: scr.Namespace,
-		}, scr)
-		switch {
-		case err == nil:
-			return false, nil
-		case errors.IsNotFound(err):
-			return true, nil
-		default:
-			return false, err
-		}
-	}), "scr object not cleared within time limit")
+	assert.NoError(t, testutil.WaitUntilNotFound(s.masterClient, scr))
 	assert.NoError(t, s.masterClient.Delete(ctx, sec))
 }
