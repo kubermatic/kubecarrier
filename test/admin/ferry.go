@@ -18,9 +18,10 @@ package admin
 
 import (
 	"context"
+	"io/ioutil"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"io/ioutil"
 	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
