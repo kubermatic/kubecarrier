@@ -22,7 +22,7 @@ import (
 
 // ServiceClusterRegistrationSpec defines the desired state of ServiceClusterRegistration
 type ServiceClusterRegistrationSpec struct {
-	// KubeconfigSecret specifies the KubeConfig to use when connecting to the ServiceCluster.
+	// KubeconfigSecret specifies the Kubeconfig to use when connecting to the ServiceCluster.
 	KubeconfigSecret ObjectReference `json:"kubeconfigSecret"`
 }
 
