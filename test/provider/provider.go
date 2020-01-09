@@ -18,10 +18,13 @@ package provider
 
 import (
 	"context"
+	"fmt"
+	"io/ioutil"
 	"time"
 
 	"github.com/stretchr/testify/suite"
 	appsv1 "k8s.io/api/apps/v1"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
@@ -157,4 +160,105 @@ func (s *ProviderSuite) TestCatapultDeployAndTeardown() {
 		}
 		return false, nil
 	}), "waiting for catapult manager deployment to be gone")
+}
+
+func (s *ProviderSuite) TestFerryCreationAndDeletion() {
+	t := s.T()
+	t.Parallel()
+	ctx := context.Background()
+	const (
+		namespace = "default"
+	)
+
+	serviceKubeconfig, err := ioutil.ReadFile(s.Framework.Config().ServiceInternalKubeconfigPath)
+	s.Require().NoError(err, "cannot read service internal kubeconfig")
+
+	sec := &corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "eu-west-1",
+			Namespace: namespace,
+		},
+		Data: map[string][]byte{
+			"kubeconfig": serviceKubeconfig,
+		},
+	}
+	scr := &operatorv1alpha1.ServiceClusterRegistration{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "eu-west-1",
+			Namespace: namespace,
+		},
+		Spec: operatorv1alpha1.ServiceClusterRegistrationSpec{
+			KubeconfigSecret: operatorv1alpha1.ObjectReference{
+				Name: "eu-west-1",
+			},
+		},
+	}
+
+	s.Require().NoError(client.IgnoreNotFound(s.masterClient.Delete(ctx, sec.DeepCopy())))
+	s.Require().NoError(client.IgnoreNotFound(s.masterClient.Delete(ctx, scr.DeepCopy())))
+
+	s.Require().NoError(s.masterClient.Create(ctx, sec))
+	s.Require().NoError(s.masterClient.Create(ctx, scr))
+
+	s.NoError(wait.Poll(time.Second, 30*time.Second, func() (done bool, err error) {
+		if err := s.masterClient.Get(ctx, types.NamespacedName{
+			Name:      scr.Name,
+			Namespace: scr.Namespace,
+		}, scr); err != nil {
+			return false, fmt.Errorf("get: %w", err)
+		}
+		cond, ok := scr.Status.GetCondition(operatorv1alpha1.ServiceClusterRegistrationReady)
+		if !ok {
+			return false, nil
+		}
+		return cond.Status == operatorv1alpha1.ConditionTrue, nil
+	}), "scr object not ready within time limit")
+
+	// Check created objects
+	ferryDeployment := &appsv1.Deployment{}
+	s.NoError(s.masterClient.Get(ctx, types.NamespacedName{
+		Name:      "eu-west-1-ferry-manager",
+		Namespace: scr.Namespace,
+	}, ferryDeployment), "getting the ferry manager deployment error")
+
+	s.Require().NoError(s.masterClient.Delete(ctx, scr))
+	s.NoError(wait.Poll(time.Second, 30*time.Second, func() (done bool, err error) {
+		err = s.masterClient.Get(ctx, types.NamespacedName{
+			Name:      scr.Name,
+			Namespace: scr.Namespace,
+		}, scr)
+		switch {
+		case err == nil:
+			return false, nil
+		case errors.IsNotFound(err):
+			return true, nil
+		default:
+			return false, err
+		}
+	}), "scr object not cleared within time limit")
+
+	// check the deployment is gone
+	s.Require().NoError(wait.Poll(time.Second, 10*time.Second, func() (done bool, err error) {
+		err = s.masterClient.Get(ctx, types.NamespacedName{
+			Name:      ferryDeployment.Name,
+			Namespace: ferryDeployment.Namespace,
+		}, ferryDeployment)
+		if errors.IsNotFound(err) {
+			return true, nil
+		}
+		if err != nil {
+			return false, err
+		}
+		return false, nil
+	}), "waiting for catapult manager deployment to be gone")
+
+	s.NoError(wait.Poll(time.Second, 30*time.Second, func() (done bool, err error) {
+		if err = s.masterClient.Delete(ctx, sec); err != nil {
+			if errors.IsNotFound(err) {
+				return true, nil
+			}
+			return false, err
+		}
+		return false, nil
+	}), "could not delete the secret")
 }
