@@ -56,7 +56,7 @@ spec:
               of ServiceClusterRegistration
             properties:
               kubeconfigSecret:
-                description: KubeconfigSecret specifies the KubeConfig to use when
+                description: KubeconfigSecret specifies the Kubeconfig to use when
                   connecting to the ServiceCluster.
                 properties:
                   name:
