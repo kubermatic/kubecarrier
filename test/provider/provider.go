@@ -217,6 +217,16 @@ func (s *ProviderSuite) TearDownSuite() {
 		}
 		return false, nil
 	}), "could not delete the CatalogEntry")
+
+	s.Require().NoError(wait.Poll(time.Second, 10*time.Second, func() (done bool, err error) {
+		if err = s.masterClient.Delete(ctx, s.crd); err != nil {
+			if errors.IsNotFound(err) {
+				return true, nil
+			}
+			return false, err
+		}
+		return false, nil
+	}), fmt.Sprintf("deleting CRD: %s error", s.crd.Name))
 }
 
 func (s *ProviderSuite) TestCatapultDeployAndTeardown() {
