@@ -18,10 +18,12 @@ package provider
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/stretchr/testify/suite"
 	appsv1 "k8s.io/api/apps/v1"
+	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
@@ -51,6 +53,7 @@ type ProviderSuite struct {
 	provider     *catalogv1alpha1.Provider
 	tenant       *catalogv1alpha1.Tenant
 	catalogEntry *catalogv1alpha1.CatalogEntry
+	crd          *apiextensionsv1.CustomResourceDefinition
 }
 
 func (s *ProviderSuite) SetupSuite() {
@@ -120,6 +123,39 @@ func (s *ProviderSuite) SetupSuite() {
 		}
 		return true, nil
 	}), "waiting for the tenantReference to be created")
+
+	// Create CRDs to execute tests
+	s.crd = &apiextensionsv1.CustomResourceDefinition{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "couchdbs.eu-west-1.example.cloud",
+			Annotations: map[string]string{
+				"kubecarrier.io/service-cluster": "eu-west-1",
+			},
+			Labels: map[string]string{
+				"kubecarrier.io/provider": s.provider.Name,
+			},
+		},
+		Spec: apiextensionsv1.CustomResourceDefinitionSpec{
+			Group: "eu-west-1.example.cloud",
+			Names: apiextensionsv1.CustomResourceDefinitionNames{
+				Plural: "couchdbs",
+				Kind:   "CouchDB",
+			},
+			Versions: []apiextensionsv1.CustomResourceDefinitionVersion{
+				{
+					Name:    "v1alpha1",
+					Storage: true,
+					Schema: &apiextensionsv1.CustomResourceValidation{
+						OpenAPIV3Schema: &apiextensionsv1.JSONSchemaProps{
+							Type: "object",
+						},
+					},
+				},
+			},
+			Scope: apiextensionsv1.ClusterScoped,
+		},
+	}
+	s.Require().NoError(s.masterClient.Create(ctx, s.crd), fmt.Sprintf("creating CRD: %s error", s.crd.Name))
 
 	// Create a CatalogEntry to execute our tests in
 	s.catalogEntry = &catalogv1alpha1.CatalogEntry{
