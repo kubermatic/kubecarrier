@@ -73,7 +73,6 @@ func (r *CatalogReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 		return ctrl.Result{}, nil
 	}
 
-	// check/add the finalizer for the Catalog.
 	if util.AddFinalizer(catalog, catalogControllerFinalizer) {
 		// Update the Catalog with the finalizer
 		if err := r.Update(ctx, catalog); err != nil {
@@ -171,7 +170,6 @@ func (r *CatalogReconciler) handleDeletion(ctx context.Context, log logr.Logger,
 		}
 	}
 
-	// Remove the finalizer.
 	if util.RemoveFinalizer(catalog, catalogControllerFinalizer) {
 		if err := r.Update(ctx, catalog); err != nil {
 			return fmt.Errorf("updating Catalog: %w", err)
