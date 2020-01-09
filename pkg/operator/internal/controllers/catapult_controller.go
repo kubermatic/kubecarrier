@@ -24,7 +24,6 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
-	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -33,23 +32,23 @@ import (
 
 	operatorv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/operator/v1alpha1"
 	"github.com/kubermatic/kubecarrier/pkg/internal/reconcile"
-	"github.com/kubermatic/kubecarrier/pkg/internal/resources/manager"
+	resourcescatapult "github.com/kubermatic/kubecarrier/pkg/internal/resources/catapult"
 	"github.com/kubermatic/kubecarrier/pkg/internal/util"
 )
 
 const (
-	kubeCarrierControllerFinalizer = "kubecarrier.kubecarrier.io/controller"
+	catapultControllerFinalizer = "catapult.kubecarrier.io/controller"
 )
 
-// KubeCarrierReconciler reconciles a KubeCarrier object
-type KubeCarrierReconciler struct {
+// CatapultReconciler reconciles a Catapult object
+type CatapultReconciler struct {
 	client.Client
 	Log    logr.Logger
 	Scheme *runtime.Scheme
 }
 
-// +kubebuilder:rbac:groups=operator.kubecarrier.io,resources=kubecarriers,verbs=get;list;watch;create;update;patch;delete
-// +kubebuilder:rbac:groups=operator.kubecarrier.io,resources=kubecarriers/status,verbs=get;update;patch
+// +kubebuilder:rbac:groups=operator.kubecarrier.io,resources=catapults,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=operator.kubecarrier.io,resources=catapults/status,verbs=get;update;patch
 // +kubebuilder:rbac:groups=rbac.authorization.k8s.io,resources=clusterrolebindings,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=rbac.authorization.k8s.io,resources=clusterroles,verbs=get;list;watch;create;update;patch;delete;escalate;bind
 // +kubebuilder:rbac:groups=rbac.authorization.k8s.io,resources=roles,verbs=get;list;watch;create;update;patch;delete;escalate;bind
@@ -57,67 +56,67 @@ type KubeCarrierReconciler struct {
 // +kubebuilder:rbac:groups=apps,resources=deployments,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups="",resources=services,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups="",resources=serviceaccounts,verbs=get;list;watch;create;update;patch;delete
-// +kubebuilder:rbac:groups=apiextensions.k8s.io,resources=customresourcedefinitions,verbs=get;list;watch;create;update;patch;delete
 
-// Reconcile function reconciles the KubeCarrier object which specified by the request. Currently, it does the following:
-// 1. Fetch the KubeCarrier object.
-// 2. Handle the deletion of the KubeCarrier object (Remove the objects that the KubeCarrier owns, and remove the finalizer).
-// 3. Reconcile the objects that owned by KubeCarrier object.
-// 4. Update the status of the KubeCarrier object.
-func (r *KubeCarrierReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
+// Reconcile function reconciles the Catapult object which specified by the request. Currently, it does the following:
+// 1. Fetch the Catapult object.
+// 2. Handle the deletion of the Catapult object (Remove the objects that the Catapult owns, and remove the finalizer).
+// 3. Reconcile the objects that owned by Catapult object.
+// 4. Update the status of the Catapult object.
+func (r *CatapultReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	ctx := context.Background()
-	log := r.Log.WithValues("kubecarrier", req.NamespacedName)
+	log := r.Log.WithValues("catapult", req.NamespacedName)
 
-	// 1. Fetch the KubeCarrier object.
-	kubeCarrier := &operatorv1alpha1.KubeCarrier{}
-	if err := r.Get(ctx, req.NamespacedName, kubeCarrier); err != nil {
-		// If the KubeCarrier object is already gone, we just ignore the NotFound error.
+	// 1. Fetch the Catapult object.
+	catapult := &operatorv1alpha1.Catapult{}
+	if err := r.Get(ctx, req.NamespacedName, catapult); err != nil {
+		// If the Catapult object is already gone, we just ignore the NotFound error.
 		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
 
-	// 2. Handle the deletion of the KubeCarrier object (Remove the objects that the KubeCarrier owns, and remove the finalizer).
-	if !kubeCarrier.DeletionTimestamp.IsZero() {
-		if err := r.handleDeletion(ctx, kubeCarrier); err != nil {
+	// 2. Handle the deletion of the Catapult object (Remove the objects that the Catapult owns, and remove the finalizer).
+	if !catapult.DeletionTimestamp.IsZero() {
+		if err := r.handleDeletion(ctx, catapult); err != nil {
 			return ctrl.Result{}, fmt.Errorf("handle deletion: %w", err)
 		}
 		return ctrl.Result{}, nil
 	}
 
 	// Add finalizer
-	if util.AddFinalizer(kubeCarrier, kubeCarrierControllerFinalizer) {
-		if err := r.Update(ctx, kubeCarrier); err != nil {
-			return ctrl.Result{}, fmt.Errorf("updating KubeCarrier finalizers: %w", err)
+	if util.AddFinalizer(catapult, catapultControllerFinalizer) {
+		if err := r.Update(ctx, catapult); err != nil {
+			return ctrl.Result{}, fmt.Errorf("updating Catapult finalizers: %w", err)
 		}
 	}
 
-	// 3. Reconcile the objects that owned by KubeCarrier object.
-	// Build the manifests of the KubeCarrier controller manager.
-	objects, err := manager.Manifests(
-		manager.Config{
-			Namespace: kubeCarrier.Namespace,
+	// 3. Reconcile the objects that owned by Catapult object.
+	// Build the manifests of the Catapult controller manager.
+	objects, err := resourcescatapult.Manifests(
+		resourcescatapult.Config{
+			Name:      catapult.Name,
+			Namespace: catapult.Namespace,
 		})
 	if err != nil {
-		return ctrl.Result{}, fmt.Errorf("creating manager manifests: %w", err)
+		return ctrl.Result{}, fmt.Errorf("creating catapult manifests: %w", err)
 	}
 
-	deploymentIsReady, err := r.reconcileOwnedObjects(ctx, log, kubeCarrier, objects)
+	deploymentIsReady, err := r.reconcileOwnedObjects(ctx, log, catapult, objects)
 	if err != nil {
 		return ctrl.Result{}, err
 	}
 
-	// 4. Update the status of the KubeCarrier object.
-	if err := r.updateKubeCarrierStatus(ctx, kubeCarrier, deploymentIsReady); err != nil {
+	// 4. Update the status of the Catapult object.
+	if err := r.updateCatapultStatus(ctx, catapult, deploymentIsReady); err != nil {
 		return ctrl.Result{}, err
 	}
 
 	return ctrl.Result{}, nil
 }
 
-func (r *KubeCarrierReconciler) SetupWithManager(mgr ctrl.Manager) error {
-	owner := &operatorv1alpha1.KubeCarrier{}
+func (r *CatapultReconciler) SetupWithManager(mgr ctrl.Manager) error {
+	owner := &operatorv1alpha1.Catapult{}
 	enqueuer, err := util.EnqueueRequestForOwner(owner, mgr.GetScheme())
 	if err != nil {
-		return fmt.Errorf("cannot create enqueuer for KubeCarrier: %w", err)
+		return fmt.Errorf("cannot create enqueuer for Catapult: %w", err)
 	}
 
 	return ctrl.NewControllerManagedBy(mgr).
@@ -128,29 +127,28 @@ func (r *KubeCarrierReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		Owns(&rbacv1.RoleBinding{}).
 		Watches(&source.Kind{Type: &rbacv1.ClusterRole{}}, enqueuer).
 		Watches(&source.Kind{Type: &rbacv1.ClusterRoleBinding{}}, enqueuer).
-		Watches(&source.Kind{Type: &apiextensionsv1.CustomResourceDefinition{}}, enqueuer).
 		Complete(r)
 }
 
-// handleDeletion handles the deletion of the KubeCarrier object. Currently, it does:
-// 1. Update the KubeCarrier status to Terminating.
-// 2. Delete the objects that the KubeCarrier object owns.
-// 3. Remove the finalizer from the KubeCarrier object.
-func (r *KubeCarrierReconciler) handleDeletion(ctx context.Context, kubeCarrier *operatorv1alpha1.KubeCarrier) error {
+// handleDeletion handles the deletion of the Catapult object. Currently, it does:
+// 1. Update the Catapult status to Terminating.
+// 2. Delete the objects that the Catapult object owns.
+// 3. Remove the finalizer from the Catapult object.
+func (r *CatapultReconciler) handleDeletion(ctx context.Context, kubeCarrier *operatorv1alpha1.Catapult) error {
 
-	// 1. Update the KubeCarrier Status to Terminating.
-	readyCondition, _ := kubeCarrier.Status.GetCondition(operatorv1alpha1.KubeCarrierReady)
+	// 1. Update the Catapult Status to Terminating.
+	readyCondition, _ := kubeCarrier.Status.GetCondition(operatorv1alpha1.CatapultReady)
 	if readyCondition.Status != operatorv1alpha1.ConditionFalse ||
-		readyCondition.Status == operatorv1alpha1.ConditionFalse && readyCondition.Reason != operatorv1alpha1.KubeCarrierTerminatingReason {
+		readyCondition.Status == operatorv1alpha1.ConditionFalse && readyCondition.Reason != operatorv1alpha1.CatapultTerminatingReason {
 		kubeCarrier.Status.ObservedGeneration = kubeCarrier.Generation
-		kubeCarrier.Status.SetCondition(operatorv1alpha1.KubeCarrierCondition{
-			Type:    operatorv1alpha1.KubeCarrierReady,
+		kubeCarrier.Status.SetCondition(operatorv1alpha1.CatapultCondition{
+			Type:    operatorv1alpha1.CatapultReady,
 			Status:  operatorv1alpha1.ConditionFalse,
-			Reason:  operatorv1alpha1.KubeCarrierTerminatingReason,
-			Message: "KubeCarrier is being terminated",
+			Reason:  operatorv1alpha1.CatapultTerminatingReason,
+			Message: "Catapult is being terminated",
 		})
 		if err := r.Status().Update(ctx, kubeCarrier); err != nil {
-			return fmt.Errorf("updating KubeCarrier status: %w", err)
+			return fmt.Errorf("updating Catapult status: %w", err)
 		}
 	}
 
@@ -181,16 +179,16 @@ func (r *KubeCarrierReconciler) handleDeletion(ctx context.Context, kubeCarrier 
 	}
 
 	// 3. Remove the Finalizer.
-	if util.RemoveFinalizer(kubeCarrier, kubeCarrierControllerFinalizer) {
+	if util.RemoveFinalizer(kubeCarrier, catapultControllerFinalizer) {
 		if err := r.Update(ctx, kubeCarrier); err != nil {
-			return fmt.Errorf("updating KubeCarrier finalizers: %w", err)
+			return fmt.Errorf("updating Catapult finalizers: %w", err)
 		}
 	}
 	return nil
 }
 
-// reconcileOwnedObjects adds the OwnerReference to the objects that owned by this KubeCarrier object, and reconciles them.
-func (r *KubeCarrierReconciler) reconcileOwnedObjects(ctx context.Context, log logr.Logger, kubeCarrier *operatorv1alpha1.KubeCarrier, objects []unstructured.Unstructured) (bool, error) {
+// reconcileOwnedObjects adds the OwnerReference to the objects that owned by this Catapult object, and reconciles them.
+func (r *CatapultReconciler) reconcileOwnedObjects(ctx context.Context, log logr.Logger, kubeCarrier *operatorv1alpha1.Catapult, objects []unstructured.Unstructured) (bool, error) {
 	var deploymentIsReady bool
 	for _, object := range objects {
 		if err := addOwnerReference(kubeCarrier, &object, r.Scheme); err != nil {
@@ -209,35 +207,35 @@ func (r *KubeCarrierReconciler) reconcileOwnedObjects(ctx context.Context, log l
 	return deploymentIsReady, nil
 }
 
-// updateKubeCarrierStatus updates the Status of the KubeCarrier object if needed.
-func (r *KubeCarrierReconciler) updateKubeCarrierStatus(ctx context.Context, kubeCarrier *operatorv1alpha1.KubeCarrier, deploymentIsReady bool) error {
+// updateCatapultStatus updates the Status of the Catapult object if needed.
+func (r *CatapultReconciler) updateCatapultStatus(ctx context.Context, kubeCarrier *operatorv1alpha1.Catapult, deploymentIsReady bool) error {
 	var updateStatus bool
-	readyCondition, _ := kubeCarrier.Status.GetCondition(operatorv1alpha1.KubeCarrierReady)
+	readyCondition, _ := kubeCarrier.Status.GetCondition(operatorv1alpha1.CatapultReady)
 	if !deploymentIsReady && readyCondition.Status != operatorv1alpha1.ConditionFalse {
 		updateStatus = true
 		kubeCarrier.Status.ObservedGeneration = kubeCarrier.Generation
-		kubeCarrier.Status.SetCondition(operatorv1alpha1.KubeCarrierCondition{
-			Type:    operatorv1alpha1.KubeCarrierReady,
+		kubeCarrier.Status.SetCondition(operatorv1alpha1.CatapultCondition{
+			Type:    operatorv1alpha1.CatapultReady,
 			Status:  operatorv1alpha1.ConditionFalse,
 			Reason:  "DeploymentUnready",
-			Message: "the deployment of the KubeCarrier controller manager is not ready",
+			Message: "the deployment of the Catapult controller manager is not ready",
 		})
 	}
 
 	if deploymentIsReady && readyCondition.Status != operatorv1alpha1.ConditionTrue {
 		updateStatus = true
 		kubeCarrier.Status.ObservedGeneration = kubeCarrier.Generation
-		kubeCarrier.Status.SetCondition(operatorv1alpha1.KubeCarrierCondition{
-			Type:    operatorv1alpha1.KubeCarrierReady,
+		kubeCarrier.Status.SetCondition(operatorv1alpha1.CatapultCondition{
+			Type:    operatorv1alpha1.CatapultReady,
 			Status:  operatorv1alpha1.ConditionTrue,
 			Reason:  "DeploymentReady",
-			Message: "the deployment of the KubeCarrier controller manager is ready",
+			Message: "the deployment of the Catapult controller manager is ready",
 		})
 	}
 
 	if updateStatus {
 		if err := r.Status().Update(ctx, kubeCarrier); err != nil {
-			return fmt.Errorf("updating KubeCarrier status: %w", err)
+			return fmt.Errorf("updating Catapult status: %w", err)
 		}
 	}
 	return nil

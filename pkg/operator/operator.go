@@ -113,9 +113,16 @@ func run(flags *flags, log logr.Logger) error {
 	if err = (&controllers.ServiceClusterRegistrationReconciler{
 		Client: mgr.GetClient(),
 		Scheme: mgr.GetScheme(),
-		Log:    log.WithName("controllers").WithName("ferry"),
+		Log:    log.WithName("controllers").WithName("Ferry"),
 	}).SetupWithManager(mgr); err != nil {
 		return fmt.Errorf("creating ServiceClusterRegistration controller: %w", err)
+	}
+	if err = (&controllers.CatapultReconciler{
+		Client: mgr.GetClient(),
+		Log:    log.WithName("controllers").WithName("Catapult"),
+		Scheme: mgr.GetScheme(),
+	}).SetupWithManager(mgr); err != nil {
+		return fmt.Errorf("creating Catapult controller: %w", err)
 	}
 
 	log.Info("starting operator")
