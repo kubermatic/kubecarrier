@@ -88,8 +88,8 @@ spec:
                       type: object
                   type: object
                 metadata:
-                  description: CatalogEntryMetadata contains the metadata (display
-                    name, description, etc) of the CatalogEntry.
+                  description: Metadata contains the metadata (display name, description,
+                    etc) of the CatalogEntry.
                   properties:
                     description:
                       description: Description shows the human-readable description

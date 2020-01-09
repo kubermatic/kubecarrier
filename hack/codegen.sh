@@ -75,3 +75,18 @@ $CONTROLLER_GEN rbac:roleName=manager-role paths="./pkg/manager/..." output:rbac
 cat config/internal/manager/crd/bases/catalog.kubecarrier.io_catalogentries.yaml | yq -Y 'del(.spec.versions[].schema.openAPIV3Schema.properties.status.properties.crds.items.properties.versions.items.properties.schema.properties)' > config/internal/manager/crd/bases/catalog.kubecarrier.io_catalogentries.yaml.tmp
 mv config/internal/manager/crd/bases/catalog.kubecarrier.io_catalogentries.yaml.tmp config/internal/manager/crd/bases/catalog.kubecarrier.io_catalogentries.yaml
 statik-gen manager config/internal/manager
+
+# Ferry
+# -------
+# RBAC
+$CONTROLLER_GEN rbac:roleName=manager-role paths="./pkg/ferry/..." output:rbac:artifacts:config=config/internal/ferry/rbac
+sed -i 's/ClusterRole/Role/g' config/internal/ferry/rbac/role.yaml
+# Statik (run only when file CONTENT has changed)
+statik-gen ferry config/internal/ferry
+
+# Catapult
+# -------
+# RBAC
+$CONTROLLER_GEN rbac:roleName=manager-role paths="./pkg/catapult/..." output:rbac:artifacts:config=config/internal/catapult/rbac
+sed -i 's/ClusterRole/Role/g' config/internal/catapult/rbac/role.yaml
+statik-gen catapult config/internal/catapult

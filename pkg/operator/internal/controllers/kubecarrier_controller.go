@@ -25,13 +25,10 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
-	"k8s.io/apimachinery/pkg/api/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/source"
 
 	operatorv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/operator/v1alpha1"
@@ -244,65 +241,4 @@ func (r *KubeCarrierReconciler) updateKubeCarrierStatus(ctx context.Context, kub
 		}
 	}
 	return nil
-}
-
-// addOwnerReference adds an OwnerReference to an object.
-func addOwnerReference(owner metav1.Object, object *unstructured.Unstructured, scheme *runtime.Scheme) error {
-	switch object.GetKind() {
-	case "ClusterRole", "ClusterRoleBinding", "CustomResourceDefinition":
-		// Non-Namespaced objects
-		if _, err := util.InsertOwnerReference(owner, object, scheme); err != nil {
-			return fmt.Errorf("insert corss-namespaced ownerReference: %w", err)
-		}
-	default:
-		if err := controllerutil.SetControllerReference(owner, object, scheme); err != nil {
-			return fmt.Errorf("set ownerReference: %w", err)
-		}
-	}
-	return nil
-}
-
-// cleanupClusterRoles deletes owned ClusterRoles
-// cleaned is true when all ClusterRoles have been cleaned up.
-func cleanupClusterRoles(ctx context.Context, c client.Client, ownedBy util.GeneralizedListOption) (cleaned bool, err error) {
-	clusterRoleList := &rbacv1.ClusterRoleList{}
-	if err := c.List(ctx, clusterRoleList, ownedBy); err != nil {
-		return false, fmt.Errorf("listing ClusterRoles: %w", err)
-	}
-	for _, clusterRole := range clusterRoleList.Items {
-		if err := c.Delete(ctx, &clusterRole); err != nil && !errors.IsNotFound(err) {
-			return false, fmt.Errorf("deleting ClusterRole: %w", err)
-		}
-	}
-	return len(clusterRoleList.Items) == 0, nil
-}
-
-// cleanupClusterRoleBindings deletes owned ClusterRoleBindings
-// cleaned is true when all ClusterRoleBindings have been cleaned up.
-func cleanupClusterRoleBindings(ctx context.Context, c client.Client, ownedBy util.GeneralizedListOption) (cleaned bool, err error) {
-	clusterRoleBindingList := &rbacv1.ClusterRoleBindingList{}
-	if err := c.List(ctx, clusterRoleBindingList, ownedBy); err != nil {
-		return false, fmt.Errorf("listing ClusterRoleBindings: %w", err)
-	}
-	for _, clusterRoleBinding := range clusterRoleBindingList.Items {
-		if err := c.Delete(ctx, &clusterRoleBinding); err != nil && !errors.IsNotFound(err) {
-			return false, fmt.Errorf("deleting ClusterRoleBinding: %w", err)
-		}
-	}
-	return len(clusterRoleBindingList.Items) == 0, nil
-}
-
-// cleanupCustomResourceDefinitions deletes owned CustomResourceDefinitions
-// cleaned is true when all CustomResourceDefinitions have been cleaned up.
-func cleanupCustomResourceDefinitions(ctx context.Context, c client.Client, ownedBy util.GeneralizedListOption) (cleaned bool, err error) {
-	customResourceDefinitionList := &apiextensionsv1.CustomResourceDefinitionList{}
-	if err := c.List(ctx, customResourceDefinitionList, ownedBy); err != nil {
-		return false, fmt.Errorf("listing CustomResourceDefinitions: %w", err)
-	}
-	for _, customResourceDefinition := range customResourceDefinitionList.Items {
-		if err := c.Delete(ctx, &customResourceDefinition); err != nil && !errors.IsNotFound(err) {
-			return false, fmt.Errorf("deleting CustomResourceDefinition: %w", err)
-		}
-	}
-	return len(customResourceDefinitionList.Items) == 0, nil
 }
