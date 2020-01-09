@@ -106,7 +106,9 @@ func New(c Config) (f *Framework, err error) {
 	if err := clientgoscheme.AddToScheme(f.serviceScheme); err != nil {
 		return nil, fmt.Errorf("adding clientgo scheme to service scheme: %w", err)
 	}
-
+	if err = apiextensionsv1.AddToScheme(f.serviceScheme); err != nil {
+		return nil, fmt.Errorf("adding apiextensionsv1 scheme to service scheme: %w", err)
+	}
 	f.serviceConfig, err = clientcmd.BuildConfigFromFlags("", f.config.ServiceExternalKubeconfigPath)
 	if err != nil {
 		return nil, fmt.Errorf("build restconfig for service: %w", err)

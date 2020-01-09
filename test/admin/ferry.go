@@ -114,8 +114,8 @@ func (s *AdminSuite) TestFerryCreationAndDeletion() {
 
 		require.NoError(t, testutil.WaitUntilReady(s.masterClient, provider))
 
-		assert.NoError(t, client.IgnoreNotFound(s.masterClient.Delete(ctx, provider)))
-		assert.NoError(t, client.IgnoreNotFound(s.serviceClient.Delete(ctx, crd)))
+		//assert.NoError(t, client.IgnoreNotFound(s.masterClient.Delete(ctx, provider)))
+		//assert.NoError(t, client.IgnoreNotFound(s.serviceClient.Delete(ctx, crd)))
 	})
 
 	require.NoError(t, s.masterClient.Delete(ctx, scr))
