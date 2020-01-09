@@ -22,6 +22,7 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/spf13/cobra"
+	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
@@ -45,6 +46,7 @@ var (
 func init() {
 	_ = clientgoscheme.AddToScheme(scheme)
 	_ = catalogv1alpha1.AddToScheme(scheme)
+	_ = apiextensionsv1.AddToScheme(scheme)
 }
 
 const (
@@ -99,6 +101,20 @@ func run(flags *flags, log logr.Logger) error {
 		Scheme: mgr.GetScheme(),
 	}).SetupWithManager(mgr); err != nil {
 		return fmt.Errorf("creating Provider controller: %w", err)
+	}
+
+	// Register a field index for Provider.Status.NamespaceName
+	if err := catalogv1alpha1.RegisterProviderNamespaceFieldIndex(mgr); err != nil {
+		return fmt.Errorf("registering ProviderNamespace field index: %w", err)
+	}
+
+	if err = (&controllers.CatalogEntryReconciler{
+		Client:                     mgr.GetClient(),
+		Log:                        log.WithName("controllers").WithName("CatalogEntry"),
+		Scheme:                     mgr.GetScheme(),
+		KubeCarrierSystemNamespace: flags.kubeCarrierSystemNamespace,
+	}).SetupWithManager(mgr); err != nil {
+		return fmt.Errorf("creating CatalogEntry controller: %w", err)
 	}
 
 	if err = (&controllers.CatalogReconciler{

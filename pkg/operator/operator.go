@@ -27,6 +27,7 @@ import (
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/client/apiutil"
 
 	operatorv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/operator/v1alpha1"
 	"github.com/kubermatic/kubecarrier/pkg/internal/util"
@@ -82,15 +83,19 @@ func run(flags *flags, log logr.Logger) error {
 	}
 
 	// Field Index
-	if err := util.AddOwnerReverseFieldIndex(
-		mgr.GetFieldIndexer(), ctrl.Log.WithName("fieldindex").WithName("ClusterRole"), &rbacv1.ClusterRole{},
-	); err != nil {
-		return fmt.Errorf("cannot add ClusterRole owner field indexer: %w", err)
-	}
-	if err := util.AddOwnerReverseFieldIndex(
-		mgr.GetFieldIndexer(), ctrl.Log.WithName("fieldindex").WithName("ClusterRoleBinding"), &rbacv1.ClusterRoleBinding{},
-	); err != nil {
-		return fmt.Errorf("cannot add ClusterRoleBinding owner field indexer: %w", err)
+	for _, obj := range []runtime.Object{
+		&rbacv1.ClusterRole{},
+		&rbacv1.ClusterRoleBinding{},
+	} {
+		gvk, err := apiutil.GVKForObject(obj, mgr.GetScheme())
+		if err != nil {
+			return fmt.Errorf("gvk: %T, %w", obj, err)
+		}
+		if err := util.AddOwnerReverseFieldIndex(
+			mgr.GetFieldIndexer(), ctrl.Log.WithName("fieldindex").WithName(gvk.Kind), obj,
+		); err != nil {
+			return fmt.Errorf("cannot add %s owner field indexer: %w", gvk.Kind, err)
+		}
 	}
 	if err := util.AddOwnerReverseFieldIndex(
 		mgr.GetFieldIndexer(), ctrl.Log.WithName("fieldindex").WithName("CustomResourceDefinition"), &apiextensionsv1.CustomResourceDefinition{},
@@ -104,6 +109,20 @@ func run(flags *flags, log logr.Logger) error {
 		Scheme: mgr.GetScheme(),
 	}).SetupWithManager(mgr); err != nil {
 		return fmt.Errorf("creating KubeCarrier controller: %w", err)
+	}
+	if err = (&controllers.ServiceClusterRegistrationReconciler{
+		Client: mgr.GetClient(),
+		Scheme: mgr.GetScheme(),
+		Log:    log.WithName("controllers").WithName("Ferry"),
+	}).SetupWithManager(mgr); err != nil {
+		return fmt.Errorf("creating ServiceClusterRegistration controller: %w", err)
+	}
+	if err = (&controllers.CatapultReconciler{
+		Client: mgr.GetClient(),
+		Log:    log.WithName("controllers").WithName("Catapult"),
+		Scheme: mgr.GetScheme(),
+	}).SetupWithManager(mgr); err != nil {
+		return fmt.Errorf("creating Catapult controller: %w", err)
 	}
 
 	log.Info("starting operator")

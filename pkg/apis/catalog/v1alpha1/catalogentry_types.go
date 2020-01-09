@@ -22,6 +22,7 @@ import (
 
 // CatalogEntrySpec defines the desired state of CatalogEntry
 type CatalogEntrySpec struct {
+	// Metadata contains the metadata (display name, description, etc) of the CatalogEntry.
 	Metadata CatalogEntryMetadata `json:"metadata,omitempty"`
 	// CRDSelector selects CRD objects that should be part of this catalog.
 	CRDSelector *metav1.LabelSelector `json:"crdSelector,omitempty"`

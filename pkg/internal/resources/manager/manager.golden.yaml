@@ -392,8 +392,8 @@
                       type: object
                   type: object
                 metadata:
-                  description: CatalogEntryMetadata contains the metadata (display
-                    name, description, etc) of the CatalogEntry.
+                  description: Metadata contains the metadata (display name, description,
+                    etc) of the CatalogEntry.
                   properties:
                     description:
                       description: Description shows the human-readable description
@@ -471,7 +471,13 @@
                           description: CRDVersion holds CRD version specific details.
                           properties:
                             name:
+                              description: 'Name of this version, for example: v1,
+                                v1alpha1, v1beta1'
                               type: string
+                            schema:
+                              description: Schema of this CRD version.
+                              type: object
+                              x-kubernetes-preserve-unknown-fields: true
                           required:
                           - name
                           type: object
@@ -758,12 +764,31 @@
     - update
     - watch
   - apiGroups:
+    - apiextensions.k8s.io
+    resources:
+    - customresourcedefinitions
+    verbs:
+    - get
+    - list
+    - update
+    - watch
+  - apiGroups:
     - catalog.kubecarrier.io
     resources:
     - catalogentries
     verbs:
+    - get
     - list
+    - update
     - watch
+  - apiGroups:
+    - catalog.kubecarrier.io
+    resources:
+    - catalogentries/status
+    verbs:
+    - get
+    - patch
+    - update
   - apiGroups:
     - catalog.kubecarrier.io
     resources:

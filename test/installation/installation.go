@@ -38,6 +38,7 @@ import (
 )
 
 var _ suite.SetupAllSuite = (*InstallationSuite)(nil)
+var _ suite.TearDownAllSuite = (*InstallationSuite)(nil)
 
 // InstallationSuite verifies if the KubeCarrier operator and KubeCarrier can be deployed.
 type InstallationSuite struct {
