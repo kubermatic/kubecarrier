@@ -71,3 +71,11 @@ $CONTROLLER_GEN crd:crdVersions=${CRD_VERSION} webhook paths="./pkg/apis/catalog
 # RBAC
 $CONTROLLER_GEN rbac:roleName=manager-role paths="./pkg/manager/..." output:rbac:artifacts:config=config/internal/manager/rbac
 statik-gen manager config/internal/manager
+
+# Ferry
+# -------
+# RBAC
+$CONTROLLER_GEN rbac:roleName=manager-role paths="./pkg/ferry/..." output:rbac:artifacts:config=config/internal/ferry/rbac
+sed -i 's/ClusterRole/Role/g' config/internal/ferry/rbac/role.yaml
+# Statik (run only when file CONTENT has changed)
+statik-gen ferry config/internal/ferry

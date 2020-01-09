@@ -53,6 +53,7 @@ func (s *AdminSuite) SetupSuite() {
 }
 
 func (s *AdminSuite) TestTenantProviderCreationAndDeletion() {
+	s.T().Parallel()
 	ctx := context.Background()
 	tenant := &catalogv1alpha1.Tenant{
 		ObjectMeta: metav1.ObjectMeta{
