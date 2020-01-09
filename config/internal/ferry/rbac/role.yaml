@@ -7,6 +7,35 @@ metadata:
   name: manager-role
 rules:
 - apiGroups:
+  - apiextensions.k8s.io
+  resources:
+  - customresourcedefinitions
+  verbs:
+  - get
+  - list
+  - update
+  - watch
+- apiGroups:
+  - core.kubecarrier.io
+  resources:
+  - crdreferences
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - core.kubecarrier.io
+  resources:
+  - crdreferences/status
+  verbs:
+  - get
+  - patch
+  - update
+- apiGroups:
   - core.kubecarrier.io
   resources:
   - serviceclusters

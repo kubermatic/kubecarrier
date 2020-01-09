@@ -18,6 +18,7 @@ set -euo pipefail
 LD_FLAGS=${1//-w/}
 GIT_ROOT=$(git rev-parse --show-toplevel)
 
+mkdir -p ${GIT_ROOT}/.idea/runConfigurations
 
 cat << EOF > ${GIT_ROOT}/.idea/runConfigurations/kubecarrier_operator.xml
 <component name="ProjectRunConfigurationManager">
@@ -61,6 +62,22 @@ cat << EOF > ${GIT_ROOT}/.idea/runConfigurations/kubecarrier_catapult.xml
     <filePath value="\$PROJECT_DIR\$/|\$PROJECT_DIR\$/cmd/catapult/main.go" />
     <package value="github.com/kubermatic/kubecarrier" />
     <directory value="\$PROJECT_DIR\$/cmd/catapult" />
+    <method v="2" />
+  </configuration>
+</component>
+EOF
+
+cat << EOF > ${GIT_ROOT}/.idea/runConfigurations/kubecarrier_e2e.xml
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="kubecarrier:e2e" type="GoApplicationRunConfiguration" factoryName="Go Application">
+    <module name="kubecarrier" />
+    <working_directory value="\$PROJECT_DIR\$/" />
+    <go_parameters value="-i -ldflags &quot;${LD_FLAGS}&quot;" />
+    <parameters value="e2e-test run --test.v --test-id=1"/>
+    <kind value="DIRECTORY" />
+    <filePath value="\$PROJECT_DIR\$/|\$PROJECT_DIR\$/cmd/anchor/main.go" />
+    <package value="github.com/kubermatic/kubecarrier" />
+    <directory value="\$PROJECT_DIR\$/cmd/anchor" />
     <method v="2" />
   </configuration>
 </component>

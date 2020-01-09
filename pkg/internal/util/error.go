@@ -14,20 +14,19 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package main
+package util
 
 import (
 	"fmt"
-	"os"
 
-	ctrl "sigs.k8s.io/controller-runtime"
-
-	"github.com/kubermatic/kubecarrier/pkg/ferry"
+	"k8s.io/apimachinery/pkg/api/errors"
 )
 
-func main() {
-	if err := ferry.NewFerryCommand(ctrl.Log.WithName("ferry")).Execute(); err != nil {
-		fmt.Println(err)
-		os.Exit(1)
+// ErrorReason returns error reason for k8s status errors, error type otherwise
+func ErrorReason(err error) string {
+	statusErr, ok := err.(*errors.StatusError)
+	if ok {
+		return string(statusErr.Status().Reason)
 	}
+	return fmt.Sprintf("%T", err)
 }

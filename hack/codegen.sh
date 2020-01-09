@@ -66,7 +66,8 @@ statik-gen operator config/operator
 # Manager
 # -------
 # CRDs/Webhooks
-$CONTROLLER_GEN crd:crdVersions=${CRD_VERSION} webhook paths="./pkg/apis/core/..." output:crd:artifacts:config=config/internal/manager/crd/bases output:webhook:artifacts:config=config/internal/manager/webhook
+# The `|| true` is because the controller-gen will error out if CRD_types.go embeds CustomResourcDefinition, and it will be handled in the following yq removements.
+$CONTROLLER_GEN crd:crdVersions=${CRD_VERSION} webhook paths="./pkg/apis/core/..." output:crd:artifacts:config=config/internal/manager/crd/bases output:webhook:artifacts:config=config/internal/manager/webhook || true
 # The `|| true` is because the controller-gen will error out if CRD_types.go embeds CatalogEntry embeds CustomResourceValidation, and it will be handled in the following yq removements.
 $CONTROLLER_GEN crd:crdVersions=${CRD_VERSION} webhook paths="./pkg/apis/catalog/..." output:crd:artifacts:config=config/internal/manager/crd/bases output:webhook:artifacts:config=config/internal/manager/webhook || true
 # RBAC
