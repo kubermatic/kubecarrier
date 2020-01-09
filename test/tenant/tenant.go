@@ -202,9 +202,25 @@ func (s *TenantSuite) TearDownSuite() {
 	ctx := context.Background()
 	// Remove the CRDs for testing.
 	for _, crd := range s.crds {
-		s.Require().NoError(s.masterClient.Delete(ctx, crd), fmt.Sprintf("deleting CRD: %s error", crd.Name))
+		s.Require().NoError(wait.Poll(time.Second, 10*time.Second, func() (done bool, err error) {
+			if err = s.masterClient.Delete(ctx, crd); err != nil {
+				if errors.IsNotFound(err) {
+					return true, nil
+				}
+				return false, err
+			}
+			return false, nil
+		}), fmt.Sprintf("deleting CRD: %s error", crd.Name))
 	}
 
 	// Remove the provider for testing.
-	s.Require().NoError(s.masterClient.Delete(ctx, s.provider), "deleting Provider error")
+	s.Require().NoError(wait.Poll(time.Second, 10*time.Second, func() (done bool, err error) {
+		if err = s.masterClient.Delete(ctx, s.provider); err != nil {
+			if errors.IsNotFound(err) {
+				return true, nil
+			}
+			return false, err
+		}
+		return false, nil
+	}), "could not delete the Provider")
 }
