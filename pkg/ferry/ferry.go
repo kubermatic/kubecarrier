@@ -50,7 +50,7 @@ type flags struct {
 
 	// service
 	serviceMetricsAddr string
-	serviceKubeConfig  string
+	serviceKubeconfig  string
 	serviceMaster      string
 	serviceClusterName string
 }
@@ -83,7 +83,7 @@ func NewFerryCommand(log logr.Logger) *cobra.Command {
 
 	// service cluster client settings
 	cmd.Flags().StringVar(&flags.serviceMetricsAddr, "service-cluster-metrics-addr", ":8081", "The address the metric endpoint binds to.")
-	cmd.Flags().StringVar(&flags.serviceKubeConfig, "service-cluster-kubeconfig", "", "Path to the Service Cluster kubeconfig.")
+	cmd.Flags().StringVar(&flags.serviceKubeconfig, "service-cluster-kubeconfig", "", "Path to the Service Cluster kubeconfig.")
 	cmd.Flags().StringVar(&flags.serviceClusterName, "service-cluster-name", "", "Name of the Service Cluster the ferry is operating on.")
 	for _, flagName := range []string{
 		"provider-namespace",
@@ -102,12 +102,12 @@ func runE(flags *flags, log logr.Logger) error {
 	// KubeCarrier cluster manager
 	masterCfg := ctrl.GetConfigOrDie()
 	var serviceCfg *rest.Config
-	if flags.serviceKubeConfig == "" {
-		log.Info("no serviceKubeConfig given, asuming same-cluster")
+	if flags.serviceKubeconfig == "" {
+		log.Info("no serviceKubeconfig given, asuming same-cluster")
 		serviceCfg = masterCfg
 	} else {
 		var err error
-		serviceCfg, err = clientcmd.BuildConfigFromFlags(flags.serviceMaster, flags.serviceKubeConfig)
+		serviceCfg, err = clientcmd.BuildConfigFromFlags(flags.serviceMaster, flags.serviceKubeconfig)
 		if err != nil {
 			return fmt.Errorf("unable to set up service cluster client config: %w", err)
 		}

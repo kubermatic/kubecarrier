@@ -2,7 +2,7 @@
   kind: Role
   metadata:
     creationTimestamp: null
-    name: ferry-hanskubecarrier-manager-manager-role
+    name: hans-ferry-manager-role
     namespace: provider-1000
   rules:
   - apiGroups:
@@ -28,12 +28,12 @@
 - apiVersion: rbac.authorization.k8s.io/v1
   kind: RoleBinding
   metadata:
-    name: ferry-hanskubecarrier-manager-manager-rolebinding
+    name: hans-ferry-manager-rolebinding
     namespace: provider-1000
   roleRef:
     apiGroup: rbac.authorization.k8s.io
     kind: Role
-    name: ferry-hanskubecarrier-manager-manager-role
+    name: hans-ferry-manager-role
   subjects:
   - kind: ServiceAccount
     name: default
@@ -41,7 +41,7 @@
 - apiVersion: rbac.authorization.k8s.io/v1
   kind: Role
   metadata:
-    name: ferry-hanskubecarrier-manager-leader-election-role
+    name: hans-ferry-leader-election-role
     namespace: provider-1000
   rules:
   - apiGroups:
@@ -73,12 +73,12 @@
 - apiVersion: rbac.authorization.k8s.io/v1
   kind: RoleBinding
   metadata:
-    name: ferry-hanskubecarrier-manager-leader-election-rolebinding
+    name: hans-ferry-leader-election-rolebinding
     namespace: provider-1000
   roleRef:
     apiGroup: rbac.authorization.k8s.io
     kind: Role
-    name: ferry-hanskubecarrier-manager-leader-election-role
+    name: hans-ferry-leader-election-role
   subjects:
   - kind: ServiceAccount
     name: default
@@ -88,7 +88,7 @@
   metadata:
     labels:
       control-plane: manager
-    name: ferry-hanskubecarrier-manager-manager
+    name: hans-ferry-manager
     namespace: provider-1000
   spec:
     replicas: 1
