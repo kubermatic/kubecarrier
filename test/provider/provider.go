@@ -82,7 +82,15 @@ func (s *ProviderSuite) SetupSuite() {
 
 func (s *ProviderSuite) TearDownSuite() {
 	ctx := context.Background()
-	s.Require().NoError(s.masterClient.Delete(ctx, s.provider), "could not delete Provider")
+	s.Require().NoError(wait.Poll(time.Second, 30*time.Second, func() (done bool, err error) {
+		if err = s.masterClient.Delete(ctx, s.provider); err != nil {
+			if errors.IsNotFound(err) {
+				return true, nil
+			}
+			return false, err
+		}
+		return false, nil
+	}), "could not delete the Provider")
 }
 
 func (s *ProviderSuite) TestCatapultDeployAndTeardown() {
