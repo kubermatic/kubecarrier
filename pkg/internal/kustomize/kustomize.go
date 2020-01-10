@@ -18,8 +18,11 @@ package kustomize
 
 import (
 	"fmt"
+	"io"
 	"net/http"
+	"os"
 
+	statikfs "github.com/rakyll/statik/fs"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"sigs.k8s.io/kustomize/v3/k8sdeps/kunstruct"
 	"sigs.k8s.io/kustomize/v3/k8sdeps/transformer"
@@ -31,6 +34,8 @@ import (
 	"sigs.k8s.io/kustomize/v3/pkg/resmap"
 	"sigs.k8s.io/kustomize/v3/pkg/resource"
 	"sigs.k8s.io/kustomize/v3/pkg/target"
+	"sigs.k8s.io/kustomize/v3/pkg/types"
+	"sigs.k8s.io/yaml"
 )
 
 // Kustomize holds factories and config options.
@@ -66,6 +71,7 @@ func NewDefaultKustomize() *Kustomize {
 type KustomizeContext interface {
 	ReadFile(path string) ([]byte, error)
 	WriteFile(path string, content []byte) error
+	MkLayer(name string, kustomization types.Kustomization) error
 	Build(path string) ([]unstructured.Unstructured, error)
 }
 
@@ -79,13 +85,46 @@ func (k *Kustomize) For(fs fs.FileSystem) KustomizeContext {
 
 // ForHTTP returns a new KustomizeContext using the given http.FileSystem.
 func (k *Kustomize) ForHTTP(httpFS http.FileSystem) KustomizeContext {
-	fs, err := httpFSToKustomizeFS(httpFS)
-	if err != nil {
-		// as we are working on two in-memory FS, this should never happen
+	kustomizeFs := fs.MakeFsInMemory()
+	if err := statikfs.Walk(httpFS, "/", func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+		if info.IsDir() {
+			return kustomizeFs.Mkdir(path)
+		}
+
+		// Read data. It should not error since it's in memory FS
+		Fin, err := httpFS.Open(path)
+		if err != nil {
+			return err
+		}
+		// Write modified data. It should not error since it's in memory FS
+		Fout, err := kustomizeFs.Create(path)
+		if err != nil {
+			return err
+		}
+		if _, err := io.Copy(Fout, Fin); err != nil {
+			return fmt.Errorf("cannot copy data: %w", err)
+		}
+
+		if err := Fin.Close(); err != nil {
+			return err
+		}
+		if err := Fout.Close(); err != nil {
+			return err
+		}
+
+		return nil
+	}); err != nil {
+		// We're handling in memory data systems, this should NEVER happen
 		panic(err)
 	}
 
-	return k.For(fs)
+	return &kustomizeContext{
+		Kustomize: k,
+		fs:        kustomizeFs,
+	}
 }
 
 // kustomizeContext combines a Kustomize instance with a FileSystem to operate on.
@@ -99,6 +138,23 @@ var _ KustomizeContext = (*kustomizeContext)(nil)
 // ReadFile reads the file's content from the underlying FS.
 func (k *kustomizeContext) ReadFile(path string) ([]byte, error) {
 	return k.fs.ReadFile(path)
+}
+
+// MkLayer makes directory in the underlying FS, and initialize its kustomization.yaml
+func (k *kustomizeContext) MkLayer(name string, kustomization types.Kustomization) error {
+	if err := k.fs.Mkdir(name); err != nil {
+		return fmt.Errorf("cannot create dir: %w", err)
+	}
+
+	kustomizationBytes, err := yaml.Marshal(kustomization)
+	if err != nil {
+		return fmt.Errorf("cannot yaml marshal: %w", err)
+	}
+
+	if err := k.WriteFile("/"+name+"/kustomization.yaml", kustomizationBytes); err != nil {
+		return fmt.Errorf("cannot write marshal: %w", err)
+	}
+	return nil
 }
 
 // WriteFile writes the given content to the underlying FS.

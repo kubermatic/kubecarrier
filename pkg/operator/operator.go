@@ -22,15 +22,13 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/spf13/cobra"
 	rbacv1 "k8s.io/api/rbac/v1"
-	apiextensionsv1beta1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
+	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
-	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client/apiutil"
 
 	operatorv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/operator/v1alpha1"
-	"github.com/kubermatic/kubecarrier/pkg/internal/kustomize"
 	"github.com/kubermatic/kubecarrier/pkg/internal/util"
 	"github.com/kubermatic/kubecarrier/pkg/operator/internal/controllers"
 )
@@ -48,14 +46,15 @@ func init() {
 	_ = clientgoscheme.AddToScheme(scheme)
 	_ = operatorv1alpha1.AddToScheme(scheme)
 	_ = rbacv1.AddToScheme(scheme)
-	_ = apiextensionsv1beta1.AddToScheme(scheme)
+	_ = apiextensionsv1.AddToScheme(scheme)
 }
 
 const (
 	componentOperator = "operator"
 )
 
-func NewOperatorCommand(log logr.Logger) *cobra.Command {
+func NewOperatorCommand() *cobra.Command {
+	log := ctrl.Log.WithName("operator")
 	flags := &flags{}
 	cmd := &cobra.Command{
 		Args:  cobra.NoArgs,
@@ -68,7 +67,7 @@ func NewOperatorCommand(log logr.Logger) *cobra.Command {
 	cmd.Flags().StringVar(&flags.metricsAddr, "metrics-addr", ":8080", "The address the metric endpoint binds to.")
 	cmd.Flags().BoolVar(&flags.enableLeaderElection, "enable-leader-election", false,
 		"Enable leader election for operator. Enabling this will ensure there is only one active controller manager.")
-	return cmd
+	return util.CmdLogMixin(cmd)
 }
 
 func run(flags *flags, log logr.Logger) error {
@@ -97,23 +96,32 @@ func run(flags *flags, log logr.Logger) error {
 			return fmt.Errorf("cannot add %s owner field indexer: %w", gvk.Kind, err)
 		}
 	}
+	if err := util.AddOwnerReverseFieldIndex(
+		mgr.GetFieldIndexer(), ctrl.Log.WithName("fieldindex").WithName("CustomResourceDefinition"), &apiextensionsv1.CustomResourceDefinition{},
+	); err != nil {
+		return fmt.Errorf("cannot add CustomResourceDefinition owner field indexer: %w", err)
+	}
 
-	kustomize := kustomize.NewDefaultKustomize()
 	if err = (&controllers.KubeCarrierReconciler{
-		Client:    mgr.GetClient(),
-		Log:       log.WithName("controllers").WithName("KubeCarrier"),
-		Scheme:    mgr.GetScheme(),
-		Kustomize: kustomize,
+		Client: mgr.GetClient(),
+		Log:    log.WithName("controllers").WithName("KubeCarrier"),
+		Scheme: mgr.GetScheme(),
 	}).SetupWithManager(mgr); err != nil {
 		return fmt.Errorf("creating KubeCarrier controller: %w", err)
 	}
-	if err = (&controllers.TenderReconciler{
-		Client:    mgr.GetClient(),
-		Scheme:    mgr.GetScheme(),
-		Log:       log.WithName("controllers").WithName("tender"),
-		Kustomize: kustomize,
+	if err = (&controllers.ServiceClusterRegistrationReconciler{
+		Client: mgr.GetClient(),
+		Scheme: mgr.GetScheme(),
+		Log:    log.WithName("controllers").WithName("Ferry"),
 	}).SetupWithManager(mgr); err != nil {
-		return fmt.Errorf("creating Tender controller: %w", err)
+		return fmt.Errorf("creating ServiceClusterRegistration controller: %w", err)
+	}
+	if err = (&controllers.CatapultReconciler{
+		Client: mgr.GetClient(),
+		Log:    log.WithName("controllers").WithName("Catapult"),
+		Scheme: mgr.GetScheme(),
+	}).SetupWithManager(mgr); err != nil {
+		return fmt.Errorf("creating Catapult controller: %w", err)
 	}
 
 	log.Info("starting operator")

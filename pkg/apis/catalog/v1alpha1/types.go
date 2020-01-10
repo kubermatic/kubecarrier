@@ -33,3 +33,8 @@ const (
 	// ConditionUnknown represents the fact that a given condition is unknown
 	ConditionUnknown ConditionStatus = "Unknown"
 )
+
+// ObjectReference describes the link to another object in the same namespace.
+type ObjectReference struct {
+	Name string `json:"name"`
+}

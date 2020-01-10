@@ -57,6 +57,26 @@ rules:
 - apiGroups:
   - operator.kubecarrier.io
   resources:
+  - catapults
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - operator.kubecarrier.io
+  resources:
+  - catapults/status
+  verbs:
+  - get
+  - patch
+  - update
+- apiGroups:
+  - operator.kubecarrier.io
+  resources:
   - kubecarriers
   verbs:
   - create
@@ -77,7 +97,7 @@ rules:
 - apiGroups:
   - operator.kubecarrier.io
   resources:
-  - tenders
+  - serviceclusterregistrations
   verbs:
   - create
   - delete
@@ -89,7 +109,7 @@ rules:
 - apiGroups:
   - operator.kubecarrier.io
   resources:
-  - tenders/status
+  - serviceclusterregistrations/status
   verbs:
   - get
   - patch

@@ -22,12 +22,13 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/spf13/cobra"
+	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
-	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 	ctrl "sigs.k8s.io/controller-runtime"
 
 	catalogv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/catalog/v1alpha1"
+	"github.com/kubermatic/kubecarrier/pkg/internal/util"
 	"github.com/kubermatic/kubecarrier/pkg/manager/internal/controllers"
 )
 
@@ -44,13 +45,15 @@ var (
 func init() {
 	_ = clientgoscheme.AddToScheme(scheme)
 	_ = catalogv1alpha1.AddToScheme(scheme)
+	_ = apiextensionsv1.AddToScheme(scheme)
 }
 
 const (
 	componentManager = "manager"
 )
 
-func NewManagerCommand(log logr.Logger) *cobra.Command {
+func NewManagerCommand() *cobra.Command {
+	log := ctrl.Log.WithName("manager")
 	flags := &flags{}
 	cmd := &cobra.Command{
 		Args:  cobra.NoArgs,
@@ -64,7 +67,7 @@ func NewManagerCommand(log logr.Logger) *cobra.Command {
 	cmd.Flags().BoolVar(&flags.enableLeaderElection, "enable-leader-election", false,
 		"Enable leader election for controller manager. Enabling this will ensure there is only one active controller manager.")
 	cmd.Flags().StringVar(&flags.kubeCarrierSystemNamespace, "kubecarrier-system-namespace", os.Getenv("KUBECARRIER_NAMESPACE"), "The namespace that KubeCarrier controller manager deploys to.")
-	return cmd
+	return util.CmdLogMixin(cmd)
 }
 
 func run(flags *flags, log logr.Logger) error {
@@ -97,6 +100,20 @@ func run(flags *flags, log logr.Logger) error {
 		Scheme: mgr.GetScheme(),
 	}).SetupWithManager(mgr); err != nil {
 		return fmt.Errorf("creating Provider controller: %w", err)
+	}
+
+	// Register a field index for Provider.Status.NamespaceName
+	if err := catalogv1alpha1.RegisterProviderNamespaceFieldIndex(mgr); err != nil {
+		return fmt.Errorf("registering ProviderNamespace field index: %w", err)
+	}
+
+	if err = (&controllers.CatalogEntryReconciler{
+		Client:                     mgr.GetClient(),
+		Log:                        log.WithName("controllers").WithName("CatalogEntry"),
+		Scheme:                     mgr.GetScheme(),
+		KubeCarrierSystemNamespace: flags.kubeCarrierSystemNamespace,
+	}).SetupWithManager(mgr); err != nil {
+		return fmt.Errorf("creating CatalogEntry controller: %w", err)
 	}
 
 	log.Info("starting manager")

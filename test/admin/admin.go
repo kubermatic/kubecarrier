@@ -122,7 +122,7 @@ func (s *AdminSuite) TestTenantProviderCreationAndDeletion() {
 
 			}
 			return true, nil
-		}), "getting the tenantReference for the Provider error")
+		}), "getting the TenantReference for the Provider error")
 	}) {
 		s.FailNow("Provider creation e2e test failed.")
 	}
@@ -149,7 +149,7 @@ func (s *AdminSuite) TestTenantProviderCreationAndDeletion() {
 		s.True(errors.IsNotFound(s.masterClient.Get(ctx, types.NamespacedName{
 			Name:      tenant.Name,
 			Namespace: fmt.Sprintf("provider-%s", provider.Name),
-		}, tenantReference)), "namespace should also be deleted.")
+		}, tenantReference)), "TenantReference should also be deleted.")
 	}) {
 		s.FailNow("Tenant deletion e2e test failed.")
 	}

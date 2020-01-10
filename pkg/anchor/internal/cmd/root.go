@@ -17,44 +17,26 @@ limitations under the License.
 package cmd
 
 import (
-	"github.com/go-logr/logr"
 	"github.com/spf13/cobra"
-	"go.uber.org/zap"
-	"go.uber.org/zap/zapcore"
+	ctrl "sigs.k8s.io/controller-runtime"
 
 	"github.com/kubermatic/kubecarrier/pkg/anchor/internal/cmd/completion"
 	e2e_test "github.com/kubermatic/kubecarrier/pkg/anchor/internal/cmd/e2e-test"
 	"github.com/kubermatic/kubecarrier/pkg/anchor/internal/cmd/setup"
 	"github.com/kubermatic/kubecarrier/pkg/anchor/internal/cmd/version"
+	"github.com/kubermatic/kubecarrier/pkg/internal/util"
 )
 
-type levelAccessor interface {
-	GetLevel() *zap.AtomicLevel
-}
-
-type flagpole struct {
-	Verbosity int8
-}
-
 // NewAnchor creates the root command for the anchor CLI.
-func NewAnchor(log logr.Logger) *cobra.Command {
-	flags := &flagpole{}
+func NewAnchor() *cobra.Command {
+	log := ctrl.Log.WithName("anchor")
 	cmd := &cobra.Command{
 		Use:   "anchor",
 		Short: "Anchor is the CLI tool for managing KubeCarrier",
 		Long: `Anchor is a CLI library for managing KubeCarrier,
 Documentation is available in the project's repository:
 https://github.com/kubermatic/kubecarrier`,
-		PersistentPreRun: func(cmd *cobra.Command, args []string) {
-			la, ok := log.(levelAccessor)
-			if !ok {
-				return
-			}
-			la.GetLevel().SetLevel(zapcore.Level(-1 * flags.Verbosity))
-		},
 	}
-
-	cmd.PersistentFlags().Int8VarP(&flags.Verbosity, "verbosity", "v", 0, "logging verbosity")
 
 	cmd.AddCommand(
 		completion.NewCommand(log),
@@ -63,5 +45,5 @@ https://github.com/kubermatic/kubecarrier`,
 		version.NewCommand(log),
 	)
 
-	return cmd
+	return util.CmdLogMixin(cmd)
 }
