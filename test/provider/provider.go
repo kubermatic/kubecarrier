@@ -166,9 +166,6 @@ func (s *ProviderSuite) TestFerryCreationAndDeletion() {
 	t := s.T()
 	t.Parallel()
 	ctx := context.Background()
-	const (
-		namespace = "default"
-	)
 
 	serviceKubeconfig, err := ioutil.ReadFile(s.Framework.Config().ServiceInternalKubeconfigPath)
 	s.Require().NoError(err, "cannot read service internal kubeconfig")
@@ -176,7 +173,7 @@ func (s *ProviderSuite) TestFerryCreationAndDeletion() {
 	sec := &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "eu-west-1",
-			Namespace: namespace,
+			Namespace: s.provider.Status.NamespaceName,
 		},
 		Data: map[string][]byte{
 			"kubeconfig": serviceKubeconfig,
@@ -185,7 +182,7 @@ func (s *ProviderSuite) TestFerryCreationAndDeletion() {
 	scr := &operatorv1alpha1.ServiceClusterRegistration{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "eu-west-1",
-			Namespace: namespace,
+			Namespace: s.provider.Status.NamespaceName,
 		},
 		Spec: operatorv1alpha1.ServiceClusterRegistrationSpec{
 			KubeconfigSecret: operatorv1alpha1.ObjectReference{
