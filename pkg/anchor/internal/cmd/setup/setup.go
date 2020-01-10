@@ -48,8 +48,8 @@ import (
 )
 
 type flags struct {
-	// KubeConfig is the absolute path of the kubeconfig of the kubernetes cluster which you want to deploy kubecarrier.
-	KubeConfig string
+	// Kubeconfig is the absolute path of the kubeconfig of the kubernetes cluster which you want to deploy kubecarrier.
+	Kubeconfig string
 }
 
 var (
@@ -82,7 +82,7 @@ $ anchor setup --kubeconfig=<kubeconfig path>
 		},
 	}
 
-	cmd.Flags().StringVar(&flags.KubeConfig, "kubeconfig", os.Getenv("KUBECONFIG"), "The absolute path of the kubeconfig of kubernetes cluster that set up with. if you don't specify the flag, it will read from the KUBECONFIG environment variable.")
+	cmd.Flags().StringVar(&flags.Kubeconfig, "kubeconfig", os.Getenv("KUBECONFIG"), "The absolute path of the kubeconfig of kubernetes cluster that set up with. if you don't specify the flag, it will read from the KUBECONFIG environment variable.")
 	return cmd
 }
 
@@ -92,12 +92,12 @@ func runE(flags *flags, log logr.Logger, cmd *cobra.Command) error {
 
 	// Check the kubeconfig
 	if err := spinner.AttachSpinnerTo(s, "Check kubeconfig", func() error {
-		if err := checkKubeConfig(flags.KubeConfig); err != nil {
+		if err := checkKubeconfig(flags.Kubeconfig); err != nil {
 			return err
 		}
 
 		// Set the kubeconfig environment variable so the client in the following can work with the cluster.
-		if err := os.Setenv("KUBECONFIG", flags.KubeConfig); err != nil {
+		if err := os.Setenv("KUBECONFIG", flags.Kubeconfig); err != nil {
 			return nil
 		}
 		return nil
@@ -151,19 +151,19 @@ func createNamespace(ctx context.Context, c client.Client, ns *corev1.Namespace)
 	}
 }
 
-func checkKubeConfig(kubeconfig string) error {
-	kubeConfigPath := strings.TrimSpace(kubeconfig)
-	if kubeConfigPath == "" {
+func checkKubeconfig(kubeconfig string) error {
+	kubeconfigPath := strings.TrimSpace(kubeconfig)
+	if kubeconfigPath == "" {
 		return fmt.Errorf("either $KUBECONFIG or --kubeconfig flag needs to be set")
 	}
 
-	kubeConfigStat, err := os.Stat(kubeConfigPath)
+	kubeconfigStat, err := os.Stat(kubeconfigPath)
 	if err != nil {
 		return fmt.Errorf("checking the kubeconfig path: %w", err)
 	}
 	// Check the kubeconfig path points to a file
-	if !kubeConfigStat.Mode().IsRegular() {
-		return fmt.Errorf("kubeconfig path %s does not point to a file", kubeConfigPath)
+	if !kubeconfigStat.Mode().IsRegular() {
+		return fmt.Errorf("kubeconfig path %s does not point to a file", kubeconfigPath)
 	}
 	return nil
 }
