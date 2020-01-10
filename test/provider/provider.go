@@ -163,8 +163,6 @@ func (s *ProviderSuite) TestCatapultDeployAndTeardown() {
 }
 
 func (s *ProviderSuite) TestFerryCreationAndDeletion() {
-	t := s.T()
-	t.Parallel()
 	ctx := context.Background()
 
 	serviceKubeconfig, err := ioutil.ReadFile(s.Framework.Config().ServiceInternalKubeconfigPath)
