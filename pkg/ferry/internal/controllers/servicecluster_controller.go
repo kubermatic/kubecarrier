@@ -97,7 +97,7 @@ func (r *ServiceClusterReconciler) Reconcile(req ctrl.Request) (res ctrl.Result,
 		return nil
 	})
 	if err != nil {
-		return ctrl.Result{}, fmt.Errorf("cannot upsert ServiceCluster: %w", err)
+		return ctrl.Result{}, fmt.Errorf("cannot create or update ServiceCluster: %w", err)
 	}
 	log.Info(fmt.Sprintf("ServiceCluster: %s", string(op)))
 
