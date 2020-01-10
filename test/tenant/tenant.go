@@ -90,7 +90,7 @@ func (s *TenantSuite) SetupSuite() {
 			ObjectMeta: metav1.ObjectMeta{
 				Name: "couchdbs.eu-west-1.example.cloud",
 				Annotations: map[string]string{
-					"kubecarrier.io/service-cluster": "eu-west-1",
+					"kubecarrier.io/serviceCluster": "eu-west-1",
 				},
 				Labels: map[string]string{
 					"kubecarrier.io/provider": s.provider.Name,
@@ -120,7 +120,7 @@ func (s *TenantSuite) SetupSuite() {
 			ObjectMeta: metav1.ObjectMeta{
 				Name: "couchdbs.us-east-1.example.cloud",
 				Annotations: map[string]string{
-					"kubecarrier.io/service-cluster": "us-east-1",
+					"kubecarrier.io/serviceCluster": "us-east-1",
 				},
 				Labels: map[string]string{
 					"kubecarrier.io/provider": s.provider.Name,

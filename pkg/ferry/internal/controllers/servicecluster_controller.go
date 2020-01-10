@@ -147,7 +147,7 @@ func (r *ServiceClusterReconciler) SetupWithManagers(serviceMgr, masterMgr ctrl.
 		},
 	)
 	if err != nil {
-		return fmt.Errorf("service-cluster watch: %w", err)
+		return fmt.Errorf("serviceCluster watch: %w", err)
 	}
 	return masterMgr.Add(c)
 }

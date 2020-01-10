@@ -57,7 +57,7 @@ func TestCatalogEntryReconciler(t *testing.T) {
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "test-crd-1.test-crd-group-1.test",
 			Annotations: map[string]string{
-				"kubecarrier.io/service-cluster": "test-service-cluster-1",
+				"kubecarrier.io/serviceCluster": "test-serviceCluster-1",
 			},
 			Labels: map[string]string{
 				"kubecarrier.io/provider": "example.provider",
@@ -80,7 +80,7 @@ func TestCatalogEntryReconciler(t *testing.T) {
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "test-crd-2.test-crd-group-2.test",
 			Annotations: map[string]string{
-				"kubecarrier.io/service-cluster": "test-service-cluster-2",
+				"kubecarrier.io/serviceCluster": "test-serviceCluster-2",
 			},
 			Labels: map[string]string{
 				"kubecarrier.io/provider": "example.provider",
@@ -104,7 +104,7 @@ func TestCatalogEntryReconciler(t *testing.T) {
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "test-crd-3.test-crd-group-3.test",
 			Annotations: map[string]string{
-				"kubecarrier.io/service-cluster": "test-service-cluster-3",
+				"kubecarrier.io/serviceCluster": "test-serviceCluster-3",
 				catalogEntryReferenceAnnotation:  "test-catalogentry",
 			},
 			Labels: map[string]string{
@@ -159,7 +159,7 @@ func TestCatalogEntryReconciler(t *testing.T) {
 		assert.Len(t, catalogEntryFound.Status.CRDs, 2, "CRD information should be added to the CatalogEntry.Status.CRDs")
 		assert.Contains(t, catalogEntryFound.Status.CRDs[0].Kind, "TestCRD", "CRD Kind is wrong")
 		assert.Contains(t, catalogEntryFound.Status.CRDs[0].Name, "test-crd", "CRD Name is wrong")
-		assert.Contains(t, catalogEntryFound.Status.CRDs[0].ServiceCluster.Name, "test-service-cluster", "CRD ServiceCluster is wrong")
+		assert.Contains(t, catalogEntryFound.Status.CRDs[0].ServiceCluster.Name, "test-serviceCluster", "CRD ServiceCluster is wrong")
 		assert.Contains(t, catalogEntryFound.Status.CRDs[0].APIGroup, "test-crd-group", "CRD APIGroup is wrong")
 
 		// Check CatalogEntry Conditions
