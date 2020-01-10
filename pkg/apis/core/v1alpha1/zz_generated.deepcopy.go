@@ -157,8 +157,8 @@ func (in *ServiceClusterStatus) DeepCopyInto(out *ServiceClusterStatus) {
 			(*in)[i].DeepCopyInto(&(*out)[i])
 		}
 	}
-	if in.ServiceClusterVersion != nil {
-		in, out := &in.ServiceClusterVersion, &out.ServiceClusterVersion
+	if in.Version != nil {
+		in, out := &in.Version, &out.Version
 		*out = new(version.Info)
 		**out = **in
 	}

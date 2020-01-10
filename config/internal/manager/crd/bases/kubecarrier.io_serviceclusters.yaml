@@ -117,8 +117,8 @@ spec:
                   printing the property is only present for display purposes, for
                   everything else use conditions
                 type: string
-              serviceClusterVersion:
-                description: ServiceClusterVersion of the service cluster
+              version:
+                description: Version of the service cluster API Server
                 properties:
                   buildDate:
                     type: string

@@ -46,8 +46,8 @@ type ServiceClusterStatus struct {
 	Conditions []ServiceClusterCondition `json:"conditions,omitempty"`
 	// The most recent generation observed by the controller.
 	ObservedGeneration int64 `json:"observedGeneration,omitempty"`
-	// ServiceClusterVersion of the service cluster
-	ServiceClusterVersion *version.Info `json:"serviceClusterVersion,omitempty"`
+	// Version of the service cluster API Server
+	Version *version.Info `json:"version,omitempty"`
 }
 
 // ServiceClusterPhaseType represents all conditions as a single string for printing in kubectl.
