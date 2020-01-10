@@ -81,7 +81,7 @@ statik-gen manager config/internal/manager
 # RBAC
 $CONTROLLER_GEN rbac:roleName=manager-role paths="./pkg/ferry/..." output:rbac:artifacts:config=config/internal/ferry/rbac
 # The `|| true` is because the `,s/ClusterRole/Role/g` will error out if there is no match of `ClusterRole` (eg., the file is empty) in the file.
-ed config/internal/manager/rbac/role.yaml <<EOF || true
+ed config/internal/ferry/rbac/role.yaml <<EOF || true
 ,s/ClusterRole/Role/g
 w
 EOF

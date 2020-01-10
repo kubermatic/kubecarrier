@@ -39,7 +39,7 @@ type CatalogEntryMetadata struct {
 // CatalogEntryStatus defines the observed state of CatalogEntry.
 type CatalogEntryStatus struct {
 	// CRDs holds the information about the underlying CRDs that are offered by this CatalogEntry.
-	CRDs []CRDInformation `json:"crds"`
+	CRDs []CRDInformation `json:"crds,omitempty"`
 
 	// ObservedGeneration is the most recent generation observed for this CatalogEntry by the controller.
 	ObservedGeneration int64 `json:"observedGeneration,omitempty"`
