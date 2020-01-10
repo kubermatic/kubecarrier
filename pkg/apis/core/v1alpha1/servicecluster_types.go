@@ -168,6 +168,7 @@ func (s *ServiceClusterStatus) GetCondition(t ServiceClusterConditionType) (cond
 // +kubebuilder:subresource:status
 // +kubebuilder:printcolumn:name="Status",type="string",JSONPath=".status.phase"
 // +kubebuilder:printcolumn:name="Age",type="date",JSONPath=".metadata.creationTimestamp"
+// +kubebuilder:printcolumn:name="Display Name",type="string",JSONPath=".spec.metadata.displayName"
 // +kubebuilder:resource:shortName=sc
 type ServiceCluster struct {
 	metav1.TypeMeta   `json:",inline"`

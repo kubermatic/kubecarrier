@@ -541,6 +541,9 @@
       - jsonPath: .metadata.creationTimestamp
         name: Age
         type: date
+      - jsonPath: .spec.metadata.displayName
+        name: Display Name
+        type: string
       name: v1alpha1
       schema:
         openAPIV3Schema:
