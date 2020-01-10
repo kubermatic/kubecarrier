@@ -105,7 +105,7 @@ func TestCatalogEntryReconciler(t *testing.T) {
 			Name: "test-crd-3.test-crd-group-3.test",
 			Annotations: map[string]string{
 				"kubecarrier.io/serviceCluster": "test-serviceCluster-3",
-				catalogEntryReferenceAnnotation:  "test-catalogentry",
+				catalogEntryReferenceAnnotation: "test-catalogentry",
 			},
 			Labels: map[string]string{
 				"kubecarrier.io/provider": "example.provider",
