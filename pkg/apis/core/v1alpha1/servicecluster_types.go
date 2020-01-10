@@ -18,6 +18,7 @@ package v1alpha1
 
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/version"
 )
 
 // ServiceClusterSpec defines the desired state of ServiceCluster
@@ -45,6 +46,8 @@ type ServiceClusterStatus struct {
 	Conditions []ServiceClusterCondition `json:"conditions,omitempty"`
 	// The most recent generation observed by the controller.
 	ObservedGeneration int64 `json:"observedGeneration,omitempty"`
+	// ServiceClusterVersion of the service cluster
+	ServiceClusterVersion *version.Info `json:"serviceClusterVersion,omitempty"`
 }
 
 // ServiceClusterPhaseType represents all conditions as a single string for printing in kubectl.

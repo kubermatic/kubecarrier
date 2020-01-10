@@ -22,10 +22,10 @@ import (
 	"time"
 
 	"github.com/go-logr/logr"
-	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/apimachinery/pkg/version"
 	"k8s.io/client-go/util/workqueue"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -39,15 +39,19 @@ import (
 	corev1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/core/v1alpha1"
 )
 
+type ServerVersionInfo interface {
+	ServerVersion() (*version.Info, error)
+}
+
 // ServiceClusterReconciler sends a heartbeat to KubeCarrier to signal its readyness.
 type ServiceClusterReconciler struct {
 	Log logr.Logger
 
-	MasterClient       client.Client
-	ServiceClient      client.Client
-	ProviderNamespace  string
-	ServiceClusterName string
-	StatusUpdatePeriod time.Duration
+	MasterClient              client.Client
+	ServiceClusterVersionInfo ServerVersionInfo
+	ProviderNamespace         string
+	ServiceClusterName        string
+	StatusUpdatePeriod        time.Duration
 }
 
 // +kubebuilder:rbac:groups=kubecarrier.io,resources=serviceclusters,verbs=get;list;watch;create;update;patch;delete
@@ -57,16 +61,11 @@ func (r *ServiceClusterReconciler) Reconcile(req ctrl.Request) (res ctrl.Result,
 	ctx := context.Background()
 	log := r.Log.WithValues("servicecluster", req.NamespacedName)
 
-	cm := &corev1.ConfigMap{}
-	svcErr := r.ServiceClient.Get(ctx, types.NamespacedName{
-		Namespace: "kube-public",
-		Name:      "cluster-info",
-	}, cm)
-
+	serverVersion, svcErr := r.ServiceClusterVersionInfo.ServerVersion()
 	var cond corev1alpha1.ServiceClusterCondition
 
 	if svcErr != nil {
-		reason := ""
+		reason := "ClusterUnreachable"
 		statusErr, ok := svcErr.(*errors.StatusError)
 		if ok {
 			reason = string(statusErr.Status().Reason)
@@ -103,6 +102,7 @@ func (r *ServiceClusterReconciler) Reconcile(req ctrl.Request) (res ctrl.Result,
 
 	serviceCluster.Status.ObservedGeneration = serviceCluster.Generation
 	serviceCluster.Status.SetCondition(cond)
+	serviceCluster.Status.ServiceClusterVersion = serverVersion
 
 	if err := r.MasterClient.Status().Update(ctx, serviceCluster); err != nil {
 		return ctrl.Result{}, fmt.Errorf("status update: %w", err)
