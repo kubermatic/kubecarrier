@@ -180,7 +180,11 @@ func (s *ProviderSuite) TestCatalogCreationAndDeletion() {
 			Namespace: s.provider.Status.NamespaceName,
 		},
 		Spec: catalogv1alpha1.CatalogSpec{
-			CatalogEntrySelector:    &metav1.LabelSelector{},
+			CatalogEntrySelector: &metav1.LabelSelector{
+				MatchLabels: map[string]string{
+					"kubecarrier.io/test": "label",
+				},
+			},
 			TenantReferenceSelector: &metav1.LabelSelector{},
 		},
 	}
@@ -203,7 +207,7 @@ func (s *ProviderSuite) TestCatalogCreationAndDeletion() {
 	}), "getting the Catalog error")
 
 	// Check if the status will be updated when tenant is removed.
-	s.Run("Catalog status updates when adding/removing Tenant", func() {
+	s.Run("Catalog status updates when adding and removing Tenant", func() {
 		// Remove the tenant
 		s.Require().NoError(wait.Poll(time.Second, 30*time.Second, func() (done bool, err error) {
 			if err = s.masterClient.Delete(ctx, s.tenant); err != nil {
@@ -215,33 +219,40 @@ func (s *ProviderSuite) TestCatalogCreationAndDeletion() {
 			return false, nil
 		}), "could not delete the Tenant")
 
+		catalogCheck := &catalogv1alpha1.Catalog{}
 		s.NoError(wait.Poll(time.Second, 30*time.Second, func() (done bool, err error) {
 			if err := s.masterClient.Get(ctx, types.NamespacedName{
 				Name:      catalog.Name,
 				Namespace: catalog.Namespace,
-			}, catalogFound); err != nil {
+			}, catalogCheck); err != nil {
 				if errors.IsNotFound(err) {
 					return false, nil
 				}
 				return true, err
 			}
-			return len(catalogFound.Status.Tenants) == 0, nil
-		}), "getting the Catalog error")
+			return len(catalogCheck.Status.Tenants) == 0, nil
+		}), len(catalogCheck.Status.Tenants))
 
 		// Recreate the tenant
+		s.tenant = &catalogv1alpha1.Tenant{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "test-tenant2",
+				Namespace: "kubecarrier-system",
+			},
+		}
 		s.Require().NoError(s.masterClient.Create(ctx, s.tenant), "creating tenant error")
 
 		s.NoError(wait.Poll(time.Second, 30*time.Second, func() (done bool, err error) {
 			if err := s.masterClient.Get(ctx, types.NamespacedName{
 				Name:      catalog.Name,
 				Namespace: catalog.Namespace,
-			}, catalogFound); err != nil {
+			}, catalogCheck); err != nil {
 				if errors.IsNotFound(err) {
 					return false, nil
 				}
 				return true, err
 			}
-			return len(catalogFound.Status.Tenants) == 1, nil
+			return len(catalogCheck.Status.Tenants) == 1 && catalogCheck.Status.Tenants[0].Name == s.tenant.Name, nil
 		}), "getting the Catalog error")
 	})
 
@@ -334,6 +345,9 @@ func (s *ProviderSuite) setupSuiteCatalog() {
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "couchdbs",
 			Namespace: s.provider.Status.NamespaceName,
+			Labels: map[string]string{
+				"kubecarrier.io/test": "label",
+			},
 		},
 		Spec: catalogv1alpha1.CatalogEntrySpec{
 			Metadata: catalogv1alpha1.CatalogEntryMetadata{
