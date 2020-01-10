@@ -17,62 +17,39 @@ limitations under the License.
 package manager
 
 import (
-	"fmt"
-	"net/http"
+	"io/ioutil"
+	"os"
 	"testing"
 
-	"github.com/stretchr/testify/mock"
+	"github.com/google/go-cmp/cmp"
 	"github.com/stretchr/testify/require"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"sigs.k8s.io/yaml"
 
-	"github.com/kubermatic/kubecarrier/pkg/internal/kustomize"
-	"github.com/kubermatic/kubecarrier/pkg/internal/version"
+	"github.com/kubermatic/kubecarrier/pkg/testutil"
 )
 
-type kustomizeContextMock struct {
-	mock.Mock
-}
-
-var _ kustomize.KustomizeContext = (*kustomizeContextMock)(nil)
-
-func (k *kustomizeContextMock) ReadFile(path string) ([]byte, error) {
-	args := k.Called(path)
-	return args.Get(0).([]byte), args.Error(1)
-}
-
-func (k *kustomizeContextMock) WriteFile(path string, content []byte) error {
-	args := k.Called(path, content)
-	return args.Error(0)
-}
-
-func (k *kustomizeContextMock) Build(path string) ([]unstructured.Unstructured, error) {
-	args := k.Called(path)
-	return args.Get(0).([]unstructured.Unstructured), args.Error(1)
-}
-
-type kustomizeStub struct {
-	*kustomizeContextMock
-}
-
-func (k *kustomizeStub) ForHTTP(fs http.FileSystem) kustomize.KustomizeContext {
-	return k
-}
-
 func TestManifests(t *testing.T) {
+	const (
+		goldenFile = "manager.golden.yaml"
+	)
 	c := Config{
 		Namespace: "test3000",
 	}
-	m := &kustomizeContextMock{}
-	m.On("ReadFile", "/default/kustomization.yaml").Return([]byte("namespace: default"), nil)
-	m.On("WriteFile", "/default/kustomization.yaml", mock.Anything).Return(nil)
-	m.On("Build", mock.Anything).Return([]unstructured.Unstructured{}, nil)
 
-	_, err := Manifests(&kustomizeStub{m}, c)
+	manifests, err := Manifests(c)
 	require.NoError(t, err, "unexpected error")
+	yManifest, err := yaml.Marshal(manifests)
+	require.NoError(t, err, "cannot marshall given manifests")
 
-	m.AssertCalled(t, "WriteFile", "/default/kustomization.yaml", []byte(fmt.Sprintf(`images:
-- name: quay.io/kubecarrier/manager
-  newTag: %s
-namespace: test3000
-`, version.Get().Version)))
+	if _, present := os.LookupEnv(testutil.OverrideGoldenEnv); present {
+		require.NoError(t, ioutil.WriteFile(goldenFile, yManifest, 0640))
+	}
+
+	yGoldenManifest, err := ioutil.ReadFile(goldenFile)
+	require.NoError(t, err)
+	if string(yManifest) != string(yGoldenManifest) {
+		t.Logf("generated manifests differ from the golden file:\n%s", cmp.Diff(
+			string(yGoldenManifest), string(yManifest)))
+		t.FailNow()
+	}
 }

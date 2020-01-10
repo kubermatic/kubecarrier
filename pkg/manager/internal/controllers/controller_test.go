@@ -18,7 +18,7 @@ package controllers
 
 import (
 	corev1 "k8s.io/api/core/v1"
-	apiextensionsv1beta1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
+	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 
 	catalogv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/catalog/v1alpha1"
@@ -34,7 +34,7 @@ func init() {
 	if err := catalogv1alpha1.AddToScheme(testScheme); err != nil {
 		panic(err)
 	}
-	if err := apiextensionsv1beta1.AddToScheme(testScheme); err != nil {
+	if err := apiextensionsv1.AddToScheme(testScheme); err != nil {
 		panic(err)
 	}
 }

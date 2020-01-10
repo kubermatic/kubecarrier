@@ -19,19 +19,11 @@ package main
 import (
 	"os"
 
-	ctrl "sigs.k8s.io/controller-runtime"
-	"sigs.k8s.io/controller-runtime/pkg/log/zap"
-
 	"github.com/kubermatic/kubecarrier/pkg/manager"
 )
 
 func main() {
-	ctrl.SetLogger(zap.New(func(options *zap.Options) {
-		options.Development = true
-	}))
-
-	log := ctrl.Log.WithName("manager")
-	command := manager.NewManagerCommand(log)
+	command := manager.NewManagerCommand()
 
 	if err := command.Execute(); err != nil {
 		os.Exit(1)
