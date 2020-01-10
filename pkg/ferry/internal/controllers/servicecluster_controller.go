@@ -50,8 +50,8 @@ type ServiceClusterReconciler struct {
 	StatusUpdatePeriod time.Duration
 }
 
-// +kubebuilder:rbac:groups=core.kubecarrier.io,resources=serviceclusters,verbs=get;list;watch;create;update;patch;delete
-// +kubebuilder:rbac:groups=core.kubecarrier.io,resources=serviceclusters/status,verbs=get;update;patch
+// +kubebuilder:rbac:groups=kubecarrier.io,resources=serviceclusters,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=kubecarrier.io,resources=serviceclusters/status,verbs=get;update;patch
 
 func (r *ServiceClusterReconciler) Reconcile(req ctrl.Request) (res ctrl.Result, err error) {
 	ctx := context.Background()

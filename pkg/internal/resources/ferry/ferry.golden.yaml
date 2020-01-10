@@ -6,7 +6,7 @@
     namespace: provider-1000
   rules:
   - apiGroups:
-    - core.kubecarrier.io
+    - kubecarrier.io
     resources:
     - serviceclusters
     verbs:
@@ -18,7 +18,7 @@
     - update
     - watch
   - apiGroups:
-    - core.kubecarrier.io
+    - kubecarrier.io
     resources:
     - serviceclusters/status
     verbs:

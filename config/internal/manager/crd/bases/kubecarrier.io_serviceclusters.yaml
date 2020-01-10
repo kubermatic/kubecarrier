@@ -6,9 +6,9 @@ metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.2.4
   creationTimestamp: null
-  name: serviceclusters.core.kubecarrier.io
+  name: serviceclusters.kubecarrier.io
 spec:
-  group: core.kubecarrier.io
+  group: kubecarrier.io
   names:
     kind: ServiceCluster
     listKind: ServiceClusterList
