@@ -73,6 +73,9 @@ $CONTROLLER_GEN crd:crdVersions=${CRD_VERSION} webhook paths="./pkg/apis/catalog
 # RBAC
 $CONTROLLER_GEN rbac:roleName=manager-role paths="./pkg/manager/..." output:rbac:artifacts:config=config/internal/manager/rbac
 # Remove properties to make the CatalogEntry yaml configuration (which embeds CustomResourceValidation) to pass the schema checks
+out=$(mktemp)
+yq -Y  "del(.spec.versions[].schema.openAPIV3Schema.properties.status.properties.crdSpec.properties)" "config/internal/manager/crd/bases/core.kubecarrier.io_crddiscoveries.yaml" > $out && mv ${out} "config/internal/manager/crd/bases/core.kubecarrier.io_crddiscoveries.yaml"
+
 cat config/internal/manager/crd/bases/catalog.kubecarrier.io_catalogentries.yaml | yq -Y 'del(.spec.versions[].schema.openAPIV3Schema.properties.status.properties.crds.items.properties.versions.items.properties.schema.properties)' > config/internal/manager/crd/bases/catalog.kubecarrier.io_catalogentries.yaml.tmp
 mv config/internal/manager/crd/bases/catalog.kubecarrier.io_catalogentries.yaml.tmp config/internal/manager/crd/bases/catalog.kubecarrier.io_catalogentries.yaml
 statik-gen manager config/internal/manager

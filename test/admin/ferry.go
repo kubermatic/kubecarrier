@@ -89,14 +89,28 @@ func (s *AdminSuite) TestFerryCreationAndDeletion() {
 	t.Run("crd-discovery", func(t *testing.T) {
 		crd := &apiextensionsv1.CustomResourceDefinition{
 			ObjectMeta: metav1.ObjectMeta{
-				Name: "cluster.redis",
+				Name: "redis.test.kubecarrier.io",
 			},
 			Spec: apiextensionsv1.CustomResourceDefinitionSpec{
-				Group: "redis",
-				Versions: []apiextensionsv1.CustomResourceDefinitionVersion{
-					{Name: "corev1alpha1"},
+				Group: "test.kubecarrier.io",
+				Names: apiextensionsv1.CustomResourceDefinitionNames{
+					Plural: "redis",
+					Kind:   "Redis",
 				},
 				Scope: "Namespaced",
+				Versions: []apiextensionsv1.CustomResourceDefinitionVersion{
+					{
+						Name:    "corev1alpha1",
+						Served:  true,
+						Storage: true,
+						Schema: &apiextensionsv1.CustomResourceValidation{
+							OpenAPIV3Schema: &apiextensionsv1.JSONSchemaProps{
+								Description: "schema",
+								Type:        "object",
+							},
+						},
+					},
+				},
 			},
 		}
 		provider := &catalogv1alpha1.Provider{
@@ -118,7 +132,7 @@ func (s *AdminSuite) TestFerryCreationAndDeletion() {
 		//assert.NoError(t, client.IgnoreNotFound(s.serviceClient.Delete(ctx, crd)))
 	})
 
-	require.NoError(t, s.masterClient.Delete(ctx, scr))
-	assert.NoError(t, testutil.WaitUntilNotFound(s.masterClient, scr))
-	assert.NoError(t, s.masterClient.Delete(ctx, sec))
+	// require.NoError(t, s.masterClient.Delete(ctx, scr))
+	// assert.NoError(t, testutil.WaitUntilNotFound(s.masterClient, scr))
+	// assert.NoError(t, s.masterClient.Delete(ctx, sec))
 }

@@ -46,8 +46,8 @@ type CRDDiscoveryReconciler struct {
 	ServiceClusterName string
 }
 
-// +kubebuilder:rbac:groups=core.kubecarrier.io,resources=crdreferences,verbs=get;list;watch;create;update;patch;delete
-// +kubebuilder:rbac:groups=core.kubecarrier.io,resources=crdreferences/status,verbs=get;update;patch
+// +kubebuilder:rbac:groups=core.kubecarrier.io,resources=crddiscoveries,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=core.kubecarrier.io,resources=crddiscoveries/status,verbs=get;update;patch
 // TODO: Figure out what to do for service cluster permissions?
 // +kubebuilder:rbac:groups=apiextensions.k8s.io,resources=customresourcedefinitions,verbs=get;list;watch;update
 

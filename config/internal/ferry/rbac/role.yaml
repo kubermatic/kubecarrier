@@ -18,7 +18,7 @@ rules:
 - apiGroups:
   - core.kubecarrier.io
   resources:
-  - crdreferences
+  - crddiscoveries
   verbs:
   - create
   - delete
@@ -30,7 +30,7 @@ rules:
 - apiGroups:
   - core.kubecarrier.io
   resources:
-  - crdreferences/status
+  - crddiscoveries/status
   verbs:
   - get
   - patch
