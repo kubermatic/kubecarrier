@@ -99,7 +99,7 @@ func (r *ServiceClusterReconciler) Reconcile(req ctrl.Request) (res ctrl.Result,
 	if err != nil {
 		return ctrl.Result{}, fmt.Errorf("cannot upsert ServiceCluster: %w", err)
 	}
-	log.Info(string(op))
+	log.Info(fmt.Sprintf("ServiceCluster: %s", string(op)))
 
 	serviceCluster.Status.ObservedGeneration = serviceCluster.Generation
 	serviceCluster.Status.SetCondition(cond)
