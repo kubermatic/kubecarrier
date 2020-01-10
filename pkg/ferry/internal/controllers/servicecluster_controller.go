@@ -134,7 +134,7 @@ func (r *ServiceClusterReconciler) SetupWithManagers(serviceMgr, masterMgr ctrl.
 		&source.Kind{Type: &corev1alpha1.ServiceCluster{}},
 		&handler.EnqueueRequestsFromMapFunc{
 			ToRequests: handler.ToRequestsFunc(func(obj handler.MapObject) []reconcile.Request {
-				if obj.Meta.GetName() == r.ServiceClusterName && obj.Meta.GetNamespace() == r.ProviderNamespace {
+				if obj.Meta.GetName() == r.ServiceClusterName {
 					return []reconcile.Request{{
 						NamespacedName: types.NamespacedName{
 							Namespace: r.ProviderNamespace,
