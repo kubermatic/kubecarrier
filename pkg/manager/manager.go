@@ -116,10 +116,17 @@ func run(flags *flags, log logr.Logger) error {
 		return fmt.Errorf("creating CatalogEntry controller: %w", err)
 	}
 
+	if err := util.AddOwnerReverseFieldIndex(
+		mgr.GetFieldIndexer(), ctrl.Log.WithName("fieldindex").WithName("Offering"), &catalogv1alpha1.Offering{},
+	); err != nil {
+		return fmt.Errorf("cannot add Offering owner field indexer: %w", err)
+	}
+
 	if err = (&controllers.CatalogReconciler{
-		Client: mgr.GetClient(),
-		Log:    log.WithName("controllers").WithName("Catalog"),
-		Scheme: mgr.GetScheme(),
+		Client:                     mgr.GetClient(),
+		Log:                        log.WithName("controllers").WithName("Catalog"),
+		Scheme:                     mgr.GetScheme(),
+		KubeCarrierSystemNamespace: flags.kubeCarrierSystemNamespace,
 	}).SetupWithManager(mgr); err != nil {
 		return fmt.Errorf("creating Catalog controller: %w", err)
 	}

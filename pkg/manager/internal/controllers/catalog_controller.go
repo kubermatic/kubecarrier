@@ -19,8 +19,10 @@ package controllers
 import (
 	"context"
 	"fmt"
+	"reflect"
 
 	"github.com/go-logr/logr"
+	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
@@ -41,8 +43,9 @@ const (
 // CatalogReconciler reconciles a Catalog object
 type CatalogReconciler struct {
 	client.Client
-	Log    logr.Logger
-	Scheme *runtime.Scheme
+	Log                        logr.Logger
+	Scheme                     *runtime.Scheme
+	KubeCarrierSystemNamespace string
 }
 
 // +kubebuilder:rbac:groups=catalog.kubecarrier.io,resources=catalogs,verbs=get;list;watch;update
@@ -110,6 +113,27 @@ func (r *CatalogReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	}
 	catalog.Status.Tenants = tenants
 
+	// Get Provider
+	provider, err := getProviderByProviderNamespace(ctx, r.Client, r.KubeCarrierSystemNamespace, req.Namespace)
+	if err != nil {
+		return ctrl.Result{}, fmt.Errorf("getting Provider: %w", err)
+	}
+
+	for _, tenantReference := range tenantReferences {
+		tenant := &catalogv1alpha1.Tenant{}
+		if err := r.Get(ctx, types.NamespacedName{
+			Name:      tenantReference.Name,
+			Namespace: r.KubeCarrierSystemNamespace,
+		}, tenant); err != nil {
+			return ctrl.Result{}, fmt.Errorf("getting Tenant: %w", err)
+		}
+		for _, catalogEntry := range catalogEntries {
+			if err := r.reconcileOfferingForTenant(ctx, log, catalog, provider, tenant, &catalogEntry); err != nil {
+				return ctrl.Result{}, fmt.Errorf("reconciling Offering: %w", err)
+			}
+		}
+	}
+
 	// Update Catalog Status.
 	catalog.Status.ObservedGeneration = catalog.Generation
 	catalog.Status.SetCondition(catalogv1alpha1.CatalogCondition{
@@ -145,10 +169,15 @@ func (r *CatalogReconciler) SetupWithManager(mgr ctrl.Manager) error {
 			return
 		}),
 	}
+	enqueuerForOwner, err := util.EnqueueRequestForOwner(&catalogv1alpha1.Catalog{}, mgr.GetScheme())
+	if err != nil {
+		return fmt.Errorf("cannot create enqueuerForOnwer for Catalog: %w", err)
+	}
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&catalogv1alpha1.Catalog{}).
 		Watches(&source.Kind{Type: &catalogv1alpha1.TenantReference{}}, enqueueAllCatalogsInNamespace).
 		Watches(&source.Kind{Type: &catalogv1alpha1.CatalogEntry{}}, enqueueAllCatalogsInNamespace).
+		Watches(&source.Kind{Type: &catalogv1alpha1.Offering{}}, enqueuerForOwner).
 		Complete(r)
 }
 
@@ -167,6 +196,34 @@ func (r *CatalogReconciler) handleDeletion(ctx context.Context, log logr.Logger,
 		if err := r.Status().Update(ctx, catalog); err != nil {
 			return fmt.Errorf("updating Catalog status: %w", err)
 		}
+	}
+
+	// Remove the Offering objects.
+	ownerListFilter, err := util.OwnedBy(catalog, r.Scheme)
+	if err != nil {
+		return fmt.Errorf("building ownedBy filter: %w", err)
+	}
+	offeringList := &catalogv1alpha1.OfferingList{}
+	if err := r.List(ctx, offeringList, ownerListFilter); err != nil {
+		return fmt.Errorf("listing Offerings: %w", err)
+	}
+
+	var offeringCleanedUp int
+	for _, offering := range offeringList.Items {
+
+		if err := r.Delete(ctx, &offering); err != nil {
+			if errors.IsNotFound(err) {
+				offeringCleanedUp++
+				continue
+			}
+			return fmt.Errorf("deleting Offering: %w", err)
+		}
+	}
+
+	if offeringCleanedUp != len(offeringList.Items) {
+		// Not everything has been cleaned up yet
+		// move to the next reconcile call
+		return nil
 	}
 
 	if util.RemoveFinalizer(catalog, catalogControllerFinalizer) {
@@ -199,4 +256,60 @@ func (r *CatalogReconciler) listSelectedTenantReferences(ctx context.Context, lo
 		return nil, fmt.Errorf("listing TenantReference: %w", err)
 	}
 	return tenantReferences.Items, nil
+}
+
+func (r *CatalogReconciler) reconcileOfferingForTenant(
+	ctx context.Context, log logr.Logger,
+	catalog *catalogv1alpha1.Catalog,
+	provider *catalogv1alpha1.Provider,
+	tenant *catalogv1alpha1.Tenant,
+	catalogEntry *catalogv1alpha1.CatalogEntry,
+) error {
+	offering := &catalogv1alpha1.Offering{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      catalogEntry.Name,
+			Namespace: tenant.Status.NamespaceName,
+		},
+		Offering: catalogv1alpha1.OfferingData{
+			Metadata: catalogv1alpha1.OfferingMetadata{
+				DisplayName: catalogEntry.Spec.Metadata.DisplayName,
+				Description: catalogEntry.Spec.Metadata.Description,
+			},
+			Provider: catalogv1alpha1.ObjectReference{
+				Name: provider.Name,
+			},
+			CRDs: catalogEntry.Status.CRDs,
+		},
+	}
+	if _, err := util.InsertOwnerReference(catalog, offering, r.Scheme); err != nil {
+		return fmt.Errorf("inserting OwnerRefernence: %w", err)
+	}
+
+	currentOffering := &catalogv1alpha1.Offering{}
+	err := r.Get(ctx, types.NamespacedName{
+		Namespace: offering.Name,
+		Name:      offering.Namespace,
+	}, currentOffering)
+	if err != nil && !errors.IsNotFound(err) {
+		return fmt.Errorf("getting Offering: %w", err)
+	}
+	if errors.IsNotFound(err) {
+		// Create the Offering.
+		if err := r.Create(ctx, offering); err != nil {
+			return fmt.Errorf("creating Offering: %w", err)
+		}
+		currentOffering = offering
+	}
+
+	ownerChanged, err := util.InsertOwnerReference(catalog, currentOffering, r.Scheme)
+	if err != nil {
+		return fmt.Errorf("inserting OwnerReference: %w", err)
+	}
+	if !reflect.DeepEqual(offering.Offering, currentOffering.Offering) || ownerChanged {
+		currentOffering.Offering = offering.Offering
+		if err := r.Update(ctx, currentOffering); err != nil {
+			return fmt.Errorf("updaing Offering: %w", err)
+		}
+	}
+	return nil
 }
