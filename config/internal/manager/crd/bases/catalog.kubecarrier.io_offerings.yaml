@@ -299,7 +299,6 @@ spec:
                 - name
                 type: object
             required:
-            - crds
             - provider
             type: object
         type: object

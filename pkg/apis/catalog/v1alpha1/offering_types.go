@@ -26,7 +26,7 @@ type OfferingData struct {
 	// Provider references a ProviderReference of this Offering.
 	Provider ObjectReference `json:"provider"`
 	// CRDs holds the information about the underlying CRDs that are offered by this offering.
-	CRDs []CRDInformation `json:"crds"`
+	CRDs []CRDInformation `json:"crds,omitempty"`
 }
 
 // OfferingMetadata contains the metadata (display name, description, etc) of the Offering.
