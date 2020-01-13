@@ -150,3 +150,6 @@ generate-intelij-tasks:
 
 install-git-hooks:
 	pre-commit install
+	printf "#!/bin/bash\\nmake generate-intelij-tasks" > .git/hooks/post-commit && chmod +x .git/hooks/post-commit
+	cp .git/hooks/post-commit .git/hooks/post-checkout
+	cp .git/hooks/post-commit .git/hooks/post-merge
