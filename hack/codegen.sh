@@ -71,9 +71,11 @@ $CONTROLLER_GEN crd:crdVersions=${CRD_VERSION} webhook paths="./pkg/apis/core/..
 $CONTROLLER_GEN crd:crdVersions=${CRD_VERSION} webhook paths="./pkg/apis/catalog/..." output:crd:artifacts:config=config/internal/manager/crd/bases output:webhook:artifacts:config=config/internal/manager/webhook || true
 # RBAC
 $CONTROLLER_GEN rbac:roleName=manager-role paths="./pkg/manager/..." output:rbac:artifacts:config=config/internal/manager/rbac
-# Remove properties to make the CatalogEntry yaml configuration (which embeds CustomResourceValidation) to pass the schema checks
+# Remove properties to make the CatalogEntry and Offering yaml configuration (which embeds CustomResourceValidation) to pass the schema checks
 cat config/internal/manager/crd/bases/catalog.kubecarrier.io_catalogentries.yaml | yq -Y 'del(.spec.versions[].schema.openAPIV3Schema.properties.status.properties.crds.items.properties.versions.items.properties.schema.properties)' > config/internal/manager/crd/bases/catalog.kubecarrier.io_catalogentries.yaml.tmp
 mv config/internal/manager/crd/bases/catalog.kubecarrier.io_catalogentries.yaml.tmp config/internal/manager/crd/bases/catalog.kubecarrier.io_catalogentries.yaml
+cat config/internal/manager/crd/bases/catalog.kubecarrier.io_offerings.yaml | yq -Y 'del(.spec.versions[].schema.openAPIV3Schema.properties.offering.properties.crds.items.properties.versions.items.properties.schema.properties)' > config/internal/manager/crd/bases/catalog.kubecarrier.io_offerings.yaml.tmp
+mv config/internal/manager/crd/bases/catalog.kubecarrier.io_offerings.yaml.tmp config/internal/manager/crd/bases/catalog.kubecarrier.io_offerings.yaml
 statik-gen manager config/internal/manager
 
 # Ferry
