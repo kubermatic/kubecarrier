@@ -158,13 +158,13 @@ func TestCRUDOwnerMethods(t *testing.T) {
 			require.NoError(t, err, "getRefs")
 			assert.Len(t, refs, i+1, "getRefs")
 		}
-		changed, err := InsertOwnerReference(obj, own, sc)
+		changed, err := InsertOwnerReference(own, obj, sc)
 		require.NoError(t, err, "insert owner reference")
 		assert.True(t, changed, "obj changed status")
 		check()
 
 		t.Log("======== idempotent repeat =====")
-		changed, err = InsertOwnerReference(obj, own, sc)
+		changed, err = InsertOwnerReference(own, obj, sc)
 		require.NoError(t, err, "insert owner reference")
 		assert.False(t, changed)
 		check()
