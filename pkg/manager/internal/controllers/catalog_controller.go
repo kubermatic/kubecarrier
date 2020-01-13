@@ -93,7 +93,6 @@ func (r *CatalogReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 				Name: catalogEntry.Name,
 			})
 	}
-
 	catalog.Status.Entries = entries
 
 	// Get TenantReferences.

@@ -64,27 +64,6 @@ func (s *ProviderSuite) SetupSuite() {
 	s.Require().NoError(err, "creating service client")
 
 	ctx := context.Background()
-	// Create a Tenant to execute our tests in
-	s.tenant = &catalogv1alpha1.Tenant{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "test-tenant1",
-			Namespace: "kubecarrier-system",
-		},
-	}
-	s.Require().NoError(s.masterClient.Create(ctx, s.tenant), "creating tenant error")
-
-	// wait for tenant to be ready
-	s.Require().NoError(wait.Poll(time.Second, 10*time.Second, func() (done bool, err error) {
-		if err := s.masterClient.Get(ctx, types.NamespacedName{
-			Name:      s.tenant.Name,
-			Namespace: s.tenant.Namespace,
-		}, s.tenant); err != nil {
-			return true, err
-		}
-
-		cond, _ := s.tenant.Status.GetCondition(catalogv1alpha1.TenantReady)
-		return cond.Status == catalogv1alpha1.ConditionTrue, nil
-	}), "waiting for tenant to be ready")
 
 	// Create a Provider to execute our tests in
 	s.provider = &catalogv1alpha1.Provider{
@@ -108,82 +87,7 @@ func (s *ProviderSuite) SetupSuite() {
 		return cond.Status == catalogv1alpha1.ConditionTrue, nil
 	}), "waiting for provider to be ready")
 
-	// wait for the TenantReference to be created.
-	tenantReference := &catalogv1alpha1.TenantReference{}
-	s.NoError(wait.Poll(time.Second, 10*time.Second, func() (done bool, err error) {
-		if err := s.masterClient.Get(ctx, types.NamespacedName{
-			Name:      s.tenant.Name,
-			Namespace: s.provider.Status.NamespaceName,
-		}, tenantReference); err != nil {
-			if errors.IsNotFound(err) {
-				return false, nil
-			}
-			return true, err
-
-		}
-		return true, nil
-	}), "waiting for the tenantReference to be created")
-
-	// Create CRDs to execute tests
-	s.crd = &apiextensionsv1.CustomResourceDefinition{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: "couchdbs.eu-west-1.example.cloud",
-			Annotations: map[string]string{
-				"kubecarrier.io/service-cluster": "eu-west-1",
-			},
-			Labels: map[string]string{
-				"kubecarrier.io/provider": s.provider.Name,
-			},
-		},
-		Spec: apiextensionsv1.CustomResourceDefinitionSpec{
-			Group: "eu-west-1.example.cloud",
-			Names: apiextensionsv1.CustomResourceDefinitionNames{
-				Plural: "couchdbs",
-				Kind:   "CouchDB",
-			},
-			Versions: []apiextensionsv1.CustomResourceDefinitionVersion{
-				{
-					Name:    "v1alpha1",
-					Storage: true,
-					Schema: &apiextensionsv1.CustomResourceValidation{
-						OpenAPIV3Schema: &apiextensionsv1.JSONSchemaProps{
-							Type: "object",
-						},
-					},
-				},
-			},
-			Scope: apiextensionsv1.ClusterScoped,
-		},
-	}
-	s.Require().NoError(s.masterClient.Create(ctx, s.crd), fmt.Sprintf("creating CRD: %s error", s.crd.Name))
-
-	// Create a CatalogEntry to execute our tests in
-	s.catalogEntry = &catalogv1alpha1.CatalogEntry{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "couchdbs",
-			Namespace: s.provider.Status.NamespaceName,
-		},
-		Spec: catalogv1alpha1.CatalogEntrySpec{
-			Metadata: catalogv1alpha1.CatalogEntryMetadata{
-				DisplayName: "Couch DB",
-				Description: "The comfy nosql database",
-			},
-		},
-	}
-	s.Require().NoError(s.masterClient.Create(ctx, s.catalogEntry), "could not create CatalogEntry")
-
-	// wait for catalogEntry to be ready
-	s.Require().NoError(wait.Poll(time.Second, 10*time.Second, func() (done bool, err error) {
-		if err := s.masterClient.Get(ctx, types.NamespacedName{
-			Name:      s.catalogEntry.Name,
-			Namespace: s.catalogEntry.Namespace,
-		}, s.catalogEntry); err != nil {
-			return true, err
-		}
-
-		cond, _ := s.catalogEntry.Status.GetCondition(catalogv1alpha1.CatalogEntryReady)
-		return cond.Status == catalogv1alpha1.ConditionTrue, nil
-	}), "waiting for catalogEntry to be ready")
+	s.setupSuiteCatalog()
 }
 
 func (s *ProviderSuite) TearDownSuite() {
@@ -198,35 +102,7 @@ func (s *ProviderSuite) TearDownSuite() {
 		return false, nil
 	}), "could not delete the Provider")
 
-	s.Require().NoError(wait.Poll(time.Second, 30*time.Second, func() (done bool, err error) {
-		if err = s.masterClient.Delete(ctx, s.tenant); err != nil {
-			if errors.IsNotFound(err) {
-				return true, nil
-			}
-			return false, err
-		}
-		return false, nil
-	}), "could not delete the Tenant")
-
-	s.Require().NoError(wait.Poll(time.Second, 30*time.Second, func() (done bool, err error) {
-		if err = s.masterClient.Delete(ctx, s.catalogEntry); err != nil {
-			if errors.IsNotFound(err) {
-				return true, nil
-			}
-			return false, err
-		}
-		return false, nil
-	}), "could not delete the CatalogEntry")
-
-	s.Require().NoError(wait.Poll(time.Second, 10*time.Second, func() (done bool, err error) {
-		if err = s.masterClient.Delete(ctx, s.crd); err != nil {
-			if errors.IsNotFound(err) {
-				return true, nil
-			}
-			return false, err
-		}
-		return false, nil
-	}), fmt.Sprintf("deleting CRD: %s error", s.crd.Name))
+	s.tearDownSuiteCatalog()
 }
 
 func (s *ProviderSuite) TestCatapultDeployAndTeardown() {
@@ -304,7 +180,11 @@ func (s *ProviderSuite) TestCatalogCreationAndDeletion() {
 			Namespace: s.provider.Status.NamespaceName,
 		},
 		Spec: catalogv1alpha1.CatalogSpec{
-			CatalogEntrySelector:    &metav1.LabelSelector{},
+			CatalogEntrySelector: &metav1.LabelSelector{
+				MatchLabels: map[string]string{
+					"kubecarrier.io/test": "label",
+				},
+			},
 			TenantReferenceSelector: &metav1.LabelSelector{},
 		},
 	}
@@ -326,6 +206,56 @@ func (s *ProviderSuite) TestCatalogCreationAndDeletion() {
 		return len(catalogFound.Status.Entries) == 1 && len(catalogFound.Status.Tenants) == 1, nil
 	}), "getting the Catalog error")
 
+	// Check if the status will be updated when tenant is removed.
+	s.Run("Catalog status updates when adding and removing Tenant", func() {
+		// Remove the tenant
+		s.Require().NoError(wait.Poll(time.Second, 30*time.Second, func() (done bool, err error) {
+			if err = s.masterClient.Delete(ctx, s.tenant); err != nil {
+				if errors.IsNotFound(err) {
+					return true, nil
+				}
+				return false, err
+			}
+			return false, nil
+		}), "could not delete the Tenant")
+
+		catalogCheck := &catalogv1alpha1.Catalog{}
+		s.NoError(wait.Poll(time.Second, 30*time.Second, func() (done bool, err error) {
+			if err := s.masterClient.Get(ctx, types.NamespacedName{
+				Name:      catalog.Name,
+				Namespace: catalog.Namespace,
+			}, catalogCheck); err != nil {
+				if errors.IsNotFound(err) {
+					return false, nil
+				}
+				return true, err
+			}
+			return len(catalogCheck.Status.Tenants) == 0, nil
+		}), len(catalogCheck.Status.Tenants))
+
+		// Recreate the tenant
+		s.tenant = &catalogv1alpha1.Tenant{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "test-tenant2",
+				Namespace: "kubecarrier-system",
+			},
+		}
+		s.Require().NoError(s.masterClient.Create(ctx, s.tenant), "creating tenant error")
+
+		s.NoError(wait.Poll(time.Second, 30*time.Second, func() (done bool, err error) {
+			if err := s.masterClient.Get(ctx, types.NamespacedName{
+				Name:      catalog.Name,
+				Namespace: catalog.Namespace,
+			}, catalogCheck); err != nil {
+				if errors.IsNotFound(err) {
+					return false, nil
+				}
+				return true, err
+			}
+			return len(catalogCheck.Status.Tenants) == 1 && catalogCheck.Status.Tenants[0].Name == s.tenant.Name, nil
+		}), "getting the Catalog error")
+	})
+
 	s.Require().NoError(wait.Poll(time.Second, 10*time.Second, func() (done bool, err error) {
 		if err = s.masterClient.Delete(ctx, catalog); err != nil {
 			if errors.IsNotFound(err) {
@@ -335,4 +265,143 @@ func (s *ProviderSuite) TestCatalogCreationAndDeletion() {
 		}
 		return false, nil
 	}), "deleting the Catalog error")
+}
+
+func (s *ProviderSuite) setupSuiteCatalog() {
+	ctx := context.Background()
+
+	// Create a Tenant to execute our tests in
+	s.tenant = &catalogv1alpha1.Tenant{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "test-tenant1",
+			Namespace: "kubecarrier-system",
+		},
+	}
+	s.Require().NoError(s.masterClient.Create(ctx, s.tenant), "creating tenant error")
+
+	// wait for tenant to be ready
+	s.Require().NoError(wait.Poll(time.Second, 10*time.Second, func() (done bool, err error) {
+		if err := s.masterClient.Get(ctx, types.NamespacedName{
+			Name:      s.tenant.Name,
+			Namespace: s.tenant.Namespace,
+		}, s.tenant); err != nil {
+			return true, err
+		}
+
+		cond, _ := s.tenant.Status.GetCondition(catalogv1alpha1.TenantReady)
+		return cond.Status == catalogv1alpha1.ConditionTrue, nil
+	}), "waiting for tenant to be ready")
+	// wait for the TenantReference to be created.
+	tenantReference := &catalogv1alpha1.TenantReference{}
+	s.NoError(wait.Poll(time.Second, 10*time.Second, func() (done bool, err error) {
+		if err := s.masterClient.Get(ctx, types.NamespacedName{
+			Name:      s.tenant.Name,
+			Namespace: s.provider.Status.NamespaceName,
+		}, tenantReference); err != nil {
+			if errors.IsNotFound(err) {
+				return false, nil
+			}
+			return true, err
+
+		}
+		return true, nil
+	}), "waiting for the tenantReference to be created")
+
+	// Create CRDs to execute tests
+	s.crd = &apiextensionsv1.CustomResourceDefinition{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "couchdbs.eu-west-1.example.cloud",
+			Annotations: map[string]string{
+				"kubecarrier.io/service-cluster": "eu-west-1",
+			},
+			Labels: map[string]string{
+				"kubecarrier.io/provider": s.provider.Name,
+			},
+		},
+		Spec: apiextensionsv1.CustomResourceDefinitionSpec{
+			Group: "eu-west-1.example.cloud",
+			Names: apiextensionsv1.CustomResourceDefinitionNames{
+				Plural: "couchdbs",
+				Kind:   "CouchDB",
+			},
+			Versions: []apiextensionsv1.CustomResourceDefinitionVersion{
+				{
+					Name:    "v1alpha1",
+					Storage: true,
+					Schema: &apiextensionsv1.CustomResourceValidation{
+						OpenAPIV3Schema: &apiextensionsv1.JSONSchemaProps{
+							Type: "object",
+						},
+					},
+				},
+			},
+			Scope: apiextensionsv1.ClusterScoped,
+		},
+	}
+	s.Require().NoError(s.masterClient.Create(ctx, s.crd), fmt.Sprintf("creating CRD: %s error", s.crd.Name))
+
+	// Create a CatalogEntry to execute our tests in
+	s.catalogEntry = &catalogv1alpha1.CatalogEntry{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "couchdbs",
+			Namespace: s.provider.Status.NamespaceName,
+			Labels: map[string]string{
+				"kubecarrier.io/test": "label",
+			},
+		},
+		Spec: catalogv1alpha1.CatalogEntrySpec{
+			Metadata: catalogv1alpha1.CatalogEntryMetadata{
+				DisplayName: "Couch DB",
+				Description: "The comfy nosql database",
+			},
+		},
+	}
+	s.Require().NoError(s.masterClient.Create(ctx, s.catalogEntry), "could not create CatalogEntry")
+
+	// wait for catalogEntry to be ready
+	s.Require().NoError(wait.Poll(time.Second, 10*time.Second, func() (done bool, err error) {
+		if err := s.masterClient.Get(ctx, types.NamespacedName{
+			Name:      s.catalogEntry.Name,
+			Namespace: s.catalogEntry.Namespace,
+		}, s.catalogEntry); err != nil {
+			return true, err
+		}
+
+		cond, _ := s.catalogEntry.Status.GetCondition(catalogv1alpha1.CatalogEntryReady)
+		return cond.Status == catalogv1alpha1.ConditionTrue, nil
+	}), "waiting for catalogEntry to be ready")
+
+}
+
+func (s *ProviderSuite) tearDownSuiteCatalog() {
+	ctx := context.Background()
+	s.Require().NoError(wait.Poll(time.Second, 30*time.Second, func() (done bool, err error) {
+		if err = s.masterClient.Delete(ctx, s.tenant); err != nil {
+			if errors.IsNotFound(err) {
+				return true, nil
+			}
+			return false, err
+		}
+		return false, nil
+	}), "could not delete the Tenant")
+
+	s.Require().NoError(wait.Poll(time.Second, 30*time.Second, func() (done bool, err error) {
+		if err = s.masterClient.Delete(ctx, s.catalogEntry); err != nil {
+			if errors.IsNotFound(err) {
+				return true, nil
+			}
+			return false, err
+		}
+		return false, nil
+	}), "could not delete the CatalogEntry")
+
+	s.Require().NoError(wait.Poll(time.Second, 10*time.Second, func() (done bool, err error) {
+		if err = s.masterClient.Delete(ctx, s.crd); err != nil {
+			if errors.IsNotFound(err) {
+				return true, nil
+			}
+			return false, err
+		}
+		return false, nil
+	}), fmt.Sprintf("deleting CRD: %s error", s.crd.Name))
 }
