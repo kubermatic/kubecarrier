@@ -65,3 +65,45 @@ cat << EOF > ${GIT_ROOT}/.idea/runConfigurations/kubecarrier_catapult.xml
   </configuration>
 </component>
 EOF
+
+testTargets=(
+  ""
+  "AdminSuite"
+  "AdminSuite/TestFerryCreationAndDeletion"
+  "AdminSuite/TestTenantProviderCreationAndDeletion"
+  "AdminSuite/TestTenantProviderCreationAndDeletion/Provider_creation"
+  "AdminSuite/TestTenantProviderCreationAndDeletion/Provider_deletion"
+  "AdminSuite/TestTenantProviderCreationAndDeletion/Tenant_creation"
+  "AdminSuite/TestTenantProviderCreationAndDeletion/Tenant_deletion"
+  "InstallationSuite"
+  "InstallationSuite/TestInstallAndTeardown"
+  "InstallationSuite/TestInstallAndTeardown/anchor_setup"
+  "InstallationSuite/TestInstallAndTeardown/kubeCarrier_teardown"
+  "ProviderSuite"
+  "ProviderSuite/TestCatapultDeployAndTeardown"
+  "TenantSuite"
+  "TenantSuite/TestCatalogEntryCreationAndDeletion"
+  "TenantSuite/TestRunning"
+  "VerifySuite"
+  "VerifySuite/TestValidMasterKubeconfig"
+  "VerifySuite/TestValidServiceKubeconfig"
+)
+
+for target in "${testTargets[@]}"
+do
+cat << EOF > ${GIT_ROOT}/.idea/runConfigurations/kubecarrier_e2e_${target//\//:}.xml
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="kubecarrier:e2e:${target}" type="GoApplicationRunConfiguration" factoryName="Go Application">
+    <module name="kubecarrier" />
+    <working_directory value="\$PROJECT_DIR\$/" />
+    <go_parameters value="-i -ldflags &quot;${LD_FLAGS}&quot;" />
+    <parameters value="e2e-test run --test.v --test.run=${target} --test-id=1" />
+    <kind value="DIRECTORY" />
+    <filePath value="\$PROJECT_DIR\$/|\$PROJECT_DIR\$/cmd/anchor/main.go" />
+    <package value="github.com/kubermatic/kubecarrier" />
+    <directory value="\$PROJECT_DIR\$/cmd/anchor" />
+    <method v="2" />
+  </configuration>
+</component>
+EOF
+done
