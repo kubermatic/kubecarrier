@@ -41,7 +41,7 @@ const (
 	catalogEntryReferenceAnnotation = "kubecarrier.io/catalog-entry"
 	catalogEntryControllerFinalizer = "catalogentry.kubecarrier.io/controller"
 	providerLabel                   = "kubecarrier.io/provider"
-	serviceClusterAnnotation        = "kubecarrier.io/serviceCluster"
+	serviceClusterAnnotation        = "kubecarrier.io/service-cluster"
 )
 
 // CatalogEntryReconciler reconciles a CatalogEntry object

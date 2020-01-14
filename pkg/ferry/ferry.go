@@ -156,7 +156,7 @@ func runE(flags *flags, log logr.Logger) error {
 		ProviderNamespace:         flags.providerNamespace,
 		ServiceClusterName:        flags.serviceClusterName,
 		StatusUpdatePeriod:        flags.serviceClusterStatusUpdatePeriod,
-	}).SetupWithManagers(serviceMgr, masterMgr); err != nil {
+	}).SetupWithManagers(masterMgr); err != nil {
 		return fmt.Errorf("cannot add %s controller: %w", "ServiceCluster", err)
 	}
 

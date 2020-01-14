@@ -114,7 +114,7 @@ func (r *ServiceClusterReconciler) Reconcile(req ctrl.Request) (res ctrl.Result,
 	return ctrl.Result{RequeueAfter: r.StatusUpdatePeriod}, nil
 }
 
-func (r *ServiceClusterReconciler) SetupWithManagers(serviceMgr, masterMgr ctrl.Manager) error {
+func (r *ServiceClusterReconciler) SetupWithManagers(masterMgr ctrl.Manager) error {
 	c, err := controller.New("servicecluster-controller", masterMgr, controller.Options{
 		Reconciler: r,
 	})
