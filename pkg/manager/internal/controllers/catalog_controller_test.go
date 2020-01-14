@@ -60,7 +60,7 @@ func TestCatalogReconciler(t *testing.T) {
 	tenantNamespaceName := fmt.Sprintf("tenant-%s", tenant.Name)
 	tenant.Status.NamespaceName = tenantNamespaceName
 
-	tenantRefernence := &catalogv1alpha1.TenantReference{
+	tenantReference := &catalogv1alpha1.TenantReference{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      tenant.Name,
 			Namespace: providerNamespaceName,
@@ -97,7 +97,7 @@ func TestCatalogReconciler(t *testing.T) {
 		},
 	}
 
-	client := fakeclient.NewFakeClientWithScheme(testScheme, catalogEntry, catalog, provider, providerNamespace, tenant, tenantRefernence, tenantNamespace)
+	client := fakeclient.NewFakeClientWithScheme(testScheme, catalogEntry, catalog, provider, providerNamespace, tenant, tenantReference, tenantNamespace)
 	log := testutil.NewLogger(t)
 	r := &CatalogReconciler{
 		Client: client,
@@ -132,7 +132,7 @@ func TestCatalogReconciler(t *testing.T) {
 		assert.Len(t, catalogFound.Status.Entries, 1, "CatalogEntry is not added to the Catalog.Status.Entries")
 		assert.Equal(t, catalogFound.Status.Entries[0].Name, catalogEntry.Name, "CatalogEntry name is wrong")
 		assert.Len(t, catalogFound.Status.Tenants, 1, "TenantReference is not added to the Catalog.Status.Tenants")
-		assert.Equal(t, catalogFound.Status.Tenants[0].Name, tenantRefernence.Name, "TenantReference name is wrong")
+		assert.Equal(t, catalogFound.Status.Tenants[0].Name, tenantReference.Name, "TenantReference name is wrong")
 
 		// Check CatalogEntry Conditions
 		readyCondition, readyConditionExists := catalogFound.Status.GetCondition(catalogv1alpha1.CatalogReady)
