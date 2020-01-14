@@ -30,6 +30,9 @@ cat << EOF > ${GIT_ROOT}/.idea/runConfigurations/kubecarrier_operator.xml
     <package value="github.com/kubermatic/kubecarrier" />
     <directory value="\$PROJECT_DIR\$/cmd/operator" />
     <method v="2" />
+    <envs>
+      <env name="KUBECONFIG" value="\$USER_HOME\$/.kube/internal-kind-config-kubecarrier-1" />
+    </envs>
   </configuration>
 </component>
 EOF
@@ -46,6 +49,9 @@ cat << EOF > ${GIT_ROOT}/.idea/runConfigurations/kubecarrier_ferry.xml
     <package value="github.com/kubermatic/kubecarrier" />
     <directory value="\$PROJECT_DIR\$/cmd/ferry" />
     <method v="2" />
+    <envs>
+      <env name="KUBECONFIG" value="\$USER_HOME\$/.kube/internal-kind-config-kubecarrier-1" />
+    </envs>
   </configuration>
 </component>
 EOF
@@ -62,6 +68,9 @@ cat << EOF > ${GIT_ROOT}/.idea/runConfigurations/kubecarrier_catapult.xml
     <package value="github.com/kubermatic/kubecarrier" />
     <directory value="\$PROJECT_DIR\$/cmd/catapult" />
     <method v="2" />
+    <envs>
+      <env name="KUBECONFIG" value="\$USER_HOME\$/.kube/internal-kind-config-kubecarrier-1" />
+    </envs>
   </configuration>
 </component>
 EOF
