@@ -23,13 +23,16 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/spf13/cobra"
 	corev1 "k8s.io/api/core/v1"
-	apiextensionsv1beta1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
+	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/client-go/discovery"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 	ctrl "sigs.k8s.io/controller-runtime"
 
+	corev1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/core/v1alpha1"
+	"github.com/kubermatic/kubecarrier/pkg/ferry/internal/controllers"
 	"github.com/kubermatic/kubecarrier/pkg/internal/util"
 )
 
@@ -54,9 +57,10 @@ type flags struct {
 }
 
 func init() {
-	_ = apiextensionsv1beta1.AddToScheme(serviceScheme)
+	_ = apiextensionsv1.AddToScheme(serviceScheme)
 	_ = clientgoscheme.AddToScheme(serviceScheme)
 	_ = clientgoscheme.AddToScheme(masterScheme)
+	_ = corev1alpha1.AddToScheme(masterScheme)
 }
 
 func NewFerryCommand(log logr.Logger) *cobra.Command {
@@ -138,6 +142,22 @@ func runE(flags *flags, log logr.Logger) error {
 		&corev1.Namespace{},
 	); err != nil {
 		return fmt.Errorf("cannot add Namespace owner field indexer: %w", err)
+	}
+
+	serviceClusterDiscoveryClient, err := discovery.NewDiscoveryClientForConfig(serviceCfg)
+	if err != nil {
+		return fmt.Errorf("cannot create discovery client for service cluster: %w", err)
+	}
+
+	if err := (&controllers.ServiceClusterReconciler{
+		Log:                       log.WithName("controllers").WithName("ServiceCluster"),
+		MasterClient:              masterMgr.GetClient(),
+		ServiceClusterVersionInfo: serviceClusterDiscoveryClient,
+		ProviderNamespace:         flags.providerNamespace,
+		ServiceClusterName:        flags.serviceClusterName,
+		StatusUpdatePeriod:        flags.serviceClusterStatusUpdatePeriod,
+	}).SetupWithManagers(masterMgr); err != nil {
+		return fmt.Errorf("cannot add %s controller: %w", "ServiceCluster", err)
 	}
 
 	if err := masterMgr.Add(serviceMgr); err != nil {
