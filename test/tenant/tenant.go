@@ -89,11 +89,9 @@ func (s *TenantSuite) SetupSuite() {
 		&apiextensionsv1.CustomResourceDefinition{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: "couchdbs.eu-west-1.example.cloud",
-				Annotations: map[string]string{
-					"kubecarrier.io/service-cluster": "eu-west-1",
-				},
 				Labels: map[string]string{
-					"kubecarrier.io/provider": s.provider.Name,
+					"kubecarrier.io/provider":        s.provider.Name,
+					"kubecarrier.io/service-cluster": "eu-west-1",
 				},
 			},
 			Spec: apiextensionsv1.CustomResourceDefinitionSpec{
@@ -119,11 +117,9 @@ func (s *TenantSuite) SetupSuite() {
 		&apiextensionsv1.CustomResourceDefinition{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: "couchdbs.us-east-1.example.cloud",
-				Annotations: map[string]string{
-					"kubecarrier.io/service-cluster": "us-east-1",
-				},
 				Labels: map[string]string{
-					"kubecarrier.io/provider": s.provider.Name,
+					"kubecarrier.io/provider":        s.provider.Name,
+					"kubecarrier.io/service-cluster": "us-east-1",
 				},
 			},
 			Spec: apiextensionsv1.CustomResourceDefinitionSpec{
