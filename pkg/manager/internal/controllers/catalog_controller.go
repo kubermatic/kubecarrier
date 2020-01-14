@@ -115,7 +115,7 @@ func (r *CatalogReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	catalog.Status.Tenants = tenants
 
 	// First update the entries and tenants to the status.
-	if err := r.Status().Update(ctx, catalog); err != nil {
+	if err := r.updateStatus(ctx, catalog, nil); err != nil {
 		return ctrl.Result{}, fmt.Errorf("updating Catalog Status: %w", err)
 	}
 
@@ -135,15 +135,12 @@ func (r *CatalogReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	}
 
 	// Update Catalog Status.
-	catalog.Status.ObservedGeneration = catalog.Generation
-	catalog.Status.SetCondition(catalogv1alpha1.CatalogCondition{
+	if err := r.updateStatus(ctx, catalog, &catalogv1alpha1.CatalogCondition{
 		Type:    catalogv1alpha1.CatalogReady,
 		Status:  catalogv1alpha1.ConditionTrue,
 		Reason:  "CatalogReady",
 		Message: "Catalog is Ready.",
-	})
-
-	if err := r.Status().Update(ctx, catalog); err != nil {
+	}); err != nil {
 		return ctrl.Result{}, fmt.Errorf("updating Catalog Status: %w", err)
 	}
 
@@ -186,15 +183,13 @@ func (r *CatalogReconciler) handleDeletion(ctx context.Context, log logr.Logger,
 	readyCondition, _ := catalog.Status.GetCondition(catalogv1alpha1.CatalogReady)
 	if readyCondition.Status != catalogv1alpha1.ConditionFalse ||
 		readyCondition.Status == catalogv1alpha1.ConditionFalse && readyCondition.Reason != catalogv1alpha1.CatalogTerminatingReason {
-		catalog.Status.ObservedGeneration = catalog.Generation
-		catalog.Status.SetCondition(catalogv1alpha1.CatalogCondition{
+		if err := r.updateStatus(ctx, catalog, &catalogv1alpha1.CatalogCondition{
 			Type:    catalogv1alpha1.CatalogReady,
 			Status:  catalogv1alpha1.ConditionFalse,
 			Reason:  catalogv1alpha1.CatalogTerminatingReason,
 			Message: "Catalog is being terminated",
-		})
-		if err := r.Status().Update(ctx, catalog); err != nil {
-			return fmt.Errorf("updating Catalog status: %w", err)
+		}); err != nil {
+			return fmt.Errorf("updating Catalog Status: %w", err)
 		}
 	}
 
@@ -380,4 +375,19 @@ func (r *CatalogReconciler) cleanupOffering(
 		}
 	}
 	return deletedOfferings, nil
+}
+
+func (r *CatalogReconciler) updateStatus(
+	ctx context.Context,
+	catalog *catalogv1alpha1.Catalog,
+	condition *catalogv1alpha1.CatalogCondition,
+) error {
+	catalog.Status.ObservedGeneration = catalog.Generation
+	if condition != nil {
+		catalog.Status.SetCondition(*condition)
+	}
+	if err := r.Status().Update(ctx, catalog); err != nil {
+		return fmt.Errorf("updating Catalog status: %w", err)
+	}
+	return nil
 }
