@@ -210,6 +210,21 @@ func (r *CatalogReconciler) handleDeletion(ctx context.Context, log logr.Logger,
 	return nil
 }
 
+func (r *CatalogReconciler) updateStatus(
+	ctx context.Context,
+	catalog *catalogv1alpha1.Catalog,
+	condition *catalogv1alpha1.CatalogCondition,
+) error {
+	catalog.Status.ObservedGeneration = catalog.Generation
+	if condition != nil {
+		catalog.Status.SetCondition(*condition)
+	}
+	if err := r.Status().Update(ctx, catalog); err != nil {
+		return fmt.Errorf("updating Catalog status: %w", err)
+	}
+	return nil
+}
+
 func (r *CatalogReconciler) listSelectedCatalogEntries(ctx context.Context, log logr.Logger, catalog *catalogv1alpha1.Catalog) ([]catalogv1alpha1.CatalogEntry, error) {
 	catalogEntrySelector, err := metav1.LabelSelectorAsSelector(catalog.Spec.CatalogEntrySelector)
 	if err != nil {
@@ -375,19 +390,4 @@ func (r *CatalogReconciler) cleanupOffering(
 		}
 	}
 	return deletedOfferings, nil
-}
-
-func (r *CatalogReconciler) updateStatus(
-	ctx context.Context,
-	catalog *catalogv1alpha1.Catalog,
-	condition *catalogv1alpha1.CatalogCondition,
-) error {
-	catalog.Status.ObservedGeneration = catalog.Generation
-	if condition != nil {
-		catalog.Status.SetCondition(*condition)
-	}
-	if err := r.Status().Update(ctx, catalog); err != nil {
-		return fmt.Errorf("updating Catalog status: %w", err)
-	}
-	return nil
 }
