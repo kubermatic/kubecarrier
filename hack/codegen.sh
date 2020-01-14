@@ -80,7 +80,11 @@ statik-gen manager config/internal/manager
 # -------
 # RBAC
 $CONTROLLER_GEN rbac:roleName=manager-role paths="./pkg/ferry/..." output:rbac:artifacts:config=config/internal/ferry/rbac
-sed -i 's/ClusterRole/Role/g' config/internal/ferry/rbac/role.yaml
+# The `|| true` is because the `,s/ClusterRole/Role/g` will error out if there is no match of `ClusterRole` (eg., the file is empty) in the file.
+ed config/internal/ferry/rbac/role.yaml <<EOF || true
+,s/ClusterRole/Role/g
+w
+EOF
 # Statik (run only when file CONTENT has changed)
 statik-gen ferry config/internal/ferry
 
@@ -88,5 +92,9 @@ statik-gen ferry config/internal/ferry
 # -------
 # RBAC
 $CONTROLLER_GEN rbac:roleName=manager-role paths="./pkg/catapult/..." output:rbac:artifacts:config=config/internal/catapult/rbac
-sed -i 's/ClusterRole/Role/g' config/internal/catapult/rbac/role.yaml
+# The `|| true` is because the `,s/ClusterRole/Role/g` will error out if there is no match of `ClusterRole` (eg., the file is empty) in the file.
+ed config/internal/catapult/rbac/role.yaml <<EOF || true
+,s/ClusterRole/Role/g
+w
+EOF
 statik-gen catapult config/internal/catapult
