@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package admin
+package ferry
 
 import (
 	"context"
@@ -22,6 +22,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"github.com/stretchr/testify/suite"
 	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -29,9 +30,29 @@ import (
 	corev1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/core/v1alpha1"
 	operatorv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/operator/v1alpha1"
 	"github.com/kubermatic/kubecarrier/pkg/testutil"
+	"github.com/kubermatic/kubecarrier/test/framework"
 )
 
-func (s *AdminSuite) TestFerryCreationAndDeletion() {
+var _ suite.SetupAllSuite = (*FerrySuite)(nil)
+
+// FerrySuite checks the Ferry related operations creations and deletions.
+type FerrySuite struct {
+	suite.Suite
+	*framework.Framework
+
+	masterClient  client.Client
+	serviceClient client.Client
+}
+
+func (s *FerrySuite) SetupSuite() {
+	var err error
+	s.serviceClient, err = s.ServiceClient()
+	s.Require().NoError(err, "creating service client")
+	s.masterClient, err = s.MasterClient()
+	s.Require().NoError(err, "creating master client")
+}
+
+func (s *FerrySuite) TestCreationAndDeletion() {
 	t := s.T()
 	t.Parallel()
 	ctx := context.Background()
