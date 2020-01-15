@@ -54,7 +54,6 @@ func (s *FerrySuite) SetupSuite() {
 
 func (s *FerrySuite) TestCreationAndDeletion() {
 	t := s.T()
-	t.Parallel()
 	ctx := context.Background()
 	const (
 		namespace = "default"
