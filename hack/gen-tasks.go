@@ -108,10 +108,10 @@ func generateVSCode(tasks []Task, root string) {
 	if err != nil {
 		log.Panic(err)
 	}
-	vscodeLunchPath := path.Join(root, ".vscode", "launch.json")
+	vscodeLaunchPath := path.Join(root, ".vscode", "launch.json")
 	vsCodeConfig := map[string]interface{}{}
 
-	f, err := os.Open(vscodeLunchPath)
+	f, err := os.Open(vscodeLaunchPath)
 	if err != nil && !errors.Is(err, os.ErrNotExist) {
 		log.Panicln("cannot open vscode confgi", err)
 	}
@@ -172,7 +172,7 @@ func generateVSCode(tasks []Task, root string) {
 	if err != nil {
 		log.Panicln("cannot marshal", err)
 	}
-	if err := ioutil.WriteFile(vscodeLunchPath, b, 0755); err != nil {
+	if err := ioutil.WriteFile(vscodeLaunchPath, b, 0755); err != nil {
 		log.Panicln("cannot write file: ", err)
 	}
 }
@@ -186,8 +186,6 @@ func main() {
 	masterKubeconfigPath := path.Join(home, ".kube", "kind-config-kubecarrier-1")
 	svcKubeconfigPath := path.Join(home, ".kube", "kind-config-kubecarrier-svc-1")
 	flag.Parse()
-
-	*ldFlags = "-X github.com/kubermatic/kubecarrier/pkg/internal/version.Version=partial-test-78ce433 -X github.com/kubermatic/kubecarrier/pkg/internal/version.Branch=partial-test -X github.com/kubermatic/kubecarrier/pkg/internal/version.Commit=78ce433 -X github.com/kubermatic/kubecarrier/pkg/internal/version.BuildDate=1579034340"
 	var tasks = []Task{
 		{
 			Name:    "Anchor version",
