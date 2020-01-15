@@ -24,9 +24,10 @@ import (
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 	corev1 "k8s.io/api/core/v1"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
+	catalogv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/catalog/v1alpha1"
 	corev1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/core/v1alpha1"
 	operatorv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/operator/v1alpha1"
 	"github.com/kubermatic/kubecarrier/pkg/testutil"
@@ -56,26 +57,32 @@ func (s *FerrySuite) TestCreationAndDeletion() {
 	t := s.T()
 	t.Parallel()
 	ctx := context.Background()
-	const (
-		namespace = "default"
-	)
 
 	serviceKubeconfig, err := ioutil.ReadFile(s.Framework.Config().ServiceInternalKubeconfigPath)
 	require.NoError(t, err, "cannot read service internal kubeconfig")
 
+	provider := &catalogv1alpha1.Provider{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "steel-inquisitor",
+			Namespace: "kubecarrier-system",
+		},
+	}
+	require.NoError(t, s.masterClient.Create(ctx, provider))
+	require.NoError(t, testutil.WaitUntilReady(s.masterClient, provider))
+
 	sec := &corev1.Secret{
-		ObjectMeta: v1.ObjectMeta{
+		ObjectMeta: metav1.ObjectMeta{
 			Name:      "eu-west-1",
-			Namespace: namespace,
+			Namespace: provider.Status.NamespaceName,
 		},
 		Data: map[string][]byte{
 			"kubeconfig": serviceKubeconfig,
 		},
 	}
 	scr := &operatorv1alpha1.ServiceClusterRegistration{
-		ObjectMeta: v1.ObjectMeta{
+		ObjectMeta: metav1.ObjectMeta{
 			Name:      "eu-west-1",
-			Namespace: namespace,
+			Namespace: provider.Status.NamespaceName,
 		},
 		Spec: operatorv1alpha1.ServiceClusterRegistrationSpec{
 			KubeconfigSecret: operatorv1alpha1.ObjectReference{
@@ -96,7 +103,7 @@ func (s *FerrySuite) TestCreationAndDeletion() {
 
 	serviceCluster := &corev1alpha1.ServiceCluster{}
 	serviceCluster.SetName(scr.GetName())
-	serviceCluster.SetNamespace(namespace)
+	serviceCluster.SetNamespace(provider.Status.NamespaceName)
 	require.NoError(t, testutil.WaitUntilReady(s.masterClient, serviceCluster))
 
 	assert.NoError(t, testutil.WaitUntilReady(s.masterClient, scr), "scr object not ready within the time limit")
