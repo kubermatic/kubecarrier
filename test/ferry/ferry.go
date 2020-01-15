@@ -55,7 +55,6 @@ func (s *FerrySuite) SetupSuite() {
 
 func (s *FerrySuite) TestCreationAndDeletion() {
 	t := s.T()
-	t.Parallel()
 	ctx := context.Background()
 
 	serviceKubeconfig, err := ioutil.ReadFile(s.Framework.Config().ServiceInternalKubeconfigPath)
