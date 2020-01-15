@@ -1,0 +1,184 @@
+
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.2.4
+  creationTimestamp: null
+  name: derivedcustomresourcedefinitions.catalog.kubecarrier.io
+spec:
+  group: catalog.kubecarrier.io
+  names:
+    kind: DerivedCustomResourceDefinition
+    listKind: DerivedCustomResourceDefinitionList
+    plural: derivedcustomresourcedefinitions
+    shortNames:
+    - dcrd
+    singular: derivedcustomresourcedefinition
+  scope: Namespaced
+  versions:
+  - additionalPrinterColumns:
+    - jsonPath: .status.phase
+      name: Status
+      type: string
+    - jsonPath: .metadata.creationTimestamp
+      name: Age
+      type: date
+    name: v1alpha1
+    schema:
+      openAPIV3Schema:
+        description: DerivedCustomResourceDefinition derives a new CRD from a existing
+          one.
+        properties:
+          apiVersion:
+            description: 'APIVersion defines the versioned schema of this representation
+              of an object. Servers should convert recognized schemas to the latest
+              internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+            type: string
+          kind:
+            description: 'Kind is a string value representing the REST resource this
+              object represents. Servers may infer this from the endpoint the client
+              submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+            type: string
+          metadata:
+            type: object
+          spec:
+            description: DerivedCustomResourceDefinitionSpec defines the desired state
+              of DerivedCustomResourceDefinition.
+            properties:
+              baseCRD:
+                description: CRD that should be used as a base to derive a new CRD
+                  from.
+                properties:
+                  name:
+                    type: string
+                required:
+                - name
+                type: object
+              expose:
+                description: controls which fields will be present in the derived
+                  CRD.
+                items:
+                  description: VersionExposeConfig specifies which fields to expose
+                    in the derived CRD.
+                  properties:
+                    fields:
+                      description: specifies the fields that should be present in
+                        the derived CRD.
+                      items:
+                        description: FieldPath is specifying how to address a certain
+                          field.
+                        properties:
+                          jsonPath:
+                            description: JSONPath e.g. .spec.somefield.somesubfield
+                            type: string
+                        required:
+                        - jsonPath
+                        type: object
+                      type: array
+                    versions:
+                      description: specifies the versions of the referenced CRD, that
+                        this expose config applies to. The same version may not be
+                        specified in multiple VersionExposeConfigs.
+                      items:
+                        type: string
+                      type: array
+                  required:
+                  - fields
+                  - versions
+                  type: object
+                type: array
+              kindOverride:
+                description: overrides the kind of the derived CRD.
+                type: string
+            required:
+            - baseCRD
+            - expose
+            type: object
+          status:
+            description: DerivedCustomResourceDefinitionStatus defines the observed
+              state of DerivedCustomResourceDefinition.
+            properties:
+              conditions:
+                description: Conditions represents the latest available observations
+                  of a DerivedCustomResourceDefinition's current state.
+                items:
+                  description: DerivedCustomResourceDefinitionCondition contains details
+                    for the current condition of this DerivedCustomResourceDefinition.
+                  properties:
+                    lastTransitionTime:
+                      description: LastTransitionTime is the last time the condition
+                        transits from one status to another.
+                      format: date-time
+                      type: string
+                    message:
+                      description: Message is the human readable message indicating
+                        details about last transition.
+                      type: string
+                    reason:
+                      description: Reason is the (brief) reason for the condition's
+                        last transition.
+                      type: string
+                    status:
+                      description: Status is the status of the condition, one of ('True',
+                        'False', 'Unknown').
+                      type: string
+                    type:
+                      description: Type is the type of the DerivedCustomResourceDefinition
+                        condition, currently ('Ready').
+                      type: string
+                  required:
+                  - lastTransitionTime
+                  - message
+                  - reason
+                  - status
+                  - type
+                  type: object
+                type: array
+              derivedCRD:
+                description: DerivedCRD holds information about the derived CRD.
+                properties:
+                  group:
+                    description: API Group of the derived CRD.
+                    type: string
+                  kind:
+                    type: string
+                  name:
+                    description: Name of the derived CRD.
+                    type: string
+                  plural:
+                    type: string
+                  singular:
+                    type: string
+                required:
+                - group
+                - kind
+                - name
+                - plural
+                - singular
+                type: object
+              observedGeneration:
+                description: ObservedGeneration is the most recent generation observed
+                  for this DerivedCustomResourceDefinition by the controller.
+                format: int64
+                type: integer
+              phase:
+                description: DEPRECATED. Phase represents the current lifecycle state
+                  of this object. Consider this field DEPRECATED, it will be removed
+                  as soon as there is a mechanism to map conditions to strings when
+                  printing the property. This is only for display purpose, for everything
+                  else use conditions.
+                type: string
+            type: object
+        type: object
+    served: true
+    storage: true
+    subresources:
+      status: {}
+status:
+  acceptedNames:
+    kind: ""
+    plural: ""
+  conditions: []
+  storedVersions: []

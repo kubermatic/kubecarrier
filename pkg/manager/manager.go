@@ -107,11 +107,15 @@ func run(flags *flags, log logr.Logger) error {
 		return fmt.Errorf("registering ProviderNamespace field index: %w", err)
 	}
 
-	// Register a field index for Offering
+	// Register Owner field indexes
+	fieldIndexerLog := ctrl.Log.WithName("fieldindex")
 	if err := util.AddOwnerReverseFieldIndex(
-		mgr.GetFieldIndexer(), ctrl.Log.WithName("fieldindex").WithName("Offering"), &catalogv1alpha1.Offering{},
+		mgr.GetFieldIndexer(), fieldIndexerLog.WithName("Offering"), &catalogv1alpha1.Offering{},
 	); err != nil {
-		return fmt.Errorf("cannot add Offering owner field indexer: %w", err)
+		return fmt.Errorf("registering Offering owner field index: %w", err)
+	}
+	if err := util.AddOwnerReverseFieldIndex(mgr.GetFieldIndexer(), fieldIndexerLog.WithName("CRD"), &apiextensionsv1.CustomResourceDefinition{}); err != nil {
+		return fmt.Errorf("registering CRD owner field index: %w", err)
 	}
 
 	if err = (&controllers.CatalogEntryReconciler{
@@ -130,6 +134,15 @@ func run(flags *flags, log logr.Logger) error {
 		KubeCarrierSystemNamespace: flags.kubeCarrierSystemNamespace,
 	}).SetupWithManager(mgr); err != nil {
 		return fmt.Errorf("creating Catalog controller: %w", err)
+	}
+
+	if err = (&controllers.DerivedCustomResourceDefinitionReconciler{
+		Client:                     mgr.GetClient(),
+		Log:                        log.WithName("controllers").WithName("DerivedCustomResourceDefinition"),
+		Scheme:                     mgr.GetScheme(),
+		KubeCarrierSystemNamespace: flags.kubeCarrierSystemNamespace,
+	}).SetupWithManager(mgr); err != nil {
+		return fmt.Errorf("creating DerivedCustomResourceDefinition controller: %w", err)
 	}
 
 	log.Info("starting manager")
