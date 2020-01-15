@@ -1,0 +1,126 @@
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.2.4
+  creationTimestamp: null
+  name: offerings.catalog.kubecarrier.io
+spec:
+  group: catalog.kubecarrier.io
+  names:
+    kind: Offering
+    listKind: OfferingList
+    plural: offerings
+    singular: offering
+  scope: Namespaced
+  versions:
+    - additionalPrinterColumns:
+        - jsonPath: .offering.displayName
+          name: Display Name
+          type: string
+        - jsonPath: .metadata.creationTimestamp
+          name: Age
+          type: date
+      name: v1alpha1
+      schema:
+        openAPIV3Schema:
+          description: Offering is used for Tenants to discover services that have
+            been made available to them.
+          properties:
+            apiVersion:
+              description: 'APIVersion defines the versioned schema of this representation
+                of an object. Servers should convert recognized schemas to the latest
+                internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+              type: string
+            kind:
+              description: 'Kind is a string value representing the REST resource
+                this object represents. Servers may infer this from the endpoint the
+                client submits requests to. Cannot be updated. In CamelCase. More
+                info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+              type: string
+            metadata:
+              type: object
+            offering:
+              description: OfferingData defines the data (metadata, provider, crds,
+                etc.) of Offering.
+              properties:
+                crds:
+                  description: CRDs holds the information about the underlying CRDs
+                    that are offered by this offering.
+                  items:
+                    description: CRDInformation contains type information about the
+                      CRD.
+                    properties:
+                      apiGroup:
+                        type: string
+                      kind:
+                        type: string
+                      name:
+                        type: string
+                      serviceCluster:
+                        description: ServiceCluster references a ServiceClusterReference
+                          of this CRD.
+                        properties:
+                          name:
+                            type: string
+                        required:
+                          - name
+                        type: object
+                      versions:
+                        items:
+                          description: CRDVersion holds CRD version specific details.
+                          properties:
+                            name:
+                              description: 'Name of this version, for example: v1,
+                                v1alpha1, v1beta1'
+                              type: string
+                            schema:
+                              description: Schema of this CRD version.
+                              type: object
+                              x-kubernetes-preserve-unknown-fields: true
+                          required:
+                            - name
+                          type: object
+                        type: array
+                    required:
+                      - apiGroup
+                      - kind
+                      - name
+                      - serviceCluster
+                      - versions
+                    type: object
+                  type: array
+                metadata:
+                  description: OfferingMetadata contains the metadata (display name,
+                    description, etc) of the Offering.
+                  properties:
+                    description:
+                      description: Description shows the human-readable description
+                        of this Offering.
+                      type: string
+                    displayName:
+                      description: DisplayName shows the human-readable name of this
+                        Offering.
+                      type: string
+                  type: object
+                provider:
+                  description: Provider references a ProviderReference of this Offering.
+                  properties:
+                    name:
+                      type: string
+                  required:
+                    - name
+                  type: object
+              required:
+                - provider
+              type: object
+          type: object
+      served: true
+      storage: true
+      subresources: {}
+status:
+  acceptedNames:
+    kind: ""
+    plural: ""
+  conditions: []
+  storedVersions: []
