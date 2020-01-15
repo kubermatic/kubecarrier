@@ -56,11 +56,9 @@ func TestCatalogEntryReconciler(t *testing.T) {
 	crd1 := &apiextensionsv1.CustomResourceDefinition{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "test-crd-1.test-crd-group-1.test",
-			Annotations: map[string]string{
-				"kubecarrier.io/service-cluster": "test-service-cluster-1",
-			},
 			Labels: map[string]string{
-				"kubecarrier.io/provider": "example.provider",
+				providerLabel:       "example.provider",
+				serviceClusterLabel: "test-service-cluster-1",
 			},
 		},
 		Spec: apiextensionsv1.CustomResourceDefinitionSpec{
@@ -79,11 +77,9 @@ func TestCatalogEntryReconciler(t *testing.T) {
 	crd2 := &apiextensionsv1.CustomResourceDefinition{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "test-crd-2.test-crd-group-2.test",
-			Annotations: map[string]string{
-				"kubecarrier.io/service-cluster": "test-service-cluster-2",
-			},
 			Labels: map[string]string{
-				"kubecarrier.io/provider": "example.provider",
+				providerLabel:       "example.provider",
+				serviceClusterLabel: "test-service-cluster-2",
 			},
 		},
 		Spec: apiextensionsv1.CustomResourceDefinitionSpec{
@@ -104,11 +100,11 @@ func TestCatalogEntryReconciler(t *testing.T) {
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "test-crd-3.test-crd-group-3.test",
 			Annotations: map[string]string{
-				"kubecarrier.io/service-cluster": "test-service-cluster-3",
-				catalogEntryReferenceAnnotation:  "test-catalogentry",
+				catalogEntryReferenceAnnotation: "test-catalogentry",
 			},
 			Labels: map[string]string{
-				"kubecarrier.io/provider": "example.provider",
+				providerLabel:       "example.provider",
+				serviceClusterLabel: "test-service-cluster-3",
 			},
 		},
 		Spec: apiextensionsv1.CustomResourceDefinitionSpec{
