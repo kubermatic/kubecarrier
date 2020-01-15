@@ -18,7 +18,7 @@ rules:
 - apiGroups:
   - kubecarrier.io
   resources:
-  - crddiscoveries
+  - customresourcedefinitiondiscoveries
   verbs:
   - create
   - delete
@@ -30,7 +30,7 @@ rules:
 - apiGroups:
   - kubecarrier.io
   resources:
-  - crddiscoveries/status
+  - customresourcedefinitiondiscoveries/status
   verbs:
   - get
   - patch

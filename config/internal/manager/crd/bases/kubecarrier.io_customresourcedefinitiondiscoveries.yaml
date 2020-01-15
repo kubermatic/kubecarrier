@@ -4,19 +4,19 @@ metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.2.4
   creationTimestamp: null
-  name: crddiscoveries.kubecarrier.io
+  name: customresourcedefinitiondiscoveries.kubecarrier.io
 spec:
   group: kubecarrier.io
   names:
-    kind: CRDDiscovery
-    listKind: CRDDiscoveryList
-    plural: crddiscoveries
-    singular: crddiscovery
+    kind: CustomResourceDefinitionDiscovery
+    listKind: CustomResourceDefinitionDiscoveryList
+    plural: customresourcedefinitiondiscoveries
+    singular: customresourcedefinitiondiscovery
   scope: Namespaced
   versions:
     - additionalPrinterColumns:
         - jsonPath: .spec.crd.metadata.name
-          name: CRD
+          name: CustomResourceDefinition
           type: string
         - jsonPath: .spec.serviceCluster.name
           name: Service Cluster
@@ -24,8 +24,9 @@ spec:
       name: v1alpha1
       schema:
         openAPIV3Schema:
-          description: CRDDiscovery is used inside KubeCarrier to fetch a CRD from
-            another cluster and to offload cross cluster access to another component.
+          description: CustomResourceDefinitionDiscovery is used inside KubeCarrier
+            to fetch a CustomResourceDefinition from another cluster and to offload
+            cross cluster access to another component.
           properties:
             apiVersion:
               description: 'APIVersion defines the versioned schema of this representation
@@ -41,7 +42,8 @@ spec:
             metadata:
               type: object
             spec:
-              description: CRDDiscoverySpec defines the desired state of crdreference
+              description: CustomResourceDefinitionDiscoverySpec defines the desired
+                state of crdreference
               properties:
                 crd:
                   description: CRD references a CustomResourceDefinition within the
@@ -54,7 +56,7 @@ spec:
                   type: object
                 serviceCluster:
                   description: ServiceCluster references a ServiceCluster to search
-                    the CRD on.
+                    the CustomResourceDefinition on.
                   properties:
                     name:
                       type: string
@@ -66,14 +68,15 @@ spec:
                 - serviceCluster
               type: object
             status:
-              description: CRDDiscoveryStatus defines the observed state of crdreference
+              description: CustomResourceDefinitionDiscoveryStatus defines the observed
+                state of crdreference
               properties:
                 conditions:
-                  description: Conditions is a list of all conditions this CRDDiscovery
+                  description: Conditions is a list of all conditions this CustomResourceDefinitionDiscovery
                     is in.
                   items:
-                    description: CRDDiscoveryCondition contains details for the current
-                      condition of this CRDDiscovery.
+                    description: CustomResourceDefinitionDiscoveryCondition contains
+                      details for the current condition of this CustomResourceDefinitionDiscovery.
                     properties:
                       lastTransitionTime:
                         description: LastTransitionTime is the last time the condition
@@ -104,8 +107,8 @@ spec:
                     type: object
                   type: array
                 crdSpec:
-                  description: CRDSpec defines the original CRD specification from
-                    the service cluster
+                  description: CRDSpec defines the original CustomResourceDefinition
+                    specification from the service cluster
                   required:
                     - spec
                   type: object

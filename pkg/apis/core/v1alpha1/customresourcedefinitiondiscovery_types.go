@@ -21,63 +21,63 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// CRDDiscoverySpec defines the desired state of crdreference
-type CRDDiscoverySpec struct {
+// CustomResourceDefinitionDiscoverySpec defines the desired state of crdreference
+type CustomResourceDefinitionDiscoverySpec struct {
 	// CRD references a CustomResourceDefinition within the ServiceCluster.
 	CRD ObjectReference `json:"crd"`
-	// ServiceCluster references a ServiceCluster to search the CRD on.
+	// ServiceCluster references a ServiceCluster to search the CustomResourceDefinition on.
 	ServiceCluster ObjectReference `json:"serviceCluster"`
 }
 
-// CRDDiscoveryStatus defines the observed state of crdreference
-type CRDDiscoveryStatus struct {
-	// CRDSpec defines the original CRD specification from the service cluster
+// CustomResourceDefinitionDiscoveryStatus defines the observed state of crdreference
+type CustomResourceDefinitionDiscoveryStatus struct {
+	// CRDSpec defines the original CustomResourceDefinition specification from the service cluster
 	CRDSpec *apiextensionsv1.CustomResourceDefinition `json:"crdSpec,omitempty"`
 	// DEPRECATED.
 	// Phase represents the current lifecycle state of this object
 	// consider this field DEPRECATED, it will be removed as soon as there
 	// is a mechanism to map conditions to a string when printing the property
 	// is only present for display purposes, for everything else use conditions
-	Phase CRDDiscoveryPhaseType `json:"phase,omitempty"`
-	// Conditions is a list of all conditions this CRDDiscovery is in.
-	Conditions []CRDDiscoveryCondition `json:"conditions,omitempty"`
+	Phase CustomResourceDefinitionDiscoveryPhaseType `json:"phase,omitempty"`
+	// Conditions is a list of all conditions this CustomResourceDefinitionDiscovery is in.
+	Conditions []CustomResourceDefinitionDiscoveryCondition `json:"conditions,omitempty"`
 	// The most recent generation observed by the controller.
 	ObservedGeneration int64 `json:"observedGeneration,omitempty"`
 }
 
-// CRDDiscoveryPhaseType represents all conditions as a single string for printing in kubectl
-type CRDDiscoveryPhaseType string
+// CustomResourceDefinitionDiscoveryPhaseType represents all conditions as a single string for printing in kubectl
+type CustomResourceDefinitionDiscoveryPhaseType string
 
-// Values of CRDDiscoveryPhaseType
+// Values of CustomResourceDefinitionDiscoveryPhaseType
 const (
-	CRDDiscoveryPhaseReady    CRDDiscoveryPhaseType = "Ready"
-	CRDDiscoveryPhaseNotReady CRDDiscoveryPhaseType = "NotReady"
-	CRDDiscoveryPhaseUnknown  CRDDiscoveryPhaseType = "Unknown"
+	CustomResourceDefinitionDiscoveryPhaseReady    CustomResourceDefinitionDiscoveryPhaseType = "Ready"
+	CustomResourceDefinitionDiscoveryPhaseNotReady CustomResourceDefinitionDiscoveryPhaseType = "NotReady"
+	CustomResourceDefinitionDiscoveryPhaseUnknown  CustomResourceDefinitionDiscoveryPhaseType = "Unknown"
 )
 
 // updatePhase updates the phase property based on the current conditions
 // this method should be called everytime the conditions are updated
-func (s *CRDDiscoveryStatus) updatePhase() {
+func (s *CustomResourceDefinitionDiscoveryStatus) updatePhase() {
 	for _, condition := range s.Conditions {
-		if condition.Type != CRDDiscoveryReady {
+		if condition.Type != CustomResourceDefinitionDiscoveryReady {
 			continue
 		}
 		switch condition.Status {
 		case ConditionTrue:
-			s.Phase = CRDDiscoveryPhaseReady
+			s.Phase = CustomResourceDefinitionDiscoveryPhaseReady
 		case ConditionFalse:
-			s.Phase = CRDDiscoveryPhaseNotReady
+			s.Phase = CustomResourceDefinitionDiscoveryPhaseNotReady
 		default:
-			s.Phase = CRDDiscoveryPhaseUnknown
+			s.Phase = CustomResourceDefinitionDiscoveryPhaseUnknown
 		}
 		return
 	}
 
-	s.Phase = CRDDiscoveryPhaseUnknown
+	s.Phase = CustomResourceDefinitionDiscoveryPhaseUnknown
 }
 
 // SetCondition replaces or adds the given condition
-func (s *CRDDiscoveryStatus) SetCondition(condition CRDDiscoveryCondition) {
+func (s *CustomResourceDefinitionDiscoveryStatus) SetCondition(condition CustomResourceDefinitionDiscoveryCondition) {
 	defer s.updatePhase()
 	if condition.LastTransitionTime.IsZero() {
 		condition.LastTransitionTime = metav1.Now()
@@ -99,7 +99,7 @@ func (s *CRDDiscoveryStatus) SetCondition(condition CRDDiscoveryCondition) {
 }
 
 // GetCondition returns the Condition of the given type, if it exists
-func (s *CRDDiscoveryStatus) GetCondition(t CRDDiscoveryConditionType) (condition CRDDiscoveryCondition, exists bool) {
+func (s *CustomResourceDefinitionDiscoveryStatus) GetCondition(t CustomResourceDefinitionDiscoveryConditionType) (condition CustomResourceDefinitionDiscoveryCondition, exists bool) {
 	for _, cond := range s.Conditions {
 		if cond.Type == t {
 			condition = cond
@@ -110,16 +110,16 @@ func (s *CRDDiscoveryStatus) GetCondition(t CRDDiscoveryConditionType) (conditio
 	return
 }
 
-// CRDDiscoveryConditionType represents a CRDDiscoveryCondition value.
-type CRDDiscoveryConditionType string
+// CustomResourceDefinitionDiscoveryConditionType represents a CustomResourceDefinitionDiscoveryCondition value.
+type CustomResourceDefinitionDiscoveryConditionType string
 
 const (
-	// CRDDiscoveryReady represents a CRDDiscovery condition is in ready state.
-	CRDDiscoveryReady CRDDiscoveryConditionType = "Ready"
+	// CustomResourceDefinitionDiscoveryReady represents a CustomResourceDefinitionDiscovery condition is in ready state.
+	CustomResourceDefinitionDiscoveryReady CustomResourceDefinitionDiscoveryConditionType = "Ready"
 )
 
-// CRDDiscoveryCondition contains details for the current condition of this CRDDiscovery.
-type CRDDiscoveryCondition struct {
+// CustomResourceDefinitionDiscoveryCondition contains details for the current condition of this CustomResourceDefinitionDiscovery.
+type CustomResourceDefinitionDiscoveryCondition struct {
 	// LastTransitionTime is the last time the condition transit from one status to another.
 	LastTransitionTime metav1.Time `json:"lastTransitionTime"`
 	// Message is the human readable message indicating details about last transition.
@@ -129,30 +129,30 @@ type CRDDiscoveryCondition struct {
 	// Status of the condition, one of ('True', 'False', 'Unknown').
 	Status ConditionStatus `json:"status"`
 	// Type of the condition, currently ('Ready').
-	Type CRDDiscoveryConditionType `json:"type"`
+	Type CustomResourceDefinitionDiscoveryConditionType `json:"type"`
 }
 
-// CRDDiscovery is used inside KubeCarrier to fetch a CRD from another cluster and to offload cross cluster access to another component.
+// CustomResourceDefinitionDiscovery is used inside KubeCarrier to fetch a CustomResourceDefinition from another cluster and to offload cross cluster access to another component.
 // +kubebuilder:subresource:status
 // +kubebuilder:object:root=true
-// +kubebuilder:printcolumn:name="CRD",type="string",JSONPath=".spec.crd.metadata.name"
+// +kubebuilder:printcolumn:name="CustomResourceDefinition",type="string",JSONPath=".spec.crd.metadata.name"
 // +kubebuilder:printcolumn:name="Service Cluster",type="string",JSONPath=".spec.serviceCluster.name"
-type CRDDiscovery struct {
+type CustomResourceDefinitionDiscovery struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec   CRDDiscoverySpec   `json:"spec,omitempty"`
-	Status CRDDiscoveryStatus `json:"status,omitempty"`
+	Spec   CustomResourceDefinitionDiscoverySpec   `json:"spec,omitempty"`
+	Status CustomResourceDefinitionDiscoveryStatus `json:"status,omitempty"`
 }
 
-// CRDDiscoveryList contains a list of crdreference
+// CustomResourceDefinitionDiscoveryList contains a list of crdreference
 // +kubebuilder:object:root=true
-type CRDDiscoveryList struct {
+type CustomResourceDefinitionDiscoveryList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
-	Items           []CRDDiscovery `json:"items"`
+	Items           []CustomResourceDefinitionDiscovery `json:"items"`
 }
 
 func init() {
-	SchemeBuilder.Register(&CRDDiscovery{}, &CRDDiscoveryList{})
+	SchemeBuilder.Register(&CustomResourceDefinitionDiscovery{}, &CustomResourceDefinitionDiscoveryList{})
 }

@@ -33,17 +33,17 @@ import (
 	"github.com/kubermatic/kubecarrier/pkg/testutil"
 )
 
-func TestCRDDiscoveryReconciler(t *testing.T) {
+func TestCustomResourceDefinitionDiscoveryReconciler(t *testing.T) {
 	const (
 		serviceClusterName = "eu-west-1"
 	)
 
-	crdRef := &corev1alpha1.CRDDiscovery{
+	crdRef := &corev1alpha1.CustomResourceDefinitionDiscovery{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "cluster.redis",
 			Namespace: "tenant-hans",
 		},
-		Spec: corev1alpha1.CRDDiscoverySpec{
+		Spec: corev1alpha1.CustomResourceDefinitionDiscoverySpec{
 			CRD:            corev1alpha1.ObjectReference{Name: "cluster.redis"},
 			ServiceCluster: corev1alpha1.ObjectReference{Name: serviceClusterName},
 		},
@@ -66,7 +66,7 @@ func TestCRDDiscoveryReconciler(t *testing.T) {
 		},
 	}
 
-	r := &CRDDiscoveryReconciler{
+	r := &CustomResourceDefinitionDiscoveryReconciler{
 		MasterClient:       fakeclient.NewFakeClientWithScheme(testScheme, crdRef),
 		ServiceClient:      fakeclient.NewFakeClientWithScheme(testScheme, crd),
 		MasterScheme:       testScheme,
@@ -82,9 +82,9 @@ func TestCRDDiscoveryReconciler(t *testing.T) {
 			_ = res
 			require.NoError(t, err, "cannot reconcile the CRD Reference")
 		}
-		crdRef = &corev1alpha1.CRDDiscovery{}
+		crdRef = &corev1alpha1.CustomResourceDefinitionDiscovery{}
 		require.NoError(t, r.MasterClient.Get(context.Background(), crdRefNN, crdRef))
-		require.NoError(t, testutil.ConditionStatusEqual(crdRef, corev1alpha1.CRDDiscoveryReady, corev1alpha1.ConditionTrue))
+		require.NoError(t, testutil.ConditionStatusEqual(crdRef, corev1alpha1.CustomResourceDefinitionDiscoveryReady, corev1alpha1.ConditionTrue))
 
 		assert.Equal(t, crd.Spec.Group, crdRef.Status.CRDSpec.Spec.Group)
 		assert.Equal(t, crd.Spec.Versions[0].Name, crdRef.Status.CRDSpec.Spec.Versions[0].Name)
@@ -102,9 +102,9 @@ func TestCRDDiscoveryReconciler(t *testing.T) {
 			require.NoError(t, err, "cannot reconcile the CRD Reference")
 			assert.True(t, res.Requeue)
 		}
-		crdRef = &corev1alpha1.CRDDiscovery{}
+		crdRef = &corev1alpha1.CustomResourceDefinitionDiscovery{}
 		require.NoError(t, r.MasterClient.Get(context.Background(), crdRefNN, crdRef))
-		assert.NoError(t, testutil.ConditionStatusEqual(crdRef, corev1alpha1.CRDDiscoveryReady, corev1alpha1.ConditionFalse))
+		assert.NoError(t, testutil.ConditionStatusEqual(crdRef, corev1alpha1.CustomResourceDefinitionDiscoveryReady, corev1alpha1.ConditionFalse))
 		assert.Equal(t, (*apiextensionsv1.CustomResourceDefinition)(nil), crdRef.Status.CRDSpec)
 	}) {
 		t.FailNow()
@@ -118,9 +118,9 @@ func TestCRDDiscoveryReconciler(t *testing.T) {
 			})
 			require.NoError(t, err, "cannot reconcile the CRD Reference")
 		}
-		crdRef = &corev1alpha1.CRDDiscovery{}
+		crdRef = &corev1alpha1.CustomResourceDefinitionDiscovery{}
 		require.NoError(t, r.MasterClient.Get(context.Background(), crdRefNN, crdRef))
-		require.NoError(t, testutil.ConditionStatusEqual(crdRef, corev1alpha1.CRDDiscoveryReady, corev1alpha1.ConditionTrue))
+		require.NoError(t, testutil.ConditionStatusEqual(crdRef, corev1alpha1.CustomResourceDefinitionDiscoveryReady, corev1alpha1.ConditionTrue))
 
 		require.NoError(t, r.MasterClient.Delete(context.Background(), crdRef))
 		for i := 0; i < 2; i++ {
