@@ -143,9 +143,17 @@ func TestCRUDOwnerMethods(t *testing.T) {
 	}}
 
 	t.Log("===== Initial state =====")
+	unowned, err := IsUnowned(obj)
+	require.NoError(t, err, "unowned")
+	assert.True(t, unowned)
+
 	for i, own := range []*corev1.Pod{ownerA, ownerB} {
 		t.Logf("===== Adding owner %s =====", own.Name)
 		check := func() {
+			unowned, err = IsUnowned(obj)
+			require.NoError(t, err, "unowned")
+			assert.False(t, unowned, "obj unowned status")
+
 			refs, err := getRefs(obj)
 			require.NoError(t, err, "getRefs")
 			assert.Len(t, refs, i+1, "getRefs")
@@ -165,19 +173,23 @@ func TestCRUDOwnerMethods(t *testing.T) {
 	for i, own := range []*corev1.Pod{ownerA, ownerB} {
 		t.Logf("===== Removing owner %s =====", own.Name)
 		check := func() {
+			unowned, err = IsUnowned(obj)
+			require.NoError(t, err, "unowned")
+			assert.Equal(t, i == 1, unowned, "obj unowned status")
+
 			refs, err := getRefs(obj)
 			require.NoError(t, err, "getRefs")
 			assert.Len(t, refs, 1-i, "getRefs")
 		}
-		changed, err := RemoveOwnerReference(own, obj, sc)
-		require.NoError(t, err, "removed owner reference")
+		changed, err := DeleteOwnerReference(own, obj, sc)
+		require.NoError(t, err, "delete owner reference")
 		assert.True(t, changed, "obj changed status")
 		check()
 
 		t.Log("======== idempotent repeat =====")
-		changed, err = RemoveOwnerReference(own, obj, sc)
-		require.NoError(t, err, "removed owner reference")
-		assert.False(t, changed)
+		changed, err = DeleteOwnerReference(own, obj, sc)
+		require.NoError(t, err, "delete owner reference")
+		assert.False(t, changed, "obj changed status")
 		check()
 	}
 }

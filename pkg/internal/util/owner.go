@@ -79,9 +79,9 @@ func InsertOwnerReference(owner, object metav1.Object, scheme *runtime.Scheme) (
 	return true, nil
 }
 
-// RemoveOwnerReference adds an OwnerReference to the given object.
-func RemoveOwnerReference(owner, object metav1.Object, scheme *runtime.Scheme) (changed bool, err error) {
-	oref, err := toOwnerReference(owner, scheme)
+// DeleteOwnerReference removes an owner from the given object.
+func DeleteOwnerReference(owner, object metav1.Object, scheme *runtime.Scheme) (changed bool, err error) {
+	reference, err := toOwnerReference(owner, scheme)
 	if err != nil {
 		return false, err
 	}
@@ -91,19 +91,34 @@ func RemoveOwnerReference(owner, object metav1.Object, scheme *runtime.Scheme) (
 		return false, err
 	}
 
-	newRefs := make([]ownerReference, 0, len(refs))
+	var newRefs []ownerReference
 	for _, ref := range refs {
-		if ref == oref {
-			changed = true
-		} else {
+		if ref != reference {
 			newRefs = append(newRefs, ref)
+		} else {
+			changed = true
 		}
 	}
+
+	// early stopping
+	if !changed {
+		return false, nil
+	}
+
 	err = setRefs(object, newRefs)
 	if err != nil {
 		return false, err
 	}
 	return changed, nil
+}
+
+// IsUnowned checks if any owners claim ownership of this object.
+func IsUnowned(object metav1.Object) (unowned bool, err error) {
+	refs, err := getRefs(object)
+	if err != nil {
+		return
+	}
+	return len(refs) == 0, nil
 }
 
 // EnqueueRequestForOwner enqueues requests for all owners of an object.

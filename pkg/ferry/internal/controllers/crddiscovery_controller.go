@@ -137,7 +137,7 @@ func (r *CRDDiscoveryReconciler) handleDeletion(ctx context.Context, log logr.Lo
 		return nil
 	case err == nil:
 		// CRD still exists, ensure we're not owning it anymore
-		changed, err := util.RemoveOwnerReference(crd, crdReference, r.MasterScheme)
+		changed, err := util.DeleteOwnerReference(crd, crdReference, r.MasterScheme)
 		if err != nil {
 			return fmt.Errorf("deleting OwnerReference: %w", err)
 		}

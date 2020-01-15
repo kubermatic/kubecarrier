@@ -2,12 +2,13 @@
 # since it depends on service name and namespace that are out of this kustomize package.
 # It should be run by config/default
 resources:
-- bases/catalog.kubecarrier.io_tenants.yaml
+- bases/catalog.kubecarrier.io_catalogentries.yaml
+- bases/catalog.kubecarrier.io_catalogs.yaml
+- bases/catalog.kubecarrier.io_offerings.yaml
 - bases/catalog.kubecarrier.io_providers.yaml
 - bases/catalog.kubecarrier.io_tenantreferences.yaml
-- bases/catalog.kubecarrier.io_catalogentries.yaml
+- bases/catalog.kubecarrier.io_tenants.yaml
 - bases/kubecarrier.io_crddiscoveries.yaml
-- bases/catalog.kubecarrier.io_catalogs.yaml
 - bases/kubecarrier.io_serviceclusters.yaml
 # +kubebuilder:scaffold:crdkustomizeresource
 
