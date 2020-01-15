@@ -75,6 +75,17 @@ rules:
 - apiGroups:
   - catalog.kubecarrier.io
   resources:
+  - providerreferences
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - update
+  - watch
+- apiGroups:
+  - catalog.kubecarrier.io
+  resources:
   - providers
   verbs:
   - get

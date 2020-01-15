@@ -108,6 +108,7 @@ func TestCatalogReconciler(t *testing.T) {
 
 	catalogFound := &catalogv1alpha1.Catalog{}
 	offeringFound := &catalogv1alpha1.Offering{}
+	providerReferenceFound := &catalogv1alpha1.ProviderReference{}
 	if !t.Run("create/update Catalog", func(t *testing.T) {
 		for i := 0; i < 5; i++ {
 			// Run Reconcile multiple times, because
@@ -147,6 +148,14 @@ func TestCatalogReconciler(t *testing.T) {
 		assert.Equal(t, offeringFound.Offering.Provider.Name, provider.Name, "Wrong Offering provider name")
 		assert.Equal(t, offeringFound.Offering.Metadata.Description, catalogEntry.Spec.Metadata.Description, "Wrong Offering description")
 		assert.Len(t, offeringFound.Offering.CRDs, len(catalogEntry.Status.CRDs), "Wrong Offering description")
+
+		// Check ProviderReference
+		require.NoError(t, client.Get(ctx, types.NamespacedName{
+			Name:      provider.Name,
+			Namespace: tenantNamespaceName,
+		}, providerReferenceFound), "getting ProviderReference error")
+		assert.Equal(t, providerReferenceFound.Spec.Metadata.Description, provider.Spec.Metadata.Description, "Wrong ProviderReference Metadata.Description")
+		assert.Equal(t, providerReferenceFound.Spec.Metadata.DisplayName, provider.Spec.Metadata.DisplayName, "Wrong ProviderReference Metadata.DisplayName")
 	}) {
 		t.FailNow()
 	}
@@ -188,5 +197,12 @@ func TestCatalogReconciler(t *testing.T) {
 			Name:      offeringFound.Name,
 			Namespace: offeringFound.Namespace,
 		}, offeringCheck)), "Offering should be gone")
+
+		// Check ProviderReference
+		providerReferenceCheck := &catalogv1alpha1.ProviderReference{}
+		assert.True(t, errors.IsNotFound(client.Get(ctx, types.NamespacedName{
+			Name:      providerReferenceFound.Name,
+			Namespace: providerReferenceFound.Namespace,
+		}, providerReferenceCheck)), "ProviderReference should be gone")
 	})
 }

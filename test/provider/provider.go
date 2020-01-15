@@ -221,6 +221,21 @@ func (s *ProviderSuite) TestCatalogCreationAndDeletion() {
 		return len(offeringFound.Offering.CRDs) == len(s.catalogEntry.Status.CRDs) && offeringFound.Offering.Provider.Name == s.provider.Name, nil
 	}), "getting the Offering error")
 
+	// Check the ProviderReference object is created.
+	providerReferenceFound := &catalogv1alpha1.ProviderReference{}
+	s.NoError(wait.Poll(time.Second, 10*time.Second, func() (done bool, err error) {
+		if err := s.masterClient.Get(ctx, types.NamespacedName{
+			Name:      s.provider.Name,
+			Namespace: s.tenant.Status.NamespaceName,
+		}, providerReferenceFound); err != nil {
+			if errors.IsNotFound(err) {
+				return false, nil
+			}
+			return true, err
+		}
+		return providerReferenceFound.Spec.Metadata.DisplayName == s.provider.Spec.Metadata.DisplayName && providerReferenceFound.Spec.Metadata.Description == s.provider.Spec.Metadata.DisplayName, nil
+	}), "getting the ProviderReference error")
+
 	// Check if the status will be updated when tenant is removed.
 	s.Run("Catalog status updates when adding and removing Tenant", func() {
 		// Remove the tenant
@@ -287,6 +302,13 @@ func (s *ProviderSuite) TestCatalogCreationAndDeletion() {
 		Name:      offeringFound.Name,
 		Namespace: offeringFound.Namespace,
 	}, offeringCheck)), "offering object should also be deleted.")
+
+	// ProviderReference object should also be removed
+	providerReferenceCheck := &catalogv1alpha1.ProviderReference{}
+	s.True(errors.IsNotFound(s.masterClient.Get(ctx, types.NamespacedName{
+		Name:      providerReferenceFound.Name,
+		Namespace: providerReferenceFound.Namespace,
+	}, providerReferenceCheck)), "providerReference object should also be deleted.")
 }
 
 func (s *ProviderSuite) setupSuiteCatalog() {

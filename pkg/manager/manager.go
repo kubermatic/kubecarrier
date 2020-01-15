@@ -114,6 +114,13 @@ func run(flags *flags, log logr.Logger) error {
 		return fmt.Errorf("cannot add Offering owner field indexer: %w", err)
 	}
 
+	// Register a field index for ProviderReference
+	if err := util.AddOwnerReverseFieldIndex(
+		mgr.GetFieldIndexer(), ctrl.Log.WithName("fieldindex").WithName("ProviderReference"), &catalogv1alpha1.ProviderReference{},
+	); err != nil {
+		return fmt.Errorf("cannot add ProviderReference owner field indexer: %w", err)
+	}
+
 	if err = (&controllers.CatalogEntryReconciler{
 		Client:                     mgr.GetClient(),
 		Log:                        log.WithName("controllers").WithName("CatalogEntry"),

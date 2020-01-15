@@ -52,6 +52,7 @@ type CatalogReconciler struct {
 // +kubebuilder:rbac:groups=catalog.kubecarrier.io,resources=catalogs/status,verbs=get;update;patch
 // +kubebuilder:rbac:groups=catalog.kubecarrier.io,resources=catalogentries,verbs=list;watch
 // +kubebuilder:rbac:groups=catalog.kubecarrier.io,resources=offerings,verbs=get;list;watch;create;update;delete
+// +kubebuilder:rbac:groups=catalog.kubecarrier.io,resources=providerreferences,verbs=get;list;watch;create;update;delete
 
 // Reconcile function reconciles the Catalog object which specified by the request. Currently, it does the following:
 // - Fetch the Catalog object.
@@ -123,6 +124,15 @@ func (r *CatalogReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	provider, err := getProviderByProviderNamespace(ctx, r.Client, r.KubeCarrierSystemNamespace, req.Namespace)
 	if err != nil {
 		return ctrl.Result{}, fmt.Errorf("getting Provider: %w", err)
+	}
+
+	desiredProviderReferences, err := r.buildDesiredProviderReferences(ctx, log, catalog, provider, tenantReferences)
+	if err != nil {
+		return ctrl.Result{}, fmt.Errorf("building ProviderReferences: %w", err)
+	}
+
+	if err := r.reconcileProviderReferences(ctx, log, catalog, desiredProviderReferences); err != nil {
+		return ctrl.Result{}, fmt.Errorf("reconcliing ProviderReferences: %w", err)
 	}
 
 	desiredOfferings, err := r.buildDesiredOfferings(ctx, log, catalog, provider, tenantReferences, catalogEntries)
@@ -197,7 +207,11 @@ func (r *CatalogReconciler) handleDeletion(ctx context.Context, log logr.Logger,
 	if err != nil {
 		return fmt.Errorf("cleaning up Offerings: %w", err)
 	}
-	if deletedOfferingsCounter != 0 {
+	deletedProviderReferencesCounter, err := r.cleanupProviderReference(ctx, log, catalog, nil)
+	if err != nil {
+		return fmt.Errorf("cleaning up ProviderReferences: %w", err)
+	}
+	if deletedOfferingsCounter != 0 || deletedProviderReferencesCounter != 0 {
 		// move to the next reconcilation round.
 		return nil
 	}
@@ -247,6 +261,139 @@ func (r *CatalogReconciler) listSelectedTenantReferences(ctx context.Context, lo
 		return nil, fmt.Errorf("listing TenantReference: %w", err)
 	}
 	return tenantReferences.Items, nil
+}
+
+func (r *CatalogReconciler) buildDesiredProviderReferences(
+	ctx context.Context, log logr.Logger,
+	catalog *catalogv1alpha1.Catalog,
+	provider *catalogv1alpha1.Provider,
+	tenantReferences []catalogv1alpha1.TenantReference,
+) ([]catalogv1alpha1.ProviderReference, error) {
+	var desiredProviderReferences []catalogv1alpha1.ProviderReference
+	for _, tenantReference := range tenantReferences {
+		tenant := &catalogv1alpha1.Tenant{}
+		if err := r.Get(ctx, types.NamespacedName{
+			Name:      tenantReference.Name,
+			Namespace: r.KubeCarrierSystemNamespace,
+		}, tenant); err != nil {
+			return nil, fmt.Errorf("getting Tenant: %w", err)
+		}
+		desiredProviderReferences = append(desiredProviderReferences, catalogv1alpha1.ProviderReference{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      provider.Name,
+				Namespace: tenant.Status.NamespaceName,
+			},
+			Spec: catalogv1alpha1.ProviderReferenceSpec{
+				Metadata: provider.Spec.Metadata,
+			},
+		})
+	}
+	return desiredProviderReferences, nil
+}
+
+func (r *CatalogReconciler) reconcileProviderReferences(
+	ctx context.Context, log logr.Logger,
+	catalog *catalogv1alpha1.Catalog,
+	desiredProviderReferences []catalogv1alpha1.ProviderReference,
+) error {
+	if _, err := r.cleanupProviderReference(ctx, log, catalog, desiredProviderReferences); err != nil {
+		return fmt.Errorf("cleanup ProviderReference: %w", err)
+	}
+
+	for _, desiredProviderReference := range desiredProviderReferences {
+		if _, err := util.InsertOwnerReference(catalog, &desiredProviderReference, r.Scheme); err != nil {
+			return fmt.Errorf("inserting OwnerRefernence: %w", err)
+		}
+
+		currentProviderReference := &catalogv1alpha1.ProviderReference{}
+		err := r.Get(ctx, types.NamespacedName{
+			Namespace: desiredProviderReference.Name,
+			Name:      desiredProviderReference.Namespace,
+		}, currentProviderReference)
+		if err != nil && !errors.IsNotFound(err) {
+			return fmt.Errorf("getting ProviderReference: %w", err)
+		}
+		if errors.IsNotFound(err) {
+			// Create the ProviderReference.
+			if err := r.Create(ctx, &desiredProviderReference); err != nil && !errors.IsAlreadyExists(err) {
+				return fmt.Errorf("creating ProviderReference: %w", err)
+			}
+			currentProviderReference = &desiredProviderReference
+		}
+
+		ownerChanged, err := util.InsertOwnerReference(catalog, currentProviderReference, r.Scheme)
+		if err != nil {
+			return fmt.Errorf("inserting OwnerReference: %w", err)
+		}
+		if !reflect.DeepEqual(desiredProviderReference.Spec, currentProviderReference.Spec) || ownerChanged {
+			currentProviderReference.Spec = desiredProviderReference.Spec
+			if err := r.Update(ctx, currentProviderReference); err != nil {
+				return fmt.Errorf("updaing ProviderReference: %w", err)
+			}
+		}
+	}
+	return nil
+}
+
+func (r *CatalogReconciler) cleanupProviderReference(
+	ctx context.Context, log logr.Logger,
+	catalog *catalogv1alpha1.Catalog,
+	desiredProviderReferences []catalogv1alpha1.ProviderReference,
+) (int, error) {
+	// Fetch existing ProviderReferences.
+	ownerListFilter, err := util.OwnedBy(catalog, r.Scheme)
+	if err != nil {
+		return 0, fmt.Errorf("building OwnedBy filter: %w", err)
+	}
+	foundProviderReferenceList := &catalogv1alpha1.ProviderReferenceList{}
+	if err := r.List(ctx, foundProviderReferenceList, ownerListFilter); err != nil {
+		return 0, fmt.Errorf("listing ProviderReferences: %w", err)
+	}
+
+	desiredIndces := map[string]struct{}{}
+	for _, desiredProviderReference := range desiredProviderReferences {
+		desiredIndces[types.NamespacedName{
+			Name:      desiredProviderReference.Name,
+			Namespace: desiredProviderReference.Namespace,
+		}.String()] = struct{}{}
+	}
+
+	var deletedProviderReferences int
+	// Delete ProviderReferences that are no longer in the desiredProviderReferences list
+	for _, currentProviderReference := range foundProviderReferenceList.Items {
+		if _, present := desiredIndces[types.NamespacedName{
+			Name:      currentProviderReference.Name,
+			Namespace: currentProviderReference.Namespace,
+		}.String()]; present {
+			continue
+		}
+		ownerReferenceChanged, err := util.DeleteOwnerReference(catalog, &currentProviderReference, r.Scheme)
+		if err != nil {
+			return 0, fmt.Errorf("deleting OwnerReference: %w", err)
+		}
+
+		unowned, err := util.IsUnowned(&currentProviderReference)
+		if err != nil {
+			return 0, fmt.Errorf("checking object isUnowned: %w", err)
+		}
+
+		switch {
+		case unowned:
+			// The ProviderReference object is unowned by any Catalog objects, it can be removed.
+			if err := r.Delete(ctx, &currentProviderReference); err != nil && !errors.IsNotFound(err) {
+				return 0, fmt.Errorf("deleting ProviderReference: %w", err)
+			}
+			log.Info("deleting unowned ProviderReference", "ProviderReferenceName", currentProviderReference.Name, "ProviderReferenceNamespace", currentProviderReference.Namespace)
+			deletedProviderReferences++
+		case !unowned && ownerReferenceChanged:
+			if err := r.Update(ctx, &currentProviderReference); err != nil {
+				return 0, fmt.Errorf("updating ProviderReference: %w", err)
+			}
+			log.Info("removing Catalog as owner from ProviderReference", "ProviderReferenceName", currentProviderReference.Name, "ProviderReferenceNamespace", currentProviderReference.Namespace)
+			deletedProviderReferences++
+		}
+	}
+	return deletedProviderReferences, nil
 }
 
 func (r *CatalogReconciler) buildDesiredOfferings(

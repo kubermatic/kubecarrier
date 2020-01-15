@@ -8,6 +8,7 @@ resources:
 - bases/catalog.kubecarrier.io_catalogentries.yaml
 - bases/catalog.kubecarrier.io_catalogs.yaml
 - bases/catalog.kubecarrier.io_offerings.yaml
+- bases/catalog.kubecarrier.io_providerreferences.yaml
 - bases/kubecarrier.io_serviceclusters.yaml
 # +kubebuilder:scaffold:crdkustomizeresource
 
