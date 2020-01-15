@@ -1,5 +1,5 @@
 /*
-Copyright 2020 The KubeCarrier Authors.
+Copyright 2019 The KubeCarrier Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -23,6 +23,11 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	catalogv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/catalog/v1alpha1"
+)
+
+const (
+	providerLabel       = "kubecarrier.io/provider"
+	serviceClusterLabel = "kubecarrier.io/service-cluster"
 )
 
 func getProviderByProviderNamespace(ctx context.Context, c client.Client, kubecarrierNamespace, providerNamespace string) (*catalogv1alpha1.Provider, error) {
