@@ -53,7 +53,7 @@ type CatalogReconciler struct {
 // +kubebuilder:rbac:groups=catalog.kubecarrier.io,resources=catalogentries,verbs=list;watch
 // +kubebuilder:rbac:groups=catalog.kubecarrier.io,resources=offerings,verbs=get;list;watch;create;update;delete
 
-// Reconcile function reconciles the Catalog object which specified by the request. Currently, it does the follwoing:
+// Reconcile function reconciles the Catalog object which specified by the request. Currently, it does the following:
 // - Fetch the Catalog object.
 // - Handle the deletion of the Catalog object.
 // - Fetch the CatalogEntries and TenantReferences that selected by this Catalog object.
@@ -256,7 +256,7 @@ func (r *CatalogReconciler) buildDesiredOfferings(
 	tenantReferences []catalogv1alpha1.TenantReference,
 	catalogEntries []catalogv1alpha1.CatalogEntry,
 ) ([]catalogv1alpha1.Offering, error) {
-	var desiredOffering []catalogv1alpha1.Offering
+	var desiredOfferings []catalogv1alpha1.Offering
 	for _, tenantReference := range tenantReferences {
 		tenant := &catalogv1alpha1.Tenant{}
 		if err := r.Get(ctx, types.NamespacedName{
@@ -266,7 +266,7 @@ func (r *CatalogReconciler) buildDesiredOfferings(
 			return nil, fmt.Errorf("getting Tenant: %w", err)
 		}
 		for _, catalogEntry := range catalogEntries {
-			desiredOffering = append(desiredOffering, catalogv1alpha1.Offering{
+			desiredOfferings = append(desiredOfferings, catalogv1alpha1.Offering{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      catalogEntry.Name,
 					Namespace: tenant.Status.NamespaceName,
@@ -284,7 +284,7 @@ func (r *CatalogReconciler) buildDesiredOfferings(
 			})
 		}
 	}
-	return desiredOffering, nil
+	return desiredOfferings, nil
 }
 
 func (r *CatalogReconciler) reconcileOfferings(
