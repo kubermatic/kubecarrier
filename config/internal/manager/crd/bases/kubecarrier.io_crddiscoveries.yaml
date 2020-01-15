@@ -4,9 +4,9 @@ metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.2.4
   creationTimestamp: null
-  name: crddiscoveries.core.kubecarrier.io
+  name: crddiscoveries.kubecarrier.io
 spec:
-  group: core.kubecarrier.io
+  group: kubecarrier.io
   names:
     kind: CRDDiscovery
     listKind: CRDDiscoveryList

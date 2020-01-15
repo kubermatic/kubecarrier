@@ -74,7 +74,7 @@ $CONTROLLER_GEN crd:crdVersions=${CRD_VERSION} webhook paths="./pkg/apis/catalog
 $CONTROLLER_GEN rbac:roleName=manager-role paths="./pkg/manager/..." output:rbac:artifacts:config=config/internal/manager/rbac
 # Remove properties to make the CatalogEntry yaml configuration (which embeds CustomResourceValidation) to pass the schema checks
 out=$(mktemp)
-yq -Y  "del(.spec.versions[].schema.openAPIV3Schema.properties.status.properties.crdSpec.properties)" "config/internal/manager/crd/bases/core.kubecarrier.io_crddiscoveries.yaml" > $out && mv ${out} "config/internal/manager/crd/bases/core.kubecarrier.io_crddiscoveries.yaml"
+yq -Y  "del(.spec.versions[].schema.openAPIV3Schema.properties.status.properties.crdSpec.properties)" "config/internal/manager/crd/bases/kubecarrier.io_crddiscoveries.yaml" > $out && mv ${out} "config/internal/manager/crd/bases/kubecarrier.io_crddiscoveries.yaml"
 
 cat config/internal/manager/crd/bases/catalog.kubecarrier.io_catalogentries.yaml | yq -Y 'del(.spec.versions[].schema.openAPIV3Schema.properties.status.properties.crds.items.properties.versions.items.properties.schema.properties)' > config/internal/manager/crd/bases/catalog.kubecarrier.io_catalogentries.yaml.tmp
 mv config/internal/manager/crd/bases/catalog.kubecarrier.io_catalogentries.yaml.tmp config/internal/manager/crd/bases/catalog.kubecarrier.io_catalogentries.yaml
@@ -84,7 +84,11 @@ statik-gen manager config/internal/manager
 # -------
 # RBAC
 $CONTROLLER_GEN rbac:roleName=manager-role paths="./pkg/ferry/..." output:rbac:artifacts:config=config/internal/ferry/rbac
-sed -i 's/ClusterRole/Role/g' config/internal/ferry/rbac/role.yaml
+# The `|| true` is because the `,s/ClusterRole/Role/g` will error out if there is no match of `ClusterRole` (eg., the file is empty) in the file.
+ed config/internal/ferry/rbac/role.yaml <<EOF || true
+,s/ClusterRole/Role/g
+w
+EOF
 # Statik (run only when file CONTENT has changed)
 statik-gen ferry config/internal/ferry
 
@@ -92,5 +96,9 @@ statik-gen ferry config/internal/ferry
 # -------
 # RBAC
 $CONTROLLER_GEN rbac:roleName=manager-role paths="./pkg/catapult/..." output:rbac:artifacts:config=config/internal/catapult/rbac
-sed -i 's/ClusterRole/Role/g' config/internal/catapult/rbac/role.yaml
+# The `|| true` is because the `,s/ClusterRole/Role/g` will error out if there is no match of `ClusterRole` (eg., the file is empty) in the file.
+ed config/internal/catapult/rbac/role.yaml <<EOF || true
+,s/ClusterRole/Role/g
+w
+EOF
 statik-gen catapult config/internal/catapult

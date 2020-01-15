@@ -6,9 +6,9 @@ metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.2.4
   creationTimestamp: null
-  name: serviceclusters.core.kubecarrier.io
+  name: serviceclusters.kubecarrier.io
 spec:
-  group: core.kubecarrier.io
+  group: kubecarrier.io
   names:
     kind: ServiceCluster
     listKind: ServiceClusterList
@@ -25,6 +25,9 @@ spec:
     - jsonPath: .metadata.creationTimestamp
       name: Age
       type: date
+    - jsonPath: .spec.metadata.displayName
+      name: Display Name
+      type: string
     name: v1alpha1
     schema:
       openAPIV3Schema:
@@ -114,6 +117,38 @@ spec:
                   printing the property is only present for display purposes, for
                   everything else use conditions
                 type: string
+              version:
+                description: Version of the service cluster API Server
+                properties:
+                  buildDate:
+                    type: string
+                  compiler:
+                    type: string
+                  gitCommit:
+                    type: string
+                  gitTreeState:
+                    type: string
+                  gitVersion:
+                    type: string
+                  goVersion:
+                    type: string
+                  major:
+                    type: string
+                  minor:
+                    type: string
+                  platform:
+                    type: string
+                required:
+                - buildDate
+                - compiler
+                - gitCommit
+                - gitTreeState
+                - gitVersion
+                - goVersion
+                - major
+                - minor
+                - platform
+                type: object
             type: object
         type: object
     served: true

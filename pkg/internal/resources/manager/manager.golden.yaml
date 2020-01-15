@@ -502,8 +502,6 @@
                     strings when printing the property. This is only for display purpose,
                     for everything else use conditions.
                   type: string
-              required:
-              - crds
               type: object
           type: object
       served: true
@@ -522,136 +520,9 @@
     annotations:
       controller-gen.kubebuilder.io/version: v0.2.4
     creationTimestamp: null
-    name: serviceclusters.core.kubecarrier.io
+    name: crddiscoveries.kubecarrier.io
   spec:
-    group: core.kubecarrier.io
-    names:
-      kind: ServiceCluster
-      listKind: ServiceClusterList
-      plural: serviceclusters
-      shortNames:
-      - sc
-      singular: servicecluster
-    scope: Namespaced
-    versions:
-    - additionalPrinterColumns:
-      - jsonPath: .status.phase
-        name: Status
-        type: string
-      - jsonPath: .metadata.creationTimestamp
-        name: Age
-        type: date
-      name: v1alpha1
-      schema:
-        openAPIV3Schema:
-          description: ServiceCluster is a providers Kubernetes Cluster.
-          properties:
-            apiVersion:
-              description: 'APIVersion defines the versioned schema of this representation
-                of an object. Servers should convert recognized schemas to the latest
-                internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
-              type: string
-            kind:
-              description: 'Kind is a string value representing the REST resource
-                this object represents. Servers may infer this from the endpoint the
-                client submits requests to. Cannot be updated. In CamelCase. More
-                info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
-              type: string
-            metadata:
-              type: object
-            spec:
-              description: ServiceClusterSpec defines the desired state of ServiceCluster
-              properties:
-                metadata:
-                  description: ServiceClusterMetadata contains the metadata (display
-                    name, description, etc) of the ServiceCluster.
-                  properties:
-                    description:
-                      description: Description shows the human-readable description
-                        of this ServiceCluster.
-                      type: string
-                    displayName:
-                      description: DisplayName shows the human-readable name of this
-                        ServiceCluster.
-                      type: string
-                  type: object
-              type: object
-            status:
-              description: ServiceClusterStatus defines the observed state of ServiceCluster
-              properties:
-                conditions:
-                  description: Conditions is a list of all conditions this ServiceCluster
-                    is in.
-                  items:
-                    description: ServiceClusterCondition contains details for the
-                      current condition of this ServiceCluster.
-                    properties:
-                      lastHeartbeatTime:
-                        description: LastHeartbeatTime is the timestamp corresponding
-                          to the last update of this condition.
-                        format: date-time
-                        type: string
-                      lastTransitionTime:
-                        description: LastTransitionTime is the last time the condition
-                          transit from one status to another.
-                        format: date-time
-                        type: string
-                      message:
-                        description: Message is the human readable message indicating
-                          details about last transition.
-                        type: string
-                      reason:
-                        description: Reason is the (brief) reason for the condition's
-                          last transition.
-                        type: string
-                      status:
-                        description: Status of the condition, one of ('True', 'False',
-                          'Unknown').
-                        type: string
-                      type:
-                        description: Type of the condition, currently ('Ready').
-                        type: string
-                    required:
-                    - lastHeartbeatTime
-                    - lastTransitionTime
-                    - message
-                    - reason
-                    - status
-                    - type
-                    type: object
-                  type: array
-                observedGeneration:
-                  description: The most recent generation observed by the controller.
-                  format: int64
-                  type: integer
-                phase:
-                  description: DEPRECATED. Phase represents the current lifecycle
-                    state of this object consider this field DEPRECATED, it will be
-                    removed as soon as there is a mechanism to map conditions to a
-                    string when printing the property is only present for display
-                    purposes, for everything else use conditions
-                  type: string
-              type: object
-          type: object
-      served: true
-      storage: true
-      subresources:
-        status: {}
-  status:
-    acceptedNames:
-      kind: ""
-      plural: ""
-    conditions: []
-    storedVersions: []
-- apiVersion: apiextensions.k8s.io/v1
-  kind: CustomResourceDefinition
-  metadata:
-    annotations:
-      controller-gen.kubebuilder.io/version: v0.2.4
-    creationTimestamp: null
-    name: crddiscoveries.core.kubecarrier.io
-  spec:
-    group: core.kubecarrier.io
+    group: kubecarrier.io
     names:
       kind: CRDDiscovery
       listKind: CRDDiscoveryList
@@ -777,6 +648,397 @@
       plural: ""
     conditions: []
     storedVersions: []
+- apiVersion: apiextensions.k8s.io/v1
+  kind: CustomResourceDefinition
+  metadata:
+    annotations:
+      controller-gen.kubebuilder.io/version: v0.2.4
+    creationTimestamp: null
+    name: catalogs.catalog.kubecarrier.io
+  spec:
+    group: catalog.kubecarrier.io
+    names:
+      kind: Catalog
+      listKind: CatalogList
+      plural: catalogs
+      shortNames:
+      - cl
+      singular: catalog
+    scope: Namespaced
+    versions:
+    - additionalPrinterColumns:
+      - jsonPath: .status.phase
+        name: Status
+        type: string
+      - jsonPath: .metadata.creationTimestamp
+        name: Age
+        type: date
+      name: v1alpha1
+      schema:
+        openAPIV3Schema:
+          description: Catalog publishes a selection of CatalogEntries to a selection
+            of Tenants.
+          properties:
+            apiVersion:
+              description: 'APIVersion defines the versioned schema of this representation
+                of an object. Servers should convert recognized schemas to the latest
+                internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+              type: string
+            kind:
+              description: 'Kind is a string value representing the REST resource
+                this object represents. Servers may infer this from the endpoint the
+                client submits requests to. Cannot be updated. In CamelCase. More
+                info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+              type: string
+            metadata:
+              type: object
+            spec:
+              description: CatalogSpec defines the desired state of Catalog
+              properties:
+                catalogEntrySelector:
+                  description: CatalogEntrySelector selects CatalogEntry objects that
+                    should be part of this catalog. If this is not specified, it will
+                    match all CatalogEntries.
+                  properties:
+                    matchExpressions:
+                      description: matchExpressions is a list of label selector requirements.
+                        The requirements are ANDed.
+                      items:
+                        description: A label selector requirement is a selector that
+                          contains values, a key, and an operator that relates the
+                          key and values.
+                        properties:
+                          key:
+                            description: key is the label key that the selector applies
+                              to.
+                            type: string
+                          operator:
+                            description: operator represents a key's relationship
+                              to a set of values. Valid operators are In, NotIn, Exists
+                              and DoesNotExist.
+                            type: string
+                          values:
+                            description: values is an array of string values. If the
+                              operator is In or NotIn, the values array must be non-empty.
+                              If the operator is Exists or DoesNotExist, the values
+                              array must be empty. This array is replaced during a
+                              strategic merge patch.
+                            items:
+                              type: string
+                            type: array
+                        required:
+                        - key
+                        - operator
+                        type: object
+                      type: array
+                    matchLabels:
+                      additionalProperties:
+                        type: string
+                      description: matchLabels is a map of {key,value} pairs. A single
+                        {key,value} in the matchLabels map is equivalent to an element
+                        of matchExpressions, whose key field is "key", the operator
+                        is "In", and the values array contains only "value". The requirements
+                        are ANDed.
+                      type: object
+                  type: object
+                tenantReferenceSelector:
+                  description: TenantReferenceSelector selects TenantReference objects
+                    that the catalog should be published to. If this is not specified,
+                    it will match all TenantReferences.
+                  properties:
+                    matchExpressions:
+                      description: matchExpressions is a list of label selector requirements.
+                        The requirements are ANDed.
+                      items:
+                        description: A label selector requirement is a selector that
+                          contains values, a key, and an operator that relates the
+                          key and values.
+                        properties:
+                          key:
+                            description: key is the label key that the selector applies
+                              to.
+                            type: string
+                          operator:
+                            description: operator represents a key's relationship
+                              to a set of values. Valid operators are In, NotIn, Exists
+                              and DoesNotExist.
+                            type: string
+                          values:
+                            description: values is an array of string values. If the
+                              operator is In or NotIn, the values array must be non-empty.
+                              If the operator is Exists or DoesNotExist, the values
+                              array must be empty. This array is replaced during a
+                              strategic merge patch.
+                            items:
+                              type: string
+                            type: array
+                        required:
+                        - key
+                        - operator
+                        type: object
+                      type: array
+                    matchLabels:
+                      additionalProperties:
+                        type: string
+                      description: matchLabels is a map of {key,value} pairs. A single
+                        {key,value} in the matchLabels map is equivalent to an element
+                        of matchExpressions, whose key field is "key", the operator
+                        is "In", and the values array contains only "value". The requirements
+                        are ANDed.
+                      type: object
+                  type: object
+              type: object
+            status:
+              description: CatalogStatus defines the observed state of Catalog.
+              properties:
+                conditions:
+                  description: Conditions represents the latest available observations
+                    of a Catalog's current state.
+                  items:
+                    description: CatalogCondition contains details for the current
+                      condition of this Catalog.
+                    properties:
+                      lastTransitionTime:
+                        description: LastTransitionTime is the last time the condition
+                          transits from one status to another.
+                        format: date-time
+                        type: string
+                      message:
+                        description: Message is the human readable message indicating
+                          details about last transition.
+                        type: string
+                      reason:
+                        description: Reason is the (brief) reason for the condition's
+                          last transition.
+                        type: string
+                      status:
+                        description: Status is the status of the condition, one of
+                          ('True', 'False', 'Unknown').
+                        type: string
+                      type:
+                        description: Type is the type of the Catalog condition, currently
+                          ('Ready').
+                        type: string
+                    required:
+                    - lastTransitionTime
+                    - message
+                    - reason
+                    - status
+                    - type
+                    type: object
+                  type: array
+                entries:
+                  description: Entries is the list of the CatalogEntries that selected
+                    by this Catalog.
+                  items:
+                    description: ObjectReference describes the link to another object
+                      in the same namespace.
+                    properties:
+                      name:
+                        type: string
+                    required:
+                    - name
+                    type: object
+                  type: array
+                observedGeneration:
+                  description: ObservedGeneration is the most recent generation observed
+                    for this Catalog by the controller.
+                  format: int64
+                  type: integer
+                phase:
+                  description: DEPRECATED. Phase represents the current lifecycle
+                    state of this object. Consider this field DEPRECATED, it will
+                    be removed as soon as there is a mechanism to map conditions to
+                    strings when printing the property. This is only for display purpose,
+                    for everything else use conditions.
+                  type: string
+                tenants:
+                  description: Tenants is the list of the Tenants(TenantReference)
+                    that selected by this Catalog.
+                  items:
+                    description: ObjectReference describes the link to another object
+                      in the same namespace.
+                    properties:
+                      name:
+                        type: string
+                    required:
+                    - name
+                    type: object
+                  type: array
+              type: object
+          type: object
+      served: true
+      storage: true
+      subresources:
+        status: {}
+  status:
+    acceptedNames:
+      kind: ""
+      plural: ""
+    conditions: []
+    storedVersions: []
+- apiVersion: apiextensions.k8s.io/v1
+  kind: CustomResourceDefinition
+  metadata:
+    annotations:
+      controller-gen.kubebuilder.io/version: v0.2.4
+    creationTimestamp: null
+    name: serviceclusters.kubecarrier.io
+  spec:
+    group: kubecarrier.io
+    names:
+      kind: ServiceCluster
+      listKind: ServiceClusterList
+      plural: serviceclusters
+      shortNames:
+      - sc
+      singular: servicecluster
+    scope: Namespaced
+    versions:
+    - additionalPrinterColumns:
+      - jsonPath: .status.phase
+        name: Status
+        type: string
+      - jsonPath: .metadata.creationTimestamp
+        name: Age
+        type: date
+      - jsonPath: .spec.metadata.displayName
+        name: Display Name
+        type: string
+      name: v1alpha1
+      schema:
+        openAPIV3Schema:
+          description: ServiceCluster is a providers Kubernetes Cluster.
+          properties:
+            apiVersion:
+              description: 'APIVersion defines the versioned schema of this representation
+                of an object. Servers should convert recognized schemas to the latest
+                internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+              type: string
+            kind:
+              description: 'Kind is a string value representing the REST resource
+                this object represents. Servers may infer this from the endpoint the
+                client submits requests to. Cannot be updated. In CamelCase. More
+                info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+              type: string
+            metadata:
+              type: object
+            spec:
+              description: ServiceClusterSpec defines the desired state of ServiceCluster
+              properties:
+                metadata:
+                  description: ServiceClusterMetadata contains the metadata (display
+                    name, description, etc) of the ServiceCluster.
+                  properties:
+                    description:
+                      description: Description shows the human-readable description
+                        of this ServiceCluster.
+                      type: string
+                    displayName:
+                      description: DisplayName shows the human-readable name of this
+                        ServiceCluster.
+                      type: string
+                  type: object
+              type: object
+            status:
+              description: ServiceClusterStatus defines the observed state of ServiceCluster
+              properties:
+                conditions:
+                  description: Conditions is a list of all conditions this ServiceCluster
+                    is in.
+                  items:
+                    description: ServiceClusterCondition contains details for the
+                      current condition of this ServiceCluster.
+                    properties:
+                      lastHeartbeatTime:
+                        description: LastHeartbeatTime is the timestamp corresponding
+                          to the last update of this condition.
+                        format: date-time
+                        type: string
+                      lastTransitionTime:
+                        description: LastTransitionTime is the last time the condition
+                          transit from one status to another.
+                        format: date-time
+                        type: string
+                      message:
+                        description: Message is the human readable message indicating
+                          details about last transition.
+                        type: string
+                      reason:
+                        description: Reason is the (brief) reason for the condition's
+                          last transition.
+                        type: string
+                      status:
+                        description: Status of the condition, one of ('True', 'False',
+                          'Unknown').
+                        type: string
+                      type:
+                        description: Type of the condition, currently ('Ready').
+                        type: string
+                    required:
+                    - lastHeartbeatTime
+                    - lastTransitionTime
+                    - message
+                    - reason
+                    - status
+                    - type
+                    type: object
+                  type: array
+                observedGeneration:
+                  description: The most recent generation observed by the controller.
+                  format: int64
+                  type: integer
+                phase:
+                  description: DEPRECATED. Phase represents the current lifecycle
+                    state of this object consider this field DEPRECATED, it will be
+                    removed as soon as there is a mechanism to map conditions to a
+                    string when printing the property is only present for display
+                    purposes, for everything else use conditions
+                  type: string
+                version:
+                  description: Version of the service cluster API Server
+                  properties:
+                    buildDate:
+                      type: string
+                    compiler:
+                      type: string
+                    gitCommit:
+                      type: string
+                    gitTreeState:
+                      type: string
+                    gitVersion:
+                      type: string
+                    goVersion:
+                      type: string
+                    major:
+                      type: string
+                    minor:
+                      type: string
+                    platform:
+                      type: string
+                  required:
+                  - buildDate
+                  - compiler
+                  - gitCommit
+                  - gitTreeState
+                  - gitVersion
+                  - goVersion
+                  - major
+                  - minor
+                  - platform
+                  type: object
+              type: object
+          type: object
+      served: true
+      storage: true
+      subresources:
+        status: {}
+  status:
+    acceptedNames:
+      kind: ""
+      plural: ""
+    conditions: []
+    storedVersions: []
 - apiVersion: rbac.authorization.k8s.io/v1
   kind: ClusterRole
   metadata:
@@ -817,6 +1079,23 @@
     - catalog.kubecarrier.io
     resources:
     - catalogentries/status
+    verbs:
+    - get
+    - patch
+    - update
+  - apiGroups:
+    - catalog.kubecarrier.io
+    resources:
+    - catalogs
+    verbs:
+    - get
+    - list
+    - update
+    - watch
+  - apiGroups:
+    - catalog.kubecarrier.io
+    resources:
+    - catalogs/status
     verbs:
     - get
     - patch

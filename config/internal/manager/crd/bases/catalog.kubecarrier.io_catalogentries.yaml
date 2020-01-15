@@ -198,8 +198,6 @@ spec:
                     strings when printing the property. This is only for display purpose,
                     for everything else use conditions.
                   type: string
-              required:
-                - crds
               type: object
           type: object
       served: true

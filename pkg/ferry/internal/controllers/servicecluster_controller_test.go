@@ -18,14 +18,14 @@ package controllers
 
 import (
 	"context"
+	"fmt"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/apimachinery/pkg/version"
 	ctrl "sigs.k8s.io/controller-runtime"
 	fakeclient "sigs.k8s.io/controller-runtime/pkg/client/fake"
 
@@ -33,17 +33,34 @@ import (
 	"github.com/kubermatic/kubecarrier/pkg/testutil"
 )
 
-func TestServiceClusterReconciler(t *testing.T) {
-	clusterInfo := &corev1.ConfigMap{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "cluster-info",
-			Namespace: "kube-public",
-		},
+type fakeServiceClusterVersionInfo struct {
+	*version.Info
+}
+
+func (f *fakeServiceClusterVersionInfo) ServerVersion() (*version.Info, error) {
+	if f.Info != nil {
+		return f.Info, nil
 	}
+	return nil, fmt.Errorf("fake version info not found")
+}
+
+func TestServiceClusterReconciler(t *testing.T) {
 	scc := &ServiceClusterReconciler{
-		Log:                testutil.NewLogger(t),
-		MasterClient:       fakeclient.NewFakeClientWithScheme(testScheme),
-		ServiceClient:      fakeclient.NewFakeClientWithScheme(testScheme, clusterInfo),
+		Log:          testutil.NewLogger(t),
+		MasterClient: fakeclient.NewFakeClientWithScheme(testScheme),
+		ServiceClusterVersionInfo: &fakeServiceClusterVersionInfo{
+			Info: &version.Info{
+				Major:        "1",
+				Minor:        "16",
+				GitVersion:   "fake",
+				GitCommit:    "fake",
+				GitTreeState: "fake",
+				BuildDate:    "fake",
+				GoVersion:    "fake",
+				Compiler:     "fake",
+				Platform:     "fake",
+			},
+		},
 		ServiceClusterName: "eu-west-1",
 		ProviderNamespace:  "my-provider",
 		StatusUpdatePeriod: time.Second,
@@ -77,7 +94,8 @@ func TestServiceClusterReconciler(t *testing.T) {
 	if !t.Run("service cluster unreachable", func(t *testing.T) {
 		scc.Log = testutil.NewLogger(t)
 		ctx := context.Background()
-		require.NoError(t, scc.ServiceClient.Delete(ctx, clusterInfo))
+		scc.ServiceClusterVersionInfo.(*fakeServiceClusterVersionInfo).Info = nil
+
 		_, err := scc.Reconcile(ctrl.Request{
 			NamespacedName: serviceClusterNN,
 		})
@@ -90,11 +108,10 @@ func TestServiceClusterReconciler(t *testing.T) {
 		cond, present := serviceCluster.Status.GetCondition(corev1alpha1.ServiceClusterReady)
 		if assert.True(t, present, "cluster ready condition missing") {
 			assert.Equal(t, corev1alpha1.ConditionFalse, cond.Status)
-			assert.Equal(t, "NotFound", cond.Reason)
-			assert.Equal(t, `configmaps "cluster-info" not found`, cond.Message)
+			assert.Equal(t, "ClusterUnreachable", cond.Reason)
+			assert.Equal(t, `fake version info not found`, cond.Message)
 		}
 	}) {
 		t.FailNow()
 	}
-
 }

@@ -68,10 +68,23 @@ func (s *AdminSuite) TestFerryCreationAndDeletion() {
 	// cleanup from previous test runs
 	require.NoError(t, client.IgnoreNotFound(s.masterClient.Delete(ctx, sec.DeepCopy())))
 	require.NoError(t, client.IgnoreNotFound(s.masterClient.Delete(ctx, scr.DeepCopy())))
+	require.NoError(t, testutil.WaitUntilNotFound(s.masterClient, sec))
+	require.NoError(t, testutil.WaitUntilNotFound(s.masterClient, scr))
 
 	require.NoError(t, s.masterClient.Create(ctx, sec))
 	require.NoError(t, s.masterClient.Create(ctx, scr))
 
+	require.NoError(t, testutil.WaitUntilReady(
+		s.masterClient,
+		scr,
+	), "serviceClusterRegistration object not ready within time limit")
+
+	serviceCluster := &corev1alpha1.ServiceCluster{}
+	serviceCluster.SetName(scr.GetName())
+	serviceCluster.SetNamespace(namespace)
+	require.NoError(t, testutil.WaitUntilReady(s.masterClient, serviceCluster))
+
+	assert.NoError(t, testutil.WaitUntilReady(s.masterClient, scr), "scr object not ready within the time limit")
 	t.Run("creation", func(t *testing.T) {
 		require.NoError(t, testutil.WaitUntilReady(
 			s.masterClient,
@@ -119,13 +132,8 @@ func (s *AdminSuite) TestFerryCreationAndDeletion() {
 				Namespace: "kubecarrier-system",
 			},
 		}
-		// cleanup if remaining
-		assert.NoError(t, client.IgnoreNotFound(s.masterClient.Delete(ctx, provider)))
-		assert.NoError(t, client.IgnoreNotFound(s.serviceClient.Delete(ctx, crd)))
-
 		require.NoError(t, s.masterClient.Create(ctx, provider))
 		require.NoError(t, s.serviceClient.Create(ctx, crd))
-
 		require.NoError(t, testutil.WaitUntilReady(s.masterClient, provider))
 
 		//assert.NoError(t, client.IgnoreNotFound(s.masterClient.Delete(ctx, provider)))

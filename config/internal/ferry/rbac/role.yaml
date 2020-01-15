@@ -16,7 +16,7 @@ rules:
   - update
   - watch
 - apiGroups:
-  - core.kubecarrier.io
+  - kubecarrier.io
   resources:
   - crddiscoveries
   verbs:
@@ -28,7 +28,7 @@ rules:
   - update
   - watch
 - apiGroups:
-  - core.kubecarrier.io
+  - kubecarrier.io
   resources:
   - crddiscoveries/status
   verbs:
@@ -36,7 +36,7 @@ rules:
   - patch
   - update
 - apiGroups:
-  - core.kubecarrier.io
+  - kubecarrier.io
   resources:
   - serviceclusters
   verbs:
@@ -48,7 +48,7 @@ rules:
   - update
   - watch
 - apiGroups:
-  - core.kubecarrier.io
+  - kubecarrier.io
   resources:
   - serviceclusters/status
   verbs:
