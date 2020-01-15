@@ -30,7 +30,7 @@ VERSION?=${BRANCH}-${SHORT_SHA}
 BUILD_DATE=$(shell date +%s)
 IMAGE_ORG?=quay.io/kubecarrier
 MODULE=github.com/kubermatic/kubecarrier
-LD_FLAGS="-w -X '$(MODULE)/pkg/internal/version.Version=$(VERSION)' -X '$(MODULE)/pkg/internal/version.Branch=$(BRANCH)' -X '$(MODULE)/pkg/internal/version.Commit=$(SHORT_SHA)' -X '$(MODULE)/pkg/internal/version.BuildDate=$(BUILD_DATE)'"
+LD_FLAGS=-X $(MODULE)/pkg/internal/version.Version=$(VERSION) -X $(MODULE)/pkg/internal/version.Branch=$(BRANCH) -X $(MODULE)/pkg/internal/version.Commit=$(SHORT_SHA) -X $(MODULE)/pkg/internal/version.BuildDate=$(BUILD_DATE)
 KIND_CLUSTER?=kubecarrier
 COMPONENTS = operator manager ferry catapult
 
@@ -47,7 +47,7 @@ bin/windows_amd64/%: GOARGS = GOOS=windows GOARCH=amd64
 
 bin/%: FORCE
 	$(eval COMPONENT=$(shell basename $*))
-	$(GOARGS) go build -ldflags $(LD_FLAGS) -o bin/$* cmd/$(COMPONENT)/main.go
+	$(GOARGS) go build -ldflags "-w $(LD_FLAGS)" -o bin/$* cmd/$(COMPONENT)/main.go
 
 FORCE:
 
@@ -74,14 +74,14 @@ test:
 .PHONY: test
 
 install:
-	go install -ldflags $(LD_FLAGS) ./cmd/anchor
+	go install -ldflags "-w $(LD_FLAGS)" ./cmd/anchor
 .PHONY: install
 
 TEST_ID?=1
 MASTER_KIND_CLUSTER?=kubecarrier-${TEST_ID}
 SVC_KIND_CLUSTER?=kubecarrier-svc-${TEST_ID}
 
-e2e-test: install require-docker
+e2e-setup: install require-docker
 	@unset KUBECONFIG
 	@kind create cluster --name=${MASTER_KIND_CLUSTER} || true
 	@kind create cluster --name=${SVC_KIND_CLUSTER} || true
@@ -92,7 +92,10 @@ e2e-test: install require-docker
 	@echo "kind clusters created"
 	@echo "Loading the images"
 	@$(MAKE) KIND_CLUSTER=${MASTER_KIND_CLUSTER} kind-load
-	@go run -ldflags $(LD_FLAGS) ./cmd/anchor e2e-test run --test.v --test-id=${TEST_ID} | richgo testfilter
+
+e2e-test: e2e-setup
+	@go run -ldflags "-w $(LD_FLAGS)" ./cmd/anchor e2e-test run --test.v --test-id=${TEST_ID} | richgo testfilter
+
 .PHONY: e2e-test
 
 e2e-test-clean:
@@ -145,5 +148,11 @@ require-docker:
 	@[[ -z "${QUAY_IO_USERNAME}" ]] || ( echo "logging in to ${QUAY_IO_USERNAME}" && docker login -u ${QUAY_IO_USERNAME} -p ${QUAY_IO_PASSWORD} quay.io )
 .PHONEY: require-docker
 
-generate-intelij-tasks:
-	@./hack/gen-intelij-tasks.sh ${LD_FLAGS}
+generate-ide-tasks:
+	@go run ./hack/gen-tasks.go -ldflags "${LD_FLAGS}"
+
+install-git-hooks:
+	pre-commit install
+	printf "#!/bin/bash\\nmake generate-ide-tasks" > .git/hooks/post-commit && chmod +x .git/hooks/post-commit
+	cp .git/hooks/post-commit .git/hooks/post-checkout
+	cp .git/hooks/post-commit .git/hooks/post-merge
