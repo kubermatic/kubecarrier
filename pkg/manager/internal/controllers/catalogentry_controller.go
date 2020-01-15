@@ -40,8 +40,6 @@ const (
 	// This annotation is used to make sure a CRD can only be referenced by a single CatalogEntry object.
 	catalogEntryReferenceAnnotation = "kubecarrier.io/catalog-entry"
 	catalogEntryControllerFinalizer = "catalogentry.kubecarrier.io/controller"
-	providerLabel                   = "kubecarrier.io/provider"
-	serviceClusterAnnotation        = "kubecarrier.io/service-cluster"
 )
 
 // CatalogEntryReconciler reconciles a CatalogEntry object
@@ -223,6 +221,9 @@ func (r *CatalogEntryReconciler) manipulateCRDInfo(ctx context.Context, log logr
 
 		// check the annotation of the CRD
 		annotations := crd.GetAnnotations()
+		if annotations == nil {
+			annotations = map[string]string{}
+		}
 		if catalogEntryNamespacedName, present := annotations[catalogEntryReferenceAnnotation]; present {
 			if catalogEntryNamespacedName == desiredNamespacedName {
 				crdReferenced++
@@ -287,7 +288,7 @@ func getCRDInformation(crd apiextensionsv1.CustomResourceDefinition) (catalogv1a
 	}
 
 	// Service Cluster
-	serviceCluster, present := crd.Annotations[serviceClusterAnnotation]
+	serviceCluster, present := crd.Labels[serviceClusterLabel]
 	if !present {
 		return catalogv1alpha1.CRDInformation{}, fmt.Errorf("getting ServiceCluster of the CRD error: CRD should have an annotation to indicate the ServiceCluster")
 	}

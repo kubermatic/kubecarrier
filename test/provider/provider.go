@@ -333,11 +333,9 @@ func (s *ProviderSuite) setupSuiteCatalog() {
 	s.crd = &apiextensionsv1.CustomResourceDefinition{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "couchdbs.eu-west-1.example.cloud",
-			Annotations: map[string]string{
-				"kubecarrier.io/service-cluster": "eu-west-1",
-			},
 			Labels: map[string]string{
-				"kubecarrier.io/provider": s.provider.Name,
+				"kubecarrier.io/provider":        s.provider.Name,
+				"kubecarrier.io/service-cluster": "eu-west-1",
 			},
 		},
 		Spec: apiextensionsv1.CustomResourceDefinitionSpec{
