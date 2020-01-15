@@ -5,9 +5,14 @@ go 1.13
 replace k8s.io/client-go => k8s.io/client-go v0.0.0-20190918160344-1fbdaa4c8d90
 
 require (
+	github.com/Masterminds/goutils v1.1.0 // indirect
+	github.com/Masterminds/semver v1.5.0 // indirect
+	github.com/Masterminds/sprig v2.22.0+incompatible
 	github.com/gernest/wow v0.1.0
 	github.com/go-logr/logr v0.1.0
 	github.com/google/go-cmp v0.3.1
+	github.com/huandu/xstrings v1.3.0 // indirect
+	github.com/mitchellh/copystructure v1.0.0 // indirect
 	github.com/rakyll/statik v0.1.6
 	github.com/spf13/cobra v0.0.5
 	github.com/stretchr/testify v1.4.0

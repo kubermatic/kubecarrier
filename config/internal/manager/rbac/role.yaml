@@ -47,6 +47,34 @@ rules:
 - apiGroups:
   - catalog.kubecarrier.io
   resources:
+  - catalogs
+  verbs:
+  - get
+  - list
+  - update
+  - watch
+- apiGroups:
+  - catalog.kubecarrier.io
+  resources:
+  - catalogs/status
+  verbs:
+  - get
+  - patch
+  - update
+- apiGroups:
+  - catalog.kubecarrier.io
+  resources:
+  - offerings
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - update
+  - watch
+- apiGroups:
+  - catalog.kubecarrier.io
+  resources:
   - providers
   verbs:
   - get
