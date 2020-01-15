@@ -81,7 +81,7 @@ TEST_ID?=1
 MASTER_KIND_CLUSTER?=kubecarrier-${TEST_ID}
 SVC_KIND_CLUSTER?=kubecarrier-svc-${TEST_ID}
 
-e2e-test: install require-docker
+e2e-setup: install require-docker
 	@unset KUBECONFIG
 	@kind create cluster --name=${MASTER_KIND_CLUSTER} || true
 	@kind create cluster --name=${SVC_KIND_CLUSTER} || true
@@ -92,7 +92,10 @@ e2e-test: install require-docker
 	@echo "kind clusters created"
 	@echo "Loading the images"
 	@$(MAKE) KIND_CLUSTER=${MASTER_KIND_CLUSTER} kind-load
+
+e2e-test: e2e-setup
 	@go run -ldflags "-w $(LD_FLAGS)" ./cmd/anchor e2e-test run --test.v --test-id=${TEST_ID} | richgo testfilter
+
 .PHONY: e2e-test
 
 e2e-test-clean:
