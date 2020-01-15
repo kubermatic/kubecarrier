@@ -117,12 +117,10 @@ func run(flags *flags, log logr.Logger) error {
 	if err := util.AddOwnerReverseFieldIndex(mgr.GetFieldIndexer(), fieldIndexerLog.WithName("CRD"), &apiextensionsv1.CustomResourceDefinition{}); err != nil {
 		return fmt.Errorf("registering CRD owner field index: %w", err)
 	}
-
-	// Register a field index for ProviderReference
 	if err := util.AddOwnerReverseFieldIndex(
-		mgr.GetFieldIndexer(), ctrl.Log.WithName("fieldindex").WithName("ProviderReference"), &catalogv1alpha1.ProviderReference{},
+		mgr.GetFieldIndexer(), fieldIndexerLog.WithName("ProviderReference"), &catalogv1alpha1.ProviderReference{},
 	); err != nil {
-		return fmt.Errorf("cannot add ProviderReference owner field indexer: %w", err)
+		return fmt.Errorf("registering ProviderReference owner field indexer: %w", err)
 	}
 
 	if err = (&controllers.CatalogEntryReconciler{
