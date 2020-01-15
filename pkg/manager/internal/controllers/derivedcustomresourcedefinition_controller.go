@@ -41,9 +41,8 @@ import (
 )
 
 const (
-	dcrdFinalizer       = "dcrd.kubecarrier.io/controller"
-	dcrdAnnotation      = "dcrd.kubecarrier.io/referenced-by"
-	serviceClusterLabel = "kubecarrier.io/service-cluster"
+	dcrdFinalizer  = "dcrd.kubecarrier.io/controller"
+	dcrdAnnotation = "dcrd.kubecarrier.io/referenced-by"
 )
 
 type DerivedCustomResourceDefinitionReconciler struct {

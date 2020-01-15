@@ -40,8 +40,6 @@ const (
 	// This annotation is used to make sure a CRD can only be referenced by a single CatalogEntry object.
 	catalogEntryReferenceAnnotation = "kubecarrier.io/catalog-entry"
 	catalogEntryControllerFinalizer = "catalogentry.kubecarrier.io/controller"
-	providerLabel                   = "kubecarrier.io/provider"
-	serviceClusterLabel             = "kubecarrier.io/service-cluster"
 )
 
 // CatalogEntryReconciler reconciles a CatalogEntry object
