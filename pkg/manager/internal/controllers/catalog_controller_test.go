@@ -18,11 +18,13 @@ package controllers
 
 import (
 	"context"
+	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -33,17 +35,41 @@ import (
 )
 
 func TestCatalogReconciler(t *testing.T) {
-	providerNamespaceName := "test-provider-namespace"
+
+	provider := &catalogv1alpha1.Provider{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "example-provider",
+			Namespace: "kubecarrier-system",
+		},
+	}
+
+	providerNamespaceName := fmt.Sprintf("provider-%s", provider.Name)
+
 	providerNamespace := &corev1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: providerNamespaceName,
 		},
 	}
 
+	tenant := &catalogv1alpha1.Tenant{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "example-tenant",
+			Namespace: "kubecarrier-system",
+		},
+	}
+	tenantNamespaceName := fmt.Sprintf("tenant-%s", tenant.Name)
+	tenant.Status.NamespaceName = tenantNamespaceName
+
 	tenantReference := &catalogv1alpha1.TenantReference{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      "test-tenant-reference",
+			Name:      tenant.Name,
 			Namespace: providerNamespaceName,
+		},
+	}
+
+	tenantNamespace := &corev1.Namespace{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: tenantNamespaceName,
 		},
 	}
 
@@ -71,7 +97,7 @@ func TestCatalogReconciler(t *testing.T) {
 		},
 	}
 
-	client := fakeclient.NewFakeClientWithScheme(testScheme, providerNamespace, tenantReference, catalogEntry, catalog)
+	client := fakeclient.NewFakeClientWithScheme(testScheme, catalogEntry, catalog, provider, providerNamespace, tenant, tenantReference, tenantNamespace)
 	log := testutil.NewLogger(t)
 	r := &CatalogReconciler{
 		Client: client,
@@ -81,6 +107,7 @@ func TestCatalogReconciler(t *testing.T) {
 	ctx := context.Background()
 
 	catalogFound := &catalogv1alpha1.Catalog{}
+	offeringFound := &catalogv1alpha1.Offering{}
 	if !t.Run("create/update Catalog", func(t *testing.T) {
 		for i := 0; i < 5; i++ {
 			// Run Reconcile multiple times, because
@@ -111,6 +138,15 @@ func TestCatalogReconciler(t *testing.T) {
 		readyCondition, readyConditionExists := catalogFound.Status.GetCondition(catalogv1alpha1.CatalogReady)
 		assert.True(t, readyConditionExists, "Ready Condition is not set")
 		assert.Equal(t, catalogv1alpha1.ConditionTrue, readyCondition.Status, "Wrong Ready condition.Status")
+
+		// Check Offering
+		require.NoError(t, client.Get(ctx, types.NamespacedName{
+			Name:      catalogEntry.Name,
+			Namespace: tenantNamespaceName,
+		}, offeringFound), "getting Offering error")
+		assert.Equal(t, offeringFound.Offering.Provider.Name, provider.Name, "Wrong Offering provider name")
+		assert.Equal(t, offeringFound.Offering.Metadata.Description, catalogEntry.Spec.Metadata.Description, "Wrong Offering description")
+		assert.Len(t, offeringFound.Offering.CRDs, len(catalogEntry.Status.CRDs), "Wrong Offering description")
 	}) {
 		t.FailNow()
 	}
@@ -145,5 +181,12 @@ func TestCatalogReconciler(t *testing.T) {
 		assert.True(t, readyConditionExists, "Ready Condition is not set")
 		assert.Equal(t, catalogv1alpha1.ConditionFalse, readyCondition.Status, "Wrong Ready condition.Status")
 		assert.Equal(t, catalogv1alpha1.CatalogTerminatingReason, readyCondition.Reason, "Wrong Reason condition.Status")
+
+		// Check Offering
+		offeringCheck := &catalogv1alpha1.Offering{}
+		assert.True(t, errors.IsNotFound(client.Get(ctx, types.NamespacedName{
+			Name:      offeringFound.Name,
+			Namespace: offeringFound.Namespace,
+		}, offeringCheck)), "Offering should be gone")
 	})
 }

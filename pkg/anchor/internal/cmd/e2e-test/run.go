@@ -19,6 +19,7 @@ package e2e_test
 import (
 	"flag"
 	"os"
+	"regexp"
 	"testing"
 
 	"github.com/go-logr/logr"
@@ -38,7 +39,7 @@ func newRunCommand(log logr.Logger, cfg *framework.Config) *cobra.Command {
 				return err
 			}
 			testing.Main(func(pat, str string) (b bool, e error) {
-				return true, nil
+				return regexp.Match(str, []byte(pat))
 			}, tests, nil, nil)
 			return nil
 		},

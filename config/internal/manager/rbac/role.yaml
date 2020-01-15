@@ -23,6 +23,8 @@ rules:
   resources:
   - customresourcedefinitions
   verbs:
+  - create
+  - delete
   - get
   - list
   - update
@@ -61,6 +63,34 @@ rules:
   - get
   - patch
   - update
+- apiGroups:
+  - catalog.kubecarrier.io
+  resources:
+  - derivedcustomresourcedefinitions
+  verbs:
+  - get
+  - list
+  - update
+  - watch
+- apiGroups:
+  - catalog.kubecarrier.io
+  resources:
+  - derivedcustomresourcedefinitions/status
+  verbs:
+  - get
+  - patch
+  - update
+- apiGroups:
+  - catalog.kubecarrier.io
+  resources:
+  - offerings
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - update
+  - watch
 - apiGroups:
   - catalog.kubecarrier.io
   resources:

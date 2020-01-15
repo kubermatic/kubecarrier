@@ -301,26 +301,3 @@ func getCRDInformation(crd apiextensionsv1.CustomResourceDefinition) (catalogv1a
 
 	return crdInfo, nil
 }
-
-func getProviderByProviderNamespace(ctx context.Context, c client.Client, kubecarrierNamespace, providerNamespace string) (*catalogv1alpha1.Provider, error) {
-	providerList := &catalogv1alpha1.ProviderList{}
-	if err := c.List(ctx, providerList,
-		client.InNamespace(kubecarrierNamespace),
-		client.MatchingFields{
-			catalogv1alpha1.ProviderNamespaceFieldIndex: providerNamespace,
-		},
-	); err != nil {
-		return nil, err
-	}
-	switch len(providerList.Items) {
-	case 0:
-		// not found
-		return nil, fmt.Errorf("providers.catalog.kubecarrier.io with index %q not found", catalogv1alpha1.ProviderNamespaceFieldIndex)
-	case 1:
-		// found!
-		return &providerList.Items[0], nil
-	default:
-		// found too many
-		return nil, fmt.Errorf("multiple providers.catalog.kubecarrier.io with index %q found", catalogv1alpha1.ProviderNamespaceFieldIndex)
-	}
-}

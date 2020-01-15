@@ -206,6 +206,21 @@ func (s *ProviderSuite) TestCatalogCreationAndDeletion() {
 		return len(catalogFound.Status.Entries) == 1 && len(catalogFound.Status.Tenants) == 1, nil
 	}), "getting the Catalog error")
 
+	// Check the Offering object is created.
+	offeringFound := &catalogv1alpha1.Offering{}
+	s.NoError(wait.Poll(time.Second, 10*time.Second, func() (done bool, err error) {
+		if err := s.masterClient.Get(ctx, types.NamespacedName{
+			Name:      s.catalogEntry.Name,
+			Namespace: s.tenant.Status.NamespaceName,
+		}, offeringFound); err != nil {
+			if errors.IsNotFound(err) {
+				return false, nil
+			}
+			return true, err
+		}
+		return len(offeringFound.Offering.CRDs) == len(s.catalogEntry.Status.CRDs) && offeringFound.Offering.Provider.Name == s.provider.Name, nil
+	}), "getting the Offering error")
+
 	// Check if the status will be updated when tenant is removed.
 	s.Run("Catalog status updates when adding and removing Tenant", func() {
 		// Remove the tenant
@@ -265,6 +280,13 @@ func (s *ProviderSuite) TestCatalogCreationAndDeletion() {
 		}
 		return false, nil
 	}), "deleting the Catalog error")
+
+	// Offering object should also be removed
+	offeringCheck := &catalogv1alpha1.Offering{}
+	s.True(errors.IsNotFound(s.masterClient.Get(ctx, types.NamespacedName{
+		Name:      offeringFound.Name,
+		Namespace: offeringFound.Namespace,
+	}, offeringCheck)), "offering object should also be deleted.")
 }
 
 func (s *ProviderSuite) setupSuiteCatalog() {
