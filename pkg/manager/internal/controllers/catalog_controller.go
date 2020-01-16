@@ -126,18 +126,26 @@ func (r *CatalogReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 		return ctrl.Result{}, fmt.Errorf("getting Provider: %w", err)
 	}
 
-	desiredProviderReferences, err := r.buildDesiredProviderReferences(ctx, log, catalog, provider, tenantReferences)
-	if err != nil {
-		return ctrl.Result{}, fmt.Errorf("building ProviderReferences: %w", err)
-	}
+	// Build objects for Tenants
+	var (
+		desiredProviderReferences []catalogv1alpha1.ProviderReference
+		desiredOfferings          []catalogv1alpha1.Offering
+	)
+	for _, tenantReference := range tenantReferences {
+		tenant := &catalogv1alpha1.Tenant{}
+		if err := r.Get(ctx, types.NamespacedName{
+			Name:      tenantReference.Name,
+			Namespace: r.KubeCarrierSystemNamespace,
+		}, tenant); err != nil {
+			return ctrl.Result{}, fmt.Errorf("getting Tenant: %w", err)
+		}
 
+		// ProviderReferences
+		desiredProviderReferences = append(desiredProviderReferences, r.buildDesiredProviderReference(provider, tenant))
+		desiredOfferings = append(desiredOfferings, r.buildDesiredOfferings(provider, tenant, catalogEntries)...)
+	}
 	if err := r.reconcileProviderReferences(ctx, log, catalog, desiredProviderReferences); err != nil {
 		return ctrl.Result{}, fmt.Errorf("reconcliing ProviderReferences: %w", err)
-	}
-
-	desiredOfferings, err := r.buildDesiredOfferings(ctx, log, catalog, provider, tenantReferences, catalogEntries)
-	if err != nil {
-		return ctrl.Result{}, fmt.Errorf("building Offering: %w", err)
 	}
 
 	if err := r.reconcileOfferings(ctx, log, catalog, desiredOfferings); err != nil {
@@ -263,32 +271,46 @@ func (r *CatalogReconciler) listSelectedTenantReferences(ctx context.Context, lo
 	return tenantReferences.Items, nil
 }
 
-func (r *CatalogReconciler) buildDesiredProviderReferences(
-	ctx context.Context, log logr.Logger,
-	catalog *catalogv1alpha1.Catalog,
+func (r *CatalogReconciler) buildDesiredProviderReference(
 	provider *catalogv1alpha1.Provider,
-	tenantReferences []catalogv1alpha1.TenantReference,
-) ([]catalogv1alpha1.ProviderReference, error) {
-	var desiredProviderReferences []catalogv1alpha1.ProviderReference
-	for _, tenantReference := range tenantReferences {
-		tenant := &catalogv1alpha1.Tenant{}
-		if err := r.Get(ctx, types.NamespacedName{
-			Name:      tenantReference.Name,
-			Namespace: r.KubeCarrierSystemNamespace,
-		}, tenant); err != nil {
-			return nil, fmt.Errorf("getting Tenant: %w", err)
-		}
-		desiredProviderReferences = append(desiredProviderReferences, catalogv1alpha1.ProviderReference{
+	tenant *catalogv1alpha1.Tenant,
+) catalogv1alpha1.ProviderReference {
+	return catalogv1alpha1.ProviderReference{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      provider.Name,
+			Namespace: tenant.Status.NamespaceName,
+		},
+		Spec: catalogv1alpha1.ProviderReferenceSpec{
+			Metadata: provider.Spec.Metadata,
+		},
+	}
+}
+
+func (r *CatalogReconciler) buildDesiredOfferings(
+	provider *catalogv1alpha1.Provider,
+	tenant *catalogv1alpha1.Tenant,
+	catalogEntries []catalogv1alpha1.CatalogEntry,
+) []catalogv1alpha1.Offering {
+	var desiredOfferings []catalogv1alpha1.Offering
+	for _, catalogEntry := range catalogEntries {
+		desiredOfferings = append(desiredOfferings, catalogv1alpha1.Offering{
 			ObjectMeta: metav1.ObjectMeta{
-				Name:      provider.Name,
+				Name:      catalogEntry.Name,
 				Namespace: tenant.Status.NamespaceName,
 			},
-			Spec: catalogv1alpha1.ProviderReferenceSpec{
-				Metadata: provider.Spec.Metadata,
+			Offering: catalogv1alpha1.OfferingData{
+				Metadata: catalogv1alpha1.OfferingMetadata{
+					DisplayName: catalogEntry.Spec.Metadata.DisplayName,
+					Description: catalogEntry.Spec.Metadata.Description,
+				},
+				Provider: catalogv1alpha1.ObjectReference{
+					Name: provider.Name,
+				},
+				CRDs: catalogEntry.Status.CRDs,
 			},
 		})
 	}
-	return desiredProviderReferences, nil
+	return desiredOfferings
 }
 
 func (r *CatalogReconciler) reconcileProviderReferences(
@@ -329,6 +351,50 @@ func (r *CatalogReconciler) reconcileProviderReferences(
 			currentProviderReference.Spec = desiredProviderReference.Spec
 			if err := r.Update(ctx, currentProviderReference); err != nil {
 				return fmt.Errorf("updaing ProviderReference: %w", err)
+			}
+		}
+	}
+	return nil
+}
+
+func (r *CatalogReconciler) reconcileOfferings(
+	ctx context.Context, log logr.Logger,
+	catalog *catalogv1alpha1.Catalog,
+	desiredOfferings []catalogv1alpha1.Offering,
+) error {
+	if _, err := r.cleanupOffering(ctx, log, catalog, desiredOfferings); err != nil {
+		return fmt.Errorf("cleanup Offering: %w", err)
+	}
+
+	for _, desiredOffering := range desiredOfferings {
+		if _, err := util.InsertOwnerReference(catalog, &desiredOffering, r.Scheme); err != nil {
+			return fmt.Errorf("inserting OwnerRefernence: %w", err)
+		}
+
+		currentOffering := &catalogv1alpha1.Offering{}
+		err := r.Get(ctx, types.NamespacedName{
+			Namespace: desiredOffering.Name,
+			Name:      desiredOffering.Namespace,
+		}, currentOffering)
+		if err != nil && !errors.IsNotFound(err) {
+			return fmt.Errorf("getting Offering: %w", err)
+		}
+		if errors.IsNotFound(err) {
+			// Create the Offering.
+			if err := r.Create(ctx, &desiredOffering); err != nil && !errors.IsAlreadyExists(err) {
+				return fmt.Errorf("creating Offering: %w", err)
+			}
+			currentOffering = &desiredOffering
+		}
+
+		ownerChanged, err := util.InsertOwnerReference(catalog, currentOffering, r.Scheme)
+		if err != nil {
+			return fmt.Errorf("inserting OwnerReference: %w", err)
+		}
+		if !reflect.DeepEqual(desiredOffering.Offering, currentOffering.Offering) || ownerChanged {
+			currentOffering.Offering = desiredOffering.Offering
+			if err := r.Update(ctx, currentOffering); err != nil {
+				return fmt.Errorf("updaing Offering: %w", err)
 			}
 		}
 	}
@@ -394,88 +460,6 @@ func (r *CatalogReconciler) cleanupProviderReference(
 		}
 	}
 	return deletedProviderReferences, nil
-}
-
-func (r *CatalogReconciler) buildDesiredOfferings(
-	ctx context.Context, log logr.Logger,
-	catalog *catalogv1alpha1.Catalog,
-	provider *catalogv1alpha1.Provider,
-	tenantReferences []catalogv1alpha1.TenantReference,
-	catalogEntries []catalogv1alpha1.CatalogEntry,
-) ([]catalogv1alpha1.Offering, error) {
-	var desiredOfferings []catalogv1alpha1.Offering
-	for _, tenantReference := range tenantReferences {
-		tenant := &catalogv1alpha1.Tenant{}
-		if err := r.Get(ctx, types.NamespacedName{
-			Name:      tenantReference.Name,
-			Namespace: r.KubeCarrierSystemNamespace,
-		}, tenant); err != nil {
-			return nil, fmt.Errorf("getting Tenant: %w", err)
-		}
-		for _, catalogEntry := range catalogEntries {
-			desiredOfferings = append(desiredOfferings, catalogv1alpha1.Offering{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      catalogEntry.Name,
-					Namespace: tenant.Status.NamespaceName,
-				},
-				Offering: catalogv1alpha1.OfferingData{
-					Metadata: catalogv1alpha1.OfferingMetadata{
-						DisplayName: catalogEntry.Spec.Metadata.DisplayName,
-						Description: catalogEntry.Spec.Metadata.Description,
-					},
-					Provider: catalogv1alpha1.ObjectReference{
-						Name: provider.Name,
-					},
-					CRDs: catalogEntry.Status.CRDs,
-				},
-			})
-		}
-	}
-	return desiredOfferings, nil
-}
-
-func (r *CatalogReconciler) reconcileOfferings(
-	ctx context.Context, log logr.Logger,
-	catalog *catalogv1alpha1.Catalog,
-	desiredOfferings []catalogv1alpha1.Offering,
-) error {
-	if _, err := r.cleanupOffering(ctx, log, catalog, desiredOfferings); err != nil {
-		return fmt.Errorf("cleanup Offering: %w", err)
-	}
-
-	for _, desiredOffering := range desiredOfferings {
-		if _, err := util.InsertOwnerReference(catalog, &desiredOffering, r.Scheme); err != nil {
-			return fmt.Errorf("inserting OwnerRefernence: %w", err)
-		}
-
-		currentOffering := &catalogv1alpha1.Offering{}
-		err := r.Get(ctx, types.NamespacedName{
-			Namespace: desiredOffering.Name,
-			Name:      desiredOffering.Namespace,
-		}, currentOffering)
-		if err != nil && !errors.IsNotFound(err) {
-			return fmt.Errorf("getting Offering: %w", err)
-		}
-		if errors.IsNotFound(err) {
-			// Create the Offering.
-			if err := r.Create(ctx, &desiredOffering); err != nil && !errors.IsAlreadyExists(err) {
-				return fmt.Errorf("creating Offering: %w", err)
-			}
-			currentOffering = &desiredOffering
-		}
-
-		ownerChanged, err := util.InsertOwnerReference(catalog, currentOffering, r.Scheme)
-		if err != nil {
-			return fmt.Errorf("inserting OwnerReference: %w", err)
-		}
-		if !reflect.DeepEqual(desiredOffering.Offering, currentOffering.Offering) || ownerChanged {
-			currentOffering.Offering = desiredOffering.Offering
-			if err := r.Update(ctx, currentOffering); err != nil {
-				return fmt.Errorf("updaing Offering: %w", err)
-			}
-		}
-	}
-	return nil
 }
 
 func (r *CatalogReconciler) cleanupOffering(
