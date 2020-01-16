@@ -86,9 +86,9 @@ func TestCustomResourceDefinitionDiscoveryReconciler(t *testing.T) {
 		require.NoError(t, r.MasterClient.Get(context.Background(), crdRefNN, crdRef))
 		require.NoError(t, testutil.ConditionStatusEqual(crdRef, corev1alpha1.CustomResourceDefinitionDiscoveryReady, corev1alpha1.ConditionTrue))
 
-		assert.Equal(t, crd.Spec.Group, crdRef.Status.CRDSpec.Spec.Group)
-		assert.Equal(t, crd.Spec.Versions[0].Name, crdRef.Status.CRDSpec.Spec.Versions[0].Name)
-		assert.Equal(t, crd.Spec.Scope, crdRef.Status.CRDSpec.Spec.Scope)
+		assert.Equal(t, crd.Spec.Group, crdRef.Status.CRD.Spec.Group)
+		assert.Equal(t, crd.Spec.Versions[0].Name, crdRef.Status.CRD.Spec.Versions[0].Name)
+		assert.Equal(t, crd.Spec.Scope, crdRef.Status.CRD.Spec.Scope)
 	}) {
 		t.FailNow()
 	}
@@ -105,7 +105,7 @@ func TestCustomResourceDefinitionDiscoveryReconciler(t *testing.T) {
 		crdRef = &corev1alpha1.CustomResourceDefinitionDiscovery{}
 		require.NoError(t, r.MasterClient.Get(context.Background(), crdRefNN, crdRef))
 		assert.NoError(t, testutil.ConditionStatusEqual(crdRef, corev1alpha1.CustomResourceDefinitionDiscoveryReady, corev1alpha1.ConditionFalse))
-		assert.Equal(t, (*apiextensionsv1.CustomResourceDefinition)(nil), crdRef.Status.CRDSpec)
+		assert.Equal(t, (*apiextensionsv1.CustomResourceDefinition)(nil), crdRef.Status.CRD)
 	}) {
 		t.FailNow()
 	}

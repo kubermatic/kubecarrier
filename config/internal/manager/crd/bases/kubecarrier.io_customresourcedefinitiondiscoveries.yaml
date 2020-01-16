@@ -106,11 +106,9 @@ spec:
                       - type
                     type: object
                   type: array
-                crdSpec:
-                  description: CRDSpec defines the original CustomResourceDefinition
-                    specification from the service cluster
-                  required:
-                    - spec
+                crd:
+                  description: CRD defines the original CustomResourceDefinition specification
+                    from the service cluster
                   type: object
                 observedGeneration:
                   description: The most recent generation observed by the controller.

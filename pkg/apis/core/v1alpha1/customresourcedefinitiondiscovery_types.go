@@ -31,8 +31,8 @@ type CustomResourceDefinitionDiscoverySpec struct {
 
 // CustomResourceDefinitionDiscoveryStatus defines the observed state of crdreference
 type CustomResourceDefinitionDiscoveryStatus struct {
-	// CRDSpec defines the original CustomResourceDefinition specification from the service cluster
-	CRDSpec *apiextensionsv1.CustomResourceDefinition `json:"crdSpec,omitempty"`
+	// CRD defines the original CustomResourceDefinition specification from the service cluster
+	CRD *apiextensionsv1.CustomResourceDefinition `json:"crd,omitempty"`
 	// DEPRECATED.
 	// Phase represents the current lifecycle state of this object
 	// consider this field DEPRECATED, it will be removed as soon as there

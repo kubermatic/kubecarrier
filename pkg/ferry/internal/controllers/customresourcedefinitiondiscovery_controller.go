@@ -82,7 +82,7 @@ func (r *CustomResourceDefinitionDiscoveryReconciler) Reconcile(req ctrl.Request
 
 	switch {
 	case errors.IsNotFound(err):
-		crdReference.Status.CRDSpec = nil
+		crdReference.Status.CRD = nil
 		crdReference.Status.SetCondition(corev1alpha1.CustomResourceDefinitionDiscoveryCondition{
 			Type:    corev1alpha1.CustomResourceDefinitionDiscoveryReady,
 			Status:  corev1alpha1.ConditionFalse,
@@ -90,7 +90,7 @@ func (r *CustomResourceDefinitionDiscoveryReconciler) Reconcile(req ctrl.Request
 			Reason:  util.ErrorReason(err),
 		})
 		if err = r.MasterClient.Status().Update(ctx, crdReference); err != nil {
-			return ctrl.Result{}, fmt.Errorf("updating CustomResourceDefinitionDiscovery Status: %w", err)
+			return ctrl.Result{}, fmt.Errorf("updating CustomResourceDefinitionDiscovery Status - notFound: %w", err)
 		}
 		// requeue until the CRD is found
 		return ctrl.Result{Requeue: true}, nil
@@ -106,7 +106,7 @@ func (r *CustomResourceDefinitionDiscoveryReconciler) Reconcile(req ctrl.Request
 			}
 		}
 
-		crdReference.Status.CRDSpec = crd
+		crdReference.Status.CRD = crd
 		crdReference.Status.SetCondition(corev1alpha1.CustomResourceDefinitionDiscoveryCondition{
 			Type:    corev1alpha1.CustomResourceDefinitionDiscoveryReady,
 			Status:  corev1alpha1.ConditionTrue,
@@ -114,7 +114,7 @@ func (r *CustomResourceDefinitionDiscoveryReconciler) Reconcile(req ctrl.Request
 			Reason:  "CRDFound",
 		})
 		if err = r.MasterClient.Status().Update(ctx, crdReference); err != nil {
-			return ctrl.Result{}, fmt.Errorf("updating CustomResourceDefinitionDiscovery Status: %w", err)
+			return ctrl.Result{}, fmt.Errorf("updating CustomResourceDefinitionDiscovery Status -- ready: %w", err)
 		}
 		return ctrl.Result{}, nil
 	default:
