@@ -191,6 +191,7 @@ func (r *CatalogReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		Watches(&source.Kind{Type: &catalogv1alpha1.TenantReference{}}, enqueueAllCatalogsInNamespace).
 		Watches(&source.Kind{Type: &catalogv1alpha1.CatalogEntry{}}, enqueueAllCatalogsInNamespace).
 		Watches(&source.Kind{Type: &catalogv1alpha1.Offering{}}, enqueuerForOwner).
+		Watches(&source.Kind{Type: &catalogv1alpha1.ProviderReference{}}, enqueuerForOwner).
 		Complete(r)
 }
 
@@ -325,11 +326,11 @@ func (r *CatalogReconciler) reconcileOfferings(
 			return fmt.Errorf("inserting OwnerRefernence: %w", err)
 		}
 
-		currentOffering := &catalogv1alpha1.Offering{}
+		foundOffering := &catalogv1alpha1.Offering{}
 		err := r.Get(ctx, types.NamespacedName{
 			Namespace: desiredOffering.Name,
 			Name:      desiredOffering.Namespace,
-		}, currentOffering)
+		}, foundOffering)
 		if err != nil && !errors.IsNotFound(err) {
 			return fmt.Errorf("getting Offering: %w", err)
 		}
@@ -338,16 +339,16 @@ func (r *CatalogReconciler) reconcileOfferings(
 			if err := r.Create(ctx, &desiredOffering); err != nil && !errors.IsAlreadyExists(err) {
 				return fmt.Errorf("creating Offering: %w", err)
 			}
-			currentOffering = &desiredOffering
+			foundOffering = &desiredOffering
 		}
 
-		ownerChanged, err := util.InsertOwnerReference(catalog, currentOffering, r.Scheme)
+		ownerChanged, err := util.InsertOwnerReference(catalog, foundOffering, r.Scheme)
 		if err != nil {
 			return fmt.Errorf("inserting OwnerReference: %w", err)
 		}
-		if !reflect.DeepEqual(desiredOffering.Offering, currentOffering.Offering) || ownerChanged {
-			currentOffering.Offering = desiredOffering.Offering
-			if err := r.Update(ctx, currentOffering); err != nil {
+		if !reflect.DeepEqual(desiredOffering.Offering, foundOffering.Offering) || ownerChanged {
+			foundOffering.Offering = desiredOffering.Offering
+			if err := r.Update(ctx, foundOffering); err != nil {
 				return fmt.Errorf("updaing Offering: %w", err)
 			}
 		}
@@ -369,11 +370,11 @@ func (r *CatalogReconciler) reconcileProviderReferences(
 			return fmt.Errorf("inserting OwnerRefernence: %w", err)
 		}
 
-		currentProviderReference := &catalogv1alpha1.ProviderReference{}
+		foundProviderReference := &catalogv1alpha1.ProviderReference{}
 		err := r.Get(ctx, types.NamespacedName{
 			Namespace: desiredProviderReference.Name,
 			Name:      desiredProviderReference.Namespace,
-		}, currentProviderReference)
+		}, foundProviderReference)
 		if err != nil && !errors.IsNotFound(err) {
 			return fmt.Errorf("getting ProviderReference: %w", err)
 		}
@@ -382,16 +383,16 @@ func (r *CatalogReconciler) reconcileProviderReferences(
 			if err := r.Create(ctx, &desiredProviderReference); err != nil && !errors.IsAlreadyExists(err) {
 				return fmt.Errorf("creating ProviderReference: %w", err)
 			}
-			currentProviderReference = &desiredProviderReference
+			foundProviderReference = &desiredProviderReference
 		}
 
-		ownerChanged, err := util.InsertOwnerReference(catalog, currentProviderReference, r.Scheme)
+		ownerChanged, err := util.InsertOwnerReference(catalog, foundProviderReference, r.Scheme)
 		if err != nil {
 			return fmt.Errorf("inserting OwnerReference: %w", err)
 		}
-		if !reflect.DeepEqual(desiredProviderReference.Spec, currentProviderReference.Spec) || ownerChanged {
-			currentProviderReference.Spec = desiredProviderReference.Spec
-			if err := r.Update(ctx, currentProviderReference); err != nil {
+		if !reflect.DeepEqual(desiredProviderReference.Spec, foundProviderReference.Spec) || ownerChanged {
+			foundProviderReference.Spec = desiredProviderReference.Spec
+			if err := r.Update(ctx, foundProviderReference); err != nil {
 				return fmt.Errorf("updaing ProviderReference: %w", err)
 			}
 		}
@@ -477,19 +478,19 @@ func (r *CatalogReconciler) cleanupOutdatedReferences(
 
 	var deletedObjectsCounter int
 	// Delete Objects that are no longer in the desiredObjects list
-	for _, currentObject := range foundObjects {
+	for _, foundObject := range foundObjects {
 		if _, present := desiredObjectMap[types.NamespacedName{
-			Name:      currentObject.GetName(),
-			Namespace: currentObject.GetNamespace(),
+			Name:      foundObject.GetName(),
+			Namespace: foundObject.GetNamespace(),
 		}.String()]; present {
 			continue
 		}
-		ownerReferenceChanged, err := util.DeleteOwnerReference(catalog, currentObject, r.Scheme)
+		ownerReferenceChanged, err := util.DeleteOwnerReference(catalog, foundObject, r.Scheme)
 		if err != nil {
 			return 0, fmt.Errorf("deleting OwnerReference: %w", err)
 		}
 
-		unowned, err := util.IsUnowned(currentObject)
+		unowned, err := util.IsUnowned(foundObject)
 		if err != nil {
 			return 0, fmt.Errorf("checking object isUnowned: %w", err)
 		}
@@ -497,20 +498,20 @@ func (r *CatalogReconciler) cleanupOutdatedReferences(
 		switch {
 		case unowned:
 			// The Object object is unowned by any Catalog objects, it can be removed.
-			if err := r.Delete(ctx, currentObject); err != nil && !errors.IsNotFound(err) {
+			if err := r.Delete(ctx, foundObject); err != nil && !errors.IsNotFound(err) {
 				return 0, fmt.Errorf("deleting Object: %w", err)
 			}
-			log.Info("deleting unowned Object", "Kind", currentObject.GetObjectKind().GroupVersionKind().Kind,
-				"ObjectName", currentObject.GetName(),
-				"ObjectNamespace", currentObject.GetNamespace())
+			log.Info("deleting unowned Object", "Kind", foundObject.GetObjectKind().GroupVersionKind().Kind,
+				"ObjectName", foundObject.GetName(),
+				"ObjectNamespace", foundObject.GetNamespace())
 			deletedObjectsCounter++
 		case !unowned && ownerReferenceChanged:
-			if err := r.Update(ctx, currentObject); err != nil {
+			if err := r.Update(ctx, foundObject); err != nil {
 				return 0, fmt.Errorf("updating Object: %w", err)
 			}
-			log.Info("removing Catalog as owner from Object", "Kind", currentObject.GetObjectKind().GroupVersionKind().Kind,
-				"ObjectName", currentObject.GetName(),
-				"ObjectNamespace", currentObject.GetNamespace())
+			log.Info("removing Catalog as owner from Object", "Kind", foundObject.GetObjectKind().GroupVersionKind().Kind,
+				"ObjectName", foundObject.GetName(),
+				"ObjectNamespace", foundObject.GetNamespace())
 			deletedObjectsCounter++
 		}
 	}
