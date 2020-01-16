@@ -172,6 +172,7 @@ func NewFerrySuite(f *framework.Framework) func(t *testing.T) {
 				require.NoError(t, testutil.WaitUntilNotFound(masterClient, crdd))
 			}()
 			assert.NoError(t, testutil.WaitUntilReady(masterClient, crdd))
+			assert.Equal(t, crd.Name, crdd.Status.CRD.Name)
 		})
 	}
 }

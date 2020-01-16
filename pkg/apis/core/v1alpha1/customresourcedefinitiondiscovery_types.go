@@ -32,6 +32,7 @@ type CustomResourceDefinitionDiscoverySpec struct {
 // CustomResourceDefinitionDiscoveryStatus defines the observed state of crdreference
 type CustomResourceDefinitionDiscoveryStatus struct {
 	// CRD defines the original CustomResourceDefinition specification from the service cluster
+	// +kubebuilder:pruning:PreserveUnknownFields
 	CRD *apiextensionsv1.CustomResourceDefinition `json:"crd,omitempty"`
 	// DEPRECATED.
 	// Phase represents the current lifecycle state of this object

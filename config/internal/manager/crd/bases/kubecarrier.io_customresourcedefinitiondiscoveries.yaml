@@ -110,6 +110,7 @@ spec:
                   description: CRD defines the original CustomResourceDefinition specification
                     from the service cluster
                   type: object
+                  x-kubernetes-preserve-unknown-fields: true
                 observedGeneration:
                   description: The most recent generation observed by the controller.
                   format: int64
