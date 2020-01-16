@@ -18,9 +18,7 @@ package framework
 
 import (
 	"fmt"
-	"log"
 	"os"
-	"sync"
 
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -135,24 +133,4 @@ func (f *Framework) ServiceClient() (client.Client, error) {
 
 func (f *Framework) Config() Config {
 	return f.config
-}
-
-var (
-	defaultTestFramework        *Framework
-	defaultTestFrameworkBuilder sync.Once
-)
-
-func DefaultTestFramework() *Framework {
-	defaultTestFrameworkBuilder.Do(func() {
-		c := Config{
-			TestID: "1",
-		}
-		c.Default()
-		var err error
-		defaultTestFramework, err = New(c)
-		if err != nil {
-			log.Panic(err)
-		}
-	})
-	return defaultTestFramework
 }
