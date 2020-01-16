@@ -235,6 +235,7 @@ func main() {
 	for _, test := range []string{
 		"",
 		"AdminSuite",
+		"FerrySuite",
 		"InstallationSuite",
 		"ProviderSuite",
 		"TenantSuite",
