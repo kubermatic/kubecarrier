@@ -55,21 +55,21 @@ func (r *CustomResourceDefinitionDiscoveryReconciler) Reconcile(req ctrl.Request
 	ctx := context.Background()
 	log := r.Log.WithValues("crdreference", req.NamespacedName)
 
-	crdReference := &corev1alpha1.CustomResourceDefinitionDiscovery{}
-	if err := r.MasterClient.Get(ctx, req.NamespacedName, crdReference); err != nil {
+	crdDiscovery := &corev1alpha1.CustomResourceDefinitionDiscovery{}
+	if err := r.MasterClient.Get(ctx, req.NamespacedName, crdDiscovery); err != nil {
 		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
-	crdReference.Status.ObservedGeneration = crdReference.Generation
+	crdDiscovery.Status.ObservedGeneration = crdDiscovery.Generation
 
-	if !crdReference.DeletionTimestamp.IsZero() {
-		if err := r.handleDeletion(ctx, log, crdReference); err != nil {
+	if !crdDiscovery.DeletionTimestamp.IsZero() {
+		if err := r.handleDeletion(ctx, log, crdDiscovery); err != nil {
 			return ctrl.Result{}, fmt.Errorf("handling deletion: %w", err)
 		}
 		return ctrl.Result{}, nil
 	}
 
-	if util.AddFinalizer(crdReference, crdReferenceControllerFinalizer) {
-		if err := r.MasterClient.Update(ctx, crdReference); err != nil {
+	if util.AddFinalizer(crdDiscovery, crdReferenceControllerFinalizer) {
+		if err := r.MasterClient.Update(ctx, crdDiscovery); err != nil {
 			return ctrl.Result{}, fmt.Errorf("updating CustomResourceDefinitionDiscovery finalizers: %w", err)
 		}
 	}
@@ -77,26 +77,26 @@ func (r *CustomResourceDefinitionDiscoveryReconciler) Reconcile(req ctrl.Request
 	// Lookup CRD
 	crd := &apiextensionsv1.CustomResourceDefinition{}
 	err := r.ServiceClient.Get(ctx, types.NamespacedName{
-		Name: crdReference.Spec.CRD.Name,
+		Name: crdDiscovery.Spec.CRD.Name,
 	}, crd)
 
 	switch {
 	case errors.IsNotFound(err):
-		crdReference.Status.CRD = nil
-		crdReference.Status.SetCondition(corev1alpha1.CustomResourceDefinitionDiscoveryCondition{
+		crdDiscovery.Status.CRD = nil
+		crdDiscovery.Status.SetCondition(corev1alpha1.CustomResourceDefinitionDiscoveryCondition{
 			Type:    corev1alpha1.CustomResourceDefinitionDiscoveryReady,
 			Status:  corev1alpha1.ConditionFalse,
 			Message: err.Error(),
 			Reason:  util.ErrorReason(err),
 		})
-		if err = r.MasterClient.Status().Update(ctx, crdReference); err != nil {
+		if err = r.MasterClient.Status().Update(ctx, crdDiscovery); err != nil {
 			return ctrl.Result{}, fmt.Errorf("updating CustomResourceDefinitionDiscovery Status - notFound: %w", err)
 		}
 		// requeue until the CRD is found
 		return ctrl.Result{Requeue: true}, nil
 	case err == nil:
 		// Add owner ref on CRD in the service cluster
-		changed, err := util.InsertOwnerReference(crd, crdReference, r.MasterScheme)
+		changed, err := util.InsertOwnerReference(crd, crdDiscovery, r.MasterScheme)
 		if err != nil {
 			return ctrl.Result{}, fmt.Errorf("inserting OwnerReference: %w", err)
 		}
@@ -106,14 +106,14 @@ func (r *CustomResourceDefinitionDiscoveryReconciler) Reconcile(req ctrl.Request
 			}
 		}
 
-		crdReference.Status.CRD = crd
-		crdReference.Status.SetCondition(corev1alpha1.CustomResourceDefinitionDiscoveryCondition{
+		crdDiscovery.Status.CRD = crd
+		crdDiscovery.Status.SetCondition(corev1alpha1.CustomResourceDefinitionDiscoveryCondition{
 			Type:    corev1alpha1.CustomResourceDefinitionDiscoveryReady,
 			Status:  corev1alpha1.ConditionTrue,
 			Message: "CRD was found on the cluster.",
 			Reason:  "CRDFound",
 		})
-		if err = r.MasterClient.Status().Update(ctx, crdReference); err != nil {
+		if err = r.MasterClient.Status().Update(ctx, crdDiscovery); err != nil {
 			return ctrl.Result{}, fmt.Errorf("updating CustomResourceDefinitionDiscovery Status -- ready: %w", err)
 		}
 		return ctrl.Result{}, nil
@@ -144,6 +144,11 @@ func (r *CustomResourceDefinitionDiscoveryReconciler) handleDeletion(ctx context
 		if changed {
 			if err = r.ServiceClient.Update(ctx, crd); err != nil {
 				return fmt.Errorf("updating CRD: %w", err)
+			}
+		}
+		if util.RemoveFinalizer(crdReference, crdReferenceControllerFinalizer) {
+			if err := r.MasterClient.Update(ctx, crdReference); err != nil {
+				return fmt.Errorf("updating CustomResourceDefinitionDiscovery finalizers: %w", err)
 			}
 		}
 		return nil

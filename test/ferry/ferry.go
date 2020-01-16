@@ -140,15 +140,15 @@ func NewFerrySuite(f *framework.Framework) func(t *testing.T) {
 		require.NoError(t, serviceClient.Create(ctx, crd))
 
 		t.Run("ServiceCluster", func(t *testing.T) {
-			//t.Parallel()
+			t.Parallel()
 			serviceCluster := &corev1alpha1.ServiceCluster{}
 			serviceCluster.SetName(serviceClusterRegistration.GetName())
 			serviceCluster.SetNamespace(provider.Status.NamespaceName)
 			require.NoError(t, testutil.WaitUntilReady(masterClient, serviceCluster))
 		})
 
-		t.Run("crd-discovery", func(t *testing.T) {
-			//t.Parallel()
+		t.Run("CustomResourceDefinitionDiscovery", func(t *testing.T) {
+			t.Parallel()
 			crdd := &corev1alpha1.CustomResourceDefinitionDiscovery{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "redis",
@@ -167,12 +167,13 @@ func NewFerrySuite(f *framework.Framework) func(t *testing.T) {
 			require.NoError(t, testutil.WaitUntilNotFound(masterClient, crdd))
 
 			require.NoError(t, masterClient.Create(ctx, crdd))
-			defer func() {
-				assert.NoError(t, client.IgnoreNotFound(masterClient.Delete(ctx, crdd)))
-				require.NoError(t, testutil.WaitUntilNotFound(masterClient, crdd))
-			}()
-			assert.NoError(t, testutil.WaitUntilReady(masterClient, crdd))
-			assert.Equal(t, crd.Name, crdd.Status.CRD.Name)
+			if assert.NoError(t, testutil.WaitUntilReady(masterClient, crdd)) {
+				assert.Equal(t, crd.Name, crdd.Status.CRD.Name)
+			}
+
+			// clean up
+			assert.NoError(t, masterClient.Delete(ctx, crdd))
+			assert.NoError(t, testutil.WaitUntilNotFound(masterClient, crdd))
 		})
 	}
 }
