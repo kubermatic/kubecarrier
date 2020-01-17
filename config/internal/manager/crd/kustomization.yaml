@@ -11,6 +11,7 @@ resources:
 - bases/catalog.kubecarrier.io_tenants.yaml
 - bases/kubecarrier.io_customresourcedefinitiondiscoveries.yaml
 - bases/kubecarrier.io_serviceclusters.yaml
+- bases/kubecarrier.io_tenantassignments.yaml
 # +kubebuilder:scaffold:crdkustomizeresource
 
 patchesStrategicMerge:

@@ -27,6 +27,7 @@ import (
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	catalogv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/catalog/v1alpha1"
@@ -52,6 +53,12 @@ func NewFerrySuite(f *framework.Framework) func(t *testing.T) {
 			provider = &catalogv1alpha1.Provider{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "steel-inquisitor",
+					Namespace: "kubecarrier-system",
+				},
+			}
+			tenant = &catalogv1alpha1.Tenant{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "otto",
 					Namespace: "kubecarrier-system",
 				},
 			}
@@ -107,6 +114,7 @@ func NewFerrySuite(f *framework.Framework) func(t *testing.T) {
 				// These two are automatically deleted when the provider is deleted...at least they should be
 				// serviceClusterSecret,
 				// serviceClusterRegistration,
+				tenant,
 			} {
 				require.NoError(t, client.IgnoreNotFound(masterClient.Delete(ctx, obj)))
 				require.NoError(t, testutil.WaitUntilNotFound(masterClient, obj))
@@ -125,7 +133,10 @@ func NewFerrySuite(f *framework.Framework) func(t *testing.T) {
 		// defer cleanUp()
 
 		require.NoError(t, masterClient.Create(ctx, provider))
+		require.NoError(t, masterClient.Create(ctx, tenant))
+
 		require.NoError(t, testutil.WaitUntilReady(masterClient, provider))
+		require.NoError(t, testutil.WaitUntilReady(masterClient, tenant))
 		for _, obj := range []metav1.Object{
 			serviceClusterSecret,
 			serviceClusterRegistration,
@@ -136,7 +147,6 @@ func NewFerrySuite(f *framework.Framework) func(t *testing.T) {
 		require.NoError(t, masterClient.Create(ctx, serviceClusterSecret))
 		require.NoError(t, masterClient.Create(ctx, serviceClusterRegistration))
 		require.NoError(t, testutil.WaitUntilReady(masterClient, serviceClusterRegistration))
-
 		require.NoError(t, serviceClient.Create(ctx, crd))
 
 		t.Run("ServiceCluster", func(t *testing.T) {
@@ -174,6 +184,44 @@ func NewFerrySuite(f *framework.Framework) func(t *testing.T) {
 			// clean up
 			assert.NoError(t, masterClient.Delete(ctx, crdd))
 			assert.NoError(t, testutil.WaitUntilNotFound(masterClient, crdd))
+		})
+		t.Run("TenantAssignment", func(t *testing.T) {
+			t.Parallel()
+			tenantAssignment := &corev1alpha1.TenantAssignment{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      tenant.Name + "." + serviceClusterRegistration.Name,
+					Namespace: provider.Status.NamespaceName,
+				},
+				Spec: corev1alpha1.TenantAssignmentSpec{
+					Tenant: corev1alpha1.ObjectReference{
+						Name: tenant.Name,
+					},
+					ServiceCluster: corev1alpha1.ObjectReference{
+						Name: serviceClusterRegistration.Name,
+					},
+				},
+			}
+			require.NoError(t, client.IgnoreNotFound(masterClient.Delete(ctx, tenantAssignment)))
+			require.NoError(t, testutil.WaitUntilNotFound(masterClient, tenantAssignment))
+			require.NoError(t, masterClient.Create(ctx, tenantAssignment))
+
+			ns := &corev1.Namespace{}
+			if assert.NoError(t, testutil.WaitUntilReady(masterClient, tenantAssignment)) {
+				assert.NoError(t,
+					serviceClient.Get(
+						ctx,
+						types.NamespacedName{Name: tenantAssignment.Status.NamespaceName},
+						ns,
+					),
+				)
+			}
+
+			assert.NoError(t, client.IgnoreNotFound(masterClient.Delete(ctx, tenantAssignment)))
+			assert.NoError(t, testutil.WaitUntilNotFound(masterClient, tenantAssignment))
+
+			if ns.Name != "" {
+				assert.NoError(t, testutil.WaitUntilNotFound(serviceClient, ns))
+			}
 		})
 	}
 }
