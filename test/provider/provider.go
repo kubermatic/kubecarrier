@@ -32,6 +32,7 @@ import (
 
 	catalogv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/catalog/v1alpha1"
 	operatorv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/operator/v1alpha1"
+	"github.com/kubermatic/kubecarrier/pkg/testutil"
 	"github.com/kubermatic/kubecarrier/test/framework"
 )
 
@@ -222,19 +223,15 @@ func (s *ProviderSuite) TestCatalogCreationAndDeletion() {
 	}), "getting the Offering error")
 
 	// Check the ProviderReference object is created.
-	providerReferenceFound := &catalogv1alpha1.ProviderReference{}
-	s.NoError(wait.Poll(time.Second, 10*time.Second, func() (done bool, err error) {
-		if err := s.masterClient.Get(ctx, types.NamespacedName{
+	providerReferenceFound := &catalogv1alpha1.ProviderReference{
+		ObjectMeta: metav1.ObjectMeta{
 			Name:      s.provider.Name,
 			Namespace: s.tenant.Status.NamespaceName,
-		}, providerReferenceFound); err != nil {
-			if errors.IsNotFound(err) {
-				return false, nil
-			}
-			return true, err
-		}
-		return providerReferenceFound.Spec.Metadata.DisplayName == s.provider.Spec.Metadata.DisplayName && providerReferenceFound.Spec.Metadata.Description == s.provider.Spec.Metadata.DisplayName, nil
-	}), "getting the ProviderReference error")
+		},
+	}
+	s.Require().NoError(testutil.WaitUntilFound(s.masterClient, providerReferenceFound), "getting the ProviderReference error")
+	s.Equal(providerReferenceFound.Spec.Metadata.DisplayName, s.provider.Spec.Metadata.DisplayName)
+	s.Equal(providerReferenceFound.Spec.Metadata.Description, s.provider.Spec.Metadata.DisplayName)
 
 	// Check if the status will be updated when tenant is removed.
 	s.Run("Catalog status updates when adding and removing Tenant", func() {
