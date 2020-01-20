@@ -404,7 +404,7 @@ func (r *CatalogReconciler) cleanupOfferings(
 	ctx context.Context, log logr.Logger,
 	catalog *catalogv1alpha1.Catalog,
 	desiredOfferings []catalogv1alpha1.Offering,
-) (int, error) {
+) (deletedOfferingCounter int, err error) {
 	// Fetch existing Offerings.
 	ownerListFilter, err := util.OwnedBy(catalog, r.Scheme)
 	if err != nil {
@@ -424,7 +424,7 @@ func (r *CatalogReconciler) cleanupProviderReferences(
 	ctx context.Context, log logr.Logger,
 	catalog *catalogv1alpha1.Catalog,
 	desiredProviderReferences []catalogv1alpha1.ProviderReference,
-) (int, error) {
+) (deletedProviderReferenceCounter int, err error) {
 	// Fetch existing ProviderReferences.
 	ownerListFilter, err := util.OwnedBy(catalog, r.Scheme)
 	if err != nil {
@@ -467,7 +467,7 @@ func (r *CatalogReconciler) cleanupOutdatedReferences(
 	catalog *catalogv1alpha1.Catalog,
 	foundObjects []object,
 	desiredObjects []object,
-) (int, error) {
+) (deletedObjectCounter int, err error) {
 	desiredObjectMap := map[string]struct{}{}
 	for _, desiredObject := range desiredObjects {
 		desiredObjectMap[types.NamespacedName{
@@ -476,7 +476,6 @@ func (r *CatalogReconciler) cleanupOutdatedReferences(
 		}.String()] = struct{}{}
 	}
 
-	var deletedObjectsCounter int
 	// Delete Objects that are no longer in the desiredObjects list
 	for _, foundObject := range foundObjects {
 		if _, present := desiredObjectMap[types.NamespacedName{
@@ -504,7 +503,7 @@ func (r *CatalogReconciler) cleanupOutdatedReferences(
 			log.Info("deleting unowned Object", "Kind", foundObject.GetObjectKind().GroupVersionKind().Kind,
 				"ObjectName", foundObject.GetName(),
 				"ObjectNamespace", foundObject.GetNamespace())
-			deletedObjectsCounter++
+			deletedObjectCounter++
 		case !unowned && ownerReferenceChanged:
 			if err := r.Update(ctx, foundObject); err != nil {
 				return 0, fmt.Errorf("updating Object: %w", err)
@@ -512,8 +511,8 @@ func (r *CatalogReconciler) cleanupOutdatedReferences(
 			log.Info("removing Catalog as owner from Object", "Kind", foundObject.GetObjectKind().GroupVersionKind().Kind,
 				"ObjectName", foundObject.GetName(),
 				"ObjectNamespace", foundObject.GetNamespace())
-			deletedObjectsCounter++
+			deletedObjectCounter++
 		}
 	}
-	return deletedObjectsCounter, nil
+	return
 }
