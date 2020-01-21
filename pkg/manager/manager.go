@@ -145,6 +145,11 @@ func run(flags *flags, log logr.Logger) error {
 		return fmt.Errorf("creating DerivedCustomResourceDefinition controller: %w", err)
 	}
 
+	// Register webhooks
+	if err = (&catalogv1alpha1.CatalogEntry{}).SetupWebhookWithManager(mgr); err != nil {
+		return fmt.Errorf("registering webhooks for CatalogEntry: %w", err)
+	}
+
 	log.Info("starting manager")
 	if err := mgr.Start(ctrl.SetupSignalHandler()); err != nil {
 		return fmt.Errorf("running manager: %w", err)
