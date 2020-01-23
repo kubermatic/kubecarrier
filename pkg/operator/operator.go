@@ -20,7 +20,9 @@ import (
 	"fmt"
 
 	"github.com/go-logr/logr"
+	certv1alpha2 "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
 	"github.com/spf13/cobra"
+	adminv1beta1 "k8s.io/api/admissionregistration/v1beta1"
 	rbacv1 "k8s.io/api/rbac/v1"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -47,6 +49,8 @@ func init() {
 	_ = operatorv1alpha1.AddToScheme(scheme)
 	_ = rbacv1.AddToScheme(scheme)
 	_ = apiextensionsv1.AddToScheme(scheme)
+	_ = certv1alpha2.AddToScheme(scheme)
+	_ = adminv1beta1.AddToScheme(scheme)
 }
 
 const (

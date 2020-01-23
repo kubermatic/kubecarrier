@@ -21,6 +21,8 @@ import (
 	"fmt"
 
 	"github.com/go-logr/logr"
+	certv1alpha2 "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
+	adminv1beta1 "k8s.io/api/admissionregistration/v1beta1"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
@@ -100,6 +102,30 @@ var unstructuredReconcilers = map[schema.GroupVersionKind]unstructuredReconcileF
 		Version: "v1",
 		Kind:    "CustomResourceDefinition",
 	}: unstructuredReconcileFn(unstructuredCustomResourceDefinition),
+
+	// "admissionregistration.k8s.io" group
+	schema.GroupVersionKind{
+		Group:   "admissionregistration.k8s.io",
+		Version: "v1beta1",
+		Kind:    "MutatingWebhookConfiguration",
+	}: unstructuredReconcileFn(unstructuredMutatingWebhookConfiguration),
+	schema.GroupVersionKind{
+		Group:   "admissionregistration.k8s.io",
+		Version: "v1beta1",
+		Kind:    "validatingWebhookConfiguration",
+	}: unstructuredReconcileFn(unstructuredValidatingWebhookConfiguration),
+
+	// "cert-manager.io" group
+	schema.GroupVersionKind{
+		Group:   "cert-manager.io",
+		Version: "v1alpha2",
+		Kind:    "Issuer",
+	}: unstructuredReconcileFn(unstructuredIssuer),
+	schema.GroupVersionKind{
+		Group:   "cert-manager.io",
+		Version: "v1alpha2",
+		Kind:    "Certificate",
+	}: unstructuredReconcileFn(unstructuredCertificate),
 }
 
 type unstructuredReconcileFn func(
@@ -234,4 +260,62 @@ func unstructuredCustomResourceDefinition(
 
 	return CustomResourceDefinition(ctx, log, c, obj)
 
+}
+
+func unstructuredMutatingWebhookConfiguration(
+	ctx context.Context,
+	log logr.Logger,
+	c client.Client,
+	desiredObj *unstructured.Unstructured,
+) (current metav1.Object, err error) {
+	// convert to proper type
+	obj := &adminv1beta1.MutatingWebhookConfiguration{}
+	if err = runtime.DefaultUnstructuredConverter.FromUnstructured(desiredObj.Object, obj); err != nil {
+		return current, fmt.Errorf("convert from unstructured: %w", err)
+	}
+
+	return MutatingWebhookConfiguration(ctx, log, c, obj)
+}
+
+func unstructuredValidatingWebhookConfiguration(
+	ctx context.Context,
+	log logr.Logger,
+	c client.Client,
+	desiredObj *unstructured.Unstructured,
+) (current metav1.Object, err error) {
+	// convert to proper type
+	obj := &adminv1beta1.ValidatingWebhookConfiguration{}
+	if err = runtime.DefaultUnstructuredConverter.FromUnstructured(desiredObj.Object, obj); err != nil {
+		return current, fmt.Errorf("convert from unstructured: %w", err)
+	}
+
+	return ValidatingWebhookConfiguration(ctx, log, c, obj)
+}
+
+func unstructuredIssuer(
+	ctx context.Context,
+	log logr.Logger,
+	c client.Client,
+	desiredObj *unstructured.Unstructured,
+) (current metav1.Object, err error) {
+	// convert to proper type
+	obj := &certv1alpha2.Issuer{}
+	if err = runtime.DefaultUnstructuredConverter.FromUnstructured(desiredObj.Object, obj); err != nil {
+		return current, fmt.Errorf("convert from unstructured: %w", err)
+	}
+	return Issuer(ctx, log, c, obj)
+}
+
+func unstructuredCertificate(
+	ctx context.Context,
+	log logr.Logger,
+	c client.Client,
+	desiredObj *unstructured.Unstructured,
+) (current metav1.Object, err error) {
+	// convert to proper type
+	obj := &certv1alpha2.Certificate{}
+	if err = runtime.DefaultUnstructuredConverter.FromUnstructured(desiredObj.Object, obj); err != nil {
+		return current, fmt.Errorf("convert from unstructured: %w", err)
+	}
+	return Certificate(ctx, log, c, obj)
 }

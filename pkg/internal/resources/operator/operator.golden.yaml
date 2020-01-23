@@ -375,6 +375,30 @@
     - update
     - watch
   - apiGroups:
+    - admissionregistration.k8s.io
+    resources:
+    - mutatingwebhookconfigurations
+    verbs:
+    - create
+    - delete
+    - get
+    - list
+    - patch
+    - update
+    - watch
+  - apiGroups:
+    - admissionregistration.k8s.io
+    resources:
+    - validatingwebhookconfigurations
+    verbs:
+    - create
+    - delete
+    - get
+    - list
+    - patch
+    - update
+    - watch
+  - apiGroups:
     - apiextensions.k8s.io
     resources:
     - customresourcedefinitions
@@ -390,6 +414,30 @@
     - apps
     resources:
     - deployments
+    verbs:
+    - create
+    - delete
+    - get
+    - list
+    - patch
+    - update
+    - watch
+  - apiGroups:
+    - cert-manager.io
+    resources:
+    - certificates
+    verbs:
+    - create
+    - delete
+    - get
+    - list
+    - patch
+    - update
+    - watch
+  - apiGroups:
+    - cert-manager.io
+    resources:
+    - issuers
     verbs:
     - create
     - delete
@@ -563,49 +611,6 @@
     apiGroup: rbac.authorization.k8s.io
     kind: Role
     name: kubecarrier-operator-leader-election-role
-  subjects:
-  - kind: ServiceAccount
-    name: default
-    namespace: test3000
-- apiVersion: v1
-  kind: Service
-  metadata:
-    labels:
-      control-plane: operator
-    name: kubecarrier-operator-operator-metrics-service
-    namespace: test3000
-  spec:
-    ports:
-    - name: https
-      port: 8443
-      targetPort: https
-    selector:
-      control-plane: operator
-- apiVersion: rbac.authorization.k8s.io/v1
-  kind: ClusterRole
-  metadata:
-    name: kubecarrier-operator-proxy-role
-  rules:
-  - apiGroups:
-    - authentication.k8s.io
-    resources:
-    - tokenreviews
-    verbs:
-    - create
-  - apiGroups:
-    - authorization.k8s.io
-    resources:
-    - subjectaccessreviews
-    verbs:
-    - create
-- apiVersion: rbac.authorization.k8s.io/v1
-  kind: ClusterRoleBinding
-  metadata:
-    name: kubecarrier-operator-proxy-rolebinding
-  roleRef:
-    apiGroup: rbac.authorization.k8s.io
-    kind: ClusterRole
-    name: kubecarrier-operator-proxy-role
   subjects:
   - kind: ServiceAccount
     name: default

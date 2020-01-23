@@ -91,6 +91,7 @@ e2e-setup: install require-docker
 	@kind get kubeconfig --name=${SVC_KIND_CLUSTER} > "${HOME}/.kube/kind-config-${SVC_KIND_CLUSTER}"
 	@echo "kind clusters created"
 	@echo "Loading the images"
+	@$(MAKE) KIND_CLUSTER=${MASTER_KIND_CLUSTER} cert-manager
 	@$(MAKE) KIND_CLUSTER=${MASTER_KIND_CLUSTER} kind-load
 
 e2e-test: e2e-setup
@@ -156,3 +157,8 @@ install-git-hooks:
 	printf "#!/bin/bash\\nmake generate-ide-tasks" > .git/hooks/post-commit && chmod +x .git/hooks/post-commit
 	cp .git/hooks/post-commit .git/hooks/post-checkout
 	cp .git/hooks/post-commit .git/hooks/post-merge
+
+# Install cert-manager in the configured Kubernetes cluster
+cert-manager:
+	kubectl create namespace cert-manager
+	kubectl apply -f https://github.com/jetstack/cert-manager/releases/download/v0.11.0/cert-manager.yaml
