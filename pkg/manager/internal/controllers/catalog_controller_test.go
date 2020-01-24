@@ -57,6 +57,12 @@ func TestCatalogReconciler(t *testing.T) {
 			Namespace: "kubecarrier-system",
 		},
 	}
+	tenant.Status.SetCondition(catalogv1alpha1.TenantCondition{
+		Type:    catalogv1alpha1.TenantReady,
+		Status:  catalogv1alpha1.ConditionTrue,
+		Reason:  "SetupComplete",
+		Message: "Tenant setup is complete.",
+	})
 	tenantNamespaceName := fmt.Sprintf("tenant-%s", tenant.Name)
 	tenant.Status.NamespaceName = tenantNamespaceName
 
