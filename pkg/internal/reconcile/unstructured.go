@@ -112,7 +112,7 @@ var unstructuredReconcilers = map[schema.GroupVersionKind]unstructuredReconcileF
 	schema.GroupVersionKind{
 		Group:   "admissionregistration.k8s.io",
 		Version: "v1beta1",
-		Kind:    "validatingWebhookConfiguration",
+		Kind:    "ValidatingWebhookConfiguration",
 	}: unstructuredReconcileFn(unstructuredValidatingWebhookConfiguration),
 
 	// "cert-manager.io" group

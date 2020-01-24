@@ -311,14 +311,6 @@
     creationTimestamp: null
     name: catalogentries.catalog.kubecarrier.io
   spec:
-    conversion:
-      strategy: Webhook
-      webhookClientConfig:
-        caBundle: Cg==
-        service:
-          name: kubecarrier-manager-webhook-service
-          namespace: test3000
-          path: /convert
     group: catalog.kubecarrier.io
     names:
       kind: CatalogEntry

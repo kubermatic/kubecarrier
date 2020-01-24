@@ -179,8 +179,22 @@ func (r *KubeCarrierReconciler) handleDeletion(ctx context.Context, kubeCarrier 
 		return fmt.Errorf("cleaning CustomResourceDefinitions: %w", err)
 	}
 
-	// Make sure all the ClusterRoleBindings, ClusterRoles and CustomResourceDefinitions are deleted.
-	if !clusterRoleBindingsCleaned || !clusterRolesCleaned || !customResourceDefinitionsCleaned {
+	mutatingWebhookConfigurationsCleaned, err := cleanupMutatingWebhookConfiguration(ctx, r.Client, ownedBy)
+	if err != nil {
+		return fmt.Errorf("cleaning MutatingWebhookConfigurations: %w", err)
+	}
+
+	validatingWebhookConfigurationsCleaned, err := cleanupValidatingWebhookConfiguration(ctx, r.Client, ownedBy)
+	if err != nil {
+		return fmt.Errorf("cleaning ValidatingWebhookConfigurations: %w", err)
+	}
+
+	// Make sure all the owned objects are deleted.
+	if !clusterRoleBindingsCleaned ||
+		!clusterRolesCleaned ||
+		!customResourceDefinitionsCleaned ||
+		!mutatingWebhookConfigurationsCleaned ||
+		!validatingWebhookConfigurationsCleaned {
 		return nil
 	}
 
