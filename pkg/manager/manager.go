@@ -161,6 +161,9 @@ func run(flags *flags, log logr.Logger) error {
 	if err = (&catalogv1alpha1.CatalogEntry{}).SetupWebhookWithManager(mgr); err != nil {
 		return fmt.Errorf("registering webhooks for CatalogEntry: %w", err)
 	}
+	if err = (&catalogv1alpha1.Tenant{}).SetupWebhookWithManager(mgr); err != nil {
+		return fmt.Errorf("registering webhooks for Tenant: %w", err)
+	}
 
 	log.Info("starting manager")
 	if err := mgr.Start(ctrl.SetupSignalHandler()); err != nil {

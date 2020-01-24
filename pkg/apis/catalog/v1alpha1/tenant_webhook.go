@@ -23,41 +23,41 @@ import (
 )
 
 // log is for logging in this package.
-var catalogEntryLog = ctrl.Log.WithName("CatalogEntry")
+var tenantLog = ctrl.Log.WithName("Tenant")
 
-func (r *CatalogEntry) SetupWebhookWithManager(mgr ctrl.Manager) error {
+func (r *Tenant) SetupWebhookWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewWebhookManagedBy(mgr).
 		For(r).
 		Complete()
 }
 
-// +kubebuilder:webhook:path=/mutate-catalog-kubecarrier-io-v1alpha1-catalogentry,mutating=true,failurePolicy=fail,groups=catalog.kubecarrier.io,resources=catalogentries,verbs=create;update,versions=v1alpha1,name=mcatalogentry.kb.io
-// +kubebuilder:webhook:path=/validate-catalog-kubecarrier-io-v1alpha1-catalogentry,mutating=false,failurePolicy=fail,groups=catalog.kubecarrier.io,resources=catalogentries,verbs=create;update,versions=v1alpha1,name=vcatalogentry.kb.io
+// +kubebuilder:webhook:path=/mutate-catalog-kubecarrier-io-v1alpha1-tenant,mutating=true,failurePolicy=fail,groups=catalog.kubecarrier.io,resources=tenants,verbs=create;update,versions=v1alpha1,name=mtenant.kb.io
+// +kubebuilder:webhook:path=/validate-catalog-kubecarrier-io-v1alpha1-tenant,mutating=false,failurePolicy=fail,groups=catalog.kubecarrier.io,resources=tenants,verbs=create;update,versions=v1alpha1,name=vtenant.kb.io
 
 var (
-	_ webhook.Defaulter = &CatalogEntry{}
-	_ webhook.Validator = &CatalogEntry{}
+	_ webhook.Defaulter = &Tenant{}
+	_ webhook.Validator = &Tenant{}
 )
 
 // Default implements webhook.Defaulter so a webhook will be registered for the type
-func (r *CatalogEntry) Default() {
-	catalogEntryLog.Info("default", "name", r.Name)
+func (r *Tenant) Default() {
+	tenantLog.Info("default", "name", r.Name)
 }
 
 // ValidateCreate implements webhook.Validator so a webhook will be registered for the type
-func (r *CatalogEntry) ValidateCreate() error {
-	catalogEntryLog.Info("validate create", "name", r.Name)
+func (r *Tenant) ValidateCreate() error {
+	tenantLog.Info("validate create", "name", r.Name)
 	return nil
 }
 
 // ValidateUpdate implements webhook.Validator so a webhook will be registered for the type
-func (r *CatalogEntry) ValidateUpdate(old runtime.Object) error {
-	catalogEntryLog.Info("validate update", "name", r.Name)
+func (r *Tenant) ValidateUpdate(old runtime.Object) error {
+	tenantLog.Info("validate update", "name", r.Name)
 	return nil
 }
 
 // ValidateDelete implements webhook.Validator so a webhook will be registered for the type
-func (r *CatalogEntry) ValidateDelete() error {
-	catalogEntryLog.Info("validate delete", "name", r.Name)
+func (r *Tenant) ValidateDelete() error {
+	tenantLog.Info("validate delete", "name", r.Name)
 	return nil
 }
