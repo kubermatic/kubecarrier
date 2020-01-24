@@ -85,6 +85,25 @@ func WaitUntilNotFound(c client.Client, obj runtime.Object) error {
 	})
 }
 
+func WaitUntilFound(c client.Client, obj runtime.Object) error {
+	o, ok := obj.(metav1.Object)
+	if !ok {
+		return fmt.Errorf("%T does not implement metav1.Object", obj)
+	}
+	return wait.Poll(time.Second, 10*time.Second, func() (done bool, err error) {
+		if err := c.Get(context.Background(), types.NamespacedName{
+			Name:      o.GetName(),
+			Namespace: o.GetNamespace(),
+		}, obj); err != nil {
+			if errors.IsNotFound(err) {
+				return false, nil
+			}
+			return true, err
+		}
+		return true, nil
+	})
+}
+
 func WaitUntilCondition(c client.Client, obj runtime.Object, ConditionType, ConditionStatus interface{}) error {
 	o, ok := obj.(metav1.Object)
 	if !ok {
