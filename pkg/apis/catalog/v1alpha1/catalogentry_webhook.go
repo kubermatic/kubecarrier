@@ -27,9 +27,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 )
 
-// +kubebuilder:webhook:path=/mutate-catalog-kubecarrier-io-v1alpha1-catalogentry,mutating=true,failurePolicy=fail,groups=catalog.kubecarrier.io,resources=catalogentries,verbs=create;update,versions=v1alpha1,name=mcatalogentry.kb.io
-// +kubebuilder:webhook:path=/validate-catalog-kubecarrier-io-v1alpha1-catalogentry,mutating=false,failurePolicy=fail,groups=catalog.kubecarrier.io,resources=catalogentries,verbs=create;update,versions=v1alpha1,name=vcatalogentry.kb.io
-
 // log is for logging in this package.
 var catalogEntryLog = ctrl.Log.WithName("CatalogEntry")
 
@@ -39,6 +36,8 @@ type CatalogEntryValidator struct {
 	client  client.Client
 	decoder *admission.Decoder
 }
+
+// +kubebuilder:webhook:path=/validate-catalog-kubecarrier-io-v1alpha1-catalogentry,mutating=false,failurePolicy=fail,groups=catalog.kubecarrier.io,resources=catalogentries,verbs=create;update,versions=v1alpha1,name=vcatalogentry.kb.io
 
 // Handle is the function to handle validating requests of CatalogEntries.
 func (r *CatalogEntryValidator) Handle(ctx context.Context, req admission.Request) admission.Response {
@@ -98,6 +97,8 @@ type CatalogEntryDefaulter struct {
 	client  client.Client
 	decoder *admission.Decoder
 }
+
+// +kubebuilder:webhook:path=/mutate-catalog-kubecarrier-io-v1alpha1-catalogentry,mutating=true,failurePolicy=fail,groups=catalog.kubecarrier.io,resources=catalogentries,verbs=create;update,versions=v1alpha1,name=mcatalogentry.kb.io
 
 // Handle is the function to handle defaulting requests of CatalogEntries.
 func (r *CatalogEntryDefaulter) Handle(ctx context.Context, req admission.Request) admission.Response {
