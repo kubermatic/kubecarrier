@@ -31,6 +31,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	catalogv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/catalog/v1alpha1"
+	corev1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/core/v1alpha1"
 	operatorv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/operator/v1alpha1"
 	"github.com/kubermatic/kubecarrier/pkg/testutil"
 	"github.com/kubermatic/kubecarrier/test/framework"
@@ -51,10 +52,11 @@ type ProviderSuite struct {
 	serviceClient client.Client
 
 	// objects that used for executing tests.
-	provider     *catalogv1alpha1.Provider
-	tenant       *catalogv1alpha1.Tenant
-	catalogEntry *catalogv1alpha1.CatalogEntry
-	crd          *apiextensionsv1.CustomResourceDefinition
+	provider       *catalogv1alpha1.Provider
+	tenant         *catalogv1alpha1.Tenant
+	catalogEntry   *catalogv1alpha1.CatalogEntry
+	crd            *apiextensionsv1.CustomResourceDefinition
+	serviceCluster *corev1alpha1.ServiceCluster
 }
 
 func (s *ProviderSuite) SetupSuite() {
@@ -233,6 +235,17 @@ func (s *ProviderSuite) TestCatalogCreationAndDeletion() {
 	s.Equal(providerReferenceFound.Spec.Metadata.DisplayName, s.provider.Spec.Metadata.DisplayName)
 	s.Equal(providerReferenceFound.Spec.Metadata.Description, s.provider.Spec.Metadata.DisplayName)
 
+	// Check the ServiceClusterReference object is created.
+	serviceClusterReferenceFound := &catalogv1alpha1.ServiceClusterReference{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      fmt.Sprintf("%s.%s", s.serviceCluster.Name, s.provider.Name),
+			Namespace: s.tenant.Status.NamespaceName,
+		},
+	}
+	s.Require().NoError(testutil.WaitUntilFound(s.masterClient, serviceClusterReferenceFound), "getting the ProviderReference error")
+	s.Equal(serviceClusterReferenceFound.Spec.Provider.Name, s.provider.Name)
+	s.Equal(serviceClusterReferenceFound.Spec.Metadata.Description, s.serviceCluster.Spec.Metadata.Description)
+
 	// Check if the status will be updated when tenant is removed.
 	s.Run("Catalog status updates when adding and removing Tenant", func() {
 		// Remove the tenant
@@ -306,6 +319,13 @@ func (s *ProviderSuite) TestCatalogCreationAndDeletion() {
 		Name:      providerReferenceFound.Name,
 		Namespace: providerReferenceFound.Namespace,
 	}, providerReferenceCheck)), "providerReference object should also be deleted.")
+
+	// ServiceClusterReference object should also be removed
+	serviceClusterReferenceCheck := &catalogv1alpha1.ServiceClusterReference{}
+	s.True(errors.IsNotFound(s.masterClient.Get(ctx, types.NamespacedName{
+		Name:      serviceClusterReferenceFound.Name,
+		Namespace: serviceClusterReferenceFound.Namespace,
+	}, serviceClusterReferenceCheck)), "serviceClusterReference object should also be deleted.")
 }
 
 func (s *ProviderSuite) setupSuiteCatalog() {
@@ -410,37 +430,26 @@ func (s *ProviderSuite) setupSuiteCatalog() {
 		return cond.Status == catalogv1alpha1.ConditionTrue, nil
 	}), "waiting for catalogEntry to be ready")
 
+	// Create a ServiceCluster to execute our tests in
+	s.serviceCluster = &corev1alpha1.ServiceCluster{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "eu-west-1",
+			Namespace: s.provider.Status.NamespaceName,
+		},
+		Spec: corev1alpha1.ServiceClusterSpec{
+			Metadata: corev1alpha1.ServiceClusterMetadata{
+				DisplayName: "eu-west-1",
+				Description: "eu-west-1 service cluster!",
+			},
+		},
+	}
+	s.Require().NoError(s.masterClient.Create(ctx, s.serviceCluster), "could not create ServiceCluster")
 }
 
 func (s *ProviderSuite) tearDownSuiteCatalog() {
 	ctx := context.Background()
-	s.Require().NoError(wait.Poll(time.Second, 30*time.Second, func() (done bool, err error) {
-		if err = s.masterClient.Delete(ctx, s.tenant); err != nil {
-			if errors.IsNotFound(err) {
-				return true, nil
-			}
-			return false, err
-		}
-		return false, nil
-	}), "could not delete the Tenant")
-
-	s.Require().NoError(wait.Poll(time.Second, 30*time.Second, func() (done bool, err error) {
-		if err = s.masterClient.Delete(ctx, s.catalogEntry); err != nil {
-			if errors.IsNotFound(err) {
-				return true, nil
-			}
-			return false, err
-		}
-		return false, nil
-	}), "could not delete the CatalogEntry")
-
-	s.Require().NoError(wait.Poll(time.Second, 10*time.Second, func() (done bool, err error) {
-		if err = s.masterClient.Delete(ctx, s.crd); err != nil {
-			if errors.IsNotFound(err) {
-				return true, nil
-			}
-			return false, err
-		}
-		return false, nil
-	}), fmt.Sprintf("deleting CRD: %s error", s.crd.Name))
+	s.Require().NoError(s.masterClient.Delete(ctx, s.tenant), "deleting the Tenant object")
+	s.Require().NoError(testutil.WaitUntilNotFound(s.masterClient, s.tenant))
+	s.Require().NoError(s.masterClient.Delete(ctx, s.crd), "deleting the CustomResourceDefinition object")
+	s.Require().NoError(testutil.WaitUntilNotFound(s.masterClient, s.crd))
 }

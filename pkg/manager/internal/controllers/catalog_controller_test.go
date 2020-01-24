@@ -31,6 +31,7 @@ import (
 	fakeclient "sigs.k8s.io/controller-runtime/pkg/client/fake"
 
 	catalogv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/catalog/v1alpha1"
+	corev1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/core/v1alpha1"
 	"github.com/kubermatic/kubecarrier/pkg/testutil"
 )
 
@@ -90,6 +91,28 @@ func TestCatalogReconciler(t *testing.T) {
 				Description: "Test CatalogEntry",
 			},
 		},
+		Status: catalogv1alpha1.CatalogEntryStatus{
+			CRDs: []catalogv1alpha1.CRDInformation{
+				{
+					ServiceCluster: catalogv1alpha1.ObjectReference{
+						Name: "test-service-cluster",
+					},
+				},
+			},
+		},
+	}
+
+	serviceCluster := &corev1alpha1.ServiceCluster{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "test-service-cluster",
+			Namespace: providerNamespaceName,
+		},
+		Spec: corev1alpha1.ServiceClusterSpec{
+			Metadata: corev1alpha1.ServiceClusterMetadata{
+				DisplayName: "test-service-cluster",
+				Description: "a service cluster for testing",
+			},
+		},
 	}
 
 	catalog := &catalogv1alpha1.Catalog{
@@ -103,7 +126,7 @@ func TestCatalogReconciler(t *testing.T) {
 		},
 	}
 
-	client := fakeclient.NewFakeClientWithScheme(testScheme, catalogEntry, catalog, provider, providerNamespace, tenant, tenantReference, tenantNamespace)
+	client := fakeclient.NewFakeClientWithScheme(testScheme, catalogEntry, catalog, provider, providerNamespace, tenant, tenantReference, tenantNamespace, serviceCluster)
 	log := testutil.NewLogger(t)
 	r := &CatalogReconciler{
 		Client: client,
@@ -115,6 +138,7 @@ func TestCatalogReconciler(t *testing.T) {
 	catalogFound := &catalogv1alpha1.Catalog{}
 	offeringFound := &catalogv1alpha1.Offering{}
 	providerReferenceFound := &catalogv1alpha1.ProviderReference{}
+	serviceClusterReferenceFound := &catalogv1alpha1.ServiceClusterReference{}
 	if !t.Run("create/update Catalog", func(t *testing.T) {
 		for i := 0; i < 5; i++ {
 			// Run Reconcile multiple times, because
@@ -162,6 +186,15 @@ func TestCatalogReconciler(t *testing.T) {
 		}, providerReferenceFound), "getting ProviderReference error")
 		assert.Equal(t, providerReferenceFound.Spec.Metadata.Description, provider.Spec.Metadata.Description, "Wrong ProviderReference Metadata.Description")
 		assert.Equal(t, providerReferenceFound.Spec.Metadata.DisplayName, provider.Spec.Metadata.DisplayName, "Wrong ProviderReference Metadata.DisplayName")
+
+		// Check ServiceClusterReference
+		require.NoError(t, client.Get(ctx, types.NamespacedName{
+			Name:      fmt.Sprintf("%s.%s", serviceCluster.Name, provider.Name),
+			Namespace: tenantNamespaceName,
+		}, serviceClusterReferenceFound), "getting ServiceClusterReference error")
+		assert.Equal(t, serviceClusterReferenceFound.Spec.Provider.Name, provider.Name, "Wrong ServiceClusterReference provider name")
+		assert.Equal(t, serviceClusterReferenceFound.Spec.Metadata.Description, serviceCluster.Spec.Metadata.Description, "Wrong ServiceClusterReference description")
+		assert.Equal(t, serviceClusterReferenceFound.Spec.Metadata.DisplayName, serviceCluster.Spec.Metadata.DisplayName, "Wrong ServiceClusterReference display name")
 	}) {
 		t.FailNow()
 	}
@@ -210,5 +243,12 @@ func TestCatalogReconciler(t *testing.T) {
 			Name:      providerReferenceFound.Name,
 			Namespace: providerReferenceFound.Namespace,
 		}, providerReferenceCheck)), "ProviderReference should be gone")
+
+		// Check ServiceClusterReference
+		serviceClusterReferenceCheck := &catalogv1alpha1.ServiceClusterReference{}
+		assert.True(t, errors.IsNotFound(client.Get(ctx, types.NamespacedName{
+			Name:      serviceClusterReferenceFound.Name,
+			Namespace: serviceClusterReferenceFound.Namespace,
+		}, serviceClusterReferenceCheck)), "ServiceClusterReference should be gone")
 	})
 }
