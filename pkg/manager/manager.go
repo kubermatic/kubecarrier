@@ -26,6 +26,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/webhook"
 
 	catalogv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/catalog/v1alpha1"
 	corev1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/core/v1alpha1"
@@ -158,13 +159,14 @@ func run(flags *flags, log logr.Logger) error {
 	}
 
 	// Register webhooks
-	if err = (&catalogv1alpha1.CatalogEntry{}).SetupWebhookWithManager(mgr); err != nil {
-		return fmt.Errorf("registering webhooks for CatalogEntry: %w", err)
-	}
 	if err = (&catalogv1alpha1.Tenant{}).SetupWebhookWithManager(mgr); err != nil {
 		return fmt.Errorf("registering webhooks for Tenant: %w", err)
 	}
 
+	// Register webhooks as handlers
+	wbh := mgr.GetWebhookServer()
+	wbh.Register("/validate-catalog-kubecarrier-io-v1alpha1-catalogentry", &webhook.Admission{Handler: &catalogv1alpha1.CatalogEntryValidator{}})
+	wbh.Register("/mutating-catalog-kubecarrier-io-v1alpha1-catalogentry", &webhook.Admission{Handler: &catalogv1alpha1.CatalogEntryValidator{}})
 	log.Info("starting manager")
 	if err := mgr.Start(ctrl.SetupSignalHandler()); err != nil {
 		return fmt.Errorf("running manager: %w", err)
