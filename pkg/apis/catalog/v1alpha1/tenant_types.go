@@ -155,6 +155,21 @@ type Tenant struct {
 	Status TenantStatus `json:"status,omitempty"`
 }
 
+// IsReady returns if the Tenant is ready.
+func (s *Tenant) IsReady() bool {
+	if s.Generation != s.Status.ObservedGeneration {
+		return false
+	}
+
+	for _, condition := range s.Status.Conditions {
+		if condition.Type == TenantReady &&
+			condition.Status == ConditionTrue {
+			return true
+		}
+	}
+	return false
+}
+
 // TenantList contains a list of Tenant.
 // +kubebuilder:object:root=true
 type TenantList struct {

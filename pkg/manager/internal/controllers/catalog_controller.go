@@ -139,9 +139,14 @@ func (r *CatalogReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 			return ctrl.Result{}, fmt.Errorf("getting Tenant: %w", err)
 		}
 
+		if !tenant.IsReady() {
+			continue
+		}
+
 		desiredProviderReferences = append(desiredProviderReferences, r.buildDesiredProviderReference(provider, tenant))
 		desiredOfferings = append(desiredOfferings, r.buildDesiredOfferings(provider, tenant, catalogEntries)...)
 	}
+
 	if err := r.reconcileProviderReferences(ctx, log, catalog, desiredProviderReferences); err != nil {
 		return ctrl.Result{}, fmt.Errorf("reconcliing ProviderReferences: %w", err)
 	}
