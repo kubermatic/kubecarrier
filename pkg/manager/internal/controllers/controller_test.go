@@ -22,6 +22,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 
 	catalogv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/catalog/v1alpha1"
+	corev1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/core/v1alpha1"
 )
 
 var testScheme = runtime.NewScheme()
@@ -35,6 +36,9 @@ func init() {
 		panic(err)
 	}
 	if err := apiextensionsv1.AddToScheme(testScheme); err != nil {
+		panic(err)
+	}
+	if err := corev1alpha1.AddToScheme(testScheme); err != nil {
 		panic(err)
 	}
 }
