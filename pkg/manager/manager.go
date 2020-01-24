@@ -28,6 +28,7 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 
 	catalogv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/catalog/v1alpha1"
+	corev1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/core/v1alpha1"
 	"github.com/kubermatic/kubecarrier/pkg/internal/util"
 	"github.com/kubermatic/kubecarrier/pkg/manager/internal/controllers"
 )
@@ -45,6 +46,7 @@ var (
 func init() {
 	_ = clientgoscheme.AddToScheme(scheme)
 	_ = catalogv1alpha1.AddToScheme(scheme)
+	_ = corev1alpha1.AddToScheme(scheme)
 	_ = apiextensionsv1.AddToScheme(scheme)
 }
 
@@ -116,6 +118,16 @@ func run(flags *flags, log logr.Logger) error {
 	}
 	if err := util.AddOwnerReverseFieldIndex(mgr.GetFieldIndexer(), fieldIndexerLog.WithName("CRD"), &apiextensionsv1.CustomResourceDefinition{}); err != nil {
 		return fmt.Errorf("registering CRD owner field index: %w", err)
+	}
+	if err := util.AddOwnerReverseFieldIndex(
+		mgr.GetFieldIndexer(), fieldIndexerLog.WithName("ProviderReference"), &catalogv1alpha1.ProviderReference{},
+	); err != nil {
+		return fmt.Errorf("registering ProviderReference owner field indexer: %w", err)
+	}
+	if err := util.AddOwnerReverseFieldIndex(
+		mgr.GetFieldIndexer(), fieldIndexerLog.WithName("ServiceClusterReference"), &catalogv1alpha1.ServiceClusterReference{},
+	); err != nil {
+		return fmt.Errorf("registering ServiceCluster owner field index: %w", err)
 	}
 
 	if err = (&controllers.CatalogEntryReconciler{

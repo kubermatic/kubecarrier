@@ -1,0 +1,74 @@
+
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.2.4
+  creationTimestamp: null
+  name: providerreferences.catalog.kubecarrier.io
+spec:
+  group: catalog.kubecarrier.io
+  names:
+    kind: ProviderReference
+    listKind: ProviderReferenceList
+    plural: providerreferences
+    shortNames:
+    - pr
+    singular: providerreference
+  scope: Namespaced
+  versions:
+  - additionalPrinterColumns:
+    - jsonPath: .spec.metadata.displayName
+      name: Display Name
+      type: string
+    - jsonPath: .metadata.creationTimestamp
+      name: Age
+      type: date
+    name: v1alpha1
+    schema:
+      openAPIV3Schema:
+        description: ProviderReference exposes information of the Provider(displayName,
+          description). This object lives in the tenant namespace for each provider
+          the tenant is allowed utilizing (e.g. there's catalog selecting this tenant
+          as its user)
+        properties:
+          apiVersion:
+            description: 'APIVersion defines the versioned schema of this representation
+              of an object. Servers should convert recognized schemas to the latest
+              internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+            type: string
+          kind:
+            description: 'Kind is a string value representing the REST resource this
+              object represents. Servers may infer this from the endpoint the client
+              submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+            type: string
+          metadata:
+            type: object
+          spec:
+            description: ProviderReferenceSpec defines the desired state of ProviderReference
+            properties:
+              metadata:
+                description: Metadata contains the metadata (display name, description,
+                  etc) of the Provider.
+                properties:
+                  description:
+                    description: Description shows the human-readable description
+                      of this Provider.
+                    type: string
+                  displayName:
+                    description: DisplayName shows the human-readable name of this
+                      Provider.
+                    type: string
+                type: object
+            type: object
+        type: object
+    served: true
+    storage: true
+    subresources: {}
+status:
+  acceptedNames:
+    kind: ""
+    plural: ""
+  conditions: []
+  storedVersions: []
