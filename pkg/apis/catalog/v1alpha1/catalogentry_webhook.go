@@ -19,9 +19,11 @@ package v1alpha1
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
 
 	adminv1beta1 "k8s.io/api/admission/v1beta1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
@@ -29,6 +31,11 @@ import (
 
 // log is for logging in this package.
 var catalogEntryLog = ctrl.Log.WithName("CatalogEntry")
+
+const (
+	KubeCarrierNamespace = "kubecarrier-system"
+	providerLabel        = "kubecarrier.io/provider"
+)
 
 // +kubebuilder:object:generate=false
 // CatalogEntryValidator validates CatalogEntries
@@ -108,7 +115,7 @@ func (r *CatalogEntryDefaulter) Handle(ctx context.Context, req admission.Reques
 	}
 	catalogEntryLog.Info("default", "name", obj.Name)
 	// Default the object
-	if err := r.defaultFn(); err != nil {
+	if err := r.defaultFn(obj); err != nil {
 		return admission.Denied(err.Error())
 	}
 	marshalled, err := json.Marshal(obj)
@@ -120,7 +127,23 @@ func (r *CatalogEntryDefaulter) Handle(ctx context.Context, req admission.Reques
 
 }
 
-func (r *CatalogEntryDefaulter) defaultFn() error {
+func (r *CatalogEntryDefaulter) defaultFn(catalogEntry *CatalogEntry) error {
+	provider, err := getProviderByProviderNamespace(context.Background(), r.client, "kubecarrier-system", catalogEntry.Namespace)
+	if err != nil {
+		return fmt.Errorf("getting the Provider by Provider Namespace: %w", err)
+	}
+
+	// Defaulting the `kubecarrier.io/provider` matchlabel
+	if catalogEntry.Spec.CRDSelector == nil {
+		catalogEntry.Spec.CRDSelector = &metav1.LabelSelector{}
+	}
+	if catalogEntry.Spec.CRDSelector.MatchLabels == nil {
+		catalogEntry.Spec.CRDSelector.MatchLabels = map[string]string{}
+	}
+	if catalogEntry.Spec.CRDSelector.MatchLabels[providerLabel] != provider.Name {
+		catalogEntry.Spec.CRDSelector.MatchLabels[providerLabel] = provider.Name
+	}
+
 	return nil
 }
 
@@ -140,4 +163,27 @@ func (r *CatalogEntryDefaulter) InjectClient(c client.Client) error {
 func (r *CatalogEntryDefaulter) InjectDecoder(d *admission.Decoder) error {
 	r.decoder = d
 	return nil
+}
+
+func getProviderByProviderNamespace(ctx context.Context, c client.Client, kubecarrierNamespace, providerNamespace string) (*Provider, error) {
+	providerList := &ProviderList{}
+	if err := c.List(ctx, providerList,
+		client.InNamespace(kubecarrierNamespace),
+		client.MatchingFields{
+			ProviderNamespaceFieldIndex: providerNamespace,
+		},
+	); err != nil {
+		return nil, err
+	}
+	switch len(providerList.Items) {
+	case 0:
+		// not found
+		return nil, fmt.Errorf("providers.catalog.kubecarrier.io with index %q not found", ProviderNamespaceFieldIndex)
+	case 1:
+		// found!
+		return &providerList.Items[0], nil
+	default:
+		// found too many
+		return nil, fmt.Errorf("multiple providers.catalog.kubecarrier.io with index %q found", ProviderNamespaceFieldIndex)
+	}
 }
