@@ -81,24 +81,35 @@ rules:
   - patch
   - update
 - apiGroups:
-  - catalog.kubecarrier.io
+    - catalog.kubecarrier.io
   resources:
-  - offerings
+    - offerings
   verbs:
-  - create
-  - delete
-  - get
-  - list
-  - update
-  - watch
+    - create
+    - delete
+    - get
+    - list
+    - update
+    - watch
 - apiGroups:
-  - catalog.kubecarrier.io
+    - catalog.kubecarrier.io
   resources:
-  - providers
+    - providerreferences
   verbs:
-  - get
-  - list
-  - update
+    - create
+    - delete
+    - get
+    - list
+    - update
+    - watch
+- apiGroups:
+    - catalog.kubecarrier.io
+  resources:
+    - providers
+  verbs:
+    - get
+    - list
+    - update
   - watch
 - apiGroups:
   - catalog.kubecarrier.io
@@ -108,6 +119,17 @@ rules:
   - get
   - patch
   - update
+- apiGroups:
+    - catalog.kubecarrier.io
+  resources:
+    - serviceclusterreferences
+  verbs:
+    - create
+    - delete
+    - get
+    - list
+    - update
+    - watch
 - apiGroups:
   - catalog.kubecarrier.io
   resources:
@@ -136,3 +158,11 @@ rules:
   - get
   - patch
   - update
+- apiGroups:
+    - kubecarrier.io
+  resources:
+    - serviceclusters
+  verbs:
+    - get
+    - list
+    - watch

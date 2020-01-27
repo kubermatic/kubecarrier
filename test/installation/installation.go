@@ -106,13 +106,13 @@ func (s *InstallationSuite) TestInstallAndTeardown() {
 		// ClusterRoleBinding
 		clusterRoleBinding := &rbacv1.ClusterRoleBinding{}
 		s.NoError(s.masterClient.Get(ctx, types.NamespacedName{
-			Name: fmt.Sprintf("%s-proxy-rolebinding", prefix),
+			Name: fmt.Sprintf("%s-manager-rolebinding", prefix),
 		}, clusterRoleBinding), "get the ClusterRoleBinding that owned by KubeCarrier object")
 
 		// ClusterRole
 		clusterRole := &rbacv1.ClusterRole{}
 		s.NoError(s.masterClient.Get(ctx, types.NamespacedName{
-			Name: fmt.Sprintf("%s-proxy-role", prefix),
+			Name: fmt.Sprintf("%s-manager-role", prefix),
 		}, clusterRole), "get the ClusterRole that owned by KubeCarrier object")
 
 		// RoleBinding
@@ -128,13 +128,6 @@ func (s *InstallationSuite) TestInstallAndTeardown() {
 			Name:      fmt.Sprintf("%s-leader-election-role", prefix),
 			Namespace: nn,
 		}, role), "get the Role that owned by KubeCarrier object")
-
-		// Service
-		service := &corev1.Service{}
-		s.NoError(s.masterClient.Get(ctx, types.NamespacedName{
-			Name:      fmt.Sprintf("%s-controller-manager-metrics-service", prefix),
-			Namespace: nn,
-		}, service), "get the Service that owned by KubeCarrier object")
 
 		// CRD
 		crd := &apiextensionsv1.CustomResourceDefinition{}
@@ -168,13 +161,13 @@ func (s *InstallationSuite) TestInstallAndTeardown() {
 		// ClusterRoleBinding
 		clusterRoleBinding := &rbacv1.ClusterRoleBinding{}
 		s.True(errors.IsNotFound(s.masterClient.Get(ctx, types.NamespacedName{
-			Name: fmt.Sprintf("%s-proxy-rolebinding", prefix),
+			Name: fmt.Sprintf("%s-manager-rolebinding", prefix),
 		}, clusterRoleBinding)), "get the ClusterRoleBinding that owned by KubeCarrier object")
 
 		// ClusterRole
 		clusterRole := &rbacv1.ClusterRole{}
 		s.True(errors.IsNotFound(s.masterClient.Get(ctx, types.NamespacedName{
-			Name: fmt.Sprintf("%s-proxy-role", prefix),
+			Name: fmt.Sprintf("%s-manager-role", prefix),
 		}, clusterRole)), "get the ClusterRole that owned by KubeCarrier object")
 
 		// RoleBinding
@@ -190,13 +183,6 @@ func (s *InstallationSuite) TestInstallAndTeardown() {
 			Name:      fmt.Sprintf("%s-leader-election-role", prefix),
 			Namespace: nn,
 		}, role)), "get the Role that owned by KubeCarrier object")
-
-		// Service
-		service := &corev1.Service{}
-		s.True(errors.IsNotFound(s.masterClient.Get(ctx, types.NamespacedName{
-			Name:      fmt.Sprintf("%s-controller-manager-metrics-service", prefix),
-			Namespace: nn,
-		}, service)), "get the Service that owned by KubeCarrier object")
 
 		// CRD
 		crd := &apiextensionsv1.CustomResourceDefinition{}

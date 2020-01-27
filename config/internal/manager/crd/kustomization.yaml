@@ -6,7 +6,9 @@ resources:
 - bases/catalog.kubecarrier.io_catalogs.yaml
 - bases/catalog.kubecarrier.io_derivedcustomresourcedefinitions.yaml
 - bases/catalog.kubecarrier.io_offerings.yaml
+- bases/catalog.kubecarrier.io_providerreferences.yaml
 - bases/catalog.kubecarrier.io_providers.yaml
+- bases/catalog.kubecarrier.io_serviceclusterreferences.yaml
 - bases/catalog.kubecarrier.io_tenantreferences.yaml
 - bases/catalog.kubecarrier.io_tenants.yaml
 - bases/kubecarrier.io_customresourcedefinitiondiscoveries.yaml
