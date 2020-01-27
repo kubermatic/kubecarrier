@@ -35,6 +35,10 @@ import (
 
 const crdDiscoveryControllerFinalizer string = "custormresourcedefinitiondiscovery.kubecarrier.io/controller"
 
+var (
+	CRDNotFound = fmt.Errorf("CRDNotFound")
+)
+
 // CustomResourceDefinitionDiscoveryReconciler reconciles a CustomResourceDefinitionDiscovery object
 type CustomResourceDefinitionDiscoveryReconciler struct {
 	Log logr.Logger
@@ -88,7 +92,7 @@ func (r *CustomResourceDefinitionDiscoveryReconciler) Reconcile(req ctrl.Request
 			Type:    corev1alpha1.CustomResourceDefinitionDiscoveryReady,
 			Status:  corev1alpha1.ConditionFalse,
 			Message: err.Error(),
-			Reason:  util.ErrorReason(err),
+			Reason:  CRDNotFound.Error(),
 		})
 		if err = r.MasterClient.Status().Update(ctx, crdDiscovery); err != nil {
 			return ctrl.Result{}, fmt.Errorf("updating CustomResourceDefinitionDiscovery Status - notFound: %w", err)
