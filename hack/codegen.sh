@@ -72,7 +72,7 @@ $CONTROLLER_GEN crd:crdVersions=${CRD_VERSION} webhook paths="./pkg/apis/core/..
 $CONTROLLER_GEN crd:crdVersions=${CRD_VERSION} webhook paths="./pkg/apis/catalog/..." output:crd:artifacts:config=config/internal/manager/crd/bases output:webhook:artifacts:config=config/internal/manager/webhook || true
 # RBAC
 $CONTROLLER_GEN rbac:roleName=manager-role paths="./pkg/manager/..." output:rbac:artifacts:config=config/internal/manager/rbac
-# Remove properties to make the CatalogEntry yaml configuration (which embeds CustomResourceValidation) to pass the schema checks
+# Remove properties to make the CustomResourceDefinitionDiscovery yaml configuration (which embeds CustomResourceValidation) to pass the schema checks
 out=$(mktemp)
 yq -Y  "del(.spec.versions[].schema.openAPIV3Schema.properties.status.properties.crd.properties)" "config/internal/manager/crd/bases/kubecarrier.io_customresourcedefinitiondiscoveries.yaml" > $out && mv ${out} "config/internal/manager/crd/bases/kubecarrier.io_customresourcedefinitiondiscoveries.yaml"
 yq -Y  "del(.spec.versions[].schema.openAPIV3Schema.properties.status.properties.crd.required)" "config/internal/manager/crd/bases/kubecarrier.io_customresourcedefinitiondiscoveries.yaml" > $out && mv ${out} "config/internal/manager/crd/bases/kubecarrier.io_customresourcedefinitiondiscoveries.yaml"
