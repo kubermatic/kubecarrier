@@ -97,7 +97,7 @@ func (r *CustomResourceDefinitionDiscoveryReconciler) Reconcile(req ctrl.Request
 		return ctrl.Result{Requeue: true}, nil
 	case err == nil:
 		// Add owner ref on CRD in the service cluster
-		changed, err := util.InsertOwnerReference(crd, crdDiscovery, r.MasterScheme)
+		changed, err := util.InsertOwnerReference(crdDiscovery, crd, r.MasterScheme)
 		if err != nil {
 			return ctrl.Result{}, fmt.Errorf("inserting OwnerReference: %w", err)
 		}
@@ -123,22 +123,22 @@ func (r *CustomResourceDefinitionDiscoveryReconciler) Reconcile(req ctrl.Request
 	}
 }
 
-func (r *CustomResourceDefinitionDiscoveryReconciler) handleDeletion(ctx context.Context, log logr.Logger, crdReference *corev1alpha1.CustomResourceDefinitionDiscovery) error {
+func (r *CustomResourceDefinitionDiscoveryReconciler) handleDeletion(ctx context.Context, log logr.Logger, crdDiscovery *corev1alpha1.CustomResourceDefinitionDiscovery) error {
 	crd := &apiextensionsv1.CustomResourceDefinition{}
 	err := r.ServiceClient.Get(ctx, types.NamespacedName{
-		Name: crdReference.Spec.CRD.Name,
+		Name: crdDiscovery.Spec.CRD.Name,
 	}, crd)
 	switch {
 	case errors.IsNotFound(err):
-		if util.RemoveFinalizer(crdReference, crdReferenceControllerFinalizer) {
-			if err := r.MasterClient.Update(ctx, crdReference); err != nil {
+		if util.RemoveFinalizer(crdDiscovery, crdReferenceControllerFinalizer) {
+			if err := r.MasterClient.Update(ctx, crdDiscovery); err != nil {
 				return fmt.Errorf("updating CustomResourceDefinitionDiscovery finalizers: %w", err)
 			}
 		}
 		return nil
 	case err == nil:
 		// CRD still exists, ensure we're not owning it anymore
-		changed, err := util.DeleteOwnerReference(crd, crdReference, r.MasterScheme)
+		changed, err := util.DeleteOwnerReference(crdDiscovery, crd, r.MasterScheme)
 		if err != nil {
 			return fmt.Errorf("deleting OwnerReference: %w", err)
 		}
@@ -147,8 +147,8 @@ func (r *CustomResourceDefinitionDiscoveryReconciler) handleDeletion(ctx context
 				return fmt.Errorf("updating CRD: %w", err)
 			}
 		}
-		if util.RemoveFinalizer(crdReference, crdReferenceControllerFinalizer) {
-			if err := r.MasterClient.Update(ctx, crdReference); err != nil {
+		if util.RemoveFinalizer(crdDiscovery, crdReferenceControllerFinalizer) {
+			if err := r.MasterClient.Update(ctx, crdDiscovery); err != nil {
 				return fmt.Errorf("updating CustomResourceDefinitionDiscovery finalizers: %w", err)
 			}
 		}
