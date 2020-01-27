@@ -157,7 +157,6 @@ func NewFerrySuite(f *framework.Framework) func(t *testing.T) {
 				serviceCluster.SetNamespace(provider.Status.NamespaceName)
 				require.NoError(t, testutil.WaitUntilReady(masterClient, serviceCluster))
 			})
-
 			t.Run("CustomResourceDefinitionDiscovery", func(t *testing.T) {
 				t.Parallel()
 				crdd := &corev1alpha1.CustomResourceDefinitionDiscovery{
@@ -186,44 +185,44 @@ func NewFerrySuite(f *framework.Framework) func(t *testing.T) {
 				assert.NoError(t, masterClient.Delete(ctx, crdd))
 				assert.NoError(t, testutil.WaitUntilNotFound(masterClient, crdd))
 			})
-		})
-		t.Run("ServiceClusterAssignment", func(t *testing.T) {
-			t.Parallel()
-			serviceClusterAssignment := &corev1alpha1.ServiceClusterAssignment{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      tenant.Name + "." + serviceClusterRegistration.Name,
-					Namespace: provider.Status.NamespaceName,
-				},
-				Spec: corev1alpha1.ServiceClusterAssignmentSpec{
-					Tenant: corev1alpha1.ObjectReference{
-						Name: tenant.Name,
+			t.Run("ServiceClusterAssignment", func(t *testing.T) {
+				t.Parallel()
+				serviceClusterAssignment := &corev1alpha1.ServiceClusterAssignment{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      tenant.Name + "." + serviceClusterRegistration.Name,
+						Namespace: provider.Status.NamespaceName,
 					},
-					ServiceCluster: corev1alpha1.ObjectReference{
-						Name: serviceClusterRegistration.Name,
+					Spec: corev1alpha1.ServiceClusterAssignmentSpec{
+						Tenant: corev1alpha1.ObjectReference{
+							Name: tenant.Name,
+						},
+						ServiceCluster: corev1alpha1.ObjectReference{
+							Name: serviceClusterRegistration.Name,
+						},
 					},
-				},
-			}
-			require.NoError(t, client.IgnoreNotFound(masterClient.Delete(ctx, serviceClusterAssignment)))
-			require.NoError(t, testutil.WaitUntilNotFound(masterClient, serviceClusterAssignment))
-			require.NoError(t, masterClient.Create(ctx, serviceClusterAssignment))
+				}
+				require.NoError(t, client.IgnoreNotFound(masterClient.Delete(ctx, serviceClusterAssignment)))
+				require.NoError(t, testutil.WaitUntilNotFound(masterClient, serviceClusterAssignment))
+				require.NoError(t, masterClient.Create(ctx, serviceClusterAssignment))
 
-			ns := &corev1.Namespace{}
-			if assert.NoError(t, testutil.WaitUntilReady(masterClient, serviceClusterAssignment)) {
-				assert.NoError(t,
-					serviceClient.Get(
-						ctx,
-						types.NamespacedName{Name: serviceClusterAssignment.Status.NamespaceName},
-						ns,
-					),
-				)
-			}
+				ns := &corev1.Namespace{}
+				if assert.NoError(t, testutil.WaitUntilReady(masterClient, serviceClusterAssignment)) {
+					assert.NoError(t,
+						serviceClient.Get(
+							ctx,
+							types.NamespacedName{Name: serviceClusterAssignment.Status.NamespaceName},
+							ns,
+						),
+					)
+				}
 
-			assert.NoError(t, client.IgnoreNotFound(masterClient.Delete(ctx, serviceClusterAssignment)))
-			assert.NoError(t, testutil.WaitUntilNotFound(masterClient, serviceClusterAssignment))
+				assert.NoError(t, client.IgnoreNotFound(masterClient.Delete(ctx, serviceClusterAssignment)))
+				assert.NoError(t, testutil.WaitUntilNotFound(masterClient, serviceClusterAssignment))
 
-			if ns.Name != "" {
-				assert.NoError(t, testutil.WaitUntilNotFound(serviceClient, ns))
-			}
+				if ns.Name != "" {
+					assert.NoError(t, testutil.WaitUntilNotFound(serviceClient, ns))
+				}
+			})
 		})
 	}
 }
