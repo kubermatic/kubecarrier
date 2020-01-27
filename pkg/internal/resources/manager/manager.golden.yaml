@@ -754,6 +754,79 @@
     annotations:
       controller-gen.kubebuilder.io/version: v0.2.4
     creationTimestamp: null
+    name: providerreferences.catalog.kubecarrier.io
+  spec:
+    group: catalog.kubecarrier.io
+    names:
+      kind: ProviderReference
+      listKind: ProviderReferenceList
+      plural: providerreferences
+      shortNames:
+      - pr
+      singular: providerreference
+    scope: Namespaced
+    versions:
+    - additionalPrinterColumns:
+      - jsonPath: .spec.metadata.displayName
+        name: Display Name
+        type: string
+      - jsonPath: .metadata.creationTimestamp
+        name: Age
+        type: date
+      name: v1alpha1
+      schema:
+        openAPIV3Schema:
+          description: ProviderReference exposes information of the Provider(displayName,
+            description). This object lives in the tenant namespace for each provider
+            the tenant is allowed utilizing (e.g. there's catalog selecting this tenant
+            as its user)
+          properties:
+            apiVersion:
+              description: 'APIVersion defines the versioned schema of this representation
+                of an object. Servers should convert recognized schemas to the latest
+                internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+              type: string
+            kind:
+              description: 'Kind is a string value representing the REST resource
+                this object represents. Servers may infer this from the endpoint the
+                client submits requests to. Cannot be updated. In CamelCase. More
+                info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+              type: string
+            metadata:
+              type: object
+            spec:
+              description: ProviderReferenceSpec defines the desired state of ProviderReference
+              properties:
+                metadata:
+                  description: Metadata contains the metadata (display name, description,
+                    etc) of the Provider.
+                  properties:
+                    description:
+                      description: Description shows the human-readable description
+                        of this Provider.
+                      type: string
+                    displayName:
+                      description: DisplayName shows the human-readable name of this
+                        Provider.
+                      type: string
+                  type: object
+              type: object
+          type: object
+      served: true
+      storage: true
+      subresources: {}
+  status:
+    acceptedNames:
+      kind: ""
+      plural: ""
+    conditions: []
+    storedVersions: []
+- apiVersion: apiextensions.k8s.io/v1
+  kind: CustomResourceDefinition
+  metadata:
+    annotations:
+      controller-gen.kubebuilder.io/version: v0.2.4
+    creationTimestamp: null
     name: providers.catalog.kubecarrier.io
   spec:
     group: catalog.kubecarrier.io
@@ -876,6 +949,94 @@
       storage: true
       subresources:
         status: {}
+  status:
+    acceptedNames:
+      kind: ""
+      plural: ""
+    conditions: []
+    storedVersions: []
+- apiVersion: apiextensions.k8s.io/v1
+  kind: CustomResourceDefinition
+  metadata:
+    annotations:
+      controller-gen.kubebuilder.io/version: v0.2.4
+    creationTimestamp: null
+    name: serviceclusterreferences.catalog.kubecarrier.io
+  spec:
+    group: catalog.kubecarrier.io
+    names:
+      kind: ServiceClusterReference
+      listKind: ServiceClusterReferenceList
+      plural: serviceclusterreferences
+      shortNames:
+      - scr
+      singular: serviceclusterreference
+    scope: Namespaced
+    versions:
+    - additionalPrinterColumns:
+      - jsonPath: .spec.provider.name
+        name: Provider
+        type: string
+      - jsonPath: .spec.metadata.displayName
+        name: Display Name
+        type: string
+      - jsonPath: .metadata.creationTimestamp
+        name: Age
+        type: date
+      name: v1alpha1
+      schema:
+        openAPIV3Schema:
+          description: "ServiceClusterReference exposes information about a Providers
+            Clusters. \n This object lives in the tenant namespace for each provider
+            the tenant is allowed utilizing (e.g. there's catalog selecting this tenant
+            as its user)"
+          properties:
+            apiVersion:
+              description: 'APIVersion defines the versioned schema of this representation
+                of an object. Servers should convert recognized schemas to the latest
+                internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+              type: string
+            kind:
+              description: 'Kind is a string value representing the REST resource
+                this object represents. Servers may infer this from the endpoint the
+                client submits requests to. Cannot be updated. In CamelCase. More
+                info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+              type: string
+            metadata:
+              type: object
+            spec:
+              description: ServiceClusterReferenceSpec defines the desired state of
+                ServiceClusterReference
+              properties:
+                metadata:
+                  description: Metadata contains the metadata (display name, description,
+                    etc) of the ServiceCluster.
+                  properties:
+                    description:
+                      description: Description shows the human-readable description
+                        of this ServiceCluster.
+                      type: string
+                    displayName:
+                      description: DisplayName shows the human-readable name of this
+                        ServiceCluster.
+                      type: string
+                  type: object
+                provider:
+                  description: Provider references the Provider that this ServiceCluster
+                    belongs to.
+                  properties:
+                    name:
+                      type: string
+                  required:
+                  - name
+                  type: object
+              required:
+              - provider
+              type: object
+          type: object
+      served: true
+      storage: true
+      subresources: {}
   status:
     acceptedNames:
       kind: ""
@@ -1194,6 +1355,140 @@
     annotations:
       controller-gen.kubebuilder.io/version: v0.2.4
     creationTimestamp: null
+    name: serviceclusterassignments.kubecarrier.io
+  spec:
+    group: kubecarrier.io
+    names:
+      kind: ServiceClusterAssignment
+      listKind: ServiceClusterAssignmentList
+      plural: serviceclusterassignments
+      singular: serviceclusterassignment
+    scope: Namespaced
+    versions:
+    - additionalPrinterColumns:
+      - jsonPath: .status.phase
+        name: Status
+        type: string
+      - jsonPath: .metadata.creationTimestamp
+        name: Age
+        type: date
+      name: v1alpha1
+      schema:
+        openAPIV3Schema:
+          description: ServiceClusterAssignment represents the assignment of a Tenant
+            to a ServiceCluster.
+          properties:
+            apiVersion:
+              description: 'APIVersion defines the versioned schema of this representation
+                of an object. Servers should convert recognized schemas to the latest
+                internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+              type: string
+            kind:
+              description: 'Kind is a string value representing the REST resource
+                this object represents. Servers may infer this from the endpoint the
+                client submits requests to. Cannot be updated. In CamelCase. More
+                info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+              type: string
+            metadata:
+              type: object
+            spec:
+              description: ServiceClusterAssignmentSpec defines the desired state
+                of ServiceClusterAssignment
+              properties:
+                serviceCluster:
+                  description: ObjectReference describes the link to another object
+                    in the same namespace
+                  properties:
+                    name:
+                      type: string
+                  required:
+                  - name
+                  type: object
+                tenant:
+                  description: ObjectReference describes the link to another object
+                    in the same namespace
+                  properties:
+                    name:
+                      type: string
+                  required:
+                  - name
+                  type: object
+              required:
+              - serviceCluster
+              - tenant
+              type: object
+            status:
+              description: ServiceClusterAssignmentStatus defines the observed state
+                of ServiceClusterAssignment
+              properties:
+                conditions:
+                  description: Conditions is a list of all conditions this ServiceClusterAssignment
+                    is in.
+                  items:
+                    description: ServiceClusterAssignmentCondition contains details
+                      for the current condition of this ServiceClusterAssignment.
+                    properties:
+                      lastTransitionTime:
+                        description: LastTransitionTime is the last time the condition
+                          transit from one status to another.
+                        format: date-time
+                        type: string
+                      message:
+                        description: Message is the human readable message indicating
+                          details about last transition.
+                        type: string
+                      reason:
+                        description: Reason is the (brief) reason for the condition's
+                          last transition.
+                        type: string
+                      status:
+                        description: Status of the condition, one of ('True', 'False',
+                          'Unknown').
+                        type: string
+                      type:
+                        description: Type of the condition, currently ('Ready').
+                        type: string
+                    required:
+                    - lastTransitionTime
+                    - message
+                    - reason
+                    - status
+                    - type
+                    type: object
+                  type: array
+                namespaceName:
+                  description: NamespaceName references the Namespace on the ServiceCluster
+                    that was assigned.
+                  type: string
+                observedGeneration:
+                  description: The most recent generation observed by the controller.
+                  format: int64
+                  type: integer
+                phase:
+                  description: DEPRECATED. Phase represents the current lifecycle
+                    state of this object consider this field DEPRECATED, it will be
+                    removed as soon as there is a mechanism to map conditions to a
+                    string when printing the property is only present for display
+                    purposes, for everything else use conditions
+                  type: string
+              type: object
+          type: object
+      served: true
+      storage: true
+      subresources:
+        status: {}
+  status:
+    acceptedNames:
+      kind: ""
+      plural: ""
+    conditions: []
+    storedVersions: []
+- apiVersion: apiextensions.k8s.io/v1
+  kind: CustomResourceDefinition
+  metadata:
+    annotations:
+      controller-gen.kubebuilder.io/version: v0.2.4
+    creationTimestamp: null
     name: serviceclusters.kubecarrier.io
   spec:
     group: kubecarrier.io
@@ -1350,138 +1645,6 @@
       plural: ""
     conditions: []
     storedVersions: []
-- apiVersion: apiextensions.k8s.io/v1
-  kind: CustomResourceDefinition
-  metadata:
-    annotations:
-      controller-gen.kubebuilder.io/version: v0.2.4
-    creationTimestamp: null
-    name: tenantassignments.kubecarrier.io
-  spec:
-    group: kubecarrier.io
-    names:
-      kind: TenantAssignment
-      listKind: TenantAssignmentList
-      plural: tenantassignments
-      singular: tenantassignment
-    scope: Namespaced
-    versions:
-    - additionalPrinterColumns:
-      - jsonPath: .status.phase
-        name: Status
-        type: string
-      - jsonPath: .metadata.creationTimestamp
-        name: Age
-        type: date
-      name: v1alpha1
-      schema:
-        openAPIV3Schema:
-          description: TenantAssignment represents the assignment of a Tenant to a
-            ServiceCluster.
-          properties:
-            apiVersion:
-              description: 'APIVersion defines the versioned schema of this representation
-                of an object. Servers should convert recognized schemas to the latest
-                internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
-              type: string
-            kind:
-              description: 'Kind is a string value representing the REST resource
-                this object represents. Servers may infer this from the endpoint the
-                client submits requests to. Cannot be updated. In CamelCase. More
-                info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
-              type: string
-            metadata:
-              type: object
-            spec:
-              description: TenantAssignmentSpec defines the desired state of TenantAssignment
-              properties:
-                serviceCluster:
-                  description: ObjectReference describes the link to another object
-                    in the same namespace
-                  properties:
-                    name:
-                      type: string
-                  required:
-                  - name
-                  type: object
-                tenant:
-                  description: ObjectReference describes the link to another object
-                    in the same namespace
-                  properties:
-                    name:
-                      type: string
-                  required:
-                  - name
-                  type: object
-              required:
-              - serviceCluster
-              - tenant
-              type: object
-            status:
-              description: TenantAssignmentStatus defines the observed state of TenantAssignment
-              properties:
-                conditions:
-                  description: Conditions is a list of all conditions this TenantAssignment
-                    is in.
-                  items:
-                    description: TenantAssignmentCondition contains details for the
-                      current condition of this TenantAssignment.
-                    properties:
-                      lastTransitionTime:
-                        description: LastTransitionTime is the last time the condition
-                          transit from one status to another.
-                        format: date-time
-                        type: string
-                      message:
-                        description: Message is the human readable message indicating
-                          details about last transition.
-                        type: string
-                      reason:
-                        description: Reason is the (brief) reason for the condition's
-                          last transition.
-                        type: string
-                      status:
-                        description: Status of the condition, one of ('True', 'False',
-                          'Unknown').
-                        type: string
-                      type:
-                        description: Type of the condition, currently ('Ready').
-                        type: string
-                    required:
-                    - lastTransitionTime
-                    - message
-                    - reason
-                    - status
-                    - type
-                    type: object
-                  type: array
-                namespaceName:
-                  description: NamespaceName references the Namespace on the ServiceCluster
-                    that was assigned.
-                  type: string
-                observedGeneration:
-                  description: The most recent generation observed by the controller.
-                  format: int64
-                  type: integer
-                phase:
-                  description: DEPRECATED. Phase represents the current lifecycle
-                    state of this object consider this field DEPRECATED, it will be
-                    removed as soon as there is a mechanism to map conditions to a
-                    string when printing the property is only present for display
-                    purposes, for everything else use conditions
-                  type: string
-              type: object
-          type: object
-      served: true
-      storage: true
-      subresources:
-        status: {}
-  status:
-    acceptedNames:
-      kind: ""
-      plural: ""
-    conditions: []
-    storedVersions: []
 - apiVersion: rbac.authorization.k8s.io/v1
   kind: ClusterRole
   metadata:
@@ -1576,6 +1739,17 @@
   - apiGroups:
     - catalog.kubecarrier.io
     resources:
+    - providerreferences
+    verbs:
+    - create
+    - delete
+    - get
+    - list
+    - update
+    - watch
+  - apiGroups:
+    - catalog.kubecarrier.io
+    resources:
     - providers
     verbs:
     - get
@@ -1590,6 +1764,17 @@
     - get
     - patch
     - update
+  - apiGroups:
+    - catalog.kubecarrier.io
+    resources:
+    - serviceclusterreferences
+    verbs:
+    - create
+    - delete
+    - get
+    - list
+    - update
+    - watch
   - apiGroups:
     - catalog.kubecarrier.io
     resources:
@@ -1618,6 +1803,14 @@
     - get
     - patch
     - update
+  - apiGroups:
+    - kubecarrier.io
+    resources:
+    - serviceclusters
+    verbs:
+    - get
+    - list
+    - watch
 - apiVersion: rbac.authorization.k8s.io/v1
   kind: ClusterRoleBinding
   metadata:
@@ -1671,49 +1864,6 @@
     apiGroup: rbac.authorization.k8s.io
     kind: Role
     name: kubecarrier-manager-leader-election-role
-  subjects:
-  - kind: ServiceAccount
-    name: default
-    namespace: test3000
-- apiVersion: v1
-  kind: Service
-  metadata:
-    labels:
-      control-plane: controller-manager
-    name: kubecarrier-manager-controller-manager-metrics-service
-    namespace: test3000
-  spec:
-    ports:
-    - name: https
-      port: 8443
-      targetPort: https
-    selector:
-      control-plane: controller-manager
-- apiVersion: rbac.authorization.k8s.io/v1
-  kind: ClusterRole
-  metadata:
-    name: kubecarrier-manager-proxy-role
-  rules:
-  - apiGroups:
-    - authentication.k8s.io
-    resources:
-    - tokenreviews
-    verbs:
-    - create
-  - apiGroups:
-    - authorization.k8s.io
-    resources:
-    - subjectaccessreviews
-    verbs:
-    - create
-- apiVersion: rbac.authorization.k8s.io/v1
-  kind: ClusterRoleBinding
-  metadata:
-    name: kubecarrier-manager-proxy-rolebinding
-  roleRef:
-    apiGroup: rbac.authorization.k8s.io
-    kind: ClusterRole
-    name: kubecarrier-manager-proxy-role
   subjects:
   - kind: ServiceAccount
     name: default

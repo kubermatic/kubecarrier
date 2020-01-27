@@ -22,24 +22,22 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 )
 
-type Predicate struct {
-	Accept func(obj runtime.Object) bool
+type PredicateFn func(obj runtime.Object) bool
+
+func (p PredicateFn) Create(ev event.CreateEvent) bool {
+	return p(ev.Object)
 }
 
-func (p *Predicate) Create(ev event.CreateEvent) bool {
-	return p.Accept(ev.Object)
+func (p PredicateFn) Delete(ev event.DeleteEvent) bool {
+	return p(ev.Object)
 }
 
-func (p Predicate) Delete(ev event.DeleteEvent) bool {
-	return p.Accept(ev.Object)
+func (p PredicateFn) Update(ev event.UpdateEvent) bool {
+	return p(ev.ObjectNew)
 }
 
-func (p Predicate) Update(ev event.UpdateEvent) bool {
-	return p.Accept(ev.ObjectNew)
+func (p PredicateFn) Generic(ev event.GenericEvent) bool {
+	return p(ev.Object)
 }
 
-func (p Predicate) Generic(ev event.GenericEvent) bool {
-	return p.Accept(ev.Object)
-}
-
-var _ predicate.Predicate = (*Predicate)(nil)
+var _ predicate.Predicate = (PredicateFn)(nil)

@@ -6,14 +6,14 @@ metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.2.4
   creationTimestamp: null
-  name: tenantassignments.kubecarrier.io
+  name: serviceclusterassignments.kubecarrier.io
 spec:
   group: kubecarrier.io
   names:
-    kind: TenantAssignment
-    listKind: TenantAssignmentList
-    plural: tenantassignments
-    singular: tenantassignment
+    kind: ServiceClusterAssignment
+    listKind: ServiceClusterAssignmentList
+    plural: serviceclusterassignments
+    singular: serviceclusterassignment
   scope: Namespaced
   versions:
   - additionalPrinterColumns:
@@ -26,7 +26,8 @@ spec:
     name: v1alpha1
     schema:
       openAPIV3Schema:
-        description: TenantAssignment represents the assignment of a Tenant to a ServiceCluster.
+        description: ServiceClusterAssignment represents the assignment of a Tenant
+          to a ServiceCluster.
         properties:
           apiVersion:
             description: 'APIVersion defines the versioned schema of this representation
@@ -41,7 +42,8 @@ spec:
           metadata:
             type: object
           spec:
-            description: TenantAssignmentSpec defines the desired state of TenantAssignment
+            description: ServiceClusterAssignmentSpec defines the desired state of
+              ServiceClusterAssignment
             properties:
               serviceCluster:
                 description: ObjectReference describes the link to another object
@@ -66,14 +68,15 @@ spec:
             - tenant
             type: object
           status:
-            description: TenantAssignmentStatus defines the observed state of TenantAssignment
+            description: ServiceClusterAssignmentStatus defines the observed state
+              of ServiceClusterAssignment
             properties:
               conditions:
-                description: Conditions is a list of all conditions this TenantAssignment
+                description: Conditions is a list of all conditions this ServiceClusterAssignment
                   is in.
                 items:
-                  description: TenantAssignmentCondition contains details for the
-                    current condition of this TenantAssignment.
+                  description: ServiceClusterAssignmentCondition contains details
+                    for the current condition of this ServiceClusterAssignment.
                   properties:
                     lastTransitionTime:
                       description: LastTransitionTime is the last time the condition

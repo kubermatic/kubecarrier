@@ -32,13 +32,13 @@ import (
 	"github.com/kubermatic/kubecarrier/pkg/testutil"
 )
 
-func TestTenantAssignmentReconciler(t *testing.T) {
-	tenantAssignment := &corev1alpha1.TenantAssignment{
+func TestServiceClusterAssignmentReconciler(t *testing.T) {
+	serviceClusterAssignment := &corev1alpha1.ServiceClusterAssignment{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "foo.eu-west-1",
 			Namespace: "provider-bar",
 		},
-		Spec: corev1alpha1.TenantAssignmentSpec{
+		Spec: corev1alpha1.ServiceClusterAssignmentSpec{
 			Tenant: corev1alpha1.ObjectReference{
 				Name: "foo",
 			},
@@ -48,16 +48,16 @@ func TestTenantAssignmentReconciler(t *testing.T) {
 		},
 	}
 
-	r := TenantAssignmentReconciler{
+	r := ServiceClusterAssignmentReconciler{
 		Log:           testutil.NewLogger(t),
-		MasterClient:  fakeclient.NewFakeClientWithScheme(testScheme, tenantAssignment),
+		MasterClient:  fakeclient.NewFakeClientWithScheme(testScheme, serviceClusterAssignment),
 		MasterScheme:  testScheme,
 		ServiceClient: fakeclient.NewFakeClientWithScheme(testScheme),
 	}
 	_, err := r.Reconcile(ctrl.Request{
 		NamespacedName: types.NamespacedName{
-			Name:      tenantAssignment.Name,
-			Namespace: tenantAssignment.Namespace,
+			Name:      serviceClusterAssignment.Name,
+			Namespace: serviceClusterAssignment.Namespace,
 		},
 	})
 	require.NoError(t, err, "Reconcile")
@@ -66,6 +66,6 @@ func TestTenantAssignmentReconciler(t *testing.T) {
 	namespaceList := &corev1.NamespaceList{}
 	require.NoError(t, r.ServiceClient.List(ctx, namespaceList), "listing Namespaces")
 	if assert.Len(t, namespaceList.Items, 1) {
-		assert.Equal(t, "TenantAssignment-", namespaceList.Items[0].GenerateName)
+		assert.Equal(t, "ServiceClusterAssignment-", namespaceList.Items[0].GenerateName)
 	}
 }

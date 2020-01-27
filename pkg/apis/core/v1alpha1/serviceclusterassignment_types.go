@@ -20,49 +20,49 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// TenantAssignmentSpec defines the desired state of TenantAssignment
-type TenantAssignmentSpec struct {
+// ServiceClusterAssignmentSpec defines the desired state of ServiceClusterAssignment
+type ServiceClusterAssignmentSpec struct {
 	Tenant         ObjectReference `json:"tenant"`
 	ServiceCluster ObjectReference `json:"serviceCluster"`
 }
 
-// TenantAssignmentStatus defines the observed state of TenantAssignment
-type TenantAssignmentStatus struct {
+// ServiceClusterAssignmentStatus defines the observed state of ServiceClusterAssignment
+type ServiceClusterAssignmentStatus struct {
 	// DEPRECATED.
 	// Phase represents the current lifecycle state of this object
 	// consider this field DEPRECATED, it will be removed as soon as there
 	// is a mechanism to map conditions to a string when printing the property
 	// is only present for display purposes, for everything else use conditions
-	Phase TenantAssignmentPhaseType `json:"phase,omitempty"`
-	// Conditions is a list of all conditions this TenantAssignment is in.
-	Conditions []TenantAssignmentCondition `json:"conditions,omitempty"`
+	Phase ServiceClusterAssignmentPhaseType `json:"phase,omitempty"`
+	// Conditions is a list of all conditions this ServiceClusterAssignment is in.
+	Conditions []ServiceClusterAssignmentCondition `json:"conditions,omitempty"`
 	// The most recent generation observed by the controller.
 	ObservedGeneration int64 `json:"observedGeneration,omitempty"`
 	// NamespaceName references the Namespace on the ServiceCluster that was assigned.
 	NamespaceName string `json:"namespaceName,omitempty"`
 }
 
-// TenantAssignmentPhaseType represents all conditions as a single string for printing in kubectl.
-type TenantAssignmentPhaseType string
+// ServiceClusterAssignmentPhaseType represents all conditions as a single string for printing in kubectl.
+type ServiceClusterAssignmentPhaseType string
 
-// Values of TenantAssignmentPhaseType
+// Values of ServiceClusterAssignmentPhaseType
 const (
-	TenantAssignmentPhaseReady    TenantAssignmentPhaseType = "Ready"
-	TenantAssignmentPhaseNotReady TenantAssignmentPhaseType = "NotReady"
-	TenantAssignmentPhaseUnknown  TenantAssignmentPhaseType = "Unknown"
+	ServiceClusterAssignmentPhaseReady    ServiceClusterAssignmentPhaseType = "Ready"
+	ServiceClusterAssignmentPhaseNotReady ServiceClusterAssignmentPhaseType = "NotReady"
+	ServiceClusterAssignmentPhaseUnknown  ServiceClusterAssignmentPhaseType = "Unknown"
 )
 
-// TenantAssignmentConditionType represents a TenantAssignmentCondition value.
-type TenantAssignmentConditionType string
+// ServiceClusterAssignmentConditionType represents a ServiceClusterAssignmentCondition value.
+type ServiceClusterAssignmentConditionType string
 
 const (
-	// TenantAssignmentReady represents a TenantAssignment condition is in ready state.
-	TenantAssignmentReady         TenantAssignmentConditionType = "Ready"
-	TenantAssignmentNamesAccepted TenantAssignmentConditionType = "NamesAccepted"
+	// ServiceClusterAssignmentReady represents a ServiceClusterAssignment condition is in ready state.
+	ServiceClusterAssignmentReady         ServiceClusterAssignmentConditionType = "Ready"
+	ServiceClusterAssignmentNamesAccepted ServiceClusterAssignmentConditionType = "NamesAccepted"
 )
 
-// TenantAssignmentCondition contains details for the current condition of this TenantAssignment.
-type TenantAssignmentCondition struct {
+// ServiceClusterAssignmentCondition contains details for the current condition of this ServiceClusterAssignment.
+type ServiceClusterAssignmentCondition struct {
 	// LastTransitionTime is the last time the condition transit from one status to another.
 	LastTransitionTime metav1.Time `json:"lastTransitionTime"`
 	// Message is the human readable message indicating details about last transition.
@@ -72,32 +72,32 @@ type TenantAssignmentCondition struct {
 	// Status of the condition, one of ('True', 'False', 'Unknown').
 	Status ConditionStatus `json:"status"`
 	// Type of the condition, currently ('Ready').
-	Type TenantAssignmentConditionType `json:"type"`
+	Type ServiceClusterAssignmentConditionType `json:"type"`
 }
 
 // updatePhase updates the phase property based on the current conditions
 // this method should be called every time the conditions are updated
-func (s *TenantAssignmentStatus) updatePhase() {
+func (s *ServiceClusterAssignmentStatus) updatePhase() {
 	for _, condition := range s.Conditions {
-		if condition.Type != TenantAssignmentReady {
+		if condition.Type != ServiceClusterAssignmentReady {
 			continue
 		}
 
 		switch condition.Status {
 		case ConditionTrue:
-			s.Phase = TenantAssignmentPhaseReady
+			s.Phase = ServiceClusterAssignmentPhaseReady
 		case ConditionFalse:
-			s.Phase = TenantAssignmentPhaseNotReady
+			s.Phase = ServiceClusterAssignmentPhaseNotReady
 		case ConditionUnknown:
-			s.Phase = TenantAssignmentPhaseUnknown
+			s.Phase = ServiceClusterAssignmentPhaseUnknown
 		}
 		return
 	}
-	s.Phase = TenantAssignmentPhaseUnknown
+	s.Phase = ServiceClusterAssignmentPhaseUnknown
 }
 
 // SetCondition replaces or adds the given condition
-func (s *TenantAssignmentStatus) SetCondition(condition TenantAssignmentCondition) {
+func (s *ServiceClusterAssignmentStatus) SetCondition(condition ServiceClusterAssignmentCondition) {
 	defer s.updatePhase()
 
 	if condition.LastTransitionTime.IsZero() {
@@ -123,7 +123,7 @@ func (s *TenantAssignmentStatus) SetCondition(condition TenantAssignmentConditio
 }
 
 // GetCondition returns the Condition of the given type, if it exists
-func (s *TenantAssignmentStatus) GetCondition(conditionType TenantAssignmentConditionType) (condition TenantAssignmentCondition, exists bool) {
+func (s *ServiceClusterAssignmentStatus) GetCondition(conditionType ServiceClusterAssignmentConditionType) (condition ServiceClusterAssignmentCondition, exists bool) {
 	for _, cond := range s.Conditions {
 		if cond.Type == conditionType {
 			condition = cond
@@ -134,27 +134,27 @@ func (s *TenantAssignmentStatus) GetCondition(conditionType TenantAssignmentCond
 	return
 }
 
-// TenantAssignment represents the assignment of a Tenant to a ServiceCluster.
+// ServiceClusterAssignment represents the assignment of a Tenant to a ServiceCluster.
 // +kubebuilder:object:root=true
 // +kubebuilder:subresource:status
 // +kubebuilder:printcolumn:name="Status",type="string",JSONPath=".status.phase"
 // +kubebuilder:printcolumn:name="Age",type="date",JSONPath=".metadata.creationTimestamp"
-type TenantAssignment struct {
+type ServiceClusterAssignment struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec   TenantAssignmentSpec   `json:"spec,omitempty"`
-	Status TenantAssignmentStatus `json:"status,omitempty"`
+	Spec   ServiceClusterAssignmentSpec   `json:"spec,omitempty"`
+	Status ServiceClusterAssignmentStatus `json:"status,omitempty"`
 }
 
-// TenantAssignmentList contains a list of TenantAssignment
+// ServiceClusterAssignmentList contains a list of ServiceClusterAssignment
 // +kubebuilder:object:root=true
-type TenantAssignmentList struct {
+type ServiceClusterAssignmentList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
-	Items           []TenantAssignment `json:"items"`
+	Items           []ServiceClusterAssignment `json:"items"`
 }
 
 func init() {
-	SchemeBuilder.Register(&TenantAssignment{}, &TenantAssignmentList{})
+	SchemeBuilder.Register(&ServiceClusterAssignment{}, &ServiceClusterAssignmentList{})
 }

@@ -185,14 +185,14 @@ func NewFerrySuite(f *framework.Framework) func(t *testing.T) {
 			assert.NoError(t, masterClient.Delete(ctx, crdd))
 			assert.NoError(t, testutil.WaitUntilNotFound(masterClient, crdd))
 		})
-		t.Run("TenantAssignment", func(t *testing.T) {
+		t.Run("ServiceClusterAssignment", func(t *testing.T) {
 			t.Parallel()
-			tenantAssignment := &corev1alpha1.TenantAssignment{
+			serviceClusterAssignment := &corev1alpha1.ServiceClusterAssignment{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      tenant.Name + "." + serviceClusterRegistration.Name,
 					Namespace: provider.Status.NamespaceName,
 				},
-				Spec: corev1alpha1.TenantAssignmentSpec{
+				Spec: corev1alpha1.ServiceClusterAssignmentSpec{
 					Tenant: corev1alpha1.ObjectReference{
 						Name: tenant.Name,
 					},
@@ -201,23 +201,23 @@ func NewFerrySuite(f *framework.Framework) func(t *testing.T) {
 					},
 				},
 			}
-			require.NoError(t, client.IgnoreNotFound(masterClient.Delete(ctx, tenantAssignment)))
-			require.NoError(t, testutil.WaitUntilNotFound(masterClient, tenantAssignment))
-			require.NoError(t, masterClient.Create(ctx, tenantAssignment))
+			require.NoError(t, client.IgnoreNotFound(masterClient.Delete(ctx, serviceClusterAssignment)))
+			require.NoError(t, testutil.WaitUntilNotFound(masterClient, serviceClusterAssignment))
+			require.NoError(t, masterClient.Create(ctx, serviceClusterAssignment))
 
 			ns := &corev1.Namespace{}
-			if assert.NoError(t, testutil.WaitUntilReady(masterClient, tenantAssignment)) {
+			if assert.NoError(t, testutil.WaitUntilReady(masterClient, serviceClusterAssignment)) {
 				assert.NoError(t,
 					serviceClient.Get(
 						ctx,
-						types.NamespacedName{Name: tenantAssignment.Status.NamespaceName},
+						types.NamespacedName{Name: serviceClusterAssignment.Status.NamespaceName},
 						ns,
 					),
 				)
 			}
 
-			assert.NoError(t, client.IgnoreNotFound(masterClient.Delete(ctx, tenantAssignment)))
-			assert.NoError(t, testutil.WaitUntilNotFound(masterClient, tenantAssignment))
+			assert.NoError(t, client.IgnoreNotFound(masterClient.Delete(ctx, serviceClusterAssignment)))
+			assert.NoError(t, testutil.WaitUntilNotFound(masterClient, serviceClusterAssignment))
 
 			if ns.Name != "" {
 				assert.NoError(t, testutil.WaitUntilNotFound(serviceClient, ns))

@@ -19,18 +19,28 @@ rules:
   - update
   - watch
 - apiGroups:
-  - apiextensions.k8s.io
+  - kubecarrier.io
   resources:
-  - customresourcedefinitions
+  - customresourcedefinitiondiscoveries
   verbs:
+  - create
   - get
   - list
+  - patch
   - update
   - watch
 - apiGroups:
   - kubecarrier.io
   resources:
-  - customresourcedefinitiondiscoveries
+  - customresourcedefinitiondiscoveries/status
+  verbs:
+  - get
+  - patch
+  - update
+- apiGroups:
+  - kubecarrier.io
+  resources:
+  - serviceclusterassignments
   verbs:
   - create
   - delete
@@ -42,7 +52,7 @@ rules:
 - apiGroups:
   - kubecarrier.io
   resources:
-  - customresourcedefinitiondiscoveries/status
+  - serviceclusterassignments/status
   verbs:
   - get
   - patch
@@ -63,26 +73,6 @@ rules:
   - kubecarrier.io
   resources:
   - serviceclusters/status
-  verbs:
-  - get
-  - patch
-  - update
-- apiGroups:
-  - kubecarrier.io
-  resources:
-  - tenantassignments
-  verbs:
-  - create
-  - delete
-  - get
-  - list
-  - patch
-  - update
-  - watch
-- apiGroups:
-  - kubecarrier.io
-  resources:
-  - tenantassignments/status
   verbs:
   - get
   - patch
