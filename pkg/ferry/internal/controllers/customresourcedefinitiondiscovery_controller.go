@@ -171,13 +171,13 @@ func (r *CustomResourceDefinitionDiscoveryReconciler) SetupWithManagers(serviceM
 	return ctrl.NewControllerManagedBy(masterMgr).
 		For(&corev1alpha1.CustomResourceDefinitionDiscovery{}).
 		Watches(source.Func(crdSource.Start), enqueuer).
-		WithEventFilter(&util.Predicate{Accept: func(obj runtime.Object) bool {
+		WithEventFilter(util.PredicateFn(func(obj runtime.Object) bool {
 			if crdReference, ok := obj.(*corev1alpha1.CustomResourceDefinitionDiscovery); ok {
 				if crdReference.Spec.ServiceCluster.Name == r.ServiceClusterName {
 					return true
 				}
 			}
 			return false
-		}}).
+		})).
 		Complete(r)
 }
