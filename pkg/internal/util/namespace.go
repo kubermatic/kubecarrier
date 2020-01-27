@@ -57,7 +57,7 @@ func UpsertNamespace(ctx context.Context, obj object, c client.Client, scheme *r
 				GenerateName: strings.ToLower(gvk.Kind) + "-",
 			},
 		}
-		if _, err := InsertOwnerReference(namespace, obj, scheme); err != nil {
+		if _, err := InsertOwnerReference(obj, namespace, scheme); err != nil {
 			return nil, fmt.Errorf("inserting Owner Reference: %w", err)
 		}
 		if err = c.Create(ctx, namespace); err != nil {

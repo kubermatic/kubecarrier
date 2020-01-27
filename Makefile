@@ -93,6 +93,11 @@ e2e-setup: install require-docker
 	@echo "Loading the images"
 	@$(MAKE) KIND_CLUSTER=${MASTER_KIND_CLUSTER} kind-load
 
+# soft-reinstall reinstall kubecarrier in the e2e cluster. It's intended for usage during development
+soft-reinstall: e2e-setup install
+	@anchor setup --kubeconfig "${HOME}/.kube/kind-config-${MASTER_KIND_CLUSTER}"
+	@kubectl --kubeconfig "${HOME}/.kube/kind-config-${MASTER_KIND_CLUSTER}" delete pod --all -n kubecarrier-system
+
 e2e-test: e2e-setup
 	@go run -ldflags "-w $(LD_FLAGS)" ./cmd/anchor e2e-test run --test.v --test-id=${TEST_ID} | richgo testfilter
 
