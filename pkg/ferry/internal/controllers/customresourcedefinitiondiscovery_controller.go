@@ -33,7 +33,7 @@ import (
 	"github.com/kubermatic/kubecarrier/pkg/internal/util"
 )
 
-const crdReferenceControllerFinalizer string = "crdreference.kubecarrier.io/controller"
+const crdDiscoveryControllerFinalizer string = "custormresourcedefinitiondiscovery.kubecarrier.io/controller"
 
 // CustomResourceDefinitionDiscoveryReconciler reconciles a CustomResourceDefinitionDiscovery object
 type CustomResourceDefinitionDiscoveryReconciler struct {
@@ -54,7 +54,7 @@ type CustomResourceDefinitionDiscoveryReconciler struct {
 
 func (r *CustomResourceDefinitionDiscoveryReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	ctx := context.Background()
-	log := r.Log.WithValues("crdreference", req.NamespacedName)
+	log := r.Log.WithValues("crddiscovery", req.NamespacedName)
 
 	crdDiscovery := &corev1alpha1.CustomResourceDefinitionDiscovery{}
 	if err := r.MasterClient.Get(ctx, req.NamespacedName, crdDiscovery); err != nil {
@@ -69,7 +69,7 @@ func (r *CustomResourceDefinitionDiscoveryReconciler) Reconcile(req ctrl.Request
 		return ctrl.Result{}, nil
 	}
 
-	if util.AddFinalizer(crdDiscovery, crdReferenceControllerFinalizer) {
+	if util.AddFinalizer(crdDiscovery, crdDiscoveryControllerFinalizer) {
 		if err := r.MasterClient.Update(ctx, crdDiscovery); err != nil {
 			return ctrl.Result{}, fmt.Errorf("updating CustomResourceDefinitionDiscovery finalizers: %w", err)
 		}
@@ -130,7 +130,7 @@ func (r *CustomResourceDefinitionDiscoveryReconciler) handleDeletion(ctx context
 	}, crd)
 	switch {
 	case errors.IsNotFound(err):
-		if util.RemoveFinalizer(crdDiscovery, crdReferenceControllerFinalizer) {
+		if util.RemoveFinalizer(crdDiscovery, crdDiscoveryControllerFinalizer) {
 			if err := r.MasterClient.Update(ctx, crdDiscovery); err != nil {
 				return fmt.Errorf("updating CustomResourceDefinitionDiscovery finalizers: %w", err)
 			}
@@ -147,7 +147,7 @@ func (r *CustomResourceDefinitionDiscoveryReconciler) handleDeletion(ctx context
 				return fmt.Errorf("updating CRD: %w", err)
 			}
 		}
-		if util.RemoveFinalizer(crdDiscovery, crdReferenceControllerFinalizer) {
+		if util.RemoveFinalizer(crdDiscovery, crdDiscoveryControllerFinalizer) {
 			if err := r.MasterClient.Update(ctx, crdDiscovery); err != nil {
 				return fmt.Errorf("updating CustomResourceDefinitionDiscovery finalizers: %w", err)
 			}
@@ -173,8 +173,8 @@ func (r *CustomResourceDefinitionDiscoveryReconciler) SetupWithManagers(serviceM
 		For(&corev1alpha1.CustomResourceDefinitionDiscovery{}).
 		Watches(source.Func(crdSource.Start), enqueuer).
 		WithEventFilter(util.PredicateFn(func(obj runtime.Object) bool {
-			if crdReference, ok := obj.(*corev1alpha1.CustomResourceDefinitionDiscovery); ok {
-				if crdReference.Spec.ServiceCluster.Name == r.ServiceClusterName {
+			if crdDiscovery, ok := obj.(*corev1alpha1.CustomResourceDefinitionDiscovery); ok {
+				if crdDiscovery.Spec.ServiceCluster.Name == r.ServiceClusterName {
 					return true
 				}
 			}
