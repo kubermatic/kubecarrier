@@ -89,6 +89,9 @@ func run(flags *flags, log logr.Logger) error {
 	for _, obj := range []runtime.Object{
 		&rbacv1.ClusterRole{},
 		&rbacv1.ClusterRoleBinding{},
+		&apiextensionsv1.CustomResourceDefinition{},
+		&adminv1beta1.MutatingWebhookConfiguration{},
+		&adminv1beta1.ValidatingWebhookConfiguration{},
 	} {
 		gvk, err := apiutil.GVKForObject(obj, mgr.GetScheme())
 		if err != nil {
@@ -99,11 +102,6 @@ func run(flags *flags, log logr.Logger) error {
 		); err != nil {
 			return fmt.Errorf("cannot add %s owner field indexer: %w", gvk.Kind, err)
 		}
-	}
-	if err := util.AddOwnerReverseFieldIndex(
-		mgr.GetFieldIndexer(), ctrl.Log.WithName("fieldindex").WithName("CustomResourceDefinition"), &apiextensionsv1.CustomResourceDefinition{},
-	); err != nil {
-		return fmt.Errorf("cannot add CustomResourceDefinition owner field indexer: %w", err)
 	}
 
 	if err = (&controllers.KubeCarrierReconciler{

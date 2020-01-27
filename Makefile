@@ -84,6 +84,8 @@ SVC_KIND_CLUSTER?=kubecarrier-svc-${TEST_ID}
 e2e-setup: install require-docker
 	@unset KUBECONFIG
 	@kind create cluster --name=${MASTER_KIND_CLUSTER} || true
+	@echo "Deploy cert-manger in master cluster"
+	@$(MAKE) cert-manager
 	@kind create cluster --name=${SVC_KIND_CLUSTER} || true
 	@kind get kubeconfig --internal --name=${MASTER_KIND_CLUSTER} > "${HOME}/.kube/internal-kind-config-${MASTER_KIND_CLUSTER}"
 	@kind get kubeconfig --internal --name=${SVC_KIND_CLUSTER} > "${HOME}/.kube/internal-kind-config-${SVC_KIND_CLUSTER}"
@@ -91,7 +93,6 @@ e2e-setup: install require-docker
 	@kind get kubeconfig --name=${SVC_KIND_CLUSTER} > "${HOME}/.kube/kind-config-${SVC_KIND_CLUSTER}"
 	@echo "kind clusters created"
 	@echo "Loading the images"
-	@$(MAKE) KIND_CLUSTER=${MASTER_KIND_CLUSTER} cert-manager
 	@$(MAKE) KIND_CLUSTER=${MASTER_KIND_CLUSTER} kind-load
 
 e2e-test: e2e-setup
