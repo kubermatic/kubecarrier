@@ -48,8 +48,9 @@ type CustomResourceDefinitionDiscoveryReconciler struct {
 
 // +kubebuilder:rbac:groups=kubecarrier.io,resources=customresourcedefinitiondiscoveries,verbs=get;list;watch;create;update;patch
 // +kubebuilder:rbac:groups=kubecarrier.io,resources=customresourcedefinitiondiscoveries/status,verbs=get;update;patch
-// TODO: Figure out what to do for service cluster permissions?
-// +kubebuilder:rbac:groups=apiextensions.k8s.io,resources=customresourcedefinitions,verbs=get;list;watch;update
+// Service cluster permission for this controller
+// https://github.com/kubermatic/kubecarrier/issues/143
+// +servicecluster:kubebuilder:rbac:groups=apiextensions.k8s.io,resources=customresourcedefinitions,verbs=get;list;watch;update
 
 func (r *CustomResourceDefinitionDiscoveryReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	ctx := context.Background()
