@@ -1623,6 +1623,10 @@
                 fieldPath: metadata.namespace
           image: quay.io/kubecarrier/manager:was not build properly
           name: manager
+          ports:
+          - containerPort: 9443
+            name: webhook-server
+            protocol: TCP
           resources:
             limits:
               cpu: 100m
@@ -1630,4 +1634,44 @@
             requests:
               cpu: 100m
               memory: 20Mi
+          volumeMounts:
+          - mountPath: /tmp/k8s-webhook-server/serving-certs
+            name: cert
+            readOnly: true
         terminationGracePeriodSeconds: 10
+        volumes:
+        - name: cert
+          secret:
+            defaultMode: 420
+            secretName: webhook-server-cert
+- apiVersion: v1
+  kind: Service
+  metadata:
+    name: kubecarrier-manager-webhook-service
+    namespace: test3000
+  spec:
+    ports:
+    - port: 443
+      targetPort: 9443
+    selector:
+      control-plane: controller-manager
+- apiVersion: cert-manager.io/v1alpha2
+  kind: Issuer
+  metadata:
+    name: kubecarrier-manager-selfsigned-issuer
+    namespace: test3000
+  spec:
+    selfSigned: {}
+- apiVersion: cert-manager.io/v1alpha2
+  kind: Certificate
+  metadata:
+    name: kubecarrier-manager-serving-cert
+    namespace: test3000
+  spec:
+    dnsNames:
+    - kubecarrier-manager-webhook-service.test3000.svc
+    - kubecarrier-manager-webhook-service.test3000.svc.cluster.local
+    issuerRef:
+      kind: Issuer
+      name: kubecarrier-manager-selfsigned-issuer
+    secretName: webhook-server-cert

@@ -21,6 +21,8 @@ import (
 	"fmt"
 
 	"github.com/go-logr/logr"
+	certv1alpha2 "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
+	adminv1beta1 "k8s.io/api/admissionregistration/v1beta1"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
@@ -58,6 +60,10 @@ type KubeCarrierReconciler struct {
 // +kubebuilder:rbac:groups="",resources=services,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups="",resources=serviceaccounts,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=apiextensions.k8s.io,resources=customresourcedefinitions,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=admissionregistration.k8s.io,resources=mutatingwebhookconfigurations,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=admissionregistration.k8s.io,resources=validatingwebhookconfigurations,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=cert-manager.io,resources=issuers,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=cert-manager.io,resources=certificates,verbs=get;list;watch;create;update;patch;delete
 
 // Reconcile function reconciles the KubeCarrier object which specified by the request. Currently, it does the following:
 // 1. Fetch the KubeCarrier object.
@@ -126,9 +132,13 @@ func (r *KubeCarrierReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		Owns(&corev1.Service{}).
 		Owns(&rbacv1.Role{}).
 		Owns(&rbacv1.RoleBinding{}).
+		Owns(&certv1alpha2.Issuer{}).
+		Owns(&certv1alpha2.Certificate{}).
 		Watches(&source.Kind{Type: &rbacv1.ClusterRole{}}, enqueuer).
 		Watches(&source.Kind{Type: &rbacv1.ClusterRoleBinding{}}, enqueuer).
 		Watches(&source.Kind{Type: &apiextensionsv1.CustomResourceDefinition{}}, enqueuer).
+		Watches(&source.Kind{Type: &adminv1beta1.MutatingWebhookConfiguration{}}, enqueuer).
+		Watches(&source.Kind{Type: &adminv1beta1.ValidatingWebhookConfiguration{}}, enqueuer).
 		Complete(r)
 }
 
@@ -175,8 +185,22 @@ func (r *KubeCarrierReconciler) handleDeletion(ctx context.Context, kubeCarrier 
 		return fmt.Errorf("cleaning CustomResourceDefinitions: %w", err)
 	}
 
-	// Make sure all the ClusterRoleBindings, ClusterRoles and CustomResourceDefinitions are deleted.
-	if !clusterRoleBindingsCleaned || !clusterRolesCleaned || !customResourceDefinitionsCleaned {
+	mutatingWebhookConfigurationsCleaned, err := cleanupMutatingWebhookConfiguration(ctx, r.Client, ownedBy)
+	if err != nil {
+		return fmt.Errorf("cleaning MutatingWebhookConfigurations: %w", err)
+	}
+
+	validatingWebhookConfigurationsCleaned, err := cleanupValidatingWebhookConfiguration(ctx, r.Client, ownedBy)
+	if err != nil {
+		return fmt.Errorf("cleaning ValidatingWebhookConfigurations: %w", err)
+	}
+
+	// Make sure all the owned objects are deleted.
+	if !clusterRoleBindingsCleaned ||
+		!clusterRolesCleaned ||
+		!customResourceDefinitionsCleaned ||
+		!mutatingWebhookConfigurationsCleaned ||
+		!validatingWebhookConfigurationsCleaned {
 		return nil
 	}
 
