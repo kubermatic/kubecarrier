@@ -116,15 +116,15 @@ func NewFerrySuite(f *framework.Framework) func(t *testing.T) {
 				// serviceClusterRegistration,
 				tenant,
 			} {
-				require.NoError(t, client.IgnoreNotFound(masterClient.Delete(ctx, obj)))
-				require.NoError(t, testutil.WaitUntilNotFound(masterClient, obj))
+				require.NoError(t, client.IgnoreNotFound(masterClient.Delete(ctx, obj.DeepCopyObject())))
+				require.NoError(t, testutil.WaitUntilNotFound(masterClient, obj.DeepCopyObject()))
 			}
 
 			for _, obj := range []runtime.Object{
 				crd,
 			} {
-				require.NoError(t, client.IgnoreNotFound(serviceClient.Delete(ctx, obj)))
-				require.NoError(t, testutil.WaitUntilNotFound(serviceClient, obj))
+				require.NoError(t, client.IgnoreNotFound(serviceClient.Delete(ctx, obj.DeepCopyObject())))
+				require.NoError(t, testutil.WaitUntilNotFound(serviceClient, obj.DeepCopyObject()))
 			}
 
 		}

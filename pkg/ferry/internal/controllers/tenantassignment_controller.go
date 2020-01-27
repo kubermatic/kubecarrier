@@ -22,6 +22,7 @@ import (
 
 	"github.com/go-logr/logr"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -100,22 +101,18 @@ func (r *TenantAssignmentReconciler) Reconcile(req ctrl.Request) (ctrl.Result, e
 }
 
 func (r *TenantAssignmentReconciler) handleDeletion(ctx context.Context, log logr.Logger, tenantAssignment *corev1alpha1.TenantAssignment) error {
-	// Delete owned Namespaces
-	ownedBy, err := util.OwnedBy(tenantAssignment, r.MasterScheme)
-	if err != nil {
-		return fmt.Errorf("building owned by selector: %w", err)
-	}
-	if err := r.ServiceClient.DeleteAllOf(ctx, &corev1.Namespace{}, ownedBy); err != nil {
-		return fmt.Errorf("deleting Namespaces: %w", err)
-	}
-
-	namespaceList := &corev1.NamespaceList{}
-	if err = r.ServiceClient.List(ctx, namespaceList, ownedBy); err != nil {
-		return fmt.Errorf("listing Namespaces: %w", err)
-	}
-
-	if len(namespaceList.Items) != 0 {
-		return nil
+	if tenantAssignment.Status.NamespaceName != "" {
+		ns := &corev1.Namespace{}
+		ns.SetName(tenantAssignment.Status.NamespaceName)
+		err := r.ServiceClient.Delete(ctx, ns)
+		switch {
+		case err == nil:
+			return nil
+		case errors.IsNotFound(err):
+			break
+		default:
+			return fmt.Errorf("cannot delete ns: %w", err)
+		}
 	}
 
 	// Remove Finalizer
