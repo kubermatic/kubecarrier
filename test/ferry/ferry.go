@@ -206,21 +206,22 @@ func NewFerrySuite(f *framework.Framework) func(t *testing.T) {
 				require.NoError(t, masterClient.Create(ctx, serviceClusterAssignment))
 
 				ns := &corev1.Namespace{}
-				if assert.NoError(t, testutil.WaitUntilReady(masterClient, serviceClusterAssignment)) {
+				if assert.NoError(t, testutil.WaitUntilReady(masterClient, serviceClusterAssignment), "serviceClusterAssignment never became ready") {
 					assert.NoError(t,
 						serviceClient.Get(
 							ctx,
 							types.NamespacedName{Name: serviceClusterAssignment.Status.NamespaceName},
 							ns,
 						),
+						"serviceCluster's namespace not created",
 					)
 				}
 
 				assert.NoError(t, client.IgnoreNotFound(masterClient.Delete(ctx, serviceClusterAssignment)))
-				assert.NoError(t, testutil.WaitUntilNotFound(masterClient, serviceClusterAssignment))
+				assert.NoError(t, testutil.WaitUntilNotFound(masterClient, serviceClusterAssignment), "serviceClusterAssignment never succesfully got deleted")
 
 				if ns.Name != "" {
-					assert.NoError(t, testutil.WaitUntilNotFound(serviceClient, ns))
+					assert.NoError(t, testutil.WaitUntilNotFound(serviceClient, ns), "serviceCluster's namespace not cleared")
 				}
 			})
 		})
