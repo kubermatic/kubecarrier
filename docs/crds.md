@@ -1,5 +1,41 @@
 # Working with CustomResourceDefinitions in KubeCarrier
 
+## Components
+
+```
++-----------------+          +----------------------------+       +----------------------------+
+|Ferry "eu_west_1"|          |Catapult "couchdb.eu_west_1"|       |Elevator "couchdb.eu_west_1"|
++-----------------+          +----------------------------+       +----------------------------+
+|                            |                                    |
+| +--------------+           | +-------------------------------+  | +-------------------------------+
++-+ServiceCluster|           +-+CRD "couchdbinternal.eu_west_1"|  +-+CRD "couchdbinternal.eu_west_1"|
+| +--------------+           | +-------------------------------+  | +-------------------------------+
+|                            |                                    |
+| +-----------------------+  | +------------------------+         | +-----------------------+
++-+CustomResourceDiscovery|  +-+CRD "couchdb.couchdb.io"|         +-+CRD "couchdb.eu_west_1"|
+| +-----------------------+    +------------------------+           +-----------------------+
+|
+| +------------------------+
++-+ServiceClusterAssignment|
+  +------------------------+
+```
+
+### Ferry
+
+A Ferry instance is launched for each `ServiceClusterRegistration` to connect with the remote Kubernetes Cluster and report status information about the connected cluster.
+This component is also used to fetch `CustomResourceDefinitions` from the ServiceCluster (`CustomResourceDefinitionDiscovery`) and manages `Namespaces` on `ServiceClusters` to place CRD instances into. (`ServiceClusterAssignment`)
+
+### Catapult
+
+For each CRD that is federated into KubeCarrier, a new catapult instance will be launched. This instance is repsonsible for reconciling instances of the same type of CustomResource.
+
+### Elevator
+
+For each `DerivedCustomResourceDefinition` a Elevator instance is launched to propagate the derived CRD instance into the providers namespace.
+This component works hand-in-hand with the Catapult instance for the respective type.
+
+## Available APIs
+
 ### CustomResourceDefinitionDiscovery
 
 `CustomResourceDefinitionDiscovery` objects are used to fetch a CRD from a remote `ServiceCluster` and controls the registration of the remote CRD into the master cluster.
@@ -90,7 +126,7 @@ metadata:
   name: couchdbs.eu-west-1
   namespace: provider-example-cloud
 spec:
-  crd:
+  baseCRD:
     name: couchdbinternal.eu-west-1.example.cloud
 
   kindOverride: CouchDB
