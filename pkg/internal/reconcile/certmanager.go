@@ -44,7 +44,7 @@ func Issuer(
 		return currentIssuer, fmt.Errorf("getting Issuer: %w", err)
 	}
 	if errors.IsNotFound(err) {
-		// Create missing ValidatingWebhookConfiguration
+		// Create missing Issuer
 		log.Info("creating", "Issuer", nn.String())
 		if err = c.Create(ctx, desiredIssuer); err != nil {
 			return currentIssuer, fmt.Errorf("creating Issuer: %w", err)
@@ -70,7 +70,7 @@ func Certificate(
 		return currentCertificate, fmt.Errorf("getting Certificate: %w", err)
 	}
 	if errors.IsNotFound(err) {
-		// Create missing ValidatingWebhookConfiguration
+		// Create missing Certificate
 		log.Info("creating", "Certificate", nn.String())
 		if err = c.Create(ctx, desiredCertificate); err != nil {
 			return currentCertificate, fmt.Errorf("creating Certificate: %w", err)

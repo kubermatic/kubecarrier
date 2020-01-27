@@ -44,7 +44,7 @@ func MutatingWebhookConfiguration(
 		return currentMutatingWebhookConfiguration, fmt.Errorf("getting MutatingWebhookConfiguration: %w", err)
 	}
 	if errors.IsNotFound(err) {
-		// Create missing ValidatingWebhookConfiguration
+		// Create missing MutatingWebhookConfiguration
 		log.Info("creating", "MutatingWebhookConfiguration", nn.String())
 		if err = c.Create(ctx, desiredMutatingWebhookConfiguration); err != nil {
 			return currentMutatingWebhookConfiguration, fmt.Errorf("creating MutatingWebhookConfiguration: %w", err)

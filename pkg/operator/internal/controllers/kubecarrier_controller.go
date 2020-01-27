@@ -21,6 +21,8 @@ import (
 	"fmt"
 
 	"github.com/go-logr/logr"
+	certv1alpha2 "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
+	adminv1beta1 "k8s.io/api/admissionregistration/v1beta1"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
@@ -130,9 +132,13 @@ func (r *KubeCarrierReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		Owns(&corev1.Service{}).
 		Owns(&rbacv1.Role{}).
 		Owns(&rbacv1.RoleBinding{}).
+		Owns(&certv1alpha2.Issuer{}).
+		Owns(&certv1alpha2.Certificate{}).
 		Watches(&source.Kind{Type: &rbacv1.ClusterRole{}}, enqueuer).
 		Watches(&source.Kind{Type: &rbacv1.ClusterRoleBinding{}}, enqueuer).
 		Watches(&source.Kind{Type: &apiextensionsv1.CustomResourceDefinition{}}, enqueuer).
+		Watches(&source.Kind{Type: &adminv1beta1.MutatingWebhookConfiguration{}}, enqueuer).
+		Watches(&source.Kind{Type: &adminv1beta1.ValidatingWebhookConfiguration{}}, enqueuer).
 		Complete(r)
 }
 
