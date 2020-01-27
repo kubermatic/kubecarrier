@@ -130,7 +130,7 @@ func NewFerrySuite(f *framework.Framework) func(t *testing.T) {
 		}
 		// clean up before and after completion
 		cleanUp()
-		// defer cleanUp()
+		defer cleanUp()
 
 		require.NoError(t, masterClient.Create(ctx, provider))
 		require.NoError(t, masterClient.Create(ctx, tenant))
@@ -149,41 +149,43 @@ func NewFerrySuite(f *framework.Framework) func(t *testing.T) {
 		require.NoError(t, testutil.WaitUntilReady(masterClient, serviceClusterRegistration))
 		require.NoError(t, serviceClient.Create(ctx, crd))
 
-		t.Run("ServiceCluster", func(t *testing.T) {
-			t.Parallel()
-			serviceCluster := &corev1alpha1.ServiceCluster{}
-			serviceCluster.SetName(serviceClusterRegistration.GetName())
-			serviceCluster.SetNamespace(provider.Status.NamespaceName)
-			require.NoError(t, testutil.WaitUntilReady(masterClient, serviceCluster))
-		})
+		t.Run("parallel-group", func(t *testing.T) {
+			t.Run("ServiceCluster", func(t *testing.T) {
+				t.Parallel()
+				serviceCluster := &corev1alpha1.ServiceCluster{}
+				serviceCluster.SetName(serviceClusterRegistration.GetName())
+				serviceCluster.SetNamespace(provider.Status.NamespaceName)
+				require.NoError(t, testutil.WaitUntilReady(masterClient, serviceCluster))
+			})
 
-		t.Run("CustomResourceDefinitionDiscovery", func(t *testing.T) {
-			t.Parallel()
-			crdd := &corev1alpha1.CustomResourceDefinitionDiscovery{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "redis",
-					Namespace: provider.Status.NamespaceName,
-				},
-				Spec: corev1alpha1.CustomResourceDefinitionDiscoverySpec{
-					CRD: corev1alpha1.ObjectReference{
-						Name: crd.GetName(),
+			t.Run("CustomResourceDefinitionDiscovery", func(t *testing.T) {
+				t.Parallel()
+				crdd := &corev1alpha1.CustomResourceDefinitionDiscovery{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "redis",
+						Namespace: provider.Status.NamespaceName,
 					},
-					ServiceCluster: corev1alpha1.ObjectReference{
-						Name: serviceClusterRegistration.GetName(),
+					Spec: corev1alpha1.CustomResourceDefinitionDiscoverySpec{
+						CRD: corev1alpha1.ObjectReference{
+							Name: crd.GetName(),
+						},
+						ServiceCluster: corev1alpha1.ObjectReference{
+							Name: serviceClusterRegistration.GetName(),
+						},
 					},
-				},
-			}
-			require.NoError(t, client.IgnoreNotFound(masterClient.Delete(ctx, crdd)))
-			require.NoError(t, testutil.WaitUntilNotFound(masterClient, crdd))
+				}
+				require.NoError(t, client.IgnoreNotFound(masterClient.Delete(ctx, crdd)))
+				require.NoError(t, testutil.WaitUntilNotFound(masterClient, crdd))
 
-			require.NoError(t, masterClient.Create(ctx, crdd))
-			if assert.NoError(t, testutil.WaitUntilReady(masterClient, crdd)) {
-				assert.Equal(t, crd.Name, crdd.Status.CRD.Name)
-			}
+				require.NoError(t, masterClient.Create(ctx, crdd))
+				if assert.NoError(t, testutil.WaitUntilReady(masterClient, crdd)) {
+					assert.Equal(t, crd.Name, crdd.Status.CRD.Name)
+				}
 
-			// clean up
-			assert.NoError(t, masterClient.Delete(ctx, crdd))
-			assert.NoError(t, testutil.WaitUntilNotFound(masterClient, crdd))
+				// clean up
+				assert.NoError(t, masterClient.Delete(ctx, crdd))
+				assert.NoError(t, testutil.WaitUntilNotFound(masterClient, crdd))
+			})
 		})
 		t.Run("ServiceClusterAssignment", func(t *testing.T) {
 			t.Parallel()
