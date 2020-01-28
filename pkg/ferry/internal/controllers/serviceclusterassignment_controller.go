@@ -101,18 +101,33 @@ func (r *ServiceClusterAssignmentReconciler) Reconcile(req ctrl.Request) (ctrl.R
 }
 
 func (r *ServiceClusterAssignmentReconciler) handleDeletion(ctx context.Context, log logr.Logger, serviceClusterAssignment *corev1alpha1.ServiceClusterAssignment) error {
-	if serviceClusterAssignment.Status.NamespaceName != "" {
-		ns := &corev1.Namespace{}
-		ns.SetName(serviceClusterAssignment.Status.NamespaceName)
-		err := r.ServiceClient.Delete(ctx, ns)
-		switch {
-		case err == nil:
-			return nil
-		case errors.IsNotFound(err):
-			break
-		default:
-			return fmt.Errorf("cannot delete ns: %w", err)
+	// Update the Provider Status to Terminating.
+	readyCondition, _ := serviceClusterAssignment.Status.GetCondition(corev1alpha1.ServiceClusterAssignmentReady)
+	if readyCondition.Status != corev1alpha1.ConditionFalse ||
+		readyCondition.Status == corev1alpha1.ConditionFalse && readyCondition.Reason != corev1alpha1.TerminatingReason {
+		serviceClusterAssignment.Status.ObservedGeneration = serviceClusterAssignment.Generation
+		serviceClusterAssignment.Status.SetCondition(corev1alpha1.ServiceClusterAssignmentCondition{
+			Type:    corev1alpha1.ServiceClusterAssignmentReady,
+			Status:  corev1alpha1.ConditionFalse,
+			Reason:  corev1alpha1.TerminatingReason,
+			Message: "ServiceClusterAssignment is being terminated",
+		})
+		if err := r.MasterClient.Status().Update(ctx, serviceClusterAssignment); err != nil {
+			return fmt.Errorf("updating ServiceClusterAssignment status: %w", err)
 		}
+	}
+
+	nsList, err := util.ListOwnedNamespaces(ctx, r.ServiceClient, serviceClusterAssignment, r.MasterScheme)
+	if err != nil {
+		return fmt.Errorf("cannot list namespaces: %w", err)
+	}
+	if len(nsList.Items) > 0 {
+		for _, ns := range nsList.Items {
+			if err := r.ServiceClient.Delete(ctx, &ns); err != nil && !errors.IsNotFound(err) {
+				return fmt.Errorf("cannot delete ns %s: %w", ns.Name, err)
+			}
+		}
+		return nil
 	}
 
 	// Remove Finalizer

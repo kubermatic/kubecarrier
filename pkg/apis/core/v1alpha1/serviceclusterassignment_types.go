@@ -57,8 +57,7 @@ type ServiceClusterAssignmentConditionType string
 
 const (
 	// ServiceClusterAssignmentReady represents a ServiceClusterAssignment condition is in ready state.
-	ServiceClusterAssignmentReady         ServiceClusterAssignmentConditionType = "Ready"
-	ServiceClusterAssignmentNamesAccepted ServiceClusterAssignmentConditionType = "NamesAccepted"
+	ServiceClusterAssignmentReady ServiceClusterAssignmentConditionType = "Ready"
 )
 
 // ServiceClusterAssignmentCondition contains details for the current condition of this ServiceClusterAssignment.

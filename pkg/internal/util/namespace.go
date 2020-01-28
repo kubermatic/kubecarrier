@@ -37,13 +37,9 @@ type object interface {
 //
 // It's required that OwnerReverseFieldIndex exists for corev1.Namespace
 func UpsertNamespace(ctx context.Context, obj object, c client.Client, scheme *runtime.Scheme) (*corev1.Namespace, error) {
-	ownedBy, err := OwnedBy(obj, scheme)
+	namespaceList, err := ListOwnedNamespaces(ctx, c, obj, scheme)
 	if err != nil {
-		return nil, fmt.Errorf("building owned by selector: %w", err)
-	}
-	namespaceList := &corev1.NamespaceList{}
-	if err = c.List(ctx, namespaceList, ownedBy); err != nil {
-		return nil, fmt.Errorf("listing Namespaces: %w", err)
+		return nil, err
 	}
 	switch len(namespaceList.Items) {
 	case 0:
@@ -73,4 +69,17 @@ func UpsertNamespace(ctx context.Context, obj object, c client.Client, scheme *r
 		}
 		return nil, fmt.Errorf("MultipleNamespaces owned namespaces found: %s", strings.Join(nss, ","))
 	}
+}
+
+// ListOwnedNamespaces lists all namespaces owned by the object. That is listing all namespaces which have owner annotation set to the given object.
+func ListOwnedNamespaces(ctx context.Context, c client.Client, obj object, scheme *runtime.Scheme) (*corev1.NamespaceList, error) {
+	ownedBy, err := OwnedBy(obj, scheme)
+	if err != nil {
+		return nil, fmt.Errorf("building owned by selector: %w", err)
+	}
+	namespaceList := &corev1.NamespaceList{}
+	if err = c.List(ctx, namespaceList, ownedBy); err != nil {
+		return nil, fmt.Errorf("listing Namespaces: %w", err)
+	}
+	return namespaceList, nil
 }
