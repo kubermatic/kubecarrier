@@ -167,9 +167,16 @@ func NewFerrySuite(f *framework.Framework) func(t *testing.T) {
 				require.NoError(t, client.IgnoreNotFound(masterClient.Delete(ctx, crdd)))
 				require.NoError(t, testutil.WaitUntilNotFound(masterClient, crdd))
 
-				require.NoError(t, masterClient.Create(ctx, crdd))
-				if assert.NoError(t, testutil.WaitUntilReady(masterClient, crdd)) {
-					assert.Equal(t, crd.Name, crdd.Status.CRD.Name)
+				if t.Run("ready", func(t *testing.T) {
+					require.NoError(t, masterClient.Create(ctx, crdd))
+					if assert.NoError(t, testutil.WaitUntilReady(masterClient, crdd)) {
+						assert.Equal(t, crd.Name, crdd.Status.CRD.Name)
+					}
+				}) {
+					t.Run("discovery", func(t *testing.T) {
+						// TODO: make this a proper test
+						t.Log("pause!!!")
+					})
 				}
 
 				// clean up
