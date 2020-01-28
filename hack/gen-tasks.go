@@ -20,6 +20,7 @@ import (
 	"encoding/json"
 	"errors"
 	"flag"
+	"fmt"
 	"io/ioutil"
 	"log"
 	"os"
@@ -28,6 +29,11 @@ import (
 	"text/template"
 
 	"github.com/Masterminds/sprig"
+)
+
+const (
+	ProviderNamespaceENV = "PROVIDER_NAMESPACE"
+	ServiceClusterENV    = "SERVICE_CLUSTER_NAME"
 )
 
 // Task defines single task
@@ -183,9 +189,22 @@ func main() {
 		log.Panicln("cannot find user's home dir", err)
 	}
 	ldFlags := flag.String("ldflags", "", "ld-flags for go's binaries")
+	providerNamespace := flag.String(
+		"provider-namespace",
+		os.ExpandEnv("$"+ProviderNamespaceENV),
+		"provider namespace to use in task generation",
+	)
+	serviceClusterName := flag.String(
+		"service-cluster-name",
+		os.ExpandEnv("$"+ServiceClusterENV),
+		"provider namespace to use in task generation",
+	)
 	masterKubeconfigPath := path.Join(home, ".kube", "kind-config-kubecarrier-1")
 	svcKubeconfigPath := path.Join(home, ".kube", "kind-config-kubecarrier-svc-1")
 	flag.Parse()
+	fmt.Printf("generating IDE tasks\n")
+	fmt.Printf("provider-namespace=%s [use flag or env %s to configure]\n", *providerNamespace, ProviderNamespaceENV)
+	fmt.Printf("service-cluster-name=%s [use flag or env %s to configure]\n", *serviceClusterName, ServiceClusterENV)
 	var tasks = []Task{
 		{
 			Name:    "Anchor version",
@@ -200,6 +219,9 @@ func main() {
 			Name:    "Operator",
 			Program: "cmd/operator",
 			LDFlags: *ldFlags,
+			Args: []string{
+				"--enable-leader-election=false",
+			},
 			Env: map[string]string{
 				"KUBECONFIG": masterKubeconfigPath,
 			},
@@ -209,9 +231,10 @@ func main() {
 			Program: "cmd/ferry",
 			LDFlags: *ldFlags,
 			Args: []string{
-				"--provider-namespace=default",
-				"--service-cluster-name=default",
+				"--provider-namespace=" + *providerNamespace,
+				"--service-cluster-name=" + *serviceClusterName,
 				"--service-cluster-kubeconfig=" + svcKubeconfigPath,
+				"--enable-leader-election=false",
 			},
 			Env: map[string]string{
 				"KUBECONFIG": masterKubeconfigPath,
@@ -222,9 +245,10 @@ func main() {
 			Program: "cmd/catapult",
 			LDFlags: *ldFlags,
 			Args: []string{
-				"--provider-namespace=default",
-				"--service-cluster-name=default",
+				"--provider-namespace=" + *providerNamespace,
+				"--service-cluster-name=" + *serviceClusterName,
 				"--service-cluster-kubeconfig=" + svcKubeconfigPath,
+				"--enable-leader-election=false",
 			},
 			Env: map[string]string{
 				"KUBECONFIG": masterKubeconfigPath,

@@ -1,0 +1,136 @@
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.2.4
+  creationTimestamp: null
+  name: customresourcedefinitiondiscoveries.kubecarrier.io
+spec:
+  group: kubecarrier.io
+  names:
+    kind: CustomResourceDefinitionDiscovery
+    listKind: CustomResourceDefinitionDiscoveryList
+    plural: customresourcedefinitiondiscoveries
+    singular: customresourcedefinitiondiscovery
+  scope: Namespaced
+  versions:
+    - additionalPrinterColumns:
+        - jsonPath: .spec.crd.metadata.name
+          name: CustomResourceDefinition
+          type: string
+        - jsonPath: .spec.serviceCluster.name
+          name: Service Cluster
+          type: string
+      name: v1alpha1
+      schema:
+        openAPIV3Schema:
+          description: CustomResourceDefinitionDiscovery is used inside KubeCarrier
+            to fetch a CustomResourceDefinition from another cluster and to offload
+            cross cluster access to another component.
+          properties:
+            apiVersion:
+              description: 'APIVersion defines the versioned schema of this representation
+                of an object. Servers should convert recognized schemas to the latest
+                internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+              type: string
+            kind:
+              description: 'Kind is a string value representing the REST resource
+                this object represents. Servers may infer this from the endpoint the
+                client submits requests to. Cannot be updated. In CamelCase. More
+                info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+              type: string
+            metadata:
+              type: object
+            spec:
+              description: CustomResourceDefinitionDiscoverySpec defines the desired
+                state of crdreference
+              properties:
+                crd:
+                  description: CRD references a CustomResourceDefinition within the
+                    ServiceCluster.
+                  properties:
+                    name:
+                      type: string
+                  required:
+                    - name
+                  type: object
+                serviceCluster:
+                  description: ServiceCluster references a ServiceCluster to search
+                    the CustomResourceDefinition on.
+                  properties:
+                    name:
+                      type: string
+                  required:
+                    - name
+                  type: object
+              required:
+                - crd
+                - serviceCluster
+              type: object
+            status:
+              description: CustomResourceDefinitionDiscoveryStatus defines the observed
+                state of crdreference
+              properties:
+                conditions:
+                  description: Conditions is a list of all conditions this CustomResourceDefinitionDiscovery
+                    is in.
+                  items:
+                    description: CustomResourceDefinitionDiscoveryCondition contains
+                      details for the current condition of this CustomResourceDefinitionDiscovery.
+                    properties:
+                      lastTransitionTime:
+                        description: LastTransitionTime is the last time the condition
+                          transit from one status to another.
+                        format: date-time
+                        type: string
+                      message:
+                        description: Message is the human readable message indicating
+                          details about last transition.
+                        type: string
+                      reason:
+                        description: Reason is the (brief) reason for the condition's
+                          last transition.
+                        type: string
+                      status:
+                        description: Status of the condition, one of ('True', 'False',
+                          'Unknown').
+                        type: string
+                      type:
+                        description: Type of the condition, currently ('Ready').
+                        type: string
+                    required:
+                      - lastTransitionTime
+                      - message
+                      - reason
+                      - status
+                      - type
+                    type: object
+                  type: array
+                crd:
+                  description: CRD defines the original CustomResourceDefinition specification
+                    from the service cluster
+                  type: object
+                  x-kubernetes-preserve-unknown-fields: true
+                observedGeneration:
+                  description: The most recent generation observed by the controller.
+                  format: int64
+                  type: integer
+                phase:
+                  description: DEPRECATED. Phase represents the current lifecycle
+                    state of this object consider this field DEPRECATED, it will be
+                    removed as soon as there is a mechanism to map conditions to a
+                    string when printing the property is only present for display
+                    purposes, for everything else use conditions
+                  type: string
+              type: object
+          type: object
+      served: true
+      storage: true
+      subresources:
+        status: {}
+status:
+  acceptedNames:
+    kind: ""
+    plural: ""
+  conditions: []
+  storedVersions: []

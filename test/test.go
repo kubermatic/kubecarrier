@@ -65,9 +65,7 @@ func AllTests(config framework.Config) ([]testing.InternalTest, error) {
 		},
 		testing.InternalTest{
 			Name: "FerrySuite",
-			F: func(t *testing.T) {
-				suite.Run(t, &ferry.FerrySuite{Framework: f})
-			},
+			F:    ferry.NewFerrySuite(f),
 		},
 		testing.InternalTest{
 			Name: "DerivedCRDSuite",

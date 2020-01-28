@@ -68,9 +68,9 @@ func (c *Config) Default() {
 }
 
 type Framework struct {
-	masterScheme  *runtime.Scheme
+	MasterScheme  *runtime.Scheme
 	masterConfig  *restclient.Config
-	serviceScheme *runtime.Scheme
+	ServiceScheme *runtime.Scheme
 	serviceConfig *restclient.Config
 	config        Config
 }
@@ -79,20 +79,20 @@ func New(c Config) (f *Framework, err error) {
 	f = &Framework{config: c}
 
 	// Master Setup
-	f.masterScheme = runtime.NewScheme()
-	if err = clientgoscheme.AddToScheme(f.masterScheme); err != nil {
+	f.MasterScheme = runtime.NewScheme()
+	if err = clientgoscheme.AddToScheme(f.MasterScheme); err != nil {
 		return nil, fmt.Errorf("adding clientgo scheme to master scheme: %w", err)
 	}
-	if err = apiextensionsv1.AddToScheme(f.masterScheme); err != nil {
+	if err = apiextensionsv1.AddToScheme(f.MasterScheme); err != nil {
 		return nil, fmt.Errorf("adding apiextensionsv1 scheme to master scheme: %w", err)
 	}
-	if err = operatorv1alpha1.AddToScheme(f.masterScheme); err != nil {
+	if err = operatorv1alpha1.AddToScheme(f.MasterScheme); err != nil {
 		return nil, fmt.Errorf("adding operatorv1alpha1 scheme to master scheme: %w", err)
 	}
-	if err = catalogv1alpha1.AddToScheme(f.masterScheme); err != nil {
+	if err = catalogv1alpha1.AddToScheme(f.MasterScheme); err != nil {
 		return nil, fmt.Errorf("adding catalogv1alpha1 scheme to master scheme: %w", err)
 	}
-	if err = corev1alpha1.AddToScheme(f.masterScheme); err != nil {
+	if err = corev1alpha1.AddToScheme(f.MasterScheme); err != nil {
 		return nil, fmt.Errorf("adding corev1alpha1 scheme to master scheme: %w", err)
 	}
 
@@ -102,11 +102,13 @@ func New(c Config) (f *Framework, err error) {
 	}
 
 	// Service Setup
-	f.serviceScheme = runtime.NewScheme()
-	if err := clientgoscheme.AddToScheme(f.serviceScheme); err != nil {
+	f.ServiceScheme = runtime.NewScheme()
+	if err := clientgoscheme.AddToScheme(f.ServiceScheme); err != nil {
 		return nil, fmt.Errorf("adding clientgo scheme to service scheme: %w", err)
 	}
-
+	if err = apiextensionsv1.AddToScheme(f.ServiceScheme); err != nil {
+		return nil, fmt.Errorf("adding apiextensionsv1 scheme to service scheme: %w", err)
+	}
 	f.serviceConfig, err = clientcmd.BuildConfigFromFlags("", f.config.ServiceExternalKubeconfigPath)
 	if err != nil {
 		return nil, fmt.Errorf("build restconfig for service: %w", err)
@@ -118,14 +120,14 @@ func New(c Config) (f *Framework, err error) {
 func (f *Framework) MasterClient() (client.Client, error) {
 	cfg := f.masterConfig
 	return client.New(cfg, client.Options{
-		Scheme: f.masterScheme,
+		Scheme: f.MasterScheme,
 	})
 }
 
 func (f *Framework) ServiceClient() (client.Client, error) {
 	cfg := f.serviceConfig
 	return client.New(cfg, client.Options{
-		Scheme: f.serviceScheme,
+		Scheme: f.ServiceScheme,
 	})
 }
 

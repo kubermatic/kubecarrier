@@ -66,11 +66,17 @@ statik-gen operator config/operator
 # Manager
 # -------
 # CRDs/Webhooks
-$CONTROLLER_GEN crd:crdVersions=${CRD_VERSION} webhook paths="./pkg/apis/core/..." output:crd:artifacts:config=config/internal/manager/crd/bases output:webhook:artifacts:config=config/internal/manager/webhook
+# The `|| true` is because the controller-gen will error out if CRD_types.go embeds CustomResourcDefinition, and it will be handled in the following yq removements.
+$CONTROLLER_GEN crd:crdVersions=${CRD_VERSION} webhook paths="./pkg/apis/core/..." output:crd:artifacts:config=config/internal/manager/crd/bases output:webhook:artifacts:config=config/internal/manager/webhook || true
 # The `|| true` is because the controller-gen will error out if CRD_types.go embeds CatalogEntry embeds CustomResourceValidation, and it will be handled in the following yq removements.
 $CONTROLLER_GEN crd:crdVersions=${CRD_VERSION} webhook paths="./pkg/apis/catalog/..." output:crd:artifacts:config=config/internal/manager/crd/bases output:webhook:artifacts:config=config/internal/manager/webhook || true
 # RBAC
 $CONTROLLER_GEN rbac:roleName=manager-role paths="./pkg/manager/..." output:rbac:artifacts:config=config/internal/manager/rbac
+# Remove properties to make the CustomResourceDefinitionDiscovery yaml configuration (which embeds CustomResourceValidation) to pass the schema checks
+out=$(mktemp)
+yq -Y  "del(.spec.versions[].schema.openAPIV3Schema.properties.status.properties.crd.properties)" "config/internal/manager/crd/bases/kubecarrier.io_customresourcedefinitiondiscoveries.yaml" > $out && mv ${out} "config/internal/manager/crd/bases/kubecarrier.io_customresourcedefinitiondiscoveries.yaml"
+yq -Y  "del(.spec.versions[].schema.openAPIV3Schema.properties.status.properties.crd.required)" "config/internal/manager/crd/bases/kubecarrier.io_customresourcedefinitiondiscoveries.yaml" > $out && mv ${out} "config/internal/manager/crd/bases/kubecarrier.io_customresourcedefinitiondiscoveries.yaml"
+
 # Remove properties to make the CatalogEntry and Offering yaml configuration (which embeds CustomResourceValidation) to pass the schema checks
 cat config/internal/manager/crd/bases/catalog.kubecarrier.io_catalogentries.yaml | yq -Y 'del(.spec.versions[].schema.openAPIV3Schema.properties.status.properties.crds.items.properties.versions.items.properties.schema.properties)' > config/internal/manager/crd/bases/catalog.kubecarrier.io_catalogentries.yaml.tmp
 mv config/internal/manager/crd/bases/catalog.kubecarrier.io_catalogentries.yaml.tmp config/internal/manager/crd/bases/catalog.kubecarrier.io_catalogentries.yaml
