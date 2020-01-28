@@ -84,12 +84,13 @@ SVC_KIND_CLUSTER?=kubecarrier-svc-${TEST_ID}
 e2e-setup: install require-docker
 	@unset KUBECONFIG
 	@kind create cluster --name=${MASTER_KIND_CLUSTER} || true
-	@echo "Deploy cert-manger in master cluster"
-	@$(MAKE) cert-manager
-	@kind create cluster --name=${SVC_KIND_CLUSTER} || true
 	@kind get kubeconfig --internal --name=${MASTER_KIND_CLUSTER} > "${HOME}/.kube/internal-kind-config-${MASTER_KIND_CLUSTER}"
-	@kind get kubeconfig --internal --name=${SVC_KIND_CLUSTER} > "${HOME}/.kube/internal-kind-config-${SVC_KIND_CLUSTER}"
 	@kind get kubeconfig --name=${MASTER_KIND_CLUSTER} > "${HOME}/.kube/kind-config-${MASTER_KIND_CLUSTER}"
+	@echo "Deploy cert-manger in master cluster"
+	# Deploy cert-manager right after the creation of the master cluster, since the deployments of cert-manger take some time to get ready.
+	@$(MAKE) KUBECONFIG=${HOME}/.kube/kind-config-${MASTER_KIND_CLUSTER} cert-manager
+	@kind create cluster --name=${SVC_KIND_CLUSTER} || true
+	@kind get kubeconfig --internal --name=${SVC_KIND_CLUSTER} > "${HOME}/.kube/internal-kind-config-${SVC_KIND_CLUSTER}"
 	@kind get kubeconfig --name=${SVC_KIND_CLUSTER} > "${HOME}/.kube/kind-config-${SVC_KIND_CLUSTER}"
 	@echo "kind clusters created"
 	@echo "Loading the images"
