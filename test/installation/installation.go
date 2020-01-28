@@ -103,6 +103,13 @@ func (s *InstallationSuite) TestInstallAndTeardown() {
 			Namespace: nn,
 		}, deployment), "get the Deployment that owned by KubeCarrier object")
 
+		// Webhook Service
+		service := &corev1.Service{}
+		s.NoError(s.masterClient.Get(ctx, types.NamespacedName{
+			Name:      fmt.Sprintf("%s-webhook-service", prefix),
+			Namespace: nn,
+		}, service), "get the Webhook Service that owned by KubeCarrier object")
+
 		// ClusterRoleBinding
 		clusterRoleBinding := &rbacv1.ClusterRoleBinding{}
 		s.NoError(s.masterClient.Get(ctx, types.NamespacedName{
@@ -157,6 +164,13 @@ func (s *InstallationSuite) TestInstallAndTeardown() {
 			}
 			return false, nil
 		}), "get the Deployment that owned by KubeCarrier object")
+
+		// Webhook Service
+		service := &corev1.Service{}
+		s.True(errors.IsNotFound(s.masterClient.Get(ctx, types.NamespacedName{
+			Name:      fmt.Sprintf("%s-webhook-service", prefix),
+			Namespace: nn,
+		}, service)), "get the Webhook Service that owned by KubeCarrier object")
 
 		// ClusterRoleBinding
 		clusterRoleBinding := &rbacv1.ClusterRoleBinding{}

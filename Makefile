@@ -84,10 +84,13 @@ SVC_KIND_CLUSTER?=kubecarrier-svc-${TEST_ID}
 e2e-setup: install require-docker
 	@unset KUBECONFIG
 	@kind create cluster --name=${MASTER_KIND_CLUSTER} || true
-	@kind create cluster --name=${SVC_KIND_CLUSTER} || true
 	@kind get kubeconfig --internal --name=${MASTER_KIND_CLUSTER} > "${HOME}/.kube/internal-kind-config-${MASTER_KIND_CLUSTER}"
-	@kind get kubeconfig --internal --name=${SVC_KIND_CLUSTER} > "${HOME}/.kube/internal-kind-config-${SVC_KIND_CLUSTER}"
 	@kind get kubeconfig --name=${MASTER_KIND_CLUSTER} > "${HOME}/.kube/kind-config-${MASTER_KIND_CLUSTER}"
+	@echo "Deploy cert-manger in master cluster"
+	# Deploy cert-manager right after the creation of the master cluster, since the deployments of cert-manger take some time to get ready.
+	@$(MAKE) KUBECONFIG=${HOME}/.kube/kind-config-${MASTER_KIND_CLUSTER} cert-manager
+	@kind create cluster --name=${SVC_KIND_CLUSTER} || true
+	@kind get kubeconfig --internal --name=${SVC_KIND_CLUSTER} > "${HOME}/.kube/internal-kind-config-${SVC_KIND_CLUSTER}"
 	@kind get kubeconfig --name=${SVC_KIND_CLUSTER} > "${HOME}/.kube/kind-config-${SVC_KIND_CLUSTER}"
 	@echo "kind clusters created"
 	@echo "Loading the images"
@@ -156,3 +159,8 @@ install-git-hooks:
 	printf "#!/bin/bash\\nmake generate-ide-tasks" > .git/hooks/post-commit && chmod +x .git/hooks/post-commit
 	cp .git/hooks/post-commit .git/hooks/post-checkout
 	cp .git/hooks/post-commit .git/hooks/post-merge
+
+# Install cert-manager in the configured Kubernetes cluster
+cert-manager:
+	kubectl create namespace cert-manager || true
+	kubectl apply -f https://github.com/jetstack/cert-manager/releases/download/v0.11.0/cert-manager.yaml
