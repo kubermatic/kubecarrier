@@ -22,21 +22,20 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/go-logr/logr"
 	adminv1beta1 "k8s.io/api/admission/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 )
-
-// log is for logging in this package.
-var catalogEntryLog = ctrl.Log.WithName("CatalogEntry")
 
 // +kubebuilder:object:generate=false
 // CatalogEntryValidator validates CatalogEntries
 type CatalogEntryValidator struct {
 	client  client.Client
 	decoder *admission.Decoder
+
+	Log logr.Logger
 }
 
 // +kubebuilder:webhook:path=/validate-catalog-kubecarrier-io-v1alpha1-catalogentry,mutating=false,failurePolicy=fail,groups=catalog.kubecarrier.io,resources=catalogentries,verbs=create;update,versions=v1alpha1,name=vcatalogentry.kb.io
@@ -49,12 +48,12 @@ func (r *CatalogEntryValidator) Handle(ctx context.Context, req admission.Reques
 	}
 	switch req.Operation {
 	case adminv1beta1.Create:
-		catalogEntryLog.Info("validate create", "name", obj.Name)
+		r.Log.Info("validate create", "name", obj.Name)
 		if err := r.validateCreate(); err != nil {
 			return admission.Denied(err.Error())
 		}
 	case adminv1beta1.Update:
-		catalogEntryLog.Info("validate update", "name", obj.Name)
+		r.Log.Info("validate update", "name", obj.Name)
 		oldObj := obj.DeepCopyObject()
 		if err := r.decoder.DecodeRaw(req.OldObject, oldObj); err != nil {
 			return admission.Errored(http.StatusBadRequest, err)
@@ -98,6 +97,7 @@ func (r *CatalogEntryValidator) InjectDecoder(d *admission.Decoder) error {
 type CatalogEntryDefaulter struct {
 	client  client.Client
 	decoder *admission.Decoder
+	Log     logr.Logger
 
 	KubeCarrierNamespace string
 	ProviderLabel        string
@@ -111,7 +111,7 @@ func (r *CatalogEntryDefaulter) Handle(ctx context.Context, req admission.Reques
 	if err := r.decoder.Decode(req, obj); err != nil {
 		return admission.Errored(http.StatusBadRequest, err)
 	}
-	catalogEntryLog.Info("default", "name", obj.Name)
+	r.Log.Info("default", "name", obj.Name)
 	// Default the object
 	if err := r.defaultFn(obj); err != nil {
 		return admission.Denied(err.Error())
