@@ -32,8 +32,8 @@ import (
 	"github.com/kubermatic/kubecarrier/pkg/manager/internal/controllers"
 )
 
-// CatalogEntryDefaulter defaults and validate CatalogEntries
-type CatalogEntryDefaulter struct {
+// CatalogEntryWebhookHandler handles mutating/validating of CatalogEntries.
+type CatalogEntryWebhookHandler struct {
 	client  client.Client
 	decoder *admission.Decoder
 	Log     logr.Logger
@@ -45,7 +45,7 @@ type CatalogEntryDefaulter struct {
 // +kubebuilder:webhook:path=/mutate-catalog-kubecarrier-io-v1alpha1-catalogentry,mutating=true,failurePolicy=fail,groups=catalog.kubecarrier.io,resources=catalogentries,verbs=create;update,versions=v1alpha1,name=mcatalogentry.kb.io
 
 // Handle is the function to handle defaulting requests of CatalogEntries.
-func (r *CatalogEntryDefaulter) Handle(ctx context.Context, req admission.Request) admission.Response {
+func (r *CatalogEntryWebhookHandler) Handle(ctx context.Context, req admission.Request) admission.Response {
 	obj := &v1alpha1.CatalogEntry{}
 	if err := r.decoder.Decode(req, obj); err != nil {
 		return admission.Errored(http.StatusBadRequest, err)
@@ -79,7 +79,7 @@ func (r *CatalogEntryDefaulter) Handle(ctx context.Context, req admission.Reques
 
 }
 
-func (r *CatalogEntryDefaulter) defaultFn(catalogEntry *v1alpha1.CatalogEntry) error {
+func (r *CatalogEntryWebhookHandler) defaultFn(catalogEntry *v1alpha1.CatalogEntry) error {
 	r.Log.Info("default", "name", catalogEntry.Name)
 	provider, err := controllers.GetProviderByProviderNamespace(context.Background(), r.client, r.KubeCarrierNamespace, catalogEntry.Namespace)
 	if err != nil {
@@ -100,30 +100,30 @@ func (r *CatalogEntryDefaulter) defaultFn(catalogEntry *v1alpha1.CatalogEntry) e
 	return nil
 }
 
-func (r *CatalogEntryDefaulter) validateCreate(catalogEntry *v1alpha1.CatalogEntry) error {
+func (r *CatalogEntryWebhookHandler) validateCreate(catalogEntry *v1alpha1.CatalogEntry) error {
 	r.Log.Info("validate create", "name", catalogEntry.Name)
 	return nil
 }
 
-func (r *CatalogEntryDefaulter) validateUpdate(catalogEntry *v1alpha1.CatalogEntry) error {
+func (r *CatalogEntryWebhookHandler) validateUpdate(catalogEntry *v1alpha1.CatalogEntry) error {
 	r.Log.Info("validate update", "name", catalogEntry.Name)
 	return nil
 }
 
-// CatalogEntryDefaulter implements inject.Client.
+// CatalogEntryWebhookHandler implements inject.Client.
 // A client will be automatically injected.
 
 // InjectClient injects the client.
-func (r *CatalogEntryDefaulter) InjectClient(c client.Client) error {
+func (r *CatalogEntryWebhookHandler) InjectClient(c client.Client) error {
 	r.client = c
 	return nil
 }
 
-// CatalogEntryDefaulter implements admission.DecoderInjector.
+// CatalogEntryWebhookHandler implements admission.DecoderInjector.
 // A decoder will be automatically injected.
 
 // InjectDecoder injects the decoder.
-func (r *CatalogEntryDefaulter) InjectDecoder(d *admission.Decoder) error {
+func (r *CatalogEntryWebhookHandler) InjectDecoder(d *admission.Decoder) error {
 	r.decoder = d
 	return nil
 }
