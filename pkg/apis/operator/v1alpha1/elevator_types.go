@@ -142,6 +142,8 @@ func (s *ElevatorStatus) SetCondition(condition ElevatorCondition) {
 }
 
 // Elevator manages the deployment of the Elevator controller manager.
+// For each `DerivedCustomResourceDefinition` a Elevator instance is launched to propagate the derived CRD instance into the providers namespace.
+// This component works hand-in-hand with the Catapult instance for the respective type.
 // +kubebuilder:object:root=true
 // +kubebuilder:subresource:status
 // +kubebuilder:printcolumn:name="Status",type="string",JSONPath=".status.phase"

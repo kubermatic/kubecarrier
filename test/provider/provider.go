@@ -168,6 +168,8 @@ func NewCatalogSuite(
 	provider *catalogv1alpha1.Provider,
 ) func(t *testing.T) {
 	return func(t *testing.T) {
+		t.Parallel()
+
 		// Catalog
 		// Setup
 		masterClient, err := f.MasterClient()

@@ -40,7 +40,7 @@ const (
 	elevatorControllerFinalizer = "elevator.kubecarrier.io/controller"
 )
 
-// ElevatorReconciler reconciles a Elevator object
+// ElevatorReconciler reconciles an Elevator object
 type ElevatorReconciler struct {
 	client.Client
 	Log    logr.Logger
