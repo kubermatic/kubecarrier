@@ -89,6 +89,11 @@ func (r *CustomResourceDefinitionDiscoveryReconciler) Reconcile(req ctrl.Request
 		return ctrl.Result{}, nil
 	}
 
+	kind := crdDiscovery.Spec.KindOverride
+	if kind == "" {
+		kind = crdDiscovery.Status.CRD.Kind
+	}
+
 	// TODO: implement the happy path
 	crd := &apiextensionsv1.CustomResourceDefinition{
 		TypeMeta:   metav1.TypeMeta{},
@@ -96,10 +101,10 @@ func (r *CustomResourceDefinitionDiscoveryReconciler) Reconcile(req ctrl.Request
 		Spec: apiextensionsv1.CustomResourceDefinitionSpec{
 			Group: crdDiscovery.Spec.ServiceCluster.Name + "." + "provider-name-TODO",
 			Names: apiextensionsv1.CustomResourceDefinitionNames{
-				Plural:   flect.Pluralize(strings.ToLower(crdDiscovery.Spec.KindOverride)),
-				Singular: strings.ToLower(crdDiscovery.Spec.KindOverride),
-				Kind:     crdDiscovery.Spec.KindOverride,
-				ListKind: crdDiscovery.Spec.KindOverride + "List",
+				Plural:   flect.Pluralize(strings.ToLower(kind)),
+				Singular: strings.ToLower(kind),
+				Kind:     kind,
+				ListKind: kind + "List",
 			},
 			Scope:                 apiextensionsv1.NamespaceScoped,
 			Versions:              crdDiscovery.Status.CRD.Spec.Versions,
@@ -124,6 +129,16 @@ func (r *CustomResourceDefinitionDiscoveryReconciler) Reconcile(req ctrl.Request
 		return ctrl.Result{}, fmt.Errorf("cannot create or update CRD: %w", err)
 	}
 	log.Info(fmt.Sprintf("CRD %s: %s", crd.Name, op))
+
+	crdDiscovery.Status.SetCondition(corev1alpha1.CustomResourceDefinitionDiscoveryCondition{
+		Message: "CustomResourceDefinitionDiscovery ready",
+		Reason:  "CustomResourceDefinitionDiscoveryReady",
+		Status:  corev1alpha1.ConditionTrue,
+		Type:    corev1alpha1.CustomResourceDefinitionDiscoveryDiscovered,
+	})
+	if err := r.Client.Status().Update(ctx, crdDiscovery); err != nil {
+		return ctrl.Result{}, fmt.Errorf("update discovered state: %w", err)
+	}
 	return ctrl.Result{}, nil
 }
 

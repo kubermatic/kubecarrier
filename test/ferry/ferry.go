@@ -19,6 +19,7 @@ package ferry
 import (
 	"context"
 	"io/ioutil"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -27,6 +28,7 @@ import (
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	catalogv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/catalog/v1alpha1"
@@ -167,6 +169,9 @@ func NewFerrySuite(f *framework.Framework) func(t *testing.T) {
 				require.NoError(t, client.IgnoreNotFound(masterClient.Delete(ctx, crdd)))
 				require.NoError(t, testutil.WaitUntilNotFound(masterClient, crdd))
 
+				internalCrd := &apiextensionsv1.CustomResourceDefinition{}
+				// TODO: fix provider name todo!!!
+				internalCrd.Name = strings.Join([]string{crd.Kind, serviceClusterRegistration.Name, "provider-name-TODO"}, ".")
 				if t.Run("ready", func(t *testing.T) {
 					require.NoError(t, masterClient.Create(ctx, crdd))
 					if assert.NoError(t, testutil.WaitUntilReady(masterClient, crdd)) {
@@ -174,15 +179,23 @@ func NewFerrySuite(f *framework.Framework) func(t *testing.T) {
 					}
 				}) {
 					t.Run("discovery", func(t *testing.T) {
-						// TODO: ensure CRD exists
-						t.Log("pause!!!")
+						if assert.NoError(t, testutil.WaitUntilCondition(
+							masterClient,
+							crdd,
+							corev1alpha1.CustomResourceDefinitionDiscoveryDiscovered,
+							corev1alpha1.ConditionTrue,
+						), "crd never discovered by the manager") {
+							assert.NoError(t, masterClient.Get(ctx, types.NamespacedName{
+								Name: internalCrd.Name,
+							}, internalCrd))
+						}
 					})
 				}
 
 				// clean up
 				assert.NoError(t, masterClient.Delete(ctx, crdd))
 				assert.NoError(t, testutil.WaitUntilNotFound(masterClient, crdd))
-				// TODO: ensure CRD is deleted
+				assert.NoError(t, testutil.WaitUntilNotFound(masterClient, internalCrd), "created internal CRD not cleared")
 			})
 		})
 	}
