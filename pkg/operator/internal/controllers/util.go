@@ -81,7 +81,7 @@ func cleanupClusterRoleBindings(ctx context.Context, c client.Client, ownedBy ut
 	return len(clusterRoleBindingList.Items) == 0, nil
 }
 
-// cleanupMutatingWebhookConfiguration deletes owned CustomResourceDefinitions
+// cleanupCustomResourceDefinitions deletes owned CustomResourceDefinitions
 // cleaned is true when all CustomResourceDefinitions have been cleaned up.
 func cleanupCustomResourceDefinitions(ctx context.Context, c client.Client, ownedBy util.GeneralizedListOption) (cleaned bool, err error) {
 	customResourceDefinitionList := &apiextensionsv1.CustomResourceDefinitionList{}
