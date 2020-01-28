@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package v1alpha1
+package webhooks
 
 import (
 	"context"
@@ -27,73 +27,12 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
+
+	"github.com/kubermatic/kubecarrier/pkg/apis/catalog/v1alpha1"
+	"github.com/kubermatic/kubecarrier/pkg/manager/internal/controllers"
 )
 
-// +kubebuilder:object:generate=false
-// CatalogEntryValidator validates CatalogEntries
-type CatalogEntryValidator struct {
-	client  client.Client
-	decoder *admission.Decoder
-
-	Log logr.Logger
-}
-
-// +kubebuilder:webhook:path=/validate-catalog-kubecarrier-io-v1alpha1-catalogentry,mutating=false,failurePolicy=fail,groups=catalog.kubecarrier.io,resources=catalogentries,verbs=create;update,versions=v1alpha1,name=vcatalogentry.kb.io
-
-// Handle is the function to handle validating requests of CatalogEntries.
-func (r *CatalogEntryValidator) Handle(ctx context.Context, req admission.Request) admission.Response {
-	obj := &CatalogEntry{}
-	if err := r.decoder.Decode(req, obj); err != nil {
-		return admission.Errored(http.StatusBadRequest, err)
-	}
-	switch req.Operation {
-	case adminv1beta1.Create:
-		r.Log.Info("validate create", "name", obj.Name)
-		if err := r.validateCreate(); err != nil {
-			return admission.Denied(err.Error())
-		}
-	case adminv1beta1.Update:
-		r.Log.Info("validate update", "name", obj.Name)
-		oldObj := obj.DeepCopyObject()
-		if err := r.decoder.DecodeRaw(req.OldObject, oldObj); err != nil {
-			return admission.Errored(http.StatusBadRequest, err)
-		}
-		if err := r.validateUpdate(); err != nil {
-			return admission.Denied(err.Error())
-		}
-
-	}
-	return admission.Allowed("allowed to be admitted")
-}
-
-func (r *CatalogEntryValidator) validateCreate() error {
-	return nil
-}
-
-func (r *CatalogEntryValidator) validateUpdate() error {
-	return nil
-}
-
-// CatalogEntryValidator implements inject.Client.
-// A client will be automatically injected.
-
-// InjectClient injects the client.
-func (r *CatalogEntryValidator) InjectClient(c client.Client) error {
-	r.client = c
-	return nil
-}
-
-// CatalogEntryValidator implements admission.DecoderInjector.
-// A decoder will be automatically injected.
-
-// InjectDecoder injects the decoder.
-func (r *CatalogEntryValidator) InjectDecoder(d *admission.Decoder) error {
-	r.decoder = d
-	return nil
-}
-
-// +kubebuilder:object:generate=false
-// CatalogEntryDefaulter defaults CatalogEntries
+// CatalogEntryDefaulter defaults and validate CatalogEntries
 type CatalogEntryDefaulter struct {
 	client  client.Client
 	decoder *admission.Decoder
@@ -107,11 +46,10 @@ type CatalogEntryDefaulter struct {
 
 // Handle is the function to handle defaulting requests of CatalogEntries.
 func (r *CatalogEntryDefaulter) Handle(ctx context.Context, req admission.Request) admission.Response {
-	obj := &CatalogEntry{}
+	obj := &v1alpha1.CatalogEntry{}
 	if err := r.decoder.Decode(req, obj); err != nil {
 		return admission.Errored(http.StatusBadRequest, err)
 	}
-	r.Log.Info("default", "name", obj.Name)
 	// Default the object
 	if err := r.defaultFn(obj); err != nil {
 		return admission.Denied(err.Error())
@@ -120,13 +58,30 @@ func (r *CatalogEntryDefaulter) Handle(ctx context.Context, req admission.Reques
 	if err != nil {
 		return admission.Errored(http.StatusInternalServerError, err)
 	}
+
+	switch req.Operation {
+	case adminv1beta1.Create:
+		if err := r.validateCreate(obj); err != nil {
+			return admission.Denied(err.Error())
+		}
+	case adminv1beta1.Update:
+		oldObj := obj.DeepCopyObject()
+		if err := r.decoder.DecodeRaw(req.OldObject, oldObj); err != nil {
+			return admission.Errored(http.StatusBadRequest, err)
+		}
+		if err := r.validateUpdate(obj); err != nil {
+			return admission.Denied(err.Error())
+		}
+
+	}
 	// Create the patch
 	return admission.PatchResponseFromRaw(req.Object.Raw, marshalled)
 
 }
 
-func (r *CatalogEntryDefaulter) defaultFn(catalogEntry *CatalogEntry) error {
-	provider, err := GetProviderByProviderNamespace(context.Background(), r.client, r.KubeCarrierNamespace, catalogEntry.Namespace)
+func (r *CatalogEntryDefaulter) defaultFn(catalogEntry *v1alpha1.CatalogEntry) error {
+	r.Log.Info("default", "name", catalogEntry.Name)
+	provider, err := controllers.GetProviderByProviderNamespace(context.Background(), r.client, r.KubeCarrierNamespace, catalogEntry.Namespace)
 	if err != nil {
 		return fmt.Errorf("getting the Provider by Provider Namespace: %w", err)
 	}
@@ -142,6 +97,16 @@ func (r *CatalogEntryDefaulter) defaultFn(catalogEntry *CatalogEntry) error {
 		catalogEntry.Spec.CRDSelector.MatchLabels[r.ProviderLabel] = provider.Name
 	}
 
+	return nil
+}
+
+func (r *CatalogEntryDefaulter) validateCreate(catalogEntry *v1alpha1.CatalogEntry) error {
+	r.Log.Info("validate create", "name", catalogEntry.Name)
+	return nil
+}
+
+func (r *CatalogEntryDefaulter) validateUpdate(catalogEntry *v1alpha1.CatalogEntry) error {
+	r.Log.Info("validate update", "name", catalogEntry.Name)
 	return nil
 }
 

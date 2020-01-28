@@ -1104,7 +1104,6 @@
   kind: CustomResourceDefinition
   metadata:
     annotations:
-      cert-manager.io/inject-ca-from: test3000/kubecarrier-manager-serving-cert
       controller-gen.kubebuilder.io/version: v0.2.4
     creationTimestamp: null
     name: tenants.catalog.kubecarrier.io
@@ -1808,68 +1807,6 @@
       - UPDATE
       resources:
       - catalogentries
-  - clientConfig:
-      caBundle: Cg==
-      service:
-        name: kubecarrier-manager-webhook-service
-        namespace: test3000
-        path: /mutate-catalog-kubecarrier-io-v1alpha1-tenant
-    failurePolicy: Fail
-    name: mtenant.kb.io
-    rules:
-    - apiGroups:
-      - catalog.kubecarrier.io
-      apiVersions:
-      - v1alpha1
-      operations:
-      - CREATE
-      - UPDATE
-      resources:
-      - tenants
-- apiVersion: admissionregistration.k8s.io/v1beta1
-  kind: ValidatingWebhookConfiguration
-  metadata:
-    annotations:
-      cert-manager.io/inject-ca-from: test3000/kubecarrier-manager-serving-cert
-    creationTimestamp: null
-    name: kubecarrier-manager-validating-webhook-configuration
-  webhooks:
-  - clientConfig:
-      caBundle: Cg==
-      service:
-        name: kubecarrier-manager-webhook-service
-        namespace: test3000
-        path: /validate-catalog-kubecarrier-io-v1alpha1-catalogentry
-    failurePolicy: Fail
-    name: vcatalogentry.kb.io
-    rules:
-    - apiGroups:
-      - catalog.kubecarrier.io
-      apiVersions:
-      - v1alpha1
-      operations:
-      - CREATE
-      - UPDATE
-      resources:
-      - catalogentries
-  - clientConfig:
-      caBundle: Cg==
-      service:
-        name: kubecarrier-manager-webhook-service
-        namespace: test3000
-        path: /validate-catalog-kubecarrier-io-v1alpha1-tenant
-    failurePolicy: Fail
-    name: vtenant.kb.io
-    rules:
-    - apiGroups:
-      - catalog.kubecarrier.io
-      apiVersions:
-      - v1alpha1
-      operations:
-      - CREATE
-      - UPDATE
-      resources:
-      - tenants
 - apiVersion: v1
   kind: Service
   metadata:

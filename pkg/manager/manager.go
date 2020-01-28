@@ -32,6 +32,7 @@ import (
 	corev1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/core/v1alpha1"
 	"github.com/kubermatic/kubecarrier/pkg/internal/util"
 	"github.com/kubermatic/kubecarrier/pkg/manager/internal/controllers"
+	"github.com/kubermatic/kubecarrier/pkg/manager/internal/webhooks"
 )
 
 type flags struct {
@@ -158,21 +159,17 @@ func run(flags *flags, log logr.Logger) error {
 		return fmt.Errorf("creating DerivedCustomResourceDefinition controller: %w", err)
 	}
 
-	// Register webhooks
-	if err = (&catalogv1alpha1.Tenant{}).SetupWebhookWithManager(mgr); err != nil {
-		return fmt.Errorf("registering webhooks for Tenant: %w", err)
-	}
-
 	// Register webhooks as handlers
 	wbh := mgr.GetWebhookServer()
-	wbh.Register("/validate-catalog-kubecarrier-io-v1alpha1-catalogentry", &webhook.Admission{Handler: &catalogv1alpha1.CatalogEntryValidator{
-		Log: log.WithName("validating webhooks").WithName("CatalogEntry"),
-	}})
-	wbh.Register("/mutate-catalog-kubecarrier-io-v1alpha1-catalogentry", &webhook.Admission{Handler: &catalogv1alpha1.CatalogEntryDefaulter{
-		KubeCarrierNamespace: flags.kubeCarrierSystemNamespace,
-		ProviderLabel:        controllers.ProviderLabel,
-		Log:                  log.WithName("mutating webhooks").WithName("CatalogEntry"),
-	}})
+
+	// mutating webhooks
+	wbh.Register(util.GenerateMutateWebhookPath(
+		catalogv1alpha1.CatalogEntry{}.GroupVersionKind()),
+		&webhook.Admission{Handler: &webhooks.CatalogEntryDefaulter{
+			KubeCarrierNamespace: flags.kubeCarrierSystemNamespace,
+			ProviderLabel:        controllers.ProviderLabel,
+			Log:                  log.WithName("mutating webhooks").WithName("CatalogEntry"),
+		}})
 	log.Info("starting manager")
 	if err := mgr.Start(ctrl.SetupSignalHandler()); err != nil {
 		return fmt.Errorf("running manager: %w", err)
