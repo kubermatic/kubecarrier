@@ -33,7 +33,7 @@ import (
 	"github.com/kubermatic/kubecarrier/pkg/internal/util"
 )
 
-const crdDiscoveryControllerFinalizer string = "custormresourcedefinitiondiscovery.kubecarrier.io/controller"
+const crdDiscoveryControllerFinalizer string = "custormresourcedefinitiondiscovery.kubecarrier.io/ferry-controller"
 
 var (
 	CRDNotFound = fmt.Errorf("CRDNotFound")
@@ -50,7 +50,7 @@ type CustomResourceDefinitionDiscoveryReconciler struct {
 	ServiceClusterName string
 }
 
-// +kubebuilder:rbac:groups=kubecarrier.io,resources=customresourcedefinitiondiscoveries,verbs=get;list;watch;create;update;patch
+// +kubebuilder:rbac:groups=kubecarrier.io,resources=customresourcedefinitiondiscoveries,verbs=get;list;watch;update;patch
 // +kubebuilder:rbac:groups=kubecarrier.io,resources=customresourcedefinitiondiscoveries/status,verbs=get;update;patch
 // Service cluster permission for this controller
 // https://github.com/kubermatic/kubecarrier/issues/143
