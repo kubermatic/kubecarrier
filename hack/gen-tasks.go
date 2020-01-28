@@ -254,6 +254,17 @@ func main() {
 				"KUBECONFIG": masterKubeconfigPath,
 			},
 		},
+		{
+			Name:    "Elevator",
+			Program: "cmd/elevator",
+			LDFlags: *ldFlags,
+			Args: []string{
+				"--provider-namespace=default",
+			},
+			Env: map[string]string{
+				"KUBECONFIG": masterKubeconfigPath,
+			},
+		},
 	}
 
 	for _, test := range []string{

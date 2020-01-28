@@ -106,3 +106,14 @@ ed config/internal/catapult/rbac/role.yaml <<EOF || true
 w
 EOF
 statik-gen catapult config/internal/catapult
+
+# Elevator
+# -------
+# RBAC
+$CONTROLLER_GEN rbac:roleName=manager-role paths="./pkg/elevator/..." output:rbac:artifacts:config=config/internal/elevator/rbac
+# The `|| true` is because the `,s/ClusterRole/Role/g` will error out if there is no match of `ClusterRole` (eg., the file is empty) in the file.
+ed config/internal/elevator/rbac/role.yaml <<EOF || true
+,s/ClusterRole/Role/g
+w
+EOF
+statik-gen elevator config/internal/elevator

@@ -469,6 +469,26 @@
   - apiGroups:
     - operator.kubecarrier.io
     resources:
+    - elevators
+    verbs:
+    - create
+    - delete
+    - get
+    - list
+    - patch
+    - update
+    - watch
+  - apiGroups:
+    - operator.kubecarrier.io
+    resources:
+    - elevators/status
+    verbs:
+    - get
+    - patch
+    - update
+  - apiGroups:
+    - operator.kubecarrier.io
+    resources:
     - kubecarriers
     verbs:
     - create
