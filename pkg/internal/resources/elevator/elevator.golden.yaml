@@ -2,13 +2,13 @@
   kind: Role
   metadata:
     creationTimestamp: null
-    name: db-eu-west-1-catapult-manager-role
+    name: db-eu-west-1-elevator-manager-role
     namespace: test3000
   rules: []
 - apiVersion: rbac.authorization.k8s.io/v1
   kind: ClusterRoleBinding
   metadata:
-    name: db-eu-west-1-catapult-manager-rolebinding
+    name: db-eu-west-1-elevator-manager-rolebinding
   roleRef:
     apiGroup: rbac.authorization.k8s.io
     kind: ClusterRole
@@ -20,7 +20,7 @@
 - apiVersion: rbac.authorization.k8s.io/v1
   kind: Role
   metadata:
-    name: db-eu-west-1-catapult-leader-election-role
+    name: db-eu-west-1-elevator-leader-election-role
     namespace: test3000
   rules:
   - apiGroups:
@@ -52,12 +52,12 @@
 - apiVersion: rbac.authorization.k8s.io/v1
   kind: RoleBinding
   metadata:
-    name: db-eu-west-1-catapult-leader-election-rolebinding
+    name: db-eu-west-1-elevator-leader-election-rolebinding
     namespace: test3000
   roleRef:
     apiGroup: rbac.authorization.k8s.io
     kind: Role
-    name: db-eu-west-1-catapult-leader-election-role
+    name: db-eu-west-1-elevator-leader-election-role
   subjects:
   - kind: ServiceAccount
     name: default
@@ -67,7 +67,7 @@
   metadata:
     labels:
       control-plane: manager
-    name: db-eu-west-1-catapult-manager
+    name: db-eu-west-1-elevator-manager
     namespace: test3000
   spec:
     replicas: 1
@@ -80,7 +80,7 @@
           control-plane: manager
       spec:
         containers:
-        - image: quay.io/kubecarrier/catapult:was not build properly
+        - image: quay.io/kubecarrier/elevator:was not build properly
           name: manager
           resources:
             limits:

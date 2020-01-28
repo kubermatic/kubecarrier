@@ -19,13 +19,17 @@ package provider
 import (
 	"context"
 	"fmt"
+	"os"
+	"testing"
 	"time"
 
-	"github.com/stretchr/testify/suite"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	appsv1 "k8s.io/api/apps/v1"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -37,419 +41,391 @@ import (
 	"github.com/kubermatic/kubecarrier/test/framework"
 )
 
-var (
-	_ suite.SetupAllSuite    = (*ProviderSuite)(nil)
-	_ suite.TearDownAllSuite = (*ProviderSuite)(nil)
-)
+func NewProviderSuite(f *framework.Framework) func(t *testing.T) {
+	return func(t *testing.T) {
+		masterClient, err := f.MasterClient()
+		require.NoError(t, err, "creating master client")
 
-// ProviderSuite verifies if the provider actions are working.
-// - atm it just deploys a catapult instance
-type ProviderSuite struct {
-	suite.Suite
-	*framework.Framework
+		ctx := context.Background()
 
-	masterClient  client.Client
-	serviceClient client.Client
-
-	// objects that used for executing tests.
-	provider       *catalogv1alpha1.Provider
-	tenant         *catalogv1alpha1.Tenant
-	catalogEntry   *catalogv1alpha1.CatalogEntry
-	crd            *apiextensionsv1.CustomResourceDefinition
-	serviceCluster *corev1alpha1.ServiceCluster
-}
-
-func (s *ProviderSuite) SetupSuite() {
-	var err error
-	s.masterClient, err = s.MasterClient()
-	s.Require().NoError(err, "creating master client")
-	s.serviceClient, err = s.ServiceClient()
-	s.Require().NoError(err, "creating service client")
-
-	ctx := context.Background()
-
-	// Create a Provider to execute our tests in
-	s.provider = &catalogv1alpha1.Provider{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "example-cloud",
-			Namespace: "kubecarrier-system",
-		},
-	}
-	s.Require().NoError(s.masterClient.Create(ctx, s.provider), "could not create Provider")
-
-	// wait for provider to be ready
-	s.Require().NoError(wait.Poll(time.Second, 10*time.Second, func() (done bool, err error) {
-		if err := s.masterClient.Get(ctx, types.NamespacedName{
-			Name:      s.provider.Name,
-			Namespace: s.provider.Namespace,
-		}, s.provider); err != nil {
-			return true, err
-		}
-
-		cond, _ := s.provider.Status.GetCondition(catalogv1alpha1.ProviderReady)
-		return cond.Status == catalogv1alpha1.ConditionTrue, nil
-	}), "waiting for provider to be ready")
-
-	s.setupSuiteCatalog()
-}
-
-func (s *ProviderSuite) TearDownSuite() {
-	ctx := context.Background()
-	s.Require().NoError(wait.Poll(time.Second, 30*time.Second, func() (done bool, err error) {
-		if err = s.masterClient.Delete(ctx, s.provider); err != nil {
-			if errors.IsNotFound(err) {
-				return true, nil
-			}
-			return false, err
-		}
-		return false, nil
-	}), "could not delete the Provider")
-
-	s.tearDownSuiteCatalog()
-}
-
-func (s *ProviderSuite) TestCatapultDeployAndTeardown() {
-	ctx := context.Background()
-
-	catapult := &operatorv1alpha1.Catapult{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "db.eu-west-1",
-			Namespace: s.provider.Status.NamespaceName,
-		},
-	}
-
-	s.Require().NoError(s.masterClient.Create(ctx, catapult), "creating Catapult error")
-
-	// Wait for Catapult to be ready
-	s.Require().NoError(wait.Poll(time.Second, 10*time.Second, func() (done bool, err error) {
-		if err := s.masterClient.Get(ctx, types.NamespacedName{
-			Name:      catapult.Name,
-			Namespace: catapult.Namespace,
-		}, catapult); err != nil {
-			return true, err
-		}
-
-		readyCond, _ := catapult.Status.GetCondition(operatorv1alpha1.CatapultReady)
-		return readyCond.Status == operatorv1alpha1.ConditionTrue, nil
-	}), "waiting for Catapult to become ready")
-
-	// Check created objects
-	catapultDeployment := &appsv1.Deployment{}
-	s.NoError(s.masterClient.Get(ctx, types.NamespacedName{
-		Name:      "db-eu-west-1-catapult-manager",
-		Namespace: catapult.Namespace,
-	}, catapultDeployment), "getting the Catapult manager deployment error")
-
-	// Teardown
-	s.Require().NoError(s.masterClient.Delete(ctx, catapult), "deleting the Catapult object")
-
-	// Wait for Catapult to be gone
-	s.Require().NoError(wait.Poll(time.Second, 10*time.Second, func() (done bool, err error) {
-		if err := s.masterClient.Get(ctx, types.NamespacedName{
-			Name:      catapult.Name,
-			Namespace: catapult.Namespace,
-		}, catapult); err != nil {
-			if errors.IsNotFound(err) {
-				return true, nil
-			}
-			return true, err
-		}
-
-		return false, nil
-	}), "waiting for Catapult to be gone")
-
-	// check everything is gone
-	s.Require().NoError(wait.Poll(time.Second, 10*time.Second, func() (done bool, err error) {
-		err = s.masterClient.Get(ctx, types.NamespacedName{
-			Name:      catapultDeployment.Name,
-			Namespace: catapultDeployment.Namespace,
-		}, catapultDeployment)
-		if errors.IsNotFound(err) {
-			return true, nil
-		}
-		if err != nil {
-			return true, err
-		}
-		return false, nil
-	}), "waiting for catapult manager deployment to be gone")
-}
-
-func (s *ProviderSuite) TestCatalogCreationAndDeletion() {
-	ctx := context.Background()
-
-	catalog := &catalogv1alpha1.Catalog{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "test-catalog",
-			Namespace: s.provider.Status.NamespaceName,
-		},
-		Spec: catalogv1alpha1.CatalogSpec{
-			CatalogEntrySelector: &metav1.LabelSelector{
-				MatchLabels: map[string]string{
-					"kubecarrier.io/test": "label",
+		var (
+			provider = &catalogv1alpha1.Provider{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "example-cloud",
+					Namespace: "kubecarrier-system",
 				},
-			},
-			TenantReferenceSelector: &metav1.LabelSelector{},
-		},
-	}
-
-	s.Require().NoError(s.masterClient.Create(ctx, catalog), "creating Catalog error")
-
-	// Check the status of the Catalog.
-	catalogFound := &catalogv1alpha1.Catalog{}
-	s.NoError(wait.Poll(time.Second, 10*time.Second, func() (done bool, err error) {
-		if err := s.masterClient.Get(ctx, types.NamespacedName{
-			Name:      catalog.Name,
-			Namespace: catalog.Namespace,
-		}, catalogFound); err != nil {
-			if errors.IsNotFound(err) {
-				return false, nil
 			}
-			return true, err
+		)
+
+		cleanUp := func() {
+			if _, noCleanup := os.LookupEnv("NO_CLEANUP"); noCleanup {
+				return
+			}
+
+			for _, obj := range []runtime.Object{
+				provider,
+			} {
+				require.NoError(t, client.IgnoreNotFound(masterClient.Delete(ctx, obj)))
+				require.NoError(t, testutil.WaitUntilNotFound(masterClient, obj))
+			}
 		}
-		return len(catalogFound.Status.Entries) == 1 && len(catalogFound.Status.Tenants) == 1, nil
-	}), "getting the Catalog error")
+		// clean up before and after completion
+		cleanUp()
+		defer cleanUp()
 
-	// Check the Offering object is created.
-	offeringFound := &catalogv1alpha1.Offering{}
-	s.NoError(wait.Poll(time.Second, 10*time.Second, func() (done bool, err error) {
-		if err := s.masterClient.Get(ctx, types.NamespacedName{
-			Name:      s.catalogEntry.Name,
-			Namespace: s.tenant.Status.NamespaceName,
-		}, offeringFound); err != nil {
-			if errors.IsNotFound(err) {
-				return false, nil
-			}
-			return true, err
-		}
-		return len(offeringFound.Offering.CRDs) == len(s.catalogEntry.Status.CRDs) && offeringFound.Offering.Provider.Name == s.provider.Name, nil
-	}), "getting the Offering error")
+		require.NoError(t, masterClient.Create(ctx, provider))
+		require.NoError(t, testutil.WaitUntilReady(masterClient, provider))
 
-	// Check the ProviderReference object is created.
-	providerReferenceFound := &catalogv1alpha1.ProviderReference{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      s.provider.Name,
-			Namespace: s.tenant.Status.NamespaceName,
-		},
+		t.Run("parallel-group", func(t *testing.T) {
+			t.Run("Catapult", NewCatapultSuite(f, provider))
+			t.Run("Elevator", NewElevatorSuite(f, provider))
+			t.Run("Catalog", NewCatalogSuite(f, provider))
+		})
 	}
-	s.Require().NoError(testutil.WaitUntilFound(s.masterClient, providerReferenceFound), "getting the ProviderReference error")
-	s.Equal(providerReferenceFound.Spec.Metadata.DisplayName, s.provider.Spec.Metadata.DisplayName)
-	s.Equal(providerReferenceFound.Spec.Metadata.Description, s.provider.Spec.Metadata.DisplayName)
+}
 
-	// Check the ServiceClusterReference object is created.
-	serviceClusterReferenceFound := &catalogv1alpha1.ServiceClusterReference{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      fmt.Sprintf("%s.%s", s.serviceCluster.Name, s.provider.Name),
-			Namespace: s.tenant.Status.NamespaceName,
-		},
-	}
-	s.Require().NoError(testutil.WaitUntilFound(s.masterClient, serviceClusterReferenceFound), "getting the ProviderReference error")
-	s.Equal(serviceClusterReferenceFound.Spec.Provider.Name, s.provider.Name)
-	s.Equal(serviceClusterReferenceFound.Spec.Metadata.Description, s.serviceCluster.Spec.Metadata.Description)
+// Catapult sub test suite
+func NewCatapultSuite(
+	f *framework.Framework,
+	provider *catalogv1alpha1.Provider,
+) func(t *testing.T) {
+	return func(t *testing.T) {
+		t.Parallel()
 
-	// Check if the status will be updated when tenant is removed.
-	s.Run("Catalog status updates when adding and removing Tenant", func() {
-		// Remove the tenant
-		s.Require().NoError(wait.Poll(time.Second, 30*time.Second, func() (done bool, err error) {
-			if err = s.masterClient.Delete(ctx, s.tenant); err != nil {
-				if errors.IsNotFound(err) {
-					return true, nil
-				}
-				return false, err
-			}
-			return false, nil
-		}), "could not delete the Tenant")
+		// Setup
+		masterClient, err := f.MasterClient()
+		require.NoError(t, err, "creating master client")
+		ctx := context.Background()
 
-		catalogCheck := &catalogv1alpha1.Catalog{}
-		s.NoError(wait.Poll(time.Second, 30*time.Second, func() (done bool, err error) {
-			if err := s.masterClient.Get(ctx, types.NamespacedName{
-				Name:      catalog.Name,
-				Namespace: catalog.Namespace,
-			}, catalogCheck); err != nil {
-				if errors.IsNotFound(err) {
-					return false, nil
-				}
-				return true, err
-			}
-			return len(catalogCheck.Status.Tenants) == 0, nil
-		}), len(catalogCheck.Status.Tenants))
-
-		// Recreate the tenant
-		s.tenant = &catalogv1alpha1.Tenant{
+		// Create Catapult
+		catapult := &operatorv1alpha1.Catapult{
 			ObjectMeta: metav1.ObjectMeta{
-				Name:      "test-tenant2",
+				Name:      "db.eu-west-1",
+				Namespace: provider.Status.NamespaceName,
+			},
+		}
+
+		require.NoError(
+			t, masterClient.Create(ctx, catapult), "creating Catapult error")
+		require.NoError(t, testutil.WaitUntilReady(masterClient, catapult))
+
+		// Check created objects
+		catapultDeployment := &appsv1.Deployment{}
+		assert.NoError(t, masterClient.Get(ctx, types.NamespacedName{
+			Name:      "db-eu-west-1-catapult-manager",
+			Namespace: catapult.Namespace,
+		}, catapultDeployment), "getting Catapult manager deployment error")
+
+		// Teardown
+		require.NoError(
+			t, masterClient.Delete(ctx, catapult), "deleting Catapult object")
+		require.NoError(t, testutil.WaitUntilNotFound(masterClient, catapult))
+
+		// check everything is gone
+		require.NoError(t, testutil.WaitUntilNotFound(masterClient, catapultDeployment))
+	}
+}
+
+// Elevator sub test suite
+func NewElevatorSuite(
+	f *framework.Framework,
+	provider *catalogv1alpha1.Provider,
+) func(t *testing.T) {
+	return func(t *testing.T) {
+		t.Parallel()
+
+		// Setup
+		masterClient, err := f.MasterClient()
+		require.NoError(t, err, "creating master client")
+		ctx := context.Background()
+
+		// Create Elevator
+		elevator := &operatorv1alpha1.Elevator{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "db.eu-west-1",
+				Namespace: provider.Status.NamespaceName,
+			},
+		}
+
+		require.NoError(
+			t, masterClient.Create(ctx, elevator), "creating Elevator error")
+		require.NoError(t, testutil.WaitUntilReady(masterClient, elevator))
+
+		// Check created objects
+		elevatorDeployment := &appsv1.Deployment{}
+		assert.NoError(t, masterClient.Get(ctx, types.NamespacedName{
+			Name:      "db-eu-west-1-elevator-manager",
+			Namespace: elevator.Namespace,
+		}, elevatorDeployment), "getting Elevator manager deployment error")
+
+		// Teardown
+		require.NoError(
+			t, masterClient.Delete(ctx, elevator), "deleting Elevator object")
+		require.NoError(t, testutil.WaitUntilNotFound(masterClient, elevator))
+
+		// check everything is gone
+		require.NoError(t, testutil.WaitUntilNotFound(masterClient, elevatorDeployment))
+	}
+}
+
+func NewCatalogSuite(
+	f *framework.Framework,
+	provider *catalogv1alpha1.Provider,
+) func(t *testing.T) {
+	return func(t *testing.T) {
+		t.Parallel()
+
+		// Catalog
+		// Setup
+		masterClient, err := f.MasterClient()
+		require.NoError(t, err, "creating master client")
+		ctx := context.Background()
+
+		// Create a Tenant to execute our tests in
+		tenant := &catalogv1alpha1.Tenant{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "test-tenant1",
 				Namespace: "kubecarrier-system",
 			},
 		}
-		s.Require().NoError(s.masterClient.Create(ctx, s.tenant), "creating tenant error")
+		require.NoError(
+			t, masterClient.Create(ctx, tenant), "creating Tenant error")
+		require.NoError(t, testutil.WaitUntilReady(masterClient, tenant))
 
-		s.NoError(wait.Poll(time.Second, 30*time.Second, func() (done bool, err error) {
-			if err := s.masterClient.Get(ctx, types.NamespacedName{
+		// wait for the TenantReference to be created.
+		tenantReference := &catalogv1alpha1.TenantReference{}
+		require.NoError(
+			t, wait.Poll(time.Second, 10*time.Second, func() (done bool, err error) {
+				if err := masterClient.Get(ctx, types.NamespacedName{
+					Name:      tenant.Name,
+					Namespace: provider.Status.NamespaceName,
+				}, tenantReference); err != nil {
+					if errors.IsNotFound(err) {
+						return false, nil
+					}
+					return true, err
+				}
+				return true, nil
+			}), "waiting for the TenantReference to be created")
+
+		// Create CRDs to execute tests
+		crd := &apiextensionsv1.CustomResourceDefinition{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: "couchdbs.eu-west-1.example.cloud",
+				Labels: map[string]string{
+					"kubecarrier.io/provider":        provider.Name,
+					"kubecarrier.io/service-cluster": "eu-west-1",
+				},
+			},
+			Spec: apiextensionsv1.CustomResourceDefinitionSpec{
+				Group: "eu-west-1.example.cloud",
+				Names: apiextensionsv1.CustomResourceDefinitionNames{
+					Plural: "couchdbs",
+					Kind:   "CouchDB",
+				},
+				Versions: []apiextensionsv1.CustomResourceDefinitionVersion{
+					{
+						Name:    "v1alpha1",
+						Storage: true,
+						Schema: &apiextensionsv1.CustomResourceValidation{
+							OpenAPIV3Schema: &apiextensionsv1.JSONSchemaProps{
+								Type: "object",
+							},
+						},
+					},
+				},
+				Scope: apiextensionsv1.ClusterScoped,
+			},
+		}
+		require.NoError(
+			t, masterClient.Create(ctx, crd), fmt.Sprintf("creating CRD: %s error", crd.Name))
+
+		// Create a CatalogEntry to execute our tests in
+		catalogEntry := &catalogv1alpha1.CatalogEntry{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "couchdbs",
+				Namespace: provider.Status.NamespaceName,
+				Labels: map[string]string{
+					"kubecarrier.io/test": "label",
+				},
+			},
+			Spec: catalogv1alpha1.CatalogEntrySpec{
+				Metadata: catalogv1alpha1.CatalogEntryMetadata{
+					DisplayName: "Couch DB",
+					Description: "The comfy nosql database",
+				},
+			},
+		}
+		require.NoError(
+			t, masterClient.Create(ctx, catalogEntry), "could not create CatalogEntry")
+		require.NoError(t, testutil.WaitUntilReady(masterClient, catalogEntry))
+
+		// Create a ServiceCluster to execute our tests in
+		serviceCluster := &corev1alpha1.ServiceCluster{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "eu-west-1",
+				Namespace: provider.Status.NamespaceName,
+			},
+			Spec: corev1alpha1.ServiceClusterSpec{
+				Metadata: corev1alpha1.ServiceClusterMetadata{
+					DisplayName: "eu-west-1",
+					Description: "eu-west-1 service cluster!",
+				},
+			},
+		}
+		require.NoError(
+			t, masterClient.Create(ctx, serviceCluster), "could not create ServiceCluster")
+
+		// Teardown
+		defer func() {
+			if _, noCleanup := os.LookupEnv("NO_CLEANUP"); noCleanup {
+				return
+			}
+
+			require.NoError(t, masterClient.Delete(ctx, tenant), "deleting the Tenant object")
+			require.NoError(t, testutil.WaitUntilNotFound(masterClient, tenant))
+
+			require.NoError(t, masterClient.Delete(ctx, crd), "deleting the CustomResourceDefinition object")
+			require.NoError(t, testutil.WaitUntilNotFound(masterClient, crd))
+		}()
+
+		// Catalog
+		// Test case
+		catalog := &catalogv1alpha1.Catalog{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "test-catalog",
+				Namespace: provider.Status.NamespaceName,
+			},
+			Spec: catalogv1alpha1.CatalogSpec{
+				CatalogEntrySelector: &metav1.LabelSelector{
+					MatchLabels: map[string]string{
+						"kubecarrier.io/test": "label",
+					},
+				},
+				TenantReferenceSelector: &metav1.LabelSelector{},
+			},
+		}
+		require.NoError(t, masterClient.Create(ctx, catalog), "creating Catalog error")
+
+		// Check the status of the Catalog.
+		catalogFound := &catalogv1alpha1.Catalog{}
+		assert.NoError(t, wait.Poll(time.Second, 10*time.Second, func() (done bool, err error) {
+			if err := masterClient.Get(ctx, types.NamespacedName{
 				Name:      catalog.Name,
 				Namespace: catalog.Namespace,
-			}, catalogCheck); err != nil {
+			}, catalogFound); err != nil {
 				if errors.IsNotFound(err) {
 					return false, nil
 				}
 				return true, err
 			}
-			return len(catalogCheck.Status.Tenants) == 1 && catalogCheck.Status.Tenants[0].Name == s.tenant.Name, nil
+			return len(catalogFound.Status.Entries) == 1 && len(catalogFound.Status.Tenants) == 1, nil
 		}), "getting the Catalog error")
-	})
 
-	s.Require().NoError(wait.Poll(time.Second, 10*time.Second, func() (done bool, err error) {
-		if err = s.masterClient.Delete(ctx, catalog); err != nil {
-			if errors.IsNotFound(err) {
-				return true, nil
+		// Check the Offering object is created.
+		offeringFound := &catalogv1alpha1.Offering{}
+		assert.NoError(t, wait.Poll(time.Second, 10*time.Second, func() (done bool, err error) {
+			if err := masterClient.Get(ctx, types.NamespacedName{
+				Name:      catalogEntry.Name,
+				Namespace: tenant.Status.NamespaceName,
+			}, offeringFound); err != nil {
+				if errors.IsNotFound(err) {
+					return false, nil
+				}
+				return true, err
 			}
-			return false, err
-		}
-		return false, nil
-	}), "deleting the Catalog error")
+			return len(offeringFound.Offering.CRDs) == len(catalogEntry.Status.CRDs) && offeringFound.Offering.Provider.Name == provider.Name, nil
+		}), "getting the Offering error")
 
-	// Offering object should also be removed
-	offeringCheck := &catalogv1alpha1.Offering{}
-	s.True(errors.IsNotFound(s.masterClient.Get(ctx, types.NamespacedName{
-		Name:      offeringFound.Name,
-		Namespace: offeringFound.Namespace,
-	}, offeringCheck)), "offering object should also be deleted.")
-
-	// ProviderReference object should also be removed
-	providerReferenceCheck := &catalogv1alpha1.ProviderReference{}
-	s.True(errors.IsNotFound(s.masterClient.Get(ctx, types.NamespacedName{
-		Name:      providerReferenceFound.Name,
-		Namespace: providerReferenceFound.Namespace,
-	}, providerReferenceCheck)), "providerReference object should also be deleted.")
-
-	// ServiceClusterReference object should also be removed
-	serviceClusterReferenceCheck := &catalogv1alpha1.ServiceClusterReference{}
-	s.True(errors.IsNotFound(s.masterClient.Get(ctx, types.NamespacedName{
-		Name:      serviceClusterReferenceFound.Name,
-		Namespace: serviceClusterReferenceFound.Namespace,
-	}, serviceClusterReferenceCheck)), "serviceClusterReference object should also be deleted.")
-}
-
-func (s *ProviderSuite) setupSuiteCatalog() {
-	ctx := context.Background()
-
-	// Create a Tenant to execute our tests in
-	s.tenant = &catalogv1alpha1.Tenant{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "test-tenant1",
-			Namespace: "kubecarrier-system",
-		},
-	}
-	s.Require().NoError(s.masterClient.Create(ctx, s.tenant), "creating tenant error")
-
-	// wait for tenant to be ready
-	s.Require().NoError(wait.Poll(time.Second, 10*time.Second, func() (done bool, err error) {
-		if err := s.masterClient.Get(ctx, types.NamespacedName{
-			Name:      s.tenant.Name,
-			Namespace: s.tenant.Namespace,
-		}, s.tenant); err != nil {
-			return true, err
-		}
-
-		cond, _ := s.tenant.Status.GetCondition(catalogv1alpha1.TenantReady)
-		return cond.Status == catalogv1alpha1.ConditionTrue, nil
-	}), "waiting for tenant to be ready")
-	// wait for the TenantReference to be created.
-	tenantReference := &catalogv1alpha1.TenantReference{}
-	s.NoError(wait.Poll(time.Second, 10*time.Second, func() (done bool, err error) {
-		if err := s.masterClient.Get(ctx, types.NamespacedName{
-			Name:      s.tenant.Name,
-			Namespace: s.provider.Status.NamespaceName,
-		}, tenantReference); err != nil {
-			if errors.IsNotFound(err) {
-				return false, nil
-			}
-			return true, err
-
-		}
-		return true, nil
-	}), "waiting for the tenantReference to be created")
-
-	// Create CRDs to execute tests
-	s.crd = &apiextensionsv1.CustomResourceDefinition{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: "couchdbs.eu-west-1.example.cloud",
-			Labels: map[string]string{
-				"kubecarrier.io/provider":        s.provider.Name,
-				"kubecarrier.io/service-cluster": "eu-west-1",
+		// Check the ProviderReference object is created.
+		providerReferenceFound := &catalogv1alpha1.ProviderReference{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      provider.Name,
+				Namespace: tenant.Status.NamespaceName,
 			},
-		},
-		Spec: apiextensionsv1.CustomResourceDefinitionSpec{
-			Group: "eu-west-1.example.cloud",
-			Names: apiextensionsv1.CustomResourceDefinitionNames{
-				Plural: "couchdbs",
-				Kind:   "CouchDB",
+		}
+		require.NoError(t, testutil.WaitUntilFound(masterClient, providerReferenceFound), "getting the ProviderReference error")
+		assert.Equal(t, providerReferenceFound.Spec.Metadata.DisplayName, provider.Spec.Metadata.DisplayName)
+		assert.Equal(t, providerReferenceFound.Spec.Metadata.Description, provider.Spec.Metadata.DisplayName)
+
+		// Check the ServiceClusterReference object is created.
+		serviceClusterReferenceFound := &catalogv1alpha1.ServiceClusterReference{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      fmt.Sprintf("%s.%s", serviceCluster.Name, provider.Name),
+				Namespace: tenant.Status.NamespaceName,
 			},
-			Versions: []apiextensionsv1.CustomResourceDefinitionVersion{
-				{
-					Name:    "v1alpha1",
-					Storage: true,
-					Schema: &apiextensionsv1.CustomResourceValidation{
-						OpenAPIV3Schema: &apiextensionsv1.JSONSchemaProps{
-							Type: "object",
-						},
-					},
+		}
+		require.NoError(t, testutil.WaitUntilFound(masterClient, serviceClusterReferenceFound), "getting the ProviderReference error")
+		assert.Equal(t, serviceClusterReferenceFound.Spec.Provider.Name, provider.Name)
+		assert.Equal(t, serviceClusterReferenceFound.Spec.Metadata.Description, serviceCluster.Spec.Metadata.Description)
+
+		// Check if the status will be updated when tenant is removed.
+		t.Run("Catalog status updates when adding and removing Tenant", func(t *testing.T) {
+			// Remove the tenant
+			require.NoError(t, masterClient.Delete(ctx, tenant), "deleting Tenant")
+			require.NoError(t, testutil.WaitUntilNotFound(masterClient, tenant))
+
+			catalogCheck := &catalogv1alpha1.Catalog{}
+			assert.NoError(t, wait.Poll(time.Second, 30*time.Second, func() (done bool, err error) {
+				if err := masterClient.Get(ctx, types.NamespacedName{
+					Name:      catalog.Name,
+					Namespace: catalog.Namespace,
+				}, catalogCheck); err != nil {
+					if errors.IsNotFound(err) {
+						return false, nil
+					}
+					return true, err
+				}
+				return len(catalogCheck.Status.Tenants) == 0, nil
+			}), len(catalogCheck.Status.Tenants))
+
+			// Recreate the tenant
+			tenant = &catalogv1alpha1.Tenant{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "test-tenant2",
+					Namespace: "kubecarrier-system",
 				},
-			},
-			Scope: apiextensionsv1.ClusterScoped,
-		},
+			}
+			require.NoError(t, masterClient.Create(ctx, tenant), "creating tenant error")
+
+			require.NoError(t, wait.Poll(time.Second, 30*time.Second, func() (done bool, err error) {
+				if err := masterClient.Get(ctx, types.NamespacedName{
+					Name:      catalog.Name,
+					Namespace: catalog.Namespace,
+				}, catalogCheck); err != nil {
+					if errors.IsNotFound(err) {
+						return false, nil
+					}
+					return true, err
+				}
+				return len(catalogCheck.Status.Tenants) == 1 && catalogCheck.Status.Tenants[0].Name == tenant.Name, nil
+			}), "getting the Catalog error")
+		})
+
+		t.Run("cleanup", func(t *testing.T) {
+			require.NoError(t, masterClient.Delete(ctx, catalog), "deleting Catalog")
+			require.NoError(t, testutil.WaitUntilNotFound(masterClient, catalog))
+
+			// Offering object should also be removed
+			offeringCheck := &catalogv1alpha1.Offering{}
+			assert.True(t, errors.IsNotFound(masterClient.Get(ctx, types.NamespacedName{
+				Name:      offeringFound.Name,
+				Namespace: offeringFound.Namespace,
+			}, offeringCheck)), "offering object should also be deleted.")
+
+			// ProviderReference object should also be removed
+			providerReferenceCheck := &catalogv1alpha1.ProviderReference{}
+			assert.True(t, errors.IsNotFound(masterClient.Get(ctx, types.NamespacedName{
+				Name:      providerReferenceFound.Name,
+				Namespace: providerReferenceFound.Namespace,
+			}, providerReferenceCheck)), "providerReference object should also be deleted.")
+
+			// ServiceClusterReference object should also be removed
+			serviceClusterReferenceCheck := &catalogv1alpha1.ServiceClusterReference{}
+			assert.True(t, errors.IsNotFound(masterClient.Get(ctx, types.NamespacedName{
+				Name:      serviceClusterReferenceFound.Name,
+				Namespace: serviceClusterReferenceFound.Namespace,
+			}, serviceClusterReferenceCheck)), "serviceClusterReference object should also be deleted.")
+		})
 	}
-	s.Require().NoError(s.masterClient.Create(ctx, s.crd), fmt.Sprintf("creating CRD: %s error", s.crd.Name))
-
-	// Create a CatalogEntry to execute our tests in
-	s.catalogEntry = &catalogv1alpha1.CatalogEntry{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "couchdbs",
-			Namespace: s.provider.Status.NamespaceName,
-			Labels: map[string]string{
-				"kubecarrier.io/test": "label",
-			},
-		},
-		Spec: catalogv1alpha1.CatalogEntrySpec{
-			Metadata: catalogv1alpha1.CatalogEntryMetadata{
-				DisplayName: "Couch DB",
-				Description: "The comfy nosql database",
-			},
-		},
-	}
-	s.Require().NoError(s.masterClient.Create(ctx, s.catalogEntry), "could not create CatalogEntry")
-
-	// wait for catalogEntry to be ready
-	s.Require().NoError(wait.Poll(time.Second, 10*time.Second, func() (done bool, err error) {
-		if err := s.masterClient.Get(ctx, types.NamespacedName{
-			Name:      s.catalogEntry.Name,
-			Namespace: s.catalogEntry.Namespace,
-		}, s.catalogEntry); err != nil {
-			return true, err
-		}
-
-		cond, _ := s.catalogEntry.Status.GetCondition(catalogv1alpha1.CatalogEntryReady)
-		return cond.Status == catalogv1alpha1.ConditionTrue, nil
-	}), "waiting for catalogEntry to be ready")
-
-	// Create a ServiceCluster to execute our tests in
-	s.serviceCluster = &corev1alpha1.ServiceCluster{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "eu-west-1",
-			Namespace: s.provider.Status.NamespaceName,
-		},
-		Spec: corev1alpha1.ServiceClusterSpec{
-			Metadata: corev1alpha1.ServiceClusterMetadata{
-				DisplayName: "eu-west-1",
-				Description: "eu-west-1 service cluster!",
-			},
-		},
-	}
-	s.Require().NoError(s.masterClient.Create(ctx, s.serviceCluster), "could not create ServiceCluster")
-}
-
-func (s *ProviderSuite) tearDownSuiteCatalog() {
-	ctx := context.Background()
-	s.Require().NoError(s.masterClient.Delete(ctx, s.tenant), "deleting the Tenant object")
-	s.Require().NoError(testutil.WaitUntilNotFound(s.masterClient, s.tenant))
-	s.Require().NoError(s.masterClient.Delete(ctx, s.crd), "deleting the CustomResourceDefinition object")
-	s.Require().NoError(testutil.WaitUntilNotFound(s.masterClient, s.crd))
 }
