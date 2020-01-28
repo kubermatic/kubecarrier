@@ -166,7 +166,10 @@ func run(flags *flags, log logr.Logger) error {
 	// Register webhooks as handlers
 	wbh := mgr.GetWebhookServer()
 	wbh.Register("/validate-catalog-kubecarrier-io-v1alpha1-catalogentry", &webhook.Admission{Handler: &catalogv1alpha1.CatalogEntryValidator{}})
-	wbh.Register("/mutate-catalog-kubecarrier-io-v1alpha1-catalogentry", &webhook.Admission{Handler: &catalogv1alpha1.CatalogEntryValidator{}})
+	wbh.Register("/mutate-catalog-kubecarrier-io-v1alpha1-catalogentry", &webhook.Admission{Handler: &catalogv1alpha1.CatalogEntryDefaulter{
+		KubeCarrierNamespace: flags.kubeCarrierSystemNamespace,
+		ProviderLabel:        controllers.ProviderLabel,
+	}})
 	log.Info("starting manager")
 	if err := mgr.Start(ctrl.SetupSignalHandler()); err != nil {
 		return fmt.Errorf("running manager: %w", err)
