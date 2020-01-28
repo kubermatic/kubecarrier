@@ -174,7 +174,7 @@ func NewFerrySuite(f *framework.Framework) func(t *testing.T) {
 					}
 				}) {
 					t.Run("discovery", func(t *testing.T) {
-						// TODO: make this a proper test
+						// TODO: ensure CRD exists
 						t.Log("pause!!!")
 					})
 				}
@@ -182,6 +182,7 @@ func NewFerrySuite(f *framework.Framework) func(t *testing.T) {
 				// clean up
 				assert.NoError(t, masterClient.Delete(ctx, crdd))
 				assert.NoError(t, testutil.WaitUntilNotFound(masterClient, crdd))
+				// TODO: ensure CRD is deleted
 			})
 		})
 	}
