@@ -58,7 +58,6 @@ type flags struct {
 
 func init() {
 	_ = apiextensionsv1.AddToScheme(serviceScheme)
-	_ = apiextensionsv1.AddToScheme(masterScheme)
 	_ = clientgoscheme.AddToScheme(serviceScheme)
 	_ = clientgoscheme.AddToScheme(masterScheme)
 	_ = corev1alpha1.AddToScheme(masterScheme)
