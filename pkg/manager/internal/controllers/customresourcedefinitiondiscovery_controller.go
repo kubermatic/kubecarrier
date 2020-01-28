@@ -19,8 +19,12 @@ package controllers
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/go-logr/logr"
+	"github.com/gobuffalo/flect"
+	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -42,6 +46,10 @@ type CustomResourceDefinitionDiscoveryReconciler struct {
 // +kubebuilder:rbac:groups=kubecarrier.io,resources=customresourcedefinitiondiscoveries,verbs=get;list;watch
 // +kubebuilder:rbac:groups=kubecarrier.io,resources=customresourcedefinitiondiscoveries/status,verbs=get;update;patch
 // +kubebuilder:rbac:groups=apiextensions.k8s.io,resources=customresourcedefinitions,verbs=get;list;watch;update;create;patch;delete
+
+// TODO: add deletion handling
+// TODO: create internal CRD
+// TODO: test for updates/handle updates of the CRDDiscovery?
 
 func (r *CustomResourceDefinitionDiscoveryReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	ctx := context.Background()
@@ -66,6 +74,55 @@ func (r *CustomResourceDefinitionDiscoveryReconciler) Reconcile(req ctrl.Request
 		}
 	}
 
+	cond, ok := crdDiscovery.Status.GetCondition(corev1alpha1.CustomResourceDefinitionDiscoveryReady)
+	if !ok || cond.Status != corev1alpha1.ConditionTrue {
+		crdDiscovery.Status.SetCondition(corev1alpha1.CustomResourceDefinitionDiscoveryCondition{
+			Message: "CustomResourceDefinitionDiscovery isn't ready",
+			Reason:  "CustomResourceDefinitionDiscoveryUnready",
+			Status:  corev1alpha1.ConditionFalse,
+			Type:    corev1alpha1.CustomResourceDefinitionDiscoveryDiscovered,
+		})
+		if err := r.Client.Status().Update(ctx, crdDiscovery); err != nil {
+			return ctrl.Result{}, fmt.Errorf("update discovered state: %w", err)
+		}
+		return ctrl.Result{}, nil
+	}
+
+	// TODO: implement the happy path
+	crd := &apiextensionsv1.CustomResourceDefinition{
+		TypeMeta:   metav1.TypeMeta{},
+		ObjectMeta: metav1.ObjectMeta{},
+		Spec: apiextensionsv1.CustomResourceDefinitionSpec{
+			Group: crdDiscovery.Spec.ServiceCluster.Name + "." + "provider-name-TODO",
+			Names: apiextensionsv1.CustomResourceDefinitionNames{
+				Plural:   flect.Pluralize(strings.ToLower(crdDiscovery.Spec.KindOverride)),
+				Singular: strings.ToLower(crdDiscovery.Spec.KindOverride),
+				Kind:     crdDiscovery.Spec.KindOverride,
+				ListKind: crdDiscovery.Spec.KindOverride + "List",
+			},
+			Scope:                 apiextensionsv1.NamespaceScoped,
+			Versions:              crdDiscovery.Status.CRD.Spec.Versions,
+			Conversion:            nil, // TODO: implement via webhooks
+			PreserveUnknownFields: false,
+		},
+		Status: apiextensionsv1.CustomResourceDefinitionStatus{},
+	}
+	crd.Name = crdDiscovery.Spec.KindOverride + "." + crd.Spec.Group
+	_, err := util.InsertOwnerReference(crdDiscovery, crd, r.Scheme)
+	if err != nil {
+		return ctrl.Result{}, fmt.Errorf("insert object reference: %w", err)
+	}
+
+	op, err := ctrl.CreateOrUpdate(ctx, r.Client, crd, func() error {
+		crd.Spec.Versions = crdDiscovery.Status.CRD.Spec.Versions
+		_, err := util.InsertOwnerReference(crdDiscovery, crd, r.Scheme)
+		return err
+	})
+
+	if err != nil {
+		return ctrl.Result{}, fmt.Errorf("cannot create or update CRD: %w", err)
+	}
+	log.Info(fmt.Sprintf("CRD %s: %s", crd.Name, op))
 	return ctrl.Result{}, nil
 }
 
