@@ -96,9 +96,9 @@ func cleanupCustomResourceDefinitions(ctx context.Context, c client.Client, owne
 	return len(customResourceDefinitionList.Items) == 0, nil
 }
 
-// cleanupMutatingWebhookConfiguration deletes owned MutatingWebhookConfigurations
+// cleanupMutatingWebhookConfigurations deletes owned MutatingWebhookConfigurations
 // cleaned is true when all MutatingWebhookConfigurations have been cleaned up.
-func cleanupMutatingWebhookConfiguration(ctx context.Context, c client.Client, ownedBy util.GeneralizedListOption) (cleaned bool, err error) {
+func cleanupMutatingWebhookConfigurations(ctx context.Context, c client.Client, ownedBy util.GeneralizedListOption) (cleaned bool, err error) {
 	mutatingWebhookConfigurationList := &adminv1beta1.MutatingWebhookConfigurationList{}
 	if err := c.List(ctx, mutatingWebhookConfigurationList, ownedBy); err != nil {
 		return false, fmt.Errorf("listing MutatingWebhookConfigurations: %w", err)
@@ -111,9 +111,9 @@ func cleanupMutatingWebhookConfiguration(ctx context.Context, c client.Client, o
 	return len(mutatingWebhookConfigurationList.Items) == 0, nil
 }
 
-// cleanupValidatingWebhookConfiguration deletes owned ValidatingWebhookConfigurations
+// cleanupValidatingWebhookConfigurations deletes owned ValidatingWebhookConfigurations
 // cleaned is true when all ValidatingWebhookConfigurations have been cleaned up.
-func cleanupValidatingWebhookConfiguration(ctx context.Context, c client.Client, ownedBy util.GeneralizedListOption) (cleaned bool, err error) {
+func cleanupValidatingWebhookConfigurations(ctx context.Context, c client.Client, ownedBy util.GeneralizedListOption) (cleaned bool, err error) {
 	validatingWebhookConfigurationList := &adminv1beta1.ValidatingWebhookConfigurationList{}
 	if err := c.List(ctx, validatingWebhookConfigurationList, ownedBy); err != nil {
 		return false, fmt.Errorf("listing ValidatingWebhookConfigurations: %w", err)

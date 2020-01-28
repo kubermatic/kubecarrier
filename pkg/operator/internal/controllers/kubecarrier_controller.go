@@ -185,12 +185,12 @@ func (r *KubeCarrierReconciler) handleDeletion(ctx context.Context, kubeCarrier 
 		return fmt.Errorf("cleaning CustomResourceDefinitions: %w", err)
 	}
 
-	mutatingWebhookConfigurationsCleaned, err := cleanupMutatingWebhookConfiguration(ctx, r.Client, ownedBy)
+	mutatingWebhookConfigurationsCleaned, err := cleanupMutatingWebhookConfigurations(ctx, r.Client, ownedBy)
 	if err != nil {
 		return fmt.Errorf("cleaning MutatingWebhookConfigurations: %w", err)
 	}
 
-	validatingWebhookConfigurationsCleaned, err := cleanupValidatingWebhookConfiguration(ctx, r.Client, ownedBy)
+	validatingWebhookConfigurationsCleaned, err := cleanupValidatingWebhookConfigurations(ctx, r.Client, ownedBy)
 	if err != nil {
 		return fmt.Errorf("cleaning ValidatingWebhookConfigurations: %w", err)
 	}
