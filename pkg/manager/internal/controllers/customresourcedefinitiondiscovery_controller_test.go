@@ -25,6 +25,7 @@ import (
 	fakeclient "sigs.k8s.io/controller-runtime/pkg/client/fake"
 
 	corev1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/core/v1alpha1"
+	"github.com/kubermatic/kubecarrier/pkg/testutil"
 )
 
 func TestCustomResourceDefinitionDiscoveryReconciler(t *testing.T) {
@@ -61,10 +62,9 @@ func TestCustomResourceDefinitionDiscoveryReconciler(t *testing.T) {
 	}
 
 	r := &CustomResourceDefinitionDiscoveryReconciler{
-		Client:             fakeclient.NewFakeClientWithScheme(testScheme, crdRef),
-		ServiceClient:      fakeclient.NewFakeClientWithScheme(testScheme, crd),
-		Scheme:             testScheme,
-		ServiceClusterName: serviceClusterName,
+		Client: fakeclient.NewFakeClientWithScheme(testScheme, crdRef),
+		Scheme: testScheme,
+		Log:    testutil.NewLogger(t),
 	}
 	_, _ = r, crdRefNN
 }
