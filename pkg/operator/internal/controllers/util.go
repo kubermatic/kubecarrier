@@ -20,6 +20,7 @@ import (
 	"context"
 	"fmt"
 
+	adminv1beta1 "k8s.io/api/admissionregistration/v1beta1"
 	rbacv1 "k8s.io/api/rbac/v1"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -35,14 +36,16 @@ import (
 // addOwnerReference adds an OwnerReference to an object.
 func addOwnerReference(owner metav1.Object, object *unstructured.Unstructured, scheme *runtime.Scheme) error {
 	switch object.GetKind() {
-	case "ClusterRole", "ClusterRoleBinding", "CustomResourceDefinition":
+	case "ClusterRole", "ClusterRoleBinding",
+		"CustomResourceDefinition",
+		"MutatingWebhookConfiguration", "ValidatingWebhookConfiguration":
 		// Non-Namespaced objects
 		if _, err := util.InsertOwnerReference(owner, object, scheme); err != nil {
 			return fmt.Errorf("insert corss-namespaced ownerReference: %w", err)
 		}
 	default:
 		if err := controllerutil.SetControllerReference(owner, object, scheme); err != nil {
-			return fmt.Errorf("set ownerReference: %w", err)
+			return fmt.Errorf("set ownerReference: %w, obj: %s, %s", err, object.GetKind(), object.GetName())
 		}
 	}
 	return nil
@@ -91,4 +94,34 @@ func cleanupCustomResourceDefinitions(ctx context.Context, c client.Client, owne
 		}
 	}
 	return len(customResourceDefinitionList.Items) == 0, nil
+}
+
+// cleanupMutatingWebhookConfigurations deletes owned MutatingWebhookConfigurations
+// cleaned is true when all MutatingWebhookConfigurations have been cleaned up.
+func cleanupMutatingWebhookConfigurations(ctx context.Context, c client.Client, ownedBy util.GeneralizedListOption) (cleaned bool, err error) {
+	mutatingWebhookConfigurationList := &adminv1beta1.MutatingWebhookConfigurationList{}
+	if err := c.List(ctx, mutatingWebhookConfigurationList, ownedBy); err != nil {
+		return false, fmt.Errorf("listing MutatingWebhookConfigurations: %w", err)
+	}
+	for _, mutatingWebhookConfiguration := range mutatingWebhookConfigurationList.Items {
+		if err := c.Delete(ctx, &mutatingWebhookConfiguration); err != nil && !errors.IsNotFound(err) {
+			return false, fmt.Errorf("deleting MutatingWebhookConfiguration: %w", err)
+		}
+	}
+	return len(mutatingWebhookConfigurationList.Items) == 0, nil
+}
+
+// cleanupValidatingWebhookConfigurations deletes owned ValidatingWebhookConfigurations
+// cleaned is true when all ValidatingWebhookConfigurations have been cleaned up.
+func cleanupValidatingWebhookConfigurations(ctx context.Context, c client.Client, ownedBy util.GeneralizedListOption) (cleaned bool, err error) {
+	validatingWebhookConfigurationList := &adminv1beta1.ValidatingWebhookConfigurationList{}
+	if err := c.List(ctx, validatingWebhookConfigurationList, ownedBy); err != nil {
+		return false, fmt.Errorf("listing ValidatingWebhookConfigurations: %w", err)
+	}
+	for _, validatingWebhookConfiguration := range validatingWebhookConfigurationList.Items {
+		if err := c.Delete(ctx, &validatingWebhookConfiguration); err != nil && !errors.IsNotFound(err) {
+			return false, fmt.Errorf("deleting ValidatingWebhookConfiguration: %w", err)
+		}
+	}
+	return len(validatingWebhookConfigurationList.Items) == 0, nil
 }

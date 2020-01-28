@@ -80,12 +80,7 @@
           control-plane: manager
       spec:
         containers:
-        - env:
-          - name: KUBECARRIER_NAMESPACE
-            valueFrom:
-              fieldRef:
-                fieldPath: metadata.namespace
-          image: quay.io/kubecarrier/catapult:was not build properly
+        - image: quay.io/kubecarrier/catapult:was not build properly
           name: manager
           resources:
             limits:

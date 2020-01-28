@@ -20,7 +20,9 @@ import (
 	"fmt"
 
 	"github.com/go-logr/logr"
+	certv1alpha2 "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
 	"github.com/spf13/cobra"
+	adminv1beta1 "k8s.io/api/admissionregistration/v1beta1"
 	rbacv1 "k8s.io/api/rbac/v1"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -47,6 +49,8 @@ func init() {
 	_ = operatorv1alpha1.AddToScheme(scheme)
 	_ = rbacv1.AddToScheme(scheme)
 	_ = apiextensionsv1.AddToScheme(scheme)
+	_ = certv1alpha2.AddToScheme(scheme)
+	_ = adminv1beta1.AddToScheme(scheme)
 }
 
 const (
@@ -85,6 +89,9 @@ func run(flags *flags, log logr.Logger) error {
 	for _, obj := range []runtime.Object{
 		&rbacv1.ClusterRole{},
 		&rbacv1.ClusterRoleBinding{},
+		&apiextensionsv1.CustomResourceDefinition{},
+		&adminv1beta1.MutatingWebhookConfiguration{},
+		&adminv1beta1.ValidatingWebhookConfiguration{},
 	} {
 		gvk, err := apiutil.GVKForObject(obj, mgr.GetScheme())
 		if err != nil {
@@ -95,11 +102,6 @@ func run(flags *flags, log logr.Logger) error {
 		); err != nil {
 			return fmt.Errorf("cannot add %s owner field indexer: %w", gvk.Kind, err)
 		}
-	}
-	if err := util.AddOwnerReverseFieldIndex(
-		mgr.GetFieldIndexer(), ctrl.Log.WithName("fieldindex").WithName("CustomResourceDefinition"), &apiextensionsv1.CustomResourceDefinition{},
-	); err != nil {
-		return fmt.Errorf("cannot add CustomResourceDefinition owner field indexer: %w", err)
 	}
 
 	if err = (&controllers.KubeCarrierReconciler{
@@ -122,6 +124,13 @@ func run(flags *flags, log logr.Logger) error {
 		Scheme: mgr.GetScheme(),
 	}).SetupWithManager(mgr); err != nil {
 		return fmt.Errorf("creating Catapult controller: %w", err)
+	}
+	if err = (&controllers.ElevatorReconciler{
+		Client: mgr.GetClient(),
+		Log:    log.WithName("controllers").WithName("Elevator"),
+		Scheme: mgr.GetScheme(),
+	}).SetupWithManager(mgr); err != nil {
+		return fmt.Errorf("creating Elevator controller: %w", err)
 	}
 
 	log.Info("starting operator")

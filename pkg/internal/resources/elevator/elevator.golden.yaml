@@ -1,0 +1,92 @@
+- apiVersion: rbac.authorization.k8s.io/v1
+  kind: Role
+  metadata:
+    creationTimestamp: null
+    name: db-eu-west-1-elevator-manager-role
+    namespace: test3000
+  rules: []
+- apiVersion: rbac.authorization.k8s.io/v1
+  kind: ClusterRoleBinding
+  metadata:
+    name: db-eu-west-1-elevator-manager-rolebinding
+  roleRef:
+    apiGroup: rbac.authorization.k8s.io
+    kind: ClusterRole
+    name: manager-role
+  subjects:
+  - kind: ServiceAccount
+    name: default
+    namespace: test3000
+- apiVersion: rbac.authorization.k8s.io/v1
+  kind: Role
+  metadata:
+    name: db-eu-west-1-elevator-leader-election-role
+    namespace: test3000
+  rules:
+  - apiGroups:
+    - ""
+    resources:
+    - configmaps
+    verbs:
+    - get
+    - list
+    - watch
+    - create
+    - update
+    - patch
+    - delete
+  - apiGroups:
+    - ""
+    resources:
+    - configmaps/status
+    verbs:
+    - get
+    - update
+    - patch
+  - apiGroups:
+    - ""
+    resources:
+    - events
+    verbs:
+    - create
+- apiVersion: rbac.authorization.k8s.io/v1
+  kind: RoleBinding
+  metadata:
+    name: db-eu-west-1-elevator-leader-election-rolebinding
+    namespace: test3000
+  roleRef:
+    apiGroup: rbac.authorization.k8s.io
+    kind: Role
+    name: db-eu-west-1-elevator-leader-election-role
+  subjects:
+  - kind: ServiceAccount
+    name: default
+    namespace: test3000
+- apiVersion: apps/v1
+  kind: Deployment
+  metadata:
+    labels:
+      control-plane: manager
+    name: db-eu-west-1-elevator-manager
+    namespace: test3000
+  spec:
+    replicas: 1
+    selector:
+      matchLabels:
+        control-plane: manager
+    template:
+      metadata:
+        labels:
+          control-plane: manager
+      spec:
+        containers:
+        - image: quay.io/kubecarrier/elevator:was not build properly
+          name: manager
+          resources:
+            limits:
+              cpu: 100m
+              memory: 30Mi
+            requests:
+              cpu: 100m
+              memory: 20Mi
+        terminationGracePeriodSeconds: 10
