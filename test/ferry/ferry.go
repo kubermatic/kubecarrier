@@ -117,7 +117,7 @@ func NewFerrySuite(f *framework.Framework) func(t *testing.T) {
 				tenant,
 			} {
 				require.NoError(t, client.IgnoreNotFound(masterClient.Delete(ctx, obj.DeepCopyObject())))
-				require.NoError(t, testutil.WaitUntilNotFound(masterClient, obj.DeepCopyObject()))
+				require.NoError(t, testutil.WaitUntilNotFound(masterClient, obj.DeepCopyObject()), "not cleared %s: %v", obj.GetObjectKind().GroupVersionKind().Kind, obj)
 			}
 
 			for _, obj := range []runtime.Object{

@@ -144,6 +144,11 @@ func (r *ServiceClusterAssignmentReconciler) SetupWithManagers(serviceMgr, maste
 					return true
 				}
 			}
+
+			// for namespace owner reconciliation from the service cluster
+			if _, ok := obj.(*corev1.Namespace); ok {
+				return true
+			}
 			return false
 		})).
 		Complete(r)
