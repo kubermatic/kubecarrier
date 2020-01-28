@@ -5,6 +5,7 @@ resources:
 - bases/operator.kubecarrier.io_kubecarriers.yaml
 - bases/operator.kubecarrier.io_serviceclusterregistrations.yaml
 - bases/operator.kubecarrier.io_catapults.yaml
+- bases/operator.kubecarrier.io_elevators.yaml
 # +kubebuilder:scaffold:crdkustomizeresource
 
 patchesStrategicMerge:

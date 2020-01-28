@@ -16,7 +16,7 @@ spec:
         control-plane: manager
     spec:
       containers:
-      - image: quay.io/kubecarrier/catapult:lastest
+      - image: quay.io/kubecarrier/elevator:lastest
         name: manager
         resources:
           limits:

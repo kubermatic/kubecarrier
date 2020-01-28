@@ -125,6 +125,13 @@ func run(flags *flags, log logr.Logger) error {
 	}).SetupWithManager(mgr); err != nil {
 		return fmt.Errorf("creating Catapult controller: %w", err)
 	}
+	if err = (&controllers.ElevatorReconciler{
+		Client: mgr.GetClient(),
+		Log:    log.WithName("controllers").WithName("Elevator"),
+		Scheme: mgr.GetScheme(),
+	}).SetupWithManager(mgr); err != nil {
+		return fmt.Errorf("creating Elevator controller: %w", err)
+	}
 
 	log.Info("starting operator")
 	if err := mgr.Start(ctrl.SetupSignalHandler()); err != nil {

@@ -43,15 +43,15 @@ func ConditionStatusEqual(obj runtime.Object, ConditionType, ConditionStatus int
 		return fmt.Errorf("cannot find results: %w", err)
 	}
 	if len(res) != 1 {
-		return fmt.Errorf("found %d values, expected 1", len(res))
+		return fmt.Errorf("found %d matching conditions, expected 1", len(res))
 	}
 	rr := res[0]
 	if len(rr) != 1 {
-		return fmt.Errorf("found %d values, expected 1", len(rr))
+		return fmt.Errorf("found %d matching conditions, expected 1", len(rr))
 	}
 	status := rr[0].String()
 	if status != fmt.Sprint(ConditionStatus) {
-		return fmt.Errorf("expected %s, got %s", ConditionStatus, status)
+		return fmt.Errorf("expected condition status %s, got %s", ConditionStatus, status)
 	}
 	return nil
 }
