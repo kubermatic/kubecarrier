@@ -19,6 +19,7 @@ package provider
 import (
 	"context"
 	"fmt"
+	"os"
 	"testing"
 	"time"
 
@@ -57,6 +58,10 @@ func NewProviderSuite(f *framework.Framework) func(t *testing.T) {
 		)
 
 		cleanUp := func() {
+			if _, noCleanup := os.LookupEnv("NO_CLEANUP"); noCleanup {
+				return
+			}
+
 			for _, obj := range []runtime.Object{
 				provider,
 			} {
@@ -273,6 +278,10 @@ func NewCatalogSuite(
 
 		// Teardown
 		defer func() {
+			if _, noCleanup := os.LookupEnv("NO_CLEANUP"); noCleanup {
+				return
+			}
+
 			require.NoError(t, masterClient.Delete(ctx, tenant), "deleting the Tenant object")
 			require.NoError(t, testutil.WaitUntilNotFound(masterClient, tenant))
 
