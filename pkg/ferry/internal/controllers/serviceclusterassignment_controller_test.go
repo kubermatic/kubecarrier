@@ -66,6 +66,6 @@ func TestServiceClusterAssignmentReconciler(t *testing.T) {
 	namespaceList := &corev1.NamespaceList{}
 	require.NoError(t, r.ServiceClient.List(ctx, namespaceList), "listing Namespaces")
 	if assert.Len(t, namespaceList.Items, 1) {
-		assert.Equal(t, "ServiceClusterAssignment-", namespaceList.Items[0].GenerateName)
+		assert.Equal(t, "serviceclusterassignment-", namespaceList.Items[0].GenerateName)
 	}
 }
