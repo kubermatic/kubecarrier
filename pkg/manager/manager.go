@@ -164,7 +164,7 @@ func run(flags *flags, log logr.Logger) error {
 
 	// mutating webhooks
 	wbh.Register(util.GenerateMutateWebhookPath(
-		catalogv1alpha1.CatalogEntry{}.GroupVersionKind()),
+		(&catalogv1alpha1.CatalogEntry{}).GroupVersionKind()),
 		&webhook.Admission{Handler: &webhooks.CatalogEntryDefaulter{
 			KubeCarrierNamespace: flags.kubeCarrierSystemNamespace,
 			ProviderLabel:        controllers.ProviderLabel,
