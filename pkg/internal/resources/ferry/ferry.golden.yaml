@@ -8,6 +8,25 @@
   - apiGroups:
     - kubecarrier.io
     resources:
+    - customresourcedefinitiondiscoveries
+    verbs:
+    - create
+    - get
+    - list
+    - patch
+    - update
+    - watch
+  - apiGroups:
+    - kubecarrier.io
+    resources:
+    - customresourcedefinitiondiscoveries/status
+    verbs:
+    - get
+    - patch
+    - update
+  - apiGroups:
+    - kubecarrier.io
+    resources:
     - serviceclusters
     verbs:
     - create

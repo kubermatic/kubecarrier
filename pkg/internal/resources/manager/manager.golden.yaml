@@ -4,310 +4,6 @@
     annotations:
       controller-gen.kubebuilder.io/version: v0.2.4
     creationTimestamp: null
-    name: tenants.catalog.kubecarrier.io
-  spec:
-    group: catalog.kubecarrier.io
-    names:
-      kind: Tenant
-      listKind: TenantList
-      plural: tenants
-      shortNames:
-      - tn
-      singular: tenant
-    scope: Namespaced
-    versions:
-    - additionalPrinterColumns:
-      - jsonPath: .status.phase
-        name: Status
-        type: string
-      - jsonPath: .metadata.creationTimestamp
-        name: Age
-        type: date
-      name: v1alpha1
-      schema:
-        openAPIV3Schema:
-          description: Tenant sets up permissions and references to allow a end-user
-            group to interact with providers' services.
-          properties:
-            apiVersion:
-              description: 'APIVersion defines the versioned schema of this representation
-                of an object. Servers should convert recognized schemas to the latest
-                internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
-              type: string
-            kind:
-              description: 'Kind is a string value representing the REST resource
-                this object represents. Servers may infer this from the endpoint the
-                client submits requests to. Cannot be updated. In CamelCase. More
-                info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
-              type: string
-            metadata:
-              type: object
-            spec:
-              description: TenantSpec defines the desired state of Tenant.
-              type: object
-            status:
-              description: TenantStatus defines the observed state of Tenant.
-              properties:
-                conditions:
-                  description: Conditions represents the latest available observations
-                    of a Tenant's current state.
-                  items:
-                    description: TenantCondition contains details for the current
-                      condition of this Tenant.
-                    properties:
-                      lastTransitionTime:
-                        description: LastTransitionTime is the last time the condition
-                          transits from one status to another.
-                        format: date-time
-                        type: string
-                      message:
-                        description: Message is the human readable message indicating
-                          details about last transition.
-                        type: string
-                      reason:
-                        description: Reason is the (brief) reason for the condition's
-                          last transition.
-                        type: string
-                      status:
-                        description: Status is the status of the condition, one of
-                          ('True', 'False', 'Unknown').
-                        type: string
-                      type:
-                        description: Type is the type of the Tenant condition, currently
-                          ('Ready').
-                        type: string
-                    required:
-                    - lastTransitionTime
-                    - message
-                    - reason
-                    - status
-                    - type
-                    type: object
-                  type: array
-                namespaceName:
-                  description: NamespaceName is the name of the namespace that the
-                    Tenant manages.
-                  type: string
-                observedGeneration:
-                  description: ObservedGeneration is the most recent generation observed
-                    for this Tenant by the controller.
-                  format: int64
-                  type: integer
-                phase:
-                  description: DEPRECATED. Phase represents the current lifecycle
-                    state of this object. Consider this field DEPRECATED, it will
-                    be removed as soon as there is a mechanism to map conditions to
-                    strings when printing the property. This is only for display purpose,
-                    for everything else use conditions.
-                  type: string
-              type: object
-          type: object
-      served: true
-      storage: true
-      subresources:
-        status: {}
-  status:
-    acceptedNames:
-      kind: ""
-      plural: ""
-    conditions: []
-    storedVersions: []
-- apiVersion: apiextensions.k8s.io/v1
-  kind: CustomResourceDefinition
-  metadata:
-    annotations:
-      controller-gen.kubebuilder.io/version: v0.2.4
-    creationTimestamp: null
-    name: providers.catalog.kubecarrier.io
-  spec:
-    group: catalog.kubecarrier.io
-    names:
-      kind: Provider
-      listKind: ProviderList
-      plural: providers
-      shortNames:
-      - pdr
-      singular: provider
-    scope: Namespaced
-    versions:
-    - additionalPrinterColumns:
-      - jsonPath: .status.namespaceName
-        name: Provider Namespace
-        type: string
-      - jsonPath: .spec.displayName
-        name: Display Name
-        type: string
-      - jsonPath: .status.phase
-        name: Status
-        type: string
-      - jsonPath: .metadata.creationTimestamp
-        name: Age
-        type: date
-      name: v1alpha1
-      schema:
-        openAPIV3Schema:
-          description: Provider is the service provider representation in the KubeCarrier
-            control-plane.
-          properties:
-            apiVersion:
-              description: 'APIVersion defines the versioned schema of this representation
-                of an object. Servers should convert recognized schemas to the latest
-                internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
-              type: string
-            kind:
-              description: 'Kind is a string value representing the REST resource
-                this object represents. Servers may infer this from the endpoint the
-                client submits requests to. Cannot be updated. In CamelCase. More
-                info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
-              type: string
-            metadata:
-              type: object
-            spec:
-              description: ProviderSpec defines the desired state of Provider.
-              properties:
-                metadata:
-                  description: ProviderMetadata contains the metadata (display name,
-                    description, etc) of the Provider.
-                  properties:
-                    description:
-                      description: Description shows the human-readable description
-                        of this Provider.
-                      type: string
-                    displayName:
-                      description: DisplayName shows the human-readable name of this
-                        Provider.
-                      type: string
-                  type: object
-              type: object
-            status:
-              description: ProviderStatus defines the observed state of Provider.
-              properties:
-                conditions:
-                  description: Conditions represents the latest available observations
-                    of a Provider's current state.
-                  items:
-                    description: ProviderCondition contains details for the current
-                      condition of this Provider.
-                    properties:
-                      lastTransitionTime:
-                        description: LastTransitionTime is the last time the condition
-                          transits from one status to another.
-                        format: date-time
-                        type: string
-                      message:
-                        description: Message is the human readable message indicating
-                          details about last transition.
-                        type: string
-                      reason:
-                        description: Reason is the (brief) reason for the condition's
-                          last transition.
-                        type: string
-                      status:
-                        description: Status is the status of the condition, one of
-                          ('True', 'False', 'Unknown').
-                        type: string
-                      type:
-                        description: Type is the type of the Provider condition, currently
-                          ('Ready').
-                        type: string
-                    required:
-                    - lastTransitionTime
-                    - message
-                    - reason
-                    - status
-                    - type
-                    type: object
-                  type: array
-                namespaceName:
-                  description: NamespaceName is the name of the namespace that the
-                    Provider manages.
-                  type: string
-                observedGeneration:
-                  description: ObservedGeneration is the most recent generation observed
-                    for this Provider by the controller.
-                  format: int64
-                  type: integer
-                phase:
-                  description: DEPRECATED. Phase represents the current lifecycle
-                    state of this object. Consider this field DEPRECATED, it will
-                    be removed as soon as there is a mechanism to map conditions to
-                    strings when printing the property. This is only for display purpose,
-                    for everything else use conditions.
-                  type: string
-              type: object
-          type: object
-      served: true
-      storage: true
-      subresources:
-        status: {}
-  status:
-    acceptedNames:
-      kind: ""
-      plural: ""
-    conditions: []
-    storedVersions: []
-- apiVersion: apiextensions.k8s.io/v1
-  kind: CustomResourceDefinition
-  metadata:
-    annotations:
-      controller-gen.kubebuilder.io/version: v0.2.4
-    creationTimestamp: null
-    name: tenantreferences.catalog.kubecarrier.io
-  spec:
-    group: catalog.kubecarrier.io
-    names:
-      kind: TenantReference
-      listKind: TenantReferenceList
-      plural: tenantreferences
-      shortNames:
-      - tr
-      singular: tenantreference
-    scope: Namespaced
-    versions:
-    - additionalPrinterColumns:
-      - jsonPath: .metadata.creationTimestamp
-        name: Age
-        type: date
-      name: v1alpha1
-      schema:
-        openAPIV3Schema:
-          description: TenantReference is a read-only object exposing the Tenant information.
-            TenantReference lives in the provider's namespace. The provider is allowed
-            modifying TenantReference's labels, marking them at will. This allows
-            the tenant granular tenant selection for the offered services catalogs.
-          properties:
-            apiVersion:
-              description: 'APIVersion defines the versioned schema of this representation
-                of an object. Servers should convert recognized schemas to the latest
-                internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
-              type: string
-            kind:
-              description: 'Kind is a string value representing the REST resource
-                this object represents. Servers may infer this from the endpoint the
-                client submits requests to. Cannot be updated. In CamelCase. More
-                info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
-              type: string
-            metadata:
-              type: object
-            spec:
-              description: TenantReferenceSpec defines the desired state of TenantReference
-              type: object
-          type: object
-      served: true
-      storage: true
-      subresources: {}
-  status:
-    acceptedNames:
-      kind: ""
-      plural: ""
-    conditions: []
-    storedVersions: []
-- apiVersion: apiextensions.k8s.io/v1
-  kind: CustomResourceDefinition
-  metadata:
-    annotations:
-      controller-gen.kubebuilder.io/version: v0.2.4
-    creationTimestamp: null
     name: catalogentries.catalog.kubecarrier.io
   spec:
     group: catalog.kubecarrier.io
@@ -749,6 +445,189 @@
     annotations:
       controller-gen.kubebuilder.io/version: v0.2.4
     creationTimestamp: null
+    name: derivedcustomresourcedefinitions.catalog.kubecarrier.io
+  spec:
+    group: catalog.kubecarrier.io
+    names:
+      kind: DerivedCustomResourceDefinition
+      listKind: DerivedCustomResourceDefinitionList
+      plural: derivedcustomresourcedefinitions
+      shortNames:
+      - dcrd
+      singular: derivedcustomresourcedefinition
+    scope: Namespaced
+    versions:
+    - additionalPrinterColumns:
+      - jsonPath: .status.phase
+        name: Status
+        type: string
+      - jsonPath: .metadata.creationTimestamp
+        name: Age
+        type: date
+      name: v1alpha1
+      schema:
+        openAPIV3Schema:
+          description: DerivedCustomResourceDefinition derives a new CRD from a existing
+            one.
+          properties:
+            apiVersion:
+              description: 'APIVersion defines the versioned schema of this representation
+                of an object. Servers should convert recognized schemas to the latest
+                internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+              type: string
+            kind:
+              description: 'Kind is a string value representing the REST resource
+                this object represents. Servers may infer this from the endpoint the
+                client submits requests to. Cannot be updated. In CamelCase. More
+                info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+              type: string
+            metadata:
+              type: object
+            spec:
+              description: DerivedCustomResourceDefinitionSpec defines the desired
+                state of DerivedCustomResourceDefinition.
+              properties:
+                baseCRD:
+                  description: CRD that should be used as a base to derive a new CRD
+                    from.
+                  properties:
+                    name:
+                      type: string
+                  required:
+                  - name
+                  type: object
+                expose:
+                  description: controls which fields will be present in the derived
+                    CRD.
+                  items:
+                    description: VersionExposeConfig specifies which fields to expose
+                      in the derived CRD.
+                    properties:
+                      fields:
+                        description: specifies the fields that should be present in
+                          the derived CRD.
+                        items:
+                          description: FieldPath is specifying how to address a certain
+                            field.
+                          properties:
+                            jsonPath:
+                              description: JSONPath e.g. .spec.somefield.somesubfield
+                              type: string
+                          required:
+                          - jsonPath
+                          type: object
+                        type: array
+                      versions:
+                        description: specifies the versions of the referenced CRD,
+                          that this expose config applies to. The same version may
+                          not be specified in multiple VersionExposeConfigs.
+                        items:
+                          type: string
+                        type: array
+                    required:
+                    - fields
+                    - versions
+                    type: object
+                  type: array
+                kindOverride:
+                  description: overrides the kind of the derived CRD.
+                  type: string
+              required:
+              - baseCRD
+              - expose
+              type: object
+            status:
+              description: DerivedCustomResourceDefinitionStatus defines the observed
+                state of DerivedCustomResourceDefinition.
+              properties:
+                conditions:
+                  description: Conditions represents the latest available observations
+                    of a DerivedCustomResourceDefinition's current state.
+                  items:
+                    description: DerivedCustomResourceDefinitionCondition contains
+                      details for the current condition of this DerivedCustomResourceDefinition.
+                    properties:
+                      lastTransitionTime:
+                        description: LastTransitionTime is the last time the condition
+                          transits from one status to another.
+                        format: date-time
+                        type: string
+                      message:
+                        description: Message is the human readable message indicating
+                          details about last transition.
+                        type: string
+                      reason:
+                        description: Reason is the (brief) reason for the condition's
+                          last transition.
+                        type: string
+                      status:
+                        description: Status is the status of the condition, one of
+                          ('True', 'False', 'Unknown').
+                        type: string
+                      type:
+                        description: Type is the type of the DerivedCustomResourceDefinition
+                          condition, currently ('Ready').
+                        type: string
+                    required:
+                    - lastTransitionTime
+                    - message
+                    - reason
+                    - status
+                    - type
+                    type: object
+                  type: array
+                derivedCRD:
+                  description: DerivedCRD holds information about the derived CRD.
+                  properties:
+                    group:
+                      description: API Group of the derived CRD.
+                      type: string
+                    kind:
+                      type: string
+                    name:
+                      description: Name of the derived CRD.
+                      type: string
+                    plural:
+                      type: string
+                    singular:
+                      type: string
+                  required:
+                  - group
+                  - kind
+                  - name
+                  - plural
+                  - singular
+                  type: object
+                observedGeneration:
+                  description: ObservedGeneration is the most recent generation observed
+                    for this DerivedCustomResourceDefinition by the controller.
+                  format: int64
+                  type: integer
+                phase:
+                  description: DEPRECATED. Phase represents the current lifecycle
+                    state of this object. Consider this field DEPRECATED, it will
+                    be removed as soon as there is a mechanism to map conditions to
+                    strings when printing the property. This is only for display purpose,
+                    for everything else use conditions.
+                  type: string
+              type: object
+          type: object
+      served: true
+      storage: true
+      subresources:
+        status: {}
+  status:
+    acceptedNames:
+      kind: ""
+      plural: ""
+    conditions: []
+    storedVersions: []
+- apiVersion: apiextensions.k8s.io/v1
+  kind: CustomResourceDefinition
+  metadata:
+    annotations:
+      controller-gen.kubebuilder.io/version: v0.2.4
+    creationTimestamp: null
     name: offerings.catalog.kubecarrier.io
   spec:
     group: catalog.kubecarrier.io
@@ -948,6 +827,534 @@
     annotations:
       controller-gen.kubebuilder.io/version: v0.2.4
     creationTimestamp: null
+    name: providers.catalog.kubecarrier.io
+  spec:
+    group: catalog.kubecarrier.io
+    names:
+      kind: Provider
+      listKind: ProviderList
+      plural: providers
+      shortNames:
+      - pdr
+      singular: provider
+    scope: Namespaced
+    versions:
+    - additionalPrinterColumns:
+      - jsonPath: .status.namespaceName
+        name: Provider Namespace
+        type: string
+      - jsonPath: .spec.displayName
+        name: Display Name
+        type: string
+      - jsonPath: .status.phase
+        name: Status
+        type: string
+      - jsonPath: .metadata.creationTimestamp
+        name: Age
+        type: date
+      name: v1alpha1
+      schema:
+        openAPIV3Schema:
+          description: Provider is the service provider representation in the KubeCarrier
+            control-plane.
+          properties:
+            apiVersion:
+              description: 'APIVersion defines the versioned schema of this representation
+                of an object. Servers should convert recognized schemas to the latest
+                internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+              type: string
+            kind:
+              description: 'Kind is a string value representing the REST resource
+                this object represents. Servers may infer this from the endpoint the
+                client submits requests to. Cannot be updated. In CamelCase. More
+                info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+              type: string
+            metadata:
+              type: object
+            spec:
+              description: ProviderSpec defines the desired state of Provider.
+              properties:
+                metadata:
+                  description: ProviderMetadata contains the metadata (display name,
+                    description, etc) of the Provider.
+                  properties:
+                    description:
+                      description: Description shows the human-readable description
+                        of this Provider.
+                      type: string
+                    displayName:
+                      description: DisplayName shows the human-readable name of this
+                        Provider.
+                      type: string
+                  type: object
+              type: object
+            status:
+              description: ProviderStatus defines the observed state of Provider.
+              properties:
+                conditions:
+                  description: Conditions represents the latest available observations
+                    of a Provider's current state.
+                  items:
+                    description: ProviderCondition contains details for the current
+                      condition of this Provider.
+                    properties:
+                      lastTransitionTime:
+                        description: LastTransitionTime is the last time the condition
+                          transits from one status to another.
+                        format: date-time
+                        type: string
+                      message:
+                        description: Message is the human readable message indicating
+                          details about last transition.
+                        type: string
+                      reason:
+                        description: Reason is the (brief) reason for the condition's
+                          last transition.
+                        type: string
+                      status:
+                        description: Status is the status of the condition, one of
+                          ('True', 'False', 'Unknown').
+                        type: string
+                      type:
+                        description: Type is the type of the Provider condition, currently
+                          ('Ready').
+                        type: string
+                    required:
+                    - lastTransitionTime
+                    - message
+                    - reason
+                    - status
+                    - type
+                    type: object
+                  type: array
+                namespaceName:
+                  description: NamespaceName is the name of the namespace that the
+                    Provider manages.
+                  type: string
+                observedGeneration:
+                  description: ObservedGeneration is the most recent generation observed
+                    for this Provider by the controller.
+                  format: int64
+                  type: integer
+                phase:
+                  description: DEPRECATED. Phase represents the current lifecycle
+                    state of this object. Consider this field DEPRECATED, it will
+                    be removed as soon as there is a mechanism to map conditions to
+                    strings when printing the property. This is only for display purpose,
+                    for everything else use conditions.
+                  type: string
+              type: object
+          type: object
+      served: true
+      storage: true
+      subresources:
+        status: {}
+  status:
+    acceptedNames:
+      kind: ""
+      plural: ""
+    conditions: []
+    storedVersions: []
+- apiVersion: apiextensions.k8s.io/v1
+  kind: CustomResourceDefinition
+  metadata:
+    annotations:
+      controller-gen.kubebuilder.io/version: v0.2.4
+    creationTimestamp: null
+    name: serviceclusterreferences.catalog.kubecarrier.io
+  spec:
+    group: catalog.kubecarrier.io
+    names:
+      kind: ServiceClusterReference
+      listKind: ServiceClusterReferenceList
+      plural: serviceclusterreferences
+      shortNames:
+      - scr
+      singular: serviceclusterreference
+    scope: Namespaced
+    versions:
+    - additionalPrinterColumns:
+      - jsonPath: .spec.provider.name
+        name: Provider
+        type: string
+      - jsonPath: .spec.metadata.displayName
+        name: Display Name
+        type: string
+      - jsonPath: .metadata.creationTimestamp
+        name: Age
+        type: date
+      name: v1alpha1
+      schema:
+        openAPIV3Schema:
+          description: "ServiceClusterReference exposes information about a Providers
+            Clusters. \n This object lives in the tenant namespace for each provider
+            the tenant is allowed utilizing (e.g. there's catalog selecting this tenant
+            as its user)"
+          properties:
+            apiVersion:
+              description: 'APIVersion defines the versioned schema of this representation
+                of an object. Servers should convert recognized schemas to the latest
+                internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+              type: string
+            kind:
+              description: 'Kind is a string value representing the REST resource
+                this object represents. Servers may infer this from the endpoint the
+                client submits requests to. Cannot be updated. In CamelCase. More
+                info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+              type: string
+            metadata:
+              type: object
+            spec:
+              description: ServiceClusterReferenceSpec defines the desired state of
+                ServiceClusterReference
+              properties:
+                metadata:
+                  description: Metadata contains the metadata (display name, description,
+                    etc) of the ServiceCluster.
+                  properties:
+                    description:
+                      description: Description shows the human-readable description
+                        of this ServiceCluster.
+                      type: string
+                    displayName:
+                      description: DisplayName shows the human-readable name of this
+                        ServiceCluster.
+                      type: string
+                  type: object
+                provider:
+                  description: Provider references the Provider that this ServiceCluster
+                    belongs to.
+                  properties:
+                    name:
+                      type: string
+                  required:
+                  - name
+                  type: object
+              required:
+              - provider
+              type: object
+          type: object
+      served: true
+      storage: true
+      subresources: {}
+  status:
+    acceptedNames:
+      kind: ""
+      plural: ""
+    conditions: []
+    storedVersions: []
+- apiVersion: apiextensions.k8s.io/v1
+  kind: CustomResourceDefinition
+  metadata:
+    annotations:
+      controller-gen.kubebuilder.io/version: v0.2.4
+    creationTimestamp: null
+    name: tenantreferences.catalog.kubecarrier.io
+  spec:
+    group: catalog.kubecarrier.io
+    names:
+      kind: TenantReference
+      listKind: TenantReferenceList
+      plural: tenantreferences
+      shortNames:
+      - tr
+      singular: tenantreference
+    scope: Namespaced
+    versions:
+    - additionalPrinterColumns:
+      - jsonPath: .metadata.creationTimestamp
+        name: Age
+        type: date
+      name: v1alpha1
+      schema:
+        openAPIV3Schema:
+          description: TenantReference is a read-only object exposing the Tenant information.
+            TenantReference lives in the provider's namespace. The provider is allowed
+            modifying TenantReference's labels, marking them at will. This allows
+            the tenant granular tenant selection for the offered services catalogs.
+          properties:
+            apiVersion:
+              description: 'APIVersion defines the versioned schema of this representation
+                of an object. Servers should convert recognized schemas to the latest
+                internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+              type: string
+            kind:
+              description: 'Kind is a string value representing the REST resource
+                this object represents. Servers may infer this from the endpoint the
+                client submits requests to. Cannot be updated. In CamelCase. More
+                info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+              type: string
+            metadata:
+              type: object
+            spec:
+              description: TenantReferenceSpec defines the desired state of TenantReference
+              type: object
+          type: object
+      served: true
+      storage: true
+      subresources: {}
+  status:
+    acceptedNames:
+      kind: ""
+      plural: ""
+    conditions: []
+    storedVersions: []
+- apiVersion: apiextensions.k8s.io/v1
+  kind: CustomResourceDefinition
+  metadata:
+    annotations:
+      controller-gen.kubebuilder.io/version: v0.2.4
+    creationTimestamp: null
+    name: tenants.catalog.kubecarrier.io
+  spec:
+    group: catalog.kubecarrier.io
+    names:
+      kind: Tenant
+      listKind: TenantList
+      plural: tenants
+      shortNames:
+      - tn
+      singular: tenant
+    scope: Namespaced
+    versions:
+    - additionalPrinterColumns:
+      - jsonPath: .status.phase
+        name: Status
+        type: string
+      - jsonPath: .metadata.creationTimestamp
+        name: Age
+        type: date
+      name: v1alpha1
+      schema:
+        openAPIV3Schema:
+          description: Tenant sets up permissions and references to allow a end-user
+            group to interact with providers' services.
+          properties:
+            apiVersion:
+              description: 'APIVersion defines the versioned schema of this representation
+                of an object. Servers should convert recognized schemas to the latest
+                internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+              type: string
+            kind:
+              description: 'Kind is a string value representing the REST resource
+                this object represents. Servers may infer this from the endpoint the
+                client submits requests to. Cannot be updated. In CamelCase. More
+                info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+              type: string
+            metadata:
+              type: object
+            spec:
+              description: TenantSpec defines the desired state of Tenant.
+              type: object
+            status:
+              description: TenantStatus defines the observed state of Tenant.
+              properties:
+                conditions:
+                  description: Conditions represents the latest available observations
+                    of a Tenant's current state.
+                  items:
+                    description: TenantCondition contains details for the current
+                      condition of this Tenant.
+                    properties:
+                      lastTransitionTime:
+                        description: LastTransitionTime is the last time the condition
+                          transits from one status to another.
+                        format: date-time
+                        type: string
+                      message:
+                        description: Message is the human readable message indicating
+                          details about last transition.
+                        type: string
+                      reason:
+                        description: Reason is the (brief) reason for the condition's
+                          last transition.
+                        type: string
+                      status:
+                        description: Status is the status of the condition, one of
+                          ('True', 'False', 'Unknown').
+                        type: string
+                      type:
+                        description: Type is the type of the Tenant condition, currently
+                          ('Ready').
+                        type: string
+                    required:
+                    - lastTransitionTime
+                    - message
+                    - reason
+                    - status
+                    - type
+                    type: object
+                  type: array
+                namespaceName:
+                  description: NamespaceName is the name of the namespace that the
+                    Tenant manages.
+                  type: string
+                observedGeneration:
+                  description: ObservedGeneration is the most recent generation observed
+                    for this Tenant by the controller.
+                  format: int64
+                  type: integer
+                phase:
+                  description: DEPRECATED. Phase represents the current lifecycle
+                    state of this object. Consider this field DEPRECATED, it will
+                    be removed as soon as there is a mechanism to map conditions to
+                    strings when printing the property. This is only for display purpose,
+                    for everything else use conditions.
+                  type: string
+              type: object
+          type: object
+      served: true
+      storage: true
+      subresources:
+        status: {}
+  status:
+    acceptedNames:
+      kind: ""
+      plural: ""
+    conditions: []
+    storedVersions: []
+- apiVersion: apiextensions.k8s.io/v1
+  kind: CustomResourceDefinition
+  metadata:
+    annotations:
+      controller-gen.kubebuilder.io/version: v0.2.4
+    creationTimestamp: null
+    name: customresourcedefinitiondiscoveries.kubecarrier.io
+  spec:
+    group: kubecarrier.io
+    names:
+      kind: CustomResourceDefinitionDiscovery
+      listKind: CustomResourceDefinitionDiscoveryList
+      plural: customresourcedefinitiondiscoveries
+      singular: customresourcedefinitiondiscovery
+    scope: Namespaced
+    versions:
+    - additionalPrinterColumns:
+      - jsonPath: .spec.crd.metadata.name
+        name: CustomResourceDefinition
+        type: string
+      - jsonPath: .spec.serviceCluster.name
+        name: Service Cluster
+        type: string
+      name: v1alpha1
+      schema:
+        openAPIV3Schema:
+          description: CustomResourceDefinitionDiscovery is used inside KubeCarrier
+            to fetch a CustomResourceDefinition from another cluster and to offload
+            cross cluster access to another component.
+          properties:
+            apiVersion:
+              description: 'APIVersion defines the versioned schema of this representation
+                of an object. Servers should convert recognized schemas to the latest
+                internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+              type: string
+            kind:
+              description: 'Kind is a string value representing the REST resource
+                this object represents. Servers may infer this from the endpoint the
+                client submits requests to. Cannot be updated. In CamelCase. More
+                info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+              type: string
+            metadata:
+              type: object
+            spec:
+              description: CustomResourceDefinitionDiscoverySpec defines the desired
+                state of crdreference
+              properties:
+                crd:
+                  description: CRD references a CustomResourceDefinition within the
+                    ServiceCluster.
+                  properties:
+                    name:
+                      type: string
+                  required:
+                  - name
+                  type: object
+                serviceCluster:
+                  description: ServiceCluster references a ServiceCluster to search
+                    the CustomResourceDefinition on.
+                  properties:
+                    name:
+                      type: string
+                  required:
+                  - name
+                  type: object
+              required:
+              - crd
+              - serviceCluster
+              type: object
+            status:
+              description: CustomResourceDefinitionDiscoveryStatus defines the observed
+                state of crdreference
+              properties:
+                conditions:
+                  description: Conditions is a list of all conditions this CustomResourceDefinitionDiscovery
+                    is in.
+                  items:
+                    description: CustomResourceDefinitionDiscoveryCondition contains
+                      details for the current condition of this CustomResourceDefinitionDiscovery.
+                    properties:
+                      lastTransitionTime:
+                        description: LastTransitionTime is the last time the condition
+                          transit from one status to another.
+                        format: date-time
+                        type: string
+                      message:
+                        description: Message is the human readable message indicating
+                          details about last transition.
+                        type: string
+                      reason:
+                        description: Reason is the (brief) reason for the condition's
+                          last transition.
+                        type: string
+                      status:
+                        description: Status of the condition, one of ('True', 'False',
+                          'Unknown').
+                        type: string
+                      type:
+                        description: Type of the condition, currently ('Ready').
+                        type: string
+                    required:
+                    - lastTransitionTime
+                    - message
+                    - reason
+                    - status
+                    - type
+                    type: object
+                  type: array
+                crd:
+                  description: CRD defines the original CustomResourceDefinition specification
+                    from the service cluster
+                  type: object
+                  x-kubernetes-preserve-unknown-fields: true
+                observedGeneration:
+                  description: The most recent generation observed by the controller.
+                  format: int64
+                  type: integer
+                phase:
+                  description: DEPRECATED. Phase represents the current lifecycle
+                    state of this object consider this field DEPRECATED, it will be
+                    removed as soon as there is a mechanism to map conditions to a
+                    string when printing the property is only present for display
+                    purposes, for everything else use conditions
+                  type: string
+              type: object
+          type: object
+      served: true
+      storage: true
+      subresources:
+        status: {}
+  status:
+    acceptedNames:
+      kind: ""
+      plural: ""
+    conditions: []
+    storedVersions: []
+- apiVersion: apiextensions.k8s.io/v1
+  kind: CustomResourceDefinition
+  metadata:
+    annotations:
+      controller-gen.kubebuilder.io/version: v0.2.4
+    creationTimestamp: null
     name: serviceclusters.kubecarrier.io
   spec:
     group: kubecarrier.io
@@ -1098,277 +1505,6 @@
       storage: true
       subresources:
         status: {}
-  status:
-    acceptedNames:
-      kind: ""
-      plural: ""
-    conditions: []
-    storedVersions: []
-- apiVersion: apiextensions.k8s.io/v1
-  kind: CustomResourceDefinition
-  metadata:
-    annotations:
-      controller-gen.kubebuilder.io/version: v0.2.4
-    creationTimestamp: null
-    name: derivedcustomresourcedefinitions.catalog.kubecarrier.io
-  spec:
-    group: catalog.kubecarrier.io
-    names:
-      kind: DerivedCustomResourceDefinition
-      listKind: DerivedCustomResourceDefinitionList
-      plural: derivedcustomresourcedefinitions
-      shortNames:
-      - dcrd
-      singular: derivedcustomresourcedefinition
-    scope: Namespaced
-    versions:
-    - additionalPrinterColumns:
-      - jsonPath: .status.phase
-        name: Status
-        type: string
-      - jsonPath: .metadata.creationTimestamp
-        name: Age
-        type: date
-      name: v1alpha1
-      schema:
-        openAPIV3Schema:
-          description: DerivedCustomResourceDefinition derives a new CRD from a existing
-            one.
-          properties:
-            apiVersion:
-              description: 'APIVersion defines the versioned schema of this representation
-                of an object. Servers should convert recognized schemas to the latest
-                internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
-              type: string
-            kind:
-              description: 'Kind is a string value representing the REST resource
-                this object represents. Servers may infer this from the endpoint the
-                client submits requests to. Cannot be updated. In CamelCase. More
-                info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
-              type: string
-            metadata:
-              type: object
-            spec:
-              description: DerivedCustomResourceDefinitionSpec defines the desired
-                state of DerivedCustomResourceDefinition.
-              properties:
-                baseCRD:
-                  description: CRD that should be used as a base to derive a new CRD
-                    from.
-                  properties:
-                    name:
-                      type: string
-                  required:
-                  - name
-                  type: object
-                expose:
-                  description: controls which fields will be present in the derived
-                    CRD.
-                  items:
-                    description: VersionExposeConfig specifies which fields to expose
-                      in the derived CRD.
-                    properties:
-                      fields:
-                        description: specifies the fields that should be present in
-                          the derived CRD.
-                        items:
-                          description: FieldPath is specifying how to address a certain
-                            field.
-                          properties:
-                            jsonPath:
-                              description: JSONPath e.g. .spec.somefield.somesubfield
-                              type: string
-                          required:
-                          - jsonPath
-                          type: object
-                        type: array
-                      versions:
-                        description: specifies the versions of the referenced CRD,
-                          that this expose config applies to. The same version may
-                          not be specified in multiple VersionExposeConfigs.
-                        items:
-                          type: string
-                        type: array
-                    required:
-                    - fields
-                    - versions
-                    type: object
-                  type: array
-                kindOverride:
-                  description: overrides the kind of the derived CRD.
-                  type: string
-              required:
-              - baseCRD
-              - expose
-              type: object
-            status:
-              description: DerivedCustomResourceDefinitionStatus defines the observed
-                state of DerivedCustomResourceDefinition.
-              properties:
-                conditions:
-                  description: Conditions represents the latest available observations
-                    of a DerivedCustomResourceDefinition's current state.
-                  items:
-                    description: DerivedCustomResourceDefinitionCondition contains
-                      details for the current condition of this DerivedCustomResourceDefinition.
-                    properties:
-                      lastTransitionTime:
-                        description: LastTransitionTime is the last time the condition
-                          transits from one status to another.
-                        format: date-time
-                        type: string
-                      message:
-                        description: Message is the human readable message indicating
-                          details about last transition.
-                        type: string
-                      reason:
-                        description: Reason is the (brief) reason for the condition's
-                          last transition.
-                        type: string
-                      status:
-                        description: Status is the status of the condition, one of
-                          ('True', 'False', 'Unknown').
-                        type: string
-                      type:
-                        description: Type is the type of the DerivedCustomResourceDefinition
-                          condition, currently ('Ready').
-                        type: string
-                    required:
-                    - lastTransitionTime
-                    - message
-                    - reason
-                    - status
-                    - type
-                    type: object
-                  type: array
-                derivedCRD:
-                  description: DerivedCRD holds information about the derived CRD.
-                  properties:
-                    group:
-                      description: API Group of the derived CRD.
-                      type: string
-                    kind:
-                      type: string
-                    name:
-                      description: Name of the derived CRD.
-                      type: string
-                    plural:
-                      type: string
-                    singular:
-                      type: string
-                  required:
-                  - group
-                  - kind
-                  - name
-                  - plural
-                  - singular
-                  type: object
-                observedGeneration:
-                  description: ObservedGeneration is the most recent generation observed
-                    for this DerivedCustomResourceDefinition by the controller.
-                  format: int64
-                  type: integer
-                phase:
-                  description: DEPRECATED. Phase represents the current lifecycle
-                    state of this object. Consider this field DEPRECATED, it will
-                    be removed as soon as there is a mechanism to map conditions to
-                    strings when printing the property. This is only for display purpose,
-                    for everything else use conditions.
-                  type: string
-              type: object
-          type: object
-      served: true
-      storage: true
-      subresources:
-        status: {}
-  status:
-    acceptedNames:
-      kind: ""
-      plural: ""
-    conditions: []
-    storedVersions: []
-- apiVersion: apiextensions.k8s.io/v1
-  kind: CustomResourceDefinition
-  metadata:
-    annotations:
-      controller-gen.kubebuilder.io/version: v0.2.4
-    creationTimestamp: null
-    name: serviceclusterreferences.catalog.kubecarrier.io
-  spec:
-    group: catalog.kubecarrier.io
-    names:
-      kind: ServiceClusterReference
-      listKind: ServiceClusterReferenceList
-      plural: serviceclusterreferences
-      shortNames:
-      - scr
-      singular: serviceclusterreference
-    scope: Namespaced
-    versions:
-    - additionalPrinterColumns:
-      - jsonPath: .spec.provider.name
-        name: Provider
-        type: string
-      - jsonPath: .spec.metadata.displayName
-        name: Display Name
-        type: string
-      - jsonPath: .metadata.creationTimestamp
-        name: Age
-        type: date
-      name: v1alpha1
-      schema:
-        openAPIV3Schema:
-          description: "ServiceClusterReference exposes information about a Providers
-            Clusters. \n This object lives in the tenant namespace for each provider
-            the tenant is allowed utilizing (e.g. there's catalog selecting this tenant
-            as its user)"
-          properties:
-            apiVersion:
-              description: 'APIVersion defines the versioned schema of this representation
-                of an object. Servers should convert recognized schemas to the latest
-                internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
-              type: string
-            kind:
-              description: 'Kind is a string value representing the REST resource
-                this object represents. Servers may infer this from the endpoint the
-                client submits requests to. Cannot be updated. In CamelCase. More
-                info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
-              type: string
-            metadata:
-              type: object
-            spec:
-              description: ServiceClusterReferenceSpec defines the desired state of
-                ServiceClusterReference
-              properties:
-                metadata:
-                  description: Metadata contains the metadata (display name, description,
-                    etc) of the ServiceCluster.
-                  properties:
-                    description:
-                      description: Description shows the human-readable description
-                        of this ServiceCluster.
-                      type: string
-                    displayName:
-                      description: DisplayName shows the human-readable name of this
-                        ServiceCluster.
-                      type: string
-                  type: object
-                provider:
-                  description: Provider references the Provider that this ServiceCluster
-                    belongs to.
-                  properties:
-                    name:
-                      type: string
-                  required:
-                  - name
-                  type: object
-              required:
-              - provider
-              type: object
-          type: object
-      served: true
-      storage: true
-      subresources: {}
   status:
     acceptedNames:
       kind: ""

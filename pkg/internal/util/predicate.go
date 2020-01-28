@@ -14,26 +14,30 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package controllers
+package util
 
 import (
-	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/client-go/kubernetes/scheme"
-
-	corev1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/core/v1alpha1"
+	"sigs.k8s.io/controller-runtime/pkg/event"
+	"sigs.k8s.io/controller-runtime/pkg/predicate"
 )
 
-var testScheme = runtime.NewScheme()
+type PredicateFn func(obj runtime.Object) bool
 
-func init() {
-	if err := scheme.AddToScheme(testScheme); err != nil {
-		panic(err)
-	}
-	if err := corev1alpha1.AddToScheme(testScheme); err != nil {
-		panic(err)
-	}
-	if err := apiextensionsv1.AddToScheme(testScheme); err != nil {
-		panic(err)
-	}
+func (p PredicateFn) Create(ev event.CreateEvent) bool {
+	return p(ev.Object)
 }
+
+func (p PredicateFn) Delete(ev event.DeleteEvent) bool {
+	return p(ev.Object)
+}
+
+func (p PredicateFn) Update(ev event.UpdateEvent) bool {
+	return p(ev.ObjectNew)
+}
+
+func (p PredicateFn) Generic(ev event.GenericEvent) bool {
+	return p(ev.Object)
+}
+
+var _ predicate.Predicate = (PredicateFn)(nil)
