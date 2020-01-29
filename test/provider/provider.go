@@ -352,7 +352,7 @@ func NewCatalogSuite(
 		}
 		require.NoError(t, testutil.WaitUntilFound(masterClient, providerReferenceFound), "getting the ProviderReference error")
 		assert.Equal(t, providerReferenceFound.Spec.Metadata.DisplayName, provider.Spec.Metadata.DisplayName)
-		assert.Equal(t, providerReferenceFound.Spec.Metadata.Description, provider.Spec.Metadata.DisplayName)
+		assert.Equal(t, providerReferenceFound.Spec.Metadata.Description, provider.Spec.Metadata.Description)
 
 		// Check the ServiceClusterReference object is created.
 		serviceClusterReferenceFound := &catalogv1alpha1.ServiceClusterReference{
