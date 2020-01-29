@@ -28,7 +28,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
-	"github.com/kubermatic/kubecarrier/pkg/apis/catalog/v1alpha1"
+	catalogv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/catalog/v1alpha1"
 	"github.com/kubermatic/kubecarrier/pkg/manager/internal/controllers"
 )
 
@@ -42,45 +42,56 @@ type CatalogEntryWebhookHandler struct {
 	ProviderLabel        string
 }
 
+var _ admission.Handler = (*CatalogEntryWebhookHandler)(nil)
+
 // +kubebuilder:webhook:path=/mutate-catalog-kubecarrier-io-v1alpha1-catalogentry,mutating=true,failurePolicy=fail,groups=catalog.kubecarrier.io,resources=catalogentries,verbs=create;update,versions=v1alpha1,name=mcatalogentry.kb.io
 
 // Handle is the function to handle defaulting requests of CatalogEntries.
 func (r *CatalogEntryWebhookHandler) Handle(ctx context.Context, req admission.Request) admission.Response {
-	obj := &v1alpha1.CatalogEntry{}
+	obj := &catalogv1alpha1.CatalogEntry{}
 	if err := r.decoder.Decode(req, obj); err != nil {
 		return admission.Errored(http.StatusBadRequest, err)
 	}
 	// Default the object
-	if err := r.defaultFn(obj); err != nil {
+	r.Log.Info("default", "name", obj.Name)
+	if err := r.defaultMatchLabels(obj); err != nil {
 		return admission.Denied(err.Error())
 	}
+
+	// Validate the object
+	if req.Operation == adminv1beta1.Create || req.Operation == adminv1beta1.Update {
+		r.Log.Info("validate create/update", "name", obj.Name)
+		if err := r.validateMetadata(obj); err != nil {
+			return admission.Denied(err.Error())
+		}
+	}
+
 	marshalled, err := json.Marshal(obj)
 	if err != nil {
 		return admission.Errored(http.StatusInternalServerError, err)
-	}
-
-	switch req.Operation {
-	case adminv1beta1.Create:
-		if err := r.validateCreate(obj); err != nil {
-			return admission.Denied(err.Error())
-		}
-	case adminv1beta1.Update:
-		oldObj := obj.DeepCopyObject()
-		if err := r.decoder.DecodeRaw(req.OldObject, oldObj); err != nil {
-			return admission.Errored(http.StatusBadRequest, err)
-		}
-		if err := r.validateUpdate(obj); err != nil {
-			return admission.Denied(err.Error())
-		}
-
 	}
 	// Create the patch
 	return admission.PatchResponseFromRaw(req.Object.Raw, marshalled)
 
 }
 
-func (r *CatalogEntryWebhookHandler) defaultFn(catalogEntry *v1alpha1.CatalogEntry) error {
-	r.Log.Info("default", "name", catalogEntry.Name)
+// CatalogEntryWebhookHandler implements inject.Client.
+// A client will be automatically injected.
+// InjectClient injects the client.
+func (r *CatalogEntryWebhookHandler) InjectClient(c client.Client) error {
+	r.client = c
+	return nil
+}
+
+// CatalogEntryWebhookHandler implements admission.DecoderInjector.
+// A decoder will be automatically injected.
+// InjectDecoder injects the decoder.
+func (r *CatalogEntryWebhookHandler) InjectDecoder(d *admission.Decoder) error {
+	r.decoder = d
+	return nil
+}
+
+func (r *CatalogEntryWebhookHandler) defaultMatchLabels(catalogEntry *catalogv1alpha1.CatalogEntry) error {
 	provider, err := controllers.GetProviderByProviderNamespace(context.Background(), r.client, r.KubeCarrierNamespace, catalogEntry.Namespace)
 	if err != nil {
 		return fmt.Errorf("getting the Provider by Provider Namespace: %w", err)
@@ -100,30 +111,9 @@ func (r *CatalogEntryWebhookHandler) defaultFn(catalogEntry *v1alpha1.CatalogEnt
 	return nil
 }
 
-func (r *CatalogEntryWebhookHandler) validateCreate(catalogEntry *v1alpha1.CatalogEntry) error {
-	r.Log.Info("validate create", "name", catalogEntry.Name)
-	return nil
-}
-
-func (r *CatalogEntryWebhookHandler) validateUpdate(catalogEntry *v1alpha1.CatalogEntry) error {
-	r.Log.Info("validate update", "name", catalogEntry.Name)
-	return nil
-}
-
-// CatalogEntryWebhookHandler implements inject.Client.
-// A client will be automatically injected.
-
-// InjectClient injects the client.
-func (r *CatalogEntryWebhookHandler) InjectClient(c client.Client) error {
-	r.client = c
-	return nil
-}
-
-// CatalogEntryWebhookHandler implements admission.DecoderInjector.
-// A decoder will be automatically injected.
-
-// InjectDecoder injects the decoder.
-func (r *CatalogEntryWebhookHandler) InjectDecoder(d *admission.Decoder) error {
-	r.decoder = d
+func (r *CatalogEntryWebhookHandler) validateMetadata(catalogEntry *catalogv1alpha1.CatalogEntry) error {
+	if catalogEntry.Spec.Metadata.Description == "" || catalogEntry.Spec.Metadata.DisplayName == "" {
+		return fmt.Errorf("the description or the display name of the CatalogEntry: %s cannot be empty", catalogEntry.Name)
+	}
 	return nil
 }

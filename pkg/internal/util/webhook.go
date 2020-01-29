@@ -19,16 +19,25 @@ package util
 import (
 	"strings"
 
-	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/apimachinery/pkg/runtime"
+	"sigs.k8s.io/controller-runtime/pkg/client/apiutil"
 )
 
 // https://github.com/kubernetes-sigs/controller-runtime/blob/dc8357113a904bf02721efcde5d92937be39031c/pkg/builder/webhook.go#L158-L166
-func GenerateMutateWebhookPath(gvk schema.GroupVersionKind) string {
+func GenerateMutateWebhookPath(obj runtime.Object, scheme *runtime.Scheme) (string, error) {
+	gvk, err := apiutil.GVKForObject(obj, scheme)
+	if err != nil {
+		return "", err
+	}
 	return "/mutate-" + strings.Replace(gvk.Group, ".", "-", -1) + "-" +
-		gvk.Version + "-" + strings.ToLower(gvk.Kind)
+		gvk.Version + "-" + strings.ToLower(gvk.Kind), nil
 }
 
-func GenerateValidateWebhookPath(gvk schema.GroupVersionKind) string {
+func GenerateValidateWebhookPath(obj runtime.Object, scheme *runtime.Scheme) (string, error) {
+	gvk, err := apiutil.GVKForObject(obj, scheme)
+	if err != nil {
+		return "", err
+	}
 	return "/validate-" + strings.Replace(gvk.Group, ".", "-", -1) + "-" +
-		gvk.Version + "-" + strings.ToLower(gvk.Kind)
+		gvk.Version + "-" + strings.ToLower(gvk.Kind), nil
 }

@@ -444,6 +444,7 @@
   kind: CustomResourceDefinition
   metadata:
     annotations:
+      cert-manager.io/inject-ca-from: test3000/kubecarrier-manager-serving-cert
       controller-gen.kubebuilder.io/version: v0.2.4
     creationTimestamp: null
     name: derivedcustomresourcedefinitions.catalog.kubecarrier.io
@@ -627,6 +628,7 @@
   kind: CustomResourceDefinition
   metadata:
     annotations:
+      cert-manager.io/inject-ca-from: test3000/kubecarrier-manager-serving-cert
       controller-gen.kubebuilder.io/version: v0.2.4
     creationTimestamp: null
     name: offerings.catalog.kubecarrier.io
@@ -753,6 +755,7 @@
   kind: CustomResourceDefinition
   metadata:
     annotations:
+      cert-manager.io/inject-ca-from: test3000/kubecarrier-manager-serving-cert
       controller-gen.kubebuilder.io/version: v0.2.4
     creationTimestamp: null
     name: providerreferences.catalog.kubecarrier.io
@@ -826,6 +829,7 @@
   kind: CustomResourceDefinition
   metadata:
     annotations:
+      cert-manager.io/inject-ca-from: test3000/kubecarrier-manager-serving-cert
       controller-gen.kubebuilder.io/version: v0.2.4
     creationTimestamp: null
     name: providers.catalog.kubecarrier.io
@@ -960,6 +964,7 @@
   kind: CustomResourceDefinition
   metadata:
     annotations:
+      cert-manager.io/inject-ca-from: test3000/kubecarrier-manager-serving-cert
       controller-gen.kubebuilder.io/version: v0.2.4
     creationTimestamp: null
     name: serviceclusterreferences.catalog.kubecarrier.io
@@ -1807,6 +1812,104 @@
       - UPDATE
       resources:
       - catalogentries
+- apiVersion: admissionregistration.k8s.io/v1beta1
+  kind: ValidatingWebhookConfiguration
+  metadata:
+    annotations:
+      cert-manager.io/inject-ca-from: test3000/kubecarrier-manager-serving-cert
+    creationTimestamp: null
+    name: kubecarrier-manager-validating-webhook-configuration
+  webhooks:
+  - clientConfig:
+      caBundle: Cg==
+      service:
+        name: kubecarrier-manager-webhook-service
+        namespace: test3000
+        path: /validate-catalog-kubecarrier-io-v1alpha1-derivedcustomresourcedefinition
+    failurePolicy: Fail
+    name: vderivedcustomresourcedefinition.kb.io
+    rules:
+    - apiGroups:
+      - catalog.kubecarrier.io
+      apiVersions:
+      - v1alpha1
+      operations:
+      - CREATE
+      - UPDATE
+      resources:
+      - derivedcustomresourcedefinitions
+  - clientConfig:
+      caBundle: Cg==
+      service:
+        name: kubecarrier-manager-webhook-service
+        namespace: test3000
+        path: /validate-catalog-kubecarrier-io-v1alpha1-offering
+    failurePolicy: Fail
+    name: voffering.kb.io
+    rules:
+    - apiGroups:
+      - catalog.kubecarrier.io
+      apiVersions:
+      - v1alpha1
+      operations:
+      - CREATE
+      - UPDATE
+      resources:
+      - offerings
+  - clientConfig:
+      caBundle: Cg==
+      service:
+        name: kubecarrier-manager-webhook-service
+        namespace: test3000
+        path: /validate-catalog-kubecarrier-io-v1alpha1-provider
+    failurePolicy: Fail
+    name: vprovider.kb.io
+    rules:
+    - apiGroups:
+      - catalog.kubecarrier.io
+      apiVersions:
+      - v1alpha1
+      operations:
+      - CREATE
+      - UPDATE
+      resources:
+      - providers
+  - clientConfig:
+      caBundle: Cg==
+      service:
+        name: kubecarrier-manager-webhook-service
+        namespace: test3000
+        path: /validate-catalog-kubecarrier-io-v1alpha1-providerreference
+    failurePolicy: Fail
+    name: vproviderreference.kb.io
+    rules:
+    - apiGroups:
+      - catalog.kubecarrier.io
+      apiVersions:
+      - v1alpha1
+      operations:
+      - CREATE
+      - UPDATE
+      resources:
+      - providerreferences
+  - clientConfig:
+      caBundle: Cg==
+      service:
+        name: kubecarrier-manager-webhook-service
+        namespace: test3000
+        path: /validate-catalog-kubecarrier-io-v1alpha1-serviceclusterreference
+    failurePolicy: Fail
+    name: vserviceclusterreference.kb.io
+    rules:
+    - apiGroups:
+      - catalog.kubecarrier.io
+      apiVersions:
+      - v1alpha1
+      operations:
+      - CREATE
+      - UPDATE
+      resources:
+      - serviceclusterreferences
 - apiVersion: v1
   kind: Service
   metadata:

@@ -162,14 +162,64 @@ func run(flags *flags, log logr.Logger) error {
 	// Register webhooks as handlers
 	wbh := mgr.GetWebhookServer()
 
+	// validating webhooks
+	derivedCustomResourceDefinitionWebhookPath, err := util.GenerateValidateWebhookPath(&catalogv1alpha1.DerivedCustomResourceDefinition{}, mgr.GetScheme())
+	if err != nil {
+		return fmt.Errorf("getting DerivedCustomResourceDefinition webhook path: %w", err)
+	}
+	wbh.Register(derivedCustomResourceDefinitionWebhookPath,
+		&webhook.Admission{Handler: &webhooks.DerivedCustomResourceDefinitionWebhookHandler{
+			Log: log.WithName("validating webhooks").WithName("DerivedCustomResourceDefinition"),
+		}})
+
+	offeringWebhookPath, err := util.GenerateValidateWebhookPath(&catalogv1alpha1.Offering{}, mgr.GetScheme())
+	if err != nil {
+		return fmt.Errorf("getting Offering webhook path: %w", err)
+	}
+	wbh.Register(offeringWebhookPath,
+		&webhook.Admission{Handler: &webhooks.OfferingWebhookHandler{
+			Log: log.WithName("validating webhooks").WithName("Offering"),
+		}})
+
+	providerWebhookPath, err := util.GenerateValidateWebhookPath(&catalogv1alpha1.Provider{}, mgr.GetScheme())
+	if err != nil {
+		return fmt.Errorf("getting Provider webhook path: %w", err)
+	}
+	wbh.Register(providerWebhookPath,
+		&webhook.Admission{Handler: &webhooks.ProviderWebhookHandler{
+			Log: log.WithName("validating webhooks").WithName("Provider"),
+		}})
+
+	providerReferenceWebhookPath, err := util.GenerateValidateWebhookPath(&catalogv1alpha1.ProviderReference{}, mgr.GetScheme())
+	if err != nil {
+		return fmt.Errorf("getting ProviderReference webhook path: %w", err)
+	}
+	wbh.Register(providerReferenceWebhookPath,
+		&webhook.Admission{Handler: &webhooks.ProviderReferenceWebhookHandler{
+			Log: log.WithName("validating webhooks").WithName("ProviderReference"),
+		}})
+
+	serviceClusterReferenceWebhookPath, err := util.GenerateValidateWebhookPath(&catalogv1alpha1.ServiceClusterReference{}, mgr.GetScheme())
+	if err != nil {
+		return fmt.Errorf("getting ServiceClusterReference webhook path: %w", err)
+	}
+	wbh.Register(serviceClusterReferenceWebhookPath,
+		&webhook.Admission{Handler: &webhooks.ServiceClusterReferenceWebhookHandler{
+			Log: log.WithName("validating webhooks").WithName("ServiceClusterReference"),
+		}})
+
 	// mutating webhooks
-	wbh.Register(util.GenerateMutateWebhookPath(
-		(&catalogv1alpha1.CatalogEntry{}).GroupVersionKind()),
+	catalogEntryWebhookPath, err := util.GenerateMutateWebhookPath(&catalogv1alpha1.CatalogEntry{}, mgr.GetScheme())
+	if err != nil {
+		return fmt.Errorf("getting CatalogEntry webhook path: %w", err)
+	}
+	wbh.Register(catalogEntryWebhookPath,
 		&webhook.Admission{Handler: &webhooks.CatalogEntryWebhookHandler{
 			KubeCarrierNamespace: flags.kubeCarrierSystemNamespace,
 			ProviderLabel:        controllers.ProviderLabel,
 			Log:                  log.WithName("mutating webhooks").WithName("CatalogEntry"),
 		}})
+
 	log.Info("starting manager")
 	if err := mgr.Start(ctrl.SetupSignalHandler()); err != nil {
 		return fmt.Errorf("running manager: %w", err)

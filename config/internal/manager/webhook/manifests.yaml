@@ -24,3 +24,101 @@ webhooks:
     - UPDATE
     resources:
     - catalogentries
+
+---
+apiVersion: admissionregistration.k8s.io/v1beta1
+kind: ValidatingWebhookConfiguration
+metadata:
+  creationTimestamp: null
+  name: validating-webhook-configuration
+webhooks:
+- clientConfig:
+    caBundle: Cg==
+    service:
+      name: webhook-service
+      namespace: system
+      path: /validate-catalog-kubecarrier-io-v1alpha1-derivedcustomresourcedefinition
+  failurePolicy: Fail
+  name: vderivedcustomresourcedefinition.kb.io
+  rules:
+  - apiGroups:
+    - catalog.kubecarrier.io
+    apiVersions:
+    - v1alpha1
+    operations:
+    - CREATE
+    - UPDATE
+    resources:
+    - derivedcustomresourcedefinitions
+- clientConfig:
+    caBundle: Cg==
+    service:
+      name: webhook-service
+      namespace: system
+      path: /validate-catalog-kubecarrier-io-v1alpha1-offering
+  failurePolicy: Fail
+  name: voffering.kb.io
+  rules:
+  - apiGroups:
+    - catalog.kubecarrier.io
+    apiVersions:
+    - v1alpha1
+    operations:
+    - CREATE
+    - UPDATE
+    resources:
+    - offerings
+- clientConfig:
+    caBundle: Cg==
+    service:
+      name: webhook-service
+      namespace: system
+      path: /validate-catalog-kubecarrier-io-v1alpha1-provider
+  failurePolicy: Fail
+  name: vprovider.kb.io
+  rules:
+  - apiGroups:
+    - catalog.kubecarrier.io
+    apiVersions:
+    - v1alpha1
+    operations:
+    - CREATE
+    - UPDATE
+    resources:
+    - providers
+- clientConfig:
+    caBundle: Cg==
+    service:
+      name: webhook-service
+      namespace: system
+      path: /validate-catalog-kubecarrier-io-v1alpha1-providerreference
+  failurePolicy: Fail
+  name: vproviderreference.kb.io
+  rules:
+  - apiGroups:
+    - catalog.kubecarrier.io
+    apiVersions:
+    - v1alpha1
+    operations:
+    - CREATE
+    - UPDATE
+    resources:
+    - providerreferences
+- clientConfig:
+    caBundle: Cg==
+    service:
+      name: webhook-service
+      namespace: system
+      path: /validate-catalog-kubecarrier-io-v1alpha1-serviceclusterreference
+  failurePolicy: Fail
+  name: vserviceclusterreference.kb.io
+  rules:
+  - apiGroups:
+    - catalog.kubecarrier.io
+    apiVersions:
+    - v1alpha1
+    operations:
+    - CREATE
+    - UPDATE
+    resources:
+    - serviceclusterreferences
