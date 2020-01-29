@@ -21,26 +21,43 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/spf13/cobra"
+	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
+	"k8s.io/client-go/tools/clientcmd"
 	ctrl "sigs.k8s.io/controller-runtime"
 
-	catalogv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/catalog/v1alpha1"
+	corev1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/core/v1alpha1"
 	"github.com/kubermatic/kubecarrier/pkg/internal/util"
 )
 
 type flags struct {
-	metricsAddr          string
-	enableLeaderElection bool
+	leaderElectionNamespace string
+	enableLeaderElection    bool
+
+	// master
+	masterMetricsAddr string
+	masterCRD         string
+
+	// service
+	serviceMetricsAddr     string
+	serviceKubeconfig      string
+	serviceTargetNamespace string
+	serviceCRD             string
 }
 
 var (
-	scheme = runtime.NewScheme()
+	masterScheme  = runtime.NewScheme()
+	serviceScheme = runtime.NewScheme()
 )
 
 func init() {
-	_ = clientgoscheme.AddToScheme(scheme)
-	_ = catalogv1alpha1.AddToScheme(scheme)
+	_ = clientgoscheme.AddToScheme(masterScheme)
+	_ = apiextensionsv1.AddToScheme(masterScheme)
+	_ = corev1alpha1.AddToScheme(masterScheme)
+
+	_ = clientgoscheme.AddToScheme(serviceScheme)
+	_ = apiextensionsv1.AddToScheme(serviceScheme)
 }
 
 const (
@@ -64,26 +81,68 @@ func NewCatapult() *cobra.Command {
 			return run(flags, log)
 		},
 	}
-	cmd.Flags().StringVar(&flags.metricsAddr, "metrics-addr", ":8080", "The address the metric endpoint binds to.")
 	cmd.Flags().BoolVar(&flags.enableLeaderElection, "enable-leader-election", false,
 		"Enable leader election for controller manager. Enabling this will ensure there is only one active controller manager.")
+	cmd.Flags().StringVar(&flags.leaderElectionNamespace, "leader-election-namespace", "", "namespace for leader election")
+
+	// master
+	cmd.Flags().StringVar(&flags.masterMetricsAddr, "master-metrics-addr", ":8080", "The address the metric endpoint binds to.")
+	cmd.Flags().StringVar(&flags.masterCRD, "master-crd", ":8080", "The CRD in the master(current) cluster we're catapulting in the service cluster")
+
+	// service cluster client settings
+	cmd.Flags().StringVar(&flags.serviceMetricsAddr, "service-cluster-metrics-addr", ":8081", "The address the metric endpoint binds to.")
+	cmd.Flags().StringVar(&flags.serviceKubeconfig, "service-cluster-kubeconfig", "", "Path to the Service Cluster kubeconfig.")
+	cmd.Flags().StringVar(&flags.serviceTargetNamespace, "service-namespace", "", "Name of the Service Cluster the ferry is operating on.")
+	cmd.Flags().StringVar(&flags.serviceCRD, "service-crd", ":8080", "The CRD in the master(current) cluster we're catapulting in the service cluster")
+	for _, flagName := range []string{
+		"service-namespace",
+		"service-cluster-kubeconfig",
+		"master-crd",
+		"service-crd",
+	} {
+		if err := cmd.MarkFlagRequired(flagName); err != nil {
+			panic(fmt.Errorf("req flag %s: %w", flagName, err))
+		}
+
+	}
 	return util.CmdLogMixin(cmd)
 }
 
 func run(flags *flags, log logr.Logger) error {
-	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
-		Scheme:             scheme,
-		MetricsBindAddress: flags.metricsAddr,
-		LeaderElection:     flags.enableLeaderElection,
-		Port:               9443,
-	})
+	// KubeCarrier cluster manager
+	masterCfg := ctrl.GetConfigOrDie()
+	serviceCfg, err := clientcmd.BuildConfigFromFlags("", flags.serviceKubeconfig)
 	if err != nil {
-		return fmt.Errorf("starting manager: %w", err)
+		return fmt.Errorf("unable to set up service cluster client config: %w", err)
 	}
 
-	log.Info("starting manager")
-	if err := mgr.Start(ctrl.SetupSignalHandler()); err != nil {
-		return fmt.Errorf("running manager: %w", err)
+	// Service cluster setup
+	serviceMgr, err := ctrl.NewManager(serviceCfg, ctrl.Options{
+		Scheme:             serviceScheme,
+		MetricsBindAddress: flags.serviceMetricsAddr,
+	})
+	if err != nil {
+		return fmt.Errorf("unable to start manager for service cluster: %w", err)
+	}
+
+	// Master cluster setup
+	masterMgr, err := ctrl.NewManager(masterCfg, ctrl.Options{
+		Scheme:                  masterScheme,
+		MetricsBindAddress:      flags.masterMetricsAddr,
+		LeaderElection:          flags.enableLeaderElection,
+		LeaderElectionNamespace: flags.leaderElectionNamespace,
+		LeaderElectionID:        "catapult-" + flags.masterCRD,
+	})
+	if err != nil {
+		return fmt.Errorf("unable to start manager for master cluster: %w", err)
+	}
+
+	if err := masterMgr.Add(serviceMgr); err != nil {
+		return fmt.Errorf("cannot add service mgr: %w", err)
+	}
+
+	if err := masterMgr.Start(ctrl.SetupSignalHandler()); err != nil {
+		return fmt.Errorf("error running component: %w", err)
 	}
 	return nil
 }
