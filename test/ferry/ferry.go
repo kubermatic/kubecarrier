@@ -170,8 +170,7 @@ func NewFerrySuite(f *framework.Framework) func(t *testing.T) {
 				require.NoError(t, testutil.WaitUntilNotFound(masterClient, crdd))
 
 				internalCrd := &apiextensionsv1.CustomResourceDefinition{}
-				// TODO: fix provider name todo!!!
-				internalCrd.Name = strings.Join([]string{crd.Spec.Names.Plural, serviceClusterRegistration.Name, "provider-name-todo"}, ".")
+				internalCrd.Name = strings.Join([]string{crd.Spec.Names.Plural, serviceClusterRegistration.Name, provider.Name}, ".")
 				if t.Run("ready", func(t *testing.T) {
 					require.NoError(t, masterClient.Create(ctx, crdd))
 					if assert.NoError(t, testutil.WaitUntilReady(masterClient, crdd)) {

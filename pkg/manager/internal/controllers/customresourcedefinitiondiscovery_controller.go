@@ -40,8 +40,9 @@ const crdDiscoveryControllerFinalizer string = "custormresourcedefinitiondiscove
 type CustomResourceDefinitionDiscoveryReconciler struct {
 	Log logr.Logger
 
-	Client client.Client
-	Scheme *runtime.Scheme
+	Client                     client.Client
+	Scheme                     *runtime.Scheme
+	KubeCarrierSystemNamespace string
 }
 
 // +kubebuilder:rbac:groups=kubecarrier.io,resources=customresourcedefinitiondiscoveries,verbs=get;list;watch
@@ -89,6 +90,11 @@ func (r *CustomResourceDefinitionDiscoveryReconciler) Reconcile(req ctrl.Request
 		return ctrl.Result{}, nil
 	}
 
+	provider, err := getProviderByProviderNamespace(ctx, r.Client, r.KubeCarrierSystemNamespace, req.Namespace)
+	if err != nil {
+		return ctrl.Result{}, fmt.Errorf("getting Provider: %w", err)
+	}
+
 	kind := crdDiscovery.Spec.KindOverride
 	if kind == "" {
 		kind = crdDiscovery.Status.CRD.Spec.Names.Kind
@@ -99,7 +105,7 @@ func (r *CustomResourceDefinitionDiscoveryReconciler) Reconcile(req ctrl.Request
 		TypeMeta:   metav1.TypeMeta{},
 		ObjectMeta: metav1.ObjectMeta{},
 		Spec: apiextensionsv1.CustomResourceDefinitionSpec{
-			Group: crdDiscovery.Spec.ServiceCluster.Name + "." + "provider-name-todo",
+			Group: crdDiscovery.Spec.ServiceCluster.Name + "." + provider.Name,
 			Names: apiextensionsv1.CustomResourceDefinitionNames{
 				Plural:   flect.Pluralize(strings.ToLower(kind)),
 				Singular: strings.ToLower(kind),
@@ -114,8 +120,7 @@ func (r *CustomResourceDefinitionDiscoveryReconciler) Reconcile(req ctrl.Request
 		Status: apiextensionsv1.CustomResourceDefinitionStatus{},
 	}
 	crd.Name = crd.Spec.Names.Plural + "." + crd.Spec.Group
-	_, err := util.InsertOwnerReference(crdDiscovery, crd, r.Scheme)
-	if err != nil {
+	if _, err := util.InsertOwnerReference(crdDiscovery, crd, r.Scheme); err != nil {
 		return ctrl.Result{}, fmt.Errorf("insert object reference: %w", err)
 	}
 
@@ -147,7 +152,7 @@ func (r *CustomResourceDefinitionDiscoveryReconciler) handleDeletion(ctx context
 	if !ok || cond.Status != corev1alpha1.ConditionFalse || cond.Reason != "Deleting" {
 		crdDiscovery.Status.SetCondition(corev1alpha1.CustomResourceDefinitionDiscoveryCondition{
 			Message: "custom resource definition discovery is being teminated",
-			Reason:  "Deleting", // TODO replace with constant from
+			Reason:  "Deleting", // TODO replace with constant from PR https://github.com/kubermatic/kubecarrier/pull/136
 			Status:  corev1alpha1.ConditionFalse,
 			Type:    corev1alpha1.CustomResourceDefinitionDiscoveryDiscovered,
 		})
