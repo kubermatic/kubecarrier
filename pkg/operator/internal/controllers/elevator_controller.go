@@ -94,6 +94,18 @@ func (r *ElevatorReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 		resourceselevator.Config{
 			Name:      elevator.Name,
 			Namespace: elevator.Namespace,
+
+			ProviderKind:    elevator.Spec.ProviderCRD.Kind,
+			ProviderVersion: elevator.Spec.ProviderCRD.Version,
+			ProviderGroup:   elevator.Spec.ProviderCRD.Group,
+			ProviderPlural:  elevator.Spec.ProviderCRD.Plural,
+
+			TenantKind:    elevator.Spec.TenantCRD.Kind,
+			TenantVersion: elevator.Spec.TenantCRD.Version,
+			TenantGroup:   elevator.Spec.TenantCRD.Group,
+			TenantPlural:  elevator.Spec.TenantCRD.Plural,
+
+			DerivedCRDName: elevator.Spec.DerivedCRD.Name,
 		})
 	if err != nil {
 		return ctrl.Result{}, fmt.Errorf("creating elevator manifests: %w", err)
@@ -122,6 +134,7 @@ func (r *ElevatorReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		Owns(&corev1.Service{}).
 		Owns(&rbacv1.Role{}).
 		Owns(&rbacv1.RoleBinding{}).
+		Watches(&source.Kind{Type: &corev1.ServiceAccount{}}, enqueuer).
 		Watches(&source.Kind{Type: &rbacv1.ClusterRole{}}, enqueuer).
 		Watches(&source.Kind{Type: &rbacv1.ClusterRoleBinding{}}, enqueuer).
 		Complete(r)

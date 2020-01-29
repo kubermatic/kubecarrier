@@ -20,6 +20,8 @@ import (
 	"fmt"
 	"strings"
 
+	"sigs.k8s.io/yaml"
+
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"sigs.k8s.io/kustomize/v3/pkg/image"
 	"sigs.k8s.io/kustomize/v3/pkg/types"
@@ -34,6 +36,10 @@ type Config struct {
 	Name string
 	// Namespace that the Elevator instance should be deployed into.
 	Namespace string
+
+	ProviderKind, ProviderVersion, ProviderGroup, ProviderPlural string
+	TenantKind, TenantVersion, TenantGroup, TenantPlural         string
+	DerivedCRDName                                               string
 }
 
 var k = kustomize.NewDefaultKustomize()
@@ -52,8 +58,110 @@ func Manifests(c Config) ([]unstructured.Unstructured, error) {
 			},
 		},
 		Resources: []string{"../default"},
+		PatchesStrategicMerge: []types.PatchStrategicMerge{
+			"manager_env_patch.yaml",
+		},
 	}); err != nil {
 		return nil, fmt.Errorf("cannot mkdir: %w", err)
+	}
+
+	// Patch environment
+	managerEnv := map[string]interface{}{
+		"apiVersion": "apps/v1",
+		"kind":       "Deployment",
+		"metadata": map[string]string{
+			"name":      "manager",
+			"namespace": "system",
+		},
+		"spec": map[string]interface{}{
+			"template": map[string]interface{}{
+				"spec": map[string]interface{}{
+					"containers": []map[string]interface{}{
+						{
+							"name": "manager",
+							"env": []map[string]interface{}{
+								{
+									"name":  "ELEVATOR_DERIVED_CRD_NAME",
+									"value": c.DerivedCRDName,
+								},
+								{
+									"name":  "ELEVATOR_PROVIDER_KIND",
+									"value": c.ProviderKind,
+								},
+								{
+									"name":  "ELEVATOR_PROVIDER_VERSION",
+									"value": c.ProviderVersion,
+								},
+								{
+									"name":  "ELEVATOR_PROVIDER_GROUP",
+									"value": c.ProviderGroup,
+								},
+								{
+									"name":  "ELEVATOR_TENANT_KIND",
+									"value": c.TenantKind,
+								},
+								{
+									"name":  "ELEVATOR_TENANT_VERSION",
+									"value": c.TenantVersion,
+								},
+								{
+									"name":  "ELEVATOR_TENANT_GROUP",
+									"value": c.TenantGroup,
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+	managerEnvBytes, err := yaml.Marshal(managerEnv)
+	fmt.Println(string(managerEnvBytes))
+	if err != nil {
+		return nil, fmt.Errorf("marshalling manager env patch: %w", err)
+	}
+	if err = kc.WriteFile("/man/manager_env_patch.yaml", managerEnvBytes); err != nil {
+		return nil, fmt.Errorf("writing manager_env_patch.yaml: %w", err)
+	}
+
+	// Generate ClusterRole for component
+	role := map[string]interface{}{
+		"apiVersion": "rbac.authorization.k8s.io/v1",
+		"kind":       "ClusterRole",
+		"metadata": map[string]string{
+			"name": "manager",
+		},
+		"rules": []map[string]interface{}{
+			{
+				"apiGroups": []string{c.ProviderGroup},
+				"resources": []string{c.ProviderPlural},
+				"verbs": []string{
+					"create", "delete", "get", "list", "patch", "update", "watch"},
+			},
+			{
+				"apiGroups": []string{c.ProviderGroup},
+				"resources": []string{c.ProviderPlural + "/status"},
+				"verbs":     []string{"get", "patch", "update"},
+			},
+			{
+				"apiGroups": []string{c.TenantGroup},
+				"resources": []string{c.TenantPlural},
+				"verbs": []string{
+					"create", "delete", "get", "list", "patch", "update", "watch"},
+			},
+			{
+				"apiGroups": []string{c.TenantGroup},
+				"resources": []string{c.TenantPlural + "/status"},
+				"verbs":     []string{"get", "patch", "update"},
+			},
+		},
+	}
+	roleBytes, err := yaml.Marshal(role)
+	if err != nil {
+		return nil, fmt.Errorf("marshalling cluster role: %w", err)
+	}
+	if err := kc.WriteFile("/rbac/cluster_role.yaml", roleBytes); err != nil {
+		return nil, fmt.Errorf("writing /rbac/cluster_role.yaml: %w", err)
 	}
 
 	// execute kustomize

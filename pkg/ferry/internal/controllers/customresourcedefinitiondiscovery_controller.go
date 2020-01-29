@@ -50,7 +50,7 @@ type CustomResourceDefinitionDiscoveryReconciler struct {
 	ServiceClusterName string
 }
 
-// +kubebuilder:rbac:groups=kubecarrier.io,resources=customresourcedefinitiondiscoveries,verbs=get;list;watch;patch
+// +kubebuilder:rbac:groups=kubecarrier.io,resources=customresourcedefinitiondiscoveries,verbs=get;list;watch;patch;update
 // +kubebuilder:rbac:groups=kubecarrier.io,resources=customresourcedefinitiondiscoveries/status,verbs=get;update;patch
 // Service cluster permission for this controller
 // https://github.com/kubermatic/kubecarrier/issues/143

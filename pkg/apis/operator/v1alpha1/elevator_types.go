@@ -22,6 +22,20 @@ import (
 
 // ElevatorSpec defines the desired state of Elevator
 type ElevatorSpec struct {
+	// References the provider or internal CRD, that should be created in the provider namespace.
+	ProviderCRD CRDReference `json:"providerCRD"`
+	// References the public CRD that will be synced into the provider namespace.
+	TenantCRD CRDReference `json:"tenantCRD"`
+	// References the DerivedCustomResourceDefinition controlling the Tenant-side CRD.
+	DerivedCRD ObjectReference `json:"derivedCRD"`
+}
+
+// CRDReference references a CustomResourceDefitition.
+type CRDReference struct {
+	Kind    string `json:"kind"`
+	Version string `json:"version"`
+	Group   string `json:"group"`
+	Plural  string `json:"plural"`
 }
 
 // ElevatorStatus defines the observed state of Elevator
@@ -142,7 +156,7 @@ func (s *ElevatorStatus) SetCondition(condition ElevatorCondition) {
 }
 
 // Elevator manages the deployment of the Elevator controller manager.
-// For each `DerivedCustomResourceDefinition` a Elevator instance is launched to propagate the derived CRD instance into the providers namespace.
+// For each `DerivedCustomResourceDefinition` a Elevator instance is launched to propagate the derived CRD instance into the provider namespace.
 // This component works hand-in-hand with the Catapult instance for the respective type.
 // +kubebuilder:object:root=true
 // +kubebuilder:subresource:status

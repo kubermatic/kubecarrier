@@ -66,7 +66,7 @@ func NewProviderSuite(f *framework.Framework) func(t *testing.T) {
 
 		t.Run("parallel-group", func(t *testing.T) {
 			t.Run("Catapult", NewCatapultSuite(f, provider))
-			t.Run("Elevator", NewElevatorSuite(f, provider))
+			t.Run("DerivedCRD", NewDerivedCRDSuite(f, provider))
 			t.Run("Catalog", NewCatalogSuite(f, provider))
 			t.Run("Ferry", NewFerrySuite(f, provider))
 		})
@@ -114,50 +114,6 @@ func NewCatapultSuite(
 
 		// check everything is gone
 		require.NoError(t, testutil.WaitUntilNotFound(masterClient, catapultDeployment))
-	}
-}
-
-// Elevator sub test suite
-func NewElevatorSuite(
-	f *framework.Framework,
-	provider *catalogv1alpha1.Provider,
-) func(t *testing.T) {
-	return func(t *testing.T) {
-		t.Parallel()
-
-		// Setup
-		masterClient, err := f.MasterClient()
-		require.NoError(t, err, "creating master client")
-		defer masterClient.CleanUp(t)
-
-		ctx := context.Background()
-
-		// Create Elevator
-		elevator := &operatorv1alpha1.Elevator{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "db.eu-west-1",
-				Namespace: provider.Status.NamespaceName,
-			},
-		}
-
-		require.NoError(
-			t, masterClient.Create(ctx, elevator), "creating Elevator error")
-		require.NoError(t, testutil.WaitUntilReady(masterClient, elevator))
-
-		// Check created objects
-		elevatorDeployment := &appsv1.Deployment{}
-		assert.NoError(t, masterClient.Get(ctx, types.NamespacedName{
-			Name:      "db-eu-west-1-elevator-manager",
-			Namespace: elevator.Namespace,
-		}, elevatorDeployment), "getting Elevator manager deployment error")
-
-		// Teardown
-		require.NoError(
-			t, masterClient.Delete(ctx, elevator), "deleting Elevator object")
-		require.NoError(t, testutil.WaitUntilNotFound(masterClient, elevator))
-
-		// check everything is gone
-		require.NoError(t, testutil.WaitUntilNotFound(masterClient, elevatorDeployment))
 	}
 }
 

@@ -20,6 +20,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"sync"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -153,6 +154,7 @@ type RecordingClient struct {
 	client.Client
 	objects map[string]runtime.Object
 	order   []string
+	mux     sync.Mutex
 }
 
 func RecordClient(c client.Client) *RecordingClient {
@@ -183,6 +185,9 @@ func (rc *RecordingClient) CleanUp(t *testing.T) {
 }
 
 func (rc *RecordingClient) Create(ctx context.Context, obj runtime.Object, opts ...client.CreateOption) error {
+	rc.mux.Lock()
+	defer rc.mux.Unlock()
+
 	meta := obj.(metav1.Object)
 	key := types.NamespacedName{
 		Name:      meta.GetName(),
@@ -195,6 +200,9 @@ func (rc *RecordingClient) Create(ctx context.Context, obj runtime.Object, opts 
 }
 
 func (rc *RecordingClient) Delete(ctx context.Context, obj runtime.Object, opts ...client.DeleteOption) error {
+	rc.mux.Lock()
+	defer rc.mux.Unlock()
+
 	meta := obj.(metav1.Object)
 	key := types.NamespacedName{
 		Name:      meta.GetName(),

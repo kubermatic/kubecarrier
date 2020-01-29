@@ -28,7 +28,7 @@ spec:
       openAPIV3Schema:
         description: Elevator manages the deployment of the Elevator controller manager.
           For each `DerivedCustomResourceDefinition` a Elevator instance is launched
-          to propagate the derived CRD instance into the providers namespace. This
+          to propagate the derived CRD instance into the provider namespace. This
           component works hand-in-hand with the Catapult instance for the respective
           type.
         properties:
@@ -46,6 +46,56 @@ spec:
             type: object
           spec:
             description: ElevatorSpec defines the desired state of Elevator
+            properties:
+              derivedCRD:
+                description: References the DerivedCustomResourceDefinition controlling
+                  the Tenant-side CRD.
+                properties:
+                  name:
+                    type: string
+                required:
+                - name
+                type: object
+              providerCRD:
+                description: References the provider or internal CRD, that should
+                  be created in the provider namespace.
+                properties:
+                  group:
+                    type: string
+                  kind:
+                    type: string
+                  plural:
+                    type: string
+                  version:
+                    type: string
+                required:
+                - group
+                - kind
+                - plural
+                - version
+                type: object
+              tenantCRD:
+                description: References the public CRD that will be synced into the
+                  provider namespace.
+                properties:
+                  group:
+                    type: string
+                  kind:
+                    type: string
+                  plural:
+                    type: string
+                  version:
+                    type: string
+                required:
+                - group
+                - kind
+                - plural
+                - version
+                type: object
+            required:
+            - derivedCRD
+            - providerCRD
+            - tenantCRD
             type: object
           status:
             description: ElevatorStatus defines the observed state of Elevator
