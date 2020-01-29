@@ -48,6 +48,12 @@ const (
 )
 
 func NewCatapult() *cobra.Command {
+	// https: //github.com/kubermatic/kubecarrier/issues/64
+	// TODO: Implement bare bone flag interface
+	// TODO: Implement one-way cross cluster reconciliation
+	// TODO: Implement two-way cross cluster reconciliation
+	// TODO: Implement cross cluster webhooks support
+
 	log := ctrl.Log.WithName("catapult")
 	flags := &flags{}
 	cmd := &cobra.Command{
