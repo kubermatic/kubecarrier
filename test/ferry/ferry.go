@@ -137,7 +137,7 @@ func NewFerrySuite(f *framework.Framework) func(t *testing.T) {
 
 		require.NoError(t, masterClient.Create(ctx, serviceClusterSecret))
 		require.NoError(t, masterClient.Create(ctx, serviceClusterRegistration))
-		require.NoError(t, testutil.WaitUntilReady(masterClient, serviceClusterRegistration))
+		require.NoError(t, testutil.WaitUntilReady(masterClient, serviceClusterRegistration), "service cluster not ready")
 
 		require.NoError(t, serviceClient.Create(ctx, crd))
 
