@@ -44,7 +44,7 @@ type ServiceClusterAssignmentReconciler struct {
 	ServiceClusterName string
 }
 
-// +kubebuilder:rbac:groups=kubecarrier.io,resources=serviceclusterassignments,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=kubecarrier.io,resources=serviceclusterassignments,verbs=get;list;watch;create;update;patch
 // +kubebuilder:rbac:groups=kubecarrier.io,resources=serviceclusterassignments/status,verbs=get;update;patch
 // +kubebuilder:rbac:groups="",resources=namespaces,verbs=get;list;watch;create;update;patch;delete
 
