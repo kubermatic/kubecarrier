@@ -54,6 +54,12 @@ func NewProviderSuite(f *framework.Framework) func(t *testing.T) {
 					Name:      "example-cloud",
 					Namespace: "kubecarrier-system",
 				},
+				Spec: catalogv1alpha1.ProviderSpec{
+					Metadata: catalogv1alpha1.ProviderMetadata{
+						DisplayName: "provider",
+						Description: "provider test description",
+					},
+				},
 			}
 		)
 

@@ -76,7 +76,7 @@ func (r *OfferingWebhookHandler) InjectDecoder(d *admission.Decoder) error {
 func (r *OfferingWebhookHandler) validateCreate(offering *catalogv1alpha1.Offering) error {
 	r.Log.Info("validate create", "name", offering.Name)
 	if offering.Offering.Provider.Name == "" {
-		return fmt.Errorf("the BaseCRD of Offering is not specifed")
+		return fmt.Errorf("the Provider of Offering is not specifed")
 	}
 	return r.validateMetadata(offering)
 }

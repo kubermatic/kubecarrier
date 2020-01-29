@@ -54,6 +54,12 @@ func NewFerrySuite(f *framework.Framework) func(t *testing.T) {
 					Name:      "steel-inquisitor",
 					Namespace: "kubecarrier-system",
 				},
+				Spec: catalogv1alpha1.ProviderSpec{
+					Metadata: catalogv1alpha1.ProviderMetadata{
+						DisplayName: "provider",
+						Description: "provider test description",
+					},
+				},
 			}
 			serviceClusterSecret = &corev1.Secret{
 				ObjectMeta: metav1.ObjectMeta{
