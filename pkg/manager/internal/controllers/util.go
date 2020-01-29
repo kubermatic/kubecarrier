@@ -30,12 +30,22 @@ const (
 	serviceClusterLabel = "kubecarrier.io/service-cluster"
 )
 
-func getProviderByProviderNamespace(ctx context.Context, c client.Client, kubecarrierNamespace, providerNamespace string) (*catalogv1alpha1.Provider, error) {
+type ProviderGetterByProviderNamespace interface {
+	// GetProviderByProviderNamespace gets the provider who's owning the namespace in question
+	GetProviderByProviderNamespace(ctx context.Context, c client.Client, namespace string) (*catalogv1alpha1.Provider, error)
+}
+
+type fieldIndexProviderGetter struct {
+	KubecarrierNamespace string
+	FieldIndex           string
+}
+
+func (f fieldIndexProviderGetter) GetProviderByProviderNamespace(ctx context.Context, c client.Client, namespace string) (*catalogv1alpha1.Provider, error) {
 	providerList := &catalogv1alpha1.ProviderList{}
 	if err := c.List(ctx, providerList,
-		client.InNamespace(kubecarrierNamespace),
+		client.InNamespace(f.KubecarrierNamespace),
 		client.MatchingFields{
-			catalogv1alpha1.ProviderNamespaceFieldIndex: providerNamespace,
+			f.FieldIndex: namespace,
 		},
 	); err != nil {
 		return nil, err
@@ -50,5 +60,21 @@ func getProviderByProviderNamespace(ctx context.Context, c client.Client, kubeca
 	default:
 		// found too many
 		return nil, fmt.Errorf("multiple providers.catalog.kubecarrier.io with index %q found", catalogv1alpha1.ProviderNamespaceFieldIndex)
+	}
+}
+
+var _ ProviderGetterByProviderNamespace = (*fieldIndexProviderGetter)(nil)
+
+// DEPRECATED.
+//
+// should use the interface ProviderGetterByProviderNamespace
+func getProviderByProviderNamespace(ctx context.Context, c client.Client, kubecarrierNamespace, providerNamespace string) (*catalogv1alpha1.Provider, error) {
+	return NewDefaultProviderGetter(kubecarrierNamespace).GetProviderByProviderNamespace(ctx, c, providerNamespace)
+}
+
+func NewDefaultProviderGetter(kubecarrierNamespace string) ProviderGetterByProviderNamespace {
+	return fieldIndexProviderGetter{
+		KubecarrierNamespace: kubecarrierNamespace,
+		FieldIndex:           catalogv1alpha1.ProviderNamespaceFieldIndex,
 	}
 }

@@ -158,10 +158,10 @@ func run(flags *flags, log logr.Logger) error {
 	}
 
 	if err = (&controllers.CustomResourceDefinitionDiscoveryReconciler{
-		Client:                     mgr.GetClient(),
-		Log:                        log.WithName("controllers").WithName("CustomResourceDefinitionDiscovery"),
-		Scheme:                     mgr.GetScheme(),
-		KubeCarrierSystemNamespace: flags.kubeCarrierSystemNamespace,
+		Client:         mgr.GetClient(),
+		Log:            log.WithName("controllers").WithName("CustomResourceDefinitionDiscovery"),
+		Scheme:         mgr.GetScheme(),
+		ProviderGetter: controllers.NewDefaultProviderGetter(flags.kubeCarrierSystemNamespace),
 	}).SetupWithManager(mgr); err != nil {
 		return fmt.Errorf("creating CustomResourceDefinitionDiscovery controller: %w", err)
 	}

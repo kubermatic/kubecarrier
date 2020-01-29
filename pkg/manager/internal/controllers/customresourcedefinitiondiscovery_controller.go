@@ -38,11 +38,10 @@ const crdDiscoveryControllerFinalizer string = "custormresourcedefinitiondiscove
 
 // CustomResourceDefinitionDiscoveryReconciler reconciles a CustomResourceDefinitionDiscovery object
 type CustomResourceDefinitionDiscoveryReconciler struct {
-	Log logr.Logger
-
-	Client                     client.Client
-	Scheme                     *runtime.Scheme
-	KubeCarrierSystemNamespace string
+	Log            logr.Logger
+	Client         client.Client
+	Scheme         *runtime.Scheme
+	ProviderGetter ProviderGetterByProviderNamespace
 }
 
 // +kubebuilder:rbac:groups=kubecarrier.io,resources=customresourcedefinitiondiscoveries,verbs=get;list;watch
@@ -86,7 +85,7 @@ func (r *CustomResourceDefinitionDiscoveryReconciler) Reconcile(req ctrl.Request
 		return ctrl.Result{}, nil
 	}
 
-	provider, err := getProviderByProviderNamespace(ctx, r.Client, r.KubeCarrierSystemNamespace, req.Namespace)
+	provider, err := r.ProviderGetter.GetProviderByProviderNamespace(ctx, r.Client, req.Namespace)
 	if err != nil {
 		return ctrl.Result{}, fmt.Errorf("getting Provider: %w", err)
 	}
