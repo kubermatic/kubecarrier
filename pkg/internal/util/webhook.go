@@ -23,7 +23,10 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client/apiutil"
 )
 
+// GenerateMutateWebhookPath and GenerateValidatingWebhookPath are used to generate the Path to register webhooks for runtime.Object.
+// They are similar to the functions in the controller-runtime package:
 // https://github.com/kubernetes-sigs/controller-runtime/blob/dc8357113a904bf02721efcde5d92937be39031c/pkg/builder/webhook.go#L158-L166
+
 func GenerateMutateWebhookPath(obj runtime.Object, scheme *runtime.Scheme) (string, error) {
 	gvk, err := apiutil.GVKForObject(obj, scheme)
 	if err != nil {
