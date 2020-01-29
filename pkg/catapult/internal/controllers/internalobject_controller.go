@@ -74,11 +74,15 @@ func (r *InternalObjectReconciler) Reconcile(req ctrl.Request) (ctrl.Result, err
 		}
 	}
 	serviceClusterObj := &unstructured.Unstructured{}
+	targetNamespace, err := r.targetNamespace(ctx)
+	if err != nil {
+		return ctrl.Result{}, fmt.Errorf("target-namespace: %w", err)
+	}
 
 	configureDesiredObj := func() error {
 		internalObjCpy := internalObj.DeepCopy()
 		serviceClusterObj.SetGroupVersionKind(r.ServiceClusterGVK)
-		serviceClusterObj.SetNamespace(r.ServiceClusterTargetNamespace)
+		serviceClusterObj.SetNamespace(targetNamespace)
 		if _, err := util.InsertOwnerReference(internalObj, serviceClusterObj, r.MasterScheme); err != nil {
 			return fmt.Errorf("cannot insert owner reference: %w", err)
 		}
@@ -102,12 +106,16 @@ func (r *InternalObjectReconciler) Reconcile(req ctrl.Request) (ctrl.Result, err
 }
 
 func (r *InternalObjectReconciler) handleDeletion(ctx context.Context, log logr.Logger, internalObj *unstructured.Unstructured) error {
+	targetNamespace, err := r.targetNamespace(ctx)
+	if err != nil {
+		return fmt.Errorf("target-namespace: %w", err)
+	}
 	serviceClusterObj := &unstructured.Unstructured{}
 	serviceClusterObj.SetGroupVersionKind(r.ServiceClusterGVK)
-	serviceClusterObj.SetNamespace(r.ServiceClusterTargetNamespace)
+	serviceClusterObj.SetNamespace(targetNamespace)
 	serviceClusterObj.SetName(internalObj.GetName())
 
-	err := r.ServiceClient.Delete(ctx, serviceClusterObj)
+	err = r.ServiceClient.Delete(ctx, serviceClusterObj)
 	switch {
 	case err == nil:
 		return nil
@@ -121,6 +129,11 @@ func (r *InternalObjectReconciler) handleDeletion(ctx context.Context, log logr.
 	default:
 		return fmt.Errorf("deleting service's cluster CRD: %w", err)
 	}
+}
+
+func (r *InternalObjectReconciler) targetNamespace(ctx context.Context) (namespace string, err error) {
+	// TODO: Implement dynamic target namespace discovery
+	return r.ServiceClusterTargetNamespace, nil
 }
 
 func (r *InternalObjectReconciler) SetupWithManagers(serviceMgr, masterMgr ctrl.Manager) error {
