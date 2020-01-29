@@ -49,10 +49,6 @@ type CustomResourceDefinitionDiscoveryReconciler struct {
 // +kubebuilder:rbac:groups=kubecarrier.io,resources=customresourcedefinitiondiscoveries/status,verbs=get;update;patch
 // +kubebuilder:rbac:groups=apiextensions.k8s.io,resources=customresourcedefinitions,verbs=get;list;watch;update;create;patch;delete
 
-// TODO: add deletion handling
-// TODO: create internal CRD
-// TODO: test for updates/handle updates of the CRDDiscovery?
-
 func (r *CustomResourceDefinitionDiscoveryReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	ctx := context.Background()
 	log := r.Log.WithValues("crddiscovery", req.NamespacedName)
@@ -100,7 +96,6 @@ func (r *CustomResourceDefinitionDiscoveryReconciler) Reconcile(req ctrl.Request
 		kind = crdDiscovery.Status.CRD.Spec.Names.Kind
 	}
 
-	// TODO: implement the happy path
 	crd := &apiextensionsv1.CustomResourceDefinition{
 		TypeMeta:   metav1.TypeMeta{},
 		ObjectMeta: metav1.ObjectMeta{},
@@ -161,7 +156,6 @@ func (r *CustomResourceDefinitionDiscoveryReconciler) handleDeletion(ctx context
 		}
 	}
 
-	// TODO: Refactor this to generic delete all objects owned by me of a given type since it's used all over the place
 	crds := &apiextensionsv1.CustomResourceDefinitionList{}
 	ownedBy, err := util.OwnedBy(crdDiscovery, r.Scheme)
 	if err != nil {
