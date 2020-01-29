@@ -66,5 +66,5 @@ func TestCustomResourceDefinitionDiscoveryReconciler(t *testing.T) {
 		Scheme: testScheme,
 		Log:    testutil.NewLogger(t),
 	}
-	_, _ = r, crdRefNN
+	_, _, _ = r, crdRefNN, crd
 }

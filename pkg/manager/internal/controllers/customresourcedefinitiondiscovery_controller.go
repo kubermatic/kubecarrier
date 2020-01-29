@@ -70,7 +70,7 @@ func (r *CustomResourceDefinitionDiscoveryReconciler) Reconcile(req ctrl.Request
 	}
 
 	if util.AddFinalizer(crdDiscovery, crdDiscoveryControllerFinalizer) {
-		if err := r.Client.Update(ctx, crdDiscovery); err != nil {
+		if err := r.Client.Status().Update(ctx, crdDiscovery); err != nil {
 			return ctrl.Result{}, fmt.Errorf("updating CustomResourceDefinitionDiscovery finalizers: %w", err)
 		}
 	}
@@ -91,7 +91,7 @@ func (r *CustomResourceDefinitionDiscoveryReconciler) Reconcile(req ctrl.Request
 
 	kind := crdDiscovery.Spec.KindOverride
 	if kind == "" {
-		kind = crdDiscovery.Status.CRD.Kind
+		kind = crdDiscovery.Status.CRD.Spec.Names.Kind
 	}
 
 	// TODO: implement the happy path
@@ -99,7 +99,7 @@ func (r *CustomResourceDefinitionDiscoveryReconciler) Reconcile(req ctrl.Request
 		TypeMeta:   metav1.TypeMeta{},
 		ObjectMeta: metav1.ObjectMeta{},
 		Spec: apiextensionsv1.CustomResourceDefinitionSpec{
-			Group: crdDiscovery.Spec.ServiceCluster.Name + "." + "provider-name-TODO",
+			Group: crdDiscovery.Spec.ServiceCluster.Name + "." + "provider-name-todo",
 			Names: apiextensionsv1.CustomResourceDefinitionNames{
 				Plural:   flect.Pluralize(strings.ToLower(kind)),
 				Singular: strings.ToLower(kind),
@@ -109,11 +109,11 @@ func (r *CustomResourceDefinitionDiscoveryReconciler) Reconcile(req ctrl.Request
 			Scope:                 apiextensionsv1.NamespaceScoped,
 			Versions:              crdDiscovery.Status.CRD.Spec.Versions,
 			Conversion:            nil, // TODO: implement via webhooks
-			PreserveUnknownFields: false,
+			PreserveUnknownFields: crdDiscovery.Status.CRD.Spec.PreserveUnknownFields,
 		},
 		Status: apiextensionsv1.CustomResourceDefinitionStatus{},
 	}
-	crd.Name = crdDiscovery.Spec.KindOverride + "." + crd.Spec.Group
+	crd.Name = crd.Spec.Names.Plural + "." + crd.Spec.Group
 	_, err := util.InsertOwnerReference(crdDiscovery, crd, r.Scheme)
 	if err != nil {
 		return ctrl.Result{}, fmt.Errorf("insert object reference: %w", err)
@@ -143,7 +143,20 @@ func (r *CustomResourceDefinitionDiscoveryReconciler) Reconcile(req ctrl.Request
 }
 
 func (r *CustomResourceDefinitionDiscoveryReconciler) handleDeletion(ctx context.Context, log logr.Logger, crdDiscovery *corev1alpha1.CustomResourceDefinitionDiscovery) error {
-	// TODO: Refactor this to generic delte all objects owned by me of a given type since it's used all over the place
+	cond, ok := crdDiscovery.Status.GetCondition(corev1alpha1.CustomResourceDefinitionDiscoveryDiscovered)
+	if !ok || cond.Status != corev1alpha1.ConditionFalse || cond.Reason != "Deleting" {
+		crdDiscovery.Status.SetCondition(corev1alpha1.CustomResourceDefinitionDiscoveryCondition{
+			Message: "custom resource definition discovery is being teminated",
+			Reason:  "Deleting", // TODO replace with constant from
+			Status:  corev1alpha1.ConditionFalse,
+			Type:    corev1alpha1.CustomResourceDefinitionDiscoveryDiscovered,
+		})
+		if err := r.Client.Status().Update(ctx, crdDiscovery); err != nil {
+			return fmt.Errorf("update discovered state: %w", err)
+		}
+	}
+
+	// TODO: Refactor this to generic delete all objects owned by me of a given type since it's used all over the place
 	crds := &apiextensionsv1.CustomResourceDefinitionList{}
 	ownedBy, err := util.OwnedBy(crdDiscovery, r.Scheme)
 	if err != nil {

@@ -216,6 +216,19 @@ func main() {
 			},
 		},
 		{
+			Name:    "Manager",
+			Program: "cmd/manager",
+			LDFlags: *ldFlags,
+			Args: []string{
+				"--kubecarrier-system-namespace=kubecarrier-system",
+				"--enable-leader-election=false",
+				"--metrics-addr=0",
+			},
+			Env: map[string]string{
+				"KUBECONFIG": masterKubeconfigPath,
+			},
+		},
+		{
 			Name:    "Operator",
 			Program: "cmd/operator",
 			LDFlags: *ldFlags,
