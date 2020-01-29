@@ -54,6 +54,9 @@ spec:
                   required:
                     - name
                   type: object
+                kindOverride:
+                  description: KindOverride overrides resulting internal CRDs kind
+                  type: string
                 serviceCluster:
                   description: ServiceCluster references a ServiceCluster to search
                     the CustomResourceDefinition on.

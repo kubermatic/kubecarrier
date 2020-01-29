@@ -27,8 +27,8 @@ type CustomResourceDefinitionDiscoverySpec struct {
 	CRD ObjectReference `json:"crd"`
 	// ServiceCluster references a ServiceCluster to search the CustomResourceDefinition on.
 	ServiceCluster ObjectReference `json:"serviceCluster"`
-	// KindOverride
-	KindOverride string
+	// KindOverride overrides resulting internal CRDs kind
+	KindOverride string `json:"kindOverride,omitempty"`
 }
 
 // CustomResourceDefinitionDiscoveryStatus defines the observed state of crdreference
