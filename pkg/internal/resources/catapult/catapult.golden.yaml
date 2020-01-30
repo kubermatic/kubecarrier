@@ -4,7 +4,35 @@
     creationTimestamp: null
     name: db-eu-west-1-catapult-manager-role
     namespace: test3000
-  rules: []
+  rules:
+  - apiGroups:
+    - catalog.kubecarrier.io
+    resources:
+    - tenants
+    verbs:
+    - get
+    - list
+    - watch
+  - apiGroups:
+    - catalog.kubecarrier.io
+    resources:
+    - tenants/status
+    verbs:
+    - get
+  - apiGroups:
+    - kubecarrier.io
+    resources:
+    - serviceclusterassignments
+    verbs:
+    - get
+    - list
+    - watch
+  - apiGroups:
+    - kubecarrier.io
+    resources:
+    - serviceclusterassignments/status
+    verbs:
+    - get
 - apiVersion: rbac.authorization.k8s.io/v1
   kind: ClusterRoleBinding
   metadata:

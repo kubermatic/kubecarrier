@@ -28,27 +28,28 @@ import (
 	"k8s.io/client-go/tools/clientcmd"
 	ctrl "sigs.k8s.io/controller-runtime"
 
+	"github.com/kubermatic/kubecarrier/pkg/apis/catalog/v1alpha1"
 	corev1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/core/v1alpha1"
 	"github.com/kubermatic/kubecarrier/pkg/catapult/internal/controllers"
 	"github.com/kubermatic/kubecarrier/pkg/internal/util"
 )
 
 type flags struct {
-	leaderElectionNamespace string
-	enableLeaderElection    bool
+	enableLeaderElection bool
 
 	// master
-	masterMetricsAddr string
-	masterGroup       string
-	masterKind        string
+	providerNamespace    string
+	masterMetricsAddr    string
+	masterGroup          string
+	masterKind           string
+	kubecarrierNamespace string
 
 	// service
-	serviceMetricsAddr     string
-	serviceKubeconfig      string
-	serviceTargetNamespace string
-	serviceGroup           string
-	serviceKind            string
-	version                string
+	serviceMetricsAddr string
+	serviceKubeconfig  string
+	serviceGroup       string
+	serviceKind        string
+	version            string
 }
 
 var (
@@ -71,7 +72,6 @@ const (
 
 func NewCatapult() *cobra.Command {
 	// https: //github.com/kubermatic/kubecarrier/issues/64
-	// TODO: Implement bare bone flag interface
 	// TODO: Implement one-way cross cluster reconciliation
 	// TODO: Implement two-way cross cluster reconciliation
 	// TODO: Implement cross cluster webhooks support
@@ -88,26 +88,27 @@ func NewCatapult() *cobra.Command {
 	}
 	cmd.Flags().BoolVar(&flags.enableLeaderElection, "enable-leader-election", false,
 		"Enable leader election for controller manager. Enabling this will ensure there is only one active controller manager.")
-	cmd.Flags().StringVar(&flags.leaderElectionNamespace, "leader-election-namespace", "", "namespace for leader election")
+	cmd.Flags().StringVar(&flags.providerNamespace, "provider-namespace", "", "provider namespace")
 
 	// master
 	cmd.Flags().StringVar(&flags.masterMetricsAddr, "master-metrics-addr", ":8080", "The address the metric endpoint binds to.")
 	cmd.Flags().StringVar(&flags.masterGroup, "master-group", "", "The object's group in the master(current) cluster we're catapulting in the service cluster")
 	cmd.Flags().StringVar(&flags.masterKind, "master-kind", "", "The object's kind in the master(current) cluster we're catapulting in the service cluster")
+	cmd.Flags().StringVar(&flags.kubecarrierNamespace, "kubecarrier-namespace", "", "kubecarrier system namespace where tenant objects live")
 
 	// service cluster client settings
 	cmd.Flags().StringVar(&flags.serviceMetricsAddr, "service-cluster-metrics-addr", ":8081", "The address the metric endpoint binds to.")
 	cmd.Flags().StringVar(&flags.serviceKubeconfig, "service-cluster-kubeconfig", "", "Path to the Service Cluster kubeconfig.")
-	cmd.Flags().StringVar(&flags.serviceTargetNamespace, "service-namespace", "", "Name of the Service Cluster the ferry is operating on.")
 	cmd.Flags().StringVar(&flags.serviceGroup, "service-group", "", "The object's group in the service(current) cluster we're catapulting in the service cluster")
 	cmd.Flags().StringVar(&flags.serviceKind, "service-kind", "", "The object's kind in the service(current) cluster we're catapulting in the service cluster")
 
 	cmd.Flags().StringVar(&flags.version, "version", "v1", "the objects version to reconcile")
 	for _, flagName := range []string{
-		"service-namespace",
-		"service-cluster-kubeconfig",
+		"kubecarrier-namespace",
 		"master-group",
 		"master-kind",
+		"provider-namespace",
+		"service-cluster-kubeconfig",
 		"service-group",
 		"service-kind",
 		"version",
@@ -142,7 +143,7 @@ func run(flags *flags, log logr.Logger) error {
 		Scheme:                  masterScheme,
 		MetricsBindAddress:      flags.masterMetricsAddr,
 		LeaderElection:          flags.enableLeaderElection,
-		LeaderElectionNamespace: flags.leaderElectionNamespace,
+		LeaderElectionNamespace: flags.providerNamespace,
 		LeaderElectionID:        "catapult-" + flags.masterGroup + "-" + flags.masterKind,
 	})
 	if err != nil {
@@ -162,14 +163,19 @@ func run(flags *flags, log logr.Logger) error {
 		Version: flags.version,
 	}
 
+	if err := v1alpha1.RegisterTenantNamespaceFieldIndex(masterMgr); err != nil {
+		return fmt.Errorf("cannot register tenant namespace field index")
+	}
+
 	if err := (&controllers.InternalObjectReconciler{
-		MasterClient:                  masterMgr.GetClient(),
-		MasterScheme:                  masterMgr.GetScheme(),
-		ServiceClient:                 serviceMgr.GetClient(),
-		Log:                           ctrl.Log.WithName("controllers").WithName("InternalObjectReconciler"),
-		InternalGVK:                   internalGVK,
-		ServiceClusterGVK:             serviceClusterGVK,
-		ServiceClusterTargetNamespace: flags.serviceTargetNamespace,
+		MasterClient:         masterMgr.GetClient(),
+		MasterScheme:         masterMgr.GetScheme(),
+		ServiceClient:        serviceMgr.GetClient(),
+		Log:                  ctrl.Log.WithName("controllers").WithName("InternalObjectReconciler"),
+		InternalGVK:          internalGVK,
+		ServiceClusterGVK:    serviceClusterGVK,
+		ProviderNamespace:    flags.providerNamespace,
+		KubecarrierNamespace: flags.kubecarrierNamespace,
 	}).SetupWithManagers(serviceMgr, masterMgr); err != nil {
 		return fmt.Errorf("setup InternalObjectReconciler: %w", err)
 	}

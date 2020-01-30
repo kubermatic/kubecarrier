@@ -24,6 +24,7 @@ import (
 
 const (
 	ProviderNamespaceFieldIndex = "provider.kubecarrier.io/namespace"
+	TenantNamespaceFieldIndex   = "tenant.kubecarrier.io/namespace"
 )
 
 // RegisterProviderNamespaceFieldIndex adds a field index for Provider.Status.NamespaceName
@@ -32,6 +33,16 @@ func RegisterProviderNamespaceFieldIndex(mgr ctrl.Manager) error {
 		&Provider{}, ProviderNamespaceFieldIndex,
 		client.IndexerFunc(func(obj runtime.Object) []string {
 			provider := obj.(*Provider)
+			return []string{provider.Status.NamespaceName}
+		}))
+}
+
+// RegisterTenantNamespaceFieldIndex adds a field index for Tenant.Status.NamespaceName
+func RegisterTenantNamespaceFieldIndex(mgr ctrl.Manager) error {
+	return mgr.GetFieldIndexer().IndexField(
+		&Tenant{}, TenantNamespaceFieldIndex,
+		client.IndexerFunc(func(obj runtime.Object) []string {
+			provider := obj.(*Tenant)
 			return []string{provider.Status.NamespaceName}
 		}))
 }

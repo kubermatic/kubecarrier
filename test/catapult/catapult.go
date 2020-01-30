@@ -27,6 +27,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	catalogv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/catalog/v1alpha1"
+	corev1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/core/v1alpha1"
 	operatorv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/operator/v1alpha1"
 	"github.com/kubermatic/kubecarrier/test/framework"
 )
@@ -113,5 +114,18 @@ func NewCatapultSuit(f *framework.Framework) func(t *testing.T) {
 		require.NoError(t, fctx.MasterClient.Create(ctx, serviceClusterSecret))
 		require.NoError(t, fctx.MasterClient.CreateAndWaitUntilReady(ctx, serviceClusterRegistration))
 		require.NoError(t, fctx.ServiceClient.Create(ctx, crd))
+
+		serviceClusterAssignment := &corev1alpha1.ServiceClusterAssignment{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      tenant.Name,
+				Namespace: provider.Namespace,
+			},
+			Spec: corev1alpha1.ServiceClusterAssignmentSpec{
+				ServiceCluster: corev1alpha1.ObjectReference{
+					serviceClusterRegistration.Name,
+				},
+			},
+		}
+		require.NoError(t, fctx.MasterClient.CreateAndWaitUntilReady(ctx, serviceClusterAssignment))
 	}
 }

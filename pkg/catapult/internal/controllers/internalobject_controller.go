@@ -26,10 +26,13 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/apimachinery/pkg/types"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/source"
 
+	catalogv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/catalog/v1alpha1"
+	corev1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/core/v1alpha1"
 	"github.com/kubermatic/kubecarrier/pkg/internal/util"
 )
 
@@ -38,16 +41,20 @@ const (
 )
 
 type InternalObjectReconciler struct {
-	MasterClient      client.Client
-	MasterScheme      *runtime.Scheme
-	ServiceClient     client.Client
-	Log               logr.Logger
-	InternalGVK       schema.GroupVersionKind
-	ServiceClusterGVK schema.GroupVersionKind
-
-	// TODO: Implement dynamic target namespace discovery
-	ServiceClusterTargetNamespace string
+	MasterClient         client.Client
+	MasterScheme         *runtime.Scheme
+	ServiceClient        client.Client
+	Log                  logr.Logger
+	InternalGVK          schema.GroupVersionKind
+	ServiceClusterGVK    schema.GroupVersionKind
+	ProviderNamespace    string
+	KubecarrierNamespace string
 }
+
+// +kubebuilder:rbac:groups=kubecarrier.io,resources=serviceclusterassignments,verbs=get;list;watch
+// +kubebuilder:rbac:groups=kubecarrier.io,resources=serviceclusterassignments/status,verbs=get
+// +kubebuilder:rbac:groups=catalog.kubecarrier.io,resources=tenants,verbs=get;list;watch
+// +kubebuilder:rbac:groups=catalog.kubecarrier.io,resources=tenants/status,verbs=get
 
 func (r *InternalObjectReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	var (
@@ -74,7 +81,7 @@ func (r *InternalObjectReconciler) Reconcile(req ctrl.Request) (ctrl.Result, err
 		}
 	}
 	serviceClusterObj := &unstructured.Unstructured{}
-	targetNamespace, err := r.targetNamespace(ctx)
+	targetNamespace, err := r.targetNamespace(ctx, internalObj)
 	if err != nil {
 		return ctrl.Result{}, fmt.Errorf("target-namespace: %w", err)
 	}
@@ -106,7 +113,7 @@ func (r *InternalObjectReconciler) Reconcile(req ctrl.Request) (ctrl.Result, err
 }
 
 func (r *InternalObjectReconciler) handleDeletion(ctx context.Context, log logr.Logger, internalObj *unstructured.Unstructured) error {
-	targetNamespace, err := r.targetNamespace(ctx)
+	targetNamespace, err := r.targetNamespace(ctx, internalObj)
 	if err != nil {
 		return fmt.Errorf("target-namespace: %w", err)
 	}
@@ -131,9 +138,34 @@ func (r *InternalObjectReconciler) handleDeletion(ctx context.Context, log logr.
 	}
 }
 
-func (r *InternalObjectReconciler) targetNamespace(ctx context.Context) (namespace string, err error) {
-	// TODO: Implement dynamic target namespace discovery
-	return r.ServiceClusterTargetNamespace, nil
+func (r *InternalObjectReconciler) targetNamespace(ctx context.Context, obj *unstructured.Unstructured) (namespace string, err error) {
+	tenantList := &catalogv1alpha1.TenantList{}
+	if err := r.MasterClient.List(ctx, tenantList,
+		client.InNamespace(r.KubecarrierNamespace),
+		client.MatchingFields{
+			catalogv1alpha1.TenantNamespaceFieldIndex: obj.GetNamespace(),
+		},
+	); err != nil {
+		return "", err
+	}
+	if len(tenantList.Items) != 1 {
+		return "", fmt.Errorf("expected single tenant matching tenant namespace, found %d", len(tenantList.Items))
+	}
+	tenant := tenantList.Items[0]
+	if !tenant.IsReady() {
+		return "", fmt.Errorf("tenant not yet ready")
+	}
+	serviceClusterAssignment := &corev1alpha1.ServiceClusterAssignment{}
+	if err := r.MasterClient.Get(ctx, types.NamespacedName{
+		Namespace: r.ProviderNamespace,
+		Name:      tenant.GetName(),
+	}, serviceClusterAssignment); err != nil {
+		return "", fmt.Errorf("getting serviceClusterAssignment: %w", err)
+	}
+	if cond, _ := serviceClusterAssignment.Status.GetCondition(corev1alpha1.ServiceClusterAssignmentReady); cond.Status != corev1alpha1.ConditionTrue {
+		return "", fmt.Errorf("serviceClusterAssignment not yet ready")
+	}
+	return serviceClusterAssignment.Status.NamespaceName, nil
 }
 
 func (r *InternalObjectReconciler) SetupWithManagers(serviceMgr, masterMgr ctrl.Manager) error {

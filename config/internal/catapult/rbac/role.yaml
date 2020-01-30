@@ -5,4 +5,32 @@ kind: Role
 metadata:
   creationTimestamp: null
   name: manager-role
-rules: []
+rules:
+- apiGroups:
+  - catalog.kubecarrier.io
+  resources:
+  - tenants
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - catalog.kubecarrier.io
+  resources:
+  - tenants/status
+  verbs:
+  - get
+- apiGroups:
+  - kubecarrier.io
+  resources:
+  - serviceclusterassignments
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - kubecarrier.io
+  resources:
+  - serviceclusterassignments/status
+  verbs:
+  - get
