@@ -118,10 +118,15 @@ func (r *ServiceClusterAssignmentReconciler) handleDeletion(ctx context.Context,
 		}
 	}
 
-	nsList, err := util.ListOwnedNamespaces(ctx, r.ServiceClient, serviceClusterAssignment, r.MasterScheme)
+	ownedBy, err := util.OwnedBy(serviceClusterAssignment, r.MasterScheme)
 	if err != nil {
-		return fmt.Errorf("cannot list namespaces: %w", err)
+		return fmt.Errorf("building owned by selector: %w", err)
 	}
+	nsList := &corev1.NamespaceList{}
+	if err = r.ServiceClient.List(ctx, nsList, ownedBy); err != nil {
+		return fmt.Errorf("listing Namespaces: %w", err)
+	}
+
 	if len(nsList.Items) > 0 {
 		for _, ns := range nsList.Items {
 			if err := r.ServiceClient.Delete(ctx, &ns); err != nil && !errors.IsNotFound(err) {
