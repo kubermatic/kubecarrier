@@ -22,7 +22,6 @@ import (
 
 // ServiceClusterAssignmentSpec defines the desired state of ServiceClusterAssignment
 type ServiceClusterAssignmentSpec struct {
-	Tenant         ObjectReference `json:"tenant"`
 	ServiceCluster ObjectReference `json:"serviceCluster"`
 }
 

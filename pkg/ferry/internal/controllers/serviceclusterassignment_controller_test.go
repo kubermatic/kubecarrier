@@ -39,9 +39,6 @@ func TestServiceClusterAssignmentReconciler(t *testing.T) {
 			Namespace: "provider-bar",
 		},
 		Spec: corev1alpha1.ServiceClusterAssignmentSpec{
-			Tenant: corev1alpha1.ObjectReference{
-				Name: "foo",
-			},
 			ServiceCluster: corev1alpha1.ObjectReference{
 				Name: "eu-west-1",
 			},

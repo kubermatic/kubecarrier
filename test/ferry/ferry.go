@@ -193,9 +193,6 @@ func NewFerrySuite(f *framework.Framework) func(t *testing.T) {
 						Namespace: provider.Status.NamespaceName,
 					},
 					Spec: corev1alpha1.ServiceClusterAssignmentSpec{
-						Tenant: corev1alpha1.ObjectReference{
-							Name: tenant.Name,
-						},
 						ServiceCluster: corev1alpha1.ObjectReference{
 							Name: serviceClusterRegistration.Name,
 						},

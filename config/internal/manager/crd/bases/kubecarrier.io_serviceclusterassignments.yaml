@@ -54,18 +54,8 @@ spec:
                 required:
                 - name
                 type: object
-              tenant:
-                description: ObjectReference describes the link to another object
-                  in the same namespace
-                properties:
-                  name:
-                    type: string
-                required:
-                - name
-                type: object
             required:
             - serviceCluster
-            - tenant
             type: object
           status:
             description: ServiceClusterAssignmentStatus defines the observed state
