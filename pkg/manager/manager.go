@@ -31,7 +31,7 @@ import (
 	catalogv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/catalog/v1alpha1"
 	corev1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/core/v1alpha1"
 	"github.com/kubermatic/kubecarrier/pkg/internal/util"
-	webhook2 "github.com/kubermatic/kubecarrier/pkg/internal/util/webhook"
+	utilwebhook "github.com/kubermatic/kubecarrier/pkg/internal/util/webhook"
 	"github.com/kubermatic/kubecarrier/pkg/manager/internal/controllers"
 	"github.com/kubermatic/kubecarrier/pkg/manager/internal/webhooks"
 )
@@ -164,7 +164,7 @@ func run(flags *flags, log logr.Logger) error {
 	wbh := mgr.GetWebhookServer()
 
 	// validating webhooks
-	derivedCustomResourceDefinitionWebhookPath, err := webhook2.GenerateValidateWebhookPath(&catalogv1alpha1.DerivedCustomResourceDefinition{}, mgr.GetScheme())
+	derivedCustomResourceDefinitionWebhookPath, err := utilwebhook.GenerateValidateWebhookPath(&catalogv1alpha1.DerivedCustomResourceDefinition{}, mgr.GetScheme())
 	if err != nil {
 		return fmt.Errorf("getting DerivedCustomResourceDefinition webhook path: %w", err)
 	}
@@ -173,7 +173,7 @@ func run(flags *flags, log logr.Logger) error {
 			Log: log.WithName("validating webhooks").WithName("DerivedCustomResourceDefinition"),
 		}})
 
-	offeringWebhookPath, err := webhook2.GenerateValidateWebhookPath(&catalogv1alpha1.Offering{}, mgr.GetScheme())
+	offeringWebhookPath, err := utilwebhook.GenerateValidateWebhookPath(&catalogv1alpha1.Offering{}, mgr.GetScheme())
 	if err != nil {
 		return fmt.Errorf("getting Offering webhook path: %w", err)
 	}
@@ -182,7 +182,7 @@ func run(flags *flags, log logr.Logger) error {
 			Log: log.WithName("validating webhooks").WithName("Offering"),
 		}})
 
-	providerWebhookPath, err := webhook2.GenerateValidateWebhookPath(&catalogv1alpha1.Provider{}, mgr.GetScheme())
+	providerWebhookPath, err := utilwebhook.GenerateValidateWebhookPath(&catalogv1alpha1.Provider{}, mgr.GetScheme())
 	if err != nil {
 		return fmt.Errorf("getting Provider webhook path: %w", err)
 	}
@@ -191,7 +191,7 @@ func run(flags *flags, log logr.Logger) error {
 			Log: log.WithName("validating webhooks").WithName("Provider"),
 		}})
 
-	providerReferenceWebhookPath, err := webhook2.GenerateValidateWebhookPath(&catalogv1alpha1.ProviderReference{}, mgr.GetScheme())
+	providerReferenceWebhookPath, err := utilwebhook.GenerateValidateWebhookPath(&catalogv1alpha1.ProviderReference{}, mgr.GetScheme())
 	if err != nil {
 		return fmt.Errorf("getting ProviderReference webhook path: %w", err)
 	}
@@ -200,7 +200,7 @@ func run(flags *flags, log logr.Logger) error {
 			Log: log.WithName("validating webhooks").WithName("ProviderReference"),
 		}})
 
-	serviceClusterReferenceWebhookPath, err := webhook2.GenerateValidateWebhookPath(&catalogv1alpha1.ServiceClusterReference{}, mgr.GetScheme())
+	serviceClusterReferenceWebhookPath, err := utilwebhook.GenerateValidateWebhookPath(&catalogv1alpha1.ServiceClusterReference{}, mgr.GetScheme())
 	if err != nil {
 		return fmt.Errorf("getting ServiceClusterReference webhook path: %w", err)
 	}
@@ -209,7 +209,7 @@ func run(flags *flags, log logr.Logger) error {
 			Log: log.WithName("validating webhooks").WithName("ServiceClusterReference"),
 		}})
 
-	tenantWebhookPath, err := webhook2.GenerateValidateWebhookPath(&catalogv1alpha1.Tenant{}, mgr.GetScheme())
+	tenantWebhookPath, err := utilwebhook.GenerateValidateWebhookPath(&catalogv1alpha1.Tenant{}, mgr.GetScheme())
 	if err != nil {
 		return fmt.Errorf("getting Tenant webhook path: %w", err)
 	}
@@ -218,7 +218,7 @@ func run(flags *flags, log logr.Logger) error {
 			Log: log.WithName("validating webhooks").WithName("Tenant"),
 		}})
 
-	tenantReferenceWebhookPath, err := webhook2.GenerateValidateWebhookPath(&catalogv1alpha1.TenantReference{}, mgr.GetScheme())
+	tenantReferenceWebhookPath, err := utilwebhook.GenerateValidateWebhookPath(&catalogv1alpha1.TenantReference{}, mgr.GetScheme())
 	if err != nil {
 		return fmt.Errorf("getting TenantReference webhook path: %w", err)
 	}
@@ -228,7 +228,7 @@ func run(flags *flags, log logr.Logger) error {
 		}})
 
 	// mutating webhooks
-	catalogEntryWebhookPath, err := webhook2.GenerateMutateWebhookPath(&catalogv1alpha1.CatalogEntry{}, mgr.GetScheme())
+	catalogEntryWebhookPath, err := utilwebhook.GenerateMutateWebhookPath(&catalogv1alpha1.CatalogEntry{}, mgr.GetScheme())
 	if err != nil {
 		return fmt.Errorf("getting CatalogEntry webhook path: %w", err)
 	}
