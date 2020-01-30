@@ -280,6 +280,43 @@
               type: object
             spec:
               description: CatapultSpec defines the desired state of Catapult
+              properties:
+                masterGroup:
+                  description: MasterGroup defines objects group and kind in the master
+                    cluster
+                  type: string
+                masterKind:
+                  description: MasterKind defines objects group and kind in the master
+                    cluster
+                  type: string
+                objectVersion:
+                  description: ObjectVersion defines the object version, and from
+                    MasterGK/ServiceGK creating the Master/Service GVK (group version
+                    kind)
+                  type: string
+                serviceCluster:
+                  description: ServiceCluster to which to catapult the objects
+                  properties:
+                    name:
+                      type: string
+                  required:
+                  - name
+                  type: object
+                serviceGroup:
+                  description: ServiceGroup defines objects group and kind in the
+                    master cluster
+                  type: string
+                serviceKind:
+                  description: ServiceKind defines objects group and kind in the master
+                    cluster
+                  type: string
+              required:
+              - masterGroup
+              - masterKind
+              - objectVersion
+              - serviceCluster
+              - serviceGroup
+              - serviceKind
               type: object
             status:
               description: CatapultStatus defines the observed state of Catapult

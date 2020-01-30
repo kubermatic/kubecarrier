@@ -108,50 +108,50 @@
           control-plane: manager
       spec:
         containers:
-          - args:
-              - --service-cluster-kubeconfig=/kubeconfig/kubeconfig
-              - --provider-namespace=$(KUBERNETES_NAMESPACE)
-              - --kubecarrier-namespace=$(KUBECARRIER_NAMESPACE)
-              - --master-group=$(MASTER_GROUP)
-              - --master-kind=$(MASTER_KIND)
-              - --service-group=$(SERVICE_GROUP)
-              - --service-kind=$(SERVICE_KIND)
-              - --version=$(RESOURCE_VERSION)
-            env:
-              - name: KUBECARRIER_NAMESPACE
-                value: kubecarrier-system
-              - name: MASTER_GROUP
-                value: MasterGroup
-              - name: MASTER_KIND
-                value: MasterKind
-              - name: SERVICE_GROUP
-                value: ServiceGroup
-              - name: SERVICE_KIND
-                value: ServiceKind
-              - name: RESOURCE_VERSION
-                value: v1alpha1
-              - name: KUBERNETES_NAMESPACE
-                valueFrom:
-                  fieldRef:
-                    fieldPath: metadata.namespace
-            image: quay.io/kubecarrier/catapult:was not build properly
-            name: manager
-            resources:
-              limits:
-                cpu: 100m
-                memory: 30Mi
-              requests:
-                cpu: 100m
-                memory: 20Mi
-            volumeMounts:
-              - mountPath: /kubeconfig
-                name: kubeconfig
+        - args:
+          - --service-cluster-kubeconfig=/kubeconfig/kubeconfig
+          - --provider-namespace=$(KUBERNETES_NAMESPACE)
+          - --kubecarrier-namespace=$(KUBECARRIER_NAMESPACE)
+          - --master-group=$(MASTER_GROUP)
+          - --master-kind=$(MASTER_KIND)
+          - --service-group=$(SERVICE_GROUP)
+          - --service-kind=$(SERVICE_KIND)
+          - --version=$(RESOURCE_VERSION)
+          env:
+          - name: KUBECARRIER_NAMESPACE
+            value: kubecarrier-system
+          - name: MASTER_GROUP
+            value: MasterGroup
+          - name: MASTER_KIND
+            value: MasterKind
+          - name: SERVICE_GROUP
+            value: ServiceGroup
+          - name: SERVICE_KIND
+            value: ServiceKind
+          - name: RESOURCE_VERSION
+            value: v1alpha1
+          - name: KUBERNETES_NAMESPACE
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.namespace
+          image: quay.io/kubecarrier/catapult:was not build properly
+          name: manager
+          resources:
+            limits:
+              cpu: 100m
+              memory: 30Mi
+            requests:
+              cpu: 100m
+              memory: 20Mi
+          volumeMounts:
+          - mountPath: /kubeconfig
+            name: kubeconfig
         terminationGracePeriodSeconds: 10
         volumes:
-          - name: kubeconfig
-            secret:
-              items:
-                - key: kubeconfig-key
-                  path: kubeconfig
-              optional: false
-              secretName: eu-west-1-sec
+        - name: kubeconfig
+          secret:
+            items:
+            - key: kubeconfig-key
+              path: kubeconfig
+            optional: false
+            secretName: eu-west-1-sec

@@ -23,9 +23,9 @@ import (
 // CatapultSpec defines the desired state of Catapult
 type CatapultSpec struct {
 	// ServiceCluster to which to catapult the objects
-	ServiceCluster ObjectReference `json:"serviceSluster"`
+	ServiceCluster ObjectReference `json:"serviceCluster"`
 
-	CatapultMappingSpec
+	CatapultMappingSpec `json:",inline"`
 }
 
 // CatapultMappingSpec specifies the mapping between master and service cluster CRDs
