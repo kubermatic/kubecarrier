@@ -200,10 +200,7 @@ func (r *CatalogReconciler) SetupWithManager(mgr ctrl.Manager) error {
 			return
 		}),
 	}
-	enqueuerForOwner, err := util.EnqueueRequestForOwner(&catalogv1alpha1.Catalog{}, mgr.GetScheme())
-	if err != nil {
-		return fmt.Errorf("cannot create enqueuerForOnwer for Catalog: %w", err)
-	}
+	enqueuerForOwner := util.EnqueueRequestForOwner(&catalogv1alpha1.Catalog{}, mgr.GetScheme())
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&catalogv1alpha1.Catalog{}).
 		Watches(&source.Kind{Type: &catalogv1alpha1.TenantReference{}}, enqueueAllCatalogsInNamespace).
@@ -511,12 +508,8 @@ func (r *CatalogReconciler) cleanupOfferings(
 	desiredOfferings []catalogv1alpha1.Offering,
 ) (deletedOfferingCounter int, err error) {
 	// Fetch existing Offerings.
-	ownerListFilter, err := util.OwnedBy(catalog, r.Scheme)
-	if err != nil {
-		return 0, fmt.Errorf("building OwnedBy filter: %w", err)
-	}
 	foundOfferingList := &catalogv1alpha1.OfferingList{}
-	if err := r.List(ctx, foundOfferingList, ownerListFilter); err != nil {
+	if err := r.List(ctx, foundOfferingList, util.OwnedBy(catalog, r.Scheme)); err != nil {
 		return 0, fmt.Errorf("listing Offerings: %w", err)
 	}
 	return r.cleanupOutdatedReferences(ctx, log,
@@ -531,12 +524,8 @@ func (r *CatalogReconciler) cleanupProviderReferences(
 	desiredProviderReferences []catalogv1alpha1.ProviderReference,
 ) (deletedProviderReferenceCounter int, err error) {
 	// Fetch existing ProviderReferences.
-	ownerListFilter, err := util.OwnedBy(catalog, r.Scheme)
-	if err != nil {
-		return 0, fmt.Errorf("building OwnedBy filter: %w", err)
-	}
 	foundProviderReferenceList := &catalogv1alpha1.ProviderReferenceList{}
-	if err := r.List(ctx, foundProviderReferenceList, ownerListFilter); err != nil {
+	if err := r.List(ctx, foundProviderReferenceList, util.OwnedBy(catalog, r.Scheme)); err != nil {
 		return 0, fmt.Errorf("listing ProviderReferences: %w", err)
 	}
 
@@ -552,12 +541,8 @@ func (r *CatalogReconciler) cleanupServiceClusterReferences(
 	desiredServiceClusterReferences []catalogv1alpha1.ServiceClusterReference,
 ) (deletedServiceClusterReferenceCounter int, err error) {
 	// Fetch existing ServiceClusterReferences.
-	ownerListFilter, err := util.OwnedBy(catalog, r.Scheme)
-	if err != nil {
-		return 0, fmt.Errorf("building OwnedBy filter: %w", err)
-	}
 	foundServiceClusterReferenceList := &catalogv1alpha1.ServiceClusterReferenceList{}
-	if err := r.List(ctx, foundServiceClusterReferenceList, ownerListFilter); err != nil {
+	if err := r.List(ctx, foundServiceClusterReferenceList, util.OwnedBy(catalog, r.Scheme)); err != nil {
 		return 0, fmt.Errorf("listing ServiceClusterReferences: %w", err)
 	}
 	return r.cleanupOutdatedReferences(ctx, log,

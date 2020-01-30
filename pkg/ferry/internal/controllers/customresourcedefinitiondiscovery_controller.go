@@ -168,14 +168,9 @@ func (r *CustomResourceDefinitionDiscoveryReconciler) SetupWithManagers(serviceM
 		return fmt.Errorf("setFields: %w", err)
 	}
 
-	enqueuer, err := util.EnqueueRequestForOwner(&corev1alpha1.CustomResourceDefinitionDiscovery{}, r.MasterScheme)
-	if err != nil {
-		return fmt.Errorf("creating CustomResourceDefinitionDiscovery enqueuer: %w", err)
-	}
-
 	return ctrl.NewControllerManagedBy(masterMgr).
 		For(&corev1alpha1.CustomResourceDefinitionDiscovery{}).
-		Watches(source.Func(crdSource.Start), enqueuer).
+		Watches(source.Func(crdSource.Start), util.EnqueueRequestForOwner(&corev1alpha1.CustomResourceDefinitionDiscovery{}, r.MasterScheme)).
 		WithEventFilter(util.PredicateFn(func(obj runtime.Object) bool {
 			if crdDiscovery, ok := obj.(*corev1alpha1.CustomResourceDefinitionDiscovery); ok {
 				if crdDiscovery.Spec.ServiceCluster.Name == r.ServiceClusterName {

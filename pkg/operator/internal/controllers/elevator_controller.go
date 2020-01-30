@@ -114,10 +114,7 @@ func (r *ElevatorReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 
 func (r *ElevatorReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	owner := &operatorv1alpha1.Elevator{}
-	enqueuer, err := util.EnqueueRequestForOwner(owner, mgr.GetScheme())
-	if err != nil {
-		return fmt.Errorf("cannot create enqueuer for Elevator: %w", err)
-	}
+	enqueuer := util.EnqueueRequestForOwner(owner, mgr.GetScheme())
 
 	return ctrl.NewControllerManagedBy(mgr).
 		For(owner).
@@ -153,22 +150,19 @@ func (r *ElevatorReconciler) handleDeletion(ctx context.Context, elevator *opera
 	}
 
 	// 2. Delete Objects.
-	ownedBy, err := util.OwnedBy(elevator, r.Scheme)
-	if err != nil {
-		return fmt.Errorf("getting ownedBy list option: %w", err)
-	}
+	ownedByFilter := util.OwnedBy(elevator, r.Scheme)
 
-	clusterRoleBindingsCleaned, err := cleanupClusterRoleBindings(ctx, r.Client, ownedBy)
+	clusterRoleBindingsCleaned, err := cleanupClusterRoleBindings(ctx, r.Client, ownedByFilter)
 	if err != nil {
 		return fmt.Errorf("cleaning ClusterRoleBinding: %w", err)
 	}
 
-	clusterRolesCleaned, err := cleanupClusterRoles(ctx, r.Client, ownedBy)
+	clusterRolesCleaned, err := cleanupClusterRoles(ctx, r.Client, ownedByFilter)
 	if err != nil {
 		return fmt.Errorf("cleaning ClusterRoles: %w", err)
 	}
 
-	customResourceDefinitionsCleaned, err := cleanupCustomResourceDefinitions(ctx, r.Client, ownedBy)
+	customResourceDefinitionsCleaned, err := cleanupCustomResourceDefinitions(ctx, r.Client, ownedByFilter)
 	if err != nil {
 		return fmt.Errorf("cleaning CustomResourceDefinitions: %w", err)
 	}

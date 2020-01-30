@@ -109,10 +109,7 @@ func (r *TenantReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 
 func (r *TenantReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	owner := &catalogv1alpha1.Tenant{}
-	enqueuer, err := util.EnqueueRequestForOwner(owner, mgr.GetScheme())
-	if err != nil {
-		return fmt.Errorf("cannot create enqueuer for Tenant: %w", err)
-	}
+	enqueuer := util.EnqueueRequestForOwner(owner, mgr.GetScheme())
 
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&catalogv1alpha1.Tenant{}).
