@@ -127,5 +127,24 @@ func NewCatapultSuit(f *framework.Framework) func(t *testing.T) {
 			},
 		}
 		require.NoError(t, fctx.MasterClient.CreateAndWaitUntilReady(ctx, serviceClusterAssignment))
+		catapult := &operatorv1alpha1.Catapult{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "test-catapult",
+				Namespace: provider.GetNamespace(),
+			},
+			Spec: operatorv1alpha1.CatapultSpec{
+				ServiceCluster: operatorv1alpha1.ObjectReference{
+					Name: serviceClusterRegistration.Name,
+				},
+				CatapultMappingSpec: operatorv1alpha1.CatapultMappingSpec{
+					MasterGroup:   "", // legacy for core group
+					MasterKind:    "ConfigMap",
+					ServiceGroup:  "", // legacy for core group
+					ServiceKind:   "ConfigMap",
+					ObjectVersion: "v1",
+				},
+			},
+		}
+		require.NoError(t, fctx.MasterClient.CreateAndWaitUntilReady(ctx, catapult))
 	}
 }

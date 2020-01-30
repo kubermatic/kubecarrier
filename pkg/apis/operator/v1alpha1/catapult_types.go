@@ -31,13 +31,13 @@ type CatapultSpec struct {
 // CatapultMappingSpec specifies the mapping between master and service cluster CRDs
 type CatapultMappingSpec struct {
 	// MasterGroup defines objects group and kind in the master cluster
-	MasterGroup string `json:"masterGroup" validate:"required"`
+	MasterGroup string `json:"masterGroup,omitempty"`
 
 	// MasterKind defines objects group and kind in the master cluster
 	MasterKind string `json:"masterKind" validate:"required"`
 
 	// ServiceGroup defines objects group and kind in the master cluster
-	ServiceGroup string `json:"serviceGroup" validate:"required"`
+	ServiceGroup string `json:"serviceGroup,omitempty"`
 
 	// ServiceKind defines objects group and kind in the master cluster
 	ServiceKind string `json:"serviceKind" validate:"required"`

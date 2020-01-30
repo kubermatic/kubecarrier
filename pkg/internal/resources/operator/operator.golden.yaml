@@ -311,11 +311,9 @@
                     cluster
                   type: string
               required:
-              - masterGroup
               - masterKind
               - objectVersion
               - serviceCluster
-              - serviceGroup
               - serviceKind
               type: object
             status:
