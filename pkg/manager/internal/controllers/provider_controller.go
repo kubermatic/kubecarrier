@@ -101,10 +101,7 @@ func (r *ProviderReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 
 func (r *ProviderReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	owner := &catalogv1alpha1.Provider{}
-	enqueuer, err := util.EnqueueRequestForOwner(owner, mgr.GetScheme())
-	if err != nil {
-		return fmt.Errorf("cannot create enqueuer for Provider: %w", err)
-	}
+	enqueuer := util.EnqueueRequestForOwner(owner, mgr.GetScheme())
 
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&catalogv1alpha1.Provider{}).

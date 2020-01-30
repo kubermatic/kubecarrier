@@ -118,12 +118,8 @@ func (r *ServiceClusterAssignmentReconciler) handleDeletion(ctx context.Context,
 		}
 	}
 
-	ownedBy, err := util.OwnedBy(serviceClusterAssignment, r.MasterScheme)
-	if err != nil {
-		return fmt.Errorf("building owned by selector: %w", err)
-	}
 	nsList := &corev1.NamespaceList{}
-	if err = r.ServiceClient.List(ctx, nsList, ownedBy); err != nil {
+	if err := r.ServiceClient.List(ctx, nsList, util.OwnedBy(serviceClusterAssignment, r.MasterScheme)); err != nil {
 		return fmt.Errorf("listing Namespaces: %w", err)
 	}
 
@@ -151,14 +147,9 @@ func (r *ServiceClusterAssignmentReconciler) SetupWithManagers(serviceMgr, maste
 		return fmt.Errorf("service cluster namespace source: %w", err)
 	}
 
-	enqueuer, err := util.EnqueueRequestForOwner(&corev1alpha1.ServiceClusterAssignment{}, r.MasterScheme)
-	if err != nil {
-		return fmt.Errorf("creating ServiceClusterAssignment enqueuer: %w", err)
-	}
-
 	return ctrl.NewControllerManagedBy(masterMgr).
 		For(&corev1alpha1.ServiceClusterAssignment{}).
-		Watches(source.Func(namespaceSource.Start), enqueuer).
+		Watches(source.Func(namespaceSource.Start), util.EnqueueRequestForOwner(&corev1alpha1.ServiceClusterAssignment{}, r.MasterScheme)).
 		WithEventFilter(util.PredicateFn(func(obj runtime.Object) bool {
 			if serviceClusterAssignment, ok := obj.(*corev1alpha1.ServiceClusterAssignment); ok {
 				if serviceClusterAssignment.Spec.ServiceCluster.Name == r.ServiceClusterName {

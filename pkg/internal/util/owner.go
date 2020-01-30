@@ -54,11 +54,8 @@ type GeneralizedListOption interface {
 }
 
 // InsertOwnerReference adds an OwnerReference to the given object.
-func InsertOwnerReference(owner, object metav1.Object, scheme *runtime.Scheme) (changed bool, err error) {
-	ownerReference, err := toOwnerReference(owner, scheme)
-	if err != nil {
-		return false, err
-	}
+func InsertOwnerReference(owner, object Object, scheme *runtime.Scheme) (changed bool, err error) {
+	ownerReference := toOwnerReference(owner, scheme)
 
 	refs, err := getRefs(object)
 	if err != nil {
@@ -80,11 +77,8 @@ func InsertOwnerReference(owner, object metav1.Object, scheme *runtime.Scheme) (
 }
 
 // DeleteOwnerReference removes an owner from the given object.
-func DeleteOwnerReference(owner, object metav1.Object, scheme *runtime.Scheme) (changed bool, err error) {
-	reference, err := toOwnerReference(owner, scheme)
-	if err != nil {
-		return false, err
-	}
+func DeleteOwnerReference(owner, object Object, scheme *runtime.Scheme) (changed bool, err error) {
+	reference := toOwnerReference(owner, scheme)
 
 	refs, err := getRefs(object)
 	if err != nil {
@@ -124,11 +118,8 @@ func IsUnowned(object metav1.Object) (unowned bool, err error) {
 // EnqueueRequestForOwner enqueues requests for all owners of an object.
 //
 // It implements the same behavior as handler.EnqueueRequestForOwner, but for our custom ownerReference.
-func EnqueueRequestForOwner(ownerType metav1.Object, scheme *runtime.Scheme) (handler.EventHandler, error) {
-	ownerTypeRef, err := toOwnerReference(ownerType, scheme)
-	if err != nil {
-		return nil, err
-	}
+func EnqueueRequestForOwner(ownerType Object, scheme *runtime.Scheme) handler.EventHandler {
+	ownerTypeRef := toOwnerReference(ownerType, scheme)
 	ownerKind, ownerGroup := ownerTypeRef.Kind, ownerTypeRef.Group
 
 	return &handler.EnqueueRequestsFromMapFunc{
@@ -158,7 +149,7 @@ func EnqueueRequestForOwner(ownerType metav1.Object, scheme *runtime.Scheme) (ha
 			}
 			return req
 		}),
-	}, nil
+	}
 }
 
 // AddOwnerReverseFieldIndex adds a reverse index for OwnerReferences.
@@ -195,14 +186,10 @@ func AddOwnerReverseFieldIndex(indexer client.FieldIndexer, log logr.Logger, obj
 // OwnedBy returns owner filter for listing objects.
 //
 // See also: AddOwnerReverseFieldIndex
-func OwnedBy(owner metav1.Object, sc *runtime.Scheme) (GeneralizedListOption, error) {
-	ref, err := toOwnerReference(owner, sc)
-	if err != nil {
-		return nil, err
-	}
+func OwnedBy(owner Object, sc *runtime.Scheme) GeneralizedListOption {
 	return client.MatchingFields{
-		OwnerAnnotation: ref.fieldIndexValue(),
-	}, nil
+		OwnerAnnotation: toOwnerReference(owner, sc).fieldIndexValue(),
+	}
 }
 
 // fieldIndexValue converts the ownerReference into a simple value for a client.FieldIndexer.
@@ -216,16 +203,25 @@ func (n ownerReference) fieldIndexValue() string {
 	return string(b)
 }
 
-// toOwnerReference converts the given object into an ownerReference.
-func toOwnerReference(owner metav1.Object, scheme *runtime.Scheme) (ownerReference, error) {
-	object, ok := owner.(runtime.Object)
-	if !ok {
-		return ownerReference{}, fmt.Errorf("%T is not a runtime.Object", owner)
-	}
+// Object generic k8s object with metav1 and runtime Object interfaces implemented
+type Object interface {
+	runtime.Object
+	metav1.Object
+}
 
-	gvk, err := apiutil.GVKForObject(object, scheme)
+// toOwnerReference converts the given object into an ownerReference.
+func toOwnerReference(owner Object, scheme *runtime.Scheme) ownerReference {
+	gvk, err := apiutil.GVKForObject(owner, scheme)
 	if err != nil {
-		return ownerReference{}, err
+		// if this panic occurs many, many other stuff has gone wrong as well
+		// by owner type's safety ensures this is somewhat well formed k8s object
+		// When using client-go API, it needs to be able to deduce GVK in the same manner
+		// thus get/create/update/patch/delete shall error out long before this is called
+		// This massively simplifies the function interface and allows OwnedBy to be a
+		// one-liner instead of 3 line check which never errors
+		// this is error is completely under our control, users of kubecarrier cannot
+		// change cluster state to cause it.
+		panic(fmt.Sprintf("cannot deduce GVK for owner (type %T)", owner))
 	}
 
 	return ownerReference{
@@ -233,7 +229,7 @@ func toOwnerReference(owner metav1.Object, scheme *runtime.Scheme) (ownerReferen
 		Namespace: owner.GetNamespace(),
 		Kind:      gvk.Kind,
 		Group:     gvk.Group,
-	}, nil
+	}
 }
 
 func getRefs(object metav1.Object) (refs []ownerReference, err error) {

@@ -37,12 +37,8 @@ type object interface {
 //
 // It's required that OwnerReverseFieldIndex exists for corev1.Namespace
 func EnsureUniqueNamespace(ctx context.Context, c client.Client, scheme *runtime.Scheme, owner object) (*corev1.Namespace, error) {
-	ownedBy, err := OwnedBy(owner, scheme)
-	if err != nil {
-		return nil, fmt.Errorf("building owned by selector: %w", err)
-	}
 	namespaceList := &corev1.NamespaceList{}
-	if err = c.List(ctx, namespaceList, ownedBy); err != nil {
+	if err := c.List(ctx, namespaceList, OwnedBy(owner, scheme)); err != nil {
 		return nil, fmt.Errorf("listing Namespaces: %w", err)
 	}
 
