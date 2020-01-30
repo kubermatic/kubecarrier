@@ -17,10 +17,14 @@ limitations under the License.
 package framework
 
 import (
+	"context"
 	"fmt"
 	"os"
+	"testing"
 
+	"github.com/stretchr/testify/assert"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	restclient "k8s.io/client-go/rest"
@@ -30,6 +34,7 @@ import (
 	catalogv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/catalog/v1alpha1"
 	corev1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/core/v1alpha1"
 	operatorv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/operator/v1alpha1"
+	"github.com/kubermatic/kubecarrier/pkg/testutil"
 )
 
 type Config struct {
@@ -133,4 +138,68 @@ func (f *Framework) ServiceClient() (client.Client, error) {
 
 func (f *Framework) Config() Config {
 	return f.config
+}
+
+func (f *Framework) NewFrameworkContext() (*FrameworkContext, error) {
+	fctx := &FrameworkContext{
+		masterTracking:  make([]runtime.Object, 0),
+		serviceTracking: make([]runtime.Object, 0),
+	}
+	mClient, err := f.MasterClient()
+	if err != nil {
+		return nil, err
+	}
+	sClient, err := f.ServiceClient()
+	if err != nil {
+		return nil, err
+	}
+	fctx.MasterClient = &FrameworkTrackingClient{
+		tracking: &fctx.masterTracking,
+		Client:   mClient,
+	}
+	fctx.ServiceClient = &FrameworkTrackingClient{
+		tracking: &fctx.serviceTracking,
+		Client:   sClient,
+	}
+	return fctx, nil
+}
+
+type FrameworkContext struct {
+	MasterClient    *FrameworkTrackingClient
+	ServiceClient   *FrameworkTrackingClient
+	masterTracking  []runtime.Object
+	serviceTracking []runtime.Object
+}
+
+func (cl *FrameworkContext) CleanUp(t *testing.T) {
+	// cleanup in reverse order of creation
+	for i := len(cl.masterTracking) - 1; i >= 0; i-- {
+		obj := cl.masterTracking[i]
+		objMeta := obj.(metav1.Object)
+		assert.NoError(t, testutil.DeleteAndWaitUntilNotFound(cl.MasterClient, obj), "cannot delete %T:%s from master cluster", obj, objMeta.GetName())
+	}
+	for i := len(cl.serviceTracking) - 1; i >= 0; i-- {
+		obj := cl.serviceTracking[i]
+		objMeta := obj.(metav1.Object)
+		assert.NoError(t, testutil.DeleteAndWaitUntilNotFound(cl.ServiceClient, obj), "cannot delete %T:%s from service cluster", obj, objMeta.GetName())
+	}
+}
+
+type FrameworkTrackingClient struct {
+	tracking *[]runtime.Object
+	client.Client
+}
+
+var _ client.Client = (*FrameworkTrackingClient)(nil)
+
+func (cl *FrameworkTrackingClient) Create(ctx context.Context, obj runtime.Object, opts ...client.CreateOption) error {
+	*cl.tracking = append(*cl.tracking, obj)
+	return cl.Client.Create(ctx, obj, opts...)
+}
+
+func (cl *FrameworkTrackingClient) CreateAndWaitUntilReady(ctx context.Context, obj runtime.Object, opts ...client.CreateOption) error {
+	if err := cl.Create(ctx, obj, opts...); err != nil {
+		return err
+	}
+	return testutil.WaitUntilReady(cl, obj)
 }

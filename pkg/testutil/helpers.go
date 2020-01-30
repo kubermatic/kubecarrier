@@ -62,6 +62,16 @@ func LogObject(t *testing.T, obj interface{}) {
 	t.Log("\n", string(b))
 }
 
+func DeleteAndWaitUntilNotFound(c client.Client, obj runtime.Object) error {
+	if err := c.Delete(context.Background(), obj); err != nil {
+		if errors.IsNotFound(err) {
+			return nil
+		}
+		return err
+	}
+	return WaitUntilNotFound(c, obj)
+}
+
 func WaitUntilNotFound(c client.Client, obj runtime.Object) error {
 	o, ok := obj.(metav1.Object)
 	if !ok {
