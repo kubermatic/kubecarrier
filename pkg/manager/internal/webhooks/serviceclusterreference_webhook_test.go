@@ -38,10 +38,29 @@ func TestServiceClusterReferenceValidatingCreate(t *testing.T) {
 		expectedError bool
 	}{
 		{
+			name: "invalid serviceClusterReference name",
+			object: &catalogv1alpha1.ServiceClusterReference{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "-test-serviceClusterReference",
+					Namespace: "test-namespace",
+				},
+				Spec: catalogv1alpha1.ServiceClusterReferenceSpec{
+					Metadata: corev1alpha1.ServiceClusterMetadata{
+						Description: "Test ServiceClusterReference",
+						DisplayName: "Test ServiceClusterReference",
+					},
+					Provider: catalogv1alpha1.ObjectReference{
+						Name: "Provider",
+					},
+				},
+			},
+			expectedError: true,
+		},
+		{
 			name: "serviceClusterReference data missing",
 			object: &catalogv1alpha1.ServiceClusterReference{
 				ObjectMeta: metav1.ObjectMeta{
-					Name:      "test-serviceClusterReference",
+					Name:      "test-serviceclusterreference",
 					Namespace: "test-namespace",
 				},
 			},
@@ -51,7 +70,7 @@ func TestServiceClusterReferenceValidatingCreate(t *testing.T) {
 			name: "metadata missing",
 			object: &catalogv1alpha1.ServiceClusterReference{
 				ObjectMeta: metav1.ObjectMeta{
-					Name:      "test-serviceClusterReference",
+					Name:      "test-serviceclusterreference",
 					Namespace: "test-namespace",
 				},
 				Spec: catalogv1alpha1.ServiceClusterReferenceSpec{
@@ -66,7 +85,7 @@ func TestServiceClusterReferenceValidatingCreate(t *testing.T) {
 			name: "metadata description missing",
 			object: &catalogv1alpha1.ServiceClusterReference{
 				ObjectMeta: metav1.ObjectMeta{
-					Name:      "test-serviceClusterReference",
+					Name:      "test-serviceclusterreference",
 					Namespace: "test-namespace",
 				},
 				Spec: catalogv1alpha1.ServiceClusterReferenceSpec{
@@ -84,7 +103,7 @@ func TestServiceClusterReferenceValidatingCreate(t *testing.T) {
 			name: "metadata displayName missing",
 			object: &catalogv1alpha1.ServiceClusterReference{
 				ObjectMeta: metav1.ObjectMeta{
-					Name:      "test-serviceClusterReference",
+					Name:      "test-serviceclusterreference",
 					Namespace: "test-namespace",
 				},
 				Spec: catalogv1alpha1.ServiceClusterReferenceSpec{
@@ -102,7 +121,7 @@ func TestServiceClusterReferenceValidatingCreate(t *testing.T) {
 			name: "provider missing",
 			object: &catalogv1alpha1.ServiceClusterReference{
 				ObjectMeta: metav1.ObjectMeta{
-					Name:      "test-serviceClusterReference",
+					Name:      "test-serviceclusterreference",
 					Namespace: "test-namespace",
 				},
 				Spec: catalogv1alpha1.ServiceClusterReferenceSpec{
@@ -118,7 +137,7 @@ func TestServiceClusterReferenceValidatingCreate(t *testing.T) {
 			name: "can pass validating create",
 			object: &catalogv1alpha1.ServiceClusterReference{
 				ObjectMeta: metav1.ObjectMeta{
-					Name:      "test-serviceClusterReference",
+					Name:      "test-serviceclusterreference",
 					Namespace: "test-namespace",
 				},
 				Spec: catalogv1alpha1.ServiceClusterReferenceSpec{
@@ -149,7 +168,7 @@ func TestServiceClusterReferenceValidatingUpdate(t *testing.T) {
 
 	oldObj := &catalogv1alpha1.ServiceClusterReference{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      "test-serviceClusterReference",
+			Name:      "test-serviceclusterreference",
 			Namespace: "test-namespace",
 		},
 		Spec: catalogv1alpha1.ServiceClusterReferenceSpec{
@@ -172,7 +191,7 @@ func TestServiceClusterReferenceValidatingUpdate(t *testing.T) {
 			name: "provider immutable",
 			object: &catalogv1alpha1.ServiceClusterReference{
 				ObjectMeta: metav1.ObjectMeta{
-					Name:      "test-serviceClusterReference",
+					Name:      "test-serviceclusterreference",
 					Namespace: "test-namespace",
 				},
 				Spec: catalogv1alpha1.ServiceClusterReferenceSpec{
@@ -191,7 +210,7 @@ func TestServiceClusterReferenceValidatingUpdate(t *testing.T) {
 			name: "can pass validating update",
 			object: &catalogv1alpha1.ServiceClusterReference{
 				ObjectMeta: metav1.ObjectMeta{
-					Name:      "test-serviceClusterReference",
+					Name:      "test-serviceclusterreference",
 					Namespace: "test-namespace",
 				},
 				Spec: catalogv1alpha1.ServiceClusterReferenceSpec{

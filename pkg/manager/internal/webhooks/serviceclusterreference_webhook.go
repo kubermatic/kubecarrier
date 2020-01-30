@@ -27,6 +27,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
 	catalogv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/catalog/v1alpha1"
+	"github.com/kubermatic/kubecarrier/pkg/internal/util/webhook"
 )
 
 // ServiceClusterReferenceWebhookHandler handles mutating/validating of ServiceClusterReferences.
@@ -75,6 +76,9 @@ func (r *ServiceClusterReferenceWebhookHandler) InjectDecoder(d *admission.Decod
 
 func (r *ServiceClusterReferenceWebhookHandler) validateCreate(serviceClusterReference *catalogv1alpha1.ServiceClusterReference) error {
 	r.Log.Info("validate create", "name", serviceClusterReference.Name)
+	if !webhook.IsDNS1123Label(serviceClusterReference.Name) {
+		return fmt.Errorf("serviceClusterReference name: %s is not a valid DNS 1123 Label, %s", serviceClusterReference.Name, webhook.DNS1123LabelDescription)
+	}
 	if serviceClusterReference.Spec.Provider.Name == "" {
 		return fmt.Errorf("the Provider of ServiceClusterReference is not specifed")
 	}

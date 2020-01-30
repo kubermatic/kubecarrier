@@ -122,3 +122,37 @@ webhooks:
     - UPDATE
     resources:
     - serviceclusterreferences
+- clientConfig:
+    caBundle: Cg==
+    service:
+      name: webhook-service
+      namespace: system
+      path: /validate-catalog-kubecarrier-io-v1alpha1-tenant
+  failurePolicy: Fail
+  name: vtenant.kb.io
+  rules:
+  - apiGroups:
+    - catalog.kubecarrier.io
+    apiVersions:
+    - v1alpha1
+    operations:
+    - CREATE
+    resources:
+    - tenants
+- clientConfig:
+    caBundle: Cg==
+    service:
+      name: webhook-service
+      namespace: system
+      path: /validate-catalog-kubecarrier-io-v1alpha1-tenantreference
+  failurePolicy: Fail
+  name: vtenantreference.kb.io
+  rules:
+  - apiGroups:
+    - catalog.kubecarrier.io
+    apiVersions:
+    - v1alpha1
+    operations:
+    - CREATE
+    resources:
+    - tenantreferences

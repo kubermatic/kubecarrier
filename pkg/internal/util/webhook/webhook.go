@@ -14,14 +14,25 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package util
+package webhook
 
 import (
+	"regexp"
 	"strings"
 
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client/apiutil"
 )
+
+const DNS1123LabelDescription = "A DNS-1123 label must consist of lower case alphanumeric characters or '-', and must start and end with an alphanumeric character. (e.g. 'my-name',  or '123-abc', regex used for validation is '[a-z0-9]([-a-z0-9]*[a-z0-9])?'"
+
+var dns1123LabelRegex = regexp.MustCompile(`^[a-z0-9]([-a-z0-9]*[a-z0-9])?$`)
+
+// IsDNS1123Label validates if string s is a validated DNS 1123 label.
+// A DNS-1123 label must consist of lower case alphanumeric characters or '-', and must start and end with an alphanumeric character.
+func IsDNS1123Label(s string) bool {
+	return dns1123LabelRegex.MatchString(s)
+}
 
 // GenerateMutateWebhookPath and GenerateValidatingWebhookPath are used to generate the Path to register webhooks for runtime.Object.
 // They are similar to the functions in the controller-runtime package:

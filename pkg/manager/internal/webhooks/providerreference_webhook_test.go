@@ -26,7 +26,7 @@ import (
 	"github.com/kubermatic/kubecarrier/pkg/testutil"
 )
 
-func TestProviderReferenceValidatingMetadata(t *testing.T) {
+func TestProviderReferenceValidatingCreate(t *testing.T) {
 	providerReferenceWebhookHandler := ProviderReferenceWebhookHandler{
 		Log: testutil.NewLogger(t),
 	}
@@ -37,20 +37,36 @@ func TestProviderReferenceValidatingMetadata(t *testing.T) {
 		expectedError bool
 	}{
 		{
-			name: "no metadata",
+			name: "invalid ProviderReference name",
 			object: &catalogv1alpha1.ProviderReference{
 				ObjectMeta: metav1.ObjectMeta{
-					Name:      "test-providerReference",
+					Name:      "test.providerReference",
+					Namespace: "test-providerReference-namespace",
+				},
+				Spec: catalogv1alpha1.ProviderReferenceSpec{
+					Metadata: catalogv1alpha1.ProviderMetadata{
+						Description: "test ProviderReference",
+						DisplayName: "test ProviderReference",
+					},
+				},
+			},
+			expectedError: true,
+		},
+		{
+			name: "metadata missing",
+			object: &catalogv1alpha1.ProviderReference{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "test-providerreference",
 					Namespace: "test-providerReference-namespace",
 				},
 			},
 			expectedError: true,
 		},
 		{
-			name: "no description",
+			name: "description missing",
 			object: &catalogv1alpha1.ProviderReference{
 				ObjectMeta: metav1.ObjectMeta{
-					Name:      "test-providerReference",
+					Name:      "test-providerreference",
 					Namespace: "test-providerReference-namespace",
 				},
 				Spec: catalogv1alpha1.ProviderReferenceSpec{
@@ -62,10 +78,10 @@ func TestProviderReferenceValidatingMetadata(t *testing.T) {
 			expectedError: true,
 		},
 		{
-			name: "no displayName",
+			name: "displayName missing",
 			object: &catalogv1alpha1.ProviderReference{
 				ObjectMeta: metav1.ObjectMeta{
-					Name:      "test-providerReference",
+					Name:      "test-providerreference",
 					Namespace: "test-providerReference-namespace",
 				},
 				Spec: catalogv1alpha1.ProviderReferenceSpec{
@@ -77,10 +93,10 @@ func TestProviderReferenceValidatingMetadata(t *testing.T) {
 			expectedError: true,
 		},
 		{
-			name: "metadata",
+			name: "can pass validate create",
 			object: &catalogv1alpha1.ProviderReference{
 				ObjectMeta: metav1.ObjectMeta{
-					Name:      "test-providerReference",
+					Name:      "test-providerreference",
 					Namespace: "test-providerReference-namespace",
 				},
 				Spec: catalogv1alpha1.ProviderReferenceSpec{
@@ -96,7 +112,7 @@ func TestProviderReferenceValidatingMetadata(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			assert.Equal(t, test.expectedError, providerReferenceWebhookHandler.validateMetadata(test.object) != nil)
+			assert.Equal(t, test.expectedError, providerReferenceWebhookHandler.validateCreate(test.object) != nil)
 		})
 	}
 }

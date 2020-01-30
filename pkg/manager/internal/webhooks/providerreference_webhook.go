@@ -23,9 +23,11 @@ import (
 
 	"github.com/go-logr/logr"
 	adminv1beta1 "k8s.io/api/admission/v1beta1"
+	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
 	catalogv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/catalog/v1alpha1"
+	"github.com/kubermatic/kubecarrier/pkg/internal/util/webhook"
 )
 
 // ProviderReferenceWebhookHandler handles mutating/validating of ProviderReferences.
@@ -45,9 +47,17 @@ func (r *ProviderReferenceWebhookHandler) Handle(ctx context.Context, req admiss
 		return admission.Errored(http.StatusBadRequest, err)
 	}
 
-	if req.Operation == adminv1beta1.Create || req.Operation == adminv1beta1.Update {
-		r.Log.Info("validate create/update", "name", obj.Name)
-		if err := r.validateMetadata(obj); err != nil {
+	switch req.Operation {
+	case adminv1beta1.Create:
+		if err := r.validateCreate(obj); err != nil {
+			return admission.Denied(err.Error())
+		}
+	case adminv1beta1.Update:
+		oldObj := obj.DeepCopyObject()
+		if err := r.decoder.DecodeRaw(req.OldObject, oldObj); err != nil {
+			return admission.Errored(http.StatusBadRequest, err)
+		}
+		if err := r.validateUpdate(obj, oldObj); err != nil {
 			return admission.Denied(err.Error())
 		}
 	}
@@ -62,6 +72,23 @@ func (r *ProviderReferenceWebhookHandler) Handle(ctx context.Context, req admiss
 func (r *ProviderReferenceWebhookHandler) InjectDecoder(d *admission.Decoder) error {
 	r.decoder = d
 	return nil
+}
+
+func (r *ProviderReferenceWebhookHandler) validateCreate(providerReference *catalogv1alpha1.ProviderReference) error {
+	r.Log.Info("validate create", "name", providerReference.Name)
+	if !webhook.IsDNS1123Label(providerReference.Name) {
+		return fmt.Errorf("providerReference name: %s is not a valid DNS 1123 Label, %s", providerReference.Name, webhook.DNS1123LabelDescription)
+	}
+	return r.validateMetadata(providerReference)
+}
+
+func (r *ProviderReferenceWebhookHandler) validateUpdate(obj *catalogv1alpha1.ProviderReference, oldObj runtime.Object) error {
+	r.Log.Info("validate create", "name", obj.Name)
+	oldProviderReference, ok := oldObj.(*catalogv1alpha1.ProviderReference)
+	if !ok {
+		return fmt.Errorf("expect old object to be a %T instead of %T\n", oldProviderReference, oldObj)
+	}
+	return r.validateMetadata(obj)
 }
 
 func (r *ProviderReferenceWebhookHandler) validateMetadata(providerReference *catalogv1alpha1.ProviderReference) error {

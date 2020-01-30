@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package util
+package webhook
 
 import (
 	"testing"
@@ -26,23 +26,53 @@ import (
 	catalogv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/catalog/v1alpha1"
 )
 
-func TestGenerateMutateWebhookPath(t *testing.T) {
+func TestGenerateWebhookPath(t *testing.T) {
 	testWebhookScheme := runtime.NewScheme()
 	if err := catalogv1alpha1.AddToScheme(testWebhookScheme); err != nil {
 		panic(err)
 	}
 	catalogEntry := &catalogv1alpha1.CatalogEntry{}
 
-	t.Run("TestGenerateMutateWebhookPath", func(t *testing.T) {
-		t.Parallel()
-		path, err := GenerateMutateWebhookPath(catalogEntry, testWebhookScheme)
-		require.NoError(t, err)
-		assert.Equal(t, path, "/mutate-catalog-kubecarrier-io-v1alpha1-catalogentry")
-	})
-	t.Run("TestGenerateValidatingWebhookPath", func(t *testing.T) {
-		t.Parallel()
-		path, err := GenerateValidateWebhookPath(catalogEntry, testWebhookScheme)
-		require.NoError(t, err)
-		assert.Equal(t, path, "/validate-catalog-kubecarrier-io-v1alpha1-catalogentry")
-	})
+	path, err := GenerateMutateWebhookPath(catalogEntry, testWebhookScheme)
+	require.NoError(t, err)
+	assert.Equal(t, path, "/mutate-catalog-kubecarrier-io-v1alpha1-catalogentry")
+
+	path, err = GenerateValidateWebhookPath(catalogEntry, testWebhookScheme)
+	require.NoError(t, err)
+	assert.Equal(t, path, "/validate-catalog-kubecarrier-io-v1alpha1-catalogentry")
+}
+
+func TestIsDNS1123Label(t *testing.T) {
+	tests := []struct {
+		s              string
+		isDNS1123Label bool
+	}{
+		{
+			"example.cloud",
+			false,
+		},
+		{
+			"Example-cloud",
+			false,
+		},
+		{
+			"-example-cloud",
+			false,
+		},
+		{
+			"example-cloud-",
+			false,
+		},
+		{
+			"examp1e-cloud",
+			true,
+		},
+		{
+			"example-cloud",
+			true,
+		},
+	}
+	for _, test := range tests {
+		assert.Equal(t, test.isDNS1123Label, IsDNS1123Label(test.s))
+	}
 }

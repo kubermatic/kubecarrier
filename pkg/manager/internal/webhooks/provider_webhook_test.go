@@ -26,7 +26,7 @@ import (
 	"github.com/kubermatic/kubecarrier/pkg/testutil"
 )
 
-func TestProviderValidatingMetadata(t *testing.T) {
+func TestProviderValidatingCreate(t *testing.T) {
 	providerWebhookHandler := ProviderWebhookHandler{
 		Log: testutil.NewLogger(t),
 	}
@@ -37,7 +37,23 @@ func TestProviderValidatingMetadata(t *testing.T) {
 		expectedError bool
 	}{
 		{
-			name: "no metadata",
+			name: "invalid provider name",
+			object: &catalogv1alpha1.Provider{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "test.provider",
+					Namespace: "test-provider-namespace",
+				},
+				Spec: catalogv1alpha1.ProviderSpec{
+					Metadata: catalogv1alpha1.ProviderMetadata{
+						Description: "test Provider",
+						DisplayName: "test Provider",
+					},
+				},
+			},
+			expectedError: true,
+		},
+		{
+			name: "metadata missing",
 			object: &catalogv1alpha1.Provider{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "test-provider",
@@ -47,7 +63,7 @@ func TestProviderValidatingMetadata(t *testing.T) {
 			expectedError: true,
 		},
 		{
-			name: "no description",
+			name: "description missing",
 			object: &catalogv1alpha1.Provider{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "test-provider",
@@ -62,7 +78,7 @@ func TestProviderValidatingMetadata(t *testing.T) {
 			expectedError: true,
 		},
 		{
-			name: "no displayName",
+			name: "displayName missing",
 			object: &catalogv1alpha1.Provider{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "test-provider",
@@ -77,7 +93,7 @@ func TestProviderValidatingMetadata(t *testing.T) {
 			expectedError: true,
 		},
 		{
-			name: "metadata",
+			name: "can pass validate create",
 			object: &catalogv1alpha1.Provider{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "test-provider",
@@ -96,7 +112,7 @@ func TestProviderValidatingMetadata(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			assert.Equal(t, test.expectedError, providerWebhookHandler.validateMetadata(test.object) != nil)
+			assert.Equal(t, test.expectedError, providerWebhookHandler.validateCreate(test.object) != nil)
 		})
 	}
 }
