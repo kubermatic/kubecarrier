@@ -26,11 +26,11 @@ import (
 )
 
 const (
-	providerLabel       = "kubecarrier.io/provider"
+	ProviderLabel       = "kubecarrier.io/provider"
 	serviceClusterLabel = "kubecarrier.io/service-cluster"
 )
 
-func getProviderByProviderNamespace(ctx context.Context, c client.Client, kubecarrierNamespace, providerNamespace string) (*catalogv1alpha1.Provider, error) {
+func GetProviderByProviderNamespace(ctx context.Context, c client.Client, kubecarrierNamespace, providerNamespace string) (*catalogv1alpha1.Provider, error) {
 	providerList := &catalogv1alpha1.ProviderList{}
 	if err := c.List(ctx, providerList,
 		client.InNamespace(kubecarrierNamespace),

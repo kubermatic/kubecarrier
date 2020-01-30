@@ -54,6 +54,12 @@ func NewProviderSuite(f *framework.Framework) func(t *testing.T) {
 					Name:      "example-cloud",
 					Namespace: "kubecarrier-system",
 				},
+				Spec: catalogv1alpha1.ProviderSpec{
+					Metadata: catalogv1alpha1.ProviderMetadata{
+						DisplayName: "provider",
+						Description: "provider test description",
+					},
+				},
 			}
 		)
 
@@ -346,7 +352,7 @@ func NewCatalogSuite(
 		}
 		require.NoError(t, testutil.WaitUntilFound(masterClient, providerReferenceFound), "getting the ProviderReference error")
 		assert.Equal(t, providerReferenceFound.Spec.Metadata.DisplayName, provider.Spec.Metadata.DisplayName)
-		assert.Equal(t, providerReferenceFound.Spec.Metadata.Description, provider.Spec.Metadata.DisplayName)
+		assert.Equal(t, providerReferenceFound.Spec.Metadata.Description, provider.Spec.Metadata.Description)
 
 		// Check the ServiceClusterReference object is created.
 		serviceClusterReferenceFound := &catalogv1alpha1.ServiceClusterReference{

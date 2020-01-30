@@ -58,7 +58,6 @@ type flags struct {
 
 func init() {
 	_ = apiextensionsv1.AddToScheme(serviceScheme)
-	_ = apiextensionsv1.AddToScheme(masterScheme)
 	_ = clientgoscheme.AddToScheme(serviceScheme)
 	_ = clientgoscheme.AddToScheme(masterScheme)
 	_ = corev1alpha1.AddToScheme(masterScheme)
@@ -169,6 +168,16 @@ func runE(flags *flags, log logr.Logger) error {
 		ServiceClusterName: flags.serviceClusterName,
 	}).SetupWithManagers(serviceMgr, masterMgr); err != nil {
 		return fmt.Errorf("cannot add %s controller: %w", "CustomResourceDefinitionDiscovery", err)
+	}
+
+	if err := (&controllers.ServiceClusterAssignmentReconciler{
+		Log:                log.WithName("controllers").WithName("ServiceClusterAssignmentReconciler"),
+		MasterClient:       masterMgr.GetClient(),
+		MasterScheme:       masterMgr.GetScheme(),
+		ServiceClient:      serviceMgr.GetClient(),
+		ServiceClusterName: flags.serviceClusterName,
+	}).SetupWithManagers(serviceMgr, masterMgr); err != nil {
+		return fmt.Errorf("cannot add %s controller: %w", "ServiceClusterAssignmentReconciler", err)
 	}
 
 	if err := masterMgr.Add(serviceMgr); err != nil {
