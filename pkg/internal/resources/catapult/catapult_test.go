@@ -25,7 +25,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"sigs.k8s.io/yaml"
 
-	"github.com/kubermatic/kubecarrier/pkg/apis/operator/v1alpha1"
+	operatorv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/operator/v1alpha1"
 	"github.com/kubermatic/kubecarrier/pkg/testutil"
 )
 
@@ -39,7 +39,7 @@ func TestManifests(t *testing.T) {
 		KubecarrierNamespace: "kubecarrier-system",
 		KubeconfigSecretName: "eu-west-1-sec",
 		KubeconfigSecretKey:  "kubeconfig-key",
-		CatapultMappingSpec: v1alpha1.CatapultMappingSpec{
+		CatapultMappingSpec: operatorv1alpha1.CatapultMappingSpec{
 			MasterGroup:   "MasterGroup",
 			MasterKind:    "MasterKind",
 			ServiceGroup:  "ServiceGroup",
