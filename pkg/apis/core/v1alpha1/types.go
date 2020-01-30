@@ -32,6 +32,9 @@ const (
 
 	// ConditionUnknown represents the fact that a given condition is unknown
 	ConditionUnknown ConditionStatus = "Unknown"
+
+	// TerminatingReason represents why the condition is False when the object is being deleted
+	TerminatingReason = "Deleting"
 )
 
 // ObjectReference describes the link to another object in the same namespace

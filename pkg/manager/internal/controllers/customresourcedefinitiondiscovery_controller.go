@@ -143,10 +143,10 @@ func (r *CustomResourceDefinitionDiscoveryReconciler) Reconcile(req ctrl.Request
 
 func (r *CustomResourceDefinitionDiscoveryReconciler) handleDeletion(ctx context.Context, log logr.Logger, crdDiscovery *corev1alpha1.CustomResourceDefinitionDiscovery) error {
 	cond, ok := crdDiscovery.Status.GetCondition(corev1alpha1.CustomResourceDefinitionDiscoveryDiscovered)
-	if !ok || cond.Status != corev1alpha1.ConditionFalse || cond.Reason != "Deleting" {
+	if !ok || cond.Status != corev1alpha1.ConditionFalse || cond.Reason != corev1alpha1.TerminatingReason {
 		crdDiscovery.Status.SetCondition(corev1alpha1.CustomResourceDefinitionDiscoveryCondition{
 			Message: "custom resource definition discovery is being teminated",
-			Reason:  "Deleting", // TODO replace with constant from PR https://github.com/kubermatic/kubecarrier/pull/136
+			Reason:  corev1alpha1.TerminatingReason,
 			Status:  corev1alpha1.ConditionFalse,
 			Type:    corev1alpha1.CustomResourceDefinitionDiscoveryDiscovered,
 		})
