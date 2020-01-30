@@ -17,6 +17,7 @@ limitations under the License.
 package webhook
 
 import (
+	"fmt"
 	"regexp"
 	"strings"
 
@@ -38,20 +39,18 @@ func IsDNS1123Label(s string) bool {
 // They are similar to the functions in the controller-runtime package:
 // https://github.com/kubernetes-sigs/controller-runtime/blob/dc8357113a904bf02721efcde5d92937be39031c/pkg/builder/webhook.go#L158-L166
 
-func GenerateMutateWebhookPath(obj runtime.Object, scheme *runtime.Scheme) (string, error) {
+func GenerateMutateWebhookPath(obj runtime.Object, scheme *runtime.Scheme) string {
 	gvk, err := apiutil.GVKForObject(obj, scheme)
 	if err != nil {
-		return "", err
+		panic(fmt.Sprintf("cannot get the GVK of obj (type %T)", obj))
 	}
-	return "/mutate-" + strings.Replace(gvk.Group, ".", "-", -1) + "-" +
-		gvk.Version + "-" + strings.ToLower(gvk.Kind), nil
+	return "/mutate-" + strings.Replace(gvk.Group, ".", "-", -1) + "-" + gvk.Version + "-" + strings.ToLower(gvk.Kind)
 }
 
-func GenerateValidateWebhookPath(obj runtime.Object, scheme *runtime.Scheme) (string, error) {
+func GenerateValidateWebhookPath(obj runtime.Object, scheme *runtime.Scheme) string {
 	gvk, err := apiutil.GVKForObject(obj, scheme)
 	if err != nil {
-		return "", err
+		panic(fmt.Sprintf("cannot get the GVK of obj (type %T)", obj))
 	}
-	return "/validate-" + strings.Replace(gvk.Group, ".", "-", -1) + "-" +
-		gvk.Version + "-" + strings.ToLower(gvk.Kind), nil
+	return "/validate-" + strings.Replace(gvk.Group, ".", "-", -1) + "-" + gvk.Version + "-" + strings.ToLower(gvk.Kind)
 }

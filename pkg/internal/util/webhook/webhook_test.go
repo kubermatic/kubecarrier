@@ -20,7 +20,6 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 	"k8s.io/apimachinery/pkg/runtime"
 
 	catalogv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/catalog/v1alpha1"
@@ -33,13 +32,9 @@ func TestGenerateWebhookPath(t *testing.T) {
 	}
 	catalogEntry := &catalogv1alpha1.CatalogEntry{}
 
-	path, err := GenerateMutateWebhookPath(catalogEntry, testWebhookScheme)
-	require.NoError(t, err)
-	assert.Equal(t, path, "/mutate-catalog-kubecarrier-io-v1alpha1-catalogentry")
+	assert.Equal(t, GenerateMutateWebhookPath(catalogEntry, testWebhookScheme), "/mutate-catalog-kubecarrier-io-v1alpha1-catalogentry")
 
-	path, err = GenerateValidateWebhookPath(catalogEntry, testWebhookScheme)
-	require.NoError(t, err)
-	assert.Equal(t, path, "/validate-catalog-kubecarrier-io-v1alpha1-catalogentry")
+	assert.Equal(t, GenerateValidateWebhookPath(catalogEntry, testWebhookScheme), "/validate-catalog-kubecarrier-io-v1alpha1-catalogentry")
 }
 
 func TestIsDNS1123Label(t *testing.T) {
