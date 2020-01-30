@@ -18,6 +18,20 @@ spec:
       containers:
       - image: quay.io/kubecarrier/catapult:lastest
         name: manager
+        args:
+          - "--service-cluster-kubeconfig=/kubeconfig/kubeconfig"
+          - "--provider-namespace=$(KUBERNETES_NAMESPACE)"
+          - "--kubecarrier-namespace=$(KUBECARRIER_NAMESPACE)"
+          - "--master-group=$(MASTER_GROUP)"
+          - "--master-kind=$(MASTER_KIND)"
+          - "--service-group=$(SERVICE_GROUP)"
+          - "--service-kind=$(SERVICE_KIND)"
+          - "--version=$(RESOURCE_VERSION)"
+        env:
+          - name: KUBERNETES_NAMESPACE
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.namespace
         resources:
           limits:
             cpu: 100m

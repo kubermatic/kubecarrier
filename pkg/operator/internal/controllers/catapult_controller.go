@@ -26,6 +26,7 @@ import (
 	rbacv1 "k8s.io/api/rbac/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/types"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/source"
@@ -45,6 +46,8 @@ type CatapultReconciler struct {
 	client.Client
 	Log    logr.Logger
 	Scheme *runtime.Scheme
+
+	KubecarrierSystemNamespace string
 }
 
 // +kubebuilder:rbac:groups=operator.kubecarrier.io,resources=catapults,verbs=get;list;watch;create;update;patch;delete
@@ -88,12 +91,24 @@ func (r *CatapultReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 		}
 	}
 
+	serviceClusterRegistration := &operatorv1alpha1.ServiceClusterRegistration{}
+	if err := r.Client.Get(ctx, types.NamespacedName{
+		Namespace: req.Namespace,
+		Name:      catapult.Spec.ServiceCluster.Name,
+	}, serviceClusterRegistration); err != nil {
+		return ctrl.Result{}, fmt.Errorf("getting serviceClusterRegistration: %w", err)
+	}
+
 	// 3. Reconcile the objects that owned by Catapult object.
 	// Build the manifests of the Catapult controller manager.
 	objects, err := resourcescatapult.Manifests(
 		resourcescatapult.Config{
-			Name:      catapult.Name,
-			Namespace: catapult.Namespace,
+			Name:                 catapult.Name,
+			ProviderNamespace:    catapult.Namespace,
+			KubecarrierNamespace: r.KubecarrierSystemNamespace,
+			KubeconfigSecretName: serviceClusterRegistration.Spec.KubeconfigSecret.Name,
+			KubeconfigSecretKey:  "kubeconfig", // Hardcoded within kubecarrier system, for now at least
+			CatapultMappingSpec:  catapult.Spec.CatapultMappingSpec,
 		})
 	if err != nil {
 		return ctrl.Result{}, fmt.Errorf("creating catapult manifests: %w", err)

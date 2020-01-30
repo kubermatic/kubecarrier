@@ -22,6 +22,28 @@ import (
 
 // CatapultSpec defines the desired state of Catapult
 type CatapultSpec struct {
+	// ServiceCluster to which to catapult the objects
+	ServiceCluster ObjectReference `json:"serviceSluster"`
+
+	CatapultMappingSpec
+}
+
+// CatapultMappingSpec specifies the mapping between master and service cluster CRDs
+type CatapultMappingSpec struct {
+	// MasterGroup defines objects group and kind in the master cluster
+	MasterGroup string `json:"masterGroup" validate:"required"`
+
+	// MasterKind defines objects group and kind in the master cluster
+	MasterKind string `json:"masterKind" validate:"required"`
+
+	// ServiceGroup defines objects group and kind in the master cluster
+	ServiceGroup string `json:"serviceGroup" validate:"required"`
+
+	// ServiceKind defines objects group and kind in the master cluster
+	ServiceKind string `json:"serviceKind" validate:"required"`
+
+	// ObjectVersion defines the object version, and from MasterGK/ServiceGK creating the Master/Service GVK (group version kind)
+	ObjectVersion string `json:"objectVersion" validate:"required"`
 }
 
 // CatapultStatus defines the observed state of Catapult

@@ -25,6 +25,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"sigs.k8s.io/yaml"
 
+	"github.com/kubermatic/kubecarrier/pkg/apis/operator/v1alpha1"
 	"github.com/kubermatic/kubecarrier/pkg/testutil"
 )
 
@@ -33,8 +34,18 @@ func TestManifests(t *testing.T) {
 		goldenFile = "catapult.golden.yaml"
 	)
 	c := Config{
-		Name:      "db.eu-west-1",
-		Namespace: "test3000",
+		Name:                 "db.eu-west-1",
+		ProviderNamespace:    "test3000",
+		KubecarrierNamespace: "kubecarrier-system",
+		KubeconfigSecretName: "eu-west-1-sec",
+		KubeconfigSecretKey:  "kubeconfig-key",
+		CatapultMappingSpec: v1alpha1.CatapultMappingSpec{
+			MasterGroup:   "MasterGroup",
+			MasterKind:    "MasterKind",
+			ServiceGroup:  "ServiceGroup",
+			ServiceKind:   "ServiceKind",
+			ObjectVersion: "v1alpha1",
+		},
 	}
 
 	manifests, err := Manifests(c)
@@ -53,4 +64,14 @@ func TestManifests(t *testing.T) {
 			string(yGoldenManifest), string(yManifest)))
 		t.FailNow()
 	}
+}
+
+func TestInvalidConfig(t *testing.T) {
+	c := Config{
+		Name: "db.eu-west-1",
+	}
+
+	_, err := Manifests(c)
+	require.Errorf(t, err, "empty config validation failed")
+	t.Log(err.Error())
 }
