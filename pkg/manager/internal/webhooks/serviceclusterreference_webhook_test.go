@@ -38,25 +38,6 @@ func TestServiceClusterReferenceValidatingCreate(t *testing.T) {
 		expectedError bool
 	}{
 		{
-			name: "invalid serviceClusterReference name",
-			object: &catalogv1alpha1.ServiceClusterReference{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "-test-serviceClusterReference",
-					Namespace: "test-namespace",
-				},
-				Spec: catalogv1alpha1.ServiceClusterReferenceSpec{
-					Metadata: corev1alpha1.ServiceClusterMetadata{
-						Description: "Test ServiceClusterReference",
-						DisplayName: "Test ServiceClusterReference",
-					},
-					Provider: catalogv1alpha1.ObjectReference{
-						Name: "Provider",
-					},
-				},
-			},
-			expectedError: true,
-		},
-		{
 			name: "serviceClusterReference data missing",
 			object: &catalogv1alpha1.ServiceClusterReference{
 				ObjectMeta: metav1.ObjectMeta{
