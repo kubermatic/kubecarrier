@@ -42,6 +42,12 @@ func (s *ProviderMixin) CreateProvider(name string) *catalogv1alpha1.Provider {
 			Name:      name,
 			Namespace: "kubecarrier-system",
 		},
+		Spec: catalogv1alpha1.ProviderSpec{
+			Metadata: catalogv1alpha1.ProviderMetadata{
+				DisplayName: "provider1",
+				Description: "provider1 test description",
+			},
+		},
 	}
 	ctx := context.Background()
 	s.Require().NoError(s.Client.Create(ctx, provider), "could not create Provider")

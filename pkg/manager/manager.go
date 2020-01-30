@@ -26,11 +26,14 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/webhook"
 
 	catalogv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/catalog/v1alpha1"
 	corev1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/core/v1alpha1"
 	"github.com/kubermatic/kubecarrier/pkg/internal/util"
+	utilwebhook "github.com/kubermatic/kubecarrier/pkg/internal/util/webhook"
 	"github.com/kubermatic/kubecarrier/pkg/manager/internal/controllers"
+	"github.com/kubermatic/kubecarrier/pkg/manager/internal/webhooks"
 )
 
 type flags struct {
@@ -156,6 +159,47 @@ func run(flags *flags, log logr.Logger) error {
 	}).SetupWithManager(mgr); err != nil {
 		return fmt.Errorf("creating DerivedCustomResourceDefinition controller: %w", err)
 	}
+
+	// Register webhooks as handlers
+	wbh := mgr.GetWebhookServer()
+
+	// validating webhooks
+	wbh.Register(utilwebhook.GenerateValidateWebhookPath(&catalogv1alpha1.DerivedCustomResourceDefinition{}, mgr.GetScheme()),
+		&webhook.Admission{Handler: &webhooks.DerivedCustomResourceDefinitionWebhookHandler{
+			Log: log.WithName("validating webhooks").WithName("DerivedCustomResourceDefinition"),
+		}})
+	wbh.Register(utilwebhook.GenerateValidateWebhookPath(&catalogv1alpha1.Offering{}, mgr.GetScheme()),
+		&webhook.Admission{Handler: &webhooks.OfferingWebhookHandler{
+			Log: log.WithName("validating webhooks").WithName("Offering"),
+		}})
+	wbh.Register(utilwebhook.GenerateValidateWebhookPath(&catalogv1alpha1.Provider{}, mgr.GetScheme()),
+		&webhook.Admission{Handler: &webhooks.ProviderWebhookHandler{
+			Log: log.WithName("validating webhooks").WithName("Provider"),
+		}})
+	wbh.Register(utilwebhook.GenerateValidateWebhookPath(&catalogv1alpha1.ProviderReference{}, mgr.GetScheme()),
+		&webhook.Admission{Handler: &webhooks.ProviderReferenceWebhookHandler{
+			Log: log.WithName("validating webhooks").WithName("ProviderReference"),
+		}})
+	wbh.Register(utilwebhook.GenerateValidateWebhookPath(&catalogv1alpha1.ServiceClusterReference{}, mgr.GetScheme()),
+		&webhook.Admission{Handler: &webhooks.ServiceClusterReferenceWebhookHandler{
+			Log: log.WithName("validating webhooks").WithName("ServiceClusterReference"),
+		}})
+	wbh.Register(utilwebhook.GenerateValidateWebhookPath(&catalogv1alpha1.Tenant{}, mgr.GetScheme()),
+		&webhook.Admission{Handler: &webhooks.TenantWebhookHandler{
+			Log: log.WithName("validating webhooks").WithName("Tenant"),
+		}})
+	wbh.Register(utilwebhook.GenerateValidateWebhookPath(&catalogv1alpha1.TenantReference{}, mgr.GetScheme()),
+		&webhook.Admission{Handler: &webhooks.TenantReferenceWebhookHandler{
+			Log: log.WithName("validating webhooks").WithName("TenantReference"),
+		}})
+
+	// mutating webhooks
+	wbh.Register(utilwebhook.GenerateMutateWebhookPath(&catalogv1alpha1.CatalogEntry{}, mgr.GetScheme()),
+		&webhook.Admission{Handler: &webhooks.CatalogEntryWebhookHandler{
+			KubeCarrierNamespace: flags.kubeCarrierSystemNamespace,
+			ProviderLabel:        controllers.ProviderLabel,
+			Log:                  log.WithName("mutating webhooks").WithName("CatalogEntry"),
+		}})
 
 	log.Info("starting manager")
 	if err := mgr.Start(ctrl.SetupSignalHandler()); err != nil {

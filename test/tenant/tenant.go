@@ -66,6 +66,12 @@ func (s *TenantSuite) SetupSuite() {
 			Name:      "example-cloud",
 			Namespace: "kubecarrier-system",
 		},
+		Spec: catalogv1alpha1.ProviderSpec{
+			Metadata: catalogv1alpha1.ProviderMetadata{
+				DisplayName: "provider1",
+				Description: "provider1 test description",
+			},
+		},
 	}
 	s.Require().NoError(s.masterClient.Create(ctx, s.provider), "creating provider error")
 

@@ -55,6 +55,12 @@ func NewFerrySuite(f *framework.Framework) func(t *testing.T) {
 					Name:      "steel-inquisitor",
 					Namespace: "kubecarrier-system",
 				},
+				Spec: catalogv1alpha1.ProviderSpec{
+					Metadata: catalogv1alpha1.ProviderMetadata{
+						DisplayName: "provider",
+						Description: "provider test description",
+					},
+				},
 			}
 			tenant = &catalogv1alpha1.Tenant{
 				ObjectMeta: metav1.ObjectMeta{

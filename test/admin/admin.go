@@ -67,6 +67,12 @@ func (s *AdminSuite) TestTenantProviderCreationAndDeletion() {
 			Name:      "test-provider1",
 			Namespace: "kubecarrier-system",
 		},
+		Spec: catalogv1alpha1.ProviderSpec{
+			Metadata: catalogv1alpha1.ProviderMetadata{
+				DisplayName: "provider",
+				Description: "provider test description",
+			},
+		},
 	}
 
 	if !s.Run("Tenant creation", func() {
