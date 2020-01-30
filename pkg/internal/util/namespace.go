@@ -33,18 +33,18 @@ type object interface {
 	runtime.Object
 }
 
-// UpsertNamespace generates unique namespace for obj if one already doesn't exists
+// EnsureUniqueNamespace generates unique namespace for obj if one already doesn't exists
 //
 // It's required that OwnerReverseFieldIndex exists for corev1.Namespace
-func UpsertNamespace(ctx context.Context, obj object, c client.Client, scheme *runtime.Scheme) (*corev1.Namespace, error) {
-	namespaceList, err := ListOwnedNamespaces(ctx, c, obj, scheme)
+func EnsureUniqueNamespace(ctx context.Context, c client.Client, scheme *runtime.Scheme, owner object) (*corev1.Namespace, error) {
+	namespaceList, err := ListOwnedNamespaces(ctx, c, owner, scheme)
 	if err != nil {
 		return nil, err
 	}
 	switch len(namespaceList.Items) {
 	case 0:
 		// Create Namespace
-		gvk, err := apiutil.GVKForObject(obj, scheme)
+		gvk, err := apiutil.GVKForObject(owner, scheme)
 		if err != nil {
 			return nil, fmt.Errorf("kind from scheme: %w", err)
 		}
@@ -53,7 +53,7 @@ func UpsertNamespace(ctx context.Context, obj object, c client.Client, scheme *r
 				GenerateName: strings.ToLower(gvk.Kind) + "-",
 			},
 		}
-		if _, err := InsertOwnerReference(obj, namespace, scheme); err != nil {
+		if _, err := InsertOwnerReference(owner, namespace, scheme); err != nil {
 			return nil, fmt.Errorf("inserting Owner Reference: %w", err)
 		}
 		if err = c.Create(ctx, namespace); err != nil {

@@ -72,7 +72,7 @@ func (r *ServiceClusterAssignmentReconciler) Reconcile(req ctrl.Request) (ctrl.R
 		}
 	}
 
-	ns, err := util.UpsertNamespace(ctx, serviceClusterAssignment, r.ServiceClient, r.MasterScheme)
+	ns, err := util.EnsureUniqueNamespace(ctx, r.ServiceClient, r.MasterScheme, serviceClusterAssignment)
 	if err != nil {
 		serviceClusterAssignment.Status.ObservedGeneration = serviceClusterAssignment.Generation
 		serviceClusterAssignment.Status.SetCondition(corev1alpha1.ServiceClusterAssignmentCondition{
