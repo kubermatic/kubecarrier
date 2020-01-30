@@ -27,6 +27,25 @@
   - apiGroups:
     - kubecarrier.io
     resources:
+    - serviceclusterassignments
+    verbs:
+    - create
+    - get
+    - list
+    - patch
+    - update
+    - watch
+  - apiGroups:
+    - kubecarrier.io
+    resources:
+    - serviceclusterassignments/status
+    verbs:
+    - get
+    - patch
+    - update
+  - apiGroups:
+    - kubecarrier.io
+    resources:
     - serviceclusters
     verbs:
     - create

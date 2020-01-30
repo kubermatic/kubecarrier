@@ -1363,6 +1363,130 @@
     annotations:
       controller-gen.kubebuilder.io/version: v0.2.4
     creationTimestamp: null
+    name: serviceclusterassignments.kubecarrier.io
+  spec:
+    group: kubecarrier.io
+    names:
+      kind: ServiceClusterAssignment
+      listKind: ServiceClusterAssignmentList
+      plural: serviceclusterassignments
+      singular: serviceclusterassignment
+    scope: Namespaced
+    versions:
+    - additionalPrinterColumns:
+      - jsonPath: .status.phase
+        name: Status
+        type: string
+      - jsonPath: .metadata.creationTimestamp
+        name: Age
+        type: date
+      name: v1alpha1
+      schema:
+        openAPIV3Schema:
+          description: ServiceClusterAssignment represents the assignment of a Tenant
+            to a ServiceCluster.
+          properties:
+            apiVersion:
+              description: 'APIVersion defines the versioned schema of this representation
+                of an object. Servers should convert recognized schemas to the latest
+                internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+              type: string
+            kind:
+              description: 'Kind is a string value representing the REST resource
+                this object represents. Servers may infer this from the endpoint the
+                client submits requests to. Cannot be updated. In CamelCase. More
+                info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+              type: string
+            metadata:
+              type: object
+            spec:
+              description: ServiceClusterAssignmentSpec defines the desired state
+                of ServiceClusterAssignment
+              properties:
+                serviceCluster:
+                  description: ObjectReference describes the link to another object
+                    in the same namespace
+                  properties:
+                    name:
+                      type: string
+                  required:
+                  - name
+                  type: object
+              required:
+              - serviceCluster
+              type: object
+            status:
+              description: ServiceClusterAssignmentStatus defines the observed state
+                of ServiceClusterAssignment
+              properties:
+                conditions:
+                  description: Conditions is a list of all conditions this ServiceClusterAssignment
+                    is in.
+                  items:
+                    description: ServiceClusterAssignmentCondition contains details
+                      for the current condition of this ServiceClusterAssignment.
+                    properties:
+                      lastTransitionTime:
+                        description: LastTransitionTime is the last time the condition
+                          transit from one status to another.
+                        format: date-time
+                        type: string
+                      message:
+                        description: Message is the human readable message indicating
+                          details about last transition.
+                        type: string
+                      reason:
+                        description: Reason is the (brief) reason for the condition's
+                          last transition.
+                        type: string
+                      status:
+                        description: Status of the condition, one of ('True', 'False',
+                          'Unknown').
+                        type: string
+                      type:
+                        description: Type of the condition, currently ('Ready').
+                        type: string
+                    required:
+                    - lastTransitionTime
+                    - message
+                    - reason
+                    - status
+                    - type
+                    type: object
+                  type: array
+                namespaceName:
+                  description: NamespaceName references the Namespace on the ServiceCluster
+                    that was assigned.
+                  type: string
+                observedGeneration:
+                  description: The most recent generation observed by the controller.
+                  format: int64
+                  type: integer
+                phase:
+                  description: DEPRECATED. Phase represents the current lifecycle
+                    state of this object consider this field DEPRECATED, it will be
+                    removed as soon as there is a mechanism to map conditions to a
+                    string when printing the property is only present for display
+                    purposes, for everything else use conditions
+                  type: string
+              type: object
+          type: object
+      served: true
+      storage: true
+      subresources:
+        status: {}
+  status:
+    acceptedNames:
+      kind: ""
+      plural: ""
+    conditions: []
+    storedVersions: []
+- apiVersion: apiextensions.k8s.io/v1
+  kind: CustomResourceDefinition
+  metadata:
+    annotations:
+      controller-gen.kubebuilder.io/version: v0.2.4
+    creationTimestamp: null
     name: serviceclusters.kubecarrier.io
   spec:
     group: kubecarrier.io
