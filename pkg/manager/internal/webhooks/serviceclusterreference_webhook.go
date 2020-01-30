@@ -23,7 +23,6 @@ import (
 
 	"github.com/go-logr/logr"
 	adminv1beta1 "k8s.io/api/admission/v1beta1"
-	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
 	catalogv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/catalog/v1alpha1"
@@ -53,11 +52,11 @@ func (r *ServiceClusterReferenceWebhookHandler) Handle(ctx context.Context, req 
 			return admission.Denied(err.Error())
 		}
 	case adminv1beta1.Update:
-		oldObj := obj.DeepCopyObject()
+		oldObj := &catalogv1alpha1.ServiceClusterReference{}
 		if err := r.decoder.DecodeRaw(req.OldObject, oldObj); err != nil {
 			return admission.Errored(http.StatusBadRequest, err)
 		}
-		if err := r.validateUpdate(obj, oldObj); err != nil {
+		if err := r.validateUpdate(oldObj, obj); err != nil {
 			return admission.Denied(err.Error())
 		}
 	}
@@ -85,16 +84,12 @@ func (r *ServiceClusterReferenceWebhookHandler) validateCreate(serviceClusterRef
 	return r.validateMetadata(serviceClusterReference)
 }
 
-func (r *ServiceClusterReferenceWebhookHandler) validateUpdate(obj *catalogv1alpha1.ServiceClusterReference, oldObj runtime.Object) error {
-	r.Log.Info("validate update", "name", obj.Name)
-	oldServiceClusterReference, ok := oldObj.(*catalogv1alpha1.ServiceClusterReference)
-	if !ok {
-		return fmt.Errorf("expect old object to be a %T instead of %T\n", oldServiceClusterReference, oldObj)
-	}
-	if obj.Spec.Provider.Name != oldServiceClusterReference.Spec.Provider.Name {
+func (r *ServiceClusterReferenceWebhookHandler) validateUpdate(oldObj, newObj *catalogv1alpha1.ServiceClusterReference) error {
+	r.Log.Info("validate update", "name", newObj.Name)
+	if newObj.Spec.Provider.Name != oldObj.Spec.Provider.Name {
 		return fmt.Errorf("the Provider of ServiceClusterReference is immutable")
 	}
-	return r.validateMetadata(obj)
+	return r.validateMetadata(newObj)
 }
 
 func (r *ServiceClusterReferenceWebhookHandler) validateMetadata(serviceClusterReference *catalogv1alpha1.ServiceClusterReference) error {

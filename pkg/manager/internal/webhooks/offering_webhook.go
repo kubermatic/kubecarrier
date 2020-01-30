@@ -23,7 +23,6 @@ import (
 
 	"github.com/go-logr/logr"
 	adminv1beta1 "k8s.io/api/admission/v1beta1"
-	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
 	catalogv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/catalog/v1alpha1"
@@ -52,11 +51,11 @@ func (r *OfferingWebhookHandler) Handle(ctx context.Context, req admission.Reque
 			return admission.Denied(err.Error())
 		}
 	case adminv1beta1.Update:
-		oldObj := obj.DeepCopyObject()
+		oldObj := &catalogv1alpha1.Offering{}
 		if err := r.decoder.DecodeRaw(req.OldObject, oldObj); err != nil {
 			return admission.Errored(http.StatusBadRequest, err)
 		}
-		if err := r.validateUpdate(obj, oldObj); err != nil {
+		if err := r.validateUpdate(oldObj, obj); err != nil {
 			return admission.Denied(err.Error())
 		}
 	}
@@ -81,16 +80,12 @@ func (r *OfferingWebhookHandler) validateCreate(offering *catalogv1alpha1.Offeri
 	return r.validateMetadata(offering)
 }
 
-func (r *OfferingWebhookHandler) validateUpdate(obj *catalogv1alpha1.Offering, oldObj runtime.Object) error {
-	r.Log.Info("validate create", "name", obj.Name)
-	oldOffering, ok := oldObj.(*catalogv1alpha1.Offering)
-	if !ok {
-		return fmt.Errorf("expect old object to be a %T instead of %T\n", oldOffering, oldObj)
-	}
-	if obj.Offering.Provider.Name != oldOffering.Offering.Provider.Name {
+func (r *OfferingWebhookHandler) validateUpdate(oldObj, newObj *catalogv1alpha1.Offering) error {
+	r.Log.Info("validate create", "name", newObj.Name)
+	if newObj.Offering.Provider.Name != oldObj.Offering.Provider.Name {
 		return fmt.Errorf("the Provider of Offering is immutable")
 	}
-	return r.validateMetadata(obj)
+	return r.validateMetadata(newObj)
 }
 
 func (r *OfferingWebhookHandler) validateMetadata(offering *catalogv1alpha1.Offering) error {

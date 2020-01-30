@@ -23,7 +23,6 @@ import (
 
 	"github.com/go-logr/logr"
 	adminv1beta1 "k8s.io/api/admission/v1beta1"
-	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
 	catalogv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/catalog/v1alpha1"
@@ -53,11 +52,11 @@ func (r *ProviderReferenceWebhookHandler) Handle(ctx context.Context, req admiss
 			return admission.Denied(err.Error())
 		}
 	case adminv1beta1.Update:
-		oldObj := obj.DeepCopyObject()
+		oldObj := &catalogv1alpha1.ProviderReference{}
 		if err := r.decoder.DecodeRaw(req.OldObject, oldObj); err != nil {
 			return admission.Errored(http.StatusBadRequest, err)
 		}
-		if err := r.validateUpdate(obj, oldObj); err != nil {
+		if err := r.validateUpdate(oldObj, obj); err != nil {
 			return admission.Denied(err.Error())
 		}
 	}
@@ -82,13 +81,9 @@ func (r *ProviderReferenceWebhookHandler) validateCreate(providerReference *cata
 	return r.validateMetadata(providerReference)
 }
 
-func (r *ProviderReferenceWebhookHandler) validateUpdate(obj *catalogv1alpha1.ProviderReference, oldObj runtime.Object) error {
-	r.Log.Info("validate create", "name", obj.Name)
-	oldProviderReference, ok := oldObj.(*catalogv1alpha1.ProviderReference)
-	if !ok {
-		return fmt.Errorf("expect old object to be a %T instead of %T\n", oldProviderReference, oldObj)
-	}
-	return r.validateMetadata(obj)
+func (r *ProviderReferenceWebhookHandler) validateUpdate(oldObj, newObj *catalogv1alpha1.ProviderReference) error {
+	r.Log.Info("validate create", "name", newObj.Name)
+	return r.validateMetadata(newObj)
 }
 
 func (r *ProviderReferenceWebhookHandler) validateMetadata(providerReference *catalogv1alpha1.ProviderReference) error {

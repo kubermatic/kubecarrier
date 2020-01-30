@@ -23,7 +23,6 @@ import (
 
 	"github.com/go-logr/logr"
 	adminv1beta1 "k8s.io/api/admission/v1beta1"
-	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
 	catalogv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/catalog/v1alpha1"
@@ -52,11 +51,11 @@ func (r *DerivedCustomResourceDefinitionWebhookHandler) Handle(ctx context.Conte
 			return admission.Denied(err.Error())
 		}
 	case adminv1beta1.Update:
-		oldObj := obj.DeepCopyObject()
+		oldObj := &catalogv1alpha1.DerivedCustomResourceDefinition{}
 		if err := r.decoder.DecodeRaw(req.OldObject, oldObj); err != nil {
 			return admission.Errored(http.StatusBadRequest, err)
 		}
-		if err := r.validateUpdate(obj, oldObj); err != nil {
+		if err := r.validateUpdate(oldObj, obj); err != nil {
 			return admission.Denied(err.Error())
 		}
 	}
@@ -81,16 +80,12 @@ func (r *DerivedCustomResourceDefinitionWebhookHandler) validateCreate(derivedCu
 	return r.validateExpose(derivedCustomResourceDefinition)
 }
 
-func (r *DerivedCustomResourceDefinitionWebhookHandler) validateUpdate(obj *catalogv1alpha1.DerivedCustomResourceDefinition, oldObj runtime.Object) error {
-	r.Log.Info("validate update", "name", obj.Name)
-	oldDerivedCRD, ok := oldObj.(*catalogv1alpha1.DerivedCustomResourceDefinition)
-	if !ok {
-		return fmt.Errorf("expect old object to be a %T instead of %T\n", oldDerivedCRD, oldObj)
-	}
-	if obj.Spec.BaseCRD.Name != oldDerivedCRD.Spec.BaseCRD.Name {
+func (r *DerivedCustomResourceDefinitionWebhookHandler) validateUpdate(oldObj, newObj *catalogv1alpha1.DerivedCustomResourceDefinition) error {
+	r.Log.Info("validate update", "name", newObj.Name)
+	if newObj.Spec.BaseCRD.Name != oldObj.Spec.BaseCRD.Name {
 		return fmt.Errorf("the BaseCRD of DerivedCustomResourceDefinition is immutable")
 	}
-	return r.validateExpose(obj)
+	return r.validateExpose(newObj)
 }
 
 func (r *DerivedCustomResourceDefinitionWebhookHandler) validateExpose(derivedCustomResourceDefinition *catalogv1alpha1.DerivedCustomResourceDefinition) error {
