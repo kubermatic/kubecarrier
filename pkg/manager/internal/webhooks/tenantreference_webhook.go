@@ -37,7 +37,7 @@ type TenantReferenceWebhookHandler struct {
 
 var _ admission.Handler = (*TenantReferenceWebhookHandler)(nil)
 
-// +kubebuilder:webhook:path=/validate-catalog-kubecarrier-io-v1alpha1-tenantreference,mutating=false,failurePolicy=fail,groups=catalog.kubecarrier.io,resources=tenantreferences,verbs=create,versions=v1alpha1,name=vtenantreference.kb.io
+// +kubebuilder:webhook:path=/validate-catalog-kubecarrier-io-v1alpha1-tenantreference,mutating=false,failurePolicy=fail,groups=catalog.kubecarrier.io,resources=tenantreferences,verbs=create,versions=v1alpha1,name=vtenantreference.kubecarrier.io
 
 // Handle is the function to handle create/update requests of TenantReferences.
 func (r *TenantReferenceWebhookHandler) Handle(ctx context.Context, req admission.Request) admission.Response {

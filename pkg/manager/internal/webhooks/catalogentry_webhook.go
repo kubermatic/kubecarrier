@@ -44,7 +44,7 @@ type CatalogEntryWebhookHandler struct {
 
 var _ admission.Handler = (*CatalogEntryWebhookHandler)(nil)
 
-// +kubebuilder:webhook:path=/mutate-catalog-kubecarrier-io-v1alpha1-catalogentry,mutating=true,failurePolicy=fail,groups=catalog.kubecarrier.io,resources=catalogentries,verbs=create;update,versions=v1alpha1,name=mcatalogentry.kb.io
+// +kubebuilder:webhook:path=/mutate-catalog-kubecarrier-io-v1alpha1-catalogentry,mutating=true,failurePolicy=fail,groups=catalog.kubecarrier.io,resources=catalogentries,verbs=create;update,versions=v1alpha1,name=mcatalogentry.kubecarrier.io
 
 // Handle is the function to handle defaulting requests of CatalogEntries.
 func (r *CatalogEntryWebhookHandler) Handle(ctx context.Context, req admission.Request) admission.Response {

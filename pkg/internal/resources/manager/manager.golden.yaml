@@ -1803,7 +1803,7 @@
         namespace: test3000
         path: /mutate-catalog-kubecarrier-io-v1alpha1-catalogentry
     failurePolicy: Fail
-    name: mcatalogentry.kb.io
+    name: mcatalogentry.kubecarrier.io
     rules:
     - apiGroups:
       - catalog.kubecarrier.io
@@ -1829,7 +1829,7 @@
         namespace: test3000
         path: /validate-catalog-kubecarrier-io-v1alpha1-derivedcustomresourcedefinition
     failurePolicy: Fail
-    name: vderivedcustomresourcedefinition.kb.io
+    name: vderivedcustomresourcedefinition.kubecarrier.io
     rules:
     - apiGroups:
       - catalog.kubecarrier.io
@@ -1847,7 +1847,7 @@
         namespace: test3000
         path: /validate-catalog-kubecarrier-io-v1alpha1-offering
     failurePolicy: Fail
-    name: voffering.kb.io
+    name: voffering.kubecarrier.io
     rules:
     - apiGroups:
       - catalog.kubecarrier.io
@@ -1865,7 +1865,7 @@
         namespace: test3000
         path: /validate-catalog-kubecarrier-io-v1alpha1-provider
     failurePolicy: Fail
-    name: vprovider.kb.io
+    name: vprovider.kubecarrier.io
     rules:
     - apiGroups:
       - catalog.kubecarrier.io
@@ -1883,7 +1883,7 @@
         namespace: test3000
         path: /validate-catalog-kubecarrier-io-v1alpha1-providerreference
     failurePolicy: Fail
-    name: vproviderreference.kb.io
+    name: vproviderreference.kubecarrier.io
     rules:
     - apiGroups:
       - catalog.kubecarrier.io
@@ -1901,7 +1901,7 @@
         namespace: test3000
         path: /validate-catalog-kubecarrier-io-v1alpha1-serviceclusterreference
     failurePolicy: Fail
-    name: vserviceclusterreference.kb.io
+    name: vserviceclusterreference.kubecarrier.io
     rules:
     - apiGroups:
       - catalog.kubecarrier.io
@@ -1919,7 +1919,7 @@
         namespace: test3000
         path: /validate-catalog-kubecarrier-io-v1alpha1-tenant
     failurePolicy: Fail
-    name: vtenant.kb.io
+    name: vtenant.kubecarrier.io
     rules:
     - apiGroups:
       - catalog.kubecarrier.io
@@ -1936,7 +1936,7 @@
         namespace: test3000
         path: /validate-catalog-kubecarrier-io-v1alpha1-tenantreference
     failurePolicy: Fail
-    name: vtenantreference.kb.io
+    name: vtenantreference.kubecarrier.io
     rules:
     - apiGroups:
       - catalog.kubecarrier.io

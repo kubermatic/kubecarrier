@@ -38,7 +38,7 @@ type ProviderReferenceWebhookHandler struct {
 
 var _ admission.Handler = (*ProviderReferenceWebhookHandler)(nil)
 
-// +kubebuilder:webhook:path=/validate-catalog-kubecarrier-io-v1alpha1-providerreference,mutating=false,failurePolicy=fail,groups=catalog.kubecarrier.io,resources=providerreferences,verbs=create;update,versions=v1alpha1,name=vproviderreference.kb.io
+// +kubebuilder:webhook:path=/validate-catalog-kubecarrier-io-v1alpha1-providerreference,mutating=false,failurePolicy=fail,groups=catalog.kubecarrier.io,resources=providerreferences,verbs=create;update,versions=v1alpha1,name=vproviderreference.kubecarrier.io
 
 // Handle is the function to handle create/update requests of ProviderReferences.
 func (r *ProviderReferenceWebhookHandler) Handle(ctx context.Context, req admission.Request) admission.Response {

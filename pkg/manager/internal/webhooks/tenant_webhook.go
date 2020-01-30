@@ -37,7 +37,7 @@ type TenantWebhookHandler struct {
 
 var _ admission.Handler = (*TenantWebhookHandler)(nil)
 
-// +kubebuilder:webhook:path=/validate-catalog-kubecarrier-io-v1alpha1-tenant,mutating=false,failurePolicy=fail,groups=catalog.kubecarrier.io,resources=tenants,verbs=create,versions=v1alpha1,name=vtenant.kb.io
+// +kubebuilder:webhook:path=/validate-catalog-kubecarrier-io-v1alpha1-tenant,mutating=false,failurePolicy=fail,groups=catalog.kubecarrier.io,resources=tenants,verbs=create,versions=v1alpha1,name=vtenant.kubecarrier.io
 
 // Handle is the function to handle create/update requests of Tenants.
 func (r *TenantWebhookHandler) Handle(ctx context.Context, req admission.Request) admission.Response {

@@ -37,7 +37,7 @@ type DerivedCustomResourceDefinitionWebhookHandler struct {
 
 var _ admission.Handler = (*DerivedCustomResourceDefinitionWebhookHandler)(nil)
 
-// +kubebuilder:webhook:path=/validate-catalog-kubecarrier-io-v1alpha1-derivedcustomresourcedefinition,mutating=false,failurePolicy=fail,groups=catalog.kubecarrier.io,resources=derivedcustomresourcedefinitions,verbs=create;update,versions=v1alpha1,name=vderivedcustomresourcedefinition.kb.io
+// +kubebuilder:webhook:path=/validate-catalog-kubecarrier-io-v1alpha1-derivedcustomresourcedefinition,mutating=false,failurePolicy=fail,groups=catalog.kubecarrier.io,resources=derivedcustomresourcedefinitions,verbs=create;update,versions=v1alpha1,name=vderivedcustomresourcedefinition.kubecarrier.io
 
 // Handle is the function to handle create/update requests of DerivedCustomResourceDefinitions.
 func (r *DerivedCustomResourceDefinitionWebhookHandler) Handle(ctx context.Context, req admission.Request) admission.Response {
