@@ -54,7 +54,11 @@ func (r *CatalogEntryWebhookHandler) Handle(ctx context.Context, req admission.R
 	}
 	// Default the object
 	r.Log.Info("default", "name", obj.Name)
-	if err := r.defaultMatchLabels(obj); err != nil {
+	provider, err := controllers.GetProviderByProviderNamespace(context.Background(), r.client, r.KubeCarrierNamespace, obj.Namespace)
+	if err != nil {
+		return admission.Denied(err.Error())
+	}
+	if err := r.defaultMatchLabels(obj, provider); err != nil {
 		return admission.Denied(err.Error())
 	}
 
@@ -91,12 +95,7 @@ func (r *CatalogEntryWebhookHandler) InjectDecoder(d *admission.Decoder) error {
 	return nil
 }
 
-func (r *CatalogEntryWebhookHandler) defaultMatchLabels(catalogEntry *catalogv1alpha1.CatalogEntry) error {
-	provider, err := controllers.GetProviderByProviderNamespace(context.Background(), r.client, r.KubeCarrierNamespace, catalogEntry.Namespace)
-	if err != nil {
-		return fmt.Errorf("getting the Provider by Provider Namespace: %w", err)
-	}
-
+func (r *CatalogEntryWebhookHandler) defaultMatchLabels(catalogEntry *catalogv1alpha1.CatalogEntry, provider *catalogv1alpha1.Provider) error {
 	// Defaulting the `kubecarrier.io/provider` matchlabel
 	if catalogEntry.Spec.CRDSelector == nil {
 		catalogEntry.Spec.CRDSelector = &metav1.LabelSelector{}
