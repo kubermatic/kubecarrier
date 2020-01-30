@@ -146,5 +146,6 @@ func NewCatapultSuit(f *framework.Framework) func(t *testing.T) {
 			},
 		}
 		require.NoError(t, fctx.MasterClient.CreateAndWaitUntilReady(ctx, catapult))
+		// TODO: Actually test this stuff properly!!!
 	}
 }
