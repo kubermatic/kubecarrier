@@ -29,7 +29,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
 	catalogv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/catalog/v1alpha1"
-	"github.com/kubermatic/kubecarrier/pkg/manager/internal/controllers"
 )
 
 // CatalogEntryWebhookHandler handles mutating/validating of CatalogEntries.
@@ -54,7 +53,7 @@ func (r *CatalogEntryWebhookHandler) Handle(ctx context.Context, req admission.R
 	}
 	// Default the object
 	r.Log.Info("default", "name", obj.Name)
-	provider, err := controllers.GetProviderByProviderNamespace(context.Background(), r.client, r.KubeCarrierNamespace, obj.Namespace)
+	provider, err := catalogv1alpha1.GetProviderByProviderNamespace(context.Background(), r.client, r.KubeCarrierNamespace, obj.Namespace)
 	if err != nil {
 		return admission.Denied(err.Error())
 	}

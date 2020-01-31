@@ -57,13 +57,14 @@ func (s *TenantSuite) SetupSuite() {
 	ctx := context.Background()
 	s.masterClient, err = s.MasterClient()
 	s.Require().NoError(err, "creating master client")
+
 	s.serviceClient, err = s.ServiceClient()
 	s.Require().NoError(err, "creating service client")
 
 	// Create a Provider to execute tests
 	s.provider = &catalogv1alpha1.Provider{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      "example-cloud",
+			Name:      "other-cloud",
 			Namespace: "kubecarrier-system",
 		},
 		Spec: catalogv1alpha1.ProviderSpec{

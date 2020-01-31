@@ -24,24 +24,26 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/gobuffalo/flect"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/types"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/source"
 
+	catalogv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/catalog/v1alpha1"
 	corev1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/core/v1alpha1"
 	"github.com/kubermatic/kubecarrier/pkg/internal/util"
 )
 
-const crdDiscoveryControllerFinalizer string = "custormresourcedefinitiondiscovery.kubecarrier.io/manager-controller"
+const crddControllerFinalizer string = "crdd.kubecarrier.io/controller"
 
 // CustomResourceDefinitionDiscoveryReconciler reconciles a CustomResourceDefinitionDiscovery object
 type CustomResourceDefinitionDiscoveryReconciler struct {
-	Log            logr.Logger
-	Client         client.Client
-	Scheme         *runtime.Scheme
-	ProviderGetter ProviderGetterByProviderNamespace
+	client.Client
+	Log                        logr.Logger
+	Scheme                     *runtime.Scheme
+	KubeCarrierSystemNamespace string
 }
 
 // +kubebuilder:rbac:groups=kubecarrier.io,resources=customresourcedefinitiondiscoveries,verbs=get;list;watch
@@ -49,55 +51,49 @@ type CustomResourceDefinitionDiscoveryReconciler struct {
 // +kubebuilder:rbac:groups=apiextensions.k8s.io,resources=customresourcedefinitions,verbs=get;list;watch;update;create;patch;delete
 
 func (r *CustomResourceDefinitionDiscoveryReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
-	ctx := context.Background()
-	log := r.Log.WithValues("crddiscovery", req.NamespacedName)
+	var (
+		ctx    = context.Background()
+		log    = r.Log.WithValues("crddiscovery", req.NamespacedName)
+		result ctrl.Result
+	)
 
 	crdDiscovery := &corev1alpha1.CustomResourceDefinitionDiscovery{}
-	if err := r.Client.Get(ctx, req.NamespacedName, crdDiscovery); err != nil {
-		return ctrl.Result{}, client.IgnoreNotFound(err)
+	if err := r.Get(ctx, req.NamespacedName, crdDiscovery); err != nil {
+		return result, client.IgnoreNotFound(err)
 	}
-	crdDiscovery.Status.ObservedGeneration = crdDiscovery.Generation
 
 	if !crdDiscovery.DeletionTimestamp.IsZero() {
 		if err := r.handleDeletion(ctx, log, crdDiscovery); err != nil {
-			return ctrl.Result{}, fmt.Errorf("handling deletion: %w", err)
+			return result, fmt.Errorf("handling deletion: %w", err)
 		}
-		return ctrl.Result{}, nil
+		return result, nil
 	}
 
-	if util.AddFinalizer(crdDiscovery, crdDiscoveryControllerFinalizer) {
-		if err := r.Client.Status().Update(ctx, crdDiscovery); err != nil {
-			return ctrl.Result{}, fmt.Errorf("updating CustomResourceDefinitionDiscovery finalizers: %w", err)
+	if crdDiscovery.Status.CRD == nil {
+		// Just-in-case sanity check - so the manager does not panic,
+		// if the EventFilter further down is not enought.
+		log.Info("skipping, missing discovered CRD in status")
+		return result, nil
+	}
+
+	if util.AddFinalizer(crdDiscovery, crddControllerFinalizer) {
+		if err := r.Update(ctx, crdDiscovery); err != nil {
+			return result, fmt.Errorf("updating CustomResourceDefinitionDiscovery finalizers: %w", err)
 		}
 	}
 
-	cond, ok := crdDiscovery.Status.GetCondition(corev1alpha1.CustomResourceDefinitionDiscoveryReady)
-	if !ok || cond.Status != corev1alpha1.ConditionTrue {
-		crdDiscovery.Status.SetCondition(corev1alpha1.CustomResourceDefinitionDiscoveryCondition{
-			Message: "CustomResourceDefinitionDiscovery isn't ready",
-			Reason:  "CustomResourceDefinitionDiscoveryUnready",
-			Status:  corev1alpha1.ConditionFalse,
-			Type:    corev1alpha1.CustomResourceDefinitionDiscoveryDiscovered,
-		})
-		if err := r.Client.Status().Update(ctx, crdDiscovery); err != nil {
-			return ctrl.Result{}, fmt.Errorf("update discovered state: %w", err)
-		}
-		return ctrl.Result{}, nil
-	}
-
-	provider, err := r.ProviderGetter.GetProviderByProviderNamespace(ctx, r.Client, req.Namespace)
+	provider, err := catalogv1alpha1.GetProviderByProviderNamespace(ctx, r, r.KubeCarrierSystemNamespace, req.Namespace)
 	if err != nil {
-		return ctrl.Result{}, fmt.Errorf("getting Provider: %w", err)
+		return result, fmt.Errorf("getting Provider: %w", err)
 	}
 
+	// Build desired CRD
 	kind := crdDiscovery.Spec.KindOverride
 	if kind == "" {
 		kind = crdDiscovery.Status.CRD.Spec.Names.Kind
 	}
 
-	crd := &apiextensionsv1.CustomResourceDefinition{
-		TypeMeta:   metav1.TypeMeta{},
-		ObjectMeta: metav1.ObjectMeta{},
+	desiredCRD := &apiextensionsv1.CustomResourceDefinition{
 		Spec: apiextensionsv1.CustomResourceDefinitionSpec{
 			Group: crdDiscovery.Spec.ServiceCluster.Name + "." + provider.Name,
 			Names: apiextensionsv1.CustomResourceDefinitionNames{
@@ -108,37 +104,73 @@ func (r *CustomResourceDefinitionDiscoveryReconciler) Reconcile(req ctrl.Request
 			},
 			Scope:                 apiextensionsv1.NamespaceScoped,
 			Versions:              crdDiscovery.Status.CRD.Spec.Versions,
-			Conversion:            nil, // TODO: implement via webhooks
 			PreserveUnknownFields: crdDiscovery.Status.CRD.Spec.PreserveUnknownFields,
 		},
 		Status: apiextensionsv1.CustomResourceDefinitionStatus{},
 	}
-	crd.Name = crd.Spec.Names.Plural + "." + crd.Spec.Group
-	if _, err := util.InsertOwnerReference(crdDiscovery, crd, r.Scheme); err != nil {
-		return ctrl.Result{}, fmt.Errorf("insert object reference: %w", err)
+	desiredCRD.Name = desiredCRD.Spec.Names.Plural + "." + desiredCRD.Spec.Group
+	if _, err := util.InsertOwnerReference(crdDiscovery, desiredCRD, r.Scheme); err != nil {
+		return result, fmt.Errorf("insert object reference: %w", err)
 	}
 
-	op, err := ctrl.CreateOrUpdate(ctx, r.Client, crd, func() error {
-		crd.Spec.Versions = crdDiscovery.Status.CRD.Spec.Versions
-		_, err := util.InsertOwnerReference(crdDiscovery, crd, r.Scheme)
-		return err
-	})
-
-	if err != nil {
-		return ctrl.Result{}, fmt.Errorf("cannot create or update CRD: %w", err)
+	currentCRD := &apiextensionsv1.CustomResourceDefinition{}
+	err = r.Get(ctx, types.NamespacedName{
+		Name:      desiredCRD.Name,
+		Namespace: desiredCRD.Namespace,
+	}, currentCRD)
+	if err != nil && !errors.IsNotFound(err) {
+		return result, fmt.Errorf("getting CustomResourceDefinition: %w", err)
 	}
-	log.Info(fmt.Sprintf("CRD %s: %s", crd.Name, op))
+	if errors.IsNotFound(err) {
+		// Create CRD
+		if err = r.Create(ctx, desiredCRD); err != nil {
+			return result, fmt.Errorf("creating CustomResourceDefinition: %w", err)
+		}
+		return result, nil
+	}
 
-	crdDiscovery.Status.SetCondition(corev1alpha1.CustomResourceDefinitionDiscoveryCondition{
-		Message: "CustomResourceDefinitionDiscovery ready",
-		Reason:  "CustomResourceDefinitionDiscoveryReady",
+	// Update CRD
+	currentCRD.Spec.PreserveUnknownFields = desiredCRD.Spec.PreserveUnknownFields
+	currentCRD.Spec.Versions = desiredCRD.Spec.Versions
+	if err = r.Update(ctx, currentCRD); err != nil {
+		return result, fmt.Errorf("updating CustomResourceDefinition: %w", err)
+	}
+
+	// Report Status
+	if !isCRDReady(currentCRD) {
+		if err = r.updateStatus(ctx, crdDiscovery, corev1alpha1.CustomResourceDefinitionDiscoveryCondition{
+			Type:    corev1alpha1.CustomResourceDefinitionDiscoveryReady,
+			Status:  corev1alpha1.ConditionFalse,
+			Reason:  "Establishing",
+			Message: "CRD is not yet established with the kubernetes apiserver.",
+		}); err != nil {
+			return result, fmt.Errorf("updating CRDD Status: %w", err)
+		}
+		return result, nil
+	}
+
+	if err = r.updateStatus(ctx, crdDiscovery, corev1alpha1.CustomResourceDefinitionDiscoveryCondition{
+		Type:    corev1alpha1.CustomResourceDefinitionDiscoveryReady,
 		Status:  corev1alpha1.ConditionTrue,
-		Type:    corev1alpha1.CustomResourceDefinitionDiscoveryDiscovered,
-	})
-	if err := r.Client.Status().Update(ctx, crdDiscovery); err != nil {
-		return ctrl.Result{}, fmt.Errorf("update discovered state: %w", err)
+		Reason:  "Established",
+		Message: "CRD is established with the kubernetes apiserver.",
+	}); err != nil {
+		return result, fmt.Errorf("updating CRDD Status: %w", err)
 	}
-	return ctrl.Result{}, nil
+	return result, nil
+}
+
+func (r *CustomResourceDefinitionDiscoveryReconciler) updateStatus(
+	ctx context.Context, crdd *corev1alpha1.CustomResourceDefinitionDiscovery,
+	condition corev1alpha1.CustomResourceDefinitionDiscoveryCondition,
+) error {
+	crdd.Status.ObservedGeneration = crdd.Generation
+	crdd.Status.SetCondition(condition)
+
+	if err := r.Status().Update(ctx, crdd); err != nil {
+		return fmt.Errorf("updating status: %w", err)
+	}
+	return nil
 }
 
 func (r *CustomResourceDefinitionDiscoveryReconciler) handleDeletion(ctx context.Context, log logr.Logger, crdDiscovery *corev1alpha1.CustomResourceDefinitionDiscovery) error {
@@ -150,26 +182,26 @@ func (r *CustomResourceDefinitionDiscoveryReconciler) handleDeletion(ctx context
 			Status:  corev1alpha1.ConditionFalse,
 			Type:    corev1alpha1.CustomResourceDefinitionDiscoveryDiscovered,
 		})
-		if err := r.Client.Status().Update(ctx, crdDiscovery); err != nil {
+		if err := r.Status().Update(ctx, crdDiscovery); err != nil {
 			return fmt.Errorf("update discovered state: %w", err)
 		}
 	}
 
 	crds := &apiextensionsv1.CustomResourceDefinitionList{}
-	if err := r.Client.List(ctx, crds, util.OwnedBy(crdDiscovery, r.Scheme)); err != nil {
+	if err := r.List(ctx, crds, util.OwnedBy(crdDiscovery, r.Scheme)); err != nil {
 		return fmt.Errorf("cannot list crds: %w", err)
 	}
 	if len(crds.Items) > 0 {
 		for _, crd := range crds.Items {
-			if err := r.Client.Delete(ctx, &crd); err != nil {
+			if err := r.Delete(ctx, &crd); err != nil {
 				return fmt.Errorf("cannot delete: %w", err)
 			}
 		}
 		return nil
 	}
 
-	if util.RemoveFinalizer(crdDiscovery, crdDiscoveryControllerFinalizer) {
-		if err := r.Client.Update(ctx, crdDiscovery); err != nil {
+	if util.RemoveFinalizer(crdDiscovery, crddControllerFinalizer) {
+		if err := r.Update(ctx, crdDiscovery); err != nil {
 			return fmt.Errorf("updating CustomResourceDefinitionDiscovery finalizers: %w", err)
 		}
 	}
@@ -179,6 +211,19 @@ func (r *CustomResourceDefinitionDiscoveryReconciler) handleDeletion(ctx context
 func (r *CustomResourceDefinitionDiscoveryReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&corev1alpha1.CustomResourceDefinitionDiscovery{}).
-		Watches(&source.Kind{Type: &apiextensionsv1.CustomResourceDefinition{}}, util.EnqueueRequestForOwner(&corev1alpha1.CustomResourceDefinitionDiscovery{}, r.Scheme)).
+		Watches(
+			&source.Kind{Type: &apiextensionsv1.CustomResourceDefinition{}},
+			util.EnqueueRequestForOwner(&corev1alpha1.CustomResourceDefinitionDiscovery{}, r.Scheme)).
+		WithEventFilter(util.PredicateFn(func(obj runtime.Object) bool {
+			crdd, ok := obj.(*corev1alpha1.CustomResourceDefinitionDiscovery)
+			if !ok {
+				// we only want to filter CustomResourceDefinitionDiscovery objects
+				return true
+			}
+
+			// CustomResourceDefinitionDiscoveryDiscovered that are not yet discovered, should be skipped.
+			discoveredCondition, _ := crdd.Status.GetCondition(corev1alpha1.CustomResourceDefinitionDiscoveryDiscovered)
+			return discoveredCondition.Status == corev1alpha1.ConditionTrue
+		})).
 		Complete(r)
 }

@@ -17,11 +17,16 @@ limitations under the License.
 package framework
 
 import (
+	"context"
 	"fmt"
 	"os"
+	"testing"
 
+	"github.com/stretchr/testify/assert"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/types"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	restclient "k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
@@ -30,6 +35,7 @@ import (
 	catalogv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/catalog/v1alpha1"
 	corev1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/core/v1alpha1"
 	operatorv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/operator/v1alpha1"
+	"github.com/kubermatic/kubecarrier/pkg/testutil"
 )
 
 type Config struct {
@@ -117,20 +123,84 @@ func New(c Config) (f *Framework, err error) {
 	return
 }
 
-func (f *Framework) MasterClient() (client.Client, error) {
+func (f *Framework) MasterClient() (*RecordingClient, error) {
 	cfg := f.masterConfig
-	return client.New(cfg, client.Options{
+	c, err := client.New(cfg, client.Options{
 		Scheme: f.MasterScheme,
 	})
+	if err != nil {
+		return nil, err
+	}
+	return RecordClient(c), nil
 }
 
-func (f *Framework) ServiceClient() (client.Client, error) {
+func (f *Framework) ServiceClient() (*RecordingClient, error) {
 	cfg := f.serviceConfig
-	return client.New(cfg, client.Options{
+	c, err := client.New(cfg, client.Options{
 		Scheme: f.ServiceScheme,
 	})
+	if err != nil {
+		return nil, err
+	}
+	return RecordClient(c), nil
 }
 
 func (f *Framework) Config() Config {
 	return f.config
+}
+
+type RecordingClient struct {
+	client.Client
+	objects map[string]runtime.Object
+	order   []string
+}
+
+func RecordClient(c client.Client) *RecordingClient {
+	return &RecordingClient{
+		Client:  c,
+		objects: map[string]runtime.Object{},
+	}
+}
+
+var _ client.Client = (*RecordingClient)(nil)
+
+func (rc *RecordingClient) CleanUp(t *testing.T) {
+	if _, noCleanup := os.LookupEnv("NO_CLEANUP"); noCleanup {
+		// skip cleanup
+		return
+	}
+
+	// cleanup in reverse order of creation
+	for i := len(rc.order) - 1; i >= 0; i-- {
+		key := rc.order[i]
+		obj, ok := rc.objects[key]
+		if !ok {
+			continue
+		}
+
+		assert.NoError(t, testutil.DeleteAndWaitUntilNotFound(rc.Client, obj))
+	}
+}
+
+func (rc *RecordingClient) Create(ctx context.Context, obj runtime.Object, opts ...client.CreateOption) error {
+	meta := obj.(metav1.Object)
+	key := types.NamespacedName{
+		Name:      meta.GetName(),
+		Namespace: meta.GetNamespace(),
+	}.String()
+	rc.objects[key] = obj
+	rc.order = append(rc.order, key)
+
+	return rc.Client.Create(ctx, obj, opts...)
+}
+
+func (rc *RecordingClient) Delete(ctx context.Context, obj runtime.Object, opts ...client.DeleteOption) error {
+	meta := obj.(metav1.Object)
+	key := types.NamespacedName{
+		Name:      meta.GetName(),
+		Namespace: meta.GetNamespace(),
+	}.String()
+	delete(rc.objects, key)
+
+	return rc.Client.Delete(ctx, obj, opts...)
 }

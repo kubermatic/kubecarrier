@@ -23,7 +23,6 @@ import (
 	"github.com/stretchr/testify/suite"
 
 	"github.com/kubermatic/kubecarrier/test/admin"
-	"github.com/kubermatic/kubecarrier/test/ferry"
 	"github.com/kubermatic/kubecarrier/test/framework"
 	"github.com/kubermatic/kubecarrier/test/installation"
 	"github.com/kubermatic/kubecarrier/test/provider"
@@ -60,10 +59,6 @@ func AllTests(config framework.Config) ([]testing.InternalTest, error) {
 		testing.InternalTest{
 			Name: "ProviderSuite",
 			F:    provider.NewProviderSuite(f),
-		},
-		testing.InternalTest{
-			Name: "FerrySuite",
-			F:    ferry.NewFerrySuite(f),
 		},
 		testing.InternalTest{
 			Name: "DerivedCRDSuite",

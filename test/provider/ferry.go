@@ -14,12 +14,11 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package ferry
+package provider
 
 import (
 	"context"
 	"io/ioutil"
-	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -27,7 +26,6 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -38,31 +36,24 @@ import (
 	"github.com/kubermatic/kubecarrier/test/framework"
 )
 
-func NewFerrySuite(f *framework.Framework) func(t *testing.T) {
+func NewFerrySuite(
+	f *framework.Framework,
+	provider *catalogv1alpha1.Provider,
+) func(t *testing.T) {
 	return func(t *testing.T) {
 		serviceClient, err := f.ServiceClient()
 		require.NoError(t, err, "creating service client")
+		defer serviceClient.CleanUp(t)
+
 		masterClient, err := f.MasterClient()
 		require.NoError(t, err, "creating master client")
+		defer masterClient.CleanUp(t)
 
+		ctx := context.Background()
 		serviceKubeconfig, err := ioutil.ReadFile(f.Config().ServiceInternalKubeconfigPath)
 		require.NoError(t, err, "cannot read service internal kubeconfig")
 
-		ctx := context.Background()
-
 		var (
-			provider = &catalogv1alpha1.Provider{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "steel-inquisitor",
-					Namespace: "kubecarrier-system",
-				},
-				Spec: catalogv1alpha1.ProviderSpec{
-					Metadata: catalogv1alpha1.ProviderMetadata{
-						DisplayName: "provider",
-						Description: "provider test description",
-					},
-				},
-			}
 			tenant = &catalogv1alpha1.Tenant{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "otto",
@@ -71,7 +62,8 @@ func NewFerrySuite(f *framework.Framework) func(t *testing.T) {
 			}
 			serviceClusterSecret = &corev1.Secret{
 				ObjectMeta: metav1.ObjectMeta{
-					Name: "eu-west-1",
+					Name:      "us-east-1",
+					Namespace: provider.Status.NamespaceName,
 				},
 				Data: map[string][]byte{
 					"kubeconfig": serviceKubeconfig,
@@ -79,11 +71,12 @@ func NewFerrySuite(f *framework.Framework) func(t *testing.T) {
 			}
 			serviceClusterRegistration = &operatorv1alpha1.ServiceClusterRegistration{
 				ObjectMeta: metav1.ObjectMeta{
-					Name: "eu-west-1",
+					Name:      "us-east-1",
+					Namespace: provider.Status.NamespaceName,
 				},
 				Spec: operatorv1alpha1.ServiceClusterRegistrationSpec{
 					KubeconfigSecret: operatorv1alpha1.ObjectReference{
-						Name: "eu-west-1",
+						Name: "us-east-1",
 					},
 				},
 			}
@@ -94,13 +87,15 @@ func NewFerrySuite(f *framework.Framework) func(t *testing.T) {
 				Spec: apiextensionsv1.CustomResourceDefinitionSpec{
 					Group: "test.kubecarrier.io",
 					Names: apiextensionsv1.CustomResourceDefinitionNames{
-						Plural: "redis",
-						Kind:   "Redis",
+						Singular: "redis",
+						Plural:   "redis",
+						Kind:     "Redis",
+						ListKind: "RedisList",
 					},
 					Scope: "Namespaced",
 					Versions: []apiextensionsv1.CustomResourceDefinitionVersion{
 						{
-							Name:    "corev1alpha1",
+							Name:    "v1alpha1",
 							Served:  true,
 							Storage: true,
 							Schema: &apiextensionsv1.CustomResourceValidation{
@@ -115,41 +110,8 @@ func NewFerrySuite(f *framework.Framework) func(t *testing.T) {
 			}
 		)
 
-		cleanUp := func() {
-			for _, obj := range []runtime.Object{
-				provider,
-				// These two are automatically deleted when the provider is deleted...at least they should be
-				// serviceClusterSecret,
-				// serviceClusterRegistration,
-				tenant,
-			} {
-				require.NoError(t, client.IgnoreNotFound(masterClient.Delete(ctx, obj.DeepCopyObject())))
-				require.NoError(t, testutil.WaitUntilNotFound(masterClient, obj.DeepCopyObject()), "not cleared %s: %v", obj.GetObjectKind().GroupVersionKind().Kind, obj)
-			}
-
-			for _, obj := range []runtime.Object{
-				crd,
-			} {
-				require.NoError(t, client.IgnoreNotFound(serviceClient.Delete(ctx, obj.DeepCopyObject())))
-				require.NoError(t, testutil.WaitUntilNotFound(serviceClient, obj.DeepCopyObject()))
-			}
-
-		}
-		// clean up before and after completion
-		cleanUp()
-		defer cleanUp()
-
-		require.NoError(t, masterClient.Create(ctx, provider))
 		require.NoError(t, masterClient.Create(ctx, tenant))
-
-		require.NoError(t, testutil.WaitUntilReady(masterClient, provider))
 		require.NoError(t, testutil.WaitUntilReady(masterClient, tenant))
-		for _, obj := range []metav1.Object{
-			serviceClusterSecret,
-			serviceClusterRegistration,
-		} {
-			obj.SetNamespace(provider.Status.NamespaceName)
-		}
 
 		require.NoError(t, masterClient.Create(ctx, serviceClusterSecret))
 		require.NoError(t, masterClient.Create(ctx, serviceClusterRegistration))
@@ -157,16 +119,17 @@ func NewFerrySuite(f *framework.Framework) func(t *testing.T) {
 
 		require.NoError(t, serviceClient.Create(ctx, crd))
 
+		// Check if the ServiceCluster becomes ready
+		//
+		serviceCluster := &corev1alpha1.ServiceCluster{}
+		serviceCluster.SetName(serviceClusterRegistration.GetName())
+		serviceCluster.SetNamespace(provider.Status.NamespaceName)
+		require.NoError(t, testutil.WaitUntilReady(masterClient, serviceCluster))
+
 		t.Run("parallel-group", func(t *testing.T) {
-			t.Run("ServiceCluster", func(t *testing.T) {
-				t.Parallel()
-				serviceCluster := &corev1alpha1.ServiceCluster{}
-				serviceCluster.SetName(serviceClusterRegistration.GetName())
-				serviceCluster.SetNamespace(provider.Status.NamespaceName)
-				require.NoError(t, testutil.WaitUntilReady(masterClient, serviceCluster))
-			})
 			t.Run("CustomResourceDefinitionDiscovery", func(t *testing.T) {
 				t.Parallel()
+
 				crdd := &corev1alpha1.CustomResourceDefinitionDiscovery{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "redis",
@@ -181,36 +144,22 @@ func NewFerrySuite(f *framework.Framework) func(t *testing.T) {
 						},
 					},
 				}
+				// make sure the object is not present, before we try to create it
 				require.NoError(t, client.IgnoreNotFound(masterClient.Delete(ctx, crdd)))
 				require.NoError(t, testutil.WaitUntilNotFound(masterClient, crdd))
 
-				internalCrd := &apiextensionsv1.CustomResourceDefinition{}
-				internalCrd.Name = strings.Join([]string{crd.Spec.Names.Plural, serviceClusterRegistration.Name, provider.Name}, ".")
-				if t.Run("ready", func(t *testing.T) {
-					require.NoError(t, masterClient.Create(ctx, crdd))
-					if assert.NoError(t, testutil.WaitUntilReady(masterClient, crdd)) {
-						assert.Equal(t, crd.Name, crdd.Status.CRD.Name)
-					}
-				}) {
-					t.Run("discovery", func(t *testing.T) {
-						if assert.NoError(t, testutil.WaitUntilCondition(
-							masterClient,
-							crdd,
-							corev1alpha1.CustomResourceDefinitionDiscoveryDiscovered,
-							corev1alpha1.ConditionTrue,
-						), "crd never discovered by the manager") {
-							assert.NoError(t, masterClient.Get(ctx, types.NamespacedName{
-								Name: internalCrd.Name,
-							}, internalCrd))
-						}
-					})
+				// create CustomResourceDefinitionDiscovery object
+				require.NoError(t, masterClient.Create(ctx, crdd))
+				if assert.NoError(t, testutil.WaitUntilReady(masterClient, crdd)) {
+					assert.Equal(t, crd.Name, crdd.Status.CRD.Name)
 				}
 
-				// clean up
-				assert.NoError(t, masterClient.Delete(ctx, crdd))
-				assert.NoError(t, testutil.WaitUntilNotFound(masterClient, crdd))
-				assert.NoError(t, testutil.WaitUntilNotFound(masterClient, internalCrd), "created internal CRD not cleared")
+				// wait till ready
+				if assert.NoError(t, testutil.WaitUntilReady(masterClient, crdd)) {
+					assert.Equal(t, crd.Name, crdd.Status.CRD.Name)
+				}
 			})
+
 			t.Run("ServiceClusterAssignment", func(t *testing.T) {
 				t.Parallel()
 				serviceClusterAssignment := &corev1alpha1.ServiceClusterAssignment{

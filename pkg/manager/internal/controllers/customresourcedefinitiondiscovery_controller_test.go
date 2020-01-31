@@ -18,17 +18,16 @@ package controllers
 
 import (
 	"context"
-	"fmt"
 	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+
 	"github.com/stretchr/testify/require"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	ctrl "sigs.k8s.io/controller-runtime"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 	fakeclient "sigs.k8s.io/controller-runtime/pkg/client/fake"
 
 	"github.com/kubermatic/kubecarrier/pkg/apis/catalog/v1alpha1"
@@ -36,24 +35,14 @@ import (
 	"github.com/kubermatic/kubecarrier/pkg/testutil"
 )
 
-type providerGetterMock struct {
-	provider *v1alpha1.Provider
-}
-
-func (p providerGetterMock) GetProviderByProviderNamespace(ctx context.Context, c client.Client, namespace string) (*v1alpha1.Provider, error) {
-	if p.provider == nil {
-		return nil, fmt.Errorf("notSet")
-	}
-	return p.provider, nil
-}
-
 func TestCustomResourceDefinitionDiscoveryReconciler(t *testing.T) {
 	const (
 		serviceClusterName = "eu-west-1"
 	)
 	provider := &v1alpha1.Provider{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: "extreme-cloud",
+			Name:      "extreme-cloud",
+			Namespace: "kubecarrier-system",
 		},
 	}
 
@@ -91,10 +80,10 @@ func TestCustomResourceDefinitionDiscoveryReconciler(t *testing.T) {
 		},
 	}
 	r := &CustomResourceDefinitionDiscoveryReconciler{
-		Log:            testutil.NewLogger(t),
-		Client:         fakeclient.NewFakeClientWithScheme(testScheme, crdDiscovery, provider),
-		Scheme:         testScheme,
-		ProviderGetter: providerGetterMock{provider: provider},
+		Log:                        testutil.NewLogger(t),
+		Client:                     fakeclient.NewFakeClientWithScheme(testScheme, crdDiscovery, provider),
+		Scheme:                     testScheme,
+		KubeCarrierSystemNamespace: provider.Namespace,
 	}
 	ctx := context.Background()
 	reconcileLoop := func() {
@@ -107,10 +96,7 @@ func TestCustomResourceDefinitionDiscoveryReconciler(t *testing.T) {
 		}
 	}
 
-	reconcileLoop()
-	cond, ok := crdDiscovery.Status.GetCondition(corev1alpha1.CustomResourceDefinitionDiscoveryDiscovered)
-	assert.True(t, ok, "CustomResourceDefinitionDiscoveryDiscovered condition should be present")
-	assert.Equal(t, corev1alpha1.ConditionFalse, cond.Status, "CustomResourceDefinitionDiscoveryDiscovered condition should False")
+	reconcileLoop() // should not panic on undiscovered instances
 
 	crdDiscovery.Status.CRD = crd
 	crdDiscovery.Status.SetCondition(corev1alpha1.CustomResourceDefinitionDiscoveryCondition{
@@ -119,13 +105,30 @@ func TestCustomResourceDefinitionDiscoveryReconciler(t *testing.T) {
 	})
 	require.NoError(t, r.Client.Status().Update(ctx, crdDiscovery))
 
-	reconcileLoop()
-	cond, ok = crdDiscovery.Status.GetCondition(corev1alpha1.CustomResourceDefinitionDiscoveryDiscovered)
-	assert.True(t, ok, "CustomResourceDefinitionDiscoveryDiscovered condition should be present")
-	assert.Equal(t, corev1alpha1.ConditionTrue, cond.Status, "CustomResourceDefinitionDiscoveryDiscovered condition should True")
+	reconcileLoop() // creates the CRD in the master cluster
+
+	readyCondition, ok := crdDiscovery.Status.GetCondition(corev1alpha1.CustomResourceDefinitionDiscoveryReady)
+	assert.True(t, ok)
+	assert.Equal(t, corev1alpha1.ConditionFalse, readyCondition.Status)
+	assert.Equal(t, "Establishing", readyCondition.Reason)
 
 	internalCRD := &apiextensionsv1.CustomResourceDefinition{}
 	require.NoError(t, r.Client.Get(ctx, types.NamespacedName{
 		Name: strings.Join([]string{"redis", serviceClusterName, provider.Name}, "."),
 	}, internalCRD))
+
+	internalCRD.Status.Conditions = []apiextensionsv1.CustomResourceDefinitionCondition{
+		{
+			Type:   apiextensionsv1.Established,
+			Status: apiextensionsv1.ConditionTrue,
+		},
+	}
+	require.NoError(t, r.Client.Status().Update(ctx, internalCRD))
+
+	reconcileLoop() // updates the status to ready
+
+	readyCondition, ok = crdDiscovery.Status.GetCondition(corev1alpha1.CustomResourceDefinitionDiscoveryReady)
+	assert.True(t, ok)
+	assert.Equal(t, corev1alpha1.ConditionTrue, readyCondition.Status)
+	assert.Equal(t, "Established", readyCondition.Reason)
 }
