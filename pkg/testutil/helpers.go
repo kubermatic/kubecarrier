@@ -62,13 +62,49 @@ func LogObject(t *testing.T, obj interface{}) {
 	t.Log("\n", string(b))
 }
 
-func WaitUntilNotFound(c client.Client, obj runtime.Object) error {
+const (
+	defaultWaitTimeout  = 60 * time.Second
+	defaultPollInterval = time.Second
+)
+
+// common options for Wait* helpers
+type waitOptions struct {
+	timeout      time.Duration
+	pollInterval time.Duration
+}
+
+// interface for option overrides
+type waitOption func(opt *waitOptions)
+
+// WithTimeout overrides the default 30s timeout for watch helpers.
+func WithTimeout(timeout time.Duration) waitOption {
+	return func(opt *waitOptions) {
+		opt.timeout = timeout
+	}
+}
+
+// WithPollInterval overrides the default 1s poll interval for watch helpers.
+func WithPollInterval(pollInterval time.Duration) waitOption {
+	return func(opt *waitOptions) {
+		opt.pollInterval = pollInterval
+	}
+}
+
+func WaitUntilNotFound(c client.Client, obj runtime.Object, opts ...waitOption) error {
+	opt := &waitOptions{
+		timeout:      defaultWaitTimeout,
+		pollInterval: defaultPollInterval,
+	}
+	for _, fn := range opts {
+		fn(opt)
+	}
+
 	o, ok := obj.(metav1.Object)
 	if !ok {
 		return fmt.Errorf("%T does not implement metav1.Object", obj)
 	}
 
-	return wait.Poll(time.Second, 60*time.Second, func() (done bool, err error) {
+	return wait.Poll(opt.pollInterval, opt.timeout, func() (done bool, err error) {
 		err = c.Get(context.Background(), types.NamespacedName{
 			Namespace: o.GetNamespace(),
 			Name:      o.GetName(),
@@ -85,12 +121,20 @@ func WaitUntilNotFound(c client.Client, obj runtime.Object) error {
 	})
 }
 
-func WaitUntilFound(c client.Client, obj runtime.Object) error {
+func WaitUntilFound(c client.Client, obj runtime.Object, opts ...waitOption) error {
+	opt := &waitOptions{
+		timeout:      defaultWaitTimeout,
+		pollInterval: defaultPollInterval,
+	}
+	for _, fn := range opts {
+		fn(opt)
+	}
+
 	o, ok := obj.(metav1.Object)
 	if !ok {
 		return fmt.Errorf("%T does not implement metav1.Object", obj)
 	}
-	return wait.Poll(time.Second, 10*time.Second, func() (done bool, err error) {
+	return wait.Poll(opt.pollInterval, opt.timeout, func() (done bool, err error) {
 		if err := c.Get(context.Background(), types.NamespacedName{
 			Name:      o.GetName(),
 			Namespace: o.GetNamespace(),
@@ -104,13 +148,21 @@ func WaitUntilFound(c client.Client, obj runtime.Object) error {
 	})
 }
 
-func WaitUntilCondition(c client.Client, obj runtime.Object, ConditionType, ConditionStatus interface{}) error {
+func WaitUntilCondition(c client.Client, obj runtime.Object, ConditionType, conditionStatus interface{}, opts ...waitOption) error {
+	opt := &waitOptions{
+		timeout:      defaultWaitTimeout,
+		pollInterval: defaultPollInterval,
+	}
+	for _, fn := range opts {
+		fn(opt)
+	}
+
 	o, ok := obj.(metav1.Object)
 	if !ok {
 		return fmt.Errorf("%T does not implement metav1.Object", obj)
 	}
 	var lastErr error
-	err := wait.Poll(time.Second, 60*time.Second, func() (done bool, err error) {
+	err := wait.Poll(opt.pollInterval, opt.timeout, func() (done bool, err error) {
 		err = c.Get(context.Background(), types.NamespacedName{
 			Namespace: o.GetNamespace(),
 			Name:      o.GetName(),
@@ -119,7 +171,7 @@ func WaitUntilCondition(c client.Client, obj runtime.Object, ConditionType, Cond
 		case errors.IsNotFound(err):
 			return false, nil
 		case err == nil:
-			lastErr = ConditionStatusEqual(obj, ConditionType, ConditionStatus)
+			lastErr = ConditionStatusEqual(obj, ConditionType, conditionStatus)
 			return lastErr == nil, nil
 		default:
 			return false, err
@@ -135,8 +187,8 @@ func WaitUntilCondition(c client.Client, obj runtime.Object, ConditionType, Cond
 	return nil
 }
 
-func WaitUntilReady(c client.Client, obj runtime.Object) error {
-	return WaitUntilCondition(c, obj, "Ready", "True")
+func WaitUntilReady(c client.Client, obj runtime.Object, opts ...waitOption) error {
+	return WaitUntilCondition(c, obj, "Ready", "True", opts...)
 }
 
 func DeleteAndWaitUntilNotFound(c client.Client, obj runtime.Object) error {

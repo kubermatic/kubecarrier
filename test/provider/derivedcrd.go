@@ -20,10 +20,10 @@ import (
 	"context"
 	"os"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -32,7 +32,6 @@ import (
 	"sigs.k8s.io/yaml"
 
 	catalogv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/catalog/v1alpha1"
-	operatorv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/operator/v1alpha1"
 	"github.com/kubermatic/kubecarrier/pkg/testutil"
 	"github.com/kubermatic/kubecarrier/test/framework"
 )
@@ -138,8 +137,23 @@ func NewDerivedCRDSuite(
 		require.NoError(
 			t, masterClient.Create(ctx, dcrd), "creating DerivedCustomResourceDefinition")
 
+		defer func() {
+			// Teardown
+			//
+			if _, noCleanup := os.LookupEnv("NO_CLEANUP"); noCleanup {
+				return
+			}
+
+			// Cleanup DerivedCRD
+			require.NoError(t, masterClient.Delete(ctx, dcrd), "deleting the DerivedCustomResourceDefinition object")
+			require.NoError(t, testutil.WaitUntilNotFound(masterClient, dcrd))
+
+			// Cleanup base CRD
+			require.NoError(t, masterClient.Delete(ctx, baseCRD), "deleting base CRD")
+		}()
+
 		// Wait for DCRD to be ready
-		require.NoError(t, testutil.WaitUntilReady(masterClient, dcrd))
+		require.NoError(t, testutil.WaitUntilReady(masterClient, dcrd, testutil.WithTimeout(40*time.Second)))
 
 		// Check reported status
 		if assert.NotNil(t, dcrd.Status.DerivedCRD, ".status.derivedCRD should be set") {
@@ -178,42 +192,6 @@ func NewDerivedCRDSuite(
     type: object
 type: object
 `, string(schemaYaml))
-
-		// Create Elevator instance for new CRD
-		elevator := &operatorv1alpha1.Elevator{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "db.eu-west-1",
-				Namespace: provider.Status.NamespaceName,
-			},
-			Spec: operatorv1alpha1.ElevatorSpec{
-				ProviderCRD: operatorv1alpha1.CRDReference{
-					Kind:    "Catapult",
-					Version: "v1alpha1",
-					Group:   "test.kubecarrier.io",
-					Plural:  "catapults",
-				},
-				TenantCRD: operatorv1alpha1.CRDReference{
-					Kind:    "TestResource",
-					Version: "v1alpha1",
-					Group:   "eu-west-1.example-cloud",
-					Plural:  "testresources",
-				},
-				DerivedCRD: operatorv1alpha1.ObjectReference{
-					Name: dcrd.Name,
-				},
-			},
-		}
-
-		require.NoError(
-			t, masterClient.Create(ctx, elevator), "creating Elevator error")
-		require.NoError(t, testutil.WaitUntilReady(masterClient, elevator))
-
-		// Check created objects
-		elevatorDeployment := &appsv1.Deployment{}
-		assert.NoError(t, masterClient.Get(ctx, types.NamespacedName{
-			Name:      "db-eu-west-1-elevator-manager",
-			Namespace: elevator.Namespace,
-		}, elevatorDeployment), "getting Elevator manager deployment error")
 
 		// Create a Tenant obj
 		someNamespace := &corev1.Namespace{
@@ -289,24 +267,5 @@ type: object
 			},
 		}
 		require.NoError(t, testutil.WaitUntilFound(masterClient, tenantObj2))
-
-		// Teardown
-		//
-		if _, noCleanup := os.LookupEnv("NO_CLEANUP"); noCleanup {
-			return
-		}
-
-		// Cleanup Elevator
-		require.NoError(
-			t, masterClient.Delete(ctx, elevator), "deleting Elevator object")
-		require.NoError(t, testutil.WaitUntilNotFound(masterClient, elevator))
-		require.NoError(t, testutil.WaitUntilNotFound(masterClient, elevatorDeployment))
-
-		// Cleanup DerivedCRD
-		require.NoError(t, masterClient.Delete(ctx, dcrd), "deleting the DerivedCustomResourceDefinition object")
-		require.NoError(t, testutil.WaitUntilNotFound(masterClient, dcrd))
-
-		// Cleanup base CRD
-		require.NoError(t, masterClient.Delete(ctx, baseCRD), "deleting base CRD")
 	}
 }
