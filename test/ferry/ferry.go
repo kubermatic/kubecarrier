@@ -56,6 +56,18 @@ func NewFerrySuite(f *framework.Framework) func(t *testing.T) {
 					Name:      "steel-inquisitor",
 					Namespace: "kubecarrier-system",
 				},
+				Spec: catalogv1alpha1.ProviderSpec{
+					Metadata: catalogv1alpha1.ProviderMetadata{
+						DisplayName: "provider",
+						Description: "provider test description",
+					},
+				},
+			}
+			tenant = &catalogv1alpha1.Tenant{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "otto",
+					Namespace: "kubecarrier-system",
+				},
 			}
 			serviceClusterSecret = &corev1.Secret{
 				ObjectMeta: metav1.ObjectMeta{
@@ -109,16 +121,17 @@ func NewFerrySuite(f *framework.Framework) func(t *testing.T) {
 				// These two are automatically deleted when the provider is deleted...at least they should be
 				// serviceClusterSecret,
 				// serviceClusterRegistration,
+				tenant,
 			} {
-				require.NoError(t, client.IgnoreNotFound(masterClient.Delete(ctx, obj)))
-				require.NoError(t, testutil.WaitUntilNotFound(masterClient, obj))
+				require.NoError(t, client.IgnoreNotFound(masterClient.Delete(ctx, obj.DeepCopyObject())))
+				require.NoError(t, testutil.WaitUntilNotFound(masterClient, obj.DeepCopyObject()), "not cleared %s: %v", obj.GetObjectKind().GroupVersionKind().Kind, obj)
 			}
 
 			for _, obj := range []runtime.Object{
 				crd,
 			} {
-				require.NoError(t, client.IgnoreNotFound(serviceClient.Delete(ctx, obj)))
-				require.NoError(t, testutil.WaitUntilNotFound(serviceClient, obj))
+				require.NoError(t, client.IgnoreNotFound(serviceClient.Delete(ctx, obj.DeepCopyObject())))
+				require.NoError(t, testutil.WaitUntilNotFound(serviceClient, obj.DeepCopyObject()))
 			}
 
 		}
@@ -127,7 +140,10 @@ func NewFerrySuite(f *framework.Framework) func(t *testing.T) {
 		defer cleanUp()
 
 		require.NoError(t, masterClient.Create(ctx, provider))
+		require.NoError(t, masterClient.Create(ctx, tenant))
+
 		require.NoError(t, testutil.WaitUntilReady(masterClient, provider))
+		require.NoError(t, testutil.WaitUntilReady(masterClient, tenant))
 		for _, obj := range []metav1.Object{
 			serviceClusterSecret,
 			serviceClusterRegistration,
@@ -149,7 +165,6 @@ func NewFerrySuite(f *framework.Framework) func(t *testing.T) {
 				serviceCluster.SetNamespace(provider.Status.NamespaceName)
 				require.NoError(t, testutil.WaitUntilReady(masterClient, serviceCluster))
 			})
-
 			t.Run("CustomResourceDefinitionDiscovery", func(t *testing.T) {
 				t.Parallel()
 				crdd := &corev1alpha1.CustomResourceDefinitionDiscovery{
@@ -195,6 +210,42 @@ func NewFerrySuite(f *framework.Framework) func(t *testing.T) {
 				assert.NoError(t, masterClient.Delete(ctx, crdd))
 				assert.NoError(t, testutil.WaitUntilNotFound(masterClient, crdd))
 				assert.NoError(t, testutil.WaitUntilNotFound(masterClient, internalCrd), "created internal CRD not cleared")
+			})
+			t.Run("ServiceClusterAssignment", func(t *testing.T) {
+				t.Parallel()
+				serviceClusterAssignment := &corev1alpha1.ServiceClusterAssignment{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      tenant.Name + "." + serviceClusterRegistration.Name,
+						Namespace: provider.Status.NamespaceName,
+					},
+					Spec: corev1alpha1.ServiceClusterAssignmentSpec{
+						ServiceCluster: corev1alpha1.ObjectReference{
+							Name: serviceClusterRegistration.Name,
+						},
+					},
+				}
+				require.NoError(t, client.IgnoreNotFound(masterClient.Delete(ctx, serviceClusterAssignment)))
+				require.NoError(t, testutil.WaitUntilNotFound(masterClient, serviceClusterAssignment))
+				require.NoError(t, masterClient.Create(ctx, serviceClusterAssignment))
+
+				ns := &corev1.Namespace{}
+				if assert.NoError(t, testutil.WaitUntilReady(masterClient, serviceClusterAssignment), "serviceClusterAssignment never became ready") {
+					assert.NoError(t,
+						serviceClient.Get(
+							ctx,
+							types.NamespacedName{Name: serviceClusterAssignment.Status.NamespaceName},
+							ns,
+						),
+						"serviceCluster's namespace not created",
+					)
+				}
+
+				assert.NoError(t, client.IgnoreNotFound(masterClient.Delete(ctx, serviceClusterAssignment)))
+				assert.NoError(t, testutil.WaitUntilNotFound(masterClient, serviceClusterAssignment), "serviceClusterAssignment never succesfully got deleted")
+
+				if ns.Name != "" {
+					assert.NoError(t, testutil.WaitUntilNotFound(serviceClient, ns), "serviceCluster's namespace not cleared")
+				}
 			})
 		})
 	}

@@ -86,25 +86,6 @@ func (r *CatalogEntryReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error
 		}
 	}
 
-	provider, err := getProviderByProviderNamespace(ctx, r.Client, r.KubeCarrierSystemNamespace, catalogEntry.Namespace)
-	if err != nil {
-		return ctrl.Result{}, fmt.Errorf("getting the Provider by Provider Namespace: %w", err)
-	}
-
-	// Defaulting the `kubecarrier.io/provider` matchlabel
-	if catalogEntry.Spec.CRDSelector == nil {
-		catalogEntry.Spec.CRDSelector = &metav1.LabelSelector{}
-	}
-	if catalogEntry.Spec.CRDSelector.MatchLabels == nil {
-		catalogEntry.Spec.CRDSelector.MatchLabels = map[string]string{}
-	}
-	if catalogEntry.Spec.CRDSelector.MatchLabels[providerLabel] != provider.Name {
-		catalogEntry.Spec.CRDSelector.MatchLabels[providerLabel] = provider.Name
-		if err := r.Update(ctx, catalogEntry); err != nil {
-			return ctrl.Result{}, fmt.Errorf("updating the provider matchLabel: %w", err)
-		}
-	}
-
 	// Manipulate the CRD information to CatalogEntry status, and update the status of the CatalogEntry.
 	if err := r.manipulateCRDInfo(ctx, log, catalogEntry, namespacedName); err != nil {
 		return ctrl.Result{}, fmt.Errorf("reconciling CRDInfo: %w", err)

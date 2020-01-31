@@ -1,0 +1,158 @@
+
+---
+apiVersion: admissionregistration.k8s.io/v1beta1
+kind: MutatingWebhookConfiguration
+metadata:
+  creationTimestamp: null
+  name: mutating-webhook-configuration
+webhooks:
+- clientConfig:
+    caBundle: Cg==
+    service:
+      name: webhook-service
+      namespace: system
+      path: /mutate-catalog-kubecarrier-io-v1alpha1-catalogentry
+  failurePolicy: Fail
+  name: mcatalogentry.kubecarrier.io
+  rules:
+  - apiGroups:
+    - catalog.kubecarrier.io
+    apiVersions:
+    - v1alpha1
+    operations:
+    - CREATE
+    - UPDATE
+    resources:
+    - catalogentries
+
+---
+apiVersion: admissionregistration.k8s.io/v1beta1
+kind: ValidatingWebhookConfiguration
+metadata:
+  creationTimestamp: null
+  name: validating-webhook-configuration
+webhooks:
+- clientConfig:
+    caBundle: Cg==
+    service:
+      name: webhook-service
+      namespace: system
+      path: /validate-catalog-kubecarrier-io-v1alpha1-derivedcustomresourcedefinition
+  failurePolicy: Fail
+  name: vderivedcustomresourcedefinition.kubecarrier.io
+  rules:
+  - apiGroups:
+    - catalog.kubecarrier.io
+    apiVersions:
+    - v1alpha1
+    operations:
+    - CREATE
+    - UPDATE
+    resources:
+    - derivedcustomresourcedefinitions
+- clientConfig:
+    caBundle: Cg==
+    service:
+      name: webhook-service
+      namespace: system
+      path: /validate-catalog-kubecarrier-io-v1alpha1-offering
+  failurePolicy: Fail
+  name: voffering.kubecarrier.io
+  rules:
+  - apiGroups:
+    - catalog.kubecarrier.io
+    apiVersions:
+    - v1alpha1
+    operations:
+    - CREATE
+    - UPDATE
+    resources:
+    - offerings
+- clientConfig:
+    caBundle: Cg==
+    service:
+      name: webhook-service
+      namespace: system
+      path: /validate-catalog-kubecarrier-io-v1alpha1-provider
+  failurePolicy: Fail
+  name: vprovider.kubecarrier.io
+  rules:
+  - apiGroups:
+    - catalog.kubecarrier.io
+    apiVersions:
+    - v1alpha1
+    operations:
+    - CREATE
+    - UPDATE
+    resources:
+    - providers
+- clientConfig:
+    caBundle: Cg==
+    service:
+      name: webhook-service
+      namespace: system
+      path: /validate-catalog-kubecarrier-io-v1alpha1-providerreference
+  failurePolicy: Fail
+  name: vproviderreference.kubecarrier.io
+  rules:
+  - apiGroups:
+    - catalog.kubecarrier.io
+    apiVersions:
+    - v1alpha1
+    operations:
+    - CREATE
+    - UPDATE
+    resources:
+    - providerreferences
+- clientConfig:
+    caBundle: Cg==
+    service:
+      name: webhook-service
+      namespace: system
+      path: /validate-catalog-kubecarrier-io-v1alpha1-serviceclusterreference
+  failurePolicy: Fail
+  name: vserviceclusterreference.kubecarrier.io
+  rules:
+  - apiGroups:
+    - catalog.kubecarrier.io
+    apiVersions:
+    - v1alpha1
+    operations:
+    - CREATE
+    - UPDATE
+    resources:
+    - serviceclusterreferences
+- clientConfig:
+    caBundle: Cg==
+    service:
+      name: webhook-service
+      namespace: system
+      path: /validate-catalog-kubecarrier-io-v1alpha1-tenant
+  failurePolicy: Fail
+  name: vtenant.kubecarrier.io
+  rules:
+  - apiGroups:
+    - catalog.kubecarrier.io
+    apiVersions:
+    - v1alpha1
+    operations:
+    - CREATE
+    resources:
+    - tenants
+- clientConfig:
+    caBundle: Cg==
+    service:
+      name: webhook-service
+      namespace: system
+      path: /validate-catalog-kubecarrier-io-v1alpha1-tenantreference
+  failurePolicy: Fail
+  name: vtenantreference.kubecarrier.io
+  rules:
+  - apiGroups:
+    - catalog.kubecarrier.io
+    apiVersions:
+    - v1alpha1
+    operations:
+    - CREATE
+    resources:
+    - tenantreferences

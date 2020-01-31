@@ -156,11 +156,7 @@ func (r *CustomResourceDefinitionDiscoveryReconciler) handleDeletion(ctx context
 	}
 
 	crds := &apiextensionsv1.CustomResourceDefinitionList{}
-	ownedBy, err := util.OwnedBy(crdDiscovery, r.Scheme)
-	if err != nil {
-		return fmt.Errorf("cannot created owned by: %w", err)
-	}
-	if err := r.Client.List(ctx, crds, ownedBy); err != nil {
+	if err := r.Client.List(ctx, crds, util.OwnedBy(crdDiscovery, r.Scheme)); err != nil {
 		return fmt.Errorf("cannot list crds: %w", err)
 	}
 	if len(crds.Items) > 0 {
@@ -181,13 +177,8 @@ func (r *CustomResourceDefinitionDiscoveryReconciler) handleDeletion(ctx context
 }
 
 func (r *CustomResourceDefinitionDiscoveryReconciler) SetupWithManager(mgr ctrl.Manager) error {
-	enqueuer, err := util.EnqueueRequestForOwner(&corev1alpha1.CustomResourceDefinitionDiscovery{}, r.Scheme)
-	if err != nil {
-		return fmt.Errorf("enqueuer: %w", err)
-	}
-
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&corev1alpha1.CustomResourceDefinitionDiscovery{}).
-		Watches(&source.Kind{Type: &apiextensionsv1.CustomResourceDefinition{}}, enqueuer).
+		Watches(&source.Kind{Type: &apiextensionsv1.CustomResourceDefinition{}}, util.EnqueueRequestForOwner(&corev1alpha1.CustomResourceDefinitionDiscovery{}, r.Scheme)).
 		Complete(r)
 }

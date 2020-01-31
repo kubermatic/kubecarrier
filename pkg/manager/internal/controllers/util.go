@@ -26,7 +26,7 @@ import (
 )
 
 const (
-	providerLabel       = "kubecarrier.io/provider"
+	ProviderLabel       = "kubecarrier.io/provider"
 	serviceClusterLabel = "kubecarrier.io/service-cluster"
 )
 
@@ -68,7 +68,7 @@ var _ ProviderGetterByProviderNamespace = (*fieldIndexProviderGetter)(nil)
 // DEPRECATED.
 //
 // should use the interface ProviderGetterByProviderNamespace
-func getProviderByProviderNamespace(ctx context.Context, c client.Client, kubecarrierNamespace, providerNamespace string) (*catalogv1alpha1.Provider, error) {
+func GetProviderByProviderNamespace(ctx context.Context, c client.Client, kubecarrierNamespace, providerNamespace string) (*catalogv1alpha1.Provider, error) {
 	return NewDefaultProviderGetter(kubecarrierNamespace).GetProviderByProviderNamespace(ctx, c, providerNamespace)
 }
 

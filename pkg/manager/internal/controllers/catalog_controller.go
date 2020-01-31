@@ -124,7 +124,7 @@ func (r *CatalogReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	}
 
 	// Get Provider
-	provider, err := getProviderByProviderNamespace(ctx, r.Client, r.KubeCarrierSystemNamespace, req.Namespace)
+	provider, err := GetProviderByProviderNamespace(ctx, r.Client, r.KubeCarrierSystemNamespace, req.Namespace)
 	if err != nil {
 		return ctrl.Result{}, fmt.Errorf("getting Provider: %w", err)
 	}
@@ -200,10 +200,7 @@ func (r *CatalogReconciler) SetupWithManager(mgr ctrl.Manager) error {
 			return
 		}),
 	}
-	enqueuerForOwner, err := util.EnqueueRequestForOwner(&catalogv1alpha1.Catalog{}, mgr.GetScheme())
-	if err != nil {
-		return fmt.Errorf("cannot create enqueuerForOnwer for Catalog: %w", err)
-	}
+	enqueuerForOwner := util.EnqueueRequestForOwner(&catalogv1alpha1.Catalog{}, mgr.GetScheme())
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&catalogv1alpha1.Catalog{}).
 		Watches(&source.Kind{Type: &catalogv1alpha1.TenantReference{}}, enqueueAllCatalogsInNamespace).
@@ -511,12 +508,8 @@ func (r *CatalogReconciler) cleanupOfferings(
 	desiredOfferings []catalogv1alpha1.Offering,
 ) (deletedOfferingCounter int, err error) {
 	// Fetch existing Offerings.
-	ownerListFilter, err := util.OwnedBy(catalog, r.Scheme)
-	if err != nil {
-		return 0, fmt.Errorf("building OwnedBy filter: %w", err)
-	}
 	foundOfferingList := &catalogv1alpha1.OfferingList{}
-	if err := r.List(ctx, foundOfferingList, ownerListFilter); err != nil {
+	if err := r.List(ctx, foundOfferingList, util.OwnedBy(catalog, r.Scheme)); err != nil {
 		return 0, fmt.Errorf("listing Offerings: %w", err)
 	}
 	return r.cleanupOutdatedReferences(ctx, log,
@@ -531,12 +524,8 @@ func (r *CatalogReconciler) cleanupProviderReferences(
 	desiredProviderReferences []catalogv1alpha1.ProviderReference,
 ) (deletedProviderReferenceCounter int, err error) {
 	// Fetch existing ProviderReferences.
-	ownerListFilter, err := util.OwnedBy(catalog, r.Scheme)
-	if err != nil {
-		return 0, fmt.Errorf("building OwnedBy filter: %w", err)
-	}
 	foundProviderReferenceList := &catalogv1alpha1.ProviderReferenceList{}
-	if err := r.List(ctx, foundProviderReferenceList, ownerListFilter); err != nil {
+	if err := r.List(ctx, foundProviderReferenceList, util.OwnedBy(catalog, r.Scheme)); err != nil {
 		return 0, fmt.Errorf("listing ProviderReferences: %w", err)
 	}
 
@@ -552,12 +541,8 @@ func (r *CatalogReconciler) cleanupServiceClusterReferences(
 	desiredServiceClusterReferences []catalogv1alpha1.ServiceClusterReference,
 ) (deletedServiceClusterReferenceCounter int, err error) {
 	// Fetch existing ServiceClusterReferences.
-	ownerListFilter, err := util.OwnedBy(catalog, r.Scheme)
-	if err != nil {
-		return 0, fmt.Errorf("building OwnedBy filter: %w", err)
-	}
 	foundServiceClusterReferenceList := &catalogv1alpha1.ServiceClusterReferenceList{}
-	if err := r.List(ctx, foundServiceClusterReferenceList, ownerListFilter); err != nil {
+	if err := r.List(ctx, foundServiceClusterReferenceList, util.OwnedBy(catalog, r.Scheme)); err != nil {
 		return 0, fmt.Errorf("listing ServiceClusterReferences: %w", err)
 	}
 	return r.cleanupOutdatedReferences(ctx, log,
@@ -566,29 +551,24 @@ func (r *CatalogReconciler) cleanupServiceClusterReferences(
 		serviceClusterReferencesToObjectArray(desiredServiceClusterReferences))
 }
 
-type object interface {
-	metav1.Object
-	runtime.Object
-}
-
-func offeringsToObjectArray(offerings []catalogv1alpha1.Offering) []object {
-	out := make([]object, len(offerings))
+func offeringsToObjectArray(offerings []catalogv1alpha1.Offering) []util.Object {
+	out := make([]util.Object, len(offerings))
 	for i := range offerings {
 		out[i] = &offerings[i]
 	}
 	return out
 }
 
-func providerReferencesToObjectArray(providerReferences []catalogv1alpha1.ProviderReference) []object {
-	out := make([]object, len(providerReferences))
+func providerReferencesToObjectArray(providerReferences []catalogv1alpha1.ProviderReference) []util.Object {
+	out := make([]util.Object, len(providerReferences))
 	for i := range providerReferences {
 		out[i] = &providerReferences[i]
 	}
 	return out
 }
 
-func serviceClusterReferencesToObjectArray(serviceClusterReferences []catalogv1alpha1.ServiceClusterReference) []object {
-	out := make([]object, len(serviceClusterReferences))
+func serviceClusterReferencesToObjectArray(serviceClusterReferences []catalogv1alpha1.ServiceClusterReference) []util.Object {
+	out := make([]util.Object, len(serviceClusterReferences))
 	for i := range serviceClusterReferences {
 		out[i] = &serviceClusterReferences[i]
 	}
@@ -598,8 +578,8 @@ func serviceClusterReferencesToObjectArray(serviceClusterReferences []catalogv1a
 func (r *CatalogReconciler) cleanupOutdatedReferences(
 	ctx context.Context, log logr.Logger,
 	catalog *catalogv1alpha1.Catalog,
-	foundObjects []object,
-	desiredObjects []object,
+	foundObjects []util.Object,
+	desiredObjects []util.Object,
 ) (deletedObjectCounter int, err error) {
 	desiredObjectMap := map[string]struct{}{}
 	for _, desiredObject := range desiredObjects {

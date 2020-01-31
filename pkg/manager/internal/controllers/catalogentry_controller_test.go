@@ -50,6 +50,11 @@ func TestCatalogEntryReconciler(t *testing.T) {
 				DisplayName: "Test CatalogEntry",
 				Description: "Test CatalogEntry",
 			},
+			CRDSelector: &metav1.LabelSelector{
+				MatchLabels: map[string]string{
+					ProviderLabel: "example.provider",
+				},
+			},
 		},
 	}
 
@@ -57,7 +62,7 @@ func TestCatalogEntryReconciler(t *testing.T) {
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "test-crd-1.test-crd-group-1.test",
 			Labels: map[string]string{
-				providerLabel:       "example.provider",
+				ProviderLabel:       "example.provider",
 				serviceClusterLabel: "test-service-cluster-1",
 			},
 		},
@@ -78,7 +83,7 @@ func TestCatalogEntryReconciler(t *testing.T) {
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "test-crd-2.test-crd-group-2.test",
 			Labels: map[string]string{
-				providerLabel:       "example.provider",
+				ProviderLabel:       "example.provider",
 				serviceClusterLabel: "test-service-cluster-2",
 			},
 		},
@@ -103,7 +108,7 @@ func TestCatalogEntryReconciler(t *testing.T) {
 				catalogEntryReferenceAnnotation: "test-catalogentry",
 			},
 			Labels: map[string]string{
-				providerLabel:       "example.provider",
+				ProviderLabel:       "example.provider",
 				serviceClusterLabel: "test-service-cluster-3",
 			},
 		},
