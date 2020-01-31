@@ -48,6 +48,12 @@ type CatalogStatus struct {
 	// is a mechanism to map conditions to strings when printing the property.
 	// This is only for display purpose, for everything else use conditions.
 	Phase CatalogPhaseType `json:"phase,omitempty"`
+	// DEPRECATED.
+	// AssignmentsPhase represents the states of ServiceClusterAssignments managed by this Catalog.
+	// Consider this field DEPRECATED, it will be removed as soon as there
+	// is a mechanism to map conditions to strings when printing the property.
+	// This is only for display purpose, for everything else use conditions.
+	AssignmentsPhase AssignmentsPhaseType `json:"assignmentsPhase,omitempty"`
 }
 
 // CatalogPhaseType represents all conditions as a single string for printing by using kubectl commands.
@@ -91,12 +97,42 @@ func (s *CatalogStatus) updatePhase() {
 	s.Phase = CatalogPhaseUnknown
 }
 
+// AssignmentsPhaseType represents all conditions as a single string for printing by using kubectl commands.
+type AssignmentsPhaseType string
+
+// Values of CatalogPhaseType.
+const (
+	AssignmentsPhaseReady    AssignmentsPhaseType = "Ready"
+	AssignmentsPhaseNotReady AssignmentsPhaseType = "NotReady"
+)
+
+// updateAssignmentsPhase updates the AssignmentsPhase property based on the current conditions
+// this method should be called every time the conditions are updated.
+func (s *CatalogStatus) updateAssignmentsPhase() {
+	for _, condition := range s.Conditions {
+		if condition.Type != AssignmentsReady {
+			continue
+		}
+
+		switch condition.Status {
+		case ConditionTrue:
+			s.AssignmentsPhase = AssignmentsPhaseReady
+		case ConditionFalse:
+			s.AssignmentsPhase = AssignmentsPhaseNotReady
+		}
+		return
+	}
+}
+
 // CatalogConditionType represents a CatalogCondition value.
 type CatalogConditionType string
 
 const (
 	// CatalogReady represents a Catalog condition is in ready state.
 	CatalogReady CatalogConditionType = "Ready"
+
+	// CatalogReady represents a Catalog condition that all managed ServiceClusterAssignments are in ready state.
+	AssignmentsReady CatalogConditionType = "AssignmentsReady"
 )
 
 // CatalogCondition contains details for the current condition of this Catalog.
@@ -128,6 +164,7 @@ func (s *CatalogStatus) GetCondition(t CatalogConditionType) (condition CatalogC
 // SetCondition replaces or adds the given condition.
 func (s *CatalogStatus) SetCondition(condition CatalogCondition) {
 	defer s.updatePhase()
+	defer s.updateAssignmentsPhase()
 
 	if condition.LastTransitionTime.IsZero() {
 		condition.LastTransitionTime = metav1.Now()
@@ -156,6 +193,7 @@ func (s *CatalogStatus) SetCondition(condition CatalogCondition) {
 // +kubebuilder:object:root=true
 // +kubebuilder:subresource:status
 // +kubebuilder:printcolumn:name="Status",type="string",JSONPath=".status.phase"
+// +kubebuilder:printcolumn:name="AssignmentStatus",type="string",JSONPath=".status.assignmentsPhase"
 // +kubebuilder:printcolumn:name="Age",type="date",JSONPath=".metadata.creationTimestamp"
 // +kubebuilder:resource:shortName=cl
 type Catalog struct {

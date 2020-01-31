@@ -233,6 +233,9 @@
       - jsonPath: .status.phase
         name: Status
         type: string
+      - jsonPath: .status.assignmentsPhase
+        name: AssignmentStatus
+        type: string
       - jsonPath: .metadata.creationTimestamp
         name: Age
         type: date
@@ -354,6 +357,13 @@
             status:
               description: CatalogStatus defines the observed state of Catalog.
               properties:
+                assignmentsPhase:
+                  description: DEPRECATED. AssignmentsPhase represents the states
+                    of ServiceClusterAssignments managed by this Catalog. Consider
+                    this field DEPRECATED, it will be removed as soon as there is
+                    a mechanism to map conditions to strings when printing the property.
+                    This is only for display purpose, for everything else use conditions.
+                  type: string
                 conditions:
                   description: Conditions represents the latest available observations
                     of a Catalog's current state.
@@ -1801,6 +1811,17 @@
     - get
     - patch
     - update
+  - apiGroups:
+    - kubecarrier.io
+    resources:
+    - serviceclusterassignments
+    verbs:
+    - create
+    - delete
+    - get
+    - list
+    - update
+    - watch
   - apiGroups:
     - kubecarrier.io
     resources:
