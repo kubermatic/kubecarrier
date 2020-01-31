@@ -551,29 +551,24 @@ func (r *CatalogReconciler) cleanupServiceClusterReferences(
 		serviceClusterReferencesToObjectArray(desiredServiceClusterReferences))
 }
 
-type object interface {
-	metav1.Object
-	runtime.Object
-}
-
-func offeringsToObjectArray(offerings []catalogv1alpha1.Offering) []object {
-	out := make([]object, len(offerings))
+func offeringsToObjectArray(offerings []catalogv1alpha1.Offering) []util.Object {
+	out := make([]util.Object, len(offerings))
 	for i := range offerings {
 		out[i] = &offerings[i]
 	}
 	return out
 }
 
-func providerReferencesToObjectArray(providerReferences []catalogv1alpha1.ProviderReference) []object {
-	out := make([]object, len(providerReferences))
+func providerReferencesToObjectArray(providerReferences []catalogv1alpha1.ProviderReference) []util.Object {
+	out := make([]util.Object, len(providerReferences))
 	for i := range providerReferences {
 		out[i] = &providerReferences[i]
 	}
 	return out
 }
 
-func serviceClusterReferencesToObjectArray(serviceClusterReferences []catalogv1alpha1.ServiceClusterReference) []object {
-	out := make([]object, len(serviceClusterReferences))
+func serviceClusterReferencesToObjectArray(serviceClusterReferences []catalogv1alpha1.ServiceClusterReference) []util.Object {
+	out := make([]util.Object, len(serviceClusterReferences))
 	for i := range serviceClusterReferences {
 		out[i] = &serviceClusterReferences[i]
 	}
@@ -583,8 +578,8 @@ func serviceClusterReferencesToObjectArray(serviceClusterReferences []catalogv1a
 func (r *CatalogReconciler) cleanupOutdatedReferences(
 	ctx context.Context, log logr.Logger,
 	catalog *catalogv1alpha1.Catalog,
-	foundObjects []object,
-	desiredObjects []object,
+	foundObjects []util.Object,
+	desiredObjects []util.Object,
 ) (deletedObjectCounter int, err error) {
 	desiredObjectMap := map[string]struct{}{}
 	for _, desiredObject := range desiredObjects {

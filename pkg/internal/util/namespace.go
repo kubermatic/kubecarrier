@@ -28,15 +28,10 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client/apiutil"
 )
 
-type object interface {
-	metav1.Object
-	runtime.Object
-}
-
 // EnsureUniqueNamespace generates unique namespace for obj if one already doesn't exists
 //
 // It's required that OwnerReverseFieldIndex exists for corev1.Namespace
-func EnsureUniqueNamespace(ctx context.Context, c client.Client, scheme *runtime.Scheme, owner object) (*corev1.Namespace, error) {
+func EnsureUniqueNamespace(ctx context.Context, c client.Client, scheme *runtime.Scheme, owner Object) (*corev1.Namespace, error) {
 	namespaceList := &corev1.NamespaceList{}
 	if err := c.List(ctx, namespaceList, OwnedBy(owner, scheme)); err != nil {
 		return nil, fmt.Errorf("listing Namespaces: %w", err)
