@@ -248,7 +248,11 @@ func (r *CatalogReconciler) handleDeletion(ctx context.Context, log logr.Logger,
 	if err != nil {
 		return fmt.Errorf("cleaning up ServiceClusterReferences: %w", err)
 	}
-	if deletedOfferingsCounter != 0 || deletedProviderReferencesCounter != 0 || deletedServiceClusterReferencesCounter != 0 {
+	deletedServiceClusterAssignmentsCounter, err := r.cleanupServiceClusterAssignments(ctx, log, catalog, nil)
+	if err != nil {
+		return fmt.Errorf("cleaning up ServiceClusterReferences: %w", err)
+	}
+	if deletedOfferingsCounter != 0 || deletedProviderReferencesCounter != 0 || deletedServiceClusterReferencesCounter != 0 || deletedServiceClusterAssignmentsCounter != 0 {
 		// move to the next reconcilation round.
 		return nil
 	}
