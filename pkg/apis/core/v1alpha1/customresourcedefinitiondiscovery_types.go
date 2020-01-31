@@ -27,6 +27,8 @@ type CustomResourceDefinitionDiscoverySpec struct {
 	CRD ObjectReference `json:"crd"`
 	// ServiceCluster references a ServiceCluster to search the CustomResourceDefinition on.
 	ServiceCluster ObjectReference `json:"serviceCluster"`
+	// KindOverride overrides resulting internal CRDs kind
+	KindOverride string `json:"kindOverride,omitempty"`
 }
 
 // CustomResourceDefinitionDiscoveryStatus defines the observed state of crdreference
@@ -117,6 +119,8 @@ type CustomResourceDefinitionDiscoveryConditionType string
 const (
 	// CustomResourceDefinitionDiscoveryReady represents a CustomResourceDefinitionDiscovery condition is in ready state.
 	CustomResourceDefinitionDiscoveryReady CustomResourceDefinitionDiscoveryConditionType = "Ready"
+	// CustomResourceDefinitionDiscoveryDiscovered represents a CustomResourceDefinitionDiscovery has been discovered by the manager controller.
+	CustomResourceDefinitionDiscoveryDiscovered CustomResourceDefinitionDiscoveryConditionType = "Discovered"
 )
 
 // CustomResourceDefinitionDiscoveryCondition contains details for the current condition of this CustomResourceDefinitionDiscovery.

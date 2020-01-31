@@ -48,57 +48,6 @@ func TestServiceClusterReferenceValidatingCreate(t *testing.T) {
 			expectedError: true,
 		},
 		{
-			name: "metadata missing",
-			object: &catalogv1alpha1.ServiceClusterReference{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "test-serviceclusterreference",
-					Namespace: "test-namespace",
-				},
-				Spec: catalogv1alpha1.ServiceClusterReferenceSpec{
-					Provider: catalogv1alpha1.ObjectReference{
-						Name: "Provider",
-					},
-				},
-			},
-			expectedError: true,
-		},
-		{
-			name: "metadata description missing",
-			object: &catalogv1alpha1.ServiceClusterReference{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "test-serviceclusterreference",
-					Namespace: "test-namespace",
-				},
-				Spec: catalogv1alpha1.ServiceClusterReferenceSpec{
-					Metadata: corev1alpha1.ServiceClusterMetadata{
-						DisplayName: "Test ServiceClusterReference",
-					},
-					Provider: catalogv1alpha1.ObjectReference{
-						Name: "Provider",
-					},
-				},
-			},
-			expectedError: true,
-		},
-		{
-			name: "metadata displayName missing",
-			object: &catalogv1alpha1.ServiceClusterReference{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "test-serviceclusterreference",
-					Namespace: "test-namespace",
-				},
-				Spec: catalogv1alpha1.ServiceClusterReferenceSpec{
-					Metadata: corev1alpha1.ServiceClusterMetadata{
-						DisplayName: "Test ServiceClusterReference",
-					},
-					Provider: catalogv1alpha1.ObjectReference{
-						Name: "Provider",
-					},
-				},
-			},
-			expectedError: true,
-		},
-		{
 			name: "provider missing",
 			object: &catalogv1alpha1.ServiceClusterReference{
 				ObjectMeta: metav1.ObjectMeta{

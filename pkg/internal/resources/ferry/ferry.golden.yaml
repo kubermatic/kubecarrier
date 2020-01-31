@@ -10,7 +10,6 @@
     resources:
     - customresourcedefinitiondiscoveries
     verbs:
-    - create
     - get
     - list
     - patch

@@ -77,20 +77,13 @@ func (r *ServiceClusterReferenceWebhookHandler) validateCreate(serviceClusterRef
 	if serviceClusterReference.Spec.Provider.Name == "" {
 		return fmt.Errorf("the Provider of ServiceClusterReference is not specifed")
 	}
-	return r.validateMetadata(serviceClusterReference)
+	return nil
 }
 
 func (r *ServiceClusterReferenceWebhookHandler) validateUpdate(oldObj, newObj *catalogv1alpha1.ServiceClusterReference) error {
 	r.Log.Info("validate update", "name", newObj.Name)
 	if newObj.Spec.Provider.Name != oldObj.Spec.Provider.Name {
 		return fmt.Errorf("the Provider of ServiceClusterReference is immutable")
-	}
-	return r.validateMetadata(newObj)
-}
-
-func (r *ServiceClusterReferenceWebhookHandler) validateMetadata(serviceClusterReference *catalogv1alpha1.ServiceClusterReference) error {
-	if serviceClusterReference.Spec.Metadata.Description == "" || serviceClusterReference.Spec.Metadata.DisplayName == "" {
-		return fmt.Errorf("the description or the display name of the ServiceClusterReference: %s cannot be empty", serviceClusterReference.Name)
 	}
 	return nil
 }

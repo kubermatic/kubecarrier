@@ -1277,6 +1277,9 @@
                   required:
                   - name
                   type: object
+                kindOverride:
+                  description: KindOverride overrides resulting internal CRDs kind
+                  type: string
                 serviceCluster:
                   description: ServiceCluster references a ServiceCluster to search
                     the CustomResourceDefinition on.
@@ -1670,6 +1673,7 @@
     - delete
     - get
     - list
+    - patch
     - update
     - watch
   - apiGroups:
@@ -1797,6 +1801,22 @@
     - catalog.kubecarrier.io
     resources:
     - tenants/status
+    verbs:
+    - get
+    - patch
+    - update
+  - apiGroups:
+    - kubecarrier.io
+    resources:
+    - customresourcedefinitiondiscoveries
+    verbs:
+    - get
+    - list
+    - watch
+  - apiGroups:
+    - kubecarrier.io
+    resources:
+    - customresourcedefinitiondiscoveries/status
     verbs:
     - get
     - patch

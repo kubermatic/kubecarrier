@@ -19,7 +19,6 @@ package provider
 import (
 	"context"
 	"fmt"
-	"os"
 	"testing"
 	"time"
 
@@ -29,10 +28,8 @@ import (
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/wait"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	catalogv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/catalog/v1alpha1"
 	corev1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/core/v1alpha1"
@@ -45,6 +42,7 @@ func NewProviderSuite(f *framework.Framework) func(t *testing.T) {
 	return func(t *testing.T) {
 		masterClient, err := f.MasterClient()
 		require.NoError(t, err, "creating master client")
+		defer masterClient.CleanUp(t)
 
 		ctx := context.Background()
 
@@ -63,22 +61,6 @@ func NewProviderSuite(f *framework.Framework) func(t *testing.T) {
 			}
 		)
 
-		cleanUp := func() {
-			if _, noCleanup := os.LookupEnv("NO_CLEANUP"); noCleanup {
-				return
-			}
-
-			for _, obj := range []runtime.Object{
-				provider,
-			} {
-				require.NoError(t, client.IgnoreNotFound(masterClient.Delete(ctx, obj)))
-				require.NoError(t, testutil.WaitUntilNotFound(masterClient, obj))
-			}
-		}
-		// clean up before and after completion
-		cleanUp()
-		defer cleanUp()
-
 		require.NoError(t, masterClient.Create(ctx, provider))
 		require.NoError(t, testutil.WaitUntilReady(masterClient, provider))
 
@@ -86,6 +68,7 @@ func NewProviderSuite(f *framework.Framework) func(t *testing.T) {
 			t.Run("Catapult", NewCatapultSuite(f, provider))
 			t.Run("Elevator", NewElevatorSuite(f, provider))
 			t.Run("Catalog", NewCatalogSuite(f, provider))
+			t.Run("Ferry", NewFerrySuite(f, provider))
 		})
 	}
 }
@@ -101,6 +84,8 @@ func NewCatapultSuite(
 		// Setup
 		masterClient, err := f.MasterClient()
 		require.NoError(t, err, "creating master client")
+		defer masterClient.CleanUp(t)
+
 		ctx := context.Background()
 
 		// Create Catapult
@@ -143,6 +128,8 @@ func NewElevatorSuite(
 		// Setup
 		masterClient, err := f.MasterClient()
 		require.NoError(t, err, "creating master client")
+		defer masterClient.CleanUp(t)
+
 		ctx := context.Background()
 
 		// Create Elevator
@@ -185,6 +172,8 @@ func NewCatalogSuite(
 		// Setup
 		masterClient, err := f.MasterClient()
 		require.NoError(t, err, "creating master client")
+		defer masterClient.CleanUp(t)
+
 		ctx := context.Background()
 
 		// Create a Tenant to execute our tests in
@@ -282,19 +271,6 @@ func NewCatalogSuite(
 		require.NoError(
 			t, masterClient.Create(ctx, serviceCluster), "could not create ServiceCluster")
 
-		// Teardown
-		defer func() {
-			if _, noCleanup := os.LookupEnv("NO_CLEANUP"); noCleanup {
-				return
-			}
-
-			require.NoError(t, masterClient.Delete(ctx, tenant), "deleting the Tenant object")
-			require.NoError(t, testutil.WaitUntilNotFound(masterClient, tenant))
-
-			require.NoError(t, masterClient.Delete(ctx, crd), "deleting the CustomResourceDefinition object")
-			require.NoError(t, testutil.WaitUntilNotFound(masterClient, crd))
-		}()
-
 		// Catalog
 		// Test case
 		catalog := &catalogv1alpha1.Catalog{
@@ -361,7 +337,7 @@ func NewCatalogSuite(
 				Namespace: tenant.Status.NamespaceName,
 			},
 		}
-		require.NoError(t, testutil.WaitUntilFound(masterClient, serviceClusterReferenceFound), "getting the ProviderReference error")
+		require.NoError(t, testutil.WaitUntilFound(masterClient, serviceClusterReferenceFound), "getting the ServiceClusterReference error")
 		assert.Equal(t, serviceClusterReferenceFound.Spec.Provider.Name, provider.Name)
 		assert.Equal(t, serviceClusterReferenceFound.Spec.Metadata.Description, serviceCluster.Spec.Metadata.Description)
 

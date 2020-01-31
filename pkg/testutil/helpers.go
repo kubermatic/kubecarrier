@@ -138,3 +138,13 @@ func WaitUntilCondition(c client.Client, obj runtime.Object, ConditionType, Cond
 func WaitUntilReady(c client.Client, obj runtime.Object) error {
 	return WaitUntilCondition(c, obj, "Ready", "True")
 }
+
+func DeleteAndWaitUntilNotFound(c client.Client, obj runtime.Object) error {
+	if err := c.Delete(context.Background(), obj); err != nil {
+		if errors.IsNotFound(err) {
+			return nil
+		}
+		return err
+	}
+	return WaitUntilNotFound(c, obj)
+}

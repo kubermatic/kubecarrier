@@ -27,6 +27,7 @@ rules:
   - delete
   - get
   - list
+  - patch
   - update
   - watch
 - apiGroups:
@@ -154,6 +155,22 @@ rules:
   - catalog.kubecarrier.io
   resources:
   - tenants/status
+  verbs:
+  - get
+  - patch
+  - update
+- apiGroups:
+  - kubecarrier.io
+  resources:
+  - customresourcedefinitiondiscoveries
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - kubecarrier.io
+  resources:
+  - customresourcedefinitiondiscoveries/status
   verbs:
   - get
   - patch
