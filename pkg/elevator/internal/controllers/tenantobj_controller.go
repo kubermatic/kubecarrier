@@ -50,6 +50,9 @@ type TenantObjReconciler struct {
 	DerivedCRDName, ProviderNamespace string
 }
 
+// +kubebuilder:rbac:groups=catalog.kubecarrier.io,resources=derivedcustomresourcedefinitions,verbs=get;list;watch
+// +kubebuilder:rbac:groups=catalog.kubecarrier.io,resources=derivedcustomresourcedefinitions/status,verbs=get
+
 func (r *TenantObjReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	var (
 		ctx    = context.Background()

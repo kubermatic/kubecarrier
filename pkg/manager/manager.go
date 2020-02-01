@@ -92,23 +92,6 @@ func run(flags *flags, log logr.Logger) error {
 		return fmt.Errorf("-kubecarrier-system-namespace or ENVVAR KUBECARRIER_NAMESPACE must be set")
 	}
 
-	if err = (&controllers.TenantReconciler{
-		Client:                     mgr.GetClient(),
-		Log:                        log.WithName("controllers").WithName("Tenant"),
-		Scheme:                     mgr.GetScheme(),
-		KubeCarrierSystemNamespace: flags.kubeCarrierSystemNamespace,
-	}).SetupWithManager(mgr); err != nil {
-		return fmt.Errorf("creating Tenant controller: %w", err)
-	}
-
-	if err = (&controllers.ProviderReconciler{
-		Client: mgr.GetClient(),
-		Log:    log.WithName("controllers").WithName("Provider"),
-		Scheme: mgr.GetScheme(),
-	}).SetupWithManager(mgr); err != nil {
-		return fmt.Errorf("creating Provider controller: %w", err)
-	}
-
 	// Register a field index for Provider.Status.NamespaceName
 	if err := catalogv1alpha1.RegisterProviderNamespaceFieldIndex(mgr); err != nil {
 		return fmt.Errorf("registering ProviderNamespace field index: %w", err)
@@ -133,6 +116,32 @@ func run(flags *flags, log logr.Logger) error {
 		mgr.GetFieldIndexer(), fieldIndexerLog.WithName("ServiceClusterReference"), &catalogv1alpha1.ServiceClusterReference{},
 	); err != nil {
 		return fmt.Errorf("registering ServiceCluster owner field index: %w", err)
+	}
+
+	if err = (&controllers.TenantReconciler{
+		Client:                     mgr.GetClient(),
+		Log:                        log.WithName("controllers").WithName("Tenant"),
+		Scheme:                     mgr.GetScheme(),
+		KubeCarrierSystemNamespace: flags.kubeCarrierSystemNamespace,
+	}).SetupWithManager(mgr); err != nil {
+		return fmt.Errorf("creating Tenant controller: %w", err)
+	}
+
+	if err = (&controllers.ProviderReconciler{
+		Client: mgr.GetClient(),
+		Log:    log.WithName("controllers").WithName("Provider"),
+		Scheme: mgr.GetScheme(),
+	}).SetupWithManager(mgr); err != nil {
+		return fmt.Errorf("creating Provider controller: %w", err)
+	}
+
+	if err = (&controllers.CustomResourceDefinitionDiscoveryReconciler{
+		Client:                     mgr.GetClient(),
+		Log:                        log.WithName("controllers").WithName("CustomResourceDefinitionDiscovery"),
+		Scheme:                     mgr.GetScheme(),
+		KubeCarrierSystemNamespace: flags.kubeCarrierSystemNamespace,
+	}).SetupWithManager(mgr); err != nil {
+		return fmt.Errorf("creating CustomResourceDefinitionDiscovery controller: %w", err)
 	}
 
 	if err = (&controllers.CatalogEntryReconciler{

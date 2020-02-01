@@ -22,7 +22,7 @@ package v1alpha1
 
 import (
 	"k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
-	"k8s.io/apimachinery/pkg/runtime"
+	runtime "k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/version"
 )
 
@@ -392,8 +392,8 @@ func (in *ServiceClusterStatus) DeepCopyInto(out *ServiceClusterStatus) {
 			(*in)[i].DeepCopyInto(&(*out)[i])
 		}
 	}
-	if in.Version != nil {
-		in, out := &in.Version, &out.Version
+	if in.KubernetesVersion != nil {
+		in, out := &in.KubernetesVersion, &out.KubernetesVersion
 		*out = new(version.Info)
 		**out = **in
 	}

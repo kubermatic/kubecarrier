@@ -84,7 +84,7 @@ func TestCustomResourceDefinitionDiscoveryReconciler(t *testing.T) {
 		}
 		crdRef = &corev1alpha1.CustomResourceDefinitionDiscovery{}
 		require.NoError(t, r.MasterClient.Get(context.Background(), crdRefNN, crdRef))
-		require.NoError(t, testutil.ConditionStatusEqual(crdRef, corev1alpha1.CustomResourceDefinitionDiscoveryReady, corev1alpha1.ConditionTrue))
+		require.NoError(t, testutil.ConditionStatusEqual(crdRef, corev1alpha1.CustomResourceDefinitionDiscoveryDiscovered, corev1alpha1.ConditionTrue))
 
 		assert.Equal(t, crd.Spec.Group, crdRef.Status.CRD.Spec.Group)
 		assert.Equal(t, crd.Spec.Versions[0].Name, crdRef.Status.CRD.Spec.Versions[0].Name)
@@ -104,7 +104,7 @@ func TestCustomResourceDefinitionDiscoveryReconciler(t *testing.T) {
 		}
 		crdRef = &corev1alpha1.CustomResourceDefinitionDiscovery{}
 		require.NoError(t, r.MasterClient.Get(context.Background(), crdRefNN, crdRef))
-		assert.NoError(t, testutil.ConditionStatusEqual(crdRef, corev1alpha1.CustomResourceDefinitionDiscoveryReady, corev1alpha1.ConditionFalse))
+		assert.NoError(t, testutil.ConditionStatusEqual(crdRef, corev1alpha1.CustomResourceDefinitionDiscoveryDiscovered, corev1alpha1.ConditionFalse))
 		assert.Equal(t, (*apiextensionsv1.CustomResourceDefinition)(nil), crdRef.Status.CRD)
 	}) {
 		t.FailNow()
@@ -120,7 +120,7 @@ func TestCustomResourceDefinitionDiscoveryReconciler(t *testing.T) {
 		}
 		crdRef = &corev1alpha1.CustomResourceDefinitionDiscovery{}
 		require.NoError(t, r.MasterClient.Get(context.Background(), crdRefNN, crdRef))
-		require.NoError(t, testutil.ConditionStatusEqual(crdRef, corev1alpha1.CustomResourceDefinitionDiscoveryReady, corev1alpha1.ConditionTrue))
+		require.NoError(t, testutil.ConditionStatusEqual(crdRef, corev1alpha1.CustomResourceDefinitionDiscoveryDiscovered, corev1alpha1.ConditionTrue))
 
 		require.NoError(t, r.MasterClient.Delete(context.Background(), crdRef))
 		for i := 0; i < 2; i++ {

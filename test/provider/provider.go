@@ -19,6 +19,7 @@ package provider
 import (
 	"context"
 	"fmt"
+	"strings"
 	"testing"
 	"time"
 
@@ -46,29 +47,53 @@ func NewProviderSuite(f *framework.Framework) func(t *testing.T) {
 
 		ctx := context.Background()
 
-		var (
-			provider = &catalogv1alpha1.Provider{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "example-cloud",
-					Namespace: "kubecarrier-system",
+		t.Run("", func(t *testing.T) {
+			// parallel-group
+			suites := []struct {
+				name  string
+				suite func(*framework.Framework, *catalogv1alpha1.Provider) func(t *testing.T)
+			}{
+				{
+					name:  "DerivedCRD",
+					suite: NewDerivedCRDSuite,
 				},
-				Spec: catalogv1alpha1.ProviderSpec{
-					Metadata: catalogv1alpha1.ProviderMetadata{
-						DisplayName: "provider",
-						Description: "provider test description",
-					},
+				{
+					name:  "Catalog",
+					suite: NewCatalogSuite,
+				},
+				{
+					name:  "ServiceCluster",
+					suite: NewServiceClusterSuite,
 				},
 			}
-		)
 
-		require.NoError(t, masterClient.Create(ctx, provider))
-		require.NoError(t, testutil.WaitUntilReady(masterClient, provider))
+			for _, s := range suites {
+				t.Run(s.name, func(t *testing.T) {
+					// "for" will reassign s to the next item in the loop
+					// so we have to same the value for the current index.
+					name := s.name
+					suite := s.suite
+					t.Parallel()
 
-		t.Run("parallel-group", func(t *testing.T) {
-			t.Run("Catapult", NewCatapultSuite(f, provider))
-			t.Run("DerivedCRD", NewDerivedCRDSuite(f, provider))
-			t.Run("Catalog", NewCatalogSuite(f, provider))
-			t.Run("Ferry", NewFerrySuite(f, provider))
+					provider := &catalogv1alpha1.Provider{
+						ObjectMeta: metav1.ObjectMeta{
+							Name:      "test-" + strings.ToLower(name),
+							Namespace: "kubecarrier-system",
+						},
+						Spec: catalogv1alpha1.ProviderSpec{
+							Metadata: catalogv1alpha1.ProviderMetadata{
+								DisplayName: "provider",
+								Description: "provider test description",
+							},
+						},
+					}
+
+					require.NoError(t, masterClient.Create(ctx, provider))
+					require.NoError(t, testutil.WaitUntilReady(masterClient, provider))
+
+					suite(f, provider)(t)
+				})
+			}
 		})
 	}
 }
@@ -79,8 +104,6 @@ func NewCatapultSuite(
 	provider *catalogv1alpha1.Provider,
 ) func(t *testing.T) {
 	return func(t *testing.T) {
-		t.Parallel()
-
 		// Setup
 		masterClient, err := f.MasterClient()
 		require.NoError(t, err, "creating master client")
@@ -122,8 +145,6 @@ func NewCatalogSuite(
 	provider *catalogv1alpha1.Provider,
 ) func(t *testing.T) {
 	return func(t *testing.T) {
-		t.Parallel()
-
 		// Catalog
 		// Setup
 		masterClient, err := f.MasterClient()
@@ -135,7 +156,7 @@ func NewCatalogSuite(
 		// Create a Tenant to execute our tests in
 		tenant := &catalogv1alpha1.Tenant{
 			ObjectMeta: metav1.ObjectMeta{
-				Name:      "test-tenant1",
+				Name:      "test-tenant-catalog",
 				Namespace: "kubecarrier-system",
 			},
 		}
@@ -257,7 +278,7 @@ func NewCatalogSuite(
 				}
 				return true, err
 			}
-			return len(catalogFound.Status.Entries) == 1 && len(catalogFound.Status.Tenants) == 1, nil
+			return len(catalogFound.Status.Entries) == 1 && len(catalogFound.Status.Tenants) > 0, nil
 		}), "getting the Catalog error")
 
 		// Check the Offering object is created.
@@ -314,8 +335,15 @@ func NewCatalogSuite(
 					}
 					return true, err
 				}
-				return len(catalogCheck.Status.Tenants) == 0, nil
-			}), len(catalogCheck.Status.Tenants))
+
+				for _, t := range catalogCheck.Status.Tenants {
+					if t.Name == tenant.Name {
+						return false, nil
+					}
+				}
+
+				return true, nil
+			}), catalogCheck.Status.Tenants)
 
 			// Recreate the tenant
 			tenant = &catalogv1alpha1.Tenant{

@@ -34,6 +34,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/apiutil"
 
+	corev1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/core/v1alpha1"
 	"github.com/kubermatic/kubecarrier/pkg/catapult/internal/controllers"
 	"github.com/kubermatic/kubecarrier/pkg/internal/util"
 )
@@ -55,6 +56,7 @@ var (
 
 func init() {
 	_ = clientgoscheme.AddToScheme(masterScheme)
+	_ = corev1alpha1.AddToScheme(masterScheme)
 	_ = clientgoscheme.AddToScheme(serviceScheme)
 }
 
@@ -78,23 +80,23 @@ func NewCatapult() *cobra.Command {
 		"Enable leader election for controller manager. Enabling this will ensure there is only one active controller manager.")
 
 	cmd.Flags().StringVar(
-		&flags.serviceClusterKind, "service-cluster-kind",
+		&flags.masterClusterKind, "master-cluster-kind",
 		os.Getenv("CATAPULT_MASTER_CLUSTER_KIND"), "Kind of master cluster CRD.")
 	cmd.Flags().StringVar(
-		&flags.serviceClusterVersion, "service-cluster-version",
+		&flags.masterClusterVersion, "master-cluster-version",
 		os.Getenv("CATAPULT_MASTER_CLUSTER_VERSION"), "Version of master cluster CRD.")
 	cmd.Flags().StringVar(
-		&flags.serviceClusterGroup, "service-cluster-group",
+		&flags.masterClusterGroup, "master-cluster-group",
 		os.Getenv("CATAPULT_MASTER_CLUSTER_GROUP"), "Group of master cluster CRD.")
 
 	cmd.Flags().StringVar(
-		&flags.masterClusterKind, "master-cluster-kind",
+		&flags.serviceClusterKind, "service-cluster-kind",
 		os.Getenv("CATAPULT_SERVICE_CLUSTER_KIND"), "Kind of service cluster CRD.")
 	cmd.Flags().StringVar(
-		&flags.masterClusterVersion, "master-cluster-version",
+		&flags.serviceClusterVersion, "service-cluster-version",
 		os.Getenv("CATAPULT_SERVICE_CLUSTER_VERSION"), "Version of service cluster CRD.")
 	cmd.Flags().StringVar(
-		&flags.masterClusterGroup, "master-cluster-group",
+		&flags.serviceClusterGroup, "service-cluster-group",
 		os.Getenv("CATAPULT_SERVICE_CLUSTER_GROUP"), "Group of service cluster CRD.")
 
 	cmd.Flags().StringVar(
@@ -166,6 +168,25 @@ func run(flags *flags, log logr.Logger) error {
 		return fmt.Errorf("starting manager: %w", err)
 	}
 
+	// Setup additional namesapced client for master cluster
+	namespacedCache, err := cache.New(masterCfg, cache.Options{
+		Scheme:    mgr.GetScheme(),
+		Mapper:    mgr.GetRESTMapper(),
+		Namespace: flags.providerNamespace,
+	})
+	if err != nil {
+		return fmt.Errorf(
+			"creating namespaced scoped cache: %w", err)
+	}
+	if err = mgr.Add(namespacedCache); err != nil {
+		return fmt.Errorf("add namespaced cache to manager: %w", err)
+	}
+	namespacedClient := &client.DelegatingClient{
+		Reader:       namespacedCache,
+		Writer:       mgr.GetClient(),
+		StatusClient: mgr.GetClient(),
+	}
+
 	// Setup additional client and cache for Service Cluster
 	serviceCfg, err := clientcmd.BuildConfigFromFlags(
 		"", flags.serviceClusterKubeconfig)
@@ -191,8 +212,7 @@ func run(flags *flags, log logr.Logger) error {
 		return fmt.Errorf("creating service cluster cache: %w", err)
 	}
 	if err = mgr.Add(serviceCache); err != nil {
-		return fmt.Errorf(
-			"add service cluster cache to manager: %w", err)
+		return fmt.Errorf("add service cluster cache to manager: %w", err)
 	}
 	serviceCachedClient := &client.DelegatingClient{
 		Reader:       serviceCache,
@@ -219,13 +239,15 @@ func run(flags *flags, log logr.Logger) error {
 
 	// Setup Controllers
 	if err := (&controllers.MasterClusterObjReconciler{
-		Log:    log.WithName("controllers").WithName("MasterClusterObjReconciler"),
-		Client: mgr.GetClient(),
-		Scheme: mgr.GetScheme(),
+		Log:              log.WithName("controllers").WithName("MasterClusterObjReconciler"),
+		Client:           mgr.GetClient(),
+		NamespacedClient: namespacedClient,
+		Scheme:           mgr.GetScheme(),
 
 		ServiceClusterClient: serviceCachedClient,
 		ServiceClusterCache:  serviceCache,
 		ServiceCluster:       flags.serviceClusterName,
+		ProviderNamespace:    flags.providerNamespace,
 
 		MasterClusterGVK:   masterClusterGVK,
 		MasterClusterType:  masterClusterType,
@@ -241,6 +263,7 @@ func run(flags *flags, log logr.Logger) error {
 
 		ServiceClusterClient: serviceCachedClient,
 		ServiceClusterCache:  serviceCache,
+		ProviderNamespace:    flags.providerNamespace,
 
 		MasterClusterGVK:   masterClusterGVK,
 		MasterClusterType:  masterClusterType,

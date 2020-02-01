@@ -145,7 +145,7 @@ func (r *ServiceClusterRegistrationReconciler) handleDeletion(ctx context.Contex
 		}
 	}
 
-	// 2. Delete Objects.
+	// Delete Objects.
 	allCleared := true
 	objects, err := ferry.Manifests(serviceclusterregistrationConfigurationForObject(serviceclusterregistration))
 	if err != nil {

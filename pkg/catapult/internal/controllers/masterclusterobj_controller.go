@@ -36,12 +36,16 @@ import (
 	"github.com/kubermatic/kubecarrier/pkg/internal/util"
 )
 
+const catapultControllerFinalizer string = "catapult.kubecarrier.io/controller"
+
 // MasterClusterObjReconciler reconciles CRD instances in the master cluster,
 // by creating a matching instance in the service cluster and syncing it's status back.
 type MasterClusterObjReconciler struct {
 	client.Client
-	Log                  logr.Logger
-	Scheme               *runtime.Scheme
+	Log              logr.Logger
+	Scheme           *runtime.Scheme
+	NamespacedClient client.Client
+
 	ServiceClusterClient client.Client
 	ServiceClusterCache  cache.Cache
 
@@ -52,6 +56,9 @@ type MasterClusterObjReconciler struct {
 	ProviderNamespace string
 	ServiceCluster    string
 }
+
+// +kubebuilder:rbac:groups=kubecarrier.io,resources=serviceclusterassignments,verbs=get;list;watch;create;update;patch
+// +kubebuilder:rbac:groups=kubecarrier.io,resources=serviceclusterassignments/status,verbs=get
 
 func (r *MasterClusterObjReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	var (
@@ -76,6 +83,19 @@ func (r *MasterClusterObjReconciler) Reconcile(req ctrl.Request) (ctrl.Result, e
 		// SCA not yet ready
 		result.Requeue = true
 		return result, nil
+	}
+
+	if !masterClusterObj.GetDeletionTimestamp().IsZero() {
+		if err := r.handleDeletion(ctx, sca, masterClusterObj); err != nil {
+			return result, fmt.Errorf("handling deletion: %w", err)
+		}
+		return result, nil
+	}
+
+	if util.AddFinalizer(masterClusterObj, catapultControllerFinalizer) {
+		if err := r.Update(ctx, masterClusterObj); err != nil {
+			return result, fmt.Errorf("updating %s finalizers: %w", r.MasterClusterGVK.Kind, err)
+		}
 	}
 
 	// Build desired service cluster object
@@ -108,7 +128,6 @@ func (r *MasterClusterObjReconciler) Reconcile(req ctrl.Request) (ctrl.Result, e
 
 	if errors.IsNotFound(err) {
 		// Create the service cluster object
-		fmt.Println(desiredServiceClusterObj)
 		if err = r.ServiceClusterClient.Create(ctx, desiredServiceClusterObj); err != nil {
 			return result, fmt.Errorf(
 				"creating %s: %w", r.ServiceClusterGVK.Kind, err)
@@ -179,53 +198,72 @@ func (r *MasterClusterObjReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		Complete(r)
 }
 
+func (r *MasterClusterObjReconciler) handleDeletion(
+	ctx context.Context, sca *corev1alpha1.ServiceClusterAssignment,
+	masterClusterObj *unstructured.Unstructured,
+) error {
+	serviceClusterObj := r.ServiceClusterType.DeepCopy()
+	err := r.ServiceClusterClient.Get(ctx, types.NamespacedName{
+		Name:      masterClusterObj.GetName(),
+		Namespace: sca.Status.ServiceClusterNamespace.Name,
+	}, serviceClusterObj)
+	if err != nil && !errors.IsNotFound(err) {
+		return fmt.Errorf("getting %s: %w", r.ServiceClusterGVK.Kind, err)
+	}
+
+	if err == nil && serviceClusterObj.GetDeletionTimestamp().IsZero() {
+		if err = r.ServiceClusterClient.Delete(ctx, serviceClusterObj); err != nil {
+			return fmt.Errorf("deleting %s: %w", r.ServiceClusterGVK.Kind, err)
+		}
+		return nil
+	}
+
+	if !errors.IsNotFound(err) {
+		// wait until object is realy gone
+		return nil
+	}
+
+	if util.RemoveFinalizer(masterClusterObj, catapultControllerFinalizer) {
+		if err := r.Update(ctx, masterClusterObj); err != nil {
+			return fmt.Errorf("updating %s finalizers: %w", r.MasterClusterGVK.Kind, err)
+		}
+	}
+	return nil
+}
+
 func (r *MasterClusterObjReconciler) reconcileServiceClusterAssignment(
 	ctx context.Context, masterClusterObj *unstructured.Unstructured,
 ) (*corev1alpha1.ServiceClusterAssignment, error) {
-	scaList := &corev1alpha1.ServiceClusterAssignmentList{}
-	if err := r.List(
-		ctx, scaList,
-		client.InNamespace(r.ProviderNamespace),
-		client.MatchingFields{
-			corev1alpha1.
-				ServiceClusterAssignmentMasterClusterNamespaceFieldIndex: masterClusterObj.GetNamespace(),
-			corev1alpha1.
-				ServiceClusterAssignmentServiceClusterFieldIndex: r.ServiceCluster,
-		}); err != nil {
-		return nil, fmt.Errorf(
-			"listing ServiceClusterAssignments for ServiceCluster and MasterCluster Namespace: %w", err)
-	}
-	if len(scaList.Items) > 1 {
-		return nil, fmt.Errorf(
-			"multiple ServiceClusterAssignments for same ServiceCluster/MasterCluster Namespace found")
+	desiredServiceClusterAssignment := &corev1alpha1.ServiceClusterAssignment{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      masterClusterObj.GetNamespace() + "." + r.ServiceCluster,
+			Namespace: r.ProviderNamespace,
+		},
+		Spec: corev1alpha1.ServiceClusterAssignmentSpec{
+			MasterClusterNamespace: corev1alpha1.ObjectReference{
+				Name: masterClusterObj.GetNamespace(),
+			},
+			ServiceCluster: corev1alpha1.ObjectReference{
+				Name: r.ServiceCluster,
+			},
+		},
 	}
 
-	var serviceClusterAssignment *corev1alpha1.ServiceClusterAssignment
-	if len(scaList.Items) == 0 {
-		// We have to create a ServiceClusterAssignment.
-		serviceClusterAssignment = &corev1alpha1.ServiceClusterAssignment{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      masterClusterObj.GetNamespace() + "." + r.ServiceCluster,
-				Namespace: r.ProviderNamespace,
-			},
-			Spec: corev1alpha1.ServiceClusterAssignmentSpec{
-				MasterClusterNamespace: corev1alpha1.ObjectReference{
-					Name: masterClusterObj.GetNamespace(),
-				},
-				ServiceCluster: corev1alpha1.ObjectReference{
-					Name: r.ServiceCluster,
-				},
-			},
-		}
+	currentServiceClusterAssignment := &corev1alpha1.ServiceClusterAssignment{}
+	err := r.NamespacedClient.Get(ctx, types.NamespacedName{
+		Name:      desiredServiceClusterAssignment.Name,
+		Namespace: r.ProviderNamespace,
+	}, currentServiceClusterAssignment)
+	if err != nil && !errors.IsNotFound(err) {
+		return nil, fmt.Errorf("getting ServiceClusterAssignment: %w", err)
+	}
 
-		if err := r.Create(ctx, serviceClusterAssignment); err != nil {
+	if errors.IsNotFound(err) {
+		// create ServiceClusterAssignment
+		if err = r.NamespacedClient.Create(ctx, desiredServiceClusterAssignment); err != nil {
 			return nil, fmt.Errorf("creating ServiceClusterAssignment: %w", err)
 		}
+		return desiredServiceClusterAssignment, nil
 	}
-
-	if len(scaList.Items) == 1 {
-		serviceClusterAssignment = &scaList.Items[0]
-	}
-
-	return serviceClusterAssignment, nil
+	return currentServiceClusterAssignment, nil
 }

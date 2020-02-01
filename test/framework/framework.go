@@ -166,9 +166,28 @@ func RecordClient(c client.Client) *RecordingClient {
 
 var _ client.Client = (*RecordingClient)(nil)
 
+func (rc *RecordingClient) RegisterForCleanup(obj runtime.Object) {
+	rc.mux.Lock()
+	defer rc.mux.Unlock()
+
+	meta := obj.(metav1.Object)
+	key := types.NamespacedName{
+		Name:      meta.GetName(),
+		Namespace: meta.GetNamespace(),
+	}.String()
+	key = fmt.Sprintf("%T:%s", obj, key)
+	rc.objects[key] = obj
+	rc.order = append(rc.order, key)
+}
+
 func (rc *RecordingClient) CleanUp(t *testing.T) {
 	if _, noCleanup := os.LookupEnv("NO_CLEANUP"); noCleanup {
 		// skip cleanup
+		return
+	}
+
+	if t.Failed() {
+		// skip cleanup if test has failed
 		return
 	}
 
@@ -180,23 +199,16 @@ func (rc *RecordingClient) CleanUp(t *testing.T) {
 			continue
 		}
 
-		assert.NoError(t, testutil.DeleteAndWaitUntilNotFound(rc.Client, obj))
+		err := testutil.DeleteAndWaitUntilNotFound(rc.Client, obj)
+		if err != nil {
+			err = fmt.Errorf("cleanup %s: %w", key, err)
+		}
+		assert.NoError(t, err)
 	}
 }
 
 func (rc *RecordingClient) Create(ctx context.Context, obj runtime.Object, opts ...client.CreateOption) error {
-	rc.mux.Lock()
-	defer rc.mux.Unlock()
-
-	meta := obj.(metav1.Object)
-	key := types.NamespacedName{
-		Name:      meta.GetName(),
-		Namespace: meta.GetNamespace(),
-	}.String()
-	key = fmt.Sprintf("%t:%s", obj, key)
-	rc.objects[key] = obj
-	rc.order = append(rc.order, key)
-
+	rc.RegisterForCleanup(obj)
 	return rc.Client.Create(ctx, obj, opts...)
 }
 
@@ -209,7 +221,7 @@ func (rc *RecordingClient) Delete(ctx context.Context, obj runtime.Object, opts 
 		Name:      meta.GetName(),
 		Namespace: meta.GetNamespace(),
 	}.String()
-	key = fmt.Sprintf("%t:%s", obj, key)
+	key = fmt.Sprintf("%T:%s", obj, key)
 	delete(rc.objects, key)
 
 	return rc.Client.Delete(ctx, obj, opts...)
