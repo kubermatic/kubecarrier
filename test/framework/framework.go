@@ -193,6 +193,7 @@ func (rc *RecordingClient) Create(ctx context.Context, obj runtime.Object, opts 
 		Name:      meta.GetName(),
 		Namespace: meta.GetNamespace(),
 	}.String()
+	key = fmt.Sprintf("%t:%s", obj, key)
 	rc.objects[key] = obj
 	rc.order = append(rc.order, key)
 
@@ -208,6 +209,7 @@ func (rc *RecordingClient) Delete(ctx context.Context, obj runtime.Object, opts 
 		Name:      meta.GetName(),
 		Namespace: meta.GetNamespace(),
 	}.String()
+	key = fmt.Sprintf("%t:%s", obj, key)
 	delete(rc.objects, key)
 
 	return rc.Client.Delete(ctx, obj, opts...)
