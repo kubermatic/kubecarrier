@@ -68,7 +68,7 @@ func WaitUntilNotFound(c client.Client, obj runtime.Object) error {
 		return fmt.Errorf("%T does not implement metav1.Object", obj)
 	}
 
-	return wait.Poll(time.Second, 30*time.Second, func() (done bool, err error) {
+	return wait.Poll(time.Second, 60*time.Second, func() (done bool, err error) {
 		err = c.Get(context.Background(), types.NamespacedName{
 			Namespace: o.GetNamespace(),
 			Name:      o.GetName(),
@@ -110,7 +110,7 @@ func WaitUntilCondition(c client.Client, obj runtime.Object, ConditionType, Cond
 		return fmt.Errorf("%T does not implement metav1.Object", obj)
 	}
 	var lastErr error
-	err := wait.Poll(time.Second, 30*time.Second, func() (done bool, err error) {
+	err := wait.Poll(time.Second, 60*time.Second, func() (done bool, err error) {
 		err = c.Get(context.Background(), types.NamespacedName{
 			Namespace: o.GetNamespace(),
 			Name:      o.GetName(),
