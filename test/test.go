@@ -61,12 +61,6 @@ func AllTests(config framework.Config) ([]testing.InternalTest, error) {
 			F:    provider.NewProviderSuite(f),
 		},
 		testing.InternalTest{
-			Name: "DerivedCRDSuite",
-			F: func(t *testing.T) {
-				suite.Run(t, &provider.DerivedCRDSuite{Framework: f})
-			},
-		},
-		testing.InternalTest{
 			Name: "TenantSuite",
 			F: func(t *testing.T) {
 				suite.Run(t, &tenant.TenantSuite{Framework: f})

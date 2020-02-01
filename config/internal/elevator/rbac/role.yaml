@@ -1,8 +1,15 @@
-
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
   creationTimestamp: null
-  name: manager-role
-rules: []
+  name: manager
+rules:
+- apiGroups:
+  - catalog.kubecarrier.io
+  resources:
+  - derivedcustomresourcedefinitions
+  verbs:
+  - get
+  - list
+  - watch

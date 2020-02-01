@@ -35,6 +35,18 @@ func TestManifests(t *testing.T) {
 	c := Config{
 		Name:      "db.eu-west-1",
 		Namespace: "test3000",
+
+		ProviderKind:    "CouchDBInternal",
+		ProviderVersion: "v1alpha1",
+		ProviderGroup:   "eu-west-1.provider",
+		ProviderPlural:  "couchdbinternals",
+
+		TenantKind:    "CouchDB",
+		TenantVersion: "v1alpha1",
+		TenantGroup:   "eu-west-1.provider",
+		TenantPlural:  "couchdbs",
+
+		DerivedCRDName: "couchdbs.eu-west-1",
 	}
 
 	manifests, err := Manifests(c)
