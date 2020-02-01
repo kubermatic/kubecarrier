@@ -298,6 +298,15 @@
                   - plural
                   - version
                   type: object
+                serviceCluster:
+                  description: References the ServiceCluster object that this object
+                    belongs to.
+                  properties:
+                    name:
+                      type: string
+                  required:
+                  - name
+                  type: object
                 serviceClusterCRD:
                   description: References the CRD in the service cluster.
                   properties:
@@ -317,6 +326,7 @@
                   type: object
               required:
               - masterClusterCRD
+              - serviceCluster
               - serviceClusterCRD
               type: object
             status:

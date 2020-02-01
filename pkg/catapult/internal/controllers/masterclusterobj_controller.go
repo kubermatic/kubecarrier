@@ -81,15 +81,11 @@ func (r *MasterClusterObjReconciler) Reconcile(req ctrl.Request) (ctrl.Result, e
 	// Build desired service cluster object
 	desiredServiceClusterObj := masterClusterObj.DeepCopy()
 	if err := unstructured.SetNestedField(
-		desiredServiceClusterObj.Object, nil, "metadata"); err != nil {
+		desiredServiceClusterObj.Object, map[string]interface{}{}, "metadata"); err != nil {
 		return result, fmt.Errorf(
 			"deleting %s .metadata: %w", r.ServiceClusterGVK.Kind, err)
 	}
-	if err := unstructured.SetNestedField(
-		desiredServiceClusterObj.Object, nil, "status"); err != nil {
-		return result, fmt.Errorf(
-			"deleting %s .status: %w", r.ServiceClusterGVK.Kind, err)
-	}
+	delete(desiredServiceClusterObj.Object, "status")
 	desiredServiceClusterObj.SetGroupVersionKind(r.ServiceClusterGVK)
 	desiredServiceClusterObj.SetName(masterClusterObj.GetName())
 	desiredServiceClusterObj.SetNamespace(sca.Status.ServiceClusterNamespace.Name)
@@ -112,6 +108,7 @@ func (r *MasterClusterObjReconciler) Reconcile(req ctrl.Request) (ctrl.Result, e
 
 	if errors.IsNotFound(err) {
 		// Create the service cluster object
+		fmt.Println(desiredServiceClusterObj)
 		if err = r.ServiceClusterClient.Create(ctx, desiredServiceClusterObj); err != nil {
 			return result, fmt.Errorf(
 				"creating %s: %w", r.ServiceClusterGVK.Kind, err)
