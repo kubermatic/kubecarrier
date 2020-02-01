@@ -18,164 +18,99 @@ package admin
 
 import (
 	"context"
-	"fmt"
-	"time"
+	"testing"
 
-	"github.com/stretchr/testify/suite"
+	"github.com/stretchr/testify/assert"
+
+	"github.com/kubermatic/kubecarrier/pkg/testutil"
+
+	"github.com/stretchr/testify/require"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
-	"k8s.io/apimachinery/pkg/util/wait"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	catalogv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/catalog/v1alpha1"
 	"github.com/kubermatic/kubecarrier/test/framework"
 )
 
-var _ suite.SetupAllSuite = (*AdminSuite)(nil)
+// AdminSuite tests administrator operations - notably the management of Tenants and Providers.
+func NewAdminSuite(f *framework.Framework) func(t *testing.T) {
+	return func(t *testing.T) {
+		// Setup
+		masterClient, err := f.MasterClient()
+		require.NoError(t, err, "creating master client")
+		defer masterClient.CleanUp(t)
 
-// AdminSuite checks the Tenant/Provider creations and deletions.
-type AdminSuite struct {
-	suite.Suite
-	*framework.Framework
+		serviceClient, err := f.ServiceClient()
+		require.NoError(t, err, "creating service client")
+		defer serviceClient.CleanUp(t)
 
-	masterClient  client.Client
-	serviceClient client.Client
-}
+		ctx := context.Background()
 
-func (s *AdminSuite) SetupSuite() {
-	var err error
-	s.serviceClient, err = s.ServiceClient()
-	s.Require().NoError(err, "creating service client")
-	s.masterClient, err = s.MasterClient()
-	s.Require().NoError(err, "creating master client")
-}
-
-func (s *AdminSuite) TestTenantProviderCreationAndDeletion() {
-	s.T().Parallel()
-	ctx := context.Background()
-	tenant := &catalogv1alpha1.Tenant{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "test-tenant1",
-			Namespace: "kubecarrier-system",
-		},
-	}
-
-	provider := &catalogv1alpha1.Provider{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "test-provider1",
-			Namespace: "kubecarrier-system",
-		},
-		Spec: catalogv1alpha1.ProviderSpec{
-			Metadata: catalogv1alpha1.ProviderMetadata{
-				DisplayName: "provider",
-				Description: "provider test description",
+		// Create a Tenant
+		tenant := &catalogv1alpha1.Tenant{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "test-tenant1",
+				Namespace: "kubecarrier-system",
 			},
-		},
-	}
+		}
+		require.NoError(t, masterClient.Create(ctx, tenant), "creating tenant error")
+		require.NoError(t, testutil.WaitUntilReady(masterClient, tenant))
 
-	if !s.Run("Tenant creation", func() {
-		s.Require().NoError(s.masterClient.Create(ctx, tenant), "creating tenant error")
+		tenantNamespaceName := tenant.Status.NamespaceName
+		tenantNamespace := &corev1.Namespace{}
+		assert.NoError(t, masterClient.Get(ctx, types.NamespacedName{
+			Name: tenantNamespaceName,
+		}, tenantNamespace))
 
-		// Try to get the namespace that created for this tenant.
-		namespace := &corev1.Namespace{}
-		s.NoError(wait.Poll(time.Second, 10*time.Second, func() (done bool, err error) {
-			if err := s.masterClient.Get(ctx, types.NamespacedName{
-				Name: fmt.Sprintf("tenant-%s", tenant.Name),
-			}, namespace); err != nil {
-				if errors.IsNotFound(err) {
-					return false, nil
-				}
-				return true, err
+		// Create a Provider
+		provider := &catalogv1alpha1.Provider{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "test-provider1",
+				Namespace: "kubecarrier-system",
+			},
+			Spec: catalogv1alpha1.ProviderSpec{
+				Metadata: catalogv1alpha1.ProviderMetadata{
+					DisplayName: "provider",
+					Description: "provider test description",
+				},
+			},
+		}
 
-			}
-			return true, nil
-		}), "getting the namespace for the Tenant error")
-	}) {
-		s.FailNow("Tenant creation e2e test failed.")
-	}
+		require.NoError(t, masterClient.Create(ctx, provider), "creating provider error")
+		require.NoError(t, testutil.WaitUntilReady(masterClient, provider))
 
-	if !s.Run("Provider creation", func() {
-		s.Require().NoError(s.masterClient.Create(ctx, provider), "creating provider error")
+		providerNamespaceName := provider.Status.NamespaceName
+		providerNamespace := &corev1.Namespace{}
+		assert.NoError(t, masterClient.Get(ctx, types.NamespacedName{
+			Name: providerNamespaceName,
+		}, providerNamespace))
 
-		// Try to get the namespace that created for this provider.
-		namespace := &corev1.Namespace{}
-		s.NoError(wait.Poll(time.Second, 10*time.Second, func() (done bool, err error) {
-			if err := s.masterClient.Get(ctx, types.NamespacedName{
-				Name: fmt.Sprintf("provider-%s", provider.Name),
-			}, namespace); err != nil {
-				if errors.IsNotFound(err) {
-					return false, nil
-				}
-				return true, err
-
-			}
-			return true, nil
-		}), "getting the namespace for the Provider error")
-
-		// Try to get the TenantReference that created for this provider from the tenant.
-		tenantReference := &catalogv1alpha1.TenantReference{}
-		s.NoError(wait.Poll(time.Second, 10*time.Second, func() (done bool, err error) {
-			if err := s.masterClient.Get(ctx, types.NamespacedName{
+		tenantReference := &catalogv1alpha1.TenantReference{
+			ObjectMeta: metav1.ObjectMeta{
 				Name:      tenant.Name,
-				Namespace: fmt.Sprintf("provider-%s", provider.Name),
-			}, tenantReference); err != nil {
-				if errors.IsNotFound(err) {
-					return false, nil
-				}
-				return true, err
+				Namespace: providerNamespaceName,
+			},
+		}
+		require.NoError(t, testutil.WaitUntilFound(masterClient, tenantReference))
 
-			}
-			return true, nil
-		}), "getting the TenantReference for the Provider error")
-	}) {
-		s.FailNow("Provider creation e2e test failed.")
-	}
+		// Delete Tenant
+		require.NoError(t, testutil.DeleteAndWaitUntilNotFound(masterClient, tenant))
 
-	if !s.Run("Tenant deletion", func() {
-		s.Require().NoError(wait.Poll(time.Second, 10*time.Second, func() (done bool, err error) {
-			if err = s.masterClient.Delete(ctx, tenant); err != nil {
-				if errors.IsNotFound(err) {
-					return true, nil
-				}
-				return false, err
-			}
-			return false, nil
-		}), "deleting the Tenant error")
+		assert.True(t, errors.IsNotFound(masterClient.Get(ctx, types.NamespacedName{
+			Name: tenantNamespaceName,
+		}, tenantNamespace)), "namespace should also be deleted.")
 
-		// Try to check the namespace that created for this tenant.
-		namespace := &corev1.Namespace{}
-		s.True(errors.IsNotFound(s.masterClient.Get(ctx, types.NamespacedName{
-			Name: fmt.Sprintf("tenant-%s", tenant.Name),
-		}, namespace)), "namespace should also be deleted.")
-
-		// Try to check the TenantReference that created for provider.
-		tenantReference := &catalogv1alpha1.TenantReference{}
-		s.True(errors.IsNotFound(s.masterClient.Get(ctx, types.NamespacedName{
+		assert.True(t, errors.IsNotFound(masterClient.Get(ctx, types.NamespacedName{
 			Name:      tenant.Name,
-			Namespace: fmt.Sprintf("provider-%s", provider.Name),
+			Namespace: tenantNamespaceName,
 		}, tenantReference)), "TenantReference should also be deleted.")
-	}) {
-		s.FailNow("Tenant deletion e2e test failed.")
+
+		// Delete Provider
+		require.NoError(t, testutil.DeleteAndWaitUntilNotFound(masterClient, provider))
+		assert.True(t, errors.IsNotFound(masterClient.Get(ctx, types.NamespacedName{
+			Name: providerNamespaceName,
+		}, providerNamespace)), "namespace should also be deleted.")
 	}
-
-	s.Run("Provider deletion", func() {
-		s.Require().NoError(wait.Poll(time.Second, 10*time.Second, func() (done bool, err error) {
-			if err = s.masterClient.Delete(ctx, provider); err != nil {
-				if errors.IsNotFound(err) {
-					return true, nil
-				}
-				return false, err
-			}
-			return false, nil
-		}), "deleting the Provider error")
-
-		// Try to check the namespace that created for this provider.
-		namespace := &corev1.Namespace{}
-		s.True(errors.IsNotFound(s.masterClient.Get(ctx, types.NamespacedName{
-			Name: fmt.Sprintf("provider-%s", provider.Name),
-		}, namespace)), "namespace should also be deleted.")
-	})
-
 }
