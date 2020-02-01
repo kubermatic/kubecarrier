@@ -225,6 +225,7 @@ func run(flags *flags, log logr.Logger) error {
 
 		ServiceClusterClient: serviceCachedClient,
 		ServiceClusterCache:  serviceCache,
+		ServiceCluster:       flags.serviceClusterName,
 
 		MasterClusterGVK:   masterClusterGVK,
 		MasterClusterType:  masterClusterType,
@@ -232,6 +233,21 @@ func run(flags *flags, log logr.Logger) error {
 		ServiceClusterType: serviceClusterType,
 	}).SetupWithManager(mgr); err != nil {
 		return fmt.Errorf("cannot add %s controller: %w", "MasterClusterObjReconciler", err)
+	}
+
+	if err := (&controllers.AdoptionReconciler{
+		Log:    log.WithName("controllers").WithName("AdoptionReconciler"),
+		Client: mgr.GetClient(),
+
+		ServiceClusterClient: serviceCachedClient,
+		ServiceClusterCache:  serviceCache,
+
+		MasterClusterGVK:   masterClusterGVK,
+		MasterClusterType:  masterClusterType,
+		ServiceClusterGVK:  serviceClusterGVK,
+		ServiceClusterType: serviceClusterType,
+	}).SetupWithManager(mgr); err != nil {
+		return fmt.Errorf("cannot add %s controller: %w", "AdoptionReconciler", err)
 	}
 
 	log.Info("starting manager")
