@@ -13,6 +13,7 @@
     - get
     - list
     - patch
+    - update
     - watch
   - apiGroups:
     - kubecarrier.io

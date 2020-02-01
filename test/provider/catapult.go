@@ -154,6 +154,8 @@ func NewCatapultSuit(f *framework.Framework) func(t *testing.T) {
 				},
 			},
 		}
+		t.Skip()
+		return
 		require.NoError(t, masterClient.Create(ctx, catapult))
 		require.NoError(t, testutil.WaitUntilReady(masterClient, catapult))
 		t.Log("I'm here!!!")
