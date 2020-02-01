@@ -17,6 +17,9 @@ limitations under the License.
 package v1alpha1
 
 import (
+	"context"
+	"fmt"
+
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -45,4 +48,27 @@ func RegisterTenantNamespaceFieldIndex(mgr ctrl.Manager) error {
 			provider := obj.(*Tenant)
 			return []string{provider.Status.NamespaceName}
 		}))
+}
+
+func GetProviderByProviderNamespace(ctx context.Context, c client.Client, kubecarrierNamespace, providerNamespace string) (*Provider, error) {
+	providerList := &ProviderList{}
+	if err := c.List(ctx, providerList,
+		client.InNamespace(kubecarrierNamespace),
+		client.MatchingFields{
+			ProviderNamespaceFieldIndex: providerNamespace,
+		},
+	); err != nil {
+		return nil, err
+	}
+	switch len(providerList.Items) {
+	case 0:
+		// not found
+		return nil, fmt.Errorf("providers.catalog.kubecarrier.io with index %q not found", ProviderNamespaceFieldIndex)
+	case 1:
+		// found!
+		return &providerList.Items[0], nil
+	default:
+		// found too many
+		return nil, fmt.Errorf("multiple providers.catalog.kubecarrier.io with index %q found", ProviderNamespaceFieldIndex)
+	}
 }

@@ -216,6 +216,19 @@ func main() {
 			},
 		},
 		{
+			Name:    "Manager",
+			Program: "cmd/manager",
+			LDFlags: *ldFlags,
+			Args: []string{
+				"--kubecarrier-system-namespace=kubecarrier-system",
+				"--enable-leader-election=false",
+				"--metrics-addr=0",
+			},
+			Env: map[string]string{
+				"KUBECONFIG": masterKubeconfigPath,
+			},
+		},
+		{
 			Name:    "Operator",
 			Program: "cmd/operator",
 			LDFlags: *ldFlags,
@@ -270,10 +283,11 @@ func main() {
 	for _, test := range []string{
 		"",
 		"AdminSuite",
-		"CatapultSuite",
-		"FerrySuite",
 		"InstallationSuite",
 		"ProviderSuite",
+		"ProviderSuite/parallel-group/CatapultSuite",
+		"ProviderSuite/parallel-group/Elevator",
+		"ProviderSuite/parallel-group/FerrySuite",
 		"TenantSuite",
 		"VerifySuite",
 	} {

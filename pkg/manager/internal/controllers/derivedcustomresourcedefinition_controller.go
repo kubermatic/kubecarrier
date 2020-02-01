@@ -128,19 +128,19 @@ func (r *DerivedCustomResourceDefinitionReconciler) Reconcile(req ctrl.Request) 
 	}
 
 	// lookup Provider
-	provider, err := getProviderByProviderNamespace(ctx, r.Client, r.KubeCarrierSystemNamespace, dcrd.Namespace)
+	provider, err := catalogv1alpha1.GetProviderByProviderNamespace(ctx, r.Client, r.KubeCarrierSystemNamespace, dcrd.Namespace)
 	if err != nil {
 		return result, fmt.Errorf("getting the Provider by Provider Namespace: %w", err)
 	}
 
 	// check if Provider is allowed to use the CRD
 	if baseCRD.Labels == nil ||
-		baseCRD.Labels[providerLabel] != provider.Name {
+		baseCRD.Labels[ProviderLabel] != provider.Name {
 		return result, r.updateStatus(ctx, dcrd, catalogv1alpha1.DerivedCustomResourceDefinitionCondition{
 			Type:    catalogv1alpha1.DerivedCustomResourceDefinitionReady,
 			Status:  catalogv1alpha1.ConditionFalse,
 			Reason:  "NotAssignedToProvider",
-			Message: fmt.Sprintf("The referenced CRD not assigned to this Provider or is missing a %s label.", providerLabel),
+			Message: fmt.Sprintf("The referenced CRD not assigned to this Provider or is missing a %s label.", ProviderLabel),
 		})
 	}
 
@@ -173,7 +173,7 @@ func (r *DerivedCustomResourceDefinitionReconciler) Reconcile(req ctrl.Request) 
 			Name: names.Plural + "." + group,
 			Labels: map[string]string{
 				serviceClusterLabel: serviceClusterName,
-				providerLabel:       provider.Name,
+				ProviderLabel:       provider.Name,
 			},
 		},
 		Spec: *baseCRD.Spec.DeepCopy(),
@@ -239,10 +239,8 @@ func isCRDReady(crd *apiextensionsv1.CustomResourceDefinition) bool {
 
 func (r *DerivedCustomResourceDefinitionReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	owner := &catalogv1alpha1.DerivedCustomResourceDefinition{}
-	enqueuer, err := util.EnqueueRequestForOwner(owner, mgr.GetScheme())
-	if err != nil {
-		return fmt.Errorf("cannot create enqueuer for DerivedCustomResourceDefinition: %w", err)
-	}
+	enqueuer := util.EnqueueRequestForOwner(owner, mgr.GetScheme())
+
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&catalogv1alpha1.DerivedCustomResourceDefinition{}).
 		Watches(&source.Kind{Type: &apiextensionsv1.CustomResourceDefinition{}}, enqueuer).
@@ -275,18 +273,13 @@ func (r *DerivedCustomResourceDefinitionReconciler) SetupWithManager(mgr ctrl.Ma
 }
 
 func (r *DerivedCustomResourceDefinitionReconciler) handleDeletion(ctx context.Context, dcrd *catalogv1alpha1.DerivedCustomResourceDefinition) error {
-	ownedBySelector, err := util.OwnedBy(dcrd, r.Scheme)
-	if err != nil {
-		return fmt.Errorf("creating owned by selector: %w", err)
-	}
-
 	crdList := &apiextensionsv1.CustomResourceDefinitionList{}
-	if err = r.List(ctx, crdList, ownedBySelector); err != nil {
+	if err := r.List(ctx, crdList, util.OwnedBy(dcrd, r.Scheme)); err != nil {
 		return fmt.Errorf("listing owned CRDs: %w", err)
 	}
 
 	for _, crd := range crdList.Items {
-		if err = r.Delete(ctx, &crd); err != nil {
+		if err := r.Delete(ctx, &crd); err != nil {
 			return fmt.Errorf("deleting CRD: %w", err)
 		}
 	}
@@ -298,7 +291,7 @@ func (r *DerivedCustomResourceDefinitionReconciler) handleDeletion(ctx context.C
 
 	// remove referenced-by annotation
 	baseCRD := &apiextensionsv1.CustomResourceDefinition{}
-	err = r.Get(ctx, types.NamespacedName{
+	err := r.Get(ctx, types.NamespacedName{
 		Name: dcrd.Spec.BaseCRD.Name,
 	}, baseCRD)
 	if err != nil && !errors.IsNotFound(err) {

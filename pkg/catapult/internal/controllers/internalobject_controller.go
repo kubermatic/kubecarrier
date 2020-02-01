@@ -180,14 +180,9 @@ func (r *InternalObjectReconciler) SetupWithManagers(serviceMgr, masterMgr ctrl.
 	internalType := &unstructured.Unstructured{}
 	internalType.SetGroupVersionKind(r.InternalGVK)
 
-	enqueuer, err := util.EnqueueRequestForOwner(internalType, r.MasterScheme)
-	if err != nil {
-		return fmt.Errorf("creating internal enqueuer: %w", err)
-	}
-
 	return ctrl.NewControllerManagedBy(masterMgr).
 		Named(strings.ToLower(r.InternalGVK.Kind)+"."+r.InternalGVK.Group).
 		For(internalType).
-		Watches(source.Func(serviceClusterSource.Start), enqueuer).
+		Watches(source.Func(serviceClusterSource.Start), util.EnqueueRequestForOwner(internalType, r.MasterScheme)).
 		Complete(r)
 }

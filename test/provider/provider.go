@@ -19,7 +19,6 @@ package provider
 import (
 	"context"
 	"fmt"
-	"os"
 	"testing"
 	"time"
 
@@ -29,10 +28,8 @@ import (
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/wait"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	catalogv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/catalog/v1alpha1"
 	corev1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/core/v1alpha1"
@@ -45,6 +42,7 @@ func NewProviderSuite(f *framework.Framework) func(t *testing.T) {
 	return func(t *testing.T) {
 		masterClient, err := f.MasterClient()
 		require.NoError(t, err, "creating master client")
+		defer masterClient.CleanUp(t)
 
 		ctx := context.Background()
 
@@ -54,75 +52,24 @@ func NewProviderSuite(f *framework.Framework) func(t *testing.T) {
 					Name:      "example-cloud",
 					Namespace: "kubecarrier-system",
 				},
+				Spec: catalogv1alpha1.ProviderSpec{
+					Metadata: catalogv1alpha1.ProviderMetadata{
+						DisplayName: "provider",
+						Description: "provider test description",
+					},
+				},
 			}
 		)
-
-		cleanUp := func() {
-			if _, noCleanup := os.LookupEnv("NO_CLEANUP"); noCleanup {
-				return
-			}
-
-			for _, obj := range []runtime.Object{
-				provider,
-			} {
-				require.NoError(t, client.IgnoreNotFound(masterClient.Delete(ctx, obj)))
-				require.NoError(t, testutil.WaitUntilNotFound(masterClient, obj))
-			}
-		}
-		// clean up before and after completion
-		cleanUp()
-		defer cleanUp()
 
 		require.NoError(t, masterClient.Create(ctx, provider))
 		require.NoError(t, testutil.WaitUntilReady(masterClient, provider))
 
 		t.Run("parallel-group", func(t *testing.T) {
-			t.Run("Catapult", NewCatapultSuite(f, provider))
+			t.Run("Catapult", NewCatapultSuit(f))
 			t.Run("Elevator", NewElevatorSuite(f, provider))
 			t.Run("Catalog", NewCatalogSuite(f, provider))
+			t.Run("Ferry", NewFerrySuite(f, provider))
 		})
-	}
-}
-
-// Catapult sub test suite
-func NewCatapultSuite(
-	f *framework.Framework,
-	provider *catalogv1alpha1.Provider,
-) func(t *testing.T) {
-	return func(t *testing.T) {
-		t.Parallel()
-
-		// Setup
-		masterClient, err := f.MasterClient()
-		require.NoError(t, err, "creating master client")
-		ctx := context.Background()
-
-		// Create Catapult
-		catapult := &operatorv1alpha1.Catapult{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "db.eu-west-1",
-				Namespace: provider.Status.NamespaceName,
-			},
-		}
-
-		require.NoError(
-			t, masterClient.Create(ctx, catapult), "creating Catapult error")
-		require.NoError(t, testutil.WaitUntilReady(masterClient, catapult))
-
-		// Check created objects
-		catapultDeployment := &appsv1.Deployment{}
-		assert.NoError(t, masterClient.Get(ctx, types.NamespacedName{
-			Name:      "db-eu-west-1-catapult-manager",
-			Namespace: catapult.Namespace,
-		}, catapultDeployment), "getting Catapult manager deployment error")
-
-		// Teardown
-		require.NoError(
-			t, masterClient.Delete(ctx, catapult), "deleting Catapult object")
-		require.NoError(t, testutil.WaitUntilNotFound(masterClient, catapult))
-
-		// check everything is gone
-		require.NoError(t, testutil.WaitUntilNotFound(masterClient, catapultDeployment))
 	}
 }
 
@@ -137,6 +84,8 @@ func NewElevatorSuite(
 		// Setup
 		masterClient, err := f.MasterClient()
 		require.NoError(t, err, "creating master client")
+		defer masterClient.CleanUp(t)
+
 		ctx := context.Background()
 
 		// Create Elevator
@@ -179,6 +128,8 @@ func NewCatalogSuite(
 		// Setup
 		masterClient, err := f.MasterClient()
 		require.NoError(t, err, "creating master client")
+		defer masterClient.CleanUp(t)
+
 		ctx := context.Background()
 
 		// Create a Tenant to execute our tests in
@@ -263,8 +214,8 @@ func NewCatalogSuite(
 		// Create a ServiceCluster to execute our tests in
 		serviceCluster := &corev1alpha1.ServiceCluster{
 			ObjectMeta: metav1.ObjectMeta{
-				Name:      "eu-west-1",
-				Namespace: provider.Status.NamespaceName,
+				GenerateName: "eu-west-1",
+				Namespace:    provider.Status.NamespaceName,
 			},
 			Spec: corev1alpha1.ServiceClusterSpec{
 				Metadata: corev1alpha1.ServiceClusterMetadata{
@@ -275,19 +226,6 @@ func NewCatalogSuite(
 		}
 		require.NoError(
 			t, masterClient.Create(ctx, serviceCluster), "could not create ServiceCluster")
-
-		// Teardown
-		defer func() {
-			if _, noCleanup := os.LookupEnv("NO_CLEANUP"); noCleanup {
-				return
-			}
-
-			require.NoError(t, masterClient.Delete(ctx, tenant), "deleting the Tenant object")
-			require.NoError(t, testutil.WaitUntilNotFound(masterClient, tenant))
-
-			require.NoError(t, masterClient.Delete(ctx, crd), "deleting the CustomResourceDefinition object")
-			require.NoError(t, testutil.WaitUntilNotFound(masterClient, crd))
-		}()
 
 		// Catalog
 		// Test case
@@ -346,7 +284,7 @@ func NewCatalogSuite(
 		}
 		require.NoError(t, testutil.WaitUntilFound(masterClient, providerReferenceFound), "getting the ProviderReference error")
 		assert.Equal(t, providerReferenceFound.Spec.Metadata.DisplayName, provider.Spec.Metadata.DisplayName)
-		assert.Equal(t, providerReferenceFound.Spec.Metadata.Description, provider.Spec.Metadata.DisplayName)
+		assert.Equal(t, providerReferenceFound.Spec.Metadata.Description, provider.Spec.Metadata.Description)
 
 		// Check the ServiceClusterReference object is created.
 		serviceClusterReferenceFound := &catalogv1alpha1.ServiceClusterReference{
@@ -355,7 +293,7 @@ func NewCatalogSuite(
 				Namespace: tenant.Status.NamespaceName,
 			},
 		}
-		require.NoError(t, testutil.WaitUntilFound(masterClient, serviceClusterReferenceFound), "getting the ProviderReference error")
+		require.NoError(t, testutil.WaitUntilFound(masterClient, serviceClusterReferenceFound), "getting the ServiceClusterReference error")
 		assert.Equal(t, serviceClusterReferenceFound.Spec.Provider.Name, provider.Name)
 		assert.Equal(t, serviceClusterReferenceFound.Spec.Metadata.Description, serviceCluster.Spec.Metadata.Description)
 

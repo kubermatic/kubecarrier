@@ -70,12 +70,10 @@ func TestOwnerReverseFieldIndex(t *testing.T) {
 	}
 
 	ownerA := configMaps[3]
-	ownerAFilter, err := OwnedBy(ownerA, mgr.GetScheme())
-	require.NoError(t, err, "converting to ownerReference")
+	ownerAFilter := OwnedBy(ownerA, mgr.GetScheme())
 
 	ownerB := configMaps[4]
-	ownerBFilter, err := OwnedBy(ownerB, mgr.GetScheme())
-	require.NoError(t, err, "converting to ownerReference")
+	ownerBFilter := OwnedBy(ownerB, mgr.GetScheme())
 
 	extractErr := func(changed bool, err error) error { return err }
 

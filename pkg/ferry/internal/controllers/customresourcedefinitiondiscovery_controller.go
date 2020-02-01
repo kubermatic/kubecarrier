@@ -33,7 +33,7 @@ import (
 	"github.com/kubermatic/kubecarrier/pkg/internal/util"
 )
 
-const crdDiscoveryControllerFinalizer string = "custormresourcedefinitiondiscovery.kubecarrier.io/controller"
+const crdDiscoveryControllerFinalizer string = "crdd.kubecarrier.io/ferry"
 
 var (
 	CRDNotFound = fmt.Errorf("CRDNotFound")
@@ -50,7 +50,7 @@ type CustomResourceDefinitionDiscoveryReconciler struct {
 	ServiceClusterName string
 }
 
-// +kubebuilder:rbac:groups=kubecarrier.io,resources=customresourcedefinitiondiscoveries,verbs=get;list;watch;create;update;patch
+// +kubebuilder:rbac:groups=kubecarrier.io,resources=customresourcedefinitiondiscoveries,verbs=get;list;watch;patch
 // +kubebuilder:rbac:groups=kubecarrier.io,resources=customresourcedefinitiondiscoveries/status,verbs=get;update;patch
 // Service cluster permission for this controller
 // https://github.com/kubermatic/kubecarrier/issues/143
@@ -168,14 +168,9 @@ func (r *CustomResourceDefinitionDiscoveryReconciler) SetupWithManagers(serviceM
 		return fmt.Errorf("setFields: %w", err)
 	}
 
-	enqueuer, err := util.EnqueueRequestForOwner(&corev1alpha1.CustomResourceDefinitionDiscovery{}, r.MasterScheme)
-	if err != nil {
-		return fmt.Errorf("creating CustomResourceDefinitionDiscovery enqueuer: %w", err)
-	}
-
 	return ctrl.NewControllerManagedBy(masterMgr).
 		For(&corev1alpha1.CustomResourceDefinitionDiscovery{}).
-		Watches(source.Func(crdSource.Start), enqueuer).
+		Watches(source.Func(crdSource.Start), util.EnqueueRequestForOwner(&corev1alpha1.CustomResourceDefinitionDiscovery{}, r.MasterScheme)).
 		WithEventFilter(util.PredicateFn(func(obj runtime.Object) bool {
 			if crdDiscovery, ok := obj.(*corev1alpha1.CustomResourceDefinitionDiscovery); ok {
 				if crdDiscovery.Spec.ServiceCluster.Name == r.ServiceClusterName {

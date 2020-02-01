@@ -10,11 +10,9 @@
     resources:
     - customresourcedefinitiondiscoveries
     verbs:
-    - create
     - get
     - list
     - patch
-    - update
     - watch
   - apiGroups:
     - kubecarrier.io

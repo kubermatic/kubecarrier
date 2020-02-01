@@ -24,7 +24,6 @@ import (
 	rbacv1 "k8s.io/api/rbac/v1"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -34,7 +33,7 @@ import (
 )
 
 // addOwnerReference adds an OwnerReference to an object.
-func addOwnerReference(owner metav1.Object, object *unstructured.Unstructured, scheme *runtime.Scheme) error {
+func addOwnerReference(owner util.Object, object *unstructured.Unstructured, scheme *runtime.Scheme) error {
 	switch object.GetKind() {
 	case "ClusterRole", "ClusterRoleBinding",
 		"CustomResourceDefinition",

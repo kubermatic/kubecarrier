@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package catapult
+package provider
 
 import (
 	"context"
@@ -29,15 +29,19 @@ import (
 	catalogv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/catalog/v1alpha1"
 	corev1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/core/v1alpha1"
 	operatorv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/operator/v1alpha1"
+	"github.com/kubermatic/kubecarrier/pkg/testutil"
 	"github.com/kubermatic/kubecarrier/test/framework"
 )
 
 func NewCatapultSuit(f *framework.Framework) func(t *testing.T) {
 	return func(t *testing.T) {
 		ctx := context.Background()
-		fctx, err := f.NewFrameworkContext()
+		masterClient, err := f.MasterClient()
 		require.NoError(t, err, "cannot create framework context")
-		defer fctx.CleanUp(t)
+		defer masterClient.CleanUp(t)
+		serviceClient, err := f.ServiceClient()
+		require.NoError(t, err, "cannot create framework context")
+		defer serviceClient.CleanUp(t)
 
 		serviceKubeconfig, err := ioutil.ReadFile(f.Config().ServiceInternalKubeconfigPath)
 		require.NoError(t, err, "cannot read service internal kubeconfig")
@@ -45,8 +49,14 @@ func NewCatapultSuit(f *framework.Framework) func(t *testing.T) {
 		var (
 			provider = &catalogv1alpha1.Provider{
 				ObjectMeta: metav1.ObjectMeta{
-					GenerateName: "provider-",
+					GenerateName: "example-cloud-",
 					Namespace:    "kubecarrier-system",
+				},
+				Spec: catalogv1alpha1.ProviderSpec{
+					Metadata: catalogv1alpha1.ProviderMetadata{
+						DisplayName: "provider",
+						Description: "provider test description",
+					},
 				},
 			}
 			tenant = &catalogv1alpha1.Tenant{
@@ -101,8 +111,7 @@ func NewCatapultSuit(f *framework.Framework) func(t *testing.T) {
 			}
 		)
 
-		require.NoError(t, fctx.MasterClient.CreateAndWaitUntilReady(ctx, provider))
-		require.NoError(t, fctx.MasterClient.CreateAndWaitUntilReady(ctx, tenant))
+		require.NoError(t, testutil.CreateAndWaitUntilReady(masterClient, tenant, provider))
 
 		for _, obj := range []metav1.Object{
 			serviceClusterSecret,
@@ -111,9 +120,9 @@ func NewCatapultSuit(f *framework.Framework) func(t *testing.T) {
 			obj.SetNamespace(provider.Status.NamespaceName)
 		}
 
-		require.NoError(t, fctx.MasterClient.Create(ctx, serviceClusterSecret))
-		require.NoError(t, fctx.MasterClient.CreateAndWaitUntilReady(ctx, serviceClusterRegistration))
-		require.NoError(t, fctx.ServiceClient.Create(ctx, crd))
+		require.NoError(t, masterClient.Create(ctx, serviceClusterSecret))
+		require.NoError(t, testutil.CreateAndWaitUntilReady(masterClient, serviceClusterRegistration))
+		require.NoError(t, serviceClient.Create(ctx, crd))
 
 		serviceClusterAssignment := &corev1alpha1.ServiceClusterAssignment{
 			ObjectMeta: metav1.ObjectMeta{
@@ -126,7 +135,7 @@ func NewCatapultSuit(f *framework.Framework) func(t *testing.T) {
 				},
 			},
 		}
-		require.NoError(t, fctx.MasterClient.CreateAndWaitUntilReady(ctx, serviceClusterAssignment))
+		require.NoError(t, testutil.CreateAndWaitUntilReady(masterClient, serviceClusterAssignment))
 		catapult := &operatorv1alpha1.Catapult{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "test-catapult",
@@ -145,7 +154,8 @@ func NewCatapultSuit(f *framework.Framework) func(t *testing.T) {
 				},
 			},
 		}
-		require.NoError(t, fctx.MasterClient.CreateAndWaitUntilReady(ctx, catapult))
-		// TODO: Actually test this stuff properly!!!
+		require.NoError(t, masterClient.Create(ctx, catapult))
+		require.NoError(t, testutil.WaitUntilReady(masterClient, catapult))
+		t.Log("I'm here!!!")
 	}
 }

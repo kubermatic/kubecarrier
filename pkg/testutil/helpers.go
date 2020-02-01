@@ -148,3 +148,17 @@ func WaitUntilCondition(c client.Client, obj runtime.Object, ConditionType, Cond
 func WaitUntilReady(c client.Client, obj runtime.Object) error {
 	return WaitUntilCondition(c, obj, "Ready", "True")
 }
+
+func CreateAndWaitUntilReady(c client.Client, objs ...runtime.Object) error {
+	for _, obj := range objs {
+		if err := c.Create(context.Background(), obj); err != nil {
+			return fmt.Errorf("cannot create %T: %w", obj, err)
+		}
+	}
+	for _, obj := range objs {
+		if err := WaitUntilCondition(c, obj, "Ready", "True"); err != nil {
+			return fmt.Errorf("not ready within time limit %T: %w", obj, err)
+		}
+	}
+	return nil
+}

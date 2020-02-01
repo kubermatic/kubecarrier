@@ -26,6 +26,7 @@ import (
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/types"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	restclient "k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
@@ -122,84 +123,84 @@ func New(c Config) (f *Framework, err error) {
 	return
 }
 
-func (f *Framework) MasterClient() (client.Client, error) {
+func (f *Framework) MasterClient() (*RecordingClient, error) {
 	cfg := f.masterConfig
-	return client.New(cfg, client.Options{
+	c, err := client.New(cfg, client.Options{
 		Scheme: f.MasterScheme,
 	})
+	if err != nil {
+		return nil, err
+	}
+	return RecordClient(c), nil
 }
 
-func (f *Framework) ServiceClient() (client.Client, error) {
+func (f *Framework) ServiceClient() (*RecordingClient, error) {
 	cfg := f.serviceConfig
-	return client.New(cfg, client.Options{
+	c, err := client.New(cfg, client.Options{
 		Scheme: f.ServiceScheme,
 	})
+	if err != nil {
+		return nil, err
+	}
+	return RecordClient(c), nil
 }
 
 func (f *Framework) Config() Config {
 	return f.config
 }
 
-func (f *Framework) NewFrameworkContext() (*FrameworkContext, error) {
-	fctx := &FrameworkContext{
-		masterTracking:  make([]runtime.Object, 0),
-		serviceTracking: make([]runtime.Object, 0),
-	}
-	mClient, err := f.MasterClient()
-	if err != nil {
-		return nil, err
-	}
-	sClient, err := f.ServiceClient()
-	if err != nil {
-		return nil, err
-	}
-	fctx.MasterClient = &FrameworkTrackingClient{
-		tracking: &fctx.masterTracking,
-		Client:   mClient,
-	}
-	fctx.ServiceClient = &FrameworkTrackingClient{
-		tracking: &fctx.serviceTracking,
-		Client:   sClient,
-	}
-	return fctx, nil
-}
-
-type FrameworkContext struct {
-	MasterClient    *FrameworkTrackingClient
-	ServiceClient   *FrameworkTrackingClient
-	masterTracking  []runtime.Object
-	serviceTracking []runtime.Object
-}
-
-func (cl *FrameworkContext) CleanUp(t *testing.T) {
-	// cleanup in reverse order of creation
-	for i := len(cl.masterTracking) - 1; i >= 0; i-- {
-		obj := cl.masterTracking[i]
-		objMeta := obj.(metav1.Object)
-		assert.NoError(t, testutil.DeleteAndWaitUntilNotFound(cl.MasterClient, obj), "cannot delete %T:%s from master cluster", obj, objMeta.GetName())
-	}
-	for i := len(cl.serviceTracking) - 1; i >= 0; i-- {
-		obj := cl.serviceTracking[i]
-		objMeta := obj.(metav1.Object)
-		assert.NoError(t, testutil.DeleteAndWaitUntilNotFound(cl.ServiceClient, obj), "cannot delete %T:%s from service cluster", obj, objMeta.GetName())
-	}
-}
-
-type FrameworkTrackingClient struct {
-	tracking *[]runtime.Object
+type RecordingClient struct {
 	client.Client
+	objects map[string]runtime.Object
+	order   []string
 }
 
-var _ client.Client = (*FrameworkTrackingClient)(nil)
-
-func (cl *FrameworkTrackingClient) Create(ctx context.Context, obj runtime.Object, opts ...client.CreateOption) error {
-	*cl.tracking = append(*cl.tracking, obj)
-	return cl.Client.Create(ctx, obj, opts...)
-}
-
-func (cl *FrameworkTrackingClient) CreateAndWaitUntilReady(ctx context.Context, obj runtime.Object, opts ...client.CreateOption) error {
-	if err := cl.Create(ctx, obj, opts...); err != nil {
-		return err
+func RecordClient(c client.Client) *RecordingClient {
+	return &RecordingClient{
+		Client:  c,
+		objects: map[string]runtime.Object{},
 	}
-	return testutil.WaitUntilReady(cl, obj)
+}
+
+var _ client.Client = (*RecordingClient)(nil)
+
+func (rc *RecordingClient) CleanUp(t *testing.T) {
+	if _, noCleanup := os.LookupEnv("NO_CLEANUP"); noCleanup {
+		// skip cleanup
+		return
+	}
+
+	// cleanup in reverse order of creation
+	for i := len(rc.order) - 1; i >= 0; i-- {
+		key := rc.order[i]
+		obj, ok := rc.objects[key]
+		if !ok {
+			continue
+		}
+
+		assert.NoError(t, testutil.DeleteAndWaitUntilNotFound(rc.Client, obj))
+	}
+}
+
+func (rc *RecordingClient) Create(ctx context.Context, obj runtime.Object, opts ...client.CreateOption) error {
+	meta := obj.(metav1.Object)
+	key := types.NamespacedName{
+		Name:      meta.GetName(),
+		Namespace: meta.GetNamespace(),
+	}.String()
+	rc.objects[key] = obj
+	rc.order = append(rc.order, key)
+
+	return rc.Client.Create(ctx, obj, opts...)
+}
+
+func (rc *RecordingClient) Delete(ctx context.Context, obj runtime.Object, opts ...client.DeleteOption) error {
+	meta := obj.(metav1.Object)
+	key := types.NamespacedName{
+		Name:      meta.GetName(),
+		Namespace: meta.GetNamespace(),
+	}.String()
+	delete(rc.objects, key)
+
+	return rc.Client.Delete(ctx, obj, opts...)
 }
