@@ -17,7 +17,7 @@ spec:
     spec:
       serviceAccountName: sa
       containers:
-      - image: quay.io/kubecarrier/elevator:lastest
+      - image: quay.io/kubecarrier/elevator:latest
         name: manager
         env:
         - name: KUBERNETES_NAMESPACE

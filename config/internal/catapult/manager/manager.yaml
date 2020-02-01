@@ -15,8 +15,9 @@ spec:
       labels:
         control-plane: manager
     spec:
+      serviceAccountName: sa
       containers:
-      - image: quay.io/kubecarrier/catapult:lastest
+      - image: quay.io/kubecarrier/catapult:latest
         name: manager
         resources:
           limits:
