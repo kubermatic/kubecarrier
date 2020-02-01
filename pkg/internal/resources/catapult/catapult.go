@@ -23,6 +23,7 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"sigs.k8s.io/kustomize/v3/pkg/image"
 	"sigs.k8s.io/kustomize/v3/pkg/types"
+	"sigs.k8s.io/yaml"
 
 	"github.com/kubermatic/kubecarrier/pkg/internal/kustomize"
 	"github.com/kubermatic/kubecarrier/pkg/internal/version"
@@ -34,6 +35,12 @@ type Config struct {
 	Name string
 	// Namespace that the Catapult instance should be deployed into.
 	Namespace string
+
+	MasterClusterKind, MasterClusterVersion,
+	MasterClusterGroup, MasterClusterPlural string
+	ServiceClusterKind, ServiceClusterVersion,
+	ServiceClusterGroup, ServiceClusterPlural string
+	ServiceClusterName, ServiceClusterSecret string
 }
 
 var k = kustomize.NewDefaultKustomize()
@@ -52,8 +59,118 @@ func Manifests(c Config) ([]unstructured.Unstructured, error) {
 			},
 		},
 		Resources: []string{"../default"},
+		PatchesStrategicMerge: []types.PatchStrategicMerge{
+			"manager_env_patch.yaml",
+		},
 	}); err != nil {
 		return nil, fmt.Errorf("cannot mkdir: %w", err)
+	}
+
+	// Patch environment
+	managerEnv := map[string]interface{}{
+		"apiVersion": "apps/v1",
+		"kind":       "Deployment",
+		"metadata": map[string]string{
+			"name":      "manager",
+			"namespace": "system",
+		},
+		"spec": map[string]interface{}{
+			"template": map[string]interface{}{
+				"spec": map[string]interface{}{
+					"containers": []map[string]interface{}{
+						{
+							"name": "manager",
+							"env": []map[string]interface{}{
+								{
+									"name":  "CATAPULT_MASTER_CLUSTER_KIND",
+									"value": c.MasterClusterKind,
+								},
+								{
+									"name":  "CATAPULT_MASTER_CLUSTER_VERSION",
+									"value": c.MasterClusterVersion,
+								},
+								{
+									"name":  "CATAPULT_MASTER_CLUSTER_GROUP",
+									"value": c.MasterClusterGroup,
+								},
+								{
+									"name":  "CATAPULT_SERVICE_CLUSTER_KIND",
+									"value": c.ServiceClusterKind,
+								},
+								{
+									"name":  "CATAPULT_SERVICE_CLUSTER_VERSION",
+									"value": c.ServiceClusterVersion,
+								},
+								{
+									"name":  "CATAPULT_SERVICE_CLUSTER_GROUP",
+									"value": c.ServiceClusterGroup,
+								},
+								{
+									"name":  "CATAPULT_SERVICE_CLUSTER_NAME",
+									"value": c.ServiceClusterName,
+								},
+								{
+									"name":  "CATAPULT_SERVICE_CLUSTER_KUBECONFIG",
+									"value": "/config/kubeconfig",
+								},
+							},
+							"volumeMounts": []map[string]interface{}{
+								{
+									"name":      "kubeconfig",
+									"mountPath": "/config",
+									"readOnly":  true,
+								},
+							},
+						},
+					},
+					"volumes": []map[string]interface{}{
+						{
+							"name": "kubeconfig",
+							"secret": map[string]interface{}{
+								"secretName": c.ServiceClusterSecret,
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+	managerEnvBytes, err := yaml.Marshal(managerEnv)
+	fmt.Println(string(managerEnvBytes))
+	if err != nil {
+		return nil, fmt.Errorf("marshalling manager env patch: %w", err)
+	}
+	if err = kc.WriteFile("/man/manager_env_patch.yaml", managerEnvBytes); err != nil {
+		return nil, fmt.Errorf("writing manager_env_patch.yaml: %w", err)
+	}
+
+	// Generate ClusterRole for component
+	role := map[string]interface{}{
+		"apiVersion": "rbac.authorization.k8s.io/v1",
+		"kind":       "ClusterRole",
+		"metadata": map[string]string{
+			"name": "manager",
+		},
+		"rules": []map[string]interface{}{
+			{
+				"apiGroups": []string{c.MasterClusterGroup},
+				"resources": []string{c.MasterClusterPlural},
+				"verbs": []string{
+					"create", "delete", "get", "list", "patch", "update", "watch"},
+			},
+			{
+				"apiGroups": []string{c.MasterClusterGroup},
+				"resources": []string{c.MasterClusterPlural + "/status"},
+				"verbs":     []string{"get", "patch", "update"},
+			},
+		},
+	}
+	roleBytes, err := yaml.Marshal(role)
+	if err != nil {
+		return nil, fmt.Errorf("marshalling cluster role: %w", err)
+	}
+	if err := kc.WriteFile("/rbac/cluster_role.yaml", roleBytes); err != nil {
+		return nil, fmt.Errorf("writing /rbac/cluster_role.yaml: %w", err)
 	}
 
 	// execute kustomize

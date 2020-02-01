@@ -94,6 +94,16 @@ func (r *CatapultReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 		resourcescatapult.Config{
 			Name:      catapult.Name,
 			Namespace: catapult.Namespace,
+
+			MasterClusterKind:    catapult.Spec.MasterClusterCRD.Kind,
+			MasterClusterVersion: catapult.Spec.MasterClusterCRD.Version,
+			MasterClusterGroup:   catapult.Spec.MasterClusterCRD.Group,
+			MasterClusterPlural:  catapult.Spec.MasterClusterCRD.Plural,
+
+			ServiceClusterKind:    catapult.Spec.ServiceClusterCRD.Kind,
+			ServiceClusterVersion: catapult.Spec.ServiceClusterCRD.Version,
+			ServiceClusterGroup:   catapult.Spec.ServiceClusterCRD.Group,
+			ServiceClusterPlural:  catapult.Spec.ServiceClusterCRD.Plural,
 		})
 	if err != nil {
 		return ctrl.Result{}, fmt.Errorf("creating catapult manifests: %w", err)

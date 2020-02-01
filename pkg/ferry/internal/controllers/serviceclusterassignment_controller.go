@@ -87,7 +87,9 @@ func (r *ServiceClusterAssignmentReconciler) Reconcile(req ctrl.Request) (ctrl.R
 		return ctrl.Result{}, fmt.Errorf("cannot create tenant Assigenment namespace: %w", err)
 	}
 
-	serviceClusterAssignment.Status.NamespaceName = ns.Name
+	serviceClusterAssignment.Status.ServiceClusterNamespace = corev1alpha1.ObjectReference{
+		Name: ns.Name,
+	}
 	serviceClusterAssignment.Status.ObservedGeneration = serviceClusterAssignment.Generation
 	serviceClusterAssignment.Status.SetCondition(corev1alpha1.ServiceClusterAssignmentCondition{
 		Type:    corev1alpha1.ServiceClusterAssignmentReady,

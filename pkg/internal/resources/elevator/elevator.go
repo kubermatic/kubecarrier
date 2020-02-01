@@ -20,11 +20,10 @@ import (
 	"fmt"
 	"strings"
 
-	"sigs.k8s.io/yaml"
-
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"sigs.k8s.io/kustomize/v3/pkg/image"
 	"sigs.k8s.io/kustomize/v3/pkg/types"
+	"sigs.k8s.io/yaml"
 
 	"github.com/kubermatic/kubecarrier/pkg/internal/kustomize"
 	"github.com/kubermatic/kubecarrier/pkg/internal/version"

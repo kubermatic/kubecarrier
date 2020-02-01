@@ -118,7 +118,7 @@ func run(flags *flags, log logr.Logger) error {
 		{value: flags.tenantVersion, env: "ELEVATOR_TENANT_VERSION", flag: "tenant-version"},
 		{value: flags.tenantGroup, env: "ELEVATOR_TENANT_GROUP", flag: "tenant-group"},
 		{value: flags.derivedCRDName, env: "ELEVATOR_DERIVED_CRD_NAME", flag: "derived-crd-name"},
-		{value: flags.derivedCRDName, env: "KUBERNETES_NAMESPACE", flag: "provider-namespace"},
+		{value: flags.providerNamespace, env: "KUBERNETES_NAMESPACE", flag: "provider-namespace"},
 	}
 	var errs []string
 	for _, check := range checks {
