@@ -18,6 +18,7 @@ package operator
 
 import (
 	"fmt"
+	"os"
 
 	"github.com/go-logr/logr"
 	certv1alpha2 "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
@@ -36,8 +37,9 @@ import (
 )
 
 type flags struct {
-	metricsAddr          string
-	enableLeaderElection bool
+	metricsAddr                string
+	enableLeaderElection       bool
+	kubeCarrierSystemNamespace string
 }
 
 var (
@@ -71,6 +73,7 @@ func NewOperatorCommand() *cobra.Command {
 	cmd.Flags().StringVar(&flags.metricsAddr, "metrics-addr", ":8080", "The address the metric endpoint binds to.")
 	cmd.Flags().BoolVar(&flags.enableLeaderElection, "enable-leader-election", false,
 		"Enable leader election for operator. Enabling this will ensure there is only one active controller manager.")
+	cmd.Flags().StringVar(&flags.kubeCarrierSystemNamespace, "kubecarrier-system-namespace", os.Getenv("KUBECARRIER_NAMESPACE"), "The namespace that KubeCarrier controller manager deploys to.")
 	return util.CmdLogMixin(cmd)
 }
 
@@ -119,9 +122,10 @@ func run(flags *flags, log logr.Logger) error {
 		return fmt.Errorf("creating ServiceClusterRegistration controller: %w", err)
 	}
 	if err = (&controllers.CatapultReconciler{
-		Client: mgr.GetClient(),
-		Log:    log.WithName("controllers").WithName("Catapult"),
-		Scheme: mgr.GetScheme(),
+		Client:                     mgr.GetClient(),
+		Log:                        log.WithName("controllers").WithName("Catapult"),
+		Scheme:                     mgr.GetScheme(),
+		KubecarrierSystemNamespace: flags.kubeCarrierSystemNamespace,
 	}).SetupWithManager(mgr); err != nil {
 		return fmt.Errorf("creating Catapult controller: %w", err)
 	}

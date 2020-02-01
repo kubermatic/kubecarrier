@@ -127,7 +127,7 @@ func NewCatapultSuit(f *framework.Framework) func(t *testing.T) {
 		serviceClusterAssignment := &corev1alpha1.ServiceClusterAssignment{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      tenant.Name,
-				Namespace: provider.Namespace,
+				Namespace: provider.Status.NamespaceName,
 			},
 			Spec: corev1alpha1.ServiceClusterAssignmentSpec{
 				ServiceCluster: corev1alpha1.ObjectReference{
@@ -139,7 +139,7 @@ func NewCatapultSuit(f *framework.Framework) func(t *testing.T) {
 		catapult := &operatorv1alpha1.Catapult{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "test-catapult",
-				Namespace: provider.GetNamespace(),
+				Namespace: provider.Status.NamespaceName,
 			},
 			Spec: operatorv1alpha1.CatapultSpec{
 				ServiceCluster: operatorv1alpha1.ObjectReference{
@@ -154,10 +154,7 @@ func NewCatapultSuit(f *framework.Framework) func(t *testing.T) {
 				},
 			},
 		}
-		t.Skip()
-		return
 		require.NoError(t, masterClient.Create(ctx, catapult))
-		require.NoError(t, testutil.WaitUntilReady(masterClient, catapult))
-		t.Log("I'm here!!!")
+		require.NoError(t, testutil.WaitUntilReady(masterClient, catapult), "catapult not ready in time")
 	}
 }

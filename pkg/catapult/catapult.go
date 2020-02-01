@@ -28,7 +28,7 @@ import (
 	"k8s.io/client-go/tools/clientcmd"
 	ctrl "sigs.k8s.io/controller-runtime"
 
-	"github.com/kubermatic/kubecarrier/pkg/apis/catalog/v1alpha1"
+	catalogv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/catalog/v1alpha1"
 	corev1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/core/v1alpha1"
 	"github.com/kubermatic/kubecarrier/pkg/catapult/internal/controllers"
 	"github.com/kubermatic/kubecarrier/pkg/internal/util"
@@ -61,6 +61,7 @@ func init() {
 	_ = clientgoscheme.AddToScheme(masterScheme)
 	_ = apiextensionsv1.AddToScheme(masterScheme)
 	_ = corev1alpha1.AddToScheme(masterScheme)
+	_ = catalogv1alpha1.AddToScheme(masterScheme)
 
 	_ = clientgoscheme.AddToScheme(serviceScheme)
 	_ = apiextensionsv1.AddToScheme(serviceScheme)
@@ -163,8 +164,8 @@ func run(flags *flags, log logr.Logger) error {
 		Version: flags.version,
 	}
 
-	if err := v1alpha1.RegisterTenantNamespaceFieldIndex(masterMgr); err != nil {
-		return fmt.Errorf("cannot register tenant namespace field index")
+	if err := catalogv1alpha1.RegisterTenantNamespaceFieldIndex(masterMgr); err != nil {
+		return fmt.Errorf("cannot register tenant namespace field index: %w", err)
 	}
 
 	if err := (&controllers.InternalObjectReconciler{
