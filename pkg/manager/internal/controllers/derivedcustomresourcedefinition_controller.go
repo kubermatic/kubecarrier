@@ -31,11 +31,13 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 	"sigs.k8s.io/controller-runtime/pkg/source"
 
 	catalogv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/catalog/v1alpha1"
+	operatorv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/operator/v1alpha1"
 	internalreconcile "github.com/kubermatic/kubecarrier/pkg/internal/reconcile"
 	"github.com/kubermatic/kubecarrier/pkg/internal/util"
 )
@@ -198,7 +200,7 @@ func (r *DerivedCustomResourceDefinitionReconciler) Reconcile(req ctrl.Request) 
 	if !isCRDReady(currentDerivedCRD) {
 		// waiting for CRD to be ready
 		if err = r.updateStatus(ctx, dcrd, catalogv1alpha1.DerivedCustomResourceDefinitionCondition{
-			Type:    catalogv1alpha1.DerivedCustomResourceDefinitionReady,
+			Type:    catalogv1alpha1.DerivedCustomResourceDefinitionCRDRegistered,
 			Status:  catalogv1alpha1.ConditionFalse,
 			Reason:  "Establishing",
 			Message: "The derived CRD is not yet established.",
@@ -216,7 +218,7 @@ func (r *DerivedCustomResourceDefinitionReconciler) Reconcile(req ctrl.Request) 
 		Singular: currentDerivedCRD.Status.AcceptedNames.Singular,
 	}
 	if err = r.updateStatus(ctx, dcrd, catalogv1alpha1.DerivedCustomResourceDefinitionCondition{
-		Type:    catalogv1alpha1.DerivedCustomResourceDefinitionReady,
+		Type:    catalogv1alpha1.DerivedCustomResourceDefinitionCRDRegistered,
 		Status:  catalogv1alpha1.ConditionTrue,
 		Reason:  "Established",
 		Message: "The derived CRD is established.",
@@ -224,7 +226,89 @@ func (r *DerivedCustomResourceDefinitionReconciler) Reconcile(req ctrl.Request) 
 		return result, fmt.Errorf("updating status: %w", err)
 	}
 
+	// Launch Elevator instance
+	storageVersion := getStorageVersion(baseCRD)
+	desiredElevator := &operatorv1alpha1.Elevator{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      dcrd.Name,
+			Namespace: dcrd.Namespace,
+		},
+		Spec: operatorv1alpha1.ElevatorSpec{
+			DerivedCRD: operatorv1alpha1.ObjectReference{
+				Name: dcrd.Name,
+			},
+			ProviderCRD: operatorv1alpha1.CRDReference{
+				Kind:    baseCRD.Status.AcceptedNames.Kind,
+				Version: storageVersion,
+				Plural:  baseCRD.Status.AcceptedNames.Plural,
+				Group:   baseCRD.Spec.Group,
+			},
+			TenantCRD: operatorv1alpha1.CRDReference{
+				Kind:    currentDerivedCRD.Status.AcceptedNames.Kind,
+				Version: storageVersion,
+				Plural:  currentDerivedCRD.Status.AcceptedNames.Plural,
+				Group:   currentDerivedCRD.Spec.Group,
+			},
+		},
+	}
+	if err := controllerutil.SetControllerReference(
+		dcrd, desiredElevator, r.Scheme); err != nil {
+		return result, fmt.Errorf("set controller reference: %w", err)
+	}
+
+	currentElevator := &operatorv1alpha1.Elevator{}
+	err = r.Get(ctx, types.NamespacedName{
+		Name:      desiredElevator.Name,
+		Namespace: desiredElevator.Namespace,
+	}, currentElevator)
+	if err != nil && !errors.IsNotFound(err) {
+		return result, fmt.Errorf("getting Elevator: %w", err)
+	}
+
+	if errors.IsNotFound(err) {
+		// Create Elevator
+		if err = r.Create(ctx, desiredElevator); err != nil {
+			return result, fmt.Errorf("creating Elevator: %w", err)
+		}
+		return result, nil
+	}
+
+	// Update Elevator
+	currentElevator.Spec = desiredElevator.Spec
+	if err = r.Update(ctx, currentElevator); err != nil {
+		return result, fmt.Errorf("updating Elevator: %w", err)
+	}
+
+	if readyCondition, _ := currentElevator.Status.GetCondition(operatorv1alpha1.ElevatorReady); readyCondition.Status != operatorv1alpha1.ConditionTrue {
+		if err = r.updateStatus(ctx, dcrd, catalogv1alpha1.DerivedCustomResourceDefinitionCondition{
+			Type:    catalogv1alpha1.DerivedCustomResourceDefinitionControllerRunning,
+			Status:  catalogv1alpha1.ConditionFalse,
+			Reason:  "Unready",
+			Message: "The controller is unready.",
+		}); err != nil {
+			return result, fmt.Errorf("updating status: %w", err)
+		}
+		return result, nil
+	}
+
+	if err = r.updateStatus(ctx, dcrd, catalogv1alpha1.DerivedCustomResourceDefinitionCondition{
+		Type:    catalogv1alpha1.DerivedCustomResourceDefinitionControllerRunning,
+		Status:  catalogv1alpha1.ConditionTrue,
+		Reason:  "Ready",
+		Message: "The controller is ready.",
+	}); err != nil {
+		return result, fmt.Errorf("updating status: %w", err)
+	}
 	return result, nil
+}
+
+func getStorageVersion(crd *apiextensionsv1.CustomResourceDefinition) string {
+	for _, version := range crd.Spec.Versions {
+		if version.Storage {
+			return version.Name
+		}
+	}
+	return ""
 }
 
 func isCRDReady(crd *apiextensionsv1.CustomResourceDefinition) bool {
@@ -243,6 +327,7 @@ func (r *DerivedCustomResourceDefinitionReconciler) SetupWithManager(mgr ctrl.Ma
 
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&catalogv1alpha1.DerivedCustomResourceDefinition{}).
+		Owns(&operatorv1alpha1.Elevator{}).
 		Watches(&source.Kind{Type: &apiextensionsv1.CustomResourceDefinition{}}, enqueuer).
 		Watches(&source.Kind{Type: &apiextensionsv1.CustomResourceDefinition{}}, &handler.EnqueueRequestsFromMapFunc{
 			ToRequests: handler.ToRequestsFunc(func(mapObject handler.MapObject) (out []reconcile.Request) {
@@ -319,6 +404,37 @@ func (r *DerivedCustomResourceDefinitionReconciler) updateStatus(
 ) error {
 	dcrd.Status.ObservedGeneration = dcrd.Generation
 	dcrd.Status.SetCondition(condition)
+
+	crdRegistered, _ := dcrd.Status.GetCondition(catalogv1alpha1.DerivedCustomResourceDefinitionCRDRegistered)
+	controllerRunning, _ := dcrd.Status.GetCondition(catalogv1alpha1.DerivedCustomResourceDefinitionControllerRunning)
+
+	if crdRegistered.Status == catalogv1alpha1.ConditionTrue &&
+		controllerRunning.Status == catalogv1alpha1.ConditionTrue {
+		// Everything is ready
+		dcrd.Status.SetCondition(catalogv1alpha1.DerivedCustomResourceDefinitionCondition{
+			Type:    catalogv1alpha1.DerivedCustomResourceDefinitionReady,
+			Status:  catalogv1alpha1.ConditionTrue,
+			Reason:  "ComponentsReady",
+			Message: "The CRD is registered and the controller ist ready.",
+		})
+	} else if crdRegistered.Status != catalogv1alpha1.ConditionTrue {
+		// CRD is not yet established
+		dcrd.Status.SetCondition(catalogv1alpha1.DerivedCustomResourceDefinitionCondition{
+			Type:    catalogv1alpha1.DerivedCustomResourceDefinitionReady,
+			Status:  catalogv1alpha1.ConditionFalse,
+			Reason:  "CRDNotEstablished",
+			Message: "The CRD is not yet established.",
+		})
+	} else if controllerRunning.Status != catalogv1alpha1.ConditionTrue {
+		// Controller not ready
+		dcrd.Status.SetCondition(catalogv1alpha1.DerivedCustomResourceDefinitionCondition{
+			Type:    catalogv1alpha1.DerivedCustomResourceDefinitionReady,
+			Status:  catalogv1alpha1.ConditionFalse,
+			Reason:  "ControllerUnready",
+			Message: "The controller is unready.",
+		})
+	}
+
 	if err := r.Status().Update(ctx, dcrd); err != nil {
 		return fmt.Errorf("updating status: %w", err)
 	}
