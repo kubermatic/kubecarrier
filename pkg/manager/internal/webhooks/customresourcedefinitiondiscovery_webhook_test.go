@@ -37,24 +37,6 @@ func TestCustomResourceDefinitionDiscoveryValidatingCreate(t *testing.T) {
 		expectedError bool
 	}{
 		{
-			name: "kind override missing",
-			object: &corev1alpha1.CustomResourceDefinitionDiscovery{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "test-crddiscovery",
-					Namespace: "test-namespace",
-				},
-				Spec: corev1alpha1.CustomResourceDefinitionDiscoverySpec{
-					ServiceCluster: corev1alpha1.ObjectReference{
-						Name: "ServiceCluster",
-					},
-					CRD: corev1alpha1.ObjectReference{
-						Name: "CRD",
-					},
-				},
-			},
-			expectedError: true,
-		},
-		{
 			name: "servicecluster missing",
 			object: &corev1alpha1.CustomResourceDefinitionDiscovery{
 				ObjectMeta: metav1.ObjectMeta{

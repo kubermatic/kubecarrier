@@ -75,9 +75,8 @@ func (r *CustomResourceDefinitionDiscoveryWebhookHandler) InjectDecoder(d *admis
 func (r *CustomResourceDefinitionDiscoveryWebhookHandler) validateCreate(crdDiscovery *corev1alpha1.CustomResourceDefinitionDiscovery) error {
 	r.Log.Info("validate create", "name", crdDiscovery.Name)
 	if crdDiscovery.Spec.ServiceCluster.Name == "" ||
-		crdDiscovery.Spec.CRD.Name == "" ||
-		crdDiscovery.Spec.KindOverride == "" {
-		return fmt.Errorf("the ServiceCluster, CRD, or KindOverride of CustomResourceDefinitionDiscovery is not specifed")
+		crdDiscovery.Spec.CRD.Name == "" {
+		return fmt.Errorf("the ServiceCluster, CRD, or KindOverride of CustomResourceDefinitionDiscovery is not specified")
 	}
 	return nil
 }

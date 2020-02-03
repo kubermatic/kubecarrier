@@ -142,7 +142,6 @@ func NewFerrySuite(
 						ServiceCluster: corev1alpha1.ObjectReference{
 							Name: serviceClusterRegistration.GetName(),
 						},
-						KindOverride: "testKindOverride",
 					},
 				}
 				// make sure the object is not present, before we try to create it
