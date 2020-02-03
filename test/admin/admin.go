@@ -21,9 +21,6 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-
-	"github.com/kubermatic/kubecarrier/pkg/testutil"
-
 	"github.com/stretchr/testify/require"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -31,6 +28,7 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 
 	catalogv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/catalog/v1alpha1"
+	"github.com/kubermatic/kubecarrier/pkg/testutil"
 	"github.com/kubermatic/kubecarrier/test/framework"
 )
 
