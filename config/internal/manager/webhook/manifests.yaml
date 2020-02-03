@@ -37,7 +37,7 @@ webhooks:
     service:
       name: webhook-service
       namespace: system
-      path: /validate-kubecarrier-io-v1alpha1-customresourcedefinitiondiscoveries
+      path: /validate-kubecarrier-io-v1alpha1-customresourcedefinitiondiscovery
   failurePolicy: Fail
   name: vcustomresourcedefinitiondiscovery.kubecarrier.io
   rules:

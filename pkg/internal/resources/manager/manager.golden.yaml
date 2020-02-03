@@ -1972,7 +1972,7 @@
       service:
         name: kubecarrier-manager-webhook-service
         namespace: test3000
-        path: /validate-kubecarrier-io-v1alpha1-customresourcedefinitiondiscoveries
+        path: /validate-kubecarrier-io-v1alpha1-customresourcedefinitiondiscovery
     failurePolicy: Fail
     name: vcustomresourcedefinitiondiscovery.kubecarrier.io
     rules:

@@ -36,7 +36,7 @@ type CustomResourceDefinitionDiscoveryWebhookHandler struct {
 
 var _ admission.Handler = (*CustomResourceDefinitionDiscoveryWebhookHandler)(nil)
 
-// +kubebuilder:webhook:path=/validate-kubecarrier-io-v1alpha1-customresourcedefinitiondiscoveries,mutating=false,failurePolicy=fail,groups=kubecarrier.io,resources=customresourcedefinitiondiscoveries,verbs=create;update,versions=v1alpha1,name=vcustomresourcedefinitiondiscovery.kubecarrier.io
+// +kubebuilder:webhook:path=/validate-kubecarrier-io-v1alpha1-customresourcedefinitiondiscovery,mutating=false,failurePolicy=fail,groups=kubecarrier.io,resources=customresourcedefinitiondiscoveries,verbs=create;update,versions=v1alpha1,name=vcustomresourcedefinitiondiscovery.kubecarrier.io
 
 // Handle is the function to handle create/update requests of CustomResourceDefinitionDiscoverys.
 func (r *CustomResourceDefinitionDiscoveryWebhookHandler) Handle(ctx context.Context, req admission.Request) admission.Response {
