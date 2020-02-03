@@ -180,6 +180,19 @@ func (rc *RecordingClient) RegisterForCleanup(obj runtime.Object) {
 	rc.order = append(rc.order, key)
 }
 
+func (rc *RecordingClient) UnregisterForCleanup(obj runtime.Object) {
+	rc.mux.Lock()
+	defer rc.mux.Unlock()
+
+	meta := obj.(metav1.Object)
+	key := types.NamespacedName{
+		Name:      meta.GetName(),
+		Namespace: meta.GetNamespace(),
+	}.String()
+	key = fmt.Sprintf("%T:%s", obj, key)
+	delete(rc.objects, key)
+}
+
 func (rc *RecordingClient) CleanUp(t *testing.T) {
 	if _, noCleanup := os.LookupEnv("NO_CLEANUP"); noCleanup {
 		// skip cleanup
@@ -213,16 +226,6 @@ func (rc *RecordingClient) Create(ctx context.Context, obj runtime.Object, opts 
 }
 
 func (rc *RecordingClient) Delete(ctx context.Context, obj runtime.Object, opts ...client.DeleteOption) error {
-	rc.mux.Lock()
-	defer rc.mux.Unlock()
-
-	meta := obj.(metav1.Object)
-	key := types.NamespacedName{
-		Name:      meta.GetName(),
-		Namespace: meta.GetNamespace(),
-	}.String()
-	key = fmt.Sprintf("%T:%s", obj, key)
-	delete(rc.objects, key)
-
+	rc.UnregisterForCleanup(obj)
 	return rc.Client.Delete(ctx, obj, opts...)
 }

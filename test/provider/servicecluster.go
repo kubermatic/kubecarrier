@@ -188,6 +188,7 @@ func NewServiceClusterSuite(
 		masterClient.RegisterForCleanup(serviceClusterAssignment)
 
 		// master cluster -> service cluster
+		//
 		masterClusterObj := &unstructured.Unstructured{
 			Object: map[string]interface{}{
 				"apiVersion": "eu-west-1.test-servicecluster/v1alpha1",
@@ -220,5 +221,40 @@ func NewServiceClusterSuite(
 		}
 		require.NoError(
 			t, testutil.WaitUntilFound(serviceClient, serviceClusterObj))
+
+		// service cluster -> master cluster
+		//
+		serviceClusterObj2 := &unstructured.Unstructured{
+			Object: map[string]interface{}{
+				"apiVersion": "test.kubecarrier.io/v1alpha1",
+				"kind":       "Redis",
+				"metadata": map[string]interface{}{
+					"name":      "test-instance-2",
+					"namespace": serviceClusterAssignment.Status.ServiceClusterNamespace.Name,
+				},
+				"spec": map[string]interface{}{
+					"prop1": "test1",
+				},
+			},
+		}
+		require.NoError(t, serviceClient.Create(ctx, serviceClusterObj2))
+		// we need to unregister this object,
+		// as the master cluster takes control and will just recreate it.
+		serviceClient.UnregisterForCleanup(serviceClusterObj2)
+
+		// a object on the master cluster should have been created
+		masterClusterObj2 := &unstructured.Unstructured{
+			Object: map[string]interface{}{
+				"apiVersion": "eu-west-1.test-servicecluster/v1alpha1",
+				"kind":       "RedisInternal",
+				"metadata": map[string]interface{}{
+					"name":      serviceClusterObj2.GetName(),
+					"namespace": provider.Status.NamespaceName,
+				},
+			},
+		}
+		masterClient.RegisterForCleanup(masterClusterObj2)
+		require.NoError(
+			t, testutil.WaitUntilFound(masterClient, masterClusterObj2))
 	}
 }

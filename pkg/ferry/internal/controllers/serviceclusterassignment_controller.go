@@ -85,7 +85,7 @@ func (r *ServiceClusterAssignmentReconciler) Reconcile(req ctrl.Request) (ctrl.R
 		if err := r.MasterClient.Status().Update(ctx, serviceClusterAssignment); err != nil {
 			return ctrl.Result{}, fmt.Errorf("updating ServiceClusterAssignment Status: %w", err)
 		}
-		return ctrl.Result{}, fmt.Errorf("cannot create tenant Assigenment namespace: %w", err)
+		return ctrl.Result{}, fmt.Errorf("cannot create TenantAssignment namespace: %w", err)
 	}
 
 	serviceClusterAssignment.Status.ServiceClusterNamespace = corev1alpha1.ObjectReference{

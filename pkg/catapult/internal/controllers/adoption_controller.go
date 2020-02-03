@@ -119,7 +119,10 @@ func (r *AdoptionReconciler) SetupWithManager(mgr ctrl.Manager) error {
 			if !ok {
 				return false
 			}
-
-			return len(meta.GetOwnerReferences()) == 0
+			unowned, err := util.IsUnowned(meta)
+			if err != nil {
+				return false
+			}
+			return unowned
 		}))
 }
