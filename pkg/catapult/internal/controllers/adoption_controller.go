@@ -45,8 +45,7 @@ type AdoptionReconciler struct {
 	ServiceClusterCache  cache.Cache
 
 	// Dynamic types we work with
-	MasterClusterGVK, ServiceClusterGVK   schema.GroupVersionKind
-	MasterClusterType, ServiceClusterType *unstructured.Unstructured
+	MasterClusterGVK, ServiceClusterGVK schema.GroupVersionKind
 
 	ProviderNamespace string
 }
@@ -57,7 +56,7 @@ func (r *AdoptionReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 		result ctrl.Result
 	)
 
-	serviceClusterObj := r.ServiceClusterType.DeepCopy()
+	serviceClusterObj := r.newServiceObject()
 	if err := r.ServiceClusterClient.Get(ctx, req.NamespacedName, serviceClusterObj); err != nil {
 		return result, client.IgnoreNotFound(err)
 	}
@@ -67,28 +66,25 @@ func (r *AdoptionReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	desiredMasterClusterObj.SetGroupVersionKind(r.MasterClusterGVK)
 	if err := unstructured.SetNestedField(
 		desiredMasterClusterObj.Object, map[string]interface{}{}, "metadata"); err != nil {
-		return result, fmt.Errorf(
-			"deleting %s .metadata: %w", r.MasterClusterGVK.Kind, err)
+		return result, fmt.Errorf("deleting %s .metadata: %w", r.MasterClusterGVK.Kind, err)
 	}
 	desiredMasterClusterObj.SetName(serviceClusterObj.GetName())
 	desiredMasterClusterObj.SetNamespace(r.ProviderNamespace)
 
 	// Reconcile
-	currentMasterClusterObj := r.MasterClusterType.DeepCopy()
+	currentMasterClusterObj := r.newMasterObject()
 	err := r.Get(ctx, types.NamespacedName{
 		Name:      desiredMasterClusterObj.GetName(),
 		Namespace: desiredMasterClusterObj.GetNamespace(),
 	}, currentMasterClusterObj)
 	if err != nil && !errors.IsNotFound(err) {
-		return result, fmt.Errorf(
-			"getting %s: %w", r.MasterClusterGVK.Kind, err)
+		return result, fmt.Errorf("getting %s: %w", r.MasterClusterGVK.Kind, err)
 	}
 
 	if errors.IsNotFound(err) {
 		// Create the master cluster object
 		if err = r.Create(ctx, desiredMasterClusterObj); err != nil {
-			return result, fmt.Errorf(
-				"creating %s: %w", r.MasterClusterGVK.Kind, err)
+			return result, fmt.Errorf("creating %s: %w", r.MasterClusterGVK.Kind, err)
 		}
 	}
 
@@ -96,7 +92,7 @@ func (r *AdoptionReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 }
 
 func (r *AdoptionReconciler) SetupWithManager(mgr ctrl.Manager) error {
-	serviceClusterSource := &source.Kind{Type: r.ServiceClusterType}
+	serviceClusterSource := &source.Kind{Type: r.newServiceObject()}
 	if err := serviceClusterSource.InjectCache(r.ServiceClusterCache); err != nil {
 		return fmt.Errorf("injecting cache: %w", err)
 	}
@@ -125,4 +121,16 @@ func (r *AdoptionReconciler) SetupWithManager(mgr ctrl.Manager) error {
 			}
 			return unowned
 		}))
+}
+
+func (r *AdoptionReconciler) newServiceObject() *unstructured.Unstructured {
+	obj := &unstructured.Unstructured{}
+	obj.SetGroupVersionKind(r.ServiceClusterGVK)
+	return obj
+}
+
+func (r *AdoptionReconciler) newMasterObject() *unstructured.Unstructured {
+	obj := &unstructured.Unstructured{}
+	obj.SetGroupVersionKind(r.MasterClusterGVK)
+	return obj
 }

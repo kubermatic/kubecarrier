@@ -23,7 +23,6 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/spf13/cobra"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
@@ -184,16 +183,11 @@ func run(flags *flags, log logr.Logger) error {
 		Version: flags.providerVersion,
 		Group:   flags.providerGroup,
 	}
-	providerType := &unstructured.Unstructured{}
-	providerType.SetGroupVersionKind(providerGVK)
-
 	tenantGVK := schema.GroupVersionKind{
 		Kind:    flags.tenantKind,
 		Version: flags.tenantVersion,
 		Group:   flags.tenantGroup,
 	}
-	tenantType := &unstructured.Unstructured{}
-	tenantType.SetGroupVersionKind(tenantGVK)
 
 	// Setup Controllers
 	if err := (&controllers.TenantObjReconciler{
@@ -202,10 +196,8 @@ func run(flags *flags, log logr.Logger) error {
 		Scheme:           mgr.GetScheme(),
 		NamespacedClient: namespacedClient,
 
-		ProviderGVK:  providerGVK,
-		ProviderType: providerType,
-		TenantGVK:    tenantGVK,
-		TenantType:   tenantType,
+		ProviderGVK: providerGVK,
+		TenantGVK:   tenantGVK,
 
 		DerivedCRDName:    flags.derivedCRDName,
 		ProviderNamespace: flags.providerNamespace,
@@ -219,10 +211,8 @@ func run(flags *flags, log logr.Logger) error {
 		Scheme:           mgr.GetScheme(),
 		NamespacedClient: namespacedClient,
 
-		ProviderGVK:  providerGVK,
-		ProviderType: providerType,
-		TenantGVK:    tenantGVK,
-		TenantType:   tenantType,
+		ProviderGVK: providerGVK,
+		TenantGVK:   tenantGVK,
 
 		DerivedCRDName:    flags.derivedCRDName,
 		ProviderNamespace: flags.providerNamespace,

@@ -19,7 +19,6 @@ package controllers
 import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
@@ -34,14 +33,12 @@ var (
 		Version: "v1alpha1",
 		Group:   "eu-west-1.provider",
 	}
-	providerType = &unstructured.Unstructured{}
 
 	tenantGVK = schema.GroupVersionKind{
 		Kind:    "CouchDB",
 		Version: "v1alpha1",
 		Group:   "eu-west-1.provider",
 	}
-	tenantType = &unstructured.Unstructured{}
 
 	providerNamespace = "extreme-cloud"
 	dcrd              = &catalogv1alpha1.DerivedCustomResourceDefinition{
@@ -71,8 +68,4 @@ func init() {
 	if err := catalogv1alpha1.AddToScheme(testScheme); err != nil {
 		panic(err)
 	}
-
-	// Test Setup
-	providerType.SetGroupVersionKind(providerGVK)
-	tenantType.SetGroupVersionKind(tenantGVK)
 }

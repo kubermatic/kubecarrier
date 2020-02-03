@@ -74,10 +74,8 @@ func TestTenantObjReconciler(t *testing.T) {
 			Scheme:           testScheme,
 			NamespacedClient: client,
 
-			ProviderGVK:  providerGVK,
-			ProviderType: providerType,
-			TenantGVK:    tenantGVK,
-			TenantType:   tenantType,
+			ProviderGVK: providerGVK,
+			TenantGVK:   tenantGVK,
 
 			DerivedCRDName:    dcrd.Name,
 			ProviderNamespace: providerNamespace,
@@ -93,7 +91,8 @@ func TestTenantObjReconciler(t *testing.T) {
 
 		// Check Provider Obj
 		ctx := context.Background()
-		checkProviderObj := providerType.DeepCopy()
+		checkProviderObj := &unstructured.Unstructured{}
+		checkProviderObj.SetGroupVersionKind(providerGVK)
 		err = client.Get(ctx, types.NamespacedName{
 			Name:      tenantObj.GetName(),
 			Namespace: tenantObj.GetNamespace(),
@@ -131,7 +130,8 @@ func TestTenantObjReconciler(t *testing.T) {
 		}, checkProviderObj.Object)
 
 		// Check Tenant Obj
-		checkTenantObj := tenantType.DeepCopy()
+		checkTenantObj := &unstructured.Unstructured{}
+		checkTenantObj.SetGroupVersionKind(tenantGVK)
 		err = client.Get(ctx, types.NamespacedName{
 			Name:      tenantObj.GetName(),
 			Namespace: tenantObj.GetNamespace(),
@@ -169,10 +169,8 @@ func TestTenantObjReconciler(t *testing.T) {
 			Scheme:           testScheme,
 			NamespacedClient: client,
 
-			ProviderGVK:  providerGVK,
-			ProviderType: providerType,
-			TenantGVK:    tenantGVK,
-			TenantType:   tenantType,
+			ProviderGVK: providerGVK,
+			TenantGVK:   tenantGVK,
 
 			DerivedCRDName:    dcrd.Name,
 			ProviderNamespace: providerNamespace,
@@ -188,7 +186,8 @@ func TestTenantObjReconciler(t *testing.T) {
 
 		// Check Provider obj
 		ctx := context.Background()
-		checkProviderObj := providerType.DeepCopy()
+		checkProviderObj := &unstructured.Unstructured{}
+		checkProviderObj.SetGroupVersionKind(providerGVK)
 		err = client.Get(ctx, types.NamespacedName{
 			Name:      tenantObj.GetName(),
 			Namespace: tenantObj.GetNamespace(),

@@ -46,15 +46,12 @@ type MasterClusterObjReconciler struct {
 	Scheme           *runtime.Scheme
 	NamespacedClient client.Client
 
-	ServiceClusterClient client.Client
-	ServiceClusterCache  cache.Cache
+	ServiceClusterClient              client.Client
+	ServiceClusterCache               cache.Cache
+	ProviderNamespace, ServiceCluster string
 
 	// Dynamic types we work with
-	MasterClusterGVK, ServiceClusterGVK   schema.GroupVersionKind
-	MasterClusterType, ServiceClusterType *unstructured.Unstructured
-
-	ProviderNamespace string
-	ServiceCluster    string
+	MasterClusterGVK, ServiceClusterGVK schema.GroupVersionKind
 }
 
 // +kubebuilder:rbac:groups=kubecarrier.io,resources=serviceclusterassignments,verbs=get;list;watch;create;update;patch
@@ -66,7 +63,7 @@ func (r *MasterClusterObjReconciler) Reconcile(req ctrl.Request) (ctrl.Result, e
 		ctx    = context.Background()
 	)
 
-	masterClusterObj := r.MasterClusterType.DeepCopy()
+	masterClusterObj := r.newMasterObject()
 	if err := r.Get(ctx, req.NamespacedName, masterClusterObj); err != nil {
 		return result, client.IgnoreNotFound(err)
 	}
@@ -116,7 +113,7 @@ func (r *MasterClusterObjReconciler) Reconcile(req ctrl.Request) (ctrl.Result, e
 	}
 
 	// Reconcile
-	currentServiceClusterObj := r.ServiceClusterType.DeepCopy()
+	currentServiceClusterObj := r.newServiceObject()
 	err = r.ServiceClusterClient.Get(ctx, types.NamespacedName{
 		Name:      desiredServiceClusterObj.GetName(),
 		Namespace: desiredServiceClusterObj.GetNamespace(),
@@ -184,18 +181,30 @@ func (r *MasterClusterObjReconciler) Reconcile(req ctrl.Request) (ctrl.Result, e
 }
 
 func (r *MasterClusterObjReconciler) SetupWithManager(mgr ctrl.Manager) error {
-	serviceClusterSource := &source.Kind{Type: r.ServiceClusterType}
+	serviceClusterSource := &source.Kind{Type: r.newServiceObject()}
 	if err := serviceClusterSource.InjectCache(r.ServiceClusterCache); err != nil {
 		return fmt.Errorf("injecting cache: %w", err)
 	}
 
 	return ctrl.NewControllerManagedBy(mgr).
-		For(r.MasterClusterType).
+		For(r.newMasterObject()).
 		Watches(
 			source.Func(serviceClusterSource.Start),
-			util.EnqueueRequestForOwner(r.MasterClusterType, r.Scheme),
+			util.EnqueueRequestForOwner(r.newMasterObject(), r.Scheme),
 		).
 		Complete(r)
+}
+
+func (r *MasterClusterObjReconciler) newServiceObject() *unstructured.Unstructured {
+	obj := &unstructured.Unstructured{}
+	obj.SetGroupVersionKind(r.ServiceClusterGVK)
+	return obj
+}
+
+func (r *MasterClusterObjReconciler) newMasterObject() *unstructured.Unstructured {
+	obj := &unstructured.Unstructured{}
+	obj.SetGroupVersionKind(r.MasterClusterGVK)
+	return obj
 }
 
 func (r *MasterClusterObjReconciler) handleDeletion(
@@ -213,7 +222,8 @@ func (r *MasterClusterObjReconciler) handleDeletion(
 	if err == nil {
 		// if the ServiceClusterAssignment is not found,
 		// we can skip deleting the instance on the ServiceCluster.
-		serviceClusterObj := r.ServiceClusterType.DeepCopy()
+		serviceClusterObj := &unstructured.Unstructured{}
+		serviceClusterObj.SetGroupVersionKind(r.ServiceClusterGVK)
 		err := r.ServiceClusterClient.Get(ctx, types.NamespacedName{
 			Name:      masterClusterObj.GetName(),
 			Namespace: sca.Status.ServiceClusterNamespace.Name,

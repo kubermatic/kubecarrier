@@ -23,7 +23,6 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/spf13/cobra"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
@@ -226,16 +225,11 @@ func run(flags *flags, log logr.Logger) error {
 		Version: flags.masterClusterVersion,
 		Group:   flags.masterClusterGroup,
 	}
-	masterClusterType := &unstructured.Unstructured{}
-	masterClusterType.SetGroupVersionKind(masterClusterGVK)
-
 	serviceClusterGVK := schema.GroupVersionKind{
 		Kind:    flags.serviceClusterKind,
 		Version: flags.serviceClusterVersion,
 		Group:   flags.serviceClusterGroup,
 	}
-	serviceClusterType := &unstructured.Unstructured{}
-	serviceClusterType.SetGroupVersionKind(serviceClusterGVK)
 
 	// Setup Controllers
 	if err := (&controllers.MasterClusterObjReconciler{
@@ -249,10 +243,8 @@ func run(flags *flags, log logr.Logger) error {
 		ServiceCluster:       flags.serviceClusterName,
 		ProviderNamespace:    flags.providerNamespace,
 
-		MasterClusterGVK:   masterClusterGVK,
-		MasterClusterType:  masterClusterType,
-		ServiceClusterGVK:  serviceClusterGVK,
-		ServiceClusterType: serviceClusterType,
+		MasterClusterGVK:  masterClusterGVK,
+		ServiceClusterGVK: serviceClusterGVK,
 	}).SetupWithManager(mgr); err != nil {
 		return fmt.Errorf("cannot add %s controller: %w", "MasterClusterObjReconciler", err)
 	}
@@ -265,10 +257,8 @@ func run(flags *flags, log logr.Logger) error {
 		ServiceClusterCache:  serviceCache,
 		ProviderNamespace:    flags.providerNamespace,
 
-		MasterClusterGVK:   masterClusterGVK,
-		MasterClusterType:  masterClusterType,
-		ServiceClusterGVK:  serviceClusterGVK,
-		ServiceClusterType: serviceClusterType,
+		MasterClusterGVK:  masterClusterGVK,
+		ServiceClusterGVK: serviceClusterGVK,
 	}).SetupWithManager(mgr); err != nil {
 		return fmt.Errorf("cannot add %s controller: %w", "AdoptionReconciler", err)
 	}

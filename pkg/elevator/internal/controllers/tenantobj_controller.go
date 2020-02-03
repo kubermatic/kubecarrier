@@ -44,9 +44,7 @@ type TenantObjReconciler struct {
 	NamespacedClient client.Client
 
 	// Dynamic types we work with
-	ProviderGVK, TenantGVK   schema.GroupVersionKind
-	ProviderType, TenantType *unstructured.Unstructured
-
+	ProviderGVK, TenantGVK            schema.GroupVersionKind
 	DerivedCRDName, ProviderNamespace string
 }
 
@@ -59,7 +57,7 @@ func (r *TenantObjReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 		result ctrl.Result
 	)
 
-	tenantObj := r.TenantType.DeepCopy()
+	tenantObj := r.newTenantObject()
 	if err := r.Get(ctx, req.NamespacedName, tenantObj); err != nil {
 		return result, client.IgnoreNotFound(err)
 	}
@@ -90,8 +88,8 @@ func (r *TenantObjReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 
 func (r *TenantObjReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
-		For(r.TenantType).
-		Owns(r.ProviderType).
+		For(r.newTenantObject()).
+		Owns(r.newProviderObject()).
 		Complete(r)
 }
 
@@ -99,7 +97,7 @@ func (r *TenantObjReconciler) reconcileTenantObj(
 	ctx context.Context, tenantObj *unstructured.Unstructured,
 	config catalogv1alpha1.VersionExposeConfig,
 ) error {
-	desiredProviderObj := r.ProviderType.DeepCopy()
+	desiredProviderObj := r.newProviderObject()
 	desiredProviderObj.SetName(tenantObj.GetName())
 	desiredProviderObj.SetNamespace(tenantObj.GetNamespace())
 
@@ -113,7 +111,7 @@ func (r *TenantObjReconciler) reconcileTenantObj(
 	statusFields, otherFields := splitStatusFields(config.Fields)
 
 	// Lookup current instance
-	currentProviderObj := r.ProviderType.DeepCopy()
+	currentProviderObj := r.newProviderObject()
 	err = r.Get(ctx, types.NamespacedName{
 		Name:      desiredProviderObj.GetName(),
 		Namespace: desiredProviderObj.GetNamespace(),
@@ -171,4 +169,16 @@ func (r *TenantObjReconciler) reconcileTenantObj(
 	}
 
 	return nil
+}
+
+func (r *TenantObjReconciler) newTenantObject() *unstructured.Unstructured {
+	obj := &unstructured.Unstructured{}
+	obj.SetGroupVersionKind(r.TenantGVK)
+	return obj
+}
+
+func (r *TenantObjReconciler) newProviderObject() *unstructured.Unstructured {
+	obj := &unstructured.Unstructured{}
+	obj.SetGroupVersionKind(r.ProviderGVK)
+	return obj
 }

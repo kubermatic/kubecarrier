@@ -18,7 +18,6 @@ package controllers
 
 import (
 	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
@@ -33,14 +32,12 @@ var (
 		Version: "v1alpha1",
 		Group:   "eu-west-1.provider",
 	}
-	masterClusterType = &unstructured.Unstructured{}
 
 	serviceClusterGVK = schema.GroupVersionKind{
 		Kind:    "CouchDB",
 		Version: "v1alpha1",
 		Group:   "couchdb.io",
 	}
-	serviceClusterType = &unstructured.Unstructured{}
 
 	providerNamespace = "extreme-cloud"
 )
@@ -53,8 +50,4 @@ func init() {
 	if err := corev1alpha1.AddToScheme(testScheme); err != nil {
 		panic(err)
 	}
-
-	// Test Setup
-	masterClusterType.SetGroupVersionKind(masterClusterGVK)
-	serviceClusterType.SetGroupVersionKind(serviceClusterGVK)
 }

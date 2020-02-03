@@ -107,10 +107,8 @@ func TestMasterClusterObjReconciler(t *testing.T) {
 			ServiceClusterClient: serviceClient,
 			NamespacedClient:     masterClient,
 
-			MasterClusterGVK:   masterClusterGVK,
-			MasterClusterType:  masterClusterType,
-			ServiceClusterGVK:  serviceClusterGVK,
-			ServiceClusterType: serviceClusterType,
+			MasterClusterGVK:  masterClusterGVK,
+			ServiceClusterGVK: serviceClusterGVK,
 
 			ServiceCluster:    "eu-west-1",
 			ProviderNamespace: providerNamespace,
@@ -125,7 +123,9 @@ func TestMasterClusterObjReconciler(t *testing.T) {
 		require.NoError(t, err)
 
 		// Check service cluster instance
-		checkServiceClusterObj := serviceClusterType.DeepCopy()
+		checkServiceClusterObj := &unstructured.Unstructured{}
+		checkServiceClusterObj.SetGroupVersionKind(serviceClusterGVK)
+
 		require.NoError(t, serviceClient.Get(ctx, types.NamespacedName{
 			Name:      masterClusterObj.GetName(),
 			Namespace: sca.Status.ServiceClusterNamespace.Name,
@@ -153,7 +153,8 @@ func TestMasterClusterObjReconciler(t *testing.T) {
 		}, checkServiceClusterObj.Object)
 
 		// Check master cluster instance
-		checkMasterClusterObj := masterClusterType.DeepCopy()
+		checkMasterClusterObj := &unstructured.Unstructured{}
+		checkMasterClusterObj.SetGroupVersionKind(masterClusterGVK)
 		require.NoError(t, masterClient.Get(ctx, types.NamespacedName{
 			Name:      masterClusterObj.GetName(),
 			Namespace: masterClusterObj.GetNamespace(),
@@ -196,10 +197,8 @@ func TestMasterClusterObjReconciler(t *testing.T) {
 			NamespacedClient:     masterClient,
 			ServiceClusterClient: serviceClient,
 
-			MasterClusterGVK:   masterClusterGVK,
-			MasterClusterType:  masterClusterType,
-			ServiceClusterGVK:  serviceClusterGVK,
-			ServiceClusterType: serviceClusterType,
+			MasterClusterGVK:  masterClusterGVK,
+			ServiceClusterGVK: serviceClusterGVK,
 
 			ServiceCluster:    "eu-west-1",
 			ProviderNamespace: providerNamespace,
@@ -248,7 +247,8 @@ func TestMasterClusterObjReconciler(t *testing.T) {
 		})
 		require.NoError(t, err)
 
-		serviceClusterObj := serviceClusterType.DeepCopy()
+		serviceClusterObj := &unstructured.Unstructured{}
+		serviceClusterObj.SetGroupVersionKind(serviceClusterGVK)
 		require.NoError(t, serviceClient.Get(ctx, types.NamespacedName{
 			Name:      masterClusterObj.GetName(),
 			Namespace: sca.Status.ServiceClusterNamespace.Name,

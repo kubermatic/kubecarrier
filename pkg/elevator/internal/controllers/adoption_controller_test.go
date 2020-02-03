@@ -58,10 +58,8 @@ func TestAdoptionReconciler(t *testing.T) {
 			Scheme:           testScheme,
 			NamespacedClient: client,
 
-			ProviderGVK:  providerGVK,
-			ProviderType: providerType,
-			TenantGVK:    tenantGVK,
-			TenantType:   tenantType,
+			ProviderGVK: providerGVK,
+			TenantGVK:   tenantGVK,
 
 			DerivedCRDName:    dcrd.Name,
 			ProviderNamespace: providerNamespace,
@@ -76,11 +74,12 @@ func TestAdoptionReconciler(t *testing.T) {
 		require.NoError(t, err)
 
 		ctx := context.Background()
-		checkProviderObj := tenantType.DeepCopy()
+		checkTenantObj := &unstructured.Unstructured{}
+		checkTenantObj.SetGroupVersionKind(tenantGVK)
 		err = client.Get(ctx, types.NamespacedName{
 			Name:      providerObj.GetName(),
 			Namespace: providerObj.GetNamespace(),
-		}, checkProviderObj)
+		}, checkTenantObj)
 		require.NoError(t, err)
 
 		assert.Equal(t, map[string]interface{}{
@@ -94,6 +93,6 @@ func TestAdoptionReconciler(t *testing.T) {
 			"spec": map[string]interface{}{
 				"test1": "spec2000",
 			},
-		}, checkProviderObj.Object)
+		}, checkTenantObj.Object)
 	})
 }

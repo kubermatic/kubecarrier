@@ -58,11 +58,8 @@ func TestAdoptionReconciler(t *testing.T) {
 			Log:                  log,
 			ServiceClusterClient: serviceClient,
 
-			ServiceClusterGVK:  serviceClusterGVK,
-			ServiceClusterType: serviceClusterType,
-			MasterClusterGVK:   masterClusterGVK,
-			MasterClusterType:  masterClusterType,
-
+			ServiceClusterGVK: serviceClusterGVK,
+			MasterClusterGVK:  masterClusterGVK,
 			ProviderNamespace: providerNamespace,
 		}
 
@@ -75,7 +72,8 @@ func TestAdoptionReconciler(t *testing.T) {
 		require.NoError(t, err)
 
 		ctx := context.Background()
-		checkMasterClusterObj := masterClusterType.DeepCopy()
+		checkMasterClusterObj := &unstructured.Unstructured{}
+		checkMasterClusterObj.SetGroupVersionKind(masterClusterGVK)
 		err = masterClient.Get(ctx, types.NamespacedName{
 			Name:      serviceClusterObj.GetName(),
 			Namespace: providerNamespace,
