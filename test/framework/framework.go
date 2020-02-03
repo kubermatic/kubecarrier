@@ -23,7 +23,7 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -203,7 +203,7 @@ func (rc *RecordingClient) CleanUp(t *testing.T) {
 		if err != nil {
 			err = fmt.Errorf("cleanup %s: %w", key, err)
 		}
-		assert.NoError(t, err)
+		require.NoError(t, err)
 	}
 }
 

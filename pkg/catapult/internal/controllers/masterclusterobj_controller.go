@@ -202,7 +202,7 @@ func (r *MasterClusterObjReconciler) handleDeletion(
 	ctx context.Context, masterClusterObj *unstructured.Unstructured,
 ) error {
 	sca := &corev1alpha1.ServiceClusterAssignment{}
-	err := r.Get(ctx, types.NamespacedName{
+	err := r.NamespacedClient.Get(ctx, types.NamespacedName{
 		Name:      masterClusterObj.GetNamespace() + "." + r.ServiceCluster,
 		Namespace: r.ProviderNamespace,
 	}, sca)
