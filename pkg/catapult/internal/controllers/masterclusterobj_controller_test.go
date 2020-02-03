@@ -105,6 +105,7 @@ func TestMasterClusterObjReconciler(t *testing.T) {
 			Log:                  log,
 			Scheme:               testScheme,
 			ServiceClusterClient: serviceClient,
+			NamespacedClient:     masterClient,
 
 			MasterClusterGVK:   masterClusterGVK,
 			MasterClusterType:  masterClusterType,
@@ -164,10 +165,13 @@ func TestMasterClusterObjReconciler(t *testing.T) {
 			"metadata": map[string]interface{}{
 				"name":            masterClusterObj.GetName(),
 				"namespace":       masterClusterObj.GetNamespace(),
-				"resourceVersion": "1",
+				"resourceVersion": "2",
 				"generation":      int64(2),
 				"labels": map[string]interface{}{
 					"l1": "v1",
+				},
+				"finalizers": []interface{}{
+					catapultControllerFinalizer,
 				},
 			},
 			"spec": map[string]interface{}{
@@ -189,6 +193,7 @@ func TestMasterClusterObjReconciler(t *testing.T) {
 			Client:               masterClient,
 			Log:                  log,
 			Scheme:               testScheme,
+			NamespacedClient:     masterClient,
 			ServiceClusterClient: serviceClient,
 
 			MasterClusterGVK:   masterClusterGVK,
