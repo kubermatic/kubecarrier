@@ -71,6 +71,19 @@ func (r *MasterClusterObjReconciler) Reconcile(req ctrl.Request) (ctrl.Result, e
 		return result, client.IgnoreNotFound(err)
 	}
 
+	if !masterClusterObj.GetDeletionTimestamp().IsZero() {
+		if err := r.handleDeletion(ctx, masterClusterObj); err != nil {
+			return result, fmt.Errorf("handling deletion: %w", err)
+		}
+		return result, nil
+	}
+
+	if util.AddFinalizer(masterClusterObj, catapultControllerFinalizer) {
+		if err := r.Update(ctx, masterClusterObj); err != nil {
+			return result, fmt.Errorf("updating %s finalizers: %w", r.MasterClusterGVK.Kind, err)
+		}
+	}
+
 	// There needs to be a ServiceClusterAssignment Object
 	// so we know where to put this object on the ServiceCluster.
 	sca, err := r.reconcileServiceClusterAssignment(ctx, masterClusterObj)
@@ -83,19 +96,6 @@ func (r *MasterClusterObjReconciler) Reconcile(req ctrl.Request) (ctrl.Result, e
 		// SCA not yet ready
 		result.Requeue = true
 		return result, nil
-	}
-
-	if !masterClusterObj.GetDeletionTimestamp().IsZero() {
-		if err := r.handleDeletion(ctx, sca, masterClusterObj); err != nil {
-			return result, fmt.Errorf("handling deletion: %w", err)
-		}
-		return result, nil
-	}
-
-	if util.AddFinalizer(masterClusterObj, catapultControllerFinalizer) {
-		if err := r.Update(ctx, masterClusterObj); err != nil {
-			return result, fmt.Errorf("updating %s finalizers: %w", r.MasterClusterGVK.Kind, err)
-		}
 	}
 
 	// Build desired service cluster object
@@ -199,28 +199,40 @@ func (r *MasterClusterObjReconciler) SetupWithManager(mgr ctrl.Manager) error {
 }
 
 func (r *MasterClusterObjReconciler) handleDeletion(
-	ctx context.Context, sca *corev1alpha1.ServiceClusterAssignment,
-	masterClusterObj *unstructured.Unstructured,
+	ctx context.Context, masterClusterObj *unstructured.Unstructured,
 ) error {
-	serviceClusterObj := r.ServiceClusterType.DeepCopy()
-	err := r.ServiceClusterClient.Get(ctx, types.NamespacedName{
-		Name:      masterClusterObj.GetName(),
-		Namespace: sca.Status.ServiceClusterNamespace.Name,
-	}, serviceClusterObj)
+	sca := &corev1alpha1.ServiceClusterAssignment{}
+	err := r.Get(ctx, types.NamespacedName{
+		Name:      masterClusterObj.GetNamespace() + "." + r.ServiceCluster,
+		Namespace: r.ProviderNamespace,
+	}, sca)
 	if err != nil && !errors.IsNotFound(err) {
-		return fmt.Errorf("getting %s: %w", r.ServiceClusterGVK.Kind, err)
+		return fmt.Errorf("getting ServiceClusterAssignment: %w", err)
 	}
 
-	if err == nil && serviceClusterObj.GetDeletionTimestamp().IsZero() {
-		if err = r.ServiceClusterClient.Delete(ctx, serviceClusterObj); err != nil {
-			return fmt.Errorf("deleting %s: %w", r.ServiceClusterGVK.Kind, err)
+	if err == nil {
+		// if the ServiceClusterAssignment is not found,
+		// we can skip deleting the instance on the ServiceCluster.
+		serviceClusterObj := r.ServiceClusterType.DeepCopy()
+		err := r.ServiceClusterClient.Get(ctx, types.NamespacedName{
+			Name:      masterClusterObj.GetName(),
+			Namespace: sca.Status.ServiceClusterNamespace.Name,
+		}, serviceClusterObj)
+		if err != nil && !errors.IsNotFound(err) {
+			return fmt.Errorf("getting %s: %w", r.ServiceClusterGVK.Kind, err)
 		}
-		return nil
-	}
 
-	if !errors.IsNotFound(err) {
-		// wait until object is realy gone
-		return nil
+		if err == nil && serviceClusterObj.GetDeletionTimestamp().IsZero() {
+			if err = r.ServiceClusterClient.Delete(ctx, serviceClusterObj); err != nil {
+				return fmt.Errorf("deleting %s: %w", r.ServiceClusterGVK.Kind, err)
+			}
+			return nil
+		}
+
+		if !errors.IsNotFound(err) {
+			// wait until object is realy gone
+			return nil
+		}
 	}
 
 	if util.RemoveFinalizer(masterClusterObj, catapultControllerFinalizer) {
