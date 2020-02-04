@@ -200,7 +200,7 @@ func (r *DerivedCustomResourceDefinitionReconciler) Reconcile(req ctrl.Request) 
 	if !isCRDReady(currentDerivedCRD) {
 		// waiting for CRD to be ready
 		if err = r.updateStatus(ctx, dcrd, catalogv1alpha1.DerivedCustomResourceDefinitionCondition{
-			Type:    catalogv1alpha1.DerivedCustomResourceDefinitionCRDRegistered,
+			Type:    catalogv1alpha1.DerivedCustomResourceDefinitionCRDEstablished,
 			Status:  catalogv1alpha1.ConditionFalse,
 			Reason:  "Establishing",
 			Message: "The derived CRD is not yet established.",
@@ -218,7 +218,7 @@ func (r *DerivedCustomResourceDefinitionReconciler) Reconcile(req ctrl.Request) 
 		Singular: currentDerivedCRD.Status.AcceptedNames.Singular,
 	}
 	if err = r.updateStatus(ctx, dcrd, catalogv1alpha1.DerivedCustomResourceDefinitionCondition{
-		Type:    catalogv1alpha1.DerivedCustomResourceDefinitionCRDRegistered,
+		Type:    catalogv1alpha1.DerivedCustomResourceDefinitionCRDEstablished,
 		Status:  catalogv1alpha1.ConditionTrue,
 		Reason:  "Established",
 		Message: "The derived CRD is established.",
@@ -405,7 +405,7 @@ func (r *DerivedCustomResourceDefinitionReconciler) updateStatus(
 	dcrd.Status.ObservedGeneration = dcrd.Generation
 	dcrd.Status.SetCondition(condition)
 
-	crdRegistered, _ := dcrd.Status.GetCondition(catalogv1alpha1.DerivedCustomResourceDefinitionCRDRegistered)
+	crdRegistered, _ := dcrd.Status.GetCondition(catalogv1alpha1.DerivedCustomResourceDefinitionCRDEstablished)
 	controllerRunning, _ := dcrd.Status.GetCondition(catalogv1alpha1.DerivedCustomResourceDefinitionControllerReady)
 
 	if crdRegistered.Status == catalogv1alpha1.ConditionTrue &&
