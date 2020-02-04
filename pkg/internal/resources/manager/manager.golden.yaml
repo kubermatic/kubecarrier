@@ -1225,6 +1225,7 @@
   kind: CustomResourceDefinition
   metadata:
     annotations:
+      cert-manager.io/inject-ca-from: test3000/kubecarrier-manager-serving-cert
       controller-gen.kubebuilder.io/version: v0.2.4
     creationTimestamp: null
     name: customresourcedefinitiondiscoveries.kubecarrier.io
@@ -2038,6 +2039,23 @@
       - UPDATE
       resources:
       - providerreferences
+  - clientConfig:
+      caBundle: Cg==
+      service:
+        name: kubecarrier-manager-webhook-service
+        namespace: test3000
+        path: /validate-kubecarrier-io-v1alpha1-servicecluster
+    failurePolicy: Fail
+    name: vservicecluster.kubecarrier.io
+    rules:
+    - apiGroups:
+      - kubecarrier.io
+      apiVersions:
+      - v1alpha1
+      operations:
+      - CREATE
+      resources:
+      - serviceclusters
   - clientConfig:
       caBundle: Cg==
       service:
