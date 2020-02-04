@@ -76,7 +76,7 @@ func (r *CustomResourceDefinitionDiscoveryWebhookHandler) validateCreate(crdDisc
 	r.Log.Info("validate create", "name", crdDiscovery.Name)
 	if crdDiscovery.Spec.ServiceCluster.Name == "" ||
 		crdDiscovery.Spec.CRD.Name == "" {
-		return fmt.Errorf("the ServiceCluster, CRD, or KindOverride of CustomResourceDefinitionDiscovery is not specified")
+		return fmt.Errorf("the ServiceCluster, or CRD of CustomResourceDefinitionDiscovery is specified as empty string")
 	}
 	return nil
 }
