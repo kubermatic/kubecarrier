@@ -1972,6 +1972,24 @@
       service:
         name: kubecarrier-manager-webhook-service
         namespace: test3000
+        path: /validate-kubecarrier-io-v1alpha1-customresourcedefinitiondiscovery
+    failurePolicy: Fail
+    name: vcustomresourcedefinitiondiscovery.kubecarrier.io
+    rules:
+    - apiGroups:
+      - kubecarrier.io
+      apiVersions:
+      - v1alpha1
+      operations:
+      - CREATE
+      - UPDATE
+      resources:
+      - customresourcedefinitiondiscoveries
+  - clientConfig:
+      caBundle: Cg==
+      service:
+        name: kubecarrier-manager-webhook-service
+        namespace: test3000
         path: /validate-catalog-kubecarrier-io-v1alpha1-derivedcustomresourcedefinition
     failurePolicy: Fail
     name: vderivedcustomresourcedefinition.kubecarrier.io
