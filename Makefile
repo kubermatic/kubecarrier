@@ -168,4 +168,4 @@ install-git-hooks:
 # Install cert-manager in the configured Kubernetes cluster
 cert-manager:
 	kubectl create namespace cert-manager || true
-	kubectl apply -f https://github.com/jetstack/cert-manager/releases/download/v0.11.0/cert-manager.yaml
+	kubectl apply -f https://github.com/jetstack/cert-manager/releases/download/v0.13.0/cert-manager.yaml
