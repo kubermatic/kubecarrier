@@ -31,12 +31,19 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
+	watch2 "k8s.io/apimachinery/pkg/watch"
+	"k8s.io/client-go/dynamic"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
+	cache2 "k8s.io/client-go/tools/cache"
+	"k8s.io/client-go/tools/watch"
+	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/client/apiutil"
 	"sigs.k8s.io/controller-runtime/pkg/client/config"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
@@ -87,11 +94,18 @@ $ anchor setup --kubeconfig=<kubeconfig path>
 }
 
 func runE(flags *flags, log logr.Logger, cmd *cobra.Command) error {
-	ctx := context.Background()
+	stopCh := ctrl.SetupSignalHandler()
+	ctx, cancelContext := context.WithTimeout(context.Background(), 60*time.Second)
+	go func() {
+		<-stopCh
+		cancelContext()
+	}()
+
 	s := wow.New(cmd.OutOrStdout(), spin.Get(spin.Dots), "")
+	startTime := time.Now()
 
 	// Check the kubeconfig
-	if err := spinner.AttachSpinnerTo(s, "Check kubeconfig", func() error {
+	if err := spinner.AttachSpinnerTo(s, startTime, "Check kubeconfig", func() error {
 		if err := checkKubeconfig(flags.Kubeconfig); err != nil {
 			return err
 		}
@@ -110,7 +124,7 @@ func runE(flags *flags, log logr.Logger, cmd *cobra.Command) error {
 	if err != nil {
 		return fmt.Errorf("getting Kubernetes cluster config: %w", err)
 	}
-	c, err := client.New(conf, client.Options{Scheme: scheme})
+	c, err := newClientWatcher(conf)
 	if err != nil {
 		return fmt.Errorf("creating Kubernetes client: %w", err)
 	}
@@ -120,15 +134,15 @@ func runE(flags *flags, log logr.Logger, cmd *cobra.Command) error {
 			Name: kubecarrierNamespaceName,
 		},
 	}
-	if err := spinner.AttachSpinnerTo(s, fmt.Sprintf("Create %q Namespace", kubecarrierNamespaceName), createNamespace(ctx, c, ns)); err != nil {
+	if err := spinner.AttachSpinnerTo(s, startTime, fmt.Sprintf("Create %q Namespace", kubecarrierNamespaceName), createNamespace(ctx, c, ns)); err != nil {
 		return fmt.Errorf("creating KubeCarrier system namespace: %w", err)
 	}
 
-	if err := spinner.AttachSpinnerTo(s, "Deploy KubeCarrier Operator", reconcileOperator(ctx, log, c, ns)); err != nil {
+	if err := spinner.AttachSpinnerTo(s, startTime, "Deploy KubeCarrier Operator", reconcileOperator(ctx, log, c, ns)); err != nil {
 		return fmt.Errorf("deploying kubecarrier operator: %w", err)
 	}
 
-	if err := spinner.AttachSpinnerTo(s, "Deploy KubeCarrier", deployKubeCarrier(ctx, ns, conf)); err != nil {
+	if err := spinner.AttachSpinnerTo(s, startTime, "Deploy KubeCarrier", deployKubeCarrier(ctx, ns, conf)); err != nil {
 		return fmt.Errorf("deploying kubecarrier controller manager: %w", err)
 	}
 
@@ -168,7 +182,7 @@ func checkKubeconfig(kubeconfig string) error {
 	return nil
 }
 
-func reconcileOperator(ctx context.Context, log logr.Logger, c client.Client, kubecarrierNamespace *corev1.Namespace) func() error {
+func reconcileOperator(ctx context.Context, log logr.Logger, c *clientWatcher, kubecarrierNamespace *corev1.Namespace) func() error {
 	return func() error {
 		// Kustomize Build
 		objects, err := operator.Manifests(
@@ -195,30 +209,10 @@ func reconcileOperator(ctx context.Context, log logr.Logger, c client.Client, ku
 				Namespace: kubecarrierNamespaceName,
 			},
 		}
+		return c.WaitUntil(ctx, deployment, func(obj runtime.Object) (b bool, err error) {
+			return util.DeploymentIsAvailable(obj.(*appsv1.Deployment)), nil
+		})
 
-		retryTicker := time.NewTicker(2 * time.Second)
-		retryTimeDuration := 10 * time.Second
-		retryDeadlineCtx, cancel := context.WithDeadline(ctx, time.Now().Add(retryTimeDuration))
-		defer retryTicker.Stop()
-		defer cancel()
-		for {
-			select {
-			case <-retryTicker.C:
-				if err := c.Get(retryDeadlineCtx, types.NamespacedName{
-					Name:      deployment.Name,
-					Namespace: deployment.Namespace,
-				}, deployment); err != nil {
-					return fmt.Errorf("geting KubeCarrier operator: %w", err)
-				}
-
-				if util.DeploymentIsAvailable(deployment) {
-					return nil
-				}
-
-			case <-retryDeadlineCtx.Done():
-				return fmt.Errorf("deploying KubeCarrier operator: KubeCarrier operator deployment is not available after %v", retryTimeDuration)
-			}
-		}
 	}
 }
 
@@ -230,10 +224,6 @@ func deployKubeCarrier(ctx context.Context, kubeCarrierNamespace *corev1.Namespa
 		// it will complain about: `no matches for kind "KubeCarrier" in version "operator.kubecarrier.io/v1alpha1"`,
 		// but actually, the scheme is already added to the runtime scheme.
 		// And in the following, reinitializing the client solves the issue.
-		c, err := client.New(conf, client.Options{Scheme: scheme})
-		if err != nil {
-			return fmt.Errorf("creating Kubernetes client: %w", err)
-		}
 
 		kubeCarrier := &operatorv1alpha1.KubeCarrier{
 			ObjectMeta: metav1.ObjectMeta{
@@ -241,34 +231,95 @@ func deployKubeCarrier(ctx context.Context, kubeCarrierNamespace *corev1.Namespa
 				Namespace: kubeCarrierNamespace.Name,
 			},
 		}
+		w, err := newClientWatcher(conf)
+		if err != nil {
+			return err
+		}
+		if _, err := ctrl.CreateOrUpdate(ctx, w, kubeCarrier, func() error {
+			return nil
+		}); err != nil {
+			return fmt.Errorf("cannot create or update kubecarrier: %w", err)
+		}
+		return w.WaitUntil(ctx, kubeCarrier, func(obj runtime.Object) (b bool, err error) {
+			return obj.(*operatorv1alpha1.KubeCarrier).IsReady(), nil
+		})
+	}
+}
 
-		retryTicker := time.NewTicker(2 * time.Second)
-		retryTimeDuration := 60 * time.Second
-		retryDeadlineCtx, cancel := context.WithDeadline(ctx, time.Now().Add(retryTimeDuration))
-		defer retryTicker.Stop()
-		defer cancel()
-		for {
-			select {
-			case <-retryTicker.C:
-				if err := c.Get(retryDeadlineCtx, types.NamespacedName{
-					Name:      kubeCarrier.Name,
-					Namespace: kubeCarrier.Namespace,
-				}, kubeCarrier); err != nil {
-					if errors.IsNotFound(err) {
-						if err := c.Create(ctx, kubeCarrier); err != nil {
-							return fmt.Errorf("creating KubeCarrier %w", err)
-						}
-					} else {
-						return fmt.Errorf("geting KubeCarrier: %w", err)
-					}
-				}
+func newClientWatcher(conf *rest.Config) (*clientWatcher, error) {
+	mapper, err := apiutil.NewDynamicRESTMapper(conf, apiutil.WithLazyDiscovery)
+	if err != nil {
+		return nil, fmt.Errorf("rest mapper: %w", err)
+	}
+	d, err := dynamic.NewForConfig(conf)
+	if err != nil {
+		return nil, err
+	}
+	cll, err := client.New(conf, client.Options{
+		Scheme: scheme,
+		Mapper: mapper,
+	})
+	if err != nil {
+		return nil, err
+	}
+	return &clientWatcher{
+		client:     d,
+		restMapper: mapper,
+		scheme:     scheme,
+		Client:     cll,
+	}, nil
+}
 
-				if kubeCarrier.IsReady() {
-					return nil
-				}
-			case <-retryDeadlineCtx.Done():
-				return fmt.Errorf("deploying KubeCarrier: KubeCarrier is not ready after %v", retryTimeDuration)
+type clientWatcher struct {
+	client     dynamic.Interface
+	restMapper meta.RESTMapper
+	scheme     *runtime.Scheme
+	client.Client
+}
+
+func (cl *clientWatcher) WaitUntil(ctx context.Context, obj util.Object, cond ...func(obj runtime.Object) (bool, error)) error {
+	objGVK, err := apiutil.GVKForObject(obj, scheme)
+	if err != nil {
+		return err
+	}
+	rmap, err := cl.restMapper.RESTMapping(objGVK.GroupKind(), objGVK.Version)
+	if err != nil {
+		return err
+	}
+	objNN := types.NamespacedName{
+		Namespace: obj.GetNamespace(),
+		Name:      obj.GetName(),
+	}
+	ri := cl.client.Resource(rmap.Resource).Namespace(objNN.Namespace)
+	if _, err := watch.ListWatchUntil(ctx, &cache2.ListWatch{
+		ListFunc: func(options metav1.ListOptions) (object runtime.Object, err error) {
+			return ri.List(options)
+		},
+		WatchFunc: ri.Watch,
+	}, func(event watch2.Event) (b bool, err error) {
+		objTmp, err := scheme.New(objGVK)
+		if err != nil {
+			return false, err
+		}
+		obj := objTmp.(util.Object)
+		if err := scheme.Convert(event.Object, obj, nil); err != nil {
+			return false, err
+		}
+		if obj.GetNamespace() != objNN.Namespace || obj.GetName() != objNN.Name {
+			return false, nil
+		}
+		for _, f := range cond {
+			ok, err := f(objTmp)
+			if err != nil {
+				return false, err
+			}
+			if !ok {
+				return false, nil
 			}
 		}
+		return true, nil
+	}); err != nil {
+		return err
 	}
+	return nil
 }
