@@ -174,7 +174,7 @@ type: object
 			assert.Equal(t, catalogv1alpha1.ConditionFalse, readyCond.Status)
 			assert.Equal(t, "CRDNotEstablished", readyCond.Reason)
 		}
-		crdCond, ok := derivedCRD.Status.GetCondition(catalogv1alpha1.DerivedCustomResourceDefinitionCRDEstablished)
+		crdCond, ok := derivedCRD.Status.GetCondition(catalogv1alpha1.DerivedCustomResourceDefinitionEstablished)
 		if assert.True(t, ok, "ready condition should be set") {
 			assert.Equal(t, catalogv1alpha1.ConditionFalse, crdCond.Status)
 			assert.Equal(t, "Establishing", crdCond.Reason)
@@ -205,7 +205,7 @@ type: object
 			Namespace: derivedCRD.Namespace,
 		}, derivedCRD))
 
-		readyCond, ok = derivedCRD.Status.GetCondition(catalogv1alpha1.DerivedCustomResourceDefinitionCRDEstablished)
+		readyCond, ok = derivedCRD.Status.GetCondition(catalogv1alpha1.DerivedCustomResourceDefinitionEstablished)
 		if assert.True(t, ok, "ready condition should be set") {
 			assert.Equal(t, catalogv1alpha1.ConditionTrue, readyCond.Status)
 			assert.Equal(t, "Established", readyCond.Reason)
@@ -269,7 +269,7 @@ type: object
 			assert.Equal(t, catalogv1alpha1.ConditionTrue, readyCond.Status)
 			assert.Equal(t, "ComponentsReady", readyCond.Reason)
 		}
-		crdCond, ok = derivedCRD.Status.GetCondition(catalogv1alpha1.DerivedCustomResourceDefinitionCRDEstablished)
+		crdCond, ok = derivedCRD.Status.GetCondition(catalogv1alpha1.DerivedCustomResourceDefinitionEstablished)
 		if assert.True(t, ok, "ready condition should be set") {
 			assert.Equal(t, catalogv1alpha1.ConditionTrue, crdCond.Status)
 			assert.Equal(t, "Established", crdCond.Reason)
