@@ -259,7 +259,7 @@ type: object
 			Namespace: derivedCRD.Namespace,
 		}, derivedCRD))
 
-		controllerCond, ok := derivedCRD.Status.GetCondition(catalogv1alpha1.DerivedCustomResourceDefinitionControllerRunning)
+		controllerCond, ok := derivedCRD.Status.GetCondition(catalogv1alpha1.DerivedCustomResourceDefinitionControllerReady)
 		if assert.True(t, ok, "ready condition should be set") {
 			assert.Equal(t, catalogv1alpha1.ConditionTrue, controllerCond.Status)
 			assert.Equal(t, "Ready", controllerCond.Reason)

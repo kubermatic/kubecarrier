@@ -107,9 +107,9 @@ type DerivedCustomResourceDefinitionConditionType string
 
 const (
 	// DerivedCustomResourceDefinitionReady represents a DerivedCustomResourceDefinition condition is in ready state.
-	DerivedCustomResourceDefinitionReady             DerivedCustomResourceDefinitionConditionType = "Ready"
-	DerivedCustomResourceDefinitionCRDRegistered     DerivedCustomResourceDefinitionConditionType = "CRDRegistered"
-	DerivedCustomResourceDefinitionControllerRunning DerivedCustomResourceDefinitionConditionType = "ControllerRunning"
+	DerivedCustomResourceDefinitionReady           DerivedCustomResourceDefinitionConditionType = "Ready"
+	DerivedCustomResourceDefinitionCRDRegistered   DerivedCustomResourceDefinitionConditionType = "CRDRegistered"
+	DerivedCustomResourceDefinitionControllerReady DerivedCustomResourceDefinitionConditionType = "ControllerReady"
 )
 
 // DerivedCustomResourceDefinitionCondition contains details for the current condition of this DerivedCustomResourceDefinition.
