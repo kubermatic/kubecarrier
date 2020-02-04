@@ -2044,12 +2044,12 @@
       service:
         name: kubecarrier-manager-webhook-service
         namespace: test3000
-        path: /validate-catalog-kubecarrier-io-v1alpha1-servicecluster
+        path: /validate-kubecarrier-io-v1alpha1-servicecluster
     failurePolicy: Fail
     name: vservicecluster.kubecarrier.io
     rules:
     - apiGroups:
-      - catalog.kubecarrier.io
+      - kubecarrier.io
       apiVersions:
       - v1alpha1
       operations:

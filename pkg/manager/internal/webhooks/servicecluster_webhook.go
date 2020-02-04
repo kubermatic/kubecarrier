@@ -37,7 +37,7 @@ type ServiceClusterWebhookHandler struct {
 
 var _ admission.Handler = (*ServiceClusterWebhookHandler)(nil)
 
-// +kubebuilder:webhook:path=/validate-catalog-kubecarrier-io-v1alpha1-servicecluster,mutating=false,failurePolicy=fail,groups=catalog.kubecarrier.io,resources=serviceclusters,verbs=create,versions=v1alpha1,name=vservicecluster.kubecarrier.io
+// +kubebuilder:webhook:path=/validate-kubecarrier-io-v1alpha1-servicecluster,mutating=false,failurePolicy=fail,groups=kubecarrier.io,resources=serviceclusters,verbs=create,versions=v1alpha1,name=vservicecluster.kubecarrier.io
 
 // Handle is the function to handle create/update requests of ServiceClusters.
 func (r *ServiceClusterWebhookHandler) Handle(ctx context.Context, req admission.Request) admission.Response {
