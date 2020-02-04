@@ -302,15 +302,6 @@ func (r *DerivedCustomResourceDefinitionReconciler) Reconcile(req ctrl.Request) 
 	return result, nil
 }
 
-func getStorageVersion(crd *apiextensionsv1.CustomResourceDefinition) string {
-	for _, version := range crd.Spec.Versions {
-		if version.Storage {
-			return version.Name
-		}
-	}
-	return ""
-}
-
 func isCRDReady(crd *apiextensionsv1.CustomResourceDefinition) bool {
 	for _, condition := range crd.Status.Conditions {
 		if condition.Type == apiextensionsv1.Established &&

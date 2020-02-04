@@ -121,6 +121,10 @@ const (
 	CustomResourceDefinitionDiscoveryReady CustomResourceDefinitionDiscoveryConditionType = "Ready"
 	// CustomResourceDefinitionDiscoveryDiscovered represents a CustomResourceDefinitionDiscovery has been discovered by the manager controller.
 	CustomResourceDefinitionDiscoveryDiscovered CustomResourceDefinitionDiscoveryConditionType = "Discovered"
+	// CustomResourceDefinitionDiscoveryEstablished is True if the crd could be registered in the master cluster and is now served by the kube-apiserver.
+	CustomResourceDefinitionDiscoveryEstablished CustomResourceDefinitionDiscoveryConditionType = "Established"
+	// CustomResourceDefinitionDiscoveryControllerReady is Ture if the controller to propagate the crd into the service cluster is ready.
+	CustomResourceDefinitionDiscoveryControllerReady CustomResourceDefinitionDiscoveryConditionType = "ControllerReady"
 )
 
 // CustomResourceDefinitionDiscoveryCondition contains details for the current condition of this CustomResourceDefinitionDiscovery.
