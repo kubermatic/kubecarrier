@@ -399,8 +399,8 @@ func (r *DerivedCustomResourceDefinitionReconciler) updateStatus(
 	crdRegistered, _ := dcrd.Status.GetCondition(catalogv1alpha1.DerivedCustomResourceDefinitionEstablished)
 	controllerRunning, _ := dcrd.Status.GetCondition(catalogv1alpha1.DerivedCustomResourceDefinitionControllerReady)
 
-	if crdRegistered.Status == catalogv1alpha1.ConditionTrue &&
-		controllerRunning.Status == catalogv1alpha1.ConditionTrue {
+	if crdRegistered.True() &&
+		controllerRunning.True() {
 		// Everything is ready
 		dcrd.Status.SetCondition(catalogv1alpha1.DerivedCustomResourceDefinitionCondition{
 			Type:    catalogv1alpha1.DerivedCustomResourceDefinitionReady,
@@ -408,7 +408,7 @@ func (r *DerivedCustomResourceDefinitionReconciler) updateStatus(
 			Reason:  "ComponentsReady",
 			Message: "The CRD is registered and the controller ist ready.",
 		})
-	} else if crdRegistered.Status != catalogv1alpha1.ConditionTrue {
+	} else if !crdRegistered.True() {
 		// CRD is not yet established
 		dcrd.Status.SetCondition(catalogv1alpha1.DerivedCustomResourceDefinitionCondition{
 			Type:    catalogv1alpha1.DerivedCustomResourceDefinitionReady,
@@ -416,7 +416,7 @@ func (r *DerivedCustomResourceDefinitionReconciler) updateStatus(
 			Reason:  "CRDNotEstablished",
 			Message: "The CRD is not yet established.",
 		})
-	} else if controllerRunning.Status != catalogv1alpha1.ConditionTrue {
+	} else if !controllerRunning.True() {
 		// Controller not ready
 		dcrd.Status.SetCondition(catalogv1alpha1.DerivedCustomResourceDefinitionCondition{
 			Type:    catalogv1alpha1.DerivedCustomResourceDefinitionReady,

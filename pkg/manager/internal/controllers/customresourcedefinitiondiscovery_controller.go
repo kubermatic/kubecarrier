@@ -273,8 +273,7 @@ func (r *CustomResourceDefinitionDiscoveryReconciler) updateStatus(
 	controllerReady, _ := crdd.Status.GetCondition(
 		corev1alpha1.CustomResourceDefinitionDiscoveryControllerReady)
 
-	if established.Status == corev1alpha1.ConditionTrue &&
-		controllerReady.Status == corev1alpha1.ConditionTrue {
+	if established.True() && controllerReady.True() {
 		// Everything is ready
 		crdd.Status.SetCondition(corev1alpha1.CustomResourceDefinitionDiscoveryCondition{
 			Type:    corev1alpha1.CustomResourceDefinitionDiscoveryReady,
@@ -282,7 +281,7 @@ func (r *CustomResourceDefinitionDiscoveryReconciler) updateStatus(
 			Reason:  "ComponentsReady",
 			Message: "The CRD is established and the controller is ready.",
 		})
-	} else if established.Status != corev1alpha1.ConditionTrue {
+	} else if !established.True() {
 		// CRD is not yet established
 		crdd.Status.SetCondition(corev1alpha1.CustomResourceDefinitionDiscoveryCondition{
 			Type:    corev1alpha1.CustomResourceDefinitionDiscoveryReady,
@@ -290,7 +289,7 @@ func (r *CustomResourceDefinitionDiscoveryReconciler) updateStatus(
 			Reason:  "CRDNotEstablished",
 			Message: "The CRD is not yet established.",
 		})
-	} else if controllerReady.Status != corev1alpha1.ConditionTrue {
+	} else if !controllerReady.True() {
 		// Controller not ready
 		crdd.Status.SetCondition(corev1alpha1.CustomResourceDefinitionDiscoveryCondition{
 			Type:    corev1alpha1.CustomResourceDefinitionDiscoveryReady,
