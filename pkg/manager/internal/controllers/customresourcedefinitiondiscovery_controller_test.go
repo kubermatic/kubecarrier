@@ -32,6 +32,7 @@ import (
 
 	"github.com/kubermatic/kubecarrier/pkg/apis/catalog/v1alpha1"
 	corev1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/core/v1alpha1"
+	operatorv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/operator/v1alpha1"
 	"github.com/kubermatic/kubecarrier/pkg/testutil"
 )
 
@@ -100,17 +101,18 @@ func TestCustomResourceDefinitionDiscoveryReconciler(t *testing.T) {
 
 	crdDiscovery.Status.CRD = crd
 	crdDiscovery.Status.SetCondition(corev1alpha1.CustomResourceDefinitionDiscoveryCondition{
-		Type:   corev1alpha1.CustomResourceDefinitionDiscoveryReady,
+		Type:   corev1alpha1.CustomResourceDefinitionDiscoveryDiscovered,
 		Status: corev1alpha1.ConditionTrue,
 	})
 	require.NoError(t, r.Client.Status().Update(ctx, crdDiscovery))
 
 	reconcileLoop() // creates the CRD in the master cluster
 
-	readyCondition, ok := crdDiscovery.Status.GetCondition(corev1alpha1.CustomResourceDefinitionDiscoveryReady)
-	assert.True(t, ok)
-	assert.Equal(t, corev1alpha1.ConditionFalse, readyCondition.Status)
-	assert.Equal(t, "Establishing", readyCondition.Reason)
+	establishedCondition, ok := crdDiscovery.Status.GetCondition(corev1alpha1.CustomResourceDefinitionDiscoveryEstablished)
+	if assert.True(t, ok) {
+		assert.Equal(t, corev1alpha1.ConditionFalse, establishedCondition.Status)
+		assert.Equal(t, "Establishing", establishedCondition.Reason)
+	}
 
 	internalCRD := &apiextensionsv1.CustomResourceDefinition{}
 	require.NoError(t, r.Client.Get(ctx, types.NamespacedName{
@@ -125,10 +127,32 @@ func TestCustomResourceDefinitionDiscoveryReconciler(t *testing.T) {
 	}
 	require.NoError(t, r.Client.Status().Update(ctx, internalCRD))
 
-	reconcileLoop() // updates the status to ready
+	reconcileLoop() // updates the status to established and launches Catapult
 
-	readyCondition, ok = crdDiscovery.Status.GetCondition(corev1alpha1.CustomResourceDefinitionDiscoveryReady)
-	assert.True(t, ok)
-	assert.Equal(t, corev1alpha1.ConditionTrue, readyCondition.Status)
-	assert.Equal(t, "Established", readyCondition.Reason)
+	establishedCondition, ok = crdDiscovery.Status.GetCondition(corev1alpha1.CustomResourceDefinitionDiscoveryEstablished)
+	if assert.True(t, ok) {
+		assert.Equal(t, corev1alpha1.ConditionTrue, establishedCondition.Status)
+		assert.Equal(t, "Established", establishedCondition.Reason)
+	}
+
+	catapult := &operatorv1alpha1.Catapult{}
+	require.NoError(t, r.Client.Get(ctx, types.NamespacedName{
+		Name:      crdDiscovery.Name,
+		Namespace: crdDiscovery.Namespace,
+	}, catapult))
+	catapult.Status.Conditions = []operatorv1alpha1.CatapultCondition{
+		{
+			Type:   operatorv1alpha1.CatapultReady,
+			Status: operatorv1alpha1.ConditionTrue,
+		},
+	}
+	require.NoError(t, r.Client.Status().Update(ctx, catapult))
+
+	reconcileLoop() // updates status to ready
+
+	readyCondition, ok := crdDiscovery.Status.GetCondition(corev1alpha1.CustomResourceDefinitionDiscoveryReady)
+	if assert.True(t, ok) {
+		assert.Equal(t, corev1alpha1.ConditionTrue, readyCondition.Status)
+		assert.Equal(t, "ComponentsReady", readyCondition.Reason)
+	}
 }

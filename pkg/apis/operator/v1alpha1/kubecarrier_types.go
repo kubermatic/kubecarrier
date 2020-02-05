@@ -102,6 +102,11 @@ type KubeCarrierCondition struct {
 	Message string `json:"message"`
 }
 
+// True returns whether .Status == "True"
+func (c KubeCarrierCondition) True() bool {
+	return c.Status == ConditionTrue
+}
+
 // GetCondition returns the Condition of the given condition type, if it exists.
 func (s *KubeCarrierStatus) GetCondition(t KubeCarrierConditionType) (condition KubeCarrierCondition, exists bool) {
 	for _, cond := range s.Conditions {

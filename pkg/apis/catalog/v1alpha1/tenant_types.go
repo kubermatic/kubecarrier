@@ -102,6 +102,11 @@ type TenantCondition struct {
 	Message string `json:"message"`
 }
 
+// True returns whether .Status == "True"
+func (c TenantCondition) True() bool {
+	return c.Status == ConditionTrue
+}
+
 // GetCondition returns the Condition of the given condition type, if it exists.
 func (s *TenantStatus) GetCondition(t TenantConditionType) (condition TenantCondition, exists bool) {
 	for _, cond := range s.Conditions {
