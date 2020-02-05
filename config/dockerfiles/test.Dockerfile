@@ -57,6 +57,6 @@ COPY go.sum go.sum
 # and so that source changes don't invalidate our downloaded layer
 RUN go mod download
 
-COPY ./hack/start-docker.sh /usr/local/bin/start-docker.sh
+COPY start-docker.sh /usr/local/bin/start-docker.sh
 
 VOLUME /var/lib/docker
