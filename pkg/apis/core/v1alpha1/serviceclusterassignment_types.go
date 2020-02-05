@@ -22,7 +22,10 @@ import (
 
 // ServiceClusterAssignmentSpec defines the desired state of ServiceClusterAssignment
 type ServiceClusterAssignmentSpec struct {
+	// References the ServiceCluster.
 	ServiceCluster ObjectReference `json:"serviceCluster"`
+	// References the source namespace in the master cluster.
+	MasterClusterNamespace ObjectReference `json:"masterNamespace"`
 }
 
 // ServiceClusterAssignmentStatus defines the observed state of ServiceClusterAssignment
@@ -37,8 +40,8 @@ type ServiceClusterAssignmentStatus struct {
 	Conditions []ServiceClusterAssignmentCondition `json:"conditions,omitempty"`
 	// The most recent generation observed by the controller.
 	ObservedGeneration int64 `json:"observedGeneration,omitempty"`
-	// NamespaceName references the Namespace on the ServiceCluster that was assigned.
-	NamespaceName string `json:"namespaceName,omitempty"`
+	// ServiceClusterNamespace references the Namespace on the ServiceCluster that was assigned.
+	ServiceClusterNamespace ObjectReference `json:"serviceClusterNamespace,omitempty"`
 }
 
 // ServiceClusterAssignmentPhaseType represents all conditions as a single string for printing in kubectl.
@@ -71,6 +74,11 @@ type ServiceClusterAssignmentCondition struct {
 	Status ConditionStatus `json:"status"`
 	// Type of the condition, currently ('Ready').
 	Type ServiceClusterAssignmentConditionType `json:"type"`
+}
+
+// True returns whether .Status == "True"
+func (c ServiceClusterAssignmentCondition) True() bool {
+	return c.Status == ConditionTrue
 }
 
 // updatePhase updates the phase property based on the current conditions

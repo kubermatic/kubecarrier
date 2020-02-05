@@ -2,7 +2,7 @@
   kind: Role
   metadata:
     creationTimestamp: null
-    name: hans-ferry-manager-role
+    name: hans-ferry-manager
     namespace: provider-1000
   rules:
   - apiGroups:
@@ -62,18 +62,31 @@
     - get
     - patch
     - update
+  - apiGroups:
+    - operator.kubecarrier.io
+    resources:
+    - serviceclusterregistrations
+    verbs:
+    - get
+    - list
+    - watch
+- apiVersion: v1
+  kind: ServiceAccount
+  metadata:
+    name: hans-ferry-sa
+    namespace: provider-1000
 - apiVersion: rbac.authorization.k8s.io/v1
   kind: RoleBinding
   metadata:
-    name: hans-ferry-manager-rolebinding
+    name: hans-ferry-manager
     namespace: provider-1000
   roleRef:
     apiGroup: rbac.authorization.k8s.io
     kind: Role
-    name: hans-ferry-manager-role
+    name: hans-ferry-manager
   subjects:
   - kind: ServiceAccount
-    name: default
+    name: hans-ferry-sa
     namespace: provider-1000
 - apiVersion: rbac.authorization.k8s.io/v1
   kind: Role
@@ -118,7 +131,7 @@
     name: hans-ferry-leader-election-role
   subjects:
   - kind: ServiceAccount
-    name: default
+    name: hans-ferry-sa
     namespace: provider-1000
 - apiVersion: apps/v1
   kind: Deployment
@@ -161,6 +174,7 @@
           volumeMounts:
           - mountPath: /kubeconfig
             name: kubeconfig
+        serviceAccountName: hans-ferry-sa
         terminationGracePeriodSeconds: 10
         volumes:
         - name: kubeconfig

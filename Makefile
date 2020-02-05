@@ -101,7 +101,7 @@ e2e-setup: install require-docker
 	@kind get kubeconfig --name=${SVC_KIND_CLUSTER} > "${HOME}/.kube/kind-config-${SVC_KIND_CLUSTER}"
 	@echo "kind clusters created"
 	@echo "Loading the images"
-	@$(MAKE) KIND_CLUSTER=${MASTER_KIND_CLUSTER} kind-load
+	@$(MAKE) KIND_CLUSTER=${MASTER_KIND_CLUSTER} kind-load -j 5
 
 # soft-reinstall reinstall kubecarrier in the e2e cluster. It's intended for usage during development
 soft-reinstall: e2e-setup install

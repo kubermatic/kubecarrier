@@ -15,9 +15,15 @@ spec:
       labels:
         control-plane: manager
     spec:
+      serviceAccountName: sa
       containers:
-      - image: quay.io/kubecarrier/catapult:lastest
+      - image: quay.io/kubecarrier/catapult:latest
         name: manager
+        env:
+        - name: KUBERNETES_NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
         resources:
           limits:
             cpu: 100m

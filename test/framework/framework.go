@@ -23,7 +23,7 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -32,6 +32,7 @@ import (
 	restclient "k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/client/apiutil"
 
 	catalogv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/catalog/v1alpha1"
 	corev1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/core/v1alpha1"
@@ -132,7 +133,7 @@ func (f *Framework) MasterClient() (*RecordingClient, error) {
 	if err != nil {
 		return nil, err
 	}
-	return RecordClient(c), nil
+	return RecordClient(c, f.MasterScheme), nil
 }
 
 func (f *Framework) ServiceClient() (*RecordingClient, error) {
@@ -143,7 +144,7 @@ func (f *Framework) ServiceClient() (*RecordingClient, error) {
 	if err != nil {
 		return nil, err
 	}
-	return RecordClient(c), nil
+	return RecordClient(c, f.ServiceScheme), nil
 }
 
 func (f *Framework) Config() Config {
@@ -152,23 +153,61 @@ func (f *Framework) Config() Config {
 
 type RecordingClient struct {
 	client.Client
+	scheme  *runtime.Scheme
 	objects map[string]runtime.Object
 	order   []string
 	mux     sync.Mutex
 }
 
-func RecordClient(c client.Client) *RecordingClient {
+func RecordClient(c client.Client, scheme *runtime.Scheme) *RecordingClient {
 	return &RecordingClient{
 		Client:  c,
+		scheme:  scheme,
 		objects: map[string]runtime.Object{},
 	}
 }
 
 var _ client.Client = (*RecordingClient)(nil)
 
+func (rc *RecordingClient) key(obj runtime.Object) string {
+	gvk, err := apiutil.GVKForObject(obj, rc.scheme)
+	if err != nil {
+		panic(err)
+	}
+
+	meta := obj.(metav1.Object)
+	key := types.NamespacedName{
+		Name:      meta.GetName(),
+		Namespace: meta.GetNamespace(),
+	}.String()
+	return fmt.Sprintf("%s.%s/%s:%s", gvk.Kind, gvk.Group, gvk.Version, key)
+}
+
+func (rc *RecordingClient) RegisterForCleanup(obj runtime.Object) {
+	rc.mux.Lock()
+	defer rc.mux.Unlock()
+
+	key := rc.key(obj)
+	rc.objects[key] = obj
+	rc.order = append(rc.order, key)
+}
+
+func (rc *RecordingClient) UnregisterForCleanup(obj runtime.Object) {
+	rc.mux.Lock()
+	defer rc.mux.Unlock()
+
+	key := rc.key(obj)
+	delete(rc.objects, key)
+}
+
 func (rc *RecordingClient) CleanUp(t *testing.T) {
 	if _, noCleanup := os.LookupEnv("NO_CLEANUP"); noCleanup {
 		// skip cleanup
+		return
+	}
+
+	if t.Failed() {
+		// skip cleanup if test has failed
 		return
 	}
 
@@ -180,35 +219,20 @@ func (rc *RecordingClient) CleanUp(t *testing.T) {
 			continue
 		}
 
-		assert.NoError(t, testutil.DeleteAndWaitUntilNotFound(rc.Client, obj))
+		err := testutil.DeleteAndWaitUntilNotFound(rc.Client, obj)
+		if err != nil {
+			err = fmt.Errorf("cleanup %s: %w", key, err)
+		}
+		require.NoError(t, err)
 	}
 }
 
 func (rc *RecordingClient) Create(ctx context.Context, obj runtime.Object, opts ...client.CreateOption) error {
-	rc.mux.Lock()
-	defer rc.mux.Unlock()
-
-	meta := obj.(metav1.Object)
-	key := types.NamespacedName{
-		Name:      meta.GetName(),
-		Namespace: meta.GetNamespace(),
-	}.String()
-	rc.objects[key] = obj
-	rc.order = append(rc.order, key)
-
+	rc.RegisterForCleanup(obj)
 	return rc.Client.Create(ctx, obj, opts...)
 }
 
 func (rc *RecordingClient) Delete(ctx context.Context, obj runtime.Object, opts ...client.DeleteOption) error {
-	rc.mux.Lock()
-	defer rc.mux.Unlock()
-
-	meta := obj.(metav1.Object)
-	key := types.NamespacedName{
-		Name:      meta.GetName(),
-		Namespace: meta.GetNamespace(),
-	}.String()
-	delete(rc.objects, key)
-
+	rc.UnregisterForCleanup(obj)
 	return rc.Client.Delete(ctx, obj, opts...)
 }

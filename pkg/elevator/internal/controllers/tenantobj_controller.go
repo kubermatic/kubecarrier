@@ -31,6 +31,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
 	catalogv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/catalog/v1alpha1"
+	"github.com/kubermatic/kubecarrier/pkg/internal/util"
 )
 
 // TenantObjReconciler reconciles a tenant-side CRD by converting it into a provider-side object and syncing the status back:
@@ -43,11 +44,12 @@ type TenantObjReconciler struct {
 	NamespacedClient client.Client
 
 	// Dynamic types we work with
-	ProviderGVK, TenantGVK   schema.GroupVersionKind
-	ProviderType, TenantType *unstructured.Unstructured
-
+	ProviderGVK, TenantGVK            schema.GroupVersionKind
 	DerivedCRDName, ProviderNamespace string
 }
+
+// +kubebuilder:rbac:groups=catalog.kubecarrier.io,resources=derivedcustomresourcedefinitions,verbs=get;list;watch
+// +kubebuilder:rbac:groups=catalog.kubecarrier.io,resources=derivedcustomresourcedefinitions/status,verbs=get
 
 func (r *TenantObjReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	var (
@@ -55,7 +57,7 @@ func (r *TenantObjReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 		result ctrl.Result
 	)
 
-	tenantObj := r.TenantType.DeepCopy()
+	tenantObj := r.newTenantObject()
 	if err := r.Get(ctx, req.NamespacedName, tenantObj); err != nil {
 		return result, client.IgnoreNotFound(err)
 	}
@@ -86,8 +88,8 @@ func (r *TenantObjReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 
 func (r *TenantObjReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
-		For(r.TenantType).
-		Owns(r.ProviderType).
+		For(r.newTenantObject()).
+		Owns(r.newProviderObject()).
 		Complete(r)
 }
 
@@ -95,7 +97,7 @@ func (r *TenantObjReconciler) reconcileTenantObj(
 	ctx context.Context, tenantObj *unstructured.Unstructured,
 	config catalogv1alpha1.VersionExposeConfig,
 ) error {
-	desiredProviderObj := r.ProviderType.DeepCopy()
+	desiredProviderObj := r.newProviderObject()
 	desiredProviderObj.SetName(tenantObj.GetName())
 	desiredProviderObj.SetNamespace(tenantObj.GetNamespace())
 
@@ -109,7 +111,7 @@ func (r *TenantObjReconciler) reconcileTenantObj(
 	statusFields, otherFields := splitStatusFields(config.Fields)
 
 	// Lookup current instance
-	currentProviderObj := r.ProviderType.DeepCopy()
+	currentProviderObj := r.newProviderObject()
 	err = r.Get(ctx, types.NamespacedName{
 		Name:      desiredProviderObj.GetName(),
 		Namespace: desiredProviderObj.GetNamespace(),
@@ -157,7 +159,7 @@ func (r *TenantObjReconciler) reconcileTenantObj(
 			"copy status fields from %s to %s: %w",
 			r.ProviderGVK.Kind, r.TenantGVK.Kind, err)
 	}
-	if err = updateObservedGeneration(currentProviderObj, tenantObj); err != nil {
+	if err = util.UpdateObservedGeneration(currentProviderObj, tenantObj); err != nil {
 		return fmt.Errorf(
 			"update observedGeneration, by comparing %s to %s: %w",
 			r.ProviderGVK.Kind, r.TenantGVK.Kind, err)
@@ -169,24 +171,14 @@ func (r *TenantObjReconciler) reconcileTenantObj(
 	return nil
 }
 
-func updateObservedGeneration(src, dest *unstructured.Unstructured) error {
-	// check if source status is "up to date", by checking ObservedGeneration
-	srcObservedGeneration, found, err := unstructured.NestedInt64(src.Object, "status", "observedGeneration")
-	if err != nil {
-		return fmt.Errorf("reading observedGeneration from %s: %w", src.GetKind(), err)
-	}
-	if !found {
-		// observedGeneration field not present -> nothing to do
-		return nil
-	}
+func (r *TenantObjReconciler) newTenantObject() *unstructured.Unstructured {
+	obj := &unstructured.Unstructured{}
+	obj.SetGroupVersionKind(r.TenantGVK)
+	return obj
+}
 
-	if srcObservedGeneration != src.GetGeneration() {
-		// observedGeneration is set, but it does not match
-		// this means the status is not up to date
-		// and we don't want to update observedGeneration on dest
-		return nil
-	}
-
-	return unstructured.SetNestedField(
-		dest.Object, dest.GetGeneration(), "status", "observedGeneration")
+func (r *TenantObjReconciler) newProviderObject() *unstructured.Unstructured {
+	obj := &unstructured.Unstructured{}
+	obj.SetGroupVersionKind(r.ProviderGVK)
+	return obj
 }

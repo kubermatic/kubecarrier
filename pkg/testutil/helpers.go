@@ -134,11 +134,12 @@ func WaitUntilFound(c client.Client, obj runtime.Object, opts ...waitOption) err
 	if !ok {
 		return fmt.Errorf("%T does not implement metav1.Object", obj)
 	}
-	return wait.Poll(opt.pollInterval, opt.timeout, func() (done bool, err error) {
-		if err := c.Get(context.Background(), types.NamespacedName{
-			Name:      o.GetName(),
-			Namespace: o.GetNamespace(),
-		}, obj); err != nil {
+	nn := types.NamespacedName{
+		Name:      o.GetName(),
+		Namespace: o.GetNamespace(),
+	}
+	err := wait.Poll(opt.pollInterval, opt.timeout, func() (done bool, err error) {
+		if err := c.Get(context.Background(), nn, obj); err != nil {
 			if errors.IsNotFound(err) {
 				return false, nil
 			}
@@ -146,9 +147,17 @@ func WaitUntilFound(c client.Client, obj runtime.Object, opts ...waitOption) err
 		}
 		return true, nil
 	})
+	if err != nil {
+		return fmt.Errorf("%s not found: %w, after %s", nn.String(), err, opt.timeout)
+	}
+	return nil
 }
 
 func WaitUntilCondition(c client.Client, obj runtime.Object, ConditionType, conditionStatus interface{}, opts ...waitOption) error {
+	if err := WaitUntilFound(c, obj, opts...); err != nil {
+		return err
+	}
+
 	opt := &waitOptions{
 		timeout:      defaultWaitTimeout,
 		pollInterval: defaultPollInterval,
@@ -162,14 +171,15 @@ func WaitUntilCondition(c client.Client, obj runtime.Object, ConditionType, cond
 		return fmt.Errorf("%T does not implement metav1.Object", obj)
 	}
 	var lastErr error
+	nn := types.NamespacedName{
+		Name:      o.GetName(),
+		Namespace: o.GetNamespace(),
+	}
 	err := wait.Poll(opt.pollInterval, opt.timeout, func() (done bool, err error) {
-		err = c.Get(context.Background(), types.NamespacedName{
-			Namespace: o.GetNamespace(),
-			Name:      o.GetName(),
-		}, obj)
+		err = c.Get(context.Background(), nn, obj)
 		switch {
 		case errors.IsNotFound(err):
-			return false, nil
+			return true, fmt.Errorf("%s not found", nn)
 		case err == nil:
 			lastErr = ConditionStatusEqual(obj, ConditionType, conditionStatus)
 			return lastErr == nil, nil
@@ -180,9 +190,9 @@ func WaitUntilCondition(c client.Client, obj runtime.Object, ConditionType, cond
 
 	if err != nil {
 		if lastErr != nil {
-			return lastErr
+			return fmt.Errorf("%s not found: %w, after %s", nn, lastErr, opt.timeout)
 		}
-		return err
+		return fmt.Errorf("%s not found: %w, after %s", nn, err, opt.timeout)
 	}
 	return nil
 }

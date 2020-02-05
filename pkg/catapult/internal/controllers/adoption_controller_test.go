@@ -31,7 +31,7 @@ import (
 )
 
 func TestAdoptionReconciler(t *testing.T) {
-	providerObj := &unstructured.Unstructured{
+	serviceClusterObj := &unstructured.Unstructured{
 		Object: map[string]interface{}{
 			"metadata": map[string]interface{}{
 				"name":       "test-1",
@@ -45,54 +45,54 @@ func TestAdoptionReconciler(t *testing.T) {
 			},
 		},
 	}
-	providerObj.SetGroupVersionKind(providerGVK)
+	serviceClusterObj.SetGroupVersionKind(serviceClusterGVK)
 
-	t.Run("creates tenant object", func(t *testing.T) {
+	t.Run("creates master cluster object", func(t *testing.T) {
 		log := testutil.NewLogger(t)
-		client := fakeclient.NewFakeClientWithScheme(
-			testScheme, dcrd, providerObj)
+		masterClient := fakeclient.NewFakeClientWithScheme(testScheme)
+		serviceClient := fakeclient.NewFakeClientWithScheme(
+			testScheme, serviceClusterObj)
 
 		r := AdoptionReconciler{
-			Client:           client,
-			Log:              log,
-			Scheme:           testScheme,
-			NamespacedClient: client,
+			Client:               masterClient,
+			Log:                  log,
+			ServiceClusterClient: serviceClient,
 
-			ProviderGVK: providerGVK,
-			TenantGVK:   tenantGVK,
-
-			DerivedCRDName:    dcrd.Name,
+			ServiceClusterGVK: serviceClusterGVK,
+			MasterClusterGVK:  masterClusterGVK,
 			ProviderNamespace: providerNamespace,
 		}
 
 		_, err := r.Reconcile(reconcile.Request{
 			NamespacedName: types.NamespacedName{
-				Name:      providerObj.GetName(),
-				Namespace: providerObj.GetNamespace(),
+				Name:      serviceClusterObj.GetName(),
+				Namespace: serviceClusterObj.GetNamespace(),
 			},
 		})
 		require.NoError(t, err)
 
 		ctx := context.Background()
-		checkTenantObj := &unstructured.Unstructured{}
-		checkTenantObj.SetGroupVersionKind(tenantGVK)
-		err = client.Get(ctx, types.NamespacedName{
-			Name:      providerObj.GetName(),
-			Namespace: providerObj.GetNamespace(),
-		}, checkTenantObj)
+		checkMasterClusterObj := &unstructured.Unstructured{}
+		checkMasterClusterObj.SetGroupVersionKind(masterClusterGVK)
+		err = masterClient.Get(ctx, types.NamespacedName{
+			Name:      serviceClusterObj.GetName(),
+			Namespace: providerNamespace,
+		}, checkMasterClusterObj)
 		require.NoError(t, err)
 
 		assert.Equal(t, map[string]interface{}{
 			"apiVersion": "eu-west-1.provider/v1alpha1",
-			"kind":       "CouchDB",
+			"kind":       "CouchDBInternal",
 			"metadata": map[string]interface{}{
 				"name":            "test-1",
-				"namespace":       "another-namespace",
+				"namespace":       r.ProviderNamespace,
 				"resourceVersion": "1",
 			},
 			"spec": map[string]interface{}{
 				"test1": "spec2000",
+				"test2": "spec2000",
+				"test3": "spec2000",
 			},
-		}, checkTenantObj.Object)
+		}, checkMasterClusterObj.Object)
 	})
 }

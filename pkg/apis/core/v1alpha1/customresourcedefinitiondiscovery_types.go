@@ -121,6 +121,10 @@ const (
 	CustomResourceDefinitionDiscoveryReady CustomResourceDefinitionDiscoveryConditionType = "Ready"
 	// CustomResourceDefinitionDiscoveryDiscovered represents a CustomResourceDefinitionDiscovery has been discovered by the manager controller.
 	CustomResourceDefinitionDiscoveryDiscovered CustomResourceDefinitionDiscoveryConditionType = "Discovered"
+	// CustomResourceDefinitionDiscoveryEstablished is True if the crd could be registered in the master cluster and is now served by the kube-apiserver.
+	CustomResourceDefinitionDiscoveryEstablished CustomResourceDefinitionDiscoveryConditionType = "Established"
+	// CustomResourceDefinitionDiscoveryControllerReady is Ture if the controller to propagate the crd into the service cluster is ready.
+	CustomResourceDefinitionDiscoveryControllerReady CustomResourceDefinitionDiscoveryConditionType = "ControllerReady"
 )
 
 // CustomResourceDefinitionDiscoveryCondition contains details for the current condition of this CustomResourceDefinitionDiscovery.
@@ -137,10 +141,15 @@ type CustomResourceDefinitionDiscoveryCondition struct {
 	Type CustomResourceDefinitionDiscoveryConditionType `json:"type"`
 }
 
+// True returns whether .Status == "True"
+func (c CustomResourceDefinitionDiscoveryCondition) True() bool {
+	return c.Status == ConditionTrue
+}
+
 // CustomResourceDefinitionDiscovery is used inside KubeCarrier to fetch a CustomResourceDefinition from another cluster and to offload cross cluster access to another component.
 // +kubebuilder:subresource:status
 // +kubebuilder:object:root=true
-// +kubebuilder:printcolumn:name="CustomResourceDefinition",type="string",JSONPath=".spec.crd.metadata.name"
+// +kubebuilder:printcolumn:name="CustomResourceDefinition",type="string",JSONPath=".spec.crd.name"
 // +kubebuilder:printcolumn:name="Service Cluster",type="string",JSONPath=".spec.serviceCluster.name"
 type CustomResourceDefinitionDiscovery struct {
 	metav1.TypeMeta   `json:",inline"`

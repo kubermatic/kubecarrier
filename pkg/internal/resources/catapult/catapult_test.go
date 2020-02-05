@@ -35,6 +35,19 @@ func TestManifests(t *testing.T) {
 	c := Config{
 		Name:      "db.eu-west-1",
 		Namespace: "test3000",
+
+		MasterClusterKind:    "CouchDBInternal",
+		MasterClusterVersion: "v1alpha1",
+		MasterClusterGroup:   "eu-west-1.provider",
+		MasterClusterPlural:  "couchdbinternals",
+
+		ServiceClusterKind:    "CouchDB",
+		ServiceClusterVersion: "v1alpha1",
+		ServiceClusterGroup:   "couchdb.io",
+		ServiceClusterPlural:  "couchdbs",
+
+		ServiceClusterName:   "eu-west-1",
+		ServiceClusterSecret: "eu-west-1-kubeconfig",
 	}
 
 	manifests, err := Manifests(c)

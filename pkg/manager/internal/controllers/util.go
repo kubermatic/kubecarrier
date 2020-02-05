@@ -16,7 +16,18 @@ limitations under the License.
 
 package controllers
 
+import apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
+
 const (
 	ProviderLabel       = "kubecarrier.io/provider"
 	serviceClusterLabel = "kubecarrier.io/service-cluster"
 )
+
+func getStorageVersion(crd *apiextensionsv1.CustomResourceDefinition) string {
+	for _, version := range crd.Spec.Versions {
+		if version.Storage {
+			return version.Name
+		}
+	}
+	return ""
+}

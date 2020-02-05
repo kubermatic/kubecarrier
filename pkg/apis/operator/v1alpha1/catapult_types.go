@@ -22,6 +22,12 @@ import (
 
 // CatapultSpec defines the desired state of Catapult
 type CatapultSpec struct {
+	// References the CRD in the master cluster.
+	MasterClusterCRD CRDReference `json:"masterClusterCRD"`
+	// References the CRD in the service cluster.
+	ServiceClusterCRD CRDReference `json:"serviceClusterCRD"`
+	// References the ServiceCluster object that this object belongs to.
+	ServiceCluster ObjectReference `json:"serviceCluster"`
 }
 
 // CatapultStatus defines the observed state of Catapult
@@ -100,6 +106,11 @@ type CatapultCondition struct {
 	Reason string `json:"reason"`
 	// Message is the human readable message indicating details about last transition.
 	Message string `json:"message"`
+}
+
+// True returns whether .Status == "True"
+func (c CatapultCondition) True() bool {
+	return c.Status == ConditionTrue
 }
 
 // GetCondition returns the Condition of the given condition type, if it exists.

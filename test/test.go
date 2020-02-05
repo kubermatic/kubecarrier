@@ -40,21 +40,16 @@ func AllTests(config framework.Config) ([]testing.InternalTest, error) {
 	tests = append(tests,
 		testing.InternalTest{
 			Name: "VerifySuite",
-			F: func(t *testing.T) {
-				suite.Run(t, &verify.VerifySuite{Framework: f})
-			},
+			F:    verify.NewVerifySuite(f),
 		},
 		testing.InternalTest{
 			Name: "InstallationSuite",
-			F: func(t *testing.T) {
-				suite.Run(t, &installation.InstallationSuite{Framework: f})
-			},
+			F:    installation.NewInstallationSuite(f),
 		},
+
 		testing.InternalTest{
 			Name: "AdminSuite",
-			F: func(t *testing.T) {
-				suite.Run(t, &admin.AdminSuite{Framework: f})
-			},
+			F:    admin.NewAdminSuite(f),
 		},
 		testing.InternalTest{
 			Name: "ProviderSuite",
@@ -65,7 +60,8 @@ func AllTests(config framework.Config) ([]testing.InternalTest, error) {
 			F: func(t *testing.T) {
 				suite.Run(t, &tenant.TenantSuite{Framework: f})
 			},
-		})
+		},
+	)
 
 	return tests, nil
 }

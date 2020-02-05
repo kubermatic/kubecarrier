@@ -41,8 +41,6 @@ func NewDerivedCRDSuite(
 	provider *catalogv1alpha1.Provider,
 ) func(t *testing.T) {
 	return func(t *testing.T) {
-		t.Parallel()
-
 		// Setup
 		//
 		masterClient, err := f.MasterClient()
@@ -157,8 +155,8 @@ func NewDerivedCRDSuite(
 
 		// Check reported status
 		if assert.NotNil(t, dcrd.Status.DerivedCRD, ".status.derivedCRD should be set") {
-			assert.Equal(t, "testresources.eu-west-1.example-cloud", dcrd.Status.DerivedCRD.Name)
-			assert.Equal(t, "eu-west-1.example-cloud", dcrd.Status.DerivedCRD.Group)
+			assert.Equal(t, "testresources.eu-west-1.test-derivedcrd", dcrd.Status.DerivedCRD.Name)
+			assert.Equal(t, "eu-west-1.test-derivedcrd", dcrd.Status.DerivedCRD.Group)
 			assert.Equal(t, "TestResource", dcrd.Status.DerivedCRD.Kind)
 			assert.Equal(t, "testresources", dcrd.Status.DerivedCRD.Plural)
 			assert.Equal(t, "testresource", dcrd.Status.DerivedCRD.Singular)
@@ -209,7 +207,7 @@ type: object
 		// Check Tenant -> Provider
 		tenantObj := &unstructured.Unstructured{
 			Object: map[string]interface{}{
-				"apiVersion": "eu-west-1.example-cloud/v1alpha1",
+				"apiVersion": "eu-west-1.test-derivedcrd/v1alpha1",
 				"kind":       "TestResource",
 				"metadata": map[string]interface{}{
 					"name":      "test-instance-1",

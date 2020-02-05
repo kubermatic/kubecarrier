@@ -30,14 +30,6 @@ type ElevatorSpec struct {
 	DerivedCRD ObjectReference `json:"derivedCRD"`
 }
 
-// CRDReference references a CustomResourceDefitition.
-type CRDReference struct {
-	Kind    string `json:"kind"`
-	Version string `json:"version"`
-	Group   string `json:"group"`
-	Plural  string `json:"plural"`
-}
-
 // ElevatorStatus defines the observed state of Elevator
 type ElevatorStatus struct {
 	// ObservedGeneration is the most recent generation observed for this Elevator by the controller.
@@ -114,6 +106,11 @@ type ElevatorCondition struct {
 	Reason string `json:"reason"`
 	// Message is the human readable message indicating details about last transition.
 	Message string `json:"message"`
+}
+
+// True returns whether .Status == "True"
+func (c ElevatorCondition) True() bool {
+	return c.Status == ConditionTrue
 }
 
 // GetCondition returns the Condition of the given condition type, if it exists.

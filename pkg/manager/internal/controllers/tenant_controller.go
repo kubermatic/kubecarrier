@@ -137,8 +137,8 @@ func (r *TenantReconciler) SetupWithManager(mgr ctrl.Manager) error {
 }
 
 // handleDeletion handles the deletion of the Tenant object. Currently, it does:
-// 1. Delete the Namespace that the tenant owns.
-// 2. Delete the TenantReferences that this tenant owns.
+// 1. Delete the TenantReferences that this tenant owns.
+// 2. Delete the Namespace that the tenant owns.
 // 3. Remove the finalizer from the tenant object.
 func (r *TenantReconciler) handleDeletion(ctx context.Context, log logr.Logger, tenant *catalogv1alpha1.Tenant) error {
 	// Update the Tenant Status to Terminating.
@@ -157,21 +157,7 @@ func (r *TenantReconciler) handleDeletion(ctx context.Context, log logr.Logger, 
 		}
 	}
 
-	ns := &corev1.Namespace{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: tenant.Status.NamespaceName,
-		},
-	}
-
-	if err := r.Delete(ctx, ns); err == nil {
-		// Move to the next reconcile round
-		return nil
-	} else if !errors.IsNotFound(err) {
-		return fmt.Errorf("deleting namespace: %w", err)
-	}
-	// else the error is IsNotFound, so the namespace is gone, and then we can remove the TenantReferences and finalizer.
-
-	// Clean up TenantReferences.
+	// 1. Clean up TenantReferences.
 	providerList := &catalogv1alpha1.ProviderList{}
 	if err := r.List(ctx, providerList, client.InNamespace(r.KubeCarrierSystemNamespace)); err != nil {
 		return fmt.Errorf("listing Providers: %w", err)
@@ -199,6 +185,32 @@ func (r *TenantReconciler) handleDeletion(ctx context.Context, log logr.Logger, 
 	if tenantReferenceCleanedUp != len(providerList.Items) {
 		// Not everything has been cleaned up yet
 		// move to the next reconcile call
+		return nil
+	}
+
+	// 2. Cleanup Namespace
+	ns := &corev1.Namespace{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: tenant.Status.NamespaceName,
+		},
+	}
+	err := r.Get(ctx, types.NamespacedName{
+		Name: tenant.Status.NamespaceName,
+	}, ns)
+	if err != nil && !errors.IsNotFound(err) {
+		return fmt.Errorf("getting Namespace: %w", err)
+	}
+
+	if err == nil && ns.DeletionTimestamp.IsZero() {
+		if err = r.Delete(ctx, ns); err != nil {
+			return fmt.Errorf("deleting Namespace: %w", err)
+		}
+		// Move to the next reconcile round
+		return nil
+	}
+
+	if !errors.IsNotFound(err) {
+		// Namespace is not yet gone
 		return nil
 	}
 

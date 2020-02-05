@@ -18,46 +18,28 @@ package controllers
 
 import (
 	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
-	catalogv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/catalog/v1alpha1"
+	corev1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/core/v1alpha1"
 )
 
 var (
 	testScheme = runtime.NewScheme()
 
-	providerGVK = schema.GroupVersionKind{
+	masterClusterGVK = schema.GroupVersionKind{
 		Kind:    "CouchDBInternal",
 		Version: "v1alpha1",
 		Group:   "eu-west-1.provider",
 	}
 
-	tenantGVK = schema.GroupVersionKind{
+	serviceClusterGVK = schema.GroupVersionKind{
 		Kind:    "CouchDB",
 		Version: "v1alpha1",
-		Group:   "eu-west-1.provider",
+		Group:   "couchdb.io",
 	}
 
 	providerNamespace = "extreme-cloud"
-	dcrd              = &catalogv1alpha1.DerivedCustomResourceDefinition{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "couchdbs.eu-west-1",
-			Namespace: providerNamespace,
-		},
-		Spec: catalogv1alpha1.DerivedCustomResourceDefinitionSpec{
-			Expose: []catalogv1alpha1.VersionExposeConfig{
-				{
-					Versions: []string{"v1alpha1"},
-					Fields: []catalogv1alpha1.FieldPath{
-						{JSONPath: ".spec.test1"},
-						{JSONPath: ".status.test1"},
-					},
-				},
-			},
-		},
-	}
 )
 
 func init() {
@@ -65,7 +47,7 @@ func init() {
 	if err := corev1.AddToScheme(testScheme); err != nil {
 		panic(err)
 	}
-	if err := catalogv1alpha1.AddToScheme(testScheme); err != nil {
+	if err := corev1alpha1.AddToScheme(testScheme); err != nil {
 		panic(err)
 	}
 }

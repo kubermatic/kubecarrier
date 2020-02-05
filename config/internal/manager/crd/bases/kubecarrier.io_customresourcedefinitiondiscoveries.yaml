@@ -15,7 +15,7 @@ spec:
   scope: Namespaced
   versions:
     - additionalPrinterColumns:
-        - jsonPath: .spec.crd.metadata.name
+        - jsonPath: .spec.crd.name
           name: CustomResourceDefinition
           type: string
         - jsonPath: .spec.serviceCluster.name

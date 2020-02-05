@@ -15,8 +15,9 @@ spec:
       labels:
         control-plane: manager
     spec:
+      serviceAccountName: sa
       containers:
-      - image: quay.io/kubecarrier/ferry:lastest
+      - image: quay.io/kubecarrier/ferry:latest
         args:
         - "--service-cluster-name=$(SERVICE_CLUSTER)"
         - "--service-cluster-kubeconfig=/kubeconfig/kubeconfig"

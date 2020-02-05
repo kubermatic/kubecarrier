@@ -44,6 +44,7 @@ type ServiceClusterAssignmentReconciler struct {
 	ServiceClusterName string
 }
 
+// +kubebuilder:rbac:groups=operator.kubecarrier.io,resources=serviceclusterregistrations,verbs=get;list;watch
 // +kubebuilder:rbac:groups=kubecarrier.io,resources=serviceclusterassignments,verbs=get;list;watch;create;update;patch
 // +kubebuilder:rbac:groups=kubecarrier.io,resources=serviceclusterassignments/status,verbs=get;update;patch
 // https://github.com/kubermatic/kubecarrier/issues/143
@@ -84,10 +85,12 @@ func (r *ServiceClusterAssignmentReconciler) Reconcile(req ctrl.Request) (ctrl.R
 		if err := r.MasterClient.Status().Update(ctx, serviceClusterAssignment); err != nil {
 			return ctrl.Result{}, fmt.Errorf("updating ServiceClusterAssignment Status: %w", err)
 		}
-		return ctrl.Result{}, fmt.Errorf("cannot create tenant Assigenment namespace: %w", err)
+		return ctrl.Result{}, fmt.Errorf("cannot create TenantAssignment namespace: %w", err)
 	}
 
-	serviceClusterAssignment.Status.NamespaceName = ns.Name
+	serviceClusterAssignment.Status.ServiceClusterNamespace = corev1alpha1.ObjectReference{
+		Name: ns.Name,
+	}
 	serviceClusterAssignment.Status.ObservedGeneration = serviceClusterAssignment.Generation
 	serviceClusterAssignment.Status.SetCondition(corev1alpha1.ServiceClusterAssignmentCondition{
 		Type:    corev1alpha1.ServiceClusterAssignmentReady,
