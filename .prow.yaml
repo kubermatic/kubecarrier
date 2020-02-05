@@ -122,11 +122,6 @@ presubmits:
             value: 'on'
           - name: KIND_NODE_IMAGE
             value: "kindest/node:v1.16.4@sha256:b91a2c2317a000f3a783489dfb755064177dbc3a0b2f4147d50f04825d016f55"
-        volumeMounts:
-          - name: modules
-            mountPath: /lib/modules
-          - name: cgroup
-            mountPath: /sys/fs/cgroup
         # docker-in-docker needs privileged mode
         securityContext:
           privileged: true
@@ -134,16 +129,6 @@ presubmits:
           requests:
             cpu: 800m
             memory: 2Gi
-    # Those volumes are required by inner docker instance to properly start the k8s cluster inside the pod.
-    volumes:
-      - name: modules
-        hostPath:
-          path: /lib/modules
-          type: Directory
-      - name: cgroup
-        hostPath:
-          path: /sys/fs/cgroup
-          type: Directory
 postsubmits:
   - name: post-kubecarrier-test-image-new
     decorate: true
