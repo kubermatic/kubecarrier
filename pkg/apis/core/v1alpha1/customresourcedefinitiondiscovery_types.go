@@ -141,6 +141,11 @@ type CustomResourceDefinitionDiscoveryCondition struct {
 	Type CustomResourceDefinitionDiscoveryConditionType `json:"type"`
 }
 
+// True returns whether .Status == "True"
+func (c CustomResourceDefinitionDiscoveryCondition) True() bool {
+	return c.Status == ConditionTrue
+}
+
 // CustomResourceDefinitionDiscovery is used inside KubeCarrier to fetch a CustomResourceDefinition from another cluster and to offload cross cluster access to another component.
 // +kubebuilder:subresource:status
 // +kubebuilder:object:root=true

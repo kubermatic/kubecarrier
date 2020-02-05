@@ -116,6 +116,11 @@ type CatalogEntryCondition struct {
 	Message string `json:"message"`
 }
 
+// True returns whether .Status == "True"
+func (c CatalogEntryCondition) True() bool {
+	return c.Status == ConditionTrue
+}
+
 // GetCondition returns the Condition of the given condition type, if it exists.
 func (s *CatalogEntryStatus) GetCondition(t CatalogEntryConditionType) (condition CatalogEntryCondition, exists bool) {
 	for _, cond := range s.Conditions {

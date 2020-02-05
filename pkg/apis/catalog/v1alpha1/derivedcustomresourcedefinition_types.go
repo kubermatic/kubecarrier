@@ -128,6 +128,11 @@ type DerivedCustomResourceDefinitionCondition struct {
 	Message string `json:"message"`
 }
 
+// True returns whether .Status == "True"
+func (c DerivedCustomResourceDefinitionCondition) True() bool {
+	return c.Status == ConditionTrue
+}
+
 // GetCondition returns the Condition of the given condition type, if it exists.
 func (s *DerivedCustomResourceDefinitionStatus) GetCondition(t DerivedCustomResourceDefinitionConditionType) (condition DerivedCustomResourceDefinitionCondition, exists bool) {
 	for _, cond := range s.Conditions {
