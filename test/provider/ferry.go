@@ -182,7 +182,7 @@ func NewFerrySuite(
 					assert.NoError(t,
 						serviceClient.Get(
 							ctx,
-							types.NamespacedName{Name: serviceClusterAssignment.Status.NamespaceName},
+							types.NamespacedName{Name: serviceClusterAssignment.Status.ServiceClusterNamespace.Name},
 							ns,
 						),
 						"serviceCluster's namespace not created",

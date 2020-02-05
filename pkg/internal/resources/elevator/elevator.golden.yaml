@@ -13,9 +13,16 @@
     - get
     - list
     - watch
+  - apiGroups:
+    - catalog.kubecarrier.io
+    resources:
+    - derivedcustomresourcedefinitions/status
+    verbs:
+    - get
 - apiVersion: rbac.authorization.k8s.io/v1
   kind: ClusterRole
   metadata:
+    creationTimestamp: null
     name: db-eu-west-1-elevator-manager
   rules:
   - apiGroups:
@@ -131,7 +138,7 @@
     name: db-eu-west-1-elevator-leader-election-role
   subjects:
   - kind: ServiceAccount
-    name: default
+    name: db-eu-west-1-elevator-sa
     namespace: test3000
 - apiVersion: apps/v1
   kind: Deployment

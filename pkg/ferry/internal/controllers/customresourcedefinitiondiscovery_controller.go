@@ -89,7 +89,7 @@ func (r *CustomResourceDefinitionDiscoveryReconciler) Reconcile(req ctrl.Request
 	case errors.IsNotFound(err):
 		crdDiscovery.Status.CRD = nil
 		crdDiscovery.Status.SetCondition(corev1alpha1.CustomResourceDefinitionDiscoveryCondition{
-			Type:    corev1alpha1.CustomResourceDefinitionDiscoveryReady,
+			Type:    corev1alpha1.CustomResourceDefinitionDiscoveryDiscovered,
 			Status:  corev1alpha1.ConditionFalse,
 			Message: err.Error(),
 			Reason:  CRDNotFound.Error(),
@@ -113,7 +113,7 @@ func (r *CustomResourceDefinitionDiscoveryReconciler) Reconcile(req ctrl.Request
 
 		crdDiscovery.Status.CRD = crd
 		crdDiscovery.Status.SetCondition(corev1alpha1.CustomResourceDefinitionDiscoveryCondition{
-			Type:    corev1alpha1.CustomResourceDefinitionDiscoveryReady,
+			Type:    corev1alpha1.CustomResourceDefinitionDiscoveryDiscovered,
 			Status:  corev1alpha1.ConditionTrue,
 			Message: "CRD was found on the cluster.",
 			Reason:  "CRDFound",

@@ -107,9 +107,11 @@ type DerivedCustomResourceDefinitionConditionType string
 
 const (
 	// DerivedCustomResourceDefinitionReady represents a DerivedCustomResourceDefinition condition is in ready state.
-	DerivedCustomResourceDefinitionReady             DerivedCustomResourceDefinitionConditionType = "Ready"
-	DerivedCustomResourceDefinitionCRDRegistered     DerivedCustomResourceDefinitionConditionType = "CRDRegistered"
-	DerivedCustomResourceDefinitionControllerRunning DerivedCustomResourceDefinitionConditionType = "ControllerRunning"
+	DerivedCustomResourceDefinitionReady DerivedCustomResourceDefinitionConditionType = "Ready"
+	// DerivedCustomResourceDefinitionEstablished is True if the derived crd could be registered and is now served by the kube-apiserver.
+	DerivedCustomResourceDefinitionEstablished DerivedCustomResourceDefinitionConditionType = "Established"
+	// DerivedCustomResourceDefinitionControllerReady is Ture if the controller to propagate the derived and internal crd is ready.
+	DerivedCustomResourceDefinitionControllerReady DerivedCustomResourceDefinitionConditionType = "ControllerReady"
 )
 
 // DerivedCustomResourceDefinitionCondition contains details for the current condition of this DerivedCustomResourceDefinition.

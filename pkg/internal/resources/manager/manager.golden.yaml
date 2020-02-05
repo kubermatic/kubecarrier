@@ -1239,7 +1239,7 @@
     scope: Namespaced
     versions:
     - additionalPrinterColumns:
-      - jsonPath: .spec.crd.metadata.name
+      - jsonPath: .spec.crd.name
         name: CustomResourceDefinition
         type: string
       - jsonPath: .spec.serviceCluster.name
@@ -1407,9 +1407,16 @@
               description: ServiceClusterAssignmentSpec defines the desired state
                 of ServiceClusterAssignment
               properties:
+                masterNamespace:
+                  description: References the source namespace in the master cluster.
+                  properties:
+                    name:
+                      type: string
+                  required:
+                  - name
+                  type: object
                 serviceCluster:
-                  description: ObjectReference describes the link to another object
-                    in the same namespace
+                  description: References the ServiceCluster.
                   properties:
                     name:
                       type: string
@@ -1417,6 +1424,7 @@
                   - name
                   type: object
               required:
+              - masterNamespace
               - serviceCluster
               type: object
             status:
@@ -1458,10 +1466,6 @@
                     - type
                     type: object
                   type: array
-                namespaceName:
-                  description: NamespaceName references the Namespace on the ServiceCluster
-                    that was assigned.
-                  type: string
                 observedGeneration:
                   description: The most recent generation observed by the controller.
                   format: int64
@@ -1473,6 +1477,15 @@
                     string when printing the property is only present for display
                     purposes, for everything else use conditions
                   type: string
+                serviceClusterNamespace:
+                  description: ServiceClusterNamespace references the Namespace on
+                    the ServiceCluster that was assigned.
+                  properties:
+                    name:
+                      type: string
+                  required:
+                  - name
+                  type: object
               type: object
           type: object
       served: true
@@ -1592,19 +1605,8 @@
                     - type
                     type: object
                   type: array
-                observedGeneration:
-                  description: The most recent generation observed by the controller.
-                  format: int64
-                  type: integer
-                phase:
-                  description: DEPRECATED. Phase represents the current lifecycle
-                    state of this object consider this field DEPRECATED, it will be
-                    removed as soon as there is a mechanism to map conditions to a
-                    string when printing the property is only present for display
-                    purposes, for everything else use conditions
-                  type: string
-                version:
-                  description: Version of the service cluster API Server
+                kubernetesVersion:
+                  description: KubernetesVersion of the service cluster API Server
                   properties:
                     buildDate:
                       type: string
@@ -1635,6 +1637,17 @@
                   - minor
                   - platform
                   type: object
+                observedGeneration:
+                  description: The most recent generation observed by the controller.
+                  format: int64
+                  type: integer
+                phase:
+                  description: DEPRECATED. Phase represents the current lifecycle
+                    state of this object consider this field DEPRECATED, it will be
+                    removed as soon as there is a mechanism to map conditions to a
+                    string when printing the property is only present for display
+                    purposes, for everything else use conditions
+                  type: string
               type: object
           type: object
       served: true
@@ -1813,6 +1826,7 @@
     verbs:
     - get
     - list
+    - update
     - watch
   - apiGroups:
     - kubecarrier.io

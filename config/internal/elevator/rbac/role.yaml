@@ -1,3 +1,4 @@
+
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
@@ -13,3 +14,9 @@ rules:
   - get
   - list
   - watch
+- apiGroups:
+  - catalog.kubecarrier.io
+  resources:
+  - derivedcustomresourcedefinitions/status
+  verbs:
+  - get

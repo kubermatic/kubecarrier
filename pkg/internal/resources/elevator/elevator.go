@@ -20,11 +20,12 @@ import (
 	"fmt"
 	"strings"
 
-	"sigs.k8s.io/yaml"
-
+	rbacv1 "k8s.io/api/rbac/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"sigs.k8s.io/kustomize/v3/pkg/image"
 	"sigs.k8s.io/kustomize/v3/pkg/types"
+	"sigs.k8s.io/yaml"
 
 	"github.com/kubermatic/kubecarrier/pkg/internal/kustomize"
 	"github.com/kubermatic/kubecarrier/pkg/internal/version"
@@ -66,6 +67,10 @@ func Manifests(c Config) ([]unstructured.Unstructured, error) {
 	}
 
 	// Patch environment
+	// Note:
+	// we are not using *appsv1.Deployment here,
+	// because some fields will be defaulted to empty and
+	// interfere with the strategic merge patch of kustomize.
 	managerEnv := map[string]interface{}{
 		"apiVersion": "apps/v1",
 		"kind":       "Deployment",
@@ -125,34 +130,36 @@ func Manifests(c Config) ([]unstructured.Unstructured, error) {
 	}
 
 	// Generate ClusterRole for component
-	role := map[string]interface{}{
-		"apiVersion": "rbac.authorization.k8s.io/v1",
-		"kind":       "ClusterRole",
-		"metadata": map[string]string{
-			"name": "manager",
+	role := rbacv1.ClusterRole{
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: "rbac.authorization.k8s.io/v1",
+			Kind:       "ClusterRole",
 		},
-		"rules": []map[string]interface{}{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "manager",
+		},
+		Rules: []rbacv1.PolicyRule{
 			{
-				"apiGroups": []string{c.ProviderGroup},
-				"resources": []string{c.ProviderPlural},
-				"verbs": []string{
+				APIGroups: []string{c.ProviderGroup},
+				Resources: []string{c.ProviderPlural},
+				Verbs: []string{
 					"create", "delete", "get", "list", "patch", "update", "watch"},
 			},
 			{
-				"apiGroups": []string{c.ProviderGroup},
-				"resources": []string{c.ProviderPlural + "/status"},
-				"verbs":     []string{"get", "patch", "update"},
+				APIGroups: []string{c.ProviderGroup},
+				Resources: []string{c.ProviderPlural + "/status"},
+				Verbs:     []string{"get", "patch", "update"},
 			},
 			{
-				"apiGroups": []string{c.TenantGroup},
-				"resources": []string{c.TenantPlural},
-				"verbs": []string{
+				APIGroups: []string{c.TenantGroup},
+				Resources: []string{c.TenantPlural},
+				Verbs: []string{
 					"create", "delete", "get", "list", "patch", "update", "watch"},
 			},
 			{
-				"apiGroups": []string{c.TenantGroup},
-				"resources": []string{c.TenantPlural + "/status"},
-				"verbs":     []string{"get", "patch", "update"},
+				APIGroups: []string{c.TenantGroup},
+				Resources: []string{c.TenantPlural + "/status"},
+				Verbs:     []string{"get", "patch", "update"},
 			},
 		},
 	}

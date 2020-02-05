@@ -102,7 +102,7 @@ func (r *ServiceClusterReconciler) Reconcile(req ctrl.Request) (res ctrl.Result,
 
 	serviceCluster.Status.ObservedGeneration = serviceCluster.Generation
 	serviceCluster.Status.SetCondition(cond)
-	serviceCluster.Status.Version = serverVersion
+	serviceCluster.Status.KubernetesVersion = serverVersion
 
 	if err := r.MasterClient.Status().Update(ctx, serviceCluster); err != nil {
 		return ctrl.Result{}, fmt.Errorf("status update: %w", err)

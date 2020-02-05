@@ -18,56 +18,44 @@ package verify
 
 import (
 	"context"
+	"testing"
 
-	"github.com/stretchr/testify/suite"
+	"github.com/stretchr/testify/require"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/types"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/kubermatic/kubecarrier/test/framework"
 )
 
-var _ suite.SetupAllSuite = (*VerifySuite)(nil)
-
 // VerifySuite verifies if we can reach both kubernetes clusters (master and service).
 // and whether they are configured for our e2e tests.
-type VerifySuite struct {
-	suite.Suite
-	*framework.Framework
+func NewVerifySuite(f *framework.Framework) func(t *testing.T) {
+	return func(t *testing.T) {
+		// Setup
+		masterClient, err := f.MasterClient()
+		require.NoError(t, err)
 
-	masterClient  client.Client
-	serviceClient client.Client
-}
+		serviceClient, err := f.ServiceClient()
+		require.NoError(t, err)
 
-func (s *VerifySuite) SetupSuite() {
-	t := s.T()
-	t.Logf("master cluster external kubeconfig location: %s", s.Framework.Config().MasterExternalKubeconfigPath)
-	t.Logf("master cluster internal kubeconfig location: %s", s.Framework.Config().MasterInternalKubeconfigPath)
-	t.Logf("svc cluster external kubeconfig location: %s", s.Framework.Config().ServiceExternalKubeconfigPath)
-	t.Logf("svc cluster internal kubeconfig location: %s", s.Framework.Config().ServiceInternalKubeconfigPath)
+		t.Run("", func(t *testing.T) {
+			// parallel-group
+			t.Run("validate master connection", func(t *testing.T) {
+				cm := &corev1.ConfigMap{}
+				require.NoError(t, masterClient.Get(context.Background(), types.NamespacedName{
+					Name:      "cluster-info",
+					Namespace: "kube-public",
+				}, cm), "cannot fetch cluster-info")
+			})
 
-	var err error
-	s.Require().NoError(err, "creating testing framework")
-	s.masterClient, err = s.MasterClient()
-	s.Require().NoError(err, "creating master client")
-	s.serviceClient, err = s.ServiceClient()
-	s.Require().NoError(err, "creating service client")
-}
+			t.Run("validate service connection", func(t *testing.T) {
+				cm := &corev1.ConfigMap{}
+				require.NoError(t, serviceClient.Get(context.Background(), types.NamespacedName{
+					Name:      "cluster-info",
+					Namespace: "kube-public",
+				}, cm), "cannot fetch cluster-info")
+			})
+		})
 
-func (s *VerifySuite) TestValidMasterKubeconfig() {
-	cm := &corev1.ConfigMap{}
-	s.Require().NoError(s.masterClient.Get(context.Background(), types.NamespacedName{
-		Name:      "cluster-info",
-		Namespace: "kube-public",
-	}, cm), "cannot fetch cluster-info")
-	s.T().Logf("cluster-info kubeconfig:\n%s", cm.Data["kubeconfig"])
-}
-
-func (s *VerifySuite) TestValidServiceKubeconfig() {
-	cm := &corev1.ConfigMap{}
-	s.Require().NoError(s.serviceClient.Get(context.Background(), types.NamespacedName{
-		Name:      "cluster-info",
-		Namespace: "kube-public",
-	}, cm), "cannot fetch cluster-info")
-	s.T().Logf("cluster-info kubeconfig:\n%s", cm.Data["kubeconfig"])
+	}
 }

@@ -26,6 +26,7 @@ import (
 	rbacv1 "k8s.io/api/rbac/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/types"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/source"
@@ -88,12 +89,34 @@ func (r *CatapultReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 		}
 	}
 
+	// Lookup ServiceClusterRegistration to get name of secret.
+	serviceClusterRegistration := &operatorv1alpha1.ServiceClusterRegistration{}
+	if err := r.Get(ctx, types.NamespacedName{
+		Name:      catapult.Spec.ServiceCluster.Name,
+		Namespace: catapult.Namespace,
+	}, serviceClusterRegistration); err != nil {
+		return ctrl.Result{}, fmt.Errorf("getting ServiceClusterRegistration: %w", err)
+	}
+
 	// 3. Reconcile the objects that owned by Catapult object.
 	// Build the manifests of the Catapult controller manager.
 	objects, err := resourcescatapult.Manifests(
 		resourcescatapult.Config{
 			Name:      catapult.Name,
 			Namespace: catapult.Namespace,
+
+			MasterClusterKind:    catapult.Spec.MasterClusterCRD.Kind,
+			MasterClusterVersion: catapult.Spec.MasterClusterCRD.Version,
+			MasterClusterGroup:   catapult.Spec.MasterClusterCRD.Group,
+			MasterClusterPlural:  catapult.Spec.MasterClusterCRD.Plural,
+
+			ServiceClusterKind:    catapult.Spec.ServiceClusterCRD.Kind,
+			ServiceClusterVersion: catapult.Spec.ServiceClusterCRD.Version,
+			ServiceClusterGroup:   catapult.Spec.ServiceClusterCRD.Group,
+			ServiceClusterPlural:  catapult.Spec.ServiceClusterCRD.Plural,
+
+			ServiceClusterName:   catapult.Spec.ServiceCluster.Name,
+			ServiceClusterSecret: serviceClusterRegistration.Spec.KubeconfigSecret.Name,
 		})
 	if err != nil {
 		return ctrl.Result{}, fmt.Errorf("creating catapult manifests: %w", err)

@@ -2,20 +2,81 @@
   kind: Role
   metadata:
     creationTimestamp: null
-    name: db-eu-west-1-catapult-manager-role
+    name: db-eu-west-1-catapult-manager
     namespace: test3000
-  rules: []
+  rules:
+  - apiGroups:
+    - kubecarrier.io
+    resources:
+    - serviceclusterassignments
+    verbs:
+    - create
+    - get
+    - list
+    - patch
+    - update
+    - watch
+  - apiGroups:
+    - kubecarrier.io
+    resources:
+    - serviceclusterassignments/status
+    verbs:
+    - get
+- apiVersion: rbac.authorization.k8s.io/v1
+  kind: ClusterRole
+  metadata:
+    creationTimestamp: null
+    name: db-eu-west-1-catapult-manager
+  rules:
+  - apiGroups:
+    - eu-west-1.provider
+    resources:
+    - couchdbinternals
+    verbs:
+    - create
+    - delete
+    - get
+    - list
+    - patch
+    - update
+    - watch
+  - apiGroups:
+    - eu-west-1.provider
+    resources:
+    - couchdbinternals/status
+    verbs:
+    - get
+    - patch
+    - update
+- apiVersion: v1
+  kind: ServiceAccount
+  metadata:
+    name: db-eu-west-1-catapult-sa
+    namespace: test3000
 - apiVersion: rbac.authorization.k8s.io/v1
   kind: ClusterRoleBinding
   metadata:
-    name: db-eu-west-1-catapult-manager-rolebinding
+    name: db-eu-west-1-catapult-manager
   roleRef:
     apiGroup: rbac.authorization.k8s.io
     kind: ClusterRole
-    name: manager-role
+    name: db-eu-west-1-catapult-manager
   subjects:
   - kind: ServiceAccount
-    name: default
+    name: db-eu-west-1-catapult-sa
+    namespace: test3000
+- apiVersion: rbac.authorization.k8s.io/v1
+  kind: RoleBinding
+  metadata:
+    name: db-eu-west-1-catapult-manager
+    namespace: test3000
+  roleRef:
+    apiGroup: rbac.authorization.k8s.io
+    kind: Role
+    name: db-eu-west-1-catapult-manager
+  subjects:
+  - kind: ServiceAccount
+    name: db-eu-west-1-catapult-sa
     namespace: test3000
 - apiVersion: rbac.authorization.k8s.io/v1
   kind: Role
@@ -60,7 +121,7 @@
     name: db-eu-west-1-catapult-leader-election-role
   subjects:
   - kind: ServiceAccount
-    name: default
+    name: db-eu-west-1-catapult-sa
     namespace: test3000
 - apiVersion: apps/v1
   kind: Deployment
@@ -80,7 +141,28 @@
           control-plane: manager
       spec:
         containers:
-        - image: quay.io/kubecarrier/catapult:was not build properly
+        - env:
+          - name: CATAPULT_MASTER_CLUSTER_KIND
+            value: CouchDBInternal
+          - name: CATAPULT_MASTER_CLUSTER_VERSION
+            value: v1alpha1
+          - name: CATAPULT_MASTER_CLUSTER_GROUP
+            value: eu-west-1.provider
+          - name: CATAPULT_SERVICE_CLUSTER_KIND
+            value: CouchDB
+          - name: CATAPULT_SERVICE_CLUSTER_VERSION
+            value: v1alpha1
+          - name: CATAPULT_SERVICE_CLUSTER_GROUP
+            value: couchdb.io
+          - name: CATAPULT_SERVICE_CLUSTER_NAME
+            value: eu-west-1
+          - name: CATAPULT_SERVICE_CLUSTER_KUBECONFIG
+            value: /config/kubeconfig
+          - name: KUBERNETES_NAMESPACE
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.namespace
+          image: quay.io/kubecarrier/catapult:was not build properly
           name: manager
           resources:
             limits:
@@ -89,4 +171,13 @@
             requests:
               cpu: 100m
               memory: 20Mi
+          volumeMounts:
+          - mountPath: /config
+            name: kubeconfig
+            readOnly: true
+        serviceAccountName: db-eu-west-1-catapult-sa
         terminationGracePeriodSeconds: 10
+        volumes:
+        - name: kubeconfig
+          secret:
+            secretName: eu-west-1-kubeconfig

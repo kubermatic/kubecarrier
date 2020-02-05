@@ -38,3 +38,11 @@ const (
 type ObjectReference struct {
 	Name string `json:"name"`
 }
+
+// CRDReference references a CustomResourceDefitition.
+type CRDReference struct {
+	Kind    string `json:"kind"`
+	Version string `json:"version"`
+	Group   string `json:"group"`
+	Plural  string `json:"plural"`
+}

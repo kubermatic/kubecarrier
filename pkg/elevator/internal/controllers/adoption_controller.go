@@ -43,8 +43,7 @@ type AdoptionReconciler struct {
 	NamespacedClient client.Client
 
 	// Dynamic types we work with
-	ProviderGVK, TenantGVK   schema.GroupVersionKind
-	ProviderType, TenantType *unstructured.Unstructured
+	ProviderGVK, TenantGVK schema.GroupVersionKind
 
 	DerivedCRDName, ProviderNamespace string
 }
@@ -55,7 +54,7 @@ func (r *AdoptionReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 		result ctrl.Result
 	)
 
-	providerObj := r.ProviderType.DeepCopy()
+	providerObj := r.newProviderObject()
 	if err := r.Get(ctx, req.NamespacedName, providerObj); err != nil {
 		return result, client.IgnoreNotFound(err)
 	}
@@ -86,7 +85,7 @@ func (r *AdoptionReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 
 func (r *AdoptionReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
-		For(r.ProviderType).
+		For(r.newProviderObject()).
 		WithEventFilter(util.PredicateFn(func(obj runtime.Object) bool {
 			// we are only interested in unowned objects
 			meta, ok := obj.(metav1.Object)
@@ -103,7 +102,7 @@ func (r *AdoptionReconciler) reconcileProviderObj(
 	ctx context.Context, providerObj *unstructured.Unstructured,
 	config catalogv1alpha1.VersionExposeConfig,
 ) error {
-	desiredTenantObj := r.TenantType.DeepCopy()
+	desiredTenantObj := r.newTenantObject()
 	desiredTenantObj.SetName(providerObj.GetName())
 	desiredTenantObj.SetNamespace(providerObj.GetNamespace())
 
@@ -111,7 +110,7 @@ func (r *AdoptionReconciler) reconcileProviderObj(
 	_, otherFields := splitStatusFields(config.Fields)
 
 	// Lookup current instance
-	currentTenantObj := r.TenantType.DeepCopy()
+	currentTenantObj := r.newTenantObject()
 	err := r.Get(ctx, types.NamespacedName{
 		Name:      desiredTenantObj.GetName(),
 		Namespace: desiredTenantObj.GetNamespace(),
@@ -131,4 +130,16 @@ func (r *AdoptionReconciler) reconcileProviderObj(
 	}
 
 	return nil
+}
+
+func (r *AdoptionReconciler) newTenantObject() *unstructured.Unstructured {
+	obj := &unstructured.Unstructured{}
+	obj.SetGroupVersionKind(r.TenantGVK)
+	return obj
+}
+
+func (r *AdoptionReconciler) newProviderObject() *unstructured.Unstructured {
+	obj := &unstructured.Unstructured{}
+	obj.SetGroupVersionKind(r.ProviderGVK)
+	return obj
 }

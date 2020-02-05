@@ -22,6 +22,12 @@ import (
 
 // CatapultSpec defines the desired state of Catapult
 type CatapultSpec struct {
+	// References the CRD in the master cluster.
+	MasterClusterCRD CRDReference `json:"masterClusterCRD"`
+	// References the CRD in the service cluster.
+	ServiceClusterCRD CRDReference `json:"serviceClusterCRD"`
+	// References the ServiceCluster object that this object belongs to.
+	ServiceCluster ObjectReference `json:"serviceCluster"`
 }
 
 // CatapultStatus defines the observed state of Catapult

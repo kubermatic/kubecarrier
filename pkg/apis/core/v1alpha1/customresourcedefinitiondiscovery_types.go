@@ -140,7 +140,7 @@ type CustomResourceDefinitionDiscoveryCondition struct {
 // CustomResourceDefinitionDiscovery is used inside KubeCarrier to fetch a CustomResourceDefinition from another cluster and to offload cross cluster access to another component.
 // +kubebuilder:subresource:status
 // +kubebuilder:object:root=true
-// +kubebuilder:printcolumn:name="CustomResourceDefinition",type="string",JSONPath=".spec.crd.metadata.name"
+// +kubebuilder:printcolumn:name="CustomResourceDefinition",type="string",JSONPath=".spec.crd.name"
 // +kubebuilder:printcolumn:name="Service Cluster",type="string",JSONPath=".spec.serviceCluster.name"
 type CustomResourceDefinitionDiscovery struct {
 	metav1.TypeMeta   `json:",inline"`

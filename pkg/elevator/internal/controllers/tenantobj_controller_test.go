@@ -74,10 +74,8 @@ func TestTenantObjReconciler(t *testing.T) {
 			Scheme:           testScheme,
 			NamespacedClient: client,
 
-			ProviderGVK:  providerGVK,
-			ProviderType: providerType,
-			TenantGVK:    tenantGVK,
-			TenantType:   tenantType,
+			ProviderGVK: providerGVK,
+			TenantGVK:   tenantGVK,
 
 			DerivedCRDName:    dcrd.Name,
 			ProviderNamespace: providerNamespace,
@@ -93,7 +91,8 @@ func TestTenantObjReconciler(t *testing.T) {
 
 		// Check Provider Obj
 		ctx := context.Background()
-		checkProviderObj := providerType.DeepCopy()
+		checkProviderObj := &unstructured.Unstructured{}
+		checkProviderObj.SetGroupVersionKind(providerGVK)
 		err = client.Get(ctx, types.NamespacedName{
 			Name:      tenantObj.GetName(),
 			Namespace: tenantObj.GetNamespace(),
@@ -131,7 +130,8 @@ func TestTenantObjReconciler(t *testing.T) {
 		}, checkProviderObj.Object)
 
 		// Check Tenant Obj
-		checkTenantObj := tenantType.DeepCopy()
+		checkTenantObj := &unstructured.Unstructured{}
+		checkTenantObj.SetGroupVersionKind(tenantGVK)
 		err = client.Get(ctx, types.NamespacedName{
 			Name:      tenantObj.GetName(),
 			Namespace: tenantObj.GetNamespace(),
@@ -169,10 +169,8 @@ func TestTenantObjReconciler(t *testing.T) {
 			Scheme:           testScheme,
 			NamespacedClient: client,
 
-			ProviderGVK:  providerGVK,
-			ProviderType: providerType,
-			TenantGVK:    tenantGVK,
-			TenantType:   tenantType,
+			ProviderGVK: providerGVK,
+			TenantGVK:   tenantGVK,
 
 			DerivedCRDName:    dcrd.Name,
 			ProviderNamespace: providerNamespace,
@@ -188,7 +186,8 @@ func TestTenantObjReconciler(t *testing.T) {
 
 		// Check Provider obj
 		ctx := context.Background()
-		checkProviderObj := providerType.DeepCopy()
+		checkProviderObj := &unstructured.Unstructured{}
+		checkProviderObj.SetGroupVersionKind(providerGVK)
 		err = client.Get(ctx, types.NamespacedName{
 			Name:      tenantObj.GetName(),
 			Namespace: tenantObj.GetNamespace(),
@@ -218,112 +217,4 @@ func TestTenantObjReconciler(t *testing.T) {
 			},
 		}, checkProviderObj.Object)
 	})
-}
-
-func Test_updateObservedGeneration(t *testing.T) {
-	tests := []struct {
-		name      string
-		src, dest *unstructured.Unstructured
-		expected  map[string]interface{}
-	}{
-		{
-			name: "default",
-			src: &unstructured.Unstructured{
-				Object: map[string]interface{}{
-					"metadata": map[string]interface{}{
-						"generation": int64(4),
-					},
-					"status": map[string]interface{}{
-						"observedGeneration": int64(4),
-					},
-				},
-			},
-			dest: &unstructured.Unstructured{
-				Object: map[string]interface{}{
-					"metadata": map[string]interface{}{
-						"generation": int64(6),
-					},
-					"status": map[string]interface{}{
-						"observedGeneration": int64(4),
-					},
-				},
-			},
-			expected: map[string]interface{}{
-				"metadata": map[string]interface{}{
-					"generation": int64(6),
-				},
-				"status": map[string]interface{}{
-					"observedGeneration": int64(6),
-				},
-			},
-		},
-
-		{
-			name: "outdated generation",
-			src: &unstructured.Unstructured{
-				Object: map[string]interface{}{
-					"metadata": map[string]interface{}{
-						"generation": int64(10),
-					},
-					"status": map[string]interface{}{
-						"observedGeneration": int64(4),
-					},
-				},
-			},
-			dest: &unstructured.Unstructured{
-				Object: map[string]interface{}{
-					"metadata": map[string]interface{}{
-						"generation": int64(6),
-					},
-					"status": map[string]interface{}{
-						"observedGeneration": int64(4),
-					},
-				},
-			},
-			expected: map[string]interface{}{
-				"metadata": map[string]interface{}{
-					"generation": int64(6),
-				},
-				"status": map[string]interface{}{
-					"observedGeneration": int64(4),
-				},
-			},
-		},
-
-		{
-			name: "property missing",
-			src: &unstructured.Unstructured{
-				Object: map[string]interface{}{
-					"metadata": map[string]interface{}{
-						"generation": int64(4),
-					},
-					"status": map[string]interface{}{},
-				},
-			},
-			dest: &unstructured.Unstructured{
-				Object: map[string]interface{}{
-					"metadata": map[string]interface{}{
-						"generation": int64(6),
-					},
-					"status": map[string]interface{}{},
-				},
-			},
-			expected: map[string]interface{}{
-				"metadata": map[string]interface{}{
-					"generation": int64(6),
-				},
-				"status": map[string]interface{}{},
-			},
-		},
-	}
-
-	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
-			err := updateObservedGeneration(test.src, test.dest)
-			require.NoError(t, err)
-
-			assert.Equal(
-				t, test.expected, test.dest.Object)
-		})
-	}
 }

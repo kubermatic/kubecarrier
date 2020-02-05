@@ -130,18 +130,27 @@ func (r *ProviderReconciler) handleDeletion(ctx context.Context, log logr.Logger
 	}
 
 	ns := &corev1.Namespace{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: provider.Status.NamespaceName,
-		},
+		ObjectMeta: metav1.ObjectMeta{},
+	}
+	err := r.Get(ctx, types.NamespacedName{
+		Name: provider.Status.NamespaceName,
+	}, ns)
+	if err != nil && !errors.IsNotFound(err) {
+		return fmt.Errorf("getting Namespace: %w", err)
 	}
 
-	if err := r.Delete(ctx, ns); err == nil {
+	if err == nil && ns.DeletionTimestamp.IsZero() {
+		if err = r.Delete(ctx, ns); err != nil {
+			return fmt.Errorf("deleting Namespace: %w", err)
+		}
 		// Move to the next reconcile round
 		return nil
-	} else if !errors.IsNotFound(err) {
-		return fmt.Errorf("deleting namespace: %w", err)
 	}
-	// else the error is IsNotFound, so the namespace is gone, and then we remove the finalizer.
+
+	if !errors.IsNotFound(err) {
+		// Namespace is not yet gone
+		return nil
+	}
 
 	// 2. The Namespace is completely removed, then we remove the finalizer here.
 	if util.RemoveFinalizer(provider, providerControllerFinalizer) {
