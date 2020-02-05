@@ -21,6 +21,9 @@ spec:
         - jsonPath: .spec.serviceCluster.name
           name: Service Cluster
           type: string
+        - jsonPath: .status.phase
+          name: Status
+          type: string
       name: v1alpha1
       schema:
         openAPIV3Schema:

@@ -146,6 +146,14 @@ func run(flags *flags, log logr.Logger) error {
 		return fmt.Errorf("creating CustomResourceDefinitionDiscovery controller: %w", err)
 	}
 
+	if err = (&controllers.CustomResourceDefinitionDiscoverySetReconciler{
+		Client: mgr.GetClient(),
+		Log:    log.WithName("controllers").WithName("CustomResourceDefinitionDiscoverySet"),
+		Scheme: mgr.GetScheme(),
+	}).SetupWithManager(mgr); err != nil {
+		return fmt.Errorf("creating CustomResourceDefinitionDiscoverySet controller: %w", err)
+	}
+
 	if err = (&controllers.CatalogEntryReconciler{
 		Client:                     mgr.GetClient(),
 		Log:                        log.WithName("controllers").WithName("CatalogEntry"),

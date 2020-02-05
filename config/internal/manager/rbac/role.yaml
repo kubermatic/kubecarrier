@@ -164,6 +164,8 @@ rules:
   resources:
   - customresourcedefinitiondiscoveries
   verbs:
+  - create
+  - delete
   - get
   - list
   - update
@@ -172,6 +174,23 @@ rules:
   - kubecarrier.io
   resources:
   - customresourcedefinitiondiscoveries/status
+  verbs:
+  - get
+  - patch
+  - update
+- apiGroups:
+  - kubecarrier.io
+  resources:
+  - customresourcedefinitiondiscoverysets
+  verbs:
+  - get
+  - list
+  - update
+  - watch
+- apiGroups:
+  - kubecarrier.io
+  resources:
+  - customresourcedefinitiondiscoverysets/status
   verbs:
   - get
   - patch
