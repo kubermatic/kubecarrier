@@ -48,6 +48,12 @@ func Deployment(
 		return nil, fmt.Errorf("getting Deployment: %w", err)
 	}
 
+	// Keep the replicas resource cleaned
+	// telepresence scales the original deployment to 0 replicas before starting a new one
+	if currentDeployment.Spec.Replicas != nil {
+		desiredDeployment.Spec.Replicas = currentDeployment.Spec.Replicas
+	}
+
 	if errors.IsNotFound(err) {
 		// Deployment needs to be created
 		log.V(1).Info("creating", "Deployment", name.String())

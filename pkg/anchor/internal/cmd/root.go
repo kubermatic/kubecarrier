@@ -23,6 +23,7 @@ import (
 	"github.com/kubermatic/kubecarrier/pkg/anchor/internal/cmd/completion"
 	e2e_test "github.com/kubermatic/kubecarrier/pkg/anchor/internal/cmd/e2e-test"
 	"github.com/kubermatic/kubecarrier/pkg/anchor/internal/cmd/setup"
+	"github.com/kubermatic/kubecarrier/pkg/anchor/internal/cmd/sut"
 	"github.com/kubermatic/kubecarrier/pkg/anchor/internal/cmd/version"
 	"github.com/kubermatic/kubecarrier/pkg/internal/util"
 )
@@ -43,6 +44,7 @@ https://github.com/kubermatic/kubecarrier`,
 		e2e_test.NewCommand(log),
 		setup.NewCommand(log),
 		version.NewCommand(log),
+		sut.NewCommand(log),
 	)
 
 	return util.CmdLogMixin(cmd)
