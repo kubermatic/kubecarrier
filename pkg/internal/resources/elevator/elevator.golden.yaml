@@ -22,6 +22,7 @@
 - apiVersion: rbac.authorization.k8s.io/v1
   kind: ClusterRole
   metadata:
+    creationTimestamp: null
     name: db-eu-west-1-elevator-manager
   rules:
   - apiGroups:
