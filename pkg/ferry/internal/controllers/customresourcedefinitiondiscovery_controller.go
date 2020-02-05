@@ -26,6 +26,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/cache"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/source"
 
@@ -45,6 +46,7 @@ type CustomResourceDefinitionDiscoveryReconciler struct {
 
 	MasterClient  client.Client
 	ServiceClient client.Client
+	ServiceCache  cache.Cache
 
 	MasterScheme       *runtime.Scheme
 	ServiceClusterName string
@@ -162,10 +164,10 @@ func (r *CustomResourceDefinitionDiscoveryReconciler) handleDeletion(ctx context
 	}
 }
 
-func (r *CustomResourceDefinitionDiscoveryReconciler) SetupWithManagers(serviceMgr, masterMgr ctrl.Manager) error {
+func (r *CustomResourceDefinitionDiscoveryReconciler) SetupWithManager(masterMgr ctrl.Manager) error {
 	crdSource := &source.Kind{Type: &apiextensionsv1.CustomResourceDefinition{}}
-	if err := serviceMgr.SetFields(crdSource); err != nil {
-		return fmt.Errorf("setFields: %w", err)
+	if err := crdSource.InjectCache(r.ServiceCache); err != nil {
+		return fmt.Errorf("injecting cache: %w", err)
 	}
 
 	return ctrl.NewControllerManagedBy(masterMgr).
