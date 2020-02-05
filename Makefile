@@ -34,6 +34,13 @@ LD_FLAGS=-X $(MODULE)/pkg/internal/version.Version=$(VERSION) -X $(MODULE)/pkg/i
 KIND_CLUSTER?=kubecarrier
 COMPONENTS = operator manager ferry catapult elevator
 
+# https://github.com/kubernetes-sigs/kind/releases/tag/v0.7.0
+# There are different node image types for newer kind v0.7.0+ version
+KIND_NODE_IMAGE=kindest/node:v1.17.0@sha256:9512edae126da271b66b990b6fff768fbb7cd786c7d39e86bdf55906352fdf62
+# KIND_NODE_IMAGE=kindest/node:v1.16.4@sha256:b91a2c2317a000f3a783489dfb755064177dbc3a0b2f4147d50f04825d016f55
+# KIND_NODE_IMAGE=kindest/node:v1.15.7@sha256:e2df133f80ef633c53c0200114fce2ed5e1f6947477dbc83261a6a921169488d
+# KIND_NODE_IMAGE=kindest/node:v1.14.10@sha256:81ae5a3237c779efc4dda43cc81c696f88a194abcc4f8fa34f86cf674aa14977
+
 all: \
 	bin/linux_amd64/anchor \
 	bin/darwin_amd64/anchor \
@@ -83,13 +90,13 @@ SVC_KIND_CLUSTER?=kubecarrier-svc-${TEST_ID}
 
 e2e-setup: install require-docker
 	@unset KUBECONFIG
-	@kind create cluster --name=${MASTER_KIND_CLUSTER} || true
+	@kind create cluster --name=${MASTER_KIND_CLUSTER} --image=${KIND_NODE_IMAGE} || true
 	@kind get kubeconfig --internal --name=${MASTER_KIND_CLUSTER} > "${HOME}/.kube/internal-kind-config-${MASTER_KIND_CLUSTER}"
 	@kind get kubeconfig --name=${MASTER_KIND_CLUSTER} > "${HOME}/.kube/kind-config-${MASTER_KIND_CLUSTER}"
 	@echo "Deploy cert-manger in master cluster"
 	# Deploy cert-manager right after the creation of the master cluster, since the deployments of cert-manger take some time to get ready.
 	@$(MAKE) KUBECONFIG=${HOME}/.kube/kind-config-${MASTER_KIND_CLUSTER} cert-manager
-	@kind create cluster --name=${SVC_KIND_CLUSTER} || true
+	@kind create cluster --name=${SVC_KIND_CLUSTER} --image=${KIND_NODE_IMAGE} || true
 	@kind get kubeconfig --internal --name=${SVC_KIND_CLUSTER} > "${HOME}/.kube/internal-kind-config-${SVC_KIND_CLUSTER}"
 	@kind get kubeconfig --name=${SVC_KIND_CLUSTER} > "${HOME}/.kube/kind-config-${SVC_KIND_CLUSTER}"
 	@echo "kind clusters created"
