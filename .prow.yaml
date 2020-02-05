@@ -145,39 +145,39 @@ presubmits:
             hostPath:
               path: /sys/fs/cgroup
               type: Directory
-postsubmits:
-  kubermatic/kubecarrier:
-    - name: post-kubecarrier-test-image
-      decorate: true
-      clone_uri: ssh://git@github.com/kubermatic/kubecarrier.git
-      branches:
-        - ^master$
-      run_if_changed: "(go.sum|go.mod|start-docker.sh|test.Dockerfile|.pre-commit-config.yaml)"
-      spec:
-        containers:
-          - image: quay.io/kubecarrier/test
-            imagePullPolicy: Always
-            name: e2e-test
-            command:
-              - make
-              - push-image-test
-            env:
-              - name: GO111MODULE
-                value: 'on'
-              - name: QUAY_IO_USERNAME
-                valueFrom:
-                  secretKeyRef:
-                    name: kubecarrier-quay.io
-                    key: username
-              - name: QUAY_IO_PASSWORD
-                valueFrom:
-                  secretKeyRef:
-                    name: kubecarrier-quay.io
-                    key: password
-            # docker needs privileged mode
-            securityContext:
-              privileged: true
-            resources:
-              requests:
-                cpu: 800m
-                memory: 2Gi
+#postsubmits:
+#  kubermatic/kubecarrier:
+#    - name: post-kubecarrier-test-image
+#      decorate: true
+#      clone_uri: ssh://git@github.com/kubermatic/kubecarrier.git
+#      branches:
+#        - ^master$
+#      run_if_changed: "(go.sum|go.mod|start-docker.sh|test.Dockerfile|.pre-commit-config.yaml)"
+#      spec:
+#        containers:
+#          - image: quay.io/kubecarrier/test
+#            imagePullPolicy: Always
+#            name: e2e-test
+#            command:
+#              - make
+#              - push-image-test
+#            env:
+#              - name: GO111MODULE
+#                value: 'on'
+#              - name: QUAY_IO_USERNAME
+#                valueFrom:
+#                  secretKeyRef:
+#                    name: kubecarrier-quay.io
+#                    key: username
+#              - name: QUAY_IO_PASSWORD
+#                valueFrom:
+#                  secretKeyRef:
+#                    name: kubecarrier-quay.io
+#                    key: password
+#            # docker needs privileged mode
+#            securityContext:
+#              privileged: true
+#            resources:
+#              requests:
+#                cpu: 800m
+#                memory: 2Gi
