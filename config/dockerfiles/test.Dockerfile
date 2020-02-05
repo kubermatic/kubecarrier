@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# Should be build from the Makefile, `make build-image-test`
+
 FROM ubuntu:18.04
 
 RUN apt-get -qq update && apt-get -qqy install \
@@ -57,6 +59,6 @@ COPY go.sum go.sum
 # and so that source changes don't invalidate our downloaded layer
 RUN go mod download
 
-COPY ./hack/start-docker.sh /usr/local/bin/start-docker.sh
+COPY start-docker.sh /usr/local/bin/start-docker.sh
 
 VOLUME /var/lib/docker
