@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# Should be build from the Makefile, `make build-image-test`
+
 FROM ubuntu:18.04
 
 RUN apt-get -qq update && apt-get -qqy install \
