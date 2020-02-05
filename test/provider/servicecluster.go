@@ -184,6 +184,14 @@ func NewServiceClusterSuite(
 				Name:      provider.Status.NamespaceName + "." + serviceCluster.Name,
 				Namespace: provider.Status.NamespaceName,
 			},
+			Spec: corev1alpha1.ServiceClusterAssignmentSpec{
+				ServiceCluster: corev1alpha1.ObjectReference{
+					Name: serviceCluster.Name,
+				},
+				MasterClusterNamespace: corev1alpha1.ObjectReference{
+					Name: provider.Status.NamespaceName,
+				},
+			},
 		}
 		masterClient.RegisterForCleanup(serviceClusterAssignment)
 

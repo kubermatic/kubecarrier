@@ -144,6 +144,24 @@ webhooks:
     service:
       name: webhook-service
       namespace: system
+      path: /validate-kubecarrier-io-v1alpha1-serviceclusterassignment
+  failurePolicy: Fail
+  name: vserviceclusterassignment.kubecarrier.io
+  rules:
+  - apiGroups:
+    - kubecarrier.io
+    apiVersions:
+    - v1alpha1
+    operations:
+    - CREATE
+    - UPDATE
+    resources:
+    - serviceclusterassignments
+- clientConfig:
+    caBundle: Cg==
+    service:
+      name: webhook-service
+      namespace: system
       path: /validate-catalog-kubecarrier-io-v1alpha1-serviceclusterreference
   failurePolicy: Fail
   name: vserviceclusterreference.kubecarrier.io

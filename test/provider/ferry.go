@@ -164,12 +164,15 @@ func NewFerrySuite(
 				t.Parallel()
 				serviceClusterAssignment := &corev1alpha1.ServiceClusterAssignment{
 					ObjectMeta: metav1.ObjectMeta{
-						Name:      tenant.Name + "." + serviceClusterRegistration.Name,
+						Name:      tenant.Namespace + "." + serviceClusterRegistration.Name,
 						Namespace: provider.Status.NamespaceName,
 					},
 					Spec: corev1alpha1.ServiceClusterAssignmentSpec{
 						ServiceCluster: corev1alpha1.ObjectReference{
 							Name: serviceClusterRegistration.Name,
+						},
+						MasterClusterNamespace: corev1alpha1.ObjectReference{
+							Name: tenant.Namespace,
 						},
 					},
 				}
