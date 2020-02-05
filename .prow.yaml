@@ -1,5 +1,5 @@
 presubmits:
-- name: pull-kubermatic-kubecarrier-validate-prow-yaml
+- name: pull-kubermatic-kubecarrier-validate-prow-yaml-new
   always_run: true
   decorate: true
   clone_uri: ssh://git@github.com/kubermatic/kubecarrier.git
@@ -19,7 +19,7 @@ presubmits:
           - --job-config-path=/home/prow/go/src/github.com/kubermatic/infra/prow/jobs
           - --prow-yaml-repo-name=$(REPO_OWNER)/$(REPO_NAME)
 
-- name: pull-kubecarrier-test
+- name: pull-kubecarrier-test-new
   always_run: true
   decorate: true
   clone_uri: ssh://git@github.com/kubermatic/kubecarrier.git
@@ -36,7 +36,7 @@ presubmits:
         resources:
           requests:
             cpu: 800m
-- name: pull-kubecarrier-lint
+- name: pull-kubecarrier-lint-new
   always_run: true
   decorate: true
   clone_uri: ssh://git@github.com/kubermatic/kubecarrier.git
@@ -144,38 +144,38 @@ presubmits:
         hostPath:
           path: /sys/fs/cgroup
           type: Directory
-#postsubmits:
-#    - name: post-kubecarrier-test-image
-#      decorate: true
-#      clone_uri: ssh://git@github.com/kubermatic/kubecarrier.git
-#      branches:
-#        - ^master$
-#      run_if_changed: "(go.sum|go.mod|start-docker.sh|test.Dockerfile|.pre-commit-config.yaml)"
-#      spec:
-#        containers:
-#          - image: quay.io/kubecarrier/test
-#            imagePullPolicy: Always
-#            name: e2e-test
-#            command:
-#              - make
-#              - push-image-test
-#            env:
-#              - name: GO111MODULE
-#                value: 'on'
-#              - name: QUAY_IO_USERNAME
-#                valueFrom:
-#                  secretKeyRef:
-#                    name: kubecarrier-quay.io
-#                    key: username
-#              - name: QUAY_IO_PASSWORD
-#                valueFrom:
-#                  secretKeyRef:
-#                    name: kubecarrier-quay.io
-#                    key: password
-#            # docker needs privileged mode
-#            securityContext:
-#              privileged: true
-#            resources:
-#              requests:
-#                cpu: 800m
-#                memory: 2Gi
+postsubmits:
+  - name: post-kubecarrier-test-image-new
+    decorate: true
+    clone_uri: ssh://git@github.com/kubermatic/kubecarrier.git
+    branches:
+      - ^master$
+    run_if_changed: "(go.sum|go.mod|start-docker.sh|test.Dockerfile|.pre-commit-config.yaml)"
+    spec:
+      containers:
+        - image: quay.io/kubecarrier/test
+          imagePullPolicy: Always
+          name: e2e-test
+          command:
+            - make
+            - push-image-test
+          env:
+            - name: GO111MODULE
+              value: 'on'
+            - name: QUAY_IO_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: kubecarrier-quay.io
+                  key: username
+            - name: QUAY_IO_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: kubecarrier-quay.io
+                  key: password
+          # docker needs privileged mode
+          securityContext:
+            privileged: true
+          resources:
+            requests:
+              cpu: 800m
+              memory: 2Gi
