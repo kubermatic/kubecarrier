@@ -41,6 +41,7 @@ type flags struct {
 	kubeCarrierSystemNamespace string
 	metricsAddr                string
 	enableLeaderElection       bool
+	certDir                    string
 }
 
 var (
@@ -74,6 +75,7 @@ func NewManagerCommand() *cobra.Command {
 	cmd.Flags().BoolVar(&flags.enableLeaderElection, "enable-leader-election", true,
 		"Enable leader election for controller manager. Enabling this will ensure there is only one active controller manager.")
 	cmd.Flags().StringVar(&flags.kubeCarrierSystemNamespace, "kubecarrier-system-namespace", os.Getenv("KUBECARRIER_NAMESPACE"), "The namespace that KubeCarrier controller manager deploys to.")
+	cmd.Flags().StringVar(&flags.certDir, "cert-dir", "/tmp/k8s-webhook-server/serving-certs", "The namespace that KubeCarrier controller manager deploys to.")
 	return util.CmdLogMixin(cmd)
 }
 
@@ -85,6 +87,7 @@ func run(flags *flags, log logr.Logger) error {
 		LeaderElectionID:        "main-controller-manager",
 		LeaderElectionNamespace: flags.kubeCarrierSystemNamespace,
 		Port:                    9443,
+		CertDir:                 flags.certDir,
 	})
 	if err != nil {
 		return fmt.Errorf("starting manager: %w", err)
