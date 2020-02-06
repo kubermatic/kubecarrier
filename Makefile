@@ -47,7 +47,7 @@ bin/windows_amd64/%: GOARGS = GOOS=windows GOARCH=amd64
 
 bin/%: FORCE
 	$(eval COMPONENT=$(shell basename $*))
-	$(GOARGS) go build -ldflags "-w $(LD_FLAGS)" -o bin/$* cmd/$(COMPONENT)/main.go
+	$(GOARGS) go build -trimpath -ldflags "-w $(LD_FLAGS)" -o bin/$* cmd/$(COMPONENT)/main.go
 
 FORCE:
 
