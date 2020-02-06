@@ -76,6 +76,11 @@ type ServiceClusterAssignmentCondition struct {
 	Type ServiceClusterAssignmentConditionType `json:"type"`
 }
 
+// True returns whether .Status == "True"
+func (c ServiceClusterAssignmentCondition) True() bool {
+	return c.Status == ConditionTrue
+}
+
 // updatePhase updates the phase property based on the current conditions
 // this method should be called every time the conditions are updated
 func (s *ServiceClusterAssignmentStatus) updatePhase() {

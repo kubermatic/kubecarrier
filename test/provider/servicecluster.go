@@ -20,6 +20,7 @@ import (
 	"context"
 	"io/ioutil"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -135,7 +136,7 @@ func NewServiceClusterSuite(
 			},
 		}
 		require.NoError(t, masterClient.Create(ctx, crdd))
-		require.NoError(t, testutil.WaitUntilReady(masterClient, crdd))
+		require.NoError(t, testutil.WaitUntilReady(masterClient, crdd), testutil.WithTimeout(120*time.Second))
 		assert.Equal(t, crd.Name, crdd.Status.CRD.Name)
 
 		// We have created/registered new CRD's, so we need a new client
@@ -146,33 +147,6 @@ func NewServiceClusterSuite(
 		serviceClient, err = f.ServiceClient()
 		require.NoError(t, err, "creating service client")
 		defer serviceClient.CleanUp(t)
-
-		// Test Catapult/Cross Cluster reconciling
-		catapult := &operatorv1alpha1.Catapult{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "redis.eu-west-1",
-				Namespace: provider.Status.NamespaceName,
-			},
-			Spec: operatorv1alpha1.CatapultSpec{
-				MasterClusterCRD: operatorv1alpha1.CRDReference{
-					Kind:    "RedisInternal",
-					Group:   "eu-west-1." + provider.Name,
-					Version: "v1alpha1",
-					Plural:  "redisinternals",
-				},
-				ServiceClusterCRD: operatorv1alpha1.CRDReference{
-					Kind:    "Redis",
-					Group:   "test.kubecarrier.io",
-					Version: "v1alpha1",
-					Plural:  "redis",
-				},
-				ServiceCluster: operatorv1alpha1.ObjectReference{
-					Name: serviceCluster.Name,
-				},
-			},
-		}
-		require.NoError(t, masterClient.Create(ctx, catapult))
-		require.NoError(t, testutil.WaitUntilReady(masterClient, catapult))
 
 		// makes sure we delete the ServiceClusterAssignment object BEFORE
 		// the ServiceClusterRegistration - or the finalizer will block cleanup of the

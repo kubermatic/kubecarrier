@@ -25,6 +25,7 @@ import (
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/cache"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/source"
 
@@ -40,6 +41,7 @@ type ServiceClusterAssignmentReconciler struct {
 
 	MasterClient       client.Client
 	ServiceClient      client.Client
+	ServiceCache       cache.Cache
 	MasterScheme       *runtime.Scheme
 	ServiceClusterName string
 }
@@ -144,13 +146,13 @@ func (r *ServiceClusterAssignmentReconciler) handleDeletion(ctx context.Context,
 	return nil
 }
 
-func (r *ServiceClusterAssignmentReconciler) SetupWithManagers(serviceMgr, masterMgr ctrl.Manager) error {
+func (r *ServiceClusterAssignmentReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	namespaceSource := &source.Kind{Type: &corev1.Namespace{}}
-	if err := serviceMgr.SetFields(namespaceSource); err != nil {
+	if err := namespaceSource.InjectCache(r.ServiceCache); err != nil {
 		return fmt.Errorf("service cluster namespace source: %w", err)
 	}
 
-	return ctrl.NewControllerManagedBy(masterMgr).
+	return ctrl.NewControllerManagedBy(mgr).
 		For(&corev1alpha1.ServiceClusterAssignment{}).
 		Watches(source.Func(namespaceSource.Start), util.EnqueueRequestForOwner(&corev1alpha1.ServiceClusterAssignment{}, r.MasterScheme)).
 		WithEventFilter(util.PredicateFn(func(obj runtime.Object) bool {
