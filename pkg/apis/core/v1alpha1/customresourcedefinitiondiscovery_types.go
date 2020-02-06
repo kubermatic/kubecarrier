@@ -151,6 +151,7 @@ func (c CustomResourceDefinitionDiscoveryCondition) True() bool {
 // +kubebuilder:object:root=true
 // +kubebuilder:printcolumn:name="CustomResourceDefinition",type="string",JSONPath=".spec.crd.name"
 // +kubebuilder:printcolumn:name="Service Cluster",type="string",JSONPath=".spec.serviceCluster.name"
+// +kubebuilder:printcolumn:name="Status",type="string",JSONPath=".status.phase"
 type CustomResourceDefinitionDiscovery struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
