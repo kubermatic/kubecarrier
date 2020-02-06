@@ -31,6 +31,7 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/spf13/cobra"
 	appsv1 "k8s.io/api/apps/v1"
+	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/config"
 
@@ -42,6 +43,7 @@ func newSUTManagerCommand(log logr.Logger) *cobra.Command {
 		extraArgs         []string
 		ldFlags           string
 		manualTelepresnce bool
+		deploymentNN      string
 	)
 
 	cmd := &cobra.Command{
@@ -59,21 +61,31 @@ func newSUTManagerCommand(log logr.Logger) *cobra.Command {
 			if err != nil {
 				return fmt.Errorf("client: %w", err)
 			}
-
-			depl := &appsv1.DeploymentList{}
 			ctx, closeCtx := context.WithCancel(context.Background())
 			defer closeCtx()
+			deployment := &appsv1.Deployment{}
 
-			if err := cl.List(ctx, depl, client.MatchingLabels{
-				"kubecarrier.io/role": "manager",
-			}); err != nil {
-				return fmt.Errorf("listing deployments: %w", err)
+			if deploymentNN == "" {
+				depl := &appsv1.DeploymentList{}
+				if err := cl.List(ctx, depl, client.MatchingLabels{
+					"kubecarrier.io/role": "manager",
+				}); err != nil {
+					return fmt.Errorf("listing deployments: %w", err)
+				}
+				deployment, err = pickDeployment(ctx, depl, cmd.ErrOrStderr())
+				if err != nil {
+					return fmt.Errorf("picking deployment: %w", err)
+				}
+			} else {
+				split := strings.Split(deploymentNN, "/")
+				if err := cl.Get(ctx, types.NamespacedName{
+					Namespace: split[0],
+					Name:      split[1],
+				}, deployment); err != nil {
+					return fmt.Errorf("getting deployment: %w", err)
+				}
 			}
 
-			deployment, err := pickDeployment(ctx, depl, cmd.ErrOrStderr())
-			if err != nil {
-				return err
-			}
 			if len(deployment.Spec.Template.Spec.Containers) > 1 {
 				return fmt.Errorf("only single container allowed")
 			}
@@ -161,6 +173,7 @@ func newSUTManagerCommand(log logr.Logger) *cobra.Command {
 		},
 	}
 	cmd.Flags().StringVar(&ldFlags, "ld-flags", "", "ld-flags to pass to go compiler upon running this")
+	cmd.Flags().StringVar(&deploymentNN, "deployment-nn", "", "deployment-nn signal the deployement namespace name which should be selected. If none (default) a fzf based picker shall be shown")
 	cmd.Flags().StringArrayVar(&extraArgs, "extra-flags", nil, "extra flags to pass to the running task")
 	cmd.Flags().BoolVar(&manualTelepresnce, "manual-telepresence", false, "manually run telepresence")
 	return cmd
