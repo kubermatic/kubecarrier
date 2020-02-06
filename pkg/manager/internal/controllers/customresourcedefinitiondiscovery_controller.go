@@ -164,9 +164,8 @@ func (r *CustomResourceDefinitionDiscoveryReconciler) reconcileCRD(
 				Kind:     kind,
 				ListKind: kind + "List",
 			},
-			Scope:                 apiextensionsv1.NamespaceScoped,
-			Versions:              crdDiscovery.Status.CRD.Spec.Versions,
-			PreserveUnknownFields: crdDiscovery.Status.CRD.Spec.PreserveUnknownFields,
+			Scope:    apiextensionsv1.NamespaceScoped,
+			Versions: crdDiscovery.Status.CRD.Spec.Versions,
 		},
 		Status: apiextensionsv1.CustomResourceDefinitionStatus{},
 	}

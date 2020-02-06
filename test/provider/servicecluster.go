@@ -20,6 +20,7 @@ import (
 	"context"
 	"io/ioutil"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -135,7 +136,7 @@ func NewServiceClusterSuite(
 			},
 		}
 		require.NoError(t, masterClient.Create(ctx, crdd))
-		require.NoError(t, testutil.WaitUntilReady(masterClient, crdd))
+		require.NoError(t, testutil.WaitUntilReady(masterClient, crdd), testutil.WithTimeout(120*time.Second))
 		assert.Equal(t, crd.Name, crdd.Status.CRD.Name)
 
 		// We have created/registered new CRD's, so we need a new client
