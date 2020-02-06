@@ -67,7 +67,7 @@ rules:
 - apiGroups:
   - catalog.kubecarrier.io
   resources:
-  - derivedcustomresourcedefinitions
+  - derivedcustomresources
   verbs:
   - get
   - list
@@ -76,7 +76,7 @@ rules:
 - apiGroups:
   - catalog.kubecarrier.io
   resources:
-  - derivedcustomresourcedefinitions/status
+  - derivedcustomresources/status
   verbs:
   - get
   - patch

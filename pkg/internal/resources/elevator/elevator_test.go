@@ -46,7 +46,7 @@ func TestManifests(t *testing.T) {
 		TenantGroup:   "eu-west-1.provider",
 		TenantPlural:  "couchdbs",
 
-		DerivedCRDName: "couchdbs.eu-west-1",
+		DerivedCRName: "couchdbs.eu-west-1",
 	}
 
 	manifests, err := Manifests(c)
