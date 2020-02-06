@@ -1,5 +1,5 @@
 presubmits:
-- name: pull-kubermatic-kubecarrier-validate-prow-yaml-new
+- name: pull-kubermatic-kubecarrier-validate-prow-yaml
   always_run: true
   decorate: true
   clone_uri: ssh://git@github.com/kubermatic/kubecarrier.git
@@ -19,7 +19,7 @@ presubmits:
           - --job-config-path=/home/prow/go/src/github.com/kubermatic/infra/prow/jobs
           - --prow-yaml-repo-name=$(REPO_OWNER)/$(REPO_NAME)
 
-- name: pull-kubecarrier-test-new
+- name: pull-kubecarrier-test
   always_run: true
   decorate: true
   clone_uri: ssh://git@github.com/kubermatic/kubecarrier.git
@@ -36,7 +36,7 @@ presubmits:
         resources:
           requests:
             cpu: 800m
-- name: pull-kubecarrier-lint-new
+- name: pull-kubecarrier-lint
   always_run: true
   decorate: true
   clone_uri: ssh://git@github.com/kubermatic/kubecarrier.git
@@ -130,7 +130,7 @@ presubmits:
             cpu: 800m
             memory: 2Gi
 postsubmits:
-  - name: post-kubecarrier-test-image-new
+  - name: post-kubecarrier-test-image
     decorate: true
     clone_uri: ssh://git@github.com/kubermatic/kubecarrier.git
     branches:
