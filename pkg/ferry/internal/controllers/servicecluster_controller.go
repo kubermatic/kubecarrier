@@ -114,7 +114,7 @@ func (r *ServiceClusterReconciler) Reconcile(req ctrl.Request) (res ctrl.Result,
 	return ctrl.Result{RequeueAfter: r.StatusUpdatePeriod}, nil
 }
 
-func (r *ServiceClusterReconciler) SetupWithManagers(masterMgr ctrl.Manager) error {
+func (r *ServiceClusterReconciler) SetupWithManager(masterMgr ctrl.Manager) error {
 	c, err := controller.New("servicecluster-controller", masterMgr, controller.Options{
 		Reconciler: r,
 	})
@@ -149,7 +149,7 @@ func (r *ServiceClusterReconciler) SetupWithManagers(masterMgr ctrl.Manager) err
 	if err != nil {
 		return fmt.Errorf("serviceCluster watch: %w", err)
 	}
-	return masterMgr.Add(c)
+	return nil
 }
 
 func (r *ServiceClusterReconciler) enqueueOwnCluster(h handler.EventHandler, q workqueue.RateLimitingInterface, p ...predicate.Predicate) error {

@@ -27,9 +27,11 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/discovery"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
-	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/cache"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/client/apiutil"
 
 	corev1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/core/v1alpha1"
 	"github.com/kubermatic/kubecarrier/pkg/ferry/internal/controllers"
@@ -52,7 +54,6 @@ type flags struct {
 	// service
 	serviceMetricsAddr string
 	serviceKubeconfig  string
-	serviceMaster      string
 	serviceClusterName string
 }
 
@@ -102,29 +103,7 @@ func NewFerryCommand(log logr.Logger) *cobra.Command {
 func runE(flags *flags, log logr.Logger) error {
 	// KubeCarrier cluster manager
 	masterCfg := ctrl.GetConfigOrDie()
-	var serviceCfg *rest.Config
-	if flags.serviceKubeconfig == "" {
-		log.Info("no serviceKubeconfig given, asuming same-cluster")
-		serviceCfg = masterCfg
-	} else {
-		var err error
-		serviceCfg, err = clientcmd.BuildConfigFromFlags(flags.serviceMaster, flags.serviceKubeconfig)
-		if err != nil {
-			return fmt.Errorf("unable to set up service cluster client config: %w", err)
-		}
-	}
-
-	// Service cluster setup
-	serviceMgr, err := ctrl.NewManager(serviceCfg, ctrl.Options{
-		Scheme:             serviceScheme,
-		MetricsBindAddress: flags.serviceMetricsAddr,
-	})
-	if err != nil {
-		return fmt.Errorf("unable to start manager for service cluster: %w", err)
-	}
-
-	// Master cluster setup
-	masterMgr, err := ctrl.NewManager(masterCfg, ctrl.Options{
+	mgr, err := ctrl.NewManager(masterCfg, ctrl.Options{
 		Scheme:                  masterScheme,
 		MetricsBindAddress:      flags.masterMetricsAddr,
 		LeaderElection:          flags.enableLeaderElection,
@@ -136,8 +115,42 @@ func runE(flags *flags, log logr.Logger) error {
 		return fmt.Errorf("unable to start manager for master cluster: %w", err)
 	}
 
+	// Setup additional client and cache for Service Cluster
+	serviceCfg, err := clientcmd.BuildConfigFromFlags(
+		"", flags.serviceKubeconfig)
+	if err != nil {
+		return fmt.Errorf("reading service cluster config: %w", err)
+	}
+	serviceMapper, err := apiutil.NewDiscoveryRESTMapper(serviceCfg)
+	if err != nil {
+		return fmt.Errorf("creating service cluster rest mapper: %w", err)
+	}
+	serviceClient, err := client.New(serviceCfg, client.Options{
+		Scheme: serviceScheme,
+		Mapper: serviceMapper,
+	})
+	if err != nil {
+		return fmt.Errorf("creating service cluster client: %w", err)
+	}
+	serviceCache, err := cache.New(serviceCfg, cache.Options{
+		Scheme: serviceScheme,
+		Mapper: serviceMapper,
+	})
+	if err != nil {
+		return fmt.Errorf("creating service cluster cache: %w", err)
+	}
+	if err = mgr.Add(serviceCache); err != nil {
+		return fmt.Errorf("add service cluster cache to manager: %w", err)
+	}
+	serviceCachedClient := &client.DelegatingClient{
+		Reader:       serviceCache,
+		Writer:       serviceClient,
+		StatusClient: serviceClient,
+	}
+
+	// Register indices
 	if err := util.AddOwnerReverseFieldIndex(
-		serviceMgr.GetFieldIndexer(),
+		serviceCache,
 		log.WithName("reverseIndex").WithName("namespace"),
 		&corev1.Namespace{},
 	); err != nil {
@@ -151,40 +164,38 @@ func runE(flags *flags, log logr.Logger) error {
 
 	if err := (&controllers.ServiceClusterReconciler{
 		Log:                       log.WithName("controllers").WithName("ServiceCluster"),
-		MasterClient:              masterMgr.GetClient(),
+		MasterClient:              mgr.GetClient(),
 		ServiceClusterVersionInfo: serviceClusterDiscoveryClient,
 		ProviderNamespace:         flags.providerNamespace,
 		ServiceClusterName:        flags.serviceClusterName,
 		StatusUpdatePeriod:        flags.serviceClusterStatusUpdatePeriod,
-	}).SetupWithManagers(masterMgr); err != nil {
+	}).SetupWithManager(mgr); err != nil {
 		return fmt.Errorf("cannot add %s controller: %w", "ServiceCluster", err)
 	}
 
 	if err := (&controllers.CustomResourceDefinitionDiscoveryReconciler{
 		Log:                log.WithName("controllers").WithName("CustomResourceDefinitionDiscovery"),
-		MasterClient:       masterMgr.GetClient(),
-		MasterScheme:       masterMgr.GetScheme(),
-		ServiceClient:      serviceMgr.GetClient(),
+		MasterClient:       mgr.GetClient(),
+		MasterScheme:       mgr.GetScheme(),
+		ServiceClient:      serviceCachedClient,
+		ServiceCache:       serviceCache,
 		ServiceClusterName: flags.serviceClusterName,
-	}).SetupWithManagers(serviceMgr, masterMgr); err != nil {
+	}).SetupWithManager(mgr); err != nil {
 		return fmt.Errorf("cannot add %s controller: %w", "CustomResourceDefinitionDiscovery", err)
 	}
 
 	if err := (&controllers.ServiceClusterAssignmentReconciler{
 		Log:                log.WithName("controllers").WithName("ServiceClusterAssignmentReconciler"),
-		MasterClient:       masterMgr.GetClient(),
-		MasterScheme:       masterMgr.GetScheme(),
-		ServiceClient:      serviceMgr.GetClient(),
+		MasterClient:       mgr.GetClient(),
+		MasterScheme:       mgr.GetScheme(),
+		ServiceClient:      serviceCachedClient,
+		ServiceCache:       serviceCache,
 		ServiceClusterName: flags.serviceClusterName,
-	}).SetupWithManagers(serviceMgr, masterMgr); err != nil {
+	}).SetupWithManager(mgr); err != nil {
 		return fmt.Errorf("cannot add %s controller: %w", "ServiceClusterAssignmentReconciler", err)
 	}
 
-	if err := masterMgr.Add(serviceMgr); err != nil {
-		return fmt.Errorf("cannot add service mgr: %w", err)
-	}
-
-	if err := masterMgr.Start(ctrl.SetupSignalHandler()); err != nil {
+	if err := mgr.Start(ctrl.SetupSignalHandler()); err != nil {
 		return fmt.Errorf("error running component: %w", err)
 	}
 	return nil
