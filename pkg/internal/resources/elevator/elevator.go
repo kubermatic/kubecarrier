@@ -40,7 +40,7 @@ type Config struct {
 
 	ProviderKind, ProviderVersion, ProviderGroup, ProviderPlural string
 	TenantKind, TenantVersion, TenantGroup, TenantPlural         string
-	DerivedCRDName                                               string
+	DerivedCRName                                                string
 }
 
 var k = kustomize.NewDefaultKustomize()
@@ -87,7 +87,7 @@ func Manifests(c Config) ([]unstructured.Unstructured, error) {
 							"env": []map[string]interface{}{
 								{
 									"name":  "ELEVATOR_DERIVED_CRD_NAME",
-									"value": c.DerivedCRDName,
+									"value": c.DerivedCRName,
 								},
 								{
 									"name":  "ELEVATOR_PROVIDER_KIND",

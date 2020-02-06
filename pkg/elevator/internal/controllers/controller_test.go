@@ -41,12 +41,12 @@ var (
 	}
 
 	providerNamespace = "extreme-cloud"
-	dcrd              = &catalogv1alpha1.DerivedCustomResourceDefinition{
+	dcr               = &catalogv1alpha1.DerivedCustomResource{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "couchdbs.eu-west-1",
 			Namespace: providerNamespace,
 		},
-		Spec: catalogv1alpha1.DerivedCustomResourceDefinitionSpec{
+		Spec: catalogv1alpha1.DerivedCustomResourceSpec{
 			Expose: []catalogv1alpha1.VersionExposeConfig{
 				{
 					Versions: []string{"v1alpha1"},

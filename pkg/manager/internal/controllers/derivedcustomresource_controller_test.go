@@ -34,13 +34,13 @@ import (
 	"github.com/kubermatic/kubecarrier/pkg/testutil"
 )
 
-func Test_DerivedCustomResourceDefinitionReconciler(t *testing.T) {
+func Test_DerivedCustomResourceReconciler(t *testing.T) {
 	baseCRD := &apiextensionsv1.CustomResourceDefinition{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "catapults.test.kubecarrier.io",
 			Labels: map[string]string{
 				"kubecarrier.io/service-cluster": "eu-west-1",
-				"kubecarrier.io/provider":        "dcrd",
+				"kubecarrier.io/provider":        "dcr",
 			},
 		},
 		Spec: apiextensionsv1.CustomResourceDefinitionSpec{
@@ -82,20 +82,20 @@ func Test_DerivedCustomResourceDefinitionReconciler(t *testing.T) {
 
 	provider := &catalogv1alpha1.Provider{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      "dcrd",
+			Name:      "dcr",
 			Namespace: "kubecarrier-system",
 		},
 		Status: catalogv1alpha1.ProviderStatus{
-			NamespaceName: "provider-dcrd",
+			NamespaceName: "provider-dcr",
 		},
 	}
 
-	derivedCRD := &catalogv1alpha1.DerivedCustomResourceDefinition{
+	derivedCR := &catalogv1alpha1.DerivedCustomResource{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "test",
 			Namespace: provider.Status.NamespaceName,
 		},
-		Spec: catalogv1alpha1.DerivedCustomResourceDefinitionSpec{
+		Spec: catalogv1alpha1.DerivedCustomResourceSpec{
 			BaseCRD: catalogv1alpha1.ObjectReference{
 				Name: baseCRD.Name,
 			},
@@ -114,11 +114,11 @@ func Test_DerivedCustomResourceDefinitionReconciler(t *testing.T) {
 	}
 
 	t.Run("Reconcile", func(t *testing.T) {
-		derivedCRD := derivedCRD.DeepCopy()
+		derivedCR := derivedCR.DeepCopy()
 
-		client := fakeclient.NewFakeClientWithScheme(testScheme, baseCRD, provider, derivedCRD)
+		client := fakeclient.NewFakeClientWithScheme(testScheme, baseCRD, provider, derivedCR)
 		log := testutil.NewLogger(t)
-		r := &DerivedCustomResourceDefinitionReconciler{
+		r := &DerivedCustomResourceReconciler{
 			Client:                     client,
 			Log:                        log,
 			Scheme:                     testScheme,
@@ -126,23 +126,23 @@ func Test_DerivedCustomResourceDefinitionReconciler(t *testing.T) {
 		}
 		ctx := context.Background()
 
-		// 1st Reconcile calll
+		// 1st Reconcile call
 		// creating the derived CRD
 		_, err := r.Reconcile(reconcile.Request{
 			NamespacedName: types.NamespacedName{
-				Name:      derivedCRD.Name,
-				Namespace: derivedCRD.Namespace,
+				Name:      derivedCR.Name,
+				Namespace: derivedCR.Namespace,
 			},
 		})
 		require.NoError(t, err)
 
 		// Check CRD
-		checkDerivedCRD := &apiextensionsv1.CustomResourceDefinition{}
+		checkDerivedCR := &apiextensionsv1.CustomResourceDefinition{}
 		require.NoError(t, client.Get(ctx, types.NamespacedName{
-			Name: "testresources.eu-west-1.dcrd",
-		}, checkDerivedCRD))
+			Name: "testresources.eu-west-1.dcr",
+		}, checkDerivedCR))
 
-		schemaYaml, _ := yaml.Marshal(checkDerivedCRD.Spec.Versions[0].Schema.OpenAPIV3Schema)
+		schemaYaml, _ := yaml.Marshal(checkDerivedCR.Spec.Versions[0].Schema.OpenAPIV3Schema)
 		assert.Equal(t, `properties:
   apiVersion:
     type: string
@@ -158,23 +158,23 @@ func Test_DerivedCustomResourceDefinitionReconciler(t *testing.T) {
 type: object
 `, string(schemaYaml))
 
-		assert.Equal(t, "eu-west-1.dcrd", checkDerivedCRD.Spec.Group)
-		assert.Equal(t, "TestResource", checkDerivedCRD.Spec.Names.Kind)
-		assert.Equal(t, "testresources", checkDerivedCRD.Spec.Names.Plural)
-		assert.Equal(t, "testresource", checkDerivedCRD.Spec.Names.Singular)
+		assert.Equal(t, "eu-west-1.dcr", checkDerivedCR.Spec.Group)
+		assert.Equal(t, "TestResource", checkDerivedCR.Spec.Names.Kind)
+		assert.Equal(t, "testresources", checkDerivedCR.Spec.Names.Plural)
+		assert.Equal(t, "testresource", checkDerivedCR.Spec.Names.Singular)
 
 		// check ready condition
 		require.NoError(t, client.Get(ctx, types.NamespacedName{
-			Name:      derivedCRD.Name,
-			Namespace: derivedCRD.Namespace,
-		}, derivedCRD))
+			Name:      derivedCR.Name,
+			Namespace: derivedCR.Namespace,
+		}, derivedCR))
 
-		readyCond, ok := derivedCRD.Status.GetCondition(catalogv1alpha1.DerivedCustomResourceDefinitionReady)
+		readyCond, ok := derivedCR.Status.GetCondition(catalogv1alpha1.DerivedCustomResourceReady)
 		if assert.True(t, ok, "ready condition should be set") {
 			assert.Equal(t, catalogv1alpha1.ConditionFalse, readyCond.Status)
 			assert.Equal(t, "CRDNotEstablished", readyCond.Reason)
 		}
-		crdCond, ok := derivedCRD.Status.GetCondition(catalogv1alpha1.DerivedCustomResourceDefinitionEstablished)
+		crdCond, ok := derivedCR.Status.GetCondition(catalogv1alpha1.DerivedCustomResourceEstablished)
 		if assert.True(t, ok, "ready condition should be set") {
 			assert.Equal(t, catalogv1alpha1.ConditionFalse, crdCond.Status)
 			assert.Equal(t, "Establishing", crdCond.Reason)
@@ -182,30 +182,30 @@ type: object
 
 		// 2nd Reconcile call
 		// after CRD is established
-		checkDerivedCRD.Status.AcceptedNames = checkDerivedCRD.Spec.Names
-		checkDerivedCRD.Status.Conditions = []apiextensionsv1.CustomResourceDefinitionCondition{
+		checkDerivedCR.Status.AcceptedNames = checkDerivedCR.Spec.Names
+		checkDerivedCR.Status.Conditions = []apiextensionsv1.CustomResourceDefinitionCondition{
 			{
 				Type:   apiextensionsv1.Established,
 				Status: apiextensionsv1.ConditionTrue,
 			},
 		}
-		require.NoError(t, client.Status().Update(ctx, checkDerivedCRD))
+		require.NoError(t, client.Status().Update(ctx, checkDerivedCR))
 
 		_, err = r.Reconcile(reconcile.Request{
 			NamespacedName: types.NamespacedName{
-				Name:      derivedCRD.Name,
-				Namespace: derivedCRD.Namespace,
+				Name:      derivedCR.Name,
+				Namespace: derivedCR.Namespace,
 			},
 		})
 		require.NoError(t, err)
 
 		// check ready condition
 		require.NoError(t, client.Get(ctx, types.NamespacedName{
-			Name:      derivedCRD.Name,
-			Namespace: derivedCRD.Namespace,
-		}, derivedCRD))
+			Name:      derivedCR.Name,
+			Namespace: derivedCR.Namespace,
+		}, derivedCR))
 
-		readyCond, ok = derivedCRD.Status.GetCondition(catalogv1alpha1.DerivedCustomResourceDefinitionEstablished)
+		readyCond, ok = derivedCR.Status.GetCondition(catalogv1alpha1.DerivedCustomResourceEstablished)
 		if assert.True(t, ok, "ready condition should be set") {
 			assert.Equal(t, catalogv1alpha1.ConditionTrue, readyCond.Status)
 			assert.Equal(t, "Established", readyCond.Reason)
@@ -214,8 +214,8 @@ type: object
 		// Check Elevator
 		checkElevator := &operatorv1alpha1.Elevator{}
 		require.NoError(t, client.Get(ctx, types.NamespacedName{
-			Name:      derivedCRD.Name,
-			Namespace: derivedCRD.Namespace,
+			Name:      derivedCR.Name,
+			Namespace: derivedCR.Namespace,
 		}, checkElevator))
 		assert.Equal(t, operatorv1alpha1.ElevatorSpec{
 			ProviderCRD: operatorv1alpha1.CRDReference{
@@ -227,11 +227,11 @@ type: object
 			TenantCRD: operatorv1alpha1.CRDReference{
 				Kind:    "TestResource",
 				Version: "v1alpha1",
-				Group:   "eu-west-1.dcrd",
+				Group:   "eu-west-1.dcr",
 				Plural:  "testresources",
 			},
-			DerivedCRD: operatorv1alpha1.ObjectReference{
-				Name: derivedCRD.Name,
+			DerivedCR: operatorv1alpha1.ObjectReference{
+				Name: derivedCR.Name,
 			},
 		}, checkElevator.Spec)
 
@@ -247,29 +247,29 @@ type: object
 
 		_, err = r.Reconcile(reconcile.Request{
 			NamespacedName: types.NamespacedName{
-				Name:      derivedCRD.Name,
-				Namespace: derivedCRD.Namespace,
+				Name:      derivedCR.Name,
+				Namespace: derivedCR.Namespace,
 			},
 		})
 		require.NoError(t, err)
 
 		// check ready condition
 		require.NoError(t, client.Get(ctx, types.NamespacedName{
-			Name:      derivedCRD.Name,
-			Namespace: derivedCRD.Namespace,
-		}, derivedCRD))
+			Name:      derivedCR.Name,
+			Namespace: derivedCR.Namespace,
+		}, derivedCR))
 
-		controllerCond, ok := derivedCRD.Status.GetCondition(catalogv1alpha1.DerivedCustomResourceDefinitionControllerReady)
+		controllerCond, ok := derivedCR.Status.GetCondition(catalogv1alpha1.DerivedCustomResourceControllerReady)
 		if assert.True(t, ok, "ready condition should be set") {
 			assert.Equal(t, catalogv1alpha1.ConditionTrue, controllerCond.Status)
 			assert.Equal(t, "Ready", controllerCond.Reason)
 		}
-		readyCond, ok = derivedCRD.Status.GetCondition(catalogv1alpha1.DerivedCustomResourceDefinitionReady)
+		readyCond, ok = derivedCR.Status.GetCondition(catalogv1alpha1.DerivedCustomResourceReady)
 		if assert.True(t, ok, "ready condition should be set") {
 			assert.Equal(t, catalogv1alpha1.ConditionTrue, readyCond.Status)
 			assert.Equal(t, "ComponentsReady", readyCond.Reason)
 		}
-		crdCond, ok = derivedCRD.Status.GetCondition(catalogv1alpha1.DerivedCustomResourceDefinitionEstablished)
+		crdCond, ok = derivedCR.Status.GetCondition(catalogv1alpha1.DerivedCustomResourceEstablished)
 		if assert.True(t, ok, "ready condition should be set") {
 			assert.Equal(t, catalogv1alpha1.ConditionTrue, crdCond.Status)
 			assert.Equal(t, "Established", crdCond.Reason)

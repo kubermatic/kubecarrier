@@ -26,24 +26,24 @@ import (
 	"github.com/kubermatic/kubecarrier/pkg/testutil"
 )
 
-func TestDerivedCustomResourceDefinitionValidatingCreate(t *testing.T) {
-	derivedCustomResourceDefinitionWebhookHandler := DerivedCustomResourceDefinitionWebhookHandler{
+func TestDerivedCustomResourceValidatingCreate(t *testing.T) {
+	derivedCustomResourceWebhookHandler := DerivedCustomResourceWebhookHandler{
 		Log: testutil.NewLogger(t),
 	}
 
 	tests := []struct {
 		name          string
-		object        *catalogv1alpha1.DerivedCustomResourceDefinition
+		object        *catalogv1alpha1.DerivedCustomResource
 		expectedError bool
 	}{
 		{
 			name: "BaseCRD missing",
-			object: &catalogv1alpha1.DerivedCustomResourceDefinition{
+			object: &catalogv1alpha1.DerivedCustomResource{
 				ObjectMeta: metav1.ObjectMeta{
-					Name:      "test-derivedCustomResourceDefinition",
+					Name:      "test-derivedCustomResource",
 					Namespace: "test-namespace",
 				},
-				Spec: catalogv1alpha1.DerivedCustomResourceDefinitionSpec{
+				Spec: catalogv1alpha1.DerivedCustomResourceSpec{
 					Expose: []catalogv1alpha1.VersionExposeConfig{
 						{
 							Versions: []string{
@@ -60,12 +60,12 @@ func TestDerivedCustomResourceDefinitionValidatingCreate(t *testing.T) {
 		},
 		{
 			name: "Expose missing",
-			object: &catalogv1alpha1.DerivedCustomResourceDefinition{
+			object: &catalogv1alpha1.DerivedCustomResource{
 				ObjectMeta: metav1.ObjectMeta{
-					Name:      "test-derivedCustomResourceDefinition",
+					Name:      "test-derivedCustomResource",
 					Namespace: "test-namespace",
 				},
-				Spec: catalogv1alpha1.DerivedCustomResourceDefinitionSpec{
+				Spec: catalogv1alpha1.DerivedCustomResourceSpec{
 					BaseCRD: catalogv1alpha1.ObjectReference{
 						Name: "BaseCRD",
 					},
@@ -75,12 +75,12 @@ func TestDerivedCustomResourceDefinitionValidatingCreate(t *testing.T) {
 		},
 		{
 			name: "Exposed Version missing",
-			object: &catalogv1alpha1.DerivedCustomResourceDefinition{
+			object: &catalogv1alpha1.DerivedCustomResource{
 				ObjectMeta: metav1.ObjectMeta{
-					Name:      "test-derivedCustomResourceDefinition",
+					Name:      "test-derivedCustomResource",
 					Namespace: "test-namespace",
 				},
-				Spec: catalogv1alpha1.DerivedCustomResourceDefinitionSpec{
+				Spec: catalogv1alpha1.DerivedCustomResourceSpec{
 					BaseCRD: catalogv1alpha1.ObjectReference{
 						Name: "BaseCRD",
 					},
@@ -97,12 +97,12 @@ func TestDerivedCustomResourceDefinitionValidatingCreate(t *testing.T) {
 		},
 		{
 			name: "Exposed Field missing",
-			object: &catalogv1alpha1.DerivedCustomResourceDefinition{
+			object: &catalogv1alpha1.DerivedCustomResource{
 				ObjectMeta: metav1.ObjectMeta{
-					Name:      "test-derivedCustomResourceDefinition",
+					Name:      "test-derivedCustomResource",
 					Namespace: "test-namespace",
 				},
-				Spec: catalogv1alpha1.DerivedCustomResourceDefinitionSpec{
+				Spec: catalogv1alpha1.DerivedCustomResourceSpec{
 					BaseCRD: catalogv1alpha1.ObjectReference{
 						Name: "BaseCRD",
 					},
@@ -119,12 +119,12 @@ func TestDerivedCustomResourceDefinitionValidatingCreate(t *testing.T) {
 		},
 		{
 			name: "can pass validating create",
-			object: &catalogv1alpha1.DerivedCustomResourceDefinition{
+			object: &catalogv1alpha1.DerivedCustomResource{
 				ObjectMeta: metav1.ObjectMeta{
-					Name:      "test-derivedCustomResourceDefinition",
+					Name:      "test-derivedCustomResource",
 					Namespace: "test-namespace",
 				},
-				Spec: catalogv1alpha1.DerivedCustomResourceDefinitionSpec{
+				Spec: catalogv1alpha1.DerivedCustomResourceSpec{
 					BaseCRD: catalogv1alpha1.ObjectReference{
 						Name: "BaseCRD",
 					},
@@ -146,22 +146,22 @@ func TestDerivedCustomResourceDefinitionValidatingCreate(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			assert.Equal(t, test.expectedError, derivedCustomResourceDefinitionWebhookHandler.validateCreate(test.object) != nil)
+			assert.Equal(t, test.expectedError, derivedCustomResourceWebhookHandler.validateCreate(test.object) != nil)
 		})
 	}
 }
 
-func TestDerivedCustomResourceDefinitionValidatingUpdate(t *testing.T) {
-	derivedCustomResourceDefinitionWebhookHandler := DerivedCustomResourceDefinitionWebhookHandler{
+func TestDerivedCustomResourceValidatingUpdate(t *testing.T) {
+	derivedCustomResourceWebhookHandler := DerivedCustomResourceWebhookHandler{
 		Log: testutil.NewLogger(t),
 	}
 
-	oldObject := &catalogv1alpha1.DerivedCustomResourceDefinition{
+	oldObject := &catalogv1alpha1.DerivedCustomResource{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      "test-derivedCustomResourceDefinition",
+			Name:      "test-derivedCustomResource",
 			Namespace: "test-namespace",
 		},
-		Spec: catalogv1alpha1.DerivedCustomResourceDefinitionSpec{
+		Spec: catalogv1alpha1.DerivedCustomResourceSpec{
 			BaseCRD: catalogv1alpha1.ObjectReference{
 				Name: "BaseCRD",
 			},
@@ -180,17 +180,17 @@ func TestDerivedCustomResourceDefinitionValidatingUpdate(t *testing.T) {
 
 	tests := []struct {
 		name          string
-		object        *catalogv1alpha1.DerivedCustomResourceDefinition
+		object        *catalogv1alpha1.DerivedCustomResource
 		expectedError bool
 	}{
 		{
 			name: "BaseCRD immutable",
-			object: &catalogv1alpha1.DerivedCustomResourceDefinition{
+			object: &catalogv1alpha1.DerivedCustomResource{
 				ObjectMeta: metav1.ObjectMeta{
-					Name:      "test-derivedCustomResourceDefinition",
+					Name:      "test-derivedCustomResource",
 					Namespace: "test-namespace",
 				},
-				Spec: catalogv1alpha1.DerivedCustomResourceDefinitionSpec{
+				Spec: catalogv1alpha1.DerivedCustomResourceSpec{
 					BaseCRD: catalogv1alpha1.ObjectReference{
 						Name: "BaseCRD2",
 					},
@@ -210,12 +210,12 @@ func TestDerivedCustomResourceDefinitionValidatingUpdate(t *testing.T) {
 		},
 		{
 			name: "can pass validating update",
-			object: &catalogv1alpha1.DerivedCustomResourceDefinition{
+			object: &catalogv1alpha1.DerivedCustomResource{
 				ObjectMeta: metav1.ObjectMeta{
-					Name:      "test-derivedCustomResourceDefinition",
+					Name:      "test-derivedCustomResource",
 					Namespace: "test-namespace",
 				},
-				Spec: catalogv1alpha1.DerivedCustomResourceDefinitionSpec{
+				Spec: catalogv1alpha1.DerivedCustomResourceSpec{
 					BaseCRD: catalogv1alpha1.ObjectReference{
 						Name: "BaseCRD",
 					},
@@ -238,7 +238,7 @@ func TestDerivedCustomResourceDefinitionValidatingUpdate(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			assert.Equal(t, test.expectedError, derivedCustomResourceDefinitionWebhookHandler.validateUpdate(test.object, oldObject) != nil)
+			assert.Equal(t, test.expectedError, derivedCustomResourceWebhookHandler.validateUpdate(test.object, oldObject) != nil)
 		})
 	}
 }

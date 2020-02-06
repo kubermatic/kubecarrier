@@ -164,22 +164,22 @@ func run(flags *flags, log logr.Logger) error {
 		return fmt.Errorf("creating Catalog controller: %w", err)
 	}
 
-	if err = (&controllers.DerivedCustomResourceDefinitionReconciler{
+	if err = (&controllers.DerivedCustomResourceReconciler{
 		Client:                     mgr.GetClient(),
-		Log:                        log.WithName("controllers").WithName("DerivedCustomResourceDefinition"),
+		Log:                        log.WithName("controllers").WithName("DerivedCustomResource"),
 		Scheme:                     mgr.GetScheme(),
 		KubeCarrierSystemNamespace: flags.kubeCarrierSystemNamespace,
 	}).SetupWithManager(mgr); err != nil {
-		return fmt.Errorf("creating DerivedCustomResourceDefinition controller: %w", err)
+		return fmt.Errorf("creating DerivedCustomResource controller: %w", err)
 	}
 
 	// Register webhooks as handlers
 	wbh := mgr.GetWebhookServer()
 
 	// validating webhooks
-	wbh.Register(utilwebhook.GenerateValidateWebhookPath(&catalogv1alpha1.DerivedCustomResourceDefinition{}, mgr.GetScheme()),
-		&webhook.Admission{Handler: &webhooks.DerivedCustomResourceDefinitionWebhookHandler{
-			Log: log.WithName("validating webhooks").WithName("DerivedCustomResourceDefinition"),
+	wbh.Register(utilwebhook.GenerateValidateWebhookPath(&catalogv1alpha1.DerivedCustomResource{}, mgr.GetScheme()),
+		&webhook.Admission{Handler: &webhooks.DerivedCustomResourceWebhookHandler{
+			Log: log.WithName("validating webhooks").WithName("DerivedCustomResource"),
 		}})
 	wbh.Register(utilwebhook.GenerateValidateWebhookPath(&catalogv1alpha1.Offering{}, mgr.GetScheme()),
 		&webhook.Admission{Handler: &webhooks.OfferingWebhookHandler{

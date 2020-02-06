@@ -54,8 +54,8 @@ func NewProviderSuite(f *framework.Framework) func(t *testing.T) {
 				suite func(*framework.Framework, *catalogv1alpha1.Provider) func(t *testing.T)
 			}{
 				{
-					name:  "DerivedCRD",
-					suite: NewDerivedCRDSuite,
+					name:  "DerivedCR",
+					suite: NewDerivedCRSuite,
 				},
 				{
 					name:  "Catalog",

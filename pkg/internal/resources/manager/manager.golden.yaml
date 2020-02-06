@@ -447,16 +447,16 @@
       cert-manager.io/inject-ca-from: test3000/kubecarrier-manager-serving-cert
       controller-gen.kubebuilder.io/version: v0.2.4
     creationTimestamp: null
-    name: derivedcustomresourcedefinitions.catalog.kubecarrier.io
+    name: derivedcustomresources.catalog.kubecarrier.io
   spec:
     group: catalog.kubecarrier.io
     names:
-      kind: DerivedCustomResourceDefinition
-      listKind: DerivedCustomResourceDefinitionList
-      plural: derivedcustomresourcedefinitions
+      kind: DerivedCustomResource
+      listKind: DerivedCustomResourceList
+      plural: derivedcustomresources
       shortNames:
-      - dcrd
-      singular: derivedcustomresourcedefinition
+      - dcr
+      singular: derivedcustomresource
     scope: Namespaced
     versions:
     - additionalPrinterColumns:
@@ -469,8 +469,7 @@
       name: v1alpha1
       schema:
         openAPIV3Schema:
-          description: DerivedCustomResourceDefinition derives a new CRD from a existing
-            one.
+          description: DerivedCustomResource derives a new CRD from a existing one.
           properties:
             apiVersion:
               description: 'APIVersion defines the versioned schema of this representation
@@ -486,8 +485,8 @@
             metadata:
               type: object
             spec:
-              description: DerivedCustomResourceDefinitionSpec defines the desired
-                state of DerivedCustomResourceDefinition.
+              description: DerivedCustomResourceSpec defines the desired state of
+                DerivedCustomResource.
               properties:
                 baseCRD:
                   description: CRD that should be used as a base to derive a new CRD
@@ -539,15 +538,15 @@
               - expose
               type: object
             status:
-              description: DerivedCustomResourceDefinitionStatus defines the observed
-                state of DerivedCustomResourceDefinition.
+              description: DerivedCustomResourceStatus defines the observed state
+                of DerivedCustomResource.
               properties:
                 conditions:
                   description: Conditions represents the latest available observations
-                    of a DerivedCustomResourceDefinition's current state.
+                    of a DerivedCustomResource's current state.
                   items:
-                    description: DerivedCustomResourceDefinitionCondition contains
-                      details for the current condition of this DerivedCustomResourceDefinition.
+                    description: DerivedCustomResourceCondition contains details for
+                      the current condition of this DerivedCustomResource.
                     properties:
                       lastTransitionTime:
                         description: LastTransitionTime is the last time the condition
@@ -567,7 +566,7 @@
                           ('True', 'False', 'Unknown').
                         type: string
                       type:
-                        description: Type is the type of the DerivedCustomResourceDefinition
+                        description: Type is the type of the DerivedCustomResource
                           condition, currently ('Ready').
                         type: string
                     required:
@@ -578,8 +577,8 @@
                     - type
                     type: object
                   type: array
-                derivedCRD:
-                  description: DerivedCRD holds information about the derived CRD.
+                derivedCR:
+                  description: DerivedCR holds information about the derived CRD.
                   properties:
                     group:
                       description: API Group of the derived CRD.
@@ -602,7 +601,7 @@
                   type: object
                 observedGeneration:
                   description: ObservedGeneration is the most recent generation observed
-                    for this DerivedCustomResourceDefinition by the controller.
+                    for this DerivedCustomResource by the controller.
                   format: int64
                   type: integer
                 phase:
@@ -1727,7 +1726,7 @@
   - apiGroups:
     - catalog.kubecarrier.io
     resources:
-    - derivedcustomresourcedefinitions
+    - derivedcustomresources
     verbs:
     - get
     - list
@@ -1736,7 +1735,7 @@
   - apiGroups:
     - catalog.kubecarrier.io
     resources:
-    - derivedcustomresourcedefinitions/status
+    - derivedcustomresources/status
     verbs:
     - get
     - patch
@@ -2004,9 +2003,9 @@
       service:
         name: kubecarrier-manager-webhook-service
         namespace: test3000
-        path: /validate-catalog-kubecarrier-io-v1alpha1-derivedcustomresourcedefinition
+        path: /validate-catalog-kubecarrier-io-v1alpha1-derivedcustomresource
     failurePolicy: Fail
-    name: vderivedcustomresourcedefinition.kubecarrier.io
+    name: vderivedcustomresource.kubecarrier.io
     rules:
     - apiGroups:
       - catalog.kubecarrier.io
@@ -2016,7 +2015,7 @@
       - CREATE
       - UPDATE
       resources:
-      - derivedcustomresourcedefinitions
+      - derivedcustomresources
   - clientConfig:
       caBundle: Cg==
       service:
