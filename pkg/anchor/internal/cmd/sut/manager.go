@@ -44,6 +44,7 @@ func newSUTManagerCommand(log logr.Logger) *cobra.Command {
 		ldFlags           string
 		manualTelepresnce bool
 		deploymentNN      string
+		workdir           string
 	)
 
 	cmd := &cobra.Command{
@@ -90,14 +91,18 @@ func newSUTManagerCommand(log logr.Logger) *cobra.Command {
 				return fmt.Errorf("only single container allowed")
 			}
 
-			tmpDir, err := ioutil.TempDir("", "sut-")
-			if err != nil {
-				return fmt.Errorf("tmpdir: %w", err)
+			if workdir == "" {
+				tmpDir, err := ioutil.TempDir("", "sut-")
+				if err != nil {
+					return fmt.Errorf("tmpdir: %w", err)
+				}
+				workdir = tmpDir
 			}
-			log.Info("created temp directory", "dir", tmpDir)
-			rootMount := path.Join(tmpDir, "rootfs")
-			envJson := path.Join(tmpDir, "env.json")
-			logFile := path.Join(tmpDir, "telepresence.log")
+
+			log.Info("created temp directory", "dir", workdir)
+			rootMount := path.Join(workdir, "rootfs")
+			envJson := path.Join(workdir, "env.json")
+			logFile := path.Join(workdir, "telepresence.log")
 
 			telepresenceArgs := []string{
 				"--swap-deployment", deployment.Name,
@@ -105,6 +110,8 @@ func newSUTManagerCommand(log logr.Logger) *cobra.Command {
 				"--mount", rootMount,
 				"--env-json", envJson,
 				"--logfile", logFile,
+				"--run",
+				"while", "true;", "do", "sleep", "3600;", "done",
 			}
 
 			container := deployment.Spec.Template.Spec.Containers[0]
@@ -114,9 +121,7 @@ func newSUTManagerCommand(log logr.Logger) *cobra.Command {
 
 			if manualTelepresnce {
 				log.Info("=== manually run telepresence! ===")
-				_, _ = fmt.Fprintln(
-					cmd.OutOrStdout(),
-					"run:", "telepresence", strings.Join(telepresenceArgs, " "),
+				_, _ = fmt.Fprintln(cmd.OutOrStdout(), "telepresence", strings.Join(telepresenceArgs, " "),
 					"\npress any key to continue...",
 				)
 				b := make([]byte, 1)
@@ -124,7 +129,7 @@ func newSUTManagerCommand(log logr.Logger) *cobra.Command {
 				_, _ = cmd.InOrStdin().Read(b)
 			} else {
 				telepresenceCmd := exec.CommandContext(ctx, "telepresence", telepresenceArgs...)
-				telepresenceCmd.Dir = tmpDir
+				telepresenceCmd.Dir = workdir
 				telepresenceCmd.Stdin = cmd.InOrStdin()
 				telepresenceCmd.Stderr = cmd.ErrOrStderr()
 				telepresenceCmd.Stdout = cmd.OutOrStdout()
@@ -143,7 +148,7 @@ func newSUTManagerCommand(log logr.Logger) *cobra.Command {
 
 			envBytes, err := ioutil.ReadFile(envJson)
 			env := make(map[string]string)
-			if err := json.Unmarshal(envBytes, env); err != nil {
+			if err := json.Unmarshal(envBytes, &env); err != nil {
 				return fmt.Errorf("cannot unmarshall the environment")
 			}
 
@@ -160,6 +165,7 @@ func newSUTManagerCommand(log logr.Logger) *cobra.Command {
 			}
 
 			hostContainerArgs = append(hostContainerArgs, extraArgs...)
+
 			task := ide.Task{
 				Name:    "SUT",
 				Program: "manager",
@@ -174,6 +180,7 @@ func newSUTManagerCommand(log logr.Logger) *cobra.Command {
 	}
 	cmd.Flags().StringVar(&ldFlags, "ld-flags", "", "ld-flags to pass to go compiler upon running this")
 	cmd.Flags().StringVar(&deploymentNN, "deployment-nn", "", "deployment-nn signal the deployement namespace name which should be selected. If none (default) a fzf based picker shall be shown")
+	cmd.Flags().StringVar(&workdir, "workdir", "", "sut working for logs, rootfs mountpoints, etc. default to new temp dir")
 	cmd.Flags().StringArrayVar(&extraArgs, "extra-flags", nil, "extra flags to pass to the running task")
 	cmd.Flags().BoolVar(&manualTelepresnce, "manual-telepresence", false, "manually run telepresence")
 	return cmd
