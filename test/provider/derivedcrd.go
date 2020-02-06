@@ -20,7 +20,6 @@ import (
 	"context"
 	"os"
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -151,7 +150,7 @@ func NewDerivedCRDSuite(
 		}()
 
 		// Wait for DCRD to be ready
-		require.NoError(t, testutil.WaitUntilReady(masterClient, dcrd, testutil.WithTimeout(40*time.Second)))
+		require.NoError(t, testutil.WaitUntilReady(masterClient, dcrd))
 
 		// Check reported status
 		if assert.NotNil(t, dcrd.Status.DerivedCRD, ".status.derivedCRD should be set") {
