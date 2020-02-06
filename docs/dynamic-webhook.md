@@ -2,12 +2,13 @@
 
 ## Introduction
 
-In KubeCarrier, the main feature is to provide services by working with arbitrary CRDs. `Provider` can config
-the fields that can be exposed to the `Tenant` by creating the `DerivedCustomResourceDefinition` object. Then the
+In KubeCarrier, the main feature is to provide services by working with arbitrary CRDs. Provider can config
+the fields that can be exposed to the Tenant by creating the `DerivedCustomResourceDefinition` object. Then the
 Tenant can create objects based on it.
 
 In some cases, not all the mandatory fields are exposed to the Tenant within the `DerivedCustomResourceDefinition`.
-in this scenario, it is very important to have mutating/validating webhooks to perform necessary defaulting and validating.
+in this scenario, it is very important to have mutating/validating webhooks to perform necessary
+defaulting for the non-exposed fields and validating for Tenant configurable fields.
 
 ## Mutating/Validating Webhooks
 Mutating/Validating webhooks are supported by performing a dry-run operation (create/update) against the kube-apiserver, specifically, webhooks will be deployed by catapult and elevator components:
