@@ -447,16 +447,16 @@
       cert-manager.io/inject-ca-from: test3000/kubecarrier-manager-serving-cert
       controller-gen.kubebuilder.io/version: v0.2.4
     creationTimestamp: null
-    name: derivedcustomresourcedefinitions.catalog.kubecarrier.io
+    name: derivedcustomresources.catalog.kubecarrier.io
   spec:
     group: catalog.kubecarrier.io
     names:
-      kind: DerivedCustomResourceDefinition
-      listKind: DerivedCustomResourceDefinitionList
-      plural: derivedcustomresourcedefinitions
+      kind: DerivedCustomResource
+      listKind: DerivedCustomResourceList
+      plural: derivedcustomresources
       shortNames:
-      - dcrd
-      singular: derivedcustomresourcedefinition
+      - dcr
+      singular: derivedcustomresource
     scope: Namespaced
     versions:
     - additionalPrinterColumns:
@@ -469,8 +469,7 @@
       name: v1alpha1
       schema:
         openAPIV3Schema:
-          description: DerivedCustomResourceDefinition derives a new CRD from a existing
-            one.
+          description: DerivedCustomResource derives a new CRD from a existing one.
           properties:
             apiVersion:
               description: 'APIVersion defines the versioned schema of this representation
@@ -486,8 +485,8 @@
             metadata:
               type: object
             spec:
-              description: DerivedCustomResourceDefinitionSpec defines the desired
-                state of DerivedCustomResourceDefinition.
+              description: DerivedCustomResourceSpec defines the desired state of
+                DerivedCustomResource.
               properties:
                 baseCRD:
                   description: CRD that should be used as a base to derive a new CRD
@@ -539,15 +538,15 @@
               - expose
               type: object
             status:
-              description: DerivedCustomResourceDefinitionStatus defines the observed
-                state of DerivedCustomResourceDefinition.
+              description: DerivedCustomResourceStatus defines the observed state
+                of DerivedCustomResource.
               properties:
                 conditions:
                   description: Conditions represents the latest available observations
-                    of a DerivedCustomResourceDefinition's current state.
+                    of a DerivedCustomResource's current state.
                   items:
-                    description: DerivedCustomResourceDefinitionCondition contains
-                      details for the current condition of this DerivedCustomResourceDefinition.
+                    description: DerivedCustomResourceCondition contains details for
+                      the current condition of this DerivedCustomResource.
                     properties:
                       lastTransitionTime:
                         description: LastTransitionTime is the last time the condition
@@ -567,7 +566,7 @@
                           ('True', 'False', 'Unknown').
                         type: string
                       type:
-                        description: Type is the type of the DerivedCustomResourceDefinition
+                        description: Type is the type of the DerivedCustomResource
                           condition, currently ('Ready').
                         type: string
                     required:
@@ -578,8 +577,8 @@
                     - type
                     type: object
                   type: array
-                derivedCRD:
-                  description: DerivedCRD holds information about the derived CRD.
+                derivedCR:
+                  description: DerivedCR holds information about the derived CRD.
                   properties:
                     group:
                       description: API Group of the derived CRD.
@@ -602,7 +601,7 @@
                   type: object
                 observedGeneration:
                   description: ObservedGeneration is the most recent generation observed
-                    for this DerivedCustomResourceDefinition by the controller.
+                    for this DerivedCustomResource by the controller.
                   format: int64
                   type: integer
                 phase:
@@ -1228,14 +1227,14 @@
       cert-manager.io/inject-ca-from: test3000/kubecarrier-manager-serving-cert
       controller-gen.kubebuilder.io/version: v0.2.4
     creationTimestamp: null
-    name: customresourcedefinitiondiscoveries.kubecarrier.io
+    name: customresourcediscoveries.kubecarrier.io
   spec:
     group: kubecarrier.io
     names:
-      kind: CustomResourceDefinitionDiscovery
-      listKind: CustomResourceDefinitionDiscoveryList
-      plural: customresourcedefinitiondiscoveries
-      singular: customresourcedefinitiondiscovery
+      kind: CustomResourceDiscovery
+      listKind: CustomResourceDiscoveryList
+      plural: customresourcediscoveries
+      singular: customresourcediscovery
     scope: Namespaced
     versions:
     - additionalPrinterColumns:
@@ -1245,12 +1244,15 @@
       - jsonPath: .spec.serviceCluster.name
         name: Service Cluster
         type: string
+      - jsonPath: .status.phase
+        name: Status
+        type: string
       name: v1alpha1
       schema:
         openAPIV3Schema:
-          description: CustomResourceDefinitionDiscovery is used inside KubeCarrier
-            to fetch a CustomResourceDefinition from another cluster and to offload
-            cross cluster access to another component.
+          description: CustomResourceDiscovery is used inside KubeCarrier to fetch
+            a CustomResourceDefinition from another cluster and to offload cross cluster
+            access to another component.
           properties:
             apiVersion:
               description: 'APIVersion defines the versioned schema of this representation
@@ -1266,8 +1268,8 @@
             metadata:
               type: object
             spec:
-              description: CustomResourceDefinitionDiscoverySpec defines the desired
-                state of crdreference
+              description: CustomResourceDiscoverySpec defines the desired state of
+                crdreference
               properties:
                 crd:
                   description: CRD references a CustomResourceDefinition within the
@@ -1295,15 +1297,15 @@
               - serviceCluster
               type: object
             status:
-              description: CustomResourceDefinitionDiscoveryStatus defines the observed
-                state of crdreference
+              description: CustomResourceDiscoveryStatus defines the observed state
+                of crdreference
               properties:
                 conditions:
-                  description: Conditions is a list of all conditions this CustomResourceDefinitionDiscovery
+                  description: Conditions is a list of all conditions this CustomResourceDiscovery
                     is in.
                   items:
-                    description: CustomResourceDefinitionDiscoveryCondition contains
-                      details for the current condition of this CustomResourceDefinitionDiscovery.
+                    description: CustomResourceDiscoveryCondition contains details
+                      for the current condition of this CustomResourceDiscovery.
                     properties:
                       lastTransitionTime:
                         description: LastTransitionTime is the last time the condition
@@ -1338,6 +1340,171 @@
                     from the service cluster
                   type: object
                   x-kubernetes-preserve-unknown-fields: true
+                observedGeneration:
+                  description: The most recent generation observed by the controller.
+                  format: int64
+                  type: integer
+                phase:
+                  description: DEPRECATED. Phase represents the current lifecycle
+                    state of this object consider this field DEPRECATED, it will be
+                    removed as soon as there is a mechanism to map conditions to a
+                    string when printing the property is only present for display
+                    purposes, for everything else use conditions
+                  type: string
+              type: object
+          type: object
+      served: true
+      storage: true
+      subresources:
+        status: {}
+  status:
+    acceptedNames:
+      kind: ""
+      plural: ""
+    conditions: []
+    storedVersions: []
+- apiVersion: apiextensions.k8s.io/v1
+  kind: CustomResourceDefinition
+  metadata:
+    annotations:
+      controller-gen.kubebuilder.io/version: v0.2.4
+    creationTimestamp: null
+    name: customresourcediscoverysets.kubecarrier.io
+  spec:
+    group: kubecarrier.io
+    names:
+      kind: CustomResourceDiscoverySet
+      listKind: CustomResourceDiscoverySetList
+      plural: customresourcediscoverysets
+      singular: customresourcediscoveryset
+    scope: Namespaced
+    versions:
+    - additionalPrinterColumns:
+      - jsonPath: .spec.crd.name
+        name: CustomResourceDefinition
+        type: string
+      - jsonPath: .status.phase
+        name: Status
+        type: string
+      name: v1alpha1
+      schema:
+        openAPIV3Schema:
+          description: CustomResourceDiscoverySet manages multiple CustomResourceDiscovery
+            objects for a set of service clusters.
+          properties:
+            apiVersion:
+              description: 'APIVersion defines the versioned schema of this representation
+                of an object. Servers should convert recognized schemas to the latest
+                internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+              type: string
+            kind:
+              description: 'Kind is a string value representing the REST resource
+                this object represents. Servers may infer this from the endpoint the
+                client submits requests to. Cannot be updated. In CamelCase. More
+                info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+              type: string
+            metadata:
+              type: object
+            spec:
+              properties:
+                crd:
+                  description: CRD references a CustomResourceDefinition within the
+                    ServiceCluster.
+                  properties:
+                    name:
+                      type: string
+                  required:
+                  - name
+                  type: object
+                kindOverride:
+                  description: KindOverride overrides resulting internal CRDs kind
+                  type: string
+                serviceClusterSelector:
+                  description: ServiceClusterSelector references a set of ServiceClusters
+                    to search the CustomResourceDefinition on.
+                  properties:
+                    matchExpressions:
+                      description: matchExpressions is a list of label selector requirements.
+                        The requirements are ANDed.
+                      items:
+                        description: A label selector requirement is a selector that
+                          contains values, a key, and an operator that relates the
+                          key and values.
+                        properties:
+                          key:
+                            description: key is the label key that the selector applies
+                              to.
+                            type: string
+                          operator:
+                            description: operator represents a key's relationship
+                              to a set of values. Valid operators are In, NotIn, Exists
+                              and DoesNotExist.
+                            type: string
+                          values:
+                            description: values is an array of string values. If the
+                              operator is In or NotIn, the values array must be non-empty.
+                              If the operator is Exists or DoesNotExist, the values
+                              array must be empty. This array is replaced during a
+                              strategic merge patch.
+                            items:
+                              type: string
+                            type: array
+                        required:
+                        - key
+                        - operator
+                        type: object
+                      type: array
+                    matchLabels:
+                      additionalProperties:
+                        type: string
+                      description: matchLabels is a map of {key,value} pairs. A single
+                        {key,value} in the matchLabels map is equivalent to an element
+                        of matchExpressions, whose key field is "key", the operator
+                        is "In", and the values array contains only "value". The requirements
+                        are ANDed.
+                      type: object
+                  type: object
+              required:
+              - crd
+              - serviceClusterSelector
+              type: object
+            status:
+              properties:
+                conditions:
+                  description: Conditions is a list of all conditions this CustomResourceDiscovery
+                    is in.
+                  items:
+                    description: CustomResourceDiscoverySetCondition contains details
+                      for the current condition of this CustomResourceDiscoverySet.
+                    properties:
+                      lastTransitionTime:
+                        description: LastTransitionTime is the last time the condition
+                          transit from one status to another.
+                        format: date-time
+                        type: string
+                      message:
+                        description: Message is the human readable message indicating
+                          details about last transition.
+                        type: string
+                      reason:
+                        description: Reason is the (brief) reason for the condition's
+                          last transition.
+                        type: string
+                      status:
+                        description: Status of the condition, one of ('True', 'False',
+                          'Unknown').
+                        type: string
+                      type:
+                        description: Type of the condition, currently ('Ready').
+                        type: string
+                    required:
+                    - lastTransitionTime
+                    - message
+                    - reason
+                    - status
+                    - type
+                    type: object
+                  type: array
                 observedGeneration:
                   description: The most recent generation observed by the controller.
                   format: int64
@@ -1503,6 +1670,7 @@
   kind: CustomResourceDefinition
   metadata:
     annotations:
+      cert-manager.io/inject-ca-from: test3000/kubecarrier-manager-serving-cert
       controller-gen.kubebuilder.io/version: v0.2.4
     creationTimestamp: null
     name: serviceclusters.kubecarrier.io
@@ -1728,7 +1896,7 @@
   - apiGroups:
     - catalog.kubecarrier.io
     resources:
-    - derivedcustomresourcedefinitions
+    - derivedcustomresources
     verbs:
     - get
     - list
@@ -1737,7 +1905,7 @@
   - apiGroups:
     - catalog.kubecarrier.io
     resources:
-    - derivedcustomresourcedefinitions/status
+    - derivedcustomresources/status
     verbs:
     - get
     - patch
@@ -1823,7 +1991,26 @@
   - apiGroups:
     - kubecarrier.io
     resources:
-    - customresourcedefinitiondiscoveries
+    - customresourcediscoveries
+    verbs:
+    - create
+    - delete
+    - get
+    - list
+    - update
+    - watch
+  - apiGroups:
+    - kubecarrier.io
+    resources:
+    - customresourcediscoveries/status
+    verbs:
+    - get
+    - patch
+    - update
+  - apiGroups:
+    - kubecarrier.io
+    resources:
+    - customresourcediscoverysets
     verbs:
     - get
     - list
@@ -1832,7 +2019,7 @@
   - apiGroups:
     - kubecarrier.io
     resources:
-    - customresourcedefinitiondiscoveries/status
+    - customresourcediscoverysets/status
     verbs:
     - get
     - patch
@@ -1987,9 +2174,9 @@
       service:
         name: kubecarrier-manager-webhook-service
         namespace: test3000
-        path: /validate-kubecarrier-io-v1alpha1-customresourcedefinitiondiscovery
+        path: /validate-kubecarrier-io-v1alpha1-customresourcediscovery
     failurePolicy: Fail
-    name: vcustomresourcedefinitiondiscovery.kubecarrier.io
+    name: vcustomresourcediscovery.kubecarrier.io
     rules:
     - apiGroups:
       - kubecarrier.io
@@ -1999,15 +2186,15 @@
       - CREATE
       - UPDATE
       resources:
-      - customresourcedefinitiondiscoveries
+      - customresourcediscoveries
   - clientConfig:
       caBundle: Cg==
       service:
         name: kubecarrier-manager-webhook-service
         namespace: test3000
-        path: /validate-catalog-kubecarrier-io-v1alpha1-derivedcustomresourcedefinition
+        path: /validate-catalog-kubecarrier-io-v1alpha1-derivedcustomresource
     failurePolicy: Fail
-    name: vderivedcustomresourcedefinition.kubecarrier.io
+    name: vderivedcustomresource.kubecarrier.io
     rules:
     - apiGroups:
       - catalog.kubecarrier.io
@@ -2017,7 +2204,7 @@
       - CREATE
       - UPDATE
       resources:
-      - derivedcustomresourcedefinitions
+      - derivedcustomresources
   - clientConfig:
       caBundle: Cg==
       service:

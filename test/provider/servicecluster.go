@@ -20,9 +20,7 @@ import (
 	"context"
 	"io/ioutil"
 	"testing"
-	"time"
 
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	corev1 "k8s.io/api/core/v1"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
@@ -119,25 +117,21 @@ func NewServiceClusterSuite(
 		serviceCluster.SetNamespace(provider.Status.NamespaceName)
 		require.NoError(t, testutil.WaitUntilReady(masterClient, serviceCluster))
 
-		// Test CustomResourceDefinitionDiscovery
-		crdd := &corev1alpha1.CustomResourceDefinitionDiscovery{
+		// Test CustomResourceDiscoverySet
+		crdiscoveries := &corev1alpha1.CustomResourceDiscoverySet{
 			ObjectMeta: metav1.ObjectMeta{
-				Name:      "redis.eu-west-1",
+				Name:      "redis",
 				Namespace: provider.Status.NamespaceName,
 			},
-			Spec: corev1alpha1.CustomResourceDefinitionDiscoverySpec{
+			Spec: corev1alpha1.CustomResourceDiscoverySetSpec{
 				KindOverride: "RedisInternal",
 				CRD: corev1alpha1.ObjectReference{
 					Name: crd.Name,
 				},
-				ServiceCluster: corev1alpha1.ObjectReference{
-					Name: serviceClusterRegistration.Name,
-				},
 			},
 		}
-		require.NoError(t, masterClient.Create(ctx, crdd))
-		require.NoError(t, testutil.WaitUntilReady(masterClient, crdd), testutil.WithTimeout(120*time.Second))
-		assert.Equal(t, crd.Name, crdd.Status.CRD.Name)
+		require.NoError(t, masterClient.Create(ctx, crdiscoveries))
+		require.NoError(t, testutil.WaitUntilReady(masterClient, crdiscoveries))
 
 		// We have created/registered new CRD's, so we need a new client
 		masterClient, err = f.MasterClient()

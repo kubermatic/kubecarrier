@@ -42,7 +42,7 @@ type flags struct {
 
 	providerKind, providerVersion, providerGroup string
 	tenantKind, tenantVersion, tenantGroup       string
-	derivedCRDName                               string
+	derivedCRName                                string
 	providerNamespace                            string
 }
 
@@ -95,8 +95,8 @@ func NewElevator() *cobra.Command {
 		os.Getenv("ELEVATOR_TENANT_GROUP"), "Group of Tenant-side CRD.")
 
 	cmd.Flags().StringVar(
-		&flags.derivedCRDName, "derived-crd-name",
-		os.Getenv("ELEVATOR_DERIVED_CRD_NAME"), "Name of DerivedCRD controlling the Tenant-side CRD.")
+		&flags.derivedCRName, "derived-crd-name",
+		os.Getenv("ELEVATOR_DERIVED_CRD_NAME"), "Name of DerivedCR controlling the Tenant-side CRD.")
 
 	cmd.Flags().StringVar(
 		&flags.providerNamespace, "provider-namespace",
@@ -116,7 +116,7 @@ func run(flags *flags, log logr.Logger) error {
 		{value: flags.tenantKind, env: "ELEVATOR_TENANT_KIND", flag: "tenant-kind"},
 		{value: flags.tenantVersion, env: "ELEVATOR_TENANT_VERSION", flag: "tenant-version"},
 		{value: flags.tenantGroup, env: "ELEVATOR_TENANT_GROUP", flag: "tenant-group"},
-		{value: flags.derivedCRDName, env: "ELEVATOR_DERIVED_CRD_NAME", flag: "derived-crd-name"},
+		{value: flags.derivedCRName, env: "ELEVATOR_DERIVED_CRD_NAME", flag: "derived-crd-name"},
 		{value: flags.providerNamespace, env: "KUBERNETES_NAMESPACE", flag: "provider-namespace"},
 	}
 	var errs []string
@@ -135,7 +135,7 @@ func run(flags *flags, log logr.Logger) error {
 		MetricsBindAddress:      flags.metricsAddr,
 		LeaderElection:          flags.enableLeaderElection,
 		LeaderElectionNamespace: flags.providerNamespace,
-		LeaderElectionID:        "elevator-" + flags.derivedCRDName,
+		LeaderElectionID:        "elevator-" + flags.derivedCRName,
 		NewClient: func(cache cache.Cache, config *rest.Config, options client.Options) (client.Client, error) {
 			// Create the Client for Write operations.
 			c, err := client.New(config, options)
@@ -156,7 +156,7 @@ func run(flags *flags, log logr.Logger) error {
 		return fmt.Errorf("starting manager: %w", err)
 	}
 
-	// We only have permissions to access DerivedCustomResourceDefinitions in the provider namespace.
+	// We only have permissions to access DerivedCustomResources in the provider namespace.
 	// So we have to create a new cache, that is limited to this namespace, or we will break on permission errors.
 	namespacedCache, err := cache.New(cfg, cache.Options{
 		Scheme:    mgr.GetScheme(),
@@ -199,7 +199,7 @@ func run(flags *flags, log logr.Logger) error {
 		ProviderGVK: providerGVK,
 		TenantGVK:   tenantGVK,
 
-		DerivedCRDName:    flags.derivedCRDName,
+		DerivedCRName:     flags.derivedCRName,
 		ProviderNamespace: flags.providerNamespace,
 	}).SetupWithManager(mgr); err != nil {
 		return fmt.Errorf("cannot add %s controller: %w", "TenantObjReconciler", err)
@@ -214,7 +214,7 @@ func run(flags *flags, log logr.Logger) error {
 		ProviderGVK: providerGVK,
 		TenantGVK:   tenantGVK,
 
-		DerivedCRDName:    flags.derivedCRDName,
+		DerivedCRName:     flags.derivedCRName,
 		ProviderNamespace: flags.providerNamespace,
 	}).SetupWithManager(mgr); err != nil {
 		return fmt.Errorf("cannot add %s controller: %w", "AdoptionReconciler", err)

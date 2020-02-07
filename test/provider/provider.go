@@ -25,7 +25,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	appsv1 "k8s.io/api/apps/v1"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -34,7 +33,6 @@ import (
 
 	catalogv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/catalog/v1alpha1"
 	corev1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/core/v1alpha1"
-	operatorv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/operator/v1alpha1"
 	"github.com/kubermatic/kubecarrier/pkg/testutil"
 	"github.com/kubermatic/kubecarrier/test/framework"
 )
@@ -54,8 +52,8 @@ func NewProviderSuite(f *framework.Framework) func(t *testing.T) {
 				suite func(*framework.Framework, *catalogv1alpha1.Provider) func(t *testing.T)
 			}{
 				{
-					name:  "DerivedCRD",
-					suite: NewDerivedCRDSuite,
+					name:  "DerivedCR",
+					suite: NewDerivedCRSuite,
 				},
 				{
 					name:  "Catalog",
@@ -95,48 +93,6 @@ func NewProviderSuite(f *framework.Framework) func(t *testing.T) {
 				})
 			}
 		})
-	}
-}
-
-// Catapult sub test suite
-func NewCatapultSuite(
-	f *framework.Framework,
-	provider *catalogv1alpha1.Provider,
-) func(t *testing.T) {
-	return func(t *testing.T) {
-		// Setup
-		masterClient, err := f.MasterClient()
-		require.NoError(t, err, "creating master client")
-		defer masterClient.CleanUp(t)
-
-		ctx := context.Background()
-
-		// Create Catapult
-		catapult := &operatorv1alpha1.Catapult{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "db.eu-west-1",
-				Namespace: provider.Status.NamespaceName,
-			},
-		}
-
-		require.NoError(
-			t, masterClient.Create(ctx, catapult), "creating Catapult error")
-		require.NoError(t, testutil.WaitUntilReady(masterClient, catapult))
-
-		// Check created objects
-		catapultDeployment := &appsv1.Deployment{}
-		assert.NoError(t, masterClient.Get(ctx, types.NamespacedName{
-			Name:      "db-eu-west-1-catapult-manager",
-			Namespace: catapult.Namespace,
-		}, catapultDeployment), "getting Catapult manager deployment error")
-
-		// Teardown
-		require.NoError(
-			t, masterClient.Delete(ctx, catapult), "deleting Catapult object")
-		require.NoError(t, testutil.WaitUntilNotFound(masterClient, catapult))
-
-		// check everything is gone
-		require.NoError(t, testutil.WaitUntilNotFound(masterClient, catapultDeployment))
 	}
 }
 

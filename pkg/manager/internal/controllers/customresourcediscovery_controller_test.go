@@ -36,7 +36,7 @@ import (
 	"github.com/kubermatic/kubecarrier/pkg/testutil"
 )
 
-func TestCustomResourceDefinitionDiscoveryReconciler(t *testing.T) {
+func TestCustomResourceDiscoveryReconciler(t *testing.T) {
 	const (
 		serviceClusterName = "eu-west-1"
 	)
@@ -47,19 +47,19 @@ func TestCustomResourceDefinitionDiscoveryReconciler(t *testing.T) {
 		},
 	}
 
-	crdDiscovery := &corev1alpha1.CustomResourceDefinitionDiscovery{
+	crDiscovery := &corev1alpha1.CustomResourceDiscovery{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "redis.cloud",
 			Namespace: "tenant-hans",
 		},
-		Spec: corev1alpha1.CustomResourceDefinitionDiscoverySpec{
+		Spec: corev1alpha1.CustomResourceDiscoverySpec{
 			CRD:            corev1alpha1.ObjectReference{Name: "redis.cloud"},
 			ServiceCluster: corev1alpha1.ObjectReference{Name: serviceClusterName},
 		},
 	}
-	crdDiscoveryNN := types.NamespacedName{
-		Namespace: crdDiscovery.Namespace,
-		Name:      crdDiscovery.Name,
+	crDiscoveryNN := types.NamespacedName{
+		Namespace: crDiscovery.Namespace,
+		Name:      crDiscovery.Name,
 	}
 
 	crd := &apiextensionsv1.CustomResourceDefinition{
@@ -80,9 +80,9 @@ func TestCustomResourceDefinitionDiscoveryReconciler(t *testing.T) {
 			},
 		},
 	}
-	r := &CustomResourceDefinitionDiscoveryReconciler{
+	r := &CustomResourceDiscoveryReconciler{
 		Log:                        testutil.NewLogger(t),
-		Client:                     fakeclient.NewFakeClientWithScheme(testScheme, crdDiscovery, provider),
+		Client:                     fakeclient.NewFakeClientWithScheme(testScheme, crDiscovery, provider),
 		Scheme:                     testScheme,
 		KubeCarrierSystemNamespace: provider.Namespace,
 	}
@@ -90,25 +90,25 @@ func TestCustomResourceDefinitionDiscoveryReconciler(t *testing.T) {
 	reconcileLoop := func() {
 		for i := 0; i < 3; i++ {
 			_, err := r.Reconcile(ctrl.Request{
-				NamespacedName: crdDiscoveryNN,
+				NamespacedName: crDiscoveryNN,
 			})
 			require.NoError(t, err)
-			require.NoError(t, r.Client.Get(ctx, crdDiscoveryNN, crdDiscovery))
+			require.NoError(t, r.Client.Get(ctx, crDiscoveryNN, crDiscovery))
 		}
 	}
 
 	reconcileLoop() // should not panic on undiscovered instances
 
-	crdDiscovery.Status.CRD = crd
-	crdDiscovery.Status.SetCondition(corev1alpha1.CustomResourceDefinitionDiscoveryCondition{
-		Type:   corev1alpha1.CustomResourceDefinitionDiscoveryDiscovered,
+	crDiscovery.Status.CRD = crd
+	crDiscovery.Status.SetCondition(corev1alpha1.CustomResourceDiscoveryCondition{
+		Type:   corev1alpha1.CustomResourceDiscoveryDiscovered,
 		Status: corev1alpha1.ConditionTrue,
 	})
-	require.NoError(t, r.Client.Status().Update(ctx, crdDiscovery))
+	require.NoError(t, r.Client.Status().Update(ctx, crDiscovery))
 
 	reconcileLoop() // creates the CRD in the master cluster
 
-	establishedCondition, ok := crdDiscovery.Status.GetCondition(corev1alpha1.CustomResourceDefinitionDiscoveryEstablished)
+	establishedCondition, ok := crDiscovery.Status.GetCondition(corev1alpha1.CustomResourceDiscoveryEstablished)
 	if assert.True(t, ok) {
 		assert.Equal(t, corev1alpha1.ConditionFalse, establishedCondition.Status)
 		assert.Equal(t, "Establishing", establishedCondition.Reason)
@@ -129,7 +129,7 @@ func TestCustomResourceDefinitionDiscoveryReconciler(t *testing.T) {
 
 	reconcileLoop() // updates the status to established and launches Catapult
 
-	establishedCondition, ok = crdDiscovery.Status.GetCondition(corev1alpha1.CustomResourceDefinitionDiscoveryEstablished)
+	establishedCondition, ok = crDiscovery.Status.GetCondition(corev1alpha1.CustomResourceDiscoveryEstablished)
 	if assert.True(t, ok) {
 		assert.Equal(t, corev1alpha1.ConditionTrue, establishedCondition.Status)
 		assert.Equal(t, "Established", establishedCondition.Reason)
@@ -137,8 +137,8 @@ func TestCustomResourceDefinitionDiscoveryReconciler(t *testing.T) {
 
 	catapult := &operatorv1alpha1.Catapult{}
 	require.NoError(t, r.Client.Get(ctx, types.NamespacedName{
-		Name:      crdDiscovery.Name,
-		Namespace: crdDiscovery.Namespace,
+		Name:      crDiscovery.Name,
+		Namespace: crDiscovery.Namespace,
 	}, catapult))
 	catapult.Status.Conditions = []operatorv1alpha1.CatapultCondition{
 		{
@@ -150,7 +150,7 @@ func TestCustomResourceDefinitionDiscoveryReconciler(t *testing.T) {
 
 	reconcileLoop() // updates status to ready
 
-	readyCondition, ok := crdDiscovery.Status.GetCondition(corev1alpha1.CustomResourceDefinitionDiscoveryReady)
+	readyCondition, ok := crDiscovery.Status.GetCondition(corev1alpha1.CustomResourceDiscoveryReady)
 	if assert.True(t, ok) {
 		assert.Equal(t, corev1alpha1.ConditionTrue, readyCondition.Status)
 		assert.Equal(t, "ComponentsReady", readyCondition.Reason)
