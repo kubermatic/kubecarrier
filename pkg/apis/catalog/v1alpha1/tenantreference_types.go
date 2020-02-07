@@ -28,7 +28,7 @@ type TenantReferenceSpec struct{}
 // marking them at will. This allows the tenant granular tenant selection for the offered services catalogs.
 // +kubebuilder:object:root=true
 // +kubebuilder:printcolumn:name="Age",type="date",JSONPath=".metadata.creationTimestamp"
-// +kubebuilder:resource:shortName=tr
+// +kubebuilder:resource:categories=kubecarrier-provider,shortName=tr
 type TenantReference struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`

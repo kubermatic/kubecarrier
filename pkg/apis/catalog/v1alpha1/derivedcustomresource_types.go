@@ -175,9 +175,10 @@ func (s *DerivedCustomResourceStatus) SetCondition(condition DerivedCustomResour
 // DerivedCustomResource derives a new CRD from a existing one.
 // +kubebuilder:object:root=true
 // +kubebuilder:subresource:status
+// +kubebuilder:printcolumn:name="Base CRD",type="string",JSONPath=".spec.baseCRD.name"
 // +kubebuilder:printcolumn:name="Status",type="string",JSONPath=".status.phase"
 // +kubebuilder:printcolumn:name="Age",type="date",JSONPath=".metadata.creationTimestamp"
-// +kubebuilder:resource:shortName=dcr
+// +kubebuilder:resource:categories=kubecarrier-provider,shortName=dcr
 type DerivedCustomResource struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`

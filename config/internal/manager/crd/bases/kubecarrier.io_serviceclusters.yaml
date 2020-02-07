@@ -10,6 +10,8 @@ metadata:
 spec:
   group: kubecarrier.io
   names:
+    categories:
+    - kubecarrier-provider
     kind: ServiceCluster
     listKind: ServiceClusterList
     plural: serviceclusters

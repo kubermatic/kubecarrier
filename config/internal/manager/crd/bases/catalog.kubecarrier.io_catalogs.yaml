@@ -10,6 +10,8 @@ metadata:
 spec:
   group: catalog.kubecarrier.io
   names:
+    categories:
+    - kubecarrier-provider
     kind: Catalog
     listKind: CatalogList
     plural: catalogs
@@ -44,12 +46,11 @@ spec:
           metadata:
             type: object
           spec:
-            description: CatalogSpec defines the desired state of Catalog
+            description: CatalogSpec defines the desired contents of a Catalog.
             properties:
               catalogEntrySelector:
                 description: CatalogEntrySelector selects CatalogEntry objects that
-                  should be part of this catalog. If this is not specified, it will
-                  match all CatalogEntries.
+                  should be part of this catalog.
                 properties:
                   matchExpressions:
                     description: matchExpressions is a list of label selector requirements.
@@ -94,8 +95,7 @@ spec:
                 type: object
               tenantReferenceSelector:
                 description: TenantReferenceSelector selects TenantReference objects
-                  that the catalog should be published to. If this is not specified,
-                  it will match all TenantReferences.
+                  that the catalog should be published to.
                 properties:
                   matchExpressions:
                     description: matchExpressions is a list of label selector requirements.

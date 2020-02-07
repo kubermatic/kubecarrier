@@ -9,6 +9,8 @@
   spec:
     group: catalog.kubecarrier.io
     names:
+      categories:
+      - kubecarrier-provider
       kind: CatalogEntry
       listKind: CatalogEntryList
       plural: catalogentries
@@ -18,6 +20,9 @@
     scope: Namespaced
     versions:
     - additionalPrinterColumns:
+      - jsonPath: .status.phase
+        name: Status
+        type: string
       - jsonPath: .metadata.creationTimestamp
         name: Age
         type: date
@@ -221,6 +226,8 @@
   spec:
     group: catalog.kubecarrier.io
     names:
+      categories:
+      - kubecarrier-provider
       kind: Catalog
       listKind: CatalogList
       plural: catalogs
@@ -256,12 +263,11 @@
             metadata:
               type: object
             spec:
-              description: CatalogSpec defines the desired state of Catalog
+              description: CatalogSpec defines the desired contents of a Catalog.
               properties:
                 catalogEntrySelector:
                   description: CatalogEntrySelector selects CatalogEntry objects that
-                    should be part of this catalog. If this is not specified, it will
-                    match all CatalogEntries.
+                    should be part of this catalog.
                   properties:
                     matchExpressions:
                       description: matchExpressions is a list of label selector requirements.
@@ -306,8 +312,7 @@
                   type: object
                 tenantReferenceSelector:
                   description: TenantReferenceSelector selects TenantReference objects
-                    that the catalog should be published to. If this is not specified,
-                    it will match all TenantReferences.
+                    that the catalog should be published to.
                   properties:
                     matchExpressions:
                       description: matchExpressions is a list of label selector requirements.
@@ -451,6 +456,8 @@
   spec:
     group: catalog.kubecarrier.io
     names:
+      categories:
+      - kubecarrier-provider
       kind: DerivedCustomResource
       listKind: DerivedCustomResourceList
       plural: derivedcustomresources
@@ -460,6 +467,9 @@
     scope: Namespaced
     versions:
     - additionalPrinterColumns:
+      - jsonPath: .spec.baseCRD.name
+        name: Base CRD
+        type: string
       - jsonPath: .status.phase
         name: Status
         type: string
@@ -634,9 +644,13 @@
   spec:
     group: catalog.kubecarrier.io
     names:
+      categories:
+      - kubecarrier-tenant
       kind: Offering
       listKind: OfferingList
       plural: offerings
+      shortNames:
+      - "off"
       singular: offering
     scope: Namespaced
     versions:
@@ -761,6 +775,8 @@
   spec:
     group: catalog.kubecarrier.io
     names:
+      categories:
+      - kubecarrier-tenant
       kind: ProviderReference
       listKind: ProviderReferenceList
       plural: providerreferences
@@ -835,6 +851,8 @@
   spec:
     group: catalog.kubecarrier.io
     names:
+      categories:
+      - kubecarrier-admin
       kind: Provider
       listKind: ProviderList
       plural: providers
@@ -970,6 +988,8 @@
   spec:
     group: catalog.kubecarrier.io
     names:
+      categories:
+      - kubecarrier-tenant
       kind: ServiceClusterReference
       listKind: ServiceClusterReferenceList
       plural: serviceclusterreferences
@@ -1059,6 +1079,8 @@
   spec:
     group: catalog.kubecarrier.io
     names:
+      categories:
+      - kubecarrier-provider
       kind: TenantReference
       listKind: TenantReferenceList
       plural: tenantreferences
@@ -1116,6 +1138,8 @@
   spec:
     group: catalog.kubecarrier.io
     names:
+      categories:
+      - kubecarrier-admin
       kind: Tenant
       listKind: TenantList
       plural: tenants
@@ -1234,6 +1258,8 @@
       kind: CustomResourceDiscovery
       listKind: CustomResourceDiscoveryList
       plural: customresourcediscoveries
+      shortNames:
+      - crdis
       singular: customresourcediscovery
     scope: Namespaced
     versions:
@@ -1373,9 +1399,13 @@
   spec:
     group: kubecarrier.io
     names:
+      categories:
+      - kubecarrier-provider
       kind: CustomResourceDiscoverySet
       listKind: CustomResourceDiscoverySetList
       plural: customresourcediscoverysets
+      shortNames:
+      - crdisset
       singular: customresourcediscoveryset
     scope: Namespaced
     versions:
@@ -1542,6 +1572,8 @@
       kind: ServiceClusterAssignment
       listKind: ServiceClusterAssignmentList
       plural: serviceclusterassignments
+      shortNames:
+      - sca
       singular: serviceclusterassignment
     scope: Namespaced
     versions:
@@ -1677,6 +1709,8 @@
   spec:
     group: kubecarrier.io
     names:
+      categories:
+      - kubecarrier-provider
       kind: ServiceCluster
       listKind: ServiceClusterList
       plural: serviceclusters

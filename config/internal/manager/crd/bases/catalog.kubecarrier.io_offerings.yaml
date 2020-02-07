@@ -8,9 +8,13 @@ metadata:
 spec:
   group: catalog.kubecarrier.io
   names:
+    categories:
+      - kubecarrier-tenant
     kind: Offering
     listKind: OfferingList
     plural: offerings
+    shortNames:
+      - "off"
     singular: offering
   scope: Namespaced
   versions:

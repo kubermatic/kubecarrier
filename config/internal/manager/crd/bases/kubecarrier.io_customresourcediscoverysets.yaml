@@ -10,9 +10,13 @@ metadata:
 spec:
   group: kubecarrier.io
   names:
+    categories:
+    - kubecarrier-provider
     kind: CustomResourceDiscoverySet
     listKind: CustomResourceDiscoverySetList
     plural: customresourcediscoverysets
+    shortNames:
+    - crdisset
     singular: customresourcediscoveryset
   scope: Namespaced
   versions:
