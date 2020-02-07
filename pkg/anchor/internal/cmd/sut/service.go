@@ -30,6 +30,7 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/spf13/cobra"
 	appsv1 "k8s.io/api/apps/v1"
+	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/client-go/tools/clientcmd/api"
@@ -48,10 +49,8 @@ func newSUTSubcommand(log logr.Logger, component string) *cobra.Command {
 	)
 
 	cmd := &cobra.Command{
-		Use: component,
-		Long: strings.TrimSpace(`
-
-`),
+		Use:   component,
+		Long:  strings.TrimSpace(``),
 		Short: "",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			loader := clientcmd.NewDefaultClientConfigLoadingRules()
@@ -74,31 +73,10 @@ func newSUTSubcommand(log logr.Logger, component string) *cobra.Command {
 			defer closeCtx()
 
 			// get the deployment info from the k8s cluster
-			deployment := &appsv1.Deployment{}
-			if deploymentNN == "" {
-				depl := &appsv1.DeploymentList{}
-				if err := cl.List(ctx, depl, client.MatchingLabels{
-					"kubecarrier.io/role": component,
-				}); err != nil {
-					return fmt.Errorf("listing deployments: %w", err)
-				}
-				deployment, err = pickDeployment(ctx, depl, cmd.ErrOrStderr())
-				if err != nil {
-					return fmt.Errorf("picking deployment: %w", err)
-				}
-			} else {
-				split := strings.Split(deploymentNN, "/")
-				if err := cl.Get(ctx, types.NamespacedName{
-					Namespace: split[0],
-					Name:      split[1],
-				}, deployment); err != nil {
-					return fmt.Errorf("getting deployment: %w", err)
-				}
+			deployment, container, err := getDeploymentAndContainer(ctx, cl, deploymentNN, component, cmd)
+			if err != nil {
+				return fmt.Errorf("getting getDeploymentAndContainer: %w", err)
 			}
-			if len(deployment.Spec.Template.Spec.Containers) > 1 {
-				return fmt.Errorf("only single container allowed")
-			}
-			container := deployment.Spec.Template.Spec.Containers[0]
 
 			// workdir setup
 			if workdir == "" {
@@ -193,6 +171,35 @@ func newSUTSubcommand(log logr.Logger, component string) *cobra.Command {
 	cmd.Flags().StringVar(&workdir, "workdir", "", "sut working for logs, rootfs mountpoints, etc. default to new temp dir")
 	cmd.Flags().StringArrayVar(&extraArgs, "extra-flags", nil, "extra flags to pass to the running task")
 	return cmd
+}
+
+func getDeploymentAndContainer(ctx context.Context, cl client.Client, deploymentNN string, component string, cmd *cobra.Command) (*appsv1.Deployment, *v1.Container, error) {
+	var err error
+	deployment := &appsv1.Deployment{}
+	if deploymentNN == "" {
+		depl := &appsv1.DeploymentList{}
+		if err := cl.List(ctx, depl, client.MatchingLabels{
+			"kubecarrier.io/role": component,
+		}); err != nil {
+			return nil, nil, fmt.Errorf("listing deployments: %w", err)
+		}
+		deployment, err = pickDeployment(ctx, depl, cmd.ErrOrStderr())
+		if err != nil {
+			return nil, nil, fmt.Errorf("picking deployment: %w", err)
+		}
+	} else {
+		split := strings.Split(deploymentNN, "/")
+		if err := cl.Get(ctx, types.NamespacedName{
+			Namespace: split[0],
+			Name:      split[1],
+		}, deployment); err != nil {
+			return nil, nil, fmt.Errorf("getting deployment: %w", err)
+		}
+	}
+	if len(deployment.Spec.Template.Spec.Containers) > 1 {
+		return nil, nil, fmt.Errorf("expected only 1 container, found: %d", len(deployment.Spec.Template.Spec.Containers))
+	}
+	return deployment, &deployment.Spec.Template.Spec.Containers[0], err
 }
 
 func writeServiceKubeconfig(clientConfig clientcmd.ClientConfig, rootMount string, kubeconfigPath string) error {

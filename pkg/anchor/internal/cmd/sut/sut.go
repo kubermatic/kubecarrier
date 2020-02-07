@@ -25,10 +25,8 @@ import (
 
 func NewCommand(log logr.Logger) *cobra.Command {
 	cmd := &cobra.Command{
-		Use: "sut",
-		Long: strings.TrimSpace(`
-
-`),
+		Use:   "sut",
+		Long:  strings.TrimSpace(``),
 		Short: "sut testing utilities",
 	}
 
