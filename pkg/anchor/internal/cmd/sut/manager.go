@@ -117,12 +117,12 @@ func newSUTManagerCommand(log logr.Logger) *cobra.Command {
 				"--run",
 				"bash",
 				"-c",
-				"while true; do sleep 3600 done",
+				"\"while true; do sleep 3600; done\"",
 			)
 
 			log.Info("=== manually run telepresence! ===")
 			_, _ = fmt.Fprintln(cmd.OutOrStdout(), "telepresence", strings.Join(telepresenceArgs, " "),
-				"\npress any key to continue...",
+				"\nWait for message \"T: Setup complete. Lunching your command.\" and press any key to continue...",
 			)
 			// pause
 			b := make([]byte, 1)
@@ -153,10 +153,17 @@ func newSUTManagerCommand(log logr.Logger) *cobra.Command {
 			// generate tasks
 			task := ide.Task{
 				Name:    "SUT",
-				Program: "manager",
+				Program: "cmd/manager",
 				Args:    hostContainerArgs,
 				Env:     env,
 				LDFlags: ldFlags,
+			}
+			{
+				b, err = json.MarshalIndent(task, "", "\t")
+				if err != nil {
+					return fmt.Errorf("marshal task: %w", err)
+				}
+				log.Info("generating IDE tasks\n" + string(b))
 			}
 			ide.GenerateIntelijJTasks([]ide.Task{task}, ".")
 			ide.GenerateVSCode([]ide.Task{task}, ".")
