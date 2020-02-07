@@ -33,7 +33,11 @@ func NewCommand(log logr.Logger) *cobra.Command {
 	}
 
 	cmd.AddCommand(
-		newSUTManagerCommand(log),
+		newSUTSubcommand(log, "catapult"),
+		newSUTSubcommand(log, "elevator"),
+		newSUTSubcommand(log, "ferry"),
+		newSUTSubcommand(log, "manager"),
+		newSUTSubcommand(log, "operator"),
 	)
 	return cmd
 }

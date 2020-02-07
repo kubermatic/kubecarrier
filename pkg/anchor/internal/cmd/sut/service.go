@@ -38,7 +38,7 @@ import (
 	"github.com/kubermatic/kubecarrier/pkg/internal/ide"
 )
 
-func newSUTManagerCommand(log logr.Logger) *cobra.Command {
+func newSUTSubcommand(log logr.Logger, component string) *cobra.Command {
 	var (
 		extraArgs    []string
 		ldFlags      string
@@ -48,7 +48,7 @@ func newSUTManagerCommand(log logr.Logger) *cobra.Command {
 	)
 
 	cmd := &cobra.Command{
-		Use: "manager",
+		Use: component,
 		Long: strings.TrimSpace(`
 
 `),
@@ -78,7 +78,7 @@ func newSUTManagerCommand(log logr.Logger) *cobra.Command {
 			if deploymentNN == "" {
 				depl := &appsv1.DeploymentList{}
 				if err := cl.List(ctx, depl, client.MatchingLabels{
-					"kubecarrier.io/role": "manager",
+					"kubecarrier.io/role": component,
 				}); err != nil {
 					return fmt.Errorf("listing deployments: %w", err)
 				}
@@ -170,7 +170,7 @@ func newSUTManagerCommand(log logr.Logger) *cobra.Command {
 			// generate tasks
 			task := ide.Task{
 				Name:    "SUT",
-				Program: "cmd/manager",
+				Program: "cmd/" + component,
 				Args:    hostContainerArgs,
 				Env:     env,
 				LDFlags: ldFlags,
