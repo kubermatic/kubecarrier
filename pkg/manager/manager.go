@@ -221,6 +221,10 @@ func run(flags *flags, log logr.Logger) error {
 		&webhook.Admission{Handler: &webhooks.ServiceClusterWebhookHandler{
 			Log: log.WithName("validating webhooks").WithName("ServiceCluster"),
 		}})
+	wbh.Register(utilwebhook.GenerateValidateWebhookPath(&corev1alpha1.ServiceClusterAssignment{}, mgr.GetScheme()),
+		&webhook.Admission{Handler: &webhooks.ServiceClusterAssignmentWebhookHandler{
+			Log: log.WithName("validating webhooks").WithName("ServiceClusterAssignment"),
+		}})
 
 	// mutating webhooks
 	wbh.Register(utilwebhook.GenerateMutateWebhookPath(&catalogv1alpha1.CatalogEntry{}, mgr.GetScheme()),
