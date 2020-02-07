@@ -46,6 +46,8 @@ func newSUTSubcommand(log logr.Logger, component string) *cobra.Command {
 		deploymentNN string
 		workdir      string
 		kubeconfig   string
+		taskName     string
+		projectRoot  string
 	)
 
 	cmd := &cobra.Command{
@@ -147,7 +149,7 @@ func newSUTSubcommand(log logr.Logger, component string) *cobra.Command {
 
 			// generate tasks
 			task := ide.Task{
-				Name:    "SUT",
+				Name:    taskName,
 				Program: "cmd/" + component,
 				Args:    hostContainerArgs,
 				Env:     env,
@@ -160,11 +162,13 @@ func newSUTSubcommand(log logr.Logger, component string) *cobra.Command {
 				}
 				log.Info("generating IDE tasks\n" + string(b))
 			}
-			ide.GenerateIntelijJTasks([]ide.Task{task}, ".")
-			ide.GenerateVSCode([]ide.Task{task}, ".")
+			ide.GenerateIntelijJTasks([]ide.Task{task}, projectRoot)
+			ide.GenerateVSCode([]ide.Task{task}, projectRoot)
 			return nil
 		},
 	}
+	cmd.Flags().StringVar(&taskName, "task-name", "SUT", "IDE task name this tool should generate")
+	cmd.Flags().StringVar(&projectRoot, "project-root", ".", "project root where IDE tasks should be generated")
 	cmd.Flags().StringVar(&ldFlags, "ld-flags", "", "ld-flags to pass to go compiler upon running this")
 	cmd.Flags().StringVar(&deploymentNN, "deployment-nn", "", "deployment-nn signal the deployement namespace name which should be selected. If none (default) a fzf based picker shall be shown")
 	cmd.Flags().StringVar(&kubeconfig, "kubeconfig", "", "kubeconfig location")
