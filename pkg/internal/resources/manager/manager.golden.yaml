@@ -1227,14 +1227,14 @@
       cert-manager.io/inject-ca-from: test3000/kubecarrier-manager-serving-cert
       controller-gen.kubebuilder.io/version: v0.2.4
     creationTimestamp: null
-    name: customresourcedefinitiondiscoveries.kubecarrier.io
+    name: customresourcediscoveries.kubecarrier.io
   spec:
     group: kubecarrier.io
     names:
-      kind: CustomResourceDefinitionDiscovery
-      listKind: CustomResourceDefinitionDiscoveryList
-      plural: customresourcedefinitiondiscoveries
-      singular: customresourcedefinitiondiscovery
+      kind: CustomResourceDiscovery
+      listKind: CustomResourceDiscoveryList
+      plural: customresourcediscoveries
+      singular: customresourcediscovery
     scope: Namespaced
     versions:
     - additionalPrinterColumns:
@@ -1250,9 +1250,9 @@
       name: v1alpha1
       schema:
         openAPIV3Schema:
-          description: CustomResourceDefinitionDiscovery is used inside KubeCarrier
-            to fetch a CustomResourceDefinition from another cluster and to offload
-            cross cluster access to another component.
+          description: CustomResourceDiscovery is used inside KubeCarrier to fetch
+            a CustomResourceDefinition from another cluster and to offload cross cluster
+            access to another component.
           properties:
             apiVersion:
               description: 'APIVersion defines the versioned schema of this representation
@@ -1268,8 +1268,8 @@
             metadata:
               type: object
             spec:
-              description: CustomResourceDefinitionDiscoverySpec defines the desired
-                state of crdreference
+              description: CustomResourceDiscoverySpec defines the desired state of
+                crdreference
               properties:
                 crd:
                   description: CRD references a CustomResourceDefinition within the
@@ -1297,15 +1297,15 @@
               - serviceCluster
               type: object
             status:
-              description: CustomResourceDefinitionDiscoveryStatus defines the observed
-                state of crdreference
+              description: CustomResourceDiscoveryStatus defines the observed state
+                of crdreference
               properties:
                 conditions:
-                  description: Conditions is a list of all conditions this CustomResourceDefinitionDiscovery
+                  description: Conditions is a list of all conditions this CustomResourceDiscovery
                     is in.
                   items:
-                    description: CustomResourceDefinitionDiscoveryCondition contains
-                      details for the current condition of this CustomResourceDefinitionDiscovery.
+                    description: CustomResourceDiscoveryCondition contains details
+                      for the current condition of this CustomResourceDiscovery.
                     properties:
                       lastTransitionTime:
                         description: LastTransitionTime is the last time the condition
@@ -1369,14 +1369,14 @@
     annotations:
       controller-gen.kubebuilder.io/version: v0.2.4
     creationTimestamp: null
-    name: customresourcedefinitiondiscoverysets.kubecarrier.io
+    name: customresourcediscoverysets.kubecarrier.io
   spec:
     group: kubecarrier.io
     names:
-      kind: CustomResourceDefinitionDiscoverySet
-      listKind: CustomResourceDefinitionDiscoverySetList
-      plural: customresourcedefinitiondiscoverysets
-      singular: customresourcedefinitiondiscoveryset
+      kind: CustomResourceDiscoverySet
+      listKind: CustomResourceDiscoverySetList
+      plural: customresourcediscoverysets
+      singular: customresourcediscoveryset
     scope: Namespaced
     versions:
     - additionalPrinterColumns:
@@ -1389,7 +1389,7 @@
       name: v1alpha1
       schema:
         openAPIV3Schema:
-          description: CustomResourceDefinitionDiscoverySet manages multiple CustomResourceDefinitionDiscovery
+          description: CustomResourceDiscoverySet manages multiple CustomResourceDiscovery
             objects for a set of service clusters.
           properties:
             apiVersion:
@@ -1471,11 +1471,11 @@
             status:
               properties:
                 conditions:
-                  description: Conditions is a list of all conditions this CustomResourceDefinitionDiscovery
+                  description: Conditions is a list of all conditions this CustomResourceDiscovery
                     is in.
                   items:
-                    description: CustomResourceDefinitionDiscoverySetCondition contains
-                      details for the current condition of this CustomResourceDefinitionDiscoverySet.
+                    description: CustomResourceDiscoverySetCondition contains details
+                      for the current condition of this CustomResourceDiscoverySet.
                     properties:
                       lastTransitionTime:
                         description: LastTransitionTime is the last time the condition
@@ -1990,7 +1990,7 @@
   - apiGroups:
     - kubecarrier.io
     resources:
-    - customresourcedefinitiondiscoveries
+    - customresourcediscoveries
     verbs:
     - create
     - delete
@@ -2001,7 +2001,7 @@
   - apiGroups:
     - kubecarrier.io
     resources:
-    - customresourcedefinitiondiscoveries/status
+    - customresourcediscoveries/status
     verbs:
     - get
     - patch
@@ -2009,7 +2009,7 @@
   - apiGroups:
     - kubecarrier.io
     resources:
-    - customresourcedefinitiondiscoverysets
+    - customresourcediscoverysets
     verbs:
     - get
     - list
@@ -2018,7 +2018,7 @@
   - apiGroups:
     - kubecarrier.io
     resources:
-    - customresourcedefinitiondiscoverysets/status
+    - customresourcediscoverysets/status
     verbs:
     - get
     - patch
@@ -2173,9 +2173,9 @@
       service:
         name: kubecarrier-manager-webhook-service
         namespace: test3000
-        path: /validate-kubecarrier-io-v1alpha1-customresourcedefinitiondiscovery
+        path: /validate-kubecarrier-io-v1alpha1-customresourcediscovery
     failurePolicy: Fail
-    name: vcustomresourcedefinitiondiscovery.kubecarrier.io
+    name: vcustomresourcediscovery.kubecarrier.io
     rules:
     - apiGroups:
       - kubecarrier.io
@@ -2185,7 +2185,7 @@
       - CREATE
       - UPDATE
       resources:
-      - customresourcedefinitiondiscoveries
+      - customresourcediscoveries
   - clientConfig:
       caBundle: Cg==
       service:

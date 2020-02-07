@@ -117,21 +117,21 @@ func NewServiceClusterSuite(
 		serviceCluster.SetNamespace(provider.Status.NamespaceName)
 		require.NoError(t, testutil.WaitUntilReady(masterClient, serviceCluster))
 
-		// Test CustomResourceDefinitionDiscoverySet
-		crdds := &corev1alpha1.CustomResourceDefinitionDiscoverySet{
+		// Test CustomResourceDiscoverySet
+		crdiscoveries := &corev1alpha1.CustomResourceDiscoverySet{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "redis",
 				Namespace: provider.Status.NamespaceName,
 			},
-			Spec: corev1alpha1.CustomResourceDefinitionDiscoverySetSpec{
+			Spec: corev1alpha1.CustomResourceDiscoverySetSpec{
 				KindOverride: "RedisInternal",
 				CRD: corev1alpha1.ObjectReference{
 					Name: crd.Name,
 				},
 			},
 		}
-		require.NoError(t, masterClient.Create(ctx, crdds))
-		require.NoError(t, testutil.WaitUntilReady(masterClient, crdds))
+		require.NoError(t, masterClient.Create(ctx, crdiscoveries))
+		require.NoError(t, testutil.WaitUntilReady(masterClient, crdiscoveries))
 
 		// We have created/registered new CRD's, so we need a new client
 		masterClient, err = f.MasterClient()
