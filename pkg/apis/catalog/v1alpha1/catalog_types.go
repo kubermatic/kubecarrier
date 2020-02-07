@@ -20,15 +20,12 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// CatalogSpec defines the desired state of Catalog
+// CatalogSpec defines the desired contents of a Catalog.
 type CatalogSpec struct {
-
 	// CatalogEntrySelector selects CatalogEntry objects that should be part of this catalog.
-	// If this is not specified, it will match all CatalogEntries.
 	CatalogEntrySelector *metav1.LabelSelector `json:"catalogEntrySelector,omitempty"`
 
 	// TenantReferenceSelector selects TenantReference objects that the catalog should be published to.
-	// If this is not specified, it will match all TenantReferences.
 	TenantReferenceSelector *metav1.LabelSelector `json:"tenantReferenceSelector,omitempty"`
 }
 
@@ -162,7 +159,7 @@ func (s *CatalogStatus) SetCondition(condition CatalogCondition) {
 // +kubebuilder:subresource:status
 // +kubebuilder:printcolumn:name="Status",type="string",JSONPath=".status.phase"
 // +kubebuilder:printcolumn:name="Age",type="date",JSONPath=".metadata.creationTimestamp"
-// +kubebuilder:resource:shortName=cl
+// +kubebuilder:resource:categories=kubecarrier-provider,shortName=cl
 type Catalog struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`

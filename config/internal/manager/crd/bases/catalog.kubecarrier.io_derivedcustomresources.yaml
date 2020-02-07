@@ -10,6 +10,8 @@ metadata:
 spec:
   group: catalog.kubecarrier.io
   names:
+    categories:
+    - kubecarrier-provider
     kind: DerivedCustomResource
     listKind: DerivedCustomResourceList
     plural: derivedcustomresources
@@ -19,6 +21,9 @@ spec:
   scope: Namespaced
   versions:
   - additionalPrinterColumns:
+    - jsonPath: .spec.baseCRD.name
+      name: Base CRD
+      type: string
     - jsonPath: .status.phase
       name: Status
       type: string

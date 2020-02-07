@@ -11,6 +11,8 @@ spec:
     kind: CustomResourceDiscovery
     listKind: CustomResourceDiscoveryList
     plural: customresourcediscoveries
+    shortNames:
+      - crdis
     singular: customresourcediscovery
   scope: Namespaced
   versions:
