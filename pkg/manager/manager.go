@@ -137,21 +137,21 @@ func run(flags *flags, log logr.Logger) error {
 		return fmt.Errorf("creating Provider controller: %w", err)
 	}
 
-	if err = (&controllers.CustomResourceDefinitionDiscoveryReconciler{
+	if err = (&controllers.CustomResourceDiscoveryReconciler{
 		Client:                     mgr.GetClient(),
-		Log:                        log.WithName("controllers").WithName("CustomResourceDefinitionDiscovery"),
+		Log:                        log.WithName("controllers").WithName("CustomResourceDiscovery"),
 		Scheme:                     mgr.GetScheme(),
 		KubeCarrierSystemNamespace: flags.kubeCarrierSystemNamespace,
 	}).SetupWithManager(mgr); err != nil {
-		return fmt.Errorf("creating CustomResourceDefinitionDiscovery controller: %w", err)
+		return fmt.Errorf("creating CustomResourceDiscovery controller: %w", err)
 	}
 
-	if err = (&controllers.CustomResourceDefinitionDiscoverySetReconciler{
+	if err = (&controllers.CustomResourceDiscoverySetReconciler{
 		Client: mgr.GetClient(),
-		Log:    log.WithName("controllers").WithName("CustomResourceDefinitionDiscoverySet"),
+		Log:    log.WithName("controllers").WithName("CustomResourceDiscoverySet"),
 		Scheme: mgr.GetScheme(),
 	}).SetupWithManager(mgr); err != nil {
-		return fmt.Errorf("creating CustomResourceDefinitionDiscoverySet controller: %w", err)
+		return fmt.Errorf("creating CustomResourceDiscoverySet controller: %w", err)
 	}
 
 	if err = (&controllers.CatalogEntryReconciler{
@@ -213,9 +213,9 @@ func run(flags *flags, log logr.Logger) error {
 		&webhook.Admission{Handler: &webhooks.TenantReferenceWebhookHandler{
 			Log: log.WithName("validating webhooks").WithName("TenantReference"),
 		}})
-	wbh.Register(utilwebhook.GenerateValidateWebhookPath(&corev1alpha1.CustomResourceDefinitionDiscovery{}, mgr.GetScheme()),
-		&webhook.Admission{Handler: &webhooks.CustomResourceDefinitionDiscoveryWebhookHandler{
-			Log: log.WithName("validating webhooks").WithName("CustomResourceDefinitionDiscovery"),
+	wbh.Register(utilwebhook.GenerateValidateWebhookPath(&corev1alpha1.CustomResourceDiscovery{}, mgr.GetScheme()),
+		&webhook.Admission{Handler: &webhooks.CustomResourceDiscoveryWebhookHandler{
+			Log: log.WithName("validating webhooks").WithName("CustomResourceDiscovery"),
 		}})
 	wbh.Register(utilwebhook.GenerateValidateWebhookPath(&corev1alpha1.ServiceCluster{}, mgr.GetScheme()),
 		&webhook.Admission{Handler: &webhooks.ServiceClusterWebhookHandler{

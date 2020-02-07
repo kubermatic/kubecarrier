@@ -6,14 +6,14 @@ metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.2.4
   creationTimestamp: null
-  name: customresourcedefinitiondiscoverysets.kubecarrier.io
+  name: customresourcediscoverysets.kubecarrier.io
 spec:
   group: kubecarrier.io
   names:
-    kind: CustomResourceDefinitionDiscoverySet
-    listKind: CustomResourceDefinitionDiscoverySetList
-    plural: customresourcedefinitiondiscoverysets
-    singular: customresourcedefinitiondiscoveryset
+    kind: CustomResourceDiscoverySet
+    listKind: CustomResourceDiscoverySetList
+    plural: customresourcediscoverysets
+    singular: customresourcediscoveryset
   scope: Namespaced
   versions:
   - additionalPrinterColumns:
@@ -26,7 +26,7 @@ spec:
     name: v1alpha1
     schema:
       openAPIV3Schema:
-        description: CustomResourceDefinitionDiscoverySet manages multiple CustomResourceDefinitionDiscovery
+        description: CustomResourceDiscoverySet manages multiple CustomResourceDiscovery
           objects for a set of service clusters.
         properties:
           apiVersion:
@@ -107,11 +107,11 @@ spec:
           status:
             properties:
               conditions:
-                description: Conditions is a list of all conditions this CustomResourceDefinitionDiscovery
+                description: Conditions is a list of all conditions this CustomResourceDiscovery
                   is in.
                 items:
-                  description: CustomResourceDefinitionDiscoverySetCondition contains
-                    details for the current condition of this CustomResourceDefinitionDiscoverySet.
+                  description: CustomResourceDiscoverySetCondition contains details
+                    for the current condition of this CustomResourceDiscoverySet.
                   properties:
                     lastTransitionTime:
                       description: LastTransitionTime is the last time the condition

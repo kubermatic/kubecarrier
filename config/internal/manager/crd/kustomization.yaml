@@ -11,8 +11,8 @@ resources:
 - bases/catalog.kubecarrier.io_serviceclusterreferences.yaml
 - bases/catalog.kubecarrier.io_tenantreferences.yaml
 - bases/catalog.kubecarrier.io_tenants.yaml
-- bases/kubecarrier.io_customresourcedefinitiondiscoveries.yaml
-- bases/kubecarrier.io_customresourcedefinitiondiscoverysets.yaml
+- bases/kubecarrier.io_customresourcediscoveries.yaml
+- bases/kubecarrier.io_customresourcediscoverysets.yaml
 - bases/kubecarrier.io_serviceclusterassignments.yaml
 - bases/kubecarrier.io_serviceclusters.yaml
 # +kubebuilder:scaffold:crdkustomizeresource
@@ -33,7 +33,7 @@ patchesStrategicMerge:
 - patches/cainjection_in_serviceclusterreferences.yaml
 - patches/cainjection_in_tenants.yaml
 - patches/cainjection_in_tenantreferences.yaml
-- patches/cainjection_in_customresourcedefinitiondiscoveries.yaml
+- patches/cainjection_in_customresourcediscoveries.yaml
 - patches/cainjection_in_serviceclusters.yaml
 # +kubebuilder:scaffold:crdkustomizecainjectionpatch
 

@@ -34,14 +34,14 @@ import (
 	"github.com/kubermatic/kubecarrier/pkg/internal/util"
 )
 
-const crdDiscoveryControllerFinalizer string = "crdd.kubecarrier.io/ferry"
+const crDiscoveryControllerFinalizer string = "crdiscovery.kubecarrier.io/ferry"
 
 var (
 	CRDNotFound = fmt.Errorf("CRDNotFound")
 )
 
-// CustomResourceDefinitionDiscoveryReconciler reconciles a CustomResourceDefinitionDiscovery object
-type CustomResourceDefinitionDiscoveryReconciler struct {
+// CustomResourceDiscoveryReconciler reconciles a CustomResourceDiscovery object
+type CustomResourceDiscoveryReconciler struct {
 	Log logr.Logger
 
 	MasterClient  client.Client
@@ -52,58 +52,58 @@ type CustomResourceDefinitionDiscoveryReconciler struct {
 	ServiceClusterName string
 }
 
-// +kubebuilder:rbac:groups=kubecarrier.io,resources=customresourcedefinitiondiscoveries,verbs=get;list;watch;patch;update
-// +kubebuilder:rbac:groups=kubecarrier.io,resources=customresourcedefinitiondiscoveries/status,verbs=get;update;patch
+// +kubebuilder:rbac:groups=kubecarrier.io,resources=customresourcediscoveries,verbs=get;list;watch;patch;update
+// +kubebuilder:rbac:groups=kubecarrier.io,resources=customresourcediscoveries/status,verbs=get;update;patch
 // Service cluster permission for this controller
 // https://github.com/kubermatic/kubecarrier/issues/143
 // +servicecluster:kubebuilder:rbac:groups=apiextensions.k8s.io,resources=customresourcedefinitions,verbs=get;list;watch;update
 
-func (r *CustomResourceDefinitionDiscoveryReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
+func (r *CustomResourceDiscoveryReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	ctx := context.Background()
-	log := r.Log.WithValues("crddiscovery", req.NamespacedName)
+	log := r.Log.WithValues("crdiscoveryy", req.NamespacedName)
 
-	crdDiscovery := &corev1alpha1.CustomResourceDefinitionDiscovery{}
-	if err := r.MasterClient.Get(ctx, req.NamespacedName, crdDiscovery); err != nil {
+	crDiscovery := &corev1alpha1.CustomResourceDiscovery{}
+	if err := r.MasterClient.Get(ctx, req.NamespacedName, crDiscovery); err != nil {
 		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
-	crdDiscovery.Status.ObservedGeneration = crdDiscovery.Generation
+	crDiscovery.Status.ObservedGeneration = crDiscovery.Generation
 
-	if !crdDiscovery.DeletionTimestamp.IsZero() {
-		if err := r.handleDeletion(ctx, log, crdDiscovery); err != nil {
+	if !crDiscovery.DeletionTimestamp.IsZero() {
+		if err := r.handleDeletion(ctx, log, crDiscovery); err != nil {
 			return ctrl.Result{}, fmt.Errorf("handling deletion: %w", err)
 		}
 		return ctrl.Result{}, nil
 	}
 
-	if util.AddFinalizer(crdDiscovery, crdDiscoveryControllerFinalizer) {
-		if err := r.MasterClient.Update(ctx, crdDiscovery); err != nil {
-			return ctrl.Result{}, fmt.Errorf("updating CustomResourceDefinitionDiscovery finalizers: %w", err)
+	if util.AddFinalizer(crDiscovery, crDiscoveryControllerFinalizer) {
+		if err := r.MasterClient.Update(ctx, crDiscovery); err != nil {
+			return ctrl.Result{}, fmt.Errorf("updating CustomResourceDiscovery finalizers: %w", err)
 		}
 	}
 
 	// Lookup CRD
 	crd := &apiextensionsv1.CustomResourceDefinition{}
 	err := r.ServiceClient.Get(ctx, types.NamespacedName{
-		Name: crdDiscovery.Spec.CRD.Name,
+		Name: crDiscovery.Spec.CRD.Name,
 	}, crd)
 
 	switch {
 	case errors.IsNotFound(err):
-		crdDiscovery.Status.CRD = nil
-		crdDiscovery.Status.SetCondition(corev1alpha1.CustomResourceDefinitionDiscoveryCondition{
-			Type:    corev1alpha1.CustomResourceDefinitionDiscoveryDiscovered,
+		crDiscovery.Status.CRD = nil
+		crDiscovery.Status.SetCondition(corev1alpha1.CustomResourceDiscoveryCondition{
+			Type:    corev1alpha1.CustomResourceDiscoveryDiscovered,
 			Status:  corev1alpha1.ConditionFalse,
 			Message: err.Error(),
 			Reason:  CRDNotFound.Error(),
 		})
-		if err = r.MasterClient.Status().Update(ctx, crdDiscovery); err != nil {
-			return ctrl.Result{}, fmt.Errorf("updating CustomResourceDefinitionDiscovery Status - notFound: %w", err)
+		if err = r.MasterClient.Status().Update(ctx, crDiscovery); err != nil {
+			return ctrl.Result{}, fmt.Errorf("updating CustomResourceDiscovery Status - notFound: %w", err)
 		}
 		// requeue until the CRD is found
 		return ctrl.Result{Requeue: true}, nil
 	case err == nil:
 		// Add owner ref on CRD in the service cluster
-		changed, err := util.InsertOwnerReference(crdDiscovery, crd, r.MasterScheme)
+		changed, err := util.InsertOwnerReference(crDiscovery, crd, r.MasterScheme)
 		if err != nil {
 			return ctrl.Result{}, fmt.Errorf("inserting OwnerReference: %w", err)
 		}
@@ -113,15 +113,15 @@ func (r *CustomResourceDefinitionDiscoveryReconciler) Reconcile(req ctrl.Request
 			}
 		}
 
-		crdDiscovery.Status.CRD = crd
-		crdDiscovery.Status.SetCondition(corev1alpha1.CustomResourceDefinitionDiscoveryCondition{
-			Type:    corev1alpha1.CustomResourceDefinitionDiscoveryDiscovered,
+		crDiscovery.Status.CRD = crd
+		crDiscovery.Status.SetCondition(corev1alpha1.CustomResourceDiscoveryCondition{
+			Type:    corev1alpha1.CustomResourceDiscoveryDiscovered,
 			Status:  corev1alpha1.ConditionTrue,
 			Message: "CRD was found on the cluster.",
 			Reason:  "CRDFound",
 		})
-		if err = r.MasterClient.Status().Update(ctx, crdDiscovery); err != nil {
-			return ctrl.Result{}, fmt.Errorf("updating CustomResourceDefinitionDiscovery Status -- ready: %w", err)
+		if err = r.MasterClient.Status().Update(ctx, crDiscovery); err != nil {
+			return ctrl.Result{}, fmt.Errorf("updating CustomResourceDiscovery Status -- ready: %w", err)
 		}
 		return ctrl.Result{}, nil
 	default:
@@ -129,22 +129,22 @@ func (r *CustomResourceDefinitionDiscoveryReconciler) Reconcile(req ctrl.Request
 	}
 }
 
-func (r *CustomResourceDefinitionDiscoveryReconciler) handleDeletion(ctx context.Context, log logr.Logger, crdDiscovery *corev1alpha1.CustomResourceDefinitionDiscovery) error {
+func (r *CustomResourceDiscoveryReconciler) handleDeletion(ctx context.Context, log logr.Logger, crDiscovery *corev1alpha1.CustomResourceDiscovery) error {
 	crd := &apiextensionsv1.CustomResourceDefinition{}
 	err := r.ServiceClient.Get(ctx, types.NamespacedName{
-		Name: crdDiscovery.Spec.CRD.Name,
+		Name: crDiscovery.Spec.CRD.Name,
 	}, crd)
 	switch {
 	case errors.IsNotFound(err):
-		if util.RemoveFinalizer(crdDiscovery, crdDiscoveryControllerFinalizer) {
-			if err := r.MasterClient.Update(ctx, crdDiscovery); err != nil {
-				return fmt.Errorf("updating CustomResourceDefinitionDiscovery finalizers: %w", err)
+		if util.RemoveFinalizer(crDiscovery, crDiscoveryControllerFinalizer) {
+			if err := r.MasterClient.Update(ctx, crDiscovery); err != nil {
+				return fmt.Errorf("updating CustomResourceDiscovery finalizers: %w", err)
 			}
 		}
 		return nil
 	case err == nil:
 		// CRD still exists, ensure we're not owning it anymore
-		changed, err := util.DeleteOwnerReference(crdDiscovery, crd, r.MasterScheme)
+		changed, err := util.DeleteOwnerReference(crDiscovery, crd, r.MasterScheme)
 		if err != nil {
 			return fmt.Errorf("deleting OwnerReference: %w", err)
 		}
@@ -153,9 +153,9 @@ func (r *CustomResourceDefinitionDiscoveryReconciler) handleDeletion(ctx context
 				return fmt.Errorf("updating CRD: %w", err)
 			}
 		}
-		if util.RemoveFinalizer(crdDiscovery, crdDiscoveryControllerFinalizer) {
-			if err := r.MasterClient.Update(ctx, crdDiscovery); err != nil {
-				return fmt.Errorf("updating CustomResourceDefinitionDiscovery finalizers: %w", err)
+		if util.RemoveFinalizer(crDiscovery, crDiscoveryControllerFinalizer) {
+			if err := r.MasterClient.Update(ctx, crDiscovery); err != nil {
+				return fmt.Errorf("updating CustomResourceDiscovery finalizers: %w", err)
 			}
 		}
 		return nil
@@ -164,18 +164,18 @@ func (r *CustomResourceDefinitionDiscoveryReconciler) handleDeletion(ctx context
 	}
 }
 
-func (r *CustomResourceDefinitionDiscoveryReconciler) SetupWithManager(masterMgr ctrl.Manager) error {
+func (r *CustomResourceDiscoveryReconciler) SetupWithManager(masterMgr ctrl.Manager) error {
 	crdSource := &source.Kind{Type: &apiextensionsv1.CustomResourceDefinition{}}
 	if err := crdSource.InjectCache(r.ServiceCache); err != nil {
 		return fmt.Errorf("injecting cache: %w", err)
 	}
 
 	return ctrl.NewControllerManagedBy(masterMgr).
-		For(&corev1alpha1.CustomResourceDefinitionDiscovery{}).
-		Watches(source.Func(crdSource.Start), util.EnqueueRequestForOwner(&corev1alpha1.CustomResourceDefinitionDiscovery{}, r.MasterScheme)).
+		For(&corev1alpha1.CustomResourceDiscovery{}).
+		Watches(source.Func(crdSource.Start), util.EnqueueRequestForOwner(&corev1alpha1.CustomResourceDiscovery{}, r.MasterScheme)).
 		WithEventFilter(util.PredicateFn(func(obj runtime.Object) bool {
-			if crdDiscovery, ok := obj.(*corev1alpha1.CustomResourceDefinitionDiscovery); ok {
-				if crdDiscovery.Spec.ServiceCluster.Name == r.ServiceClusterName {
+			if crDiscovery, ok := obj.(*corev1alpha1.CustomResourceDiscovery); ok {
+				if crDiscovery.Spec.ServiceCluster.Name == r.ServiceClusterName {
 					return true
 				}
 			}
