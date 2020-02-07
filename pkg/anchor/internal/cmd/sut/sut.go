@@ -17,7 +17,6 @@ limitations under the License.
 package sut
 
 import (
-	"flag"
 	"strings"
 
 	"github.com/go-logr/logr"
@@ -33,7 +32,6 @@ func NewCommand(log logr.Logger) *cobra.Command {
 		Short: "sut testing utilities",
 	}
 
-	cmd.Flags().AddGoFlagSet(flag.CommandLine)
 	cmd.AddCommand(
 		newSUTManagerCommand(log),
 	)

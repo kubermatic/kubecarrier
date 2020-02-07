@@ -31,8 +31,9 @@ import (
 	"github.com/spf13/cobra"
 	appsv1 "k8s.io/api/apps/v1"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/client-go/tools/clientcmd"
+	"k8s.io/client-go/tools/clientcmd/api"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/client/config"
 
 	"github.com/kubermatic/kubecarrier/pkg/internal/ide"
 )
@@ -43,6 +44,7 @@ func newSUTManagerCommand(log logr.Logger) *cobra.Command {
 		ldFlags      string
 		deploymentNN string
 		workdir      string
+		kubeconfig   string
 	)
 
 	cmd := &cobra.Command{
@@ -52,7 +54,15 @@ func newSUTManagerCommand(log logr.Logger) *cobra.Command {
 `),
 		Short: "",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			cfg, err := config.GetConfig()
+			loader := clientcmd.NewDefaultClientConfigLoadingRules()
+			loader.ExplicitPath = kubeconfig
+			fname := loader.GetDefaultFilename()
+			log.Info("loading kubeconfig", "filename", fname)
+			clientConfig := clientcmd.NewNonInteractiveDeferredLoadingClientConfig(
+				loader,
+				&clientcmd.ConfigOverrides{},
+			)
+			cfg, err := clientConfig.ClientConfig()
 			if err != nil {
 				return fmt.Errorf("config: %w", err)
 			}
@@ -62,8 +72,9 @@ func newSUTManagerCommand(log logr.Logger) *cobra.Command {
 			}
 			ctx, closeCtx := context.WithCancel(context.Background())
 			defer closeCtx()
-			deployment := &appsv1.Deployment{}
 
+			// get the deployment info from the k8s cluster
+			deployment := &appsv1.Deployment{}
 			if deploymentNN == "" {
 				depl := &appsv1.DeploymentList{}
 				if err := cl.List(ctx, depl, client.MatchingLabels{
@@ -101,6 +112,7 @@ func newSUTManagerCommand(log logr.Logger) *cobra.Command {
 			rootMount := path.Join(workdir, "rootfs")
 			envJson := path.Join(workdir, "env.json")
 			logFile := path.Join(workdir, "telepresence.log")
+			appKubeconfig := path.Join(workdir, "kubeconfig")
 
 			// configure telepresence args
 			telepresenceArgs := []string{
@@ -128,6 +140,10 @@ func newSUTManagerCommand(log logr.Logger) *cobra.Command {
 			b := make([]byte, 1)
 			_, _ = cmd.InOrStdin().Read(b)
 
+			if err := writeServiceKubeconfig(clientConfig, rootMount, appKubeconfig); err != nil {
+				return fmt.Errorf("write kubeconfig: %w", err)
+			}
+
 			volumeReplacementMap := make(map[string]string)
 			for _, mount := range container.VolumeMounts {
 				volumeReplacementMap[mount.MountPath] = path.Join(rootMount, mount.MountPath)
@@ -149,6 +165,7 @@ func newSUTManagerCommand(log logr.Logger) *cobra.Command {
 				hostContainerArgs = append(hostContainerArgs, arg)
 			}
 			hostContainerArgs = append(hostContainerArgs, extraArgs...)
+			env["KUBECONFIG"] = appKubeconfig
 
 			// generate tasks
 			task := ide.Task{
@@ -172,9 +189,25 @@ func newSUTManagerCommand(log logr.Logger) *cobra.Command {
 	}
 	cmd.Flags().StringVar(&ldFlags, "ld-flags", "", "ld-flags to pass to go compiler upon running this")
 	cmd.Flags().StringVar(&deploymentNN, "deployment-nn", "", "deployment-nn signal the deployement namespace name which should be selected. If none (default) a fzf based picker shall be shown")
+	cmd.Flags().StringVar(&kubeconfig, "kubeconfig", "", "kubeconfig location")
 	cmd.Flags().StringVar(&workdir, "workdir", "", "sut working for logs, rootfs mountpoints, etc. default to new temp dir")
 	cmd.Flags().StringArrayVar(&extraArgs, "extra-flags", nil, "extra flags to pass to the running task")
 	return cmd
+}
+
+func writeServiceKubeconfig(clientConfig clientcmd.ClientConfig, rootMount string, kubeconfigPath string) error {
+	rawCfg, err := clientConfig.RawConfig()
+	if err != nil {
+		return fmt.Errorf("rawCfg: %w", err)
+	}
+	kubeconfigContext := rawCfg.Contexts[rawCfg.CurrentContext]
+	rawCfg.AuthInfos[kubeconfigContext.AuthInfo] = &api.AuthInfo{
+		TokenFile: path.Join(rootMount, "var", "run", "secrets", "kubernetes.io", "serviceaccount", "token"),
+	}
+	if err := clientcmd.WriteToFile(rawCfg, kubeconfigPath); err != nil {
+		return fmt.Errorf("marshall raw cfg: %w", err)
+	}
+	return nil
 }
 
 func pickDeployment(ctx context.Context, depl *appsv1.DeploymentList, stdErr io.Writer) (*appsv1.Deployment, error) {
