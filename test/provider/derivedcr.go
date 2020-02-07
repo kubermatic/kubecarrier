@@ -34,7 +34,7 @@ import (
 	"github.com/kubermatic/kubecarrier/test/framework"
 )
 
-func NewDerivedCRDSuite(
+func NewDerivedCRSuite(
 	f *framework.Framework,
 	provider *catalogv1alpha1.Provider,
 ) func(t *testing.T) {
@@ -106,12 +106,12 @@ func NewDerivedCRDSuite(
 
 		// Test
 		//
-		dcrd := &catalogv1alpha1.DerivedCustomResourceDefinition{
+		dcr := &catalogv1alpha1.DerivedCustomResource{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "test",
 				Namespace: provider.Status.NamespaceName,
 			},
-			Spec: catalogv1alpha1.DerivedCustomResourceDefinitionSpec{
+			Spec: catalogv1alpha1.DerivedCustomResourceSpec{
 				BaseCRD: catalogv1alpha1.ObjectReference{
 					Name: baseCRD.Name,
 				},
@@ -131,24 +131,24 @@ func NewDerivedCRDSuite(
 			},
 		}
 		require.NoError(
-			t, masterClient.Create(ctx, dcrd), "creating DerivedCustomResourceDefinition")
+			t, masterClient.Create(ctx, dcr), "creating DerivedCustomResource")
 
-		// Wait for DCRD to be ready
-		require.NoError(t, testutil.WaitUntilReady(masterClient, dcrd))
+		// Wait for DCR to be ready
+		require.NoError(t, testutil.WaitUntilReady(masterClient, dcr))
 
 		// Check reported status
-		if assert.NotNil(t, dcrd.Status.DerivedCRD, ".status.derivedCRD should be set") {
-			assert.Equal(t, "testresources.eu-west-1.test-derivedcrd", dcrd.Status.DerivedCRD.Name)
-			assert.Equal(t, "eu-west-1.test-derivedcrd", dcrd.Status.DerivedCRD.Group)
-			assert.Equal(t, "TestResource", dcrd.Status.DerivedCRD.Kind)
-			assert.Equal(t, "testresources", dcrd.Status.DerivedCRD.Plural)
-			assert.Equal(t, "testresource", dcrd.Status.DerivedCRD.Singular)
+		if assert.NotNil(t, dcr.Status.DerivedCR, ".status.derivedCR should be set") {
+			assert.Equal(t, "testresources.eu-west-1.test-derivedcr", dcr.Status.DerivedCR.Name)
+			assert.Equal(t, "eu-west-1.test-derivedcr", dcr.Status.DerivedCR.Group)
+			assert.Equal(t, "TestResource", dcr.Status.DerivedCR.Kind)
+			assert.Equal(t, "testresources", dcr.Status.DerivedCR.Plural)
+			assert.Equal(t, "testresource", dcr.Status.DerivedCR.Singular)
 		}
 
 		// Check created CRD
 		crd := &apiextensionsv1.CustomResourceDefinition{}
 		require.NoError(t, masterClient.Get(ctx, types.NamespacedName{
-			Name: dcrd.Status.DerivedCRD.Name,
+			Name: dcr.Status.DerivedCR.Name,
 		}, crd), "getting derived CRD")
 
 		schemaYaml, _ := yaml.Marshal(crd.Spec.Versions[0].Schema.OpenAPIV3Schema)
@@ -190,7 +190,7 @@ type: object
 		// Check Tenant -> Provider
 		tenantObj := &unstructured.Unstructured{
 			Object: map[string]interface{}{
-				"apiVersion": "eu-west-1.test-derivedcrd/v1alpha1",
+				"apiVersion": "eu-west-1.test-derivedcr/v1alpha1",
 				"kind":       "TestResource",
 				"metadata": map[string]interface{}{
 					"name":      "test-instance-1",

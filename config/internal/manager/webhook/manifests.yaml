@@ -37,9 +37,9 @@ webhooks:
     service:
       name: webhook-service
       namespace: system
-      path: /validate-kubecarrier-io-v1alpha1-customresourcedefinitiondiscovery
+      path: /validate-kubecarrier-io-v1alpha1-customresourcediscovery
   failurePolicy: Fail
-  name: vcustomresourcedefinitiondiscovery.kubecarrier.io
+  name: vcustomresourcediscovery.kubecarrier.io
   rules:
   - apiGroups:
     - kubecarrier.io
@@ -49,15 +49,15 @@ webhooks:
     - CREATE
     - UPDATE
     resources:
-    - customresourcedefinitiondiscoveries
+    - customresourcediscoveries
 - clientConfig:
     caBundle: Cg==
     service:
       name: webhook-service
       namespace: system
-      path: /validate-catalog-kubecarrier-io-v1alpha1-derivedcustomresourcedefinition
+      path: /validate-catalog-kubecarrier-io-v1alpha1-derivedcustomresource
   failurePolicy: Fail
-  name: vderivedcustomresourcedefinition.kubecarrier.io
+  name: vderivedcustomresource.kubecarrier.io
   rules:
   - apiGroups:
     - catalog.kubecarrier.io
@@ -67,7 +67,7 @@ webhooks:
     - CREATE
     - UPDATE
     resources:
-    - derivedcustomresourcedefinitions
+    - derivedcustomresources
 - clientConfig:
     caBundle: Cg==
     service:

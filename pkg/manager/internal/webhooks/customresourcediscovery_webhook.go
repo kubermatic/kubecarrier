@@ -28,19 +28,19 @@ import (
 	corev1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/core/v1alpha1"
 )
 
-// CustomResourceDefinitionDiscoveryWebhookHandler handles mutating/validating of CustomResourceDefinitionDiscoveries.
-type CustomResourceDefinitionDiscoveryWebhookHandler struct {
+// CustomResourceDiscoveryWebhookHandler handles mutating/validating of CustomResourceDiscoveries.
+type CustomResourceDiscoveryWebhookHandler struct {
 	decoder *admission.Decoder
 	Log     logr.Logger
 }
 
-var _ admission.Handler = (*CustomResourceDefinitionDiscoveryWebhookHandler)(nil)
+var _ admission.Handler = (*CustomResourceDiscoveryWebhookHandler)(nil)
 
-// +kubebuilder:webhook:path=/validate-kubecarrier-io-v1alpha1-customresourcedefinitiondiscovery,mutating=false,failurePolicy=fail,groups=kubecarrier.io,resources=customresourcedefinitiondiscoveries,verbs=create;update,versions=v1alpha1,name=vcustomresourcedefinitiondiscovery.kubecarrier.io
+// +kubebuilder:webhook:path=/validate-kubecarrier-io-v1alpha1-customresourcediscovery,mutating=false,failurePolicy=fail,groups=kubecarrier.io,resources=customresourcediscoveries,verbs=create;update,versions=v1alpha1,name=vcustomresourcediscovery.kubecarrier.io
 
-// Handle is the function to handle create/update requests of CustomResourceDefinitionDiscoverys.
-func (r *CustomResourceDefinitionDiscoveryWebhookHandler) Handle(ctx context.Context, req admission.Request) admission.Response {
-	obj := &corev1alpha1.CustomResourceDefinitionDiscovery{}
+// Handle is the function to handle create/update requests of CustomResourceDiscoveries.
+func (r *CustomResourceDiscoveryWebhookHandler) Handle(ctx context.Context, req admission.Request) admission.Response {
+	obj := &corev1alpha1.CustomResourceDiscovery{}
 	if err := r.decoder.Decode(req, obj); err != nil {
 		return admission.Errored(http.StatusBadRequest, err)
 	}
@@ -51,7 +51,7 @@ func (r *CustomResourceDefinitionDiscoveryWebhookHandler) Handle(ctx context.Con
 			return admission.Denied(err.Error())
 		}
 	case adminv1beta1.Update:
-		oldObj := &corev1alpha1.CustomResourceDefinitionDiscovery{}
+		oldObj := &corev1alpha1.CustomResourceDiscovery{}
 		if err := r.decoder.DecodeRaw(req.OldObject, oldObj); err != nil {
 			return admission.Errored(http.StatusBadRequest, err)
 		}
@@ -63,30 +63,30 @@ func (r *CustomResourceDefinitionDiscoveryWebhookHandler) Handle(ctx context.Con
 
 }
 
-// CustomResourceDefinitionDiscoveryWebhookHandler implements admission.DecoderInjector.
+// CustomResourceDiscoveryWebhookHandler implements admission.DecoderInjector.
 // A decoder will be automatically injected.
 
 // InjectDecoder injects the decoder.
-func (r *CustomResourceDefinitionDiscoveryWebhookHandler) InjectDecoder(d *admission.Decoder) error {
+func (r *CustomResourceDiscoveryWebhookHandler) InjectDecoder(d *admission.Decoder) error {
 	r.decoder = d
 	return nil
 }
 
-func (r *CustomResourceDefinitionDiscoveryWebhookHandler) validateCreate(crdDiscovery *corev1alpha1.CustomResourceDefinitionDiscovery) error {
-	r.Log.Info("validate create", "name", crdDiscovery.Name)
-	if crdDiscovery.Spec.ServiceCluster.Name == "" ||
-		crdDiscovery.Spec.CRD.Name == "" {
-		return fmt.Errorf("the ServiceCluster, or CRD of CustomResourceDefinitionDiscovery is specified as empty string")
+func (r *CustomResourceDiscoveryWebhookHandler) validateCreate(crDiscovery *corev1alpha1.CustomResourceDiscovery) error {
+	r.Log.Info("validate create", "name", crDiscovery.Name)
+	if crDiscovery.Spec.ServiceCluster.Name == "" ||
+		crDiscovery.Spec.CRD.Name == "" {
+		return fmt.Errorf("the ServiceCluster, or CRD of CustomResourceDiscovery is specified as empty string")
 	}
 	return nil
 }
 
-func (r *CustomResourceDefinitionDiscoveryWebhookHandler) validateUpdate(oldObj, newObj *corev1alpha1.CustomResourceDefinitionDiscovery) error {
+func (r *CustomResourceDiscoveryWebhookHandler) validateUpdate(oldObj, newObj *corev1alpha1.CustomResourceDiscovery) error {
 	r.Log.Info("validate update", "name", newObj.Name)
 	if newObj.Spec.ServiceCluster.Name != oldObj.Spec.ServiceCluster.Name ||
 		newObj.Spec.CRD.Name != oldObj.Spec.CRD.Name ||
 		newObj.Spec.KindOverride != oldObj.Spec.KindOverride {
-		return fmt.Errorf("the Spec (ServiceCluster, CRD, and KindOverride) of CustomResourceDefinitionDiscovery is immutable")
+		return fmt.Errorf("the Spec (ServiceCluster, CRD, and KindOverride) of CustomResourceDiscovery is immutable")
 	}
 	return nil
 }

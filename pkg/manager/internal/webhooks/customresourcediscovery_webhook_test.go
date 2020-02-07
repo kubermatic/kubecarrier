@@ -26,24 +26,24 @@ import (
 	"github.com/kubermatic/kubecarrier/pkg/testutil"
 )
 
-func TestCustomResourceDefinitionDiscoveryValidatingCreate(t *testing.T) {
-	customResourceDefinitionDiscoveryWebhookHandler := CustomResourceDefinitionDiscoveryWebhookHandler{
+func TestCustomResourceDiscoveryValidatingCreate(t *testing.T) {
+	customResourceDiscoveryWebhookHandler := CustomResourceDiscoveryWebhookHandler{
 		Log: testutil.NewLogger(t),
 	}
 
 	tests := []struct {
 		name          string
-		object        *corev1alpha1.CustomResourceDefinitionDiscovery
+		object        *corev1alpha1.CustomResourceDiscovery
 		expectedError bool
 	}{
 		{
 			name: "servicecluster missing",
-			object: &corev1alpha1.CustomResourceDefinitionDiscovery{
+			object: &corev1alpha1.CustomResourceDiscovery{
 				ObjectMeta: metav1.ObjectMeta{
-					Name:      "test-crddiscovery",
+					Name:      "test-crdiscoveryy",
 					Namespace: "test-namespace",
 				},
-				Spec: corev1alpha1.CustomResourceDefinitionDiscoverySpec{
+				Spec: corev1alpha1.CustomResourceDiscoverySpec{
 					CRD: corev1alpha1.ObjectReference{
 						Name: "CRD",
 					},
@@ -54,12 +54,12 @@ func TestCustomResourceDefinitionDiscoveryValidatingCreate(t *testing.T) {
 		},
 		{
 			name: "crd missing",
-			object: &corev1alpha1.CustomResourceDefinitionDiscovery{
+			object: &corev1alpha1.CustomResourceDiscovery{
 				ObjectMeta: metav1.ObjectMeta{
-					Name:      "test-crddiscovery",
+					Name:      "test-crdiscoveryy",
 					Namespace: "test-namespace",
 				},
-				Spec: corev1alpha1.CustomResourceDefinitionDiscoverySpec{
+				Spec: corev1alpha1.CustomResourceDiscoverySpec{
 					ServiceCluster: corev1alpha1.ObjectReference{
 						Name: "ServiceCluster",
 					},
@@ -70,12 +70,12 @@ func TestCustomResourceDefinitionDiscoveryValidatingCreate(t *testing.T) {
 		},
 		{
 			name: "can pass validating create",
-			object: &corev1alpha1.CustomResourceDefinitionDiscovery{
+			object: &corev1alpha1.CustomResourceDiscovery{
 				ObjectMeta: metav1.ObjectMeta{
-					Name:      "test-crddiscovery",
+					Name:      "test-crdiscoveryy",
 					Namespace: "test-namespace",
 				},
-				Spec: corev1alpha1.CustomResourceDefinitionDiscoverySpec{
+				Spec: corev1alpha1.CustomResourceDiscoverySpec{
 					ServiceCluster: corev1alpha1.ObjectReference{
 						Name: "ServiceCluster",
 					},
@@ -91,22 +91,22 @@ func TestCustomResourceDefinitionDiscoveryValidatingCreate(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			assert.Equal(t, test.expectedError, customResourceDefinitionDiscoveryWebhookHandler.validateCreate(test.object) != nil)
+			assert.Equal(t, test.expectedError, customResourceDiscoveryWebhookHandler.validateCreate(test.object) != nil)
 		})
 	}
 }
 
-func TestCustomResourceDefinitionDiscoveryValidatingUpdate(t *testing.T) {
-	customResourceDefinitionDiscoveryWebhookHandler := CustomResourceDefinitionDiscoveryWebhookHandler{
+func TestCustomResourceDiscoveryValidatingUpdate(t *testing.T) {
+	customResourceDiscoveryWebhookHandler := CustomResourceDiscoveryWebhookHandler{
 		Log: testutil.NewLogger(t),
 	}
 
-	oldObj := &corev1alpha1.CustomResourceDefinitionDiscovery{
+	oldObj := &corev1alpha1.CustomResourceDiscovery{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      "test-crddiscovery",
+			Name:      "test-crdiscoveryy",
 			Namespace: "test-namespace",
 		},
-		Spec: corev1alpha1.CustomResourceDefinitionDiscoverySpec{
+		Spec: corev1alpha1.CustomResourceDiscoverySpec{
 			ServiceCluster: corev1alpha1.ObjectReference{
 				Name: "ServiceCluster",
 			},
@@ -119,17 +119,17 @@ func TestCustomResourceDefinitionDiscoveryValidatingUpdate(t *testing.T) {
 
 	tests := []struct {
 		name          string
-		object        *corev1alpha1.CustomResourceDefinitionDiscovery
+		object        *corev1alpha1.CustomResourceDiscovery
 		expectedError bool
 	}{
 		{
 			name: "kind override immutable",
-			object: &corev1alpha1.CustomResourceDefinitionDiscovery{
+			object: &corev1alpha1.CustomResourceDiscovery{
 				ObjectMeta: metav1.ObjectMeta{
-					Name:      "test-crddiscovery",
+					Name:      "test-crdiscoveryy",
 					Namespace: "test-namespace",
 				},
-				Spec: corev1alpha1.CustomResourceDefinitionDiscoverySpec{
+				Spec: corev1alpha1.CustomResourceDiscoverySpec{
 					ServiceCluster: corev1alpha1.ObjectReference{
 						Name: "ServiceCluster",
 					},
@@ -143,12 +143,12 @@ func TestCustomResourceDefinitionDiscoveryValidatingUpdate(t *testing.T) {
 		},
 		{
 			name: "servicecluster immutable",
-			object: &corev1alpha1.CustomResourceDefinitionDiscovery{
+			object: &corev1alpha1.CustomResourceDiscovery{
 				ObjectMeta: metav1.ObjectMeta{
-					Name:      "test-crddiscovery",
+					Name:      "test-crdiscoveryy",
 					Namespace: "test-namespace",
 				},
-				Spec: corev1alpha1.CustomResourceDefinitionDiscoverySpec{
+				Spec: corev1alpha1.CustomResourceDiscoverySpec{
 					ServiceCluster: corev1alpha1.ObjectReference{
 						Name: "ServiceCluster2",
 					},
@@ -162,12 +162,12 @@ func TestCustomResourceDefinitionDiscoveryValidatingUpdate(t *testing.T) {
 		},
 		{
 			name: "crd immutable",
-			object: &corev1alpha1.CustomResourceDefinitionDiscovery{
+			object: &corev1alpha1.CustomResourceDiscovery{
 				ObjectMeta: metav1.ObjectMeta{
-					Name:      "test-crddiscovery",
+					Name:      "test-crdiscoveryy",
 					Namespace: "test-namespace",
 				},
-				Spec: corev1alpha1.CustomResourceDefinitionDiscoverySpec{
+				Spec: corev1alpha1.CustomResourceDiscoverySpec{
 					ServiceCluster: corev1alpha1.ObjectReference{
 						Name: "ServiceCluster",
 					},
@@ -181,12 +181,12 @@ func TestCustomResourceDefinitionDiscoveryValidatingUpdate(t *testing.T) {
 		},
 		{
 			name: "can pass validating update",
-			object: &corev1alpha1.CustomResourceDefinitionDiscovery{
+			object: &corev1alpha1.CustomResourceDiscovery{
 				ObjectMeta: metav1.ObjectMeta{
-					Name:      "test-crddiscovery",
+					Name:      "test-crdiscoveryy",
 					Namespace: "test-namespace",
 				},
-				Spec: corev1alpha1.CustomResourceDefinitionDiscoverySpec{
+				Spec: corev1alpha1.CustomResourceDiscoverySpec{
 					ServiceCluster: corev1alpha1.ObjectReference{
 						Name: "ServiceCluster",
 					},
@@ -202,7 +202,7 @@ func TestCustomResourceDefinitionDiscoveryValidatingUpdate(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			assert.Equal(t, test.expectedError, customResourceDefinitionDiscoveryWebhookHandler.validateUpdate(test.object, oldObj) != nil)
+			assert.Equal(t, test.expectedError, customResourceDiscoveryWebhookHandler.validateUpdate(test.object, oldObj) != nil)
 		})
 	}
 }

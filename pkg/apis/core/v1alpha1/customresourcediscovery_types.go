@@ -21,8 +21,8 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// CustomResourceDefinitionDiscoverySpec defines the desired state of crdreference
-type CustomResourceDefinitionDiscoverySpec struct {
+// CustomResourceDiscoverySpec defines the desired state of crdreference
+type CustomResourceDiscoverySpec struct {
 	// CRD references a CustomResourceDefinition within the ServiceCluster.
 	CRD ObjectReference `json:"crd"`
 	// ServiceCluster references a ServiceCluster to search the CustomResourceDefinition on.
@@ -31,8 +31,8 @@ type CustomResourceDefinitionDiscoverySpec struct {
 	KindOverride string `json:"kindOverride,omitempty"`
 }
 
-// CustomResourceDefinitionDiscoveryStatus defines the observed state of crdreference
-type CustomResourceDefinitionDiscoveryStatus struct {
+// CustomResourceDiscoveryStatus defines the observed state of crdreference
+type CustomResourceDiscoveryStatus struct {
 	// CRD defines the original CustomResourceDefinition specification from the service cluster
 	// +kubebuilder:pruning:PreserveUnknownFields
 	CRD *apiextensionsv1.CustomResourceDefinition `json:"crd,omitempty"`
@@ -41,46 +41,46 @@ type CustomResourceDefinitionDiscoveryStatus struct {
 	// consider this field DEPRECATED, it will be removed as soon as there
 	// is a mechanism to map conditions to a string when printing the property
 	// is only present for display purposes, for everything else use conditions
-	Phase CustomResourceDefinitionDiscoveryPhaseType `json:"phase,omitempty"`
-	// Conditions is a list of all conditions this CustomResourceDefinitionDiscovery is in.
-	Conditions []CustomResourceDefinitionDiscoveryCondition `json:"conditions,omitempty"`
+	Phase CustomResourceDiscoveryPhaseType `json:"phase,omitempty"`
+	// Conditions is a list of all conditions this CustomResourceDiscovery is in.
+	Conditions []CustomResourceDiscoveryCondition `json:"conditions,omitempty"`
 	// The most recent generation observed by the controller.
 	ObservedGeneration int64 `json:"observedGeneration,omitempty"`
 }
 
-// CustomResourceDefinitionDiscoveryPhaseType represents all conditions as a single string for printing in kubectl
-type CustomResourceDefinitionDiscoveryPhaseType string
+// CustomResourceDiscoveryPhaseType represents all conditions as a single string for printing in kubectl
+type CustomResourceDiscoveryPhaseType string
 
-// Values of CustomResourceDefinitionDiscoveryPhaseType
+// Values of CustomResourceDiscoveryPhaseType
 const (
-	CustomResourceDefinitionDiscoveryPhaseReady    CustomResourceDefinitionDiscoveryPhaseType = "Ready"
-	CustomResourceDefinitionDiscoveryPhaseNotReady CustomResourceDefinitionDiscoveryPhaseType = "NotReady"
-	CustomResourceDefinitionDiscoveryPhaseUnknown  CustomResourceDefinitionDiscoveryPhaseType = "Unknown"
+	CustomResourceDiscoveryPhaseReady    CustomResourceDiscoveryPhaseType = "Ready"
+	CustomResourceDiscoveryPhaseNotReady CustomResourceDiscoveryPhaseType = "NotReady"
+	CustomResourceDiscoveryPhaseUnknown  CustomResourceDiscoveryPhaseType = "Unknown"
 )
 
 // updatePhase updates the phase property based on the current conditions
 // this method should be called everytime the conditions are updated
-func (s *CustomResourceDefinitionDiscoveryStatus) updatePhase() {
+func (s *CustomResourceDiscoveryStatus) updatePhase() {
 	for _, condition := range s.Conditions {
-		if condition.Type != CustomResourceDefinitionDiscoveryReady {
+		if condition.Type != CustomResourceDiscoveryReady {
 			continue
 		}
 		switch condition.Status {
 		case ConditionTrue:
-			s.Phase = CustomResourceDefinitionDiscoveryPhaseReady
+			s.Phase = CustomResourceDiscoveryPhaseReady
 		case ConditionFalse:
-			s.Phase = CustomResourceDefinitionDiscoveryPhaseNotReady
+			s.Phase = CustomResourceDiscoveryPhaseNotReady
 		default:
-			s.Phase = CustomResourceDefinitionDiscoveryPhaseUnknown
+			s.Phase = CustomResourceDiscoveryPhaseUnknown
 		}
 		return
 	}
 
-	s.Phase = CustomResourceDefinitionDiscoveryPhaseUnknown
+	s.Phase = CustomResourceDiscoveryPhaseUnknown
 }
 
 // SetCondition replaces or adds the given condition
-func (s *CustomResourceDefinitionDiscoveryStatus) SetCondition(condition CustomResourceDefinitionDiscoveryCondition) {
+func (s *CustomResourceDiscoveryStatus) SetCondition(condition CustomResourceDiscoveryCondition) {
 	defer s.updatePhase()
 	if condition.LastTransitionTime.IsZero() {
 		condition.LastTransitionTime = metav1.Now()
@@ -102,7 +102,7 @@ func (s *CustomResourceDefinitionDiscoveryStatus) SetCondition(condition CustomR
 }
 
 // GetCondition returns the Condition of the given type, if it exists
-func (s *CustomResourceDefinitionDiscoveryStatus) GetCondition(t CustomResourceDefinitionDiscoveryConditionType) (condition CustomResourceDefinitionDiscoveryCondition, exists bool) {
+func (s *CustomResourceDiscoveryStatus) GetCondition(t CustomResourceDiscoveryConditionType) (condition CustomResourceDiscoveryCondition, exists bool) {
 	for _, cond := range s.Conditions {
 		if cond.Type == t {
 			condition = cond
@@ -113,22 +113,22 @@ func (s *CustomResourceDefinitionDiscoveryStatus) GetCondition(t CustomResourceD
 	return
 }
 
-// CustomResourceDefinitionDiscoveryConditionType represents a CustomResourceDefinitionDiscoveryCondition value.
-type CustomResourceDefinitionDiscoveryConditionType string
+// CustomResourceDiscoveryConditionType represents a CustomResourceDiscoveryCondition value.
+type CustomResourceDiscoveryConditionType string
 
 const (
-	// CustomResourceDefinitionDiscoveryReady represents a CustomResourceDefinitionDiscovery condition is in ready state.
-	CustomResourceDefinitionDiscoveryReady CustomResourceDefinitionDiscoveryConditionType = "Ready"
-	// CustomResourceDefinitionDiscoveryDiscovered represents a CustomResourceDefinitionDiscovery has been discovered by the manager controller.
-	CustomResourceDefinitionDiscoveryDiscovered CustomResourceDefinitionDiscoveryConditionType = "Discovered"
-	// CustomResourceDefinitionDiscoveryEstablished is True if the crd could be registered in the master cluster and is now served by the kube-apiserver.
-	CustomResourceDefinitionDiscoveryEstablished CustomResourceDefinitionDiscoveryConditionType = "Established"
-	// CustomResourceDefinitionDiscoveryControllerReady is Ture if the controller to propagate the crd into the service cluster is ready.
-	CustomResourceDefinitionDiscoveryControllerReady CustomResourceDefinitionDiscoveryConditionType = "ControllerReady"
+	// CustomResourceDiscoveryReady represents a CustomResourceDiscovery condition is in ready state.
+	CustomResourceDiscoveryReady CustomResourceDiscoveryConditionType = "Ready"
+	// CustomResourceDiscoveryDiscovered represents a CustomResourceDiscovery has been discovered by the manager controller.
+	CustomResourceDiscoveryDiscovered CustomResourceDiscoveryConditionType = "Discovered"
+	// CustomResourceDiscoveryEstablished is True if the crd could be registered in the master cluster and is now served by the kube-apiserver.
+	CustomResourceDiscoveryEstablished CustomResourceDiscoveryConditionType = "Established"
+	// CustomResourceDiscoveryControllerReady is Ture if the controller to propagate the crd into the service cluster is ready.
+	CustomResourceDiscoveryControllerReady CustomResourceDiscoveryConditionType = "ControllerReady"
 )
 
-// CustomResourceDefinitionDiscoveryCondition contains details for the current condition of this CustomResourceDefinitionDiscovery.
-type CustomResourceDefinitionDiscoveryCondition struct {
+// CustomResourceDiscoveryCondition contains details for the current condition of this CustomResourceDiscovery.
+type CustomResourceDiscoveryCondition struct {
 	// LastTransitionTime is the last time the condition transit from one status to another.
 	LastTransitionTime metav1.Time `json:"lastTransitionTime"`
 	// Message is the human readable message indicating details about last transition.
@@ -138,35 +138,36 @@ type CustomResourceDefinitionDiscoveryCondition struct {
 	// Status of the condition, one of ('True', 'False', 'Unknown').
 	Status ConditionStatus `json:"status"`
 	// Type of the condition, currently ('Ready').
-	Type CustomResourceDefinitionDiscoveryConditionType `json:"type"`
+	Type CustomResourceDiscoveryConditionType `json:"type"`
 }
 
 // True returns whether .Status == "True"
-func (c CustomResourceDefinitionDiscoveryCondition) True() bool {
+func (c CustomResourceDiscoveryCondition) True() bool {
 	return c.Status == ConditionTrue
 }
 
-// CustomResourceDefinitionDiscovery is used inside KubeCarrier to fetch a CustomResourceDefinition from another cluster and to offload cross cluster access to another component.
+// CustomResourceDiscovery is used inside KubeCarrier to fetch a CustomResourceDefinition from another cluster and to offload cross cluster access to another component.
 // +kubebuilder:subresource:status
 // +kubebuilder:object:root=true
 // +kubebuilder:printcolumn:name="CustomResourceDefinition",type="string",JSONPath=".spec.crd.name"
 // +kubebuilder:printcolumn:name="Service Cluster",type="string",JSONPath=".spec.serviceCluster.name"
-type CustomResourceDefinitionDiscovery struct {
+// +kubebuilder:printcolumn:name="Status",type="string",JSONPath=".status.phase"
+type CustomResourceDiscovery struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec   CustomResourceDefinitionDiscoverySpec   `json:"spec,omitempty"`
-	Status CustomResourceDefinitionDiscoveryStatus `json:"status,omitempty"`
+	Spec   CustomResourceDiscoverySpec   `json:"spec,omitempty"`
+	Status CustomResourceDiscoveryStatus `json:"status,omitempty"`
 }
 
-// CustomResourceDefinitionDiscoveryList contains a list of crdreference
+// CustomResourceDiscoveryList contains a list of crdreference
 // +kubebuilder:object:root=true
-type CustomResourceDefinitionDiscoveryList struct {
+type CustomResourceDiscoveryList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
-	Items           []CustomResourceDefinitionDiscovery `json:"items"`
+	Items           []CustomResourceDiscovery `json:"items"`
 }
 
 func init() {
-	SchemeBuilder.Register(&CustomResourceDefinitionDiscovery{}, &CustomResourceDefinitionDiscoveryList{})
+	SchemeBuilder.Register(&CustomResourceDiscovery{}, &CustomResourceDiscoveryList{})
 }

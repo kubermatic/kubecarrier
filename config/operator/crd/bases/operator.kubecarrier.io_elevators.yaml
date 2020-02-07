@@ -27,10 +27,9 @@ spec:
     schema:
       openAPIV3Schema:
         description: Elevator manages the deployment of the Elevator controller manager.
-          For each `DerivedCustomResourceDefinition` a Elevator instance is launched
-          to propagate the derived CRD instance into the provider namespace. This
-          component works hand-in-hand with the Catapult instance for the respective
-          type.
+          For each `DerivedCustomResource` a Elevator instance is launched to propagate
+          the derived CRD instance into the provider namespace. This component works
+          hand-in-hand with the Catapult instance for the respective type.
         properties:
           apiVersion:
             description: 'APIVersion defines the versioned schema of this representation
@@ -47,9 +46,9 @@ spec:
           spec:
             description: ElevatorSpec defines the desired state of Elevator
             properties:
-              derivedCRD:
-                description: References the DerivedCustomResourceDefinition controlling
-                  the Tenant-side CRD.
+              derivedCR:
+                description: References the DerivedCustomResource controlling the
+                  Tenant-side CRD.
                 properties:
                   name:
                     type: string
@@ -93,7 +92,7 @@ spec:
                 - version
                 type: object
             required:
-            - derivedCRD
+            - derivedCR
             - providerCRD
             - tenantCRD
             type: object

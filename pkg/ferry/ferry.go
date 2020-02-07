@@ -173,15 +173,15 @@ func runE(flags *flags, log logr.Logger) error {
 		return fmt.Errorf("cannot add %s controller: %w", "ServiceCluster", err)
 	}
 
-	if err := (&controllers.CustomResourceDefinitionDiscoveryReconciler{
-		Log:                log.WithName("controllers").WithName("CustomResourceDefinitionDiscovery"),
+	if err := (&controllers.CustomResourceDiscoveryReconciler{
+		Log:                log.WithName("controllers").WithName("CustomResourceDiscovery"),
 		MasterClient:       mgr.GetClient(),
 		MasterScheme:       mgr.GetScheme(),
 		ServiceClient:      serviceCachedClient,
 		ServiceCache:       serviceCache,
 		ServiceClusterName: flags.serviceClusterName,
 	}).SetupWithManager(mgr); err != nil {
-		return fmt.Errorf("cannot add %s controller: %w", "CustomResourceDefinitionDiscovery", err)
+		return fmt.Errorf("cannot add %s controller: %w", "CustomResourceDiscovery", err)
 	}
 
 	if err := (&controllers.ServiceClusterAssignmentReconciler{
