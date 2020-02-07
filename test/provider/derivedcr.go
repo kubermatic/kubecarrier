@@ -18,7 +18,6 @@ package provider
 
 import (
 	"context"
-	"os"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -133,21 +132,6 @@ func NewDerivedCRSuite(
 		}
 		require.NoError(
 			t, masterClient.Create(ctx, dcr), "creating DerivedCustomResource")
-
-		defer func() {
-			// Teardown
-			//
-			if _, noCleanup := os.LookupEnv("NO_CLEANUP"); noCleanup {
-				return
-			}
-
-			// Cleanup DerivedCR
-			require.NoError(t, masterClient.Delete(ctx, dcr), "deleting the DerivedCustomResource object")
-			require.NoError(t, testutil.WaitUntilNotFound(masterClient, dcr))
-
-			// Cleanup base CRD
-			require.NoError(t, masterClient.Delete(ctx, baseCRD), "deleting base CRD")
-		}()
 
 		// Wait for DCR to be ready
 		require.NoError(t, testutil.WaitUntilReady(masterClient, dcr))
