@@ -45,7 +45,7 @@ func newSUTSubcommand(log logr.Logger, component string) *cobra.Command {
 		ldFlags      string
 		deploymentNN string
 		workdir      string
-		kubeconfig   string
+		loader       = clientcmd.NewDefaultClientConfigLoadingRules()
 		taskName     string
 		projectRoot  string
 	)
@@ -55,8 +55,6 @@ func newSUTSubcommand(log logr.Logger, component string) *cobra.Command {
 		Long:  strings.TrimSpace(``),
 		Short: "",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			loader := clientcmd.NewDefaultClientConfigLoadingRules()
-			loader.ExplicitPath = kubeconfig
 			fname := loader.GetDefaultFilename()
 			log.Info("loading kubeconfig", "filename", fname)
 			clientConfig := clientcmd.NewNonInteractiveDeferredLoadingClientConfig(
@@ -171,7 +169,7 @@ func newSUTSubcommand(log logr.Logger, component string) *cobra.Command {
 	cmd.Flags().StringVar(&projectRoot, "project-root", ".", "project root where IDE tasks should be generated")
 	cmd.Flags().StringVar(&ldFlags, "ld-flags", "", "ld-flags to pass to go compiler upon running this")
 	cmd.Flags().StringVar(&deploymentNN, "deployment-nn", "", "deployment-nn signal the deployement namespace name which should be selected. If none (default) a fzf based picker shall be shown")
-	cmd.Flags().StringVar(&kubeconfig, "kubeconfig", "", "kubeconfig location")
+	cmd.Flags().StringVar(&loader.ExplicitPath, "kubeconfig", "", "kubeconfig location")
 	cmd.Flags().StringVar(&workdir, "workdir", "", "sut working for logs, rootfs mountpoints, etc. default to new temp dir")
 	cmd.Flags().StringArrayVar(&extraArgs, "extra-flags", nil, "extra flags to pass to the running task")
 	return cmd
