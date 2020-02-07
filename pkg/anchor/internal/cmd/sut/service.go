@@ -193,6 +193,9 @@ func getDeploymentAndContainer(ctx context.Context, cl client.Client, deployment
 		}
 	} else {
 		split := strings.Split(deploymentNN, "/")
+		if len(split) != 2 {
+			return nil, nil, fmt.Errorf("deployment namespace name should be in namespace/name format. Found more than 1 '/' char")
+		}
 		if err := cl.Get(ctx, types.NamespacedName{
 			Namespace: split[0],
 			Name:      split[1],
