@@ -26,7 +26,6 @@ import (
 	"os/exec"
 	"path"
 	"strings"
-	"time"
 
 	"github.com/go-logr/logr"
 	"github.com/spf13/cobra"
@@ -40,11 +39,10 @@ import (
 
 func newSUTManagerCommand(log logr.Logger) *cobra.Command {
 	var (
-		extraArgs         []string
-		ldFlags           string
-		manualTelepresnce bool
-		deploymentNN      string
-		workdir           string
+		extraArgs    []string
+		ldFlags      string
+		deploymentNN string
+		workdir      string
 	)
 
 	cmd := &cobra.Command{
@@ -122,27 +120,13 @@ func newSUTManagerCommand(log logr.Logger) *cobra.Command {
 				"while true; do sleep 3600 done",
 			)
 
-			if manualTelepresnce {
-				log.Info("=== manually run telepresence! ===")
-				_, _ = fmt.Fprintln(cmd.OutOrStdout(), "telepresence", strings.Join(telepresenceArgs, " "),
-					"\npress any key to continue...",
-				)
-				b := make([]byte, 1)
-				// pause
-				_, _ = cmd.InOrStdin().Read(b)
-			} else {
-				telepresenceCmd := exec.CommandContext(ctx, "telepresence", telepresenceArgs...)
-				telepresenceCmd.Dir = workdir
-				telepresenceCmd.Stdin = cmd.InOrStdin()
-				telepresenceCmd.Stderr = cmd.ErrOrStderr()
-				telepresenceCmd.Stdout = cmd.OutOrStdout()
-				log.Info("calling telepresence:", "args", telepresenceArgs)
-				if err := telepresenceCmd.Start(); err != nil {
-					return fmt.Errorf("cannot start telepresence: %w", err)
-				}
-				// wait for telepresence to start!
-				time.Sleep(time.Hour)
-			}
+			log.Info("=== manually run telepresence! ===")
+			_, _ = fmt.Fprintln(cmd.OutOrStdout(), "telepresence", strings.Join(telepresenceArgs, " "),
+				"\npress any key to continue...",
+			)
+			// pause
+			b := make([]byte, 1)
+			_, _ = cmd.InOrStdin().Read(b)
 
 			volumeReplacementMap := make(map[string]string)
 			for _, mount := range container.VolumeMounts {
@@ -183,7 +167,6 @@ func newSUTManagerCommand(log logr.Logger) *cobra.Command {
 	cmd.Flags().StringVar(&deploymentNN, "deployment-nn", "", "deployment-nn signal the deployement namespace name which should be selected. If none (default) a fzf based picker shall be shown")
 	cmd.Flags().StringVar(&workdir, "workdir", "", "sut working for logs, rootfs mountpoints, etc. default to new temp dir")
 	cmd.Flags().StringArrayVar(&extraArgs, "extra-flags", nil, "extra flags to pass to the running task")
-	cmd.Flags().BoolVar(&manualTelepresnce, "manual-telepresence", false, "manually run telepresence")
 	return cmd
 }
 
