@@ -86,11 +86,12 @@ func newSUTManagerCommand(log logr.Logger) *cobra.Command {
 					return fmt.Errorf("getting deployment: %w", err)
 				}
 			}
-
 			if len(deployment.Spec.Template.Spec.Containers) > 1 {
 				return fmt.Errorf("only single container allowed")
 			}
+			container := deployment.Spec.Template.Spec.Containers[0]
 
+			// workdir setup
 			if workdir == "" {
 				tmpDir, err := ioutil.TempDir("", "sut-")
 				if err != nil {
@@ -98,26 +99,28 @@ func newSUTManagerCommand(log logr.Logger) *cobra.Command {
 				}
 				workdir = tmpDir
 			}
-
 			log.Info("created temp directory", "dir", workdir)
 			rootMount := path.Join(workdir, "rootfs")
 			envJson := path.Join(workdir, "env.json")
 			logFile := path.Join(workdir, "telepresence.log")
 
+			// configure telepresence args
 			telepresenceArgs := []string{
 				"--swap-deployment", deployment.Name,
 				"--namespace", deployment.Namespace,
 				"--mount", rootMount,
 				"--env-json", envJson,
 				"--logfile", logFile,
-				"--run",
-				"while", "true;", "do", "sleep", "3600;", "done",
 			}
-
-			container := deployment.Spec.Template.Spec.Containers[0]
 			for _, portSpec := range container.Ports {
 				telepresenceArgs = append(telepresenceArgs, "--expose", fmt.Sprint(portSpec.ContainerPort))
 			}
+			telepresenceArgs = append(telepresenceArgs,
+				"--run",
+				"bash",
+				"-c",
+				"while true; do sleep 3600 done",
+			)
 
 			if manualTelepresnce {
 				log.Info("=== manually run telepresence! ===")
@@ -145,13 +148,11 @@ func newSUTManagerCommand(log logr.Logger) *cobra.Command {
 			for _, mount := range container.VolumeMounts {
 				volumeReplacementMap[mount.MountPath] = path.Join(rootMount, mount.MountPath)
 			}
-
 			envBytes, err := ioutil.ReadFile(envJson)
 			env := make(map[string]string)
 			if err := json.Unmarshal(envBytes, &env); err != nil {
 				return fmt.Errorf("cannot unmarshall the environment")
 			}
-
 			hostContainerArgs := make([]string, 0, len(container.Args))
 			for _, arg := range container.Args {
 				arg, err := k8sExpandEnvArg(arg, env)
@@ -163,9 +164,9 @@ func newSUTManagerCommand(log logr.Logger) *cobra.Command {
 				}
 				hostContainerArgs = append(hostContainerArgs, arg)
 			}
-
 			hostContainerArgs = append(hostContainerArgs, extraArgs...)
 
+			// generate tasks
 			task := ide.Task{
 				Name:    "SUT",
 				Program: "manager",
