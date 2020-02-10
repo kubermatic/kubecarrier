@@ -33,7 +33,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client/apiutil"
 )
 
-func NewClientWatcher(conf *rest.Config, scheme *runtime.Scheme, cl ...client.Client) (*ClientWatcher, error) {
+func NewClientWatcher(conf *rest.Config, scheme *runtime.Scheme) (*ClientWatcher, error) {
 	mapper, err := apiutil.NewDynamicRESTMapper(conf, apiutil.WithLazyDiscovery)
 	if err != nil {
 		return nil, fmt.Errorf("rest mapper: %w", err)
@@ -42,22 +42,13 @@ func NewClientWatcher(conf *rest.Config, scheme *runtime.Scheme, cl ...client.Cl
 	if err != nil {
 		return nil, err
 	}
-	var k8sClient client.Client
-	switch len(cl) {
-	case 0:
-		k8sClient, err = client.New(conf, client.Options{
-			Scheme: scheme,
-			Mapper: mapper,
-		})
-		if err != nil {
-			return nil, err
-		}
-	case 1:
-		k8sClient = cl[0]
-	default:
-		return nil, fmt.Errorf("only one client can be supplied")
+	k8sClient, err := client.New(conf, client.Options{
+		Scheme: scheme,
+		Mapper: mapper,
+	})
+	if err != nil {
+		return nil, err
 	}
-
 	return &ClientWatcher{
 		dynamicClient: d,
 		restMapper:    mapper,
@@ -74,12 +65,12 @@ type ClientWatcher struct {
 }
 
 // WaitUntil waits until the object's condition function is true, or the context deadline is reached
-func (cl *ClientWatcher) WaitUntil(ctx context.Context, obj Object, cond ...func(obj runtime.Object) (bool, error)) error {
-	objGVK, err := apiutil.GVKForObject(obj, cl.scheme)
+func (cw *ClientWatcher) WaitUntil(ctx context.Context, obj Object, cond ...func(obj runtime.Object) (bool, error)) error {
+	objGVK, err := apiutil.GVKForObject(obj, cw.scheme)
 	if err != nil {
 		return err
 	}
-	restMapping, err := cl.restMapper.RESTMapping(objGVK.GroupKind(), objGVK.Version)
+	restMapping, err := cw.restMapper.RESTMapping(objGVK.GroupKind(), objGVK.Version)
 	if err != nil {
 		return err
 	}
@@ -87,19 +78,19 @@ func (cl *ClientWatcher) WaitUntil(ctx context.Context, obj Object, cond ...func
 		Namespace: obj.GetNamespace(),
 		Name:      obj.GetName(),
 	}
-	resourceInterface := cl.dynamicClient.Resource(restMapping.Resource).Namespace(objNN.Namespace)
+	resourceInterface := cw.dynamicClient.Resource(restMapping.Resource).Namespace(objNN.Namespace)
 	if _, err := clientwatch.ListWatchUntil(ctx, &cache.ListWatch{
 		ListFunc: func(options metav1.ListOptions) (object runtime.Object, err error) {
 			return resourceInterface.List(options)
 		},
 		WatchFunc: resourceInterface.Watch,
 	}, func(event watch.Event) (b bool, err error) {
-		objTmp, err := cl.scheme.New(objGVK)
+		objTmp, err := cw.scheme.New(objGVK)
 		if err != nil {
 			return false, err
 		}
 		obj := objTmp.(Object)
-		if err := cl.scheme.Convert(event.Object, obj, nil); err != nil {
+		if err := cw.scheme.Convert(event.Object, obj, nil); err != nil {
 			return false, err
 		}
 		if obj.GetNamespace() != objNN.Namespace || obj.GetName() != objNN.Name {
