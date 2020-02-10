@@ -82,11 +82,12 @@ func newSUTSubcommand(log logr.Logger, component string) *cobra.Command {
 			if workdir == "" {
 				tmpDir, err := ioutil.TempDir("", "sut-")
 				if err != nil {
+					log.Info("created temp directory", "dir", tmpDir)
 					return fmt.Errorf("tmpdir: %w", err)
 				}
 				workdir = tmpDir
 			}
-			log.Info("created temp directory", "dir", workdir)
+			log.Info("using workdir", "dir", workdir)
 			rootMount := path.Join(workdir, "rootfs")
 			envJson := path.Join(workdir, "env.json")
 			logFile := path.Join(workdir, "telepresence.log")
@@ -122,6 +123,7 @@ func newSUTSubcommand(log logr.Logger, component string) *cobra.Command {
 				return fmt.Errorf("write kubeconfig: %w", err)
 			}
 
+			// translate path args from the container to IDE task
 			volumeReplacementMap := make(map[string]string)
 			for _, mount := range container.VolumeMounts {
 				volumeReplacementMap[mount.MountPath] = path.Join(rootMount, mount.MountPath)
@@ -143,6 +145,16 @@ func newSUTSubcommand(log logr.Logger, component string) *cobra.Command {
 				hostContainerArgs = append(hostContainerArgs, arg)
 			}
 			hostContainerArgs = append(hostContainerArgs, extraArgs...)
+			for k, v := range env {
+				if !strings.HasPrefix(k, "TELEPRESENCE") {
+					for containerPath, hostPath := range volumeReplacementMap {
+						if strings.HasPrefix(v, containerPath) {
+							v = strings.ReplaceAll(v, containerPath, hostPath)
+						}
+					}
+					env[k] = v
+				}
+			}
 			env["KUBECONFIG"] = appKubeconfig
 
 			// generate tasks
