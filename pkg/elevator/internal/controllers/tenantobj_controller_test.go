@@ -66,7 +66,7 @@ func TestTenantObjReconciler(t *testing.T) {
 
 		log := testutil.NewLogger(t)
 		client := fakeclient.NewFakeClientWithScheme(
-			testScheme, dcrd, tenantObj, providerObj)
+			testScheme, dcr, tenantObj, providerObj)
 
 		r := TenantObjReconciler{
 			Client:           client,
@@ -77,7 +77,7 @@ func TestTenantObjReconciler(t *testing.T) {
 			ProviderGVK: providerGVK,
 			TenantGVK:   tenantGVK,
 
-			DerivedCRDName:    dcrd.Name,
+			DerivedCRName:     dcr.Name,
 			ProviderNamespace: providerNamespace,
 		}
 
@@ -161,7 +161,7 @@ func TestTenantObjReconciler(t *testing.T) {
 
 	t.Run("creates provider obj", func(t *testing.T) {
 		log := testutil.NewLogger(t)
-		client := fakeclient.NewFakeClientWithScheme(testScheme, dcrd, tenantObj)
+		client := fakeclient.NewFakeClientWithScheme(testScheme, dcr, tenantObj)
 
 		r := TenantObjReconciler{
 			Client:           client,
@@ -172,7 +172,7 @@ func TestTenantObjReconciler(t *testing.T) {
 			ProviderGVK: providerGVK,
 			TenantGVK:   tenantGVK,
 
-			DerivedCRDName:    dcrd.Name,
+			DerivedCRName:     dcr.Name,
 			ProviderNamespace: providerNamespace,
 		}
 

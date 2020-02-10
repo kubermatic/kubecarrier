@@ -43,45 +43,45 @@ import (
 )
 
 const (
-	dcrdFinalizer  = "dcrd.kubecarrier.io/controller"
-	dcrdAnnotation = "dcrd.kubecarrier.io/referenced-by"
+	dcrFinalizer  = "dcr.kubecarrier.io/controller"
+	dcrAnnotation = "dcr.kubecarrier.io/referenced-by"
 )
 
-type DerivedCustomResourceDefinitionReconciler struct {
+type DerivedCustomResourceReconciler struct {
 	client.Client
 	Log                        logr.Logger
 	Scheme                     *runtime.Scheme
 	KubeCarrierSystemNamespace string
 }
 
-// +kubebuilder:rbac:groups=catalog.kubecarrier.io,resources=derivedcustomresourcedefinitions,verbs=get;list;watch;update
-// +kubebuilder:rbac:groups=catalog.kubecarrier.io,resources=derivedcustomresourcedefinitions/status,verbs=get;update;patch
+// +kubebuilder:rbac:groups=catalog.kubecarrier.io,resources=derivedcustomresources,verbs=get;list;watch;update
+// +kubebuilder:rbac:groups=catalog.kubecarrier.io,resources=derivedcustomresources/status,verbs=get;update;patch
 // +kubebuilder:rbac:groups=apiextensions.k8s.io,resources=customresourcedefinitions,verbs=get;list;watch;update;create;delete
 
-func (r *DerivedCustomResourceDefinitionReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
+func (r *DerivedCustomResourceReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	ctx := context.Background()
 	result := ctrl.Result{}
-	log := r.Log.WithValues("dcrd", req.NamespacedName)
+	log := r.Log.WithValues("dcr", req.NamespacedName)
 
-	dcrd := &catalogv1alpha1.DerivedCustomResourceDefinition{}
-	if err := r.Get(ctx, req.NamespacedName, dcrd); err != nil {
+	dcr := &catalogv1alpha1.DerivedCustomResource{}
+	if err := r.Get(ctx, req.NamespacedName, dcr); err != nil {
 		// If the Provider object is already gone, we just ignore the NotFound error.
 		return result, client.IgnoreNotFound(err)
 	}
 
 	// deletion
-	if !dcrd.DeletionTimestamp.IsZero() {
+	if !dcr.DeletionTimestamp.IsZero() {
 		// remove finalizer
-		if err := r.handleDeletion(ctx, dcrd); err != nil {
+		if err := r.handleDeletion(ctx, dcr); err != nil {
 			return result, fmt.Errorf("handling deletion: %w", err)
 		}
 		return result, nil
 	}
 
 	// add finalizer
-	if util.AddFinalizer(dcrd, dcrdFinalizer) {
-		// Update the DCRD with the finalizer
-		if err := r.Update(ctx, dcrd); err != nil {
+	if util.AddFinalizer(dcr, dcrFinalizer) {
+		// Update the DCR with the finalizer
+		if err := r.Update(ctx, dcr); err != nil {
 			return result, fmt.Errorf("updating finalizers: %w", err)
 		}
 	}
@@ -89,11 +89,11 @@ func (r *DerivedCustomResourceDefinitionReconciler) Reconcile(req ctrl.Request) 
 	// lookup base CRD
 	baseCRD := &apiextensionsv1.CustomResourceDefinition{}
 	if err := r.Get(ctx, types.NamespacedName{
-		Name: dcrd.Spec.BaseCRD.Name,
+		Name: dcr.Spec.BaseCRD.Name,
 	}, baseCRD); err != nil {
 		if errors.IsNotFound(err) {
-			return result, r.updateStatus(ctx, dcrd, catalogv1alpha1.DerivedCustomResourceDefinitionCondition{
-				Type:    catalogv1alpha1.DerivedCustomResourceDefinitionReady,
+			return result, r.updateStatus(ctx, dcr, catalogv1alpha1.DerivedCustomResourceCondition{
+				Type:    catalogv1alpha1.DerivedCustomResourceReady,
 				Status:  catalogv1alpha1.ConditionFalse,
 				Reason:  "NotFound",
 				Message: "The referenced CRD was not found.",
@@ -103,8 +103,8 @@ func (r *DerivedCustomResourceDefinitionReconciler) Reconcile(req ctrl.Request) 
 		return result, fmt.Errorf("get base CRD: %w", err)
 	}
 	if baseCRD.Spec.Scope != apiextensionsv1.NamespaceScoped {
-		return result, r.updateStatus(ctx, dcrd, catalogv1alpha1.DerivedCustomResourceDefinitionCondition{
-			Type:    catalogv1alpha1.DerivedCustomResourceDefinitionReady,
+		return result, r.updateStatus(ctx, dcr, catalogv1alpha1.DerivedCustomResourceCondition{
+			Type:    catalogv1alpha1.DerivedCustomResourceReady,
 			Status:  catalogv1alpha1.ConditionFalse,
 			Reason:  "NotNamespaced",
 			Message: "The referenced CRD needs to Namespace scoped.",
@@ -113,24 +113,24 @@ func (r *DerivedCustomResourceDefinitionReconciler) Reconcile(req ctrl.Request) 
 	if baseCRD.Annotations == nil {
 		baseCRD.Annotations = map[string]string{}
 	}
-	if ref, ok := baseCRD.Annotations[dcrdAnnotation]; ok && ref != req.NamespacedName.String() {
+	if ref, ok := baseCRD.Annotations[dcrAnnotation]; ok && ref != req.NamespacedName.String() {
 		// referenced by another instance
-		return result, r.updateStatus(ctx, dcrd, catalogv1alpha1.DerivedCustomResourceDefinitionCondition{
-			Type:    catalogv1alpha1.DerivedCustomResourceDefinitionReady,
+		return result, r.updateStatus(ctx, dcr, catalogv1alpha1.DerivedCustomResourceCondition{
+			Type:    catalogv1alpha1.DerivedCustomResourceReady,
 			Status:  catalogv1alpha1.ConditionFalse,
 			Reason:  "AlreadyInUse",
 			Message: fmt.Sprintf("The referenced CRD is already referenced by %q.", ref),
 		})
 	} else if !ok {
 		// not yet referenced
-		baseCRD.Annotations[dcrdAnnotation] = req.NamespacedName.String()
+		baseCRD.Annotations[dcrAnnotation] = req.NamespacedName.String()
 		if err := r.Update(ctx, baseCRD); err != nil {
 			return result, fmt.Errorf("updating base CRD: %w", err)
 		}
 	}
 
 	// lookup Provider
-	provider, err := catalogv1alpha1.GetProviderByProviderNamespace(ctx, r.Client, r.KubeCarrierSystemNamespace, dcrd.Namespace)
+	provider, err := catalogv1alpha1.GetProviderByProviderNamespace(ctx, r.Client, r.KubeCarrierSystemNamespace, dcr.Namespace)
 	if err != nil {
 		return result, fmt.Errorf("getting the Provider by Provider Namespace: %w", err)
 	}
@@ -138,8 +138,8 @@ func (r *DerivedCustomResourceDefinitionReconciler) Reconcile(req ctrl.Request) 
 	// check if Provider is allowed to use the CRD
 	if baseCRD.Labels == nil ||
 		baseCRD.Labels[ProviderLabel] != provider.Name {
-		return result, r.updateStatus(ctx, dcrd, catalogv1alpha1.DerivedCustomResourceDefinitionCondition{
-			Type:    catalogv1alpha1.DerivedCustomResourceDefinitionReady,
+		return result, r.updateStatus(ctx, dcr, catalogv1alpha1.DerivedCustomResourceCondition{
+			Type:    catalogv1alpha1.DerivedCustomResourceReady,
 			Status:  catalogv1alpha1.ConditionFalse,
 			Reason:  "NotAssignedToProvider",
 			Message: fmt.Sprintf("The referenced CRD not assigned to this Provider or is missing a %s label.", ProviderLabel),
@@ -149,8 +149,8 @@ func (r *DerivedCustomResourceDefinitionReconciler) Reconcile(req ctrl.Request) 
 	// lookup ServiceCluster
 	if baseCRD.Labels == nil ||
 		baseCRD.Labels[serviceClusterLabel] == "" {
-		return result, r.updateStatus(ctx, dcrd, catalogv1alpha1.DerivedCustomResourceDefinitionCondition{
-			Type:    catalogv1alpha1.DerivedCustomResourceDefinitionReady,
+		return result, r.updateStatus(ctx, dcr, catalogv1alpha1.DerivedCustomResourceCondition{
+			Type:    catalogv1alpha1.DerivedCustomResourceReady,
 			Status:  catalogv1alpha1.ConditionFalse,
 			Reason:  "MissingServiceClusterLabel",
 			Message: fmt.Sprintf("The referenced CRD is missing a %s label.", serviceClusterLabel),
@@ -160,17 +160,17 @@ func (r *DerivedCustomResourceDefinitionReconciler) Reconcile(req ctrl.Request) 
 
 	// kindOverride
 	names := *baseCRD.Spec.Names.DeepCopy()
-	if dcrd.Spec.KindOverride != "" {
+	if dcr.Spec.KindOverride != "" {
 		// Analog to controller-gen:
 		// https://github.com/kubernetes-sigs/controller-tools/blob/v0.2.4/pkg/crd/spec.go#L58-L77
-		names.Kind = dcrd.Spec.KindOverride
+		names.Kind = dcr.Spec.KindOverride
 		names.ListKind = names.Kind + "List"
 		names.Plural = flect.Pluralize(strings.ToLower(names.Kind))
 		names.Singular = strings.ToLower(names.Kind)
 	}
 	group := serviceClusterName + "." + provider.Name
 
-	derivedCRD := &apiextensionsv1.CustomResourceDefinition{
+	derivedCR := &apiextensionsv1.CustomResourceDefinition{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: names.Plural + "." + group,
 			Labels: map[string]string{
@@ -180,27 +180,27 @@ func (r *DerivedCustomResourceDefinitionReconciler) Reconcile(req ctrl.Request) 
 		},
 		Spec: *baseCRD.Spec.DeepCopy(),
 	}
-	derivedCRD.Spec.Group = group
-	derivedCRD.Spec.Names = names
+	derivedCR.Spec.Group = group
+	derivedCR.Spec.Names = names
 
-	if _, err = util.InsertOwnerReference(dcrd, derivedCRD, r.Scheme); err != nil {
+	if _, err = util.InsertOwnerReference(dcr, derivedCR, r.Scheme); err != nil {
 		return result, fmt.Errorf("setting owner reference: %w", err)
 	}
-	if err = r.applyExposeConfig(dcrd, derivedCRD); err != nil {
+	if err = r.applyExposeConfig(dcr, derivedCR); err != nil {
 		return result, fmt.Errorf("apply expose config: %w", err)
 	}
-	currentDerivedCRD, err := internalreconcile.CustomResourceDefinition(
-		ctx, log, r.Client, derivedCRD,
+	currentDerivedCR, err := internalreconcile.CustomResourceDefinition(
+		ctx, log, r.Client, derivedCR,
 	)
 	if err != nil {
 		return result, fmt.Errorf("reconciling CRD: %w", err)
 	}
 
 	// check derived CRD conditions
-	if !isCRDReady(currentDerivedCRD) {
+	if !isCRDReady(currentDerivedCR) {
 		// waiting for CRD to be ready
-		if err = r.updateStatus(ctx, dcrd, catalogv1alpha1.DerivedCustomResourceDefinitionCondition{
-			Type:    catalogv1alpha1.DerivedCustomResourceDefinitionEstablished,
+		if err = r.updateStatus(ctx, dcr, catalogv1alpha1.DerivedCustomResourceCondition{
+			Type:    catalogv1alpha1.DerivedCustomResourceEstablished,
 			Status:  catalogv1alpha1.ConditionFalse,
 			Reason:  "Establishing",
 			Message: "The derived CRD is not yet established.",
@@ -210,15 +210,15 @@ func (r *DerivedCustomResourceDefinitionReconciler) Reconcile(req ctrl.Request) 
 		return result, nil
 	}
 
-	dcrd.Status.DerivedCRD = &catalogv1alpha1.DerivedCustomResourceDefinitionReference{
-		Name:     currentDerivedCRD.Name,
-		Group:    currentDerivedCRD.Spec.Group,
-		Kind:     currentDerivedCRD.Status.AcceptedNames.Kind,
-		Plural:   currentDerivedCRD.Status.AcceptedNames.Plural,
-		Singular: currentDerivedCRD.Status.AcceptedNames.Singular,
+	dcr.Status.DerivedCR = &catalogv1alpha1.DerivedCustomResourceReference{
+		Name:     currentDerivedCR.Name,
+		Group:    currentDerivedCR.Spec.Group,
+		Kind:     currentDerivedCR.Status.AcceptedNames.Kind,
+		Plural:   currentDerivedCR.Status.AcceptedNames.Plural,
+		Singular: currentDerivedCR.Status.AcceptedNames.Singular,
 	}
-	if err = r.updateStatus(ctx, dcrd, catalogv1alpha1.DerivedCustomResourceDefinitionCondition{
-		Type:    catalogv1alpha1.DerivedCustomResourceDefinitionEstablished,
+	if err = r.updateStatus(ctx, dcr, catalogv1alpha1.DerivedCustomResourceCondition{
+		Type:    catalogv1alpha1.DerivedCustomResourceEstablished,
 		Status:  catalogv1alpha1.ConditionTrue,
 		Reason:  "Established",
 		Message: "The derived CRD is established.",
@@ -230,12 +230,12 @@ func (r *DerivedCustomResourceDefinitionReconciler) Reconcile(req ctrl.Request) 
 	storageVersion := getStorageVersion(baseCRD)
 	desiredElevator := &operatorv1alpha1.Elevator{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      dcrd.Name,
-			Namespace: dcrd.Namespace,
+			Name:      dcr.Name,
+			Namespace: dcr.Namespace,
 		},
 		Spec: operatorv1alpha1.ElevatorSpec{
-			DerivedCRD: operatorv1alpha1.ObjectReference{
-				Name: dcrd.Name,
+			DerivedCR: operatorv1alpha1.ObjectReference{
+				Name: dcr.Name,
 			},
 			ProviderCRD: operatorv1alpha1.CRDReference{
 				Kind:    baseCRD.Status.AcceptedNames.Kind,
@@ -244,15 +244,15 @@ func (r *DerivedCustomResourceDefinitionReconciler) Reconcile(req ctrl.Request) 
 				Group:   baseCRD.Spec.Group,
 			},
 			TenantCRD: operatorv1alpha1.CRDReference{
-				Kind:    currentDerivedCRD.Status.AcceptedNames.Kind,
+				Kind:    currentDerivedCR.Status.AcceptedNames.Kind,
 				Version: storageVersion,
-				Plural:  currentDerivedCRD.Status.AcceptedNames.Plural,
-				Group:   currentDerivedCRD.Spec.Group,
+				Plural:  currentDerivedCR.Status.AcceptedNames.Plural,
+				Group:   currentDerivedCR.Spec.Group,
 			},
 		},
 	}
 	if err := controllerutil.SetControllerReference(
-		dcrd, desiredElevator, r.Scheme); err != nil {
+		dcr, desiredElevator, r.Scheme); err != nil {
 		return result, fmt.Errorf("set controller reference: %w", err)
 	}
 
@@ -280,8 +280,8 @@ func (r *DerivedCustomResourceDefinitionReconciler) Reconcile(req ctrl.Request) 
 	}
 
 	if readyCondition, _ := currentElevator.Status.GetCondition(operatorv1alpha1.ElevatorReady); readyCondition.Status != operatorv1alpha1.ConditionTrue {
-		if err = r.updateStatus(ctx, dcrd, catalogv1alpha1.DerivedCustomResourceDefinitionCondition{
-			Type:    catalogv1alpha1.DerivedCustomResourceDefinitionControllerReady,
+		if err = r.updateStatus(ctx, dcr, catalogv1alpha1.DerivedCustomResourceCondition{
+			Type:    catalogv1alpha1.DerivedCustomResourceControllerReady,
 			Status:  catalogv1alpha1.ConditionFalse,
 			Reason:  "Unready",
 			Message: "The controller is unready.",
@@ -291,8 +291,8 @@ func (r *DerivedCustomResourceDefinitionReconciler) Reconcile(req ctrl.Request) 
 		return result, nil
 	}
 
-	if err = r.updateStatus(ctx, dcrd, catalogv1alpha1.DerivedCustomResourceDefinitionCondition{
-		Type:    catalogv1alpha1.DerivedCustomResourceDefinitionControllerReady,
+	if err = r.updateStatus(ctx, dcr, catalogv1alpha1.DerivedCustomResourceCondition{
+		Type:    catalogv1alpha1.DerivedCustomResourceControllerReady,
 		Status:  catalogv1alpha1.ConditionTrue,
 		Reason:  "Ready",
 		Message: "The controller is ready.",
@@ -312,12 +312,12 @@ func isCRDReady(crd *apiextensionsv1.CustomResourceDefinition) bool {
 	return false
 }
 
-func (r *DerivedCustomResourceDefinitionReconciler) SetupWithManager(mgr ctrl.Manager) error {
-	owner := &catalogv1alpha1.DerivedCustomResourceDefinition{}
+func (r *DerivedCustomResourceReconciler) SetupWithManager(mgr ctrl.Manager) error {
+	owner := &catalogv1alpha1.DerivedCustomResource{}
 	enqueuer := util.EnqueueRequestForOwner(owner, mgr.GetScheme())
 
 	return ctrl.NewControllerManagedBy(mgr).
-		For(&catalogv1alpha1.DerivedCustomResourceDefinition{}).
+		For(&catalogv1alpha1.DerivedCustomResource{}).
 		Owns(&operatorv1alpha1.Elevator{}).
 		Watches(&source.Kind{Type: &apiextensionsv1.CustomResourceDefinition{}}, enqueuer).
 		Watches(&source.Kind{Type: &apiextensionsv1.CustomResourceDefinition{}}, &handler.EnqueueRequestsFromMapFunc{
@@ -327,7 +327,7 @@ func (r *DerivedCustomResourceDefinitionReconciler) SetupWithManager(mgr ctrl.Ma
 					return
 				}
 
-				ref, ok := annotations[dcrdAnnotation]
+				ref, ok := annotations[dcrAnnotation]
 				if !ok {
 					return
 				}
@@ -348,9 +348,9 @@ func (r *DerivedCustomResourceDefinitionReconciler) SetupWithManager(mgr ctrl.Ma
 		Complete(r)
 }
 
-func (r *DerivedCustomResourceDefinitionReconciler) handleDeletion(ctx context.Context, dcrd *catalogv1alpha1.DerivedCustomResourceDefinition) error {
+func (r *DerivedCustomResourceReconciler) handleDeletion(ctx context.Context, dcr *catalogv1alpha1.DerivedCustomResource) error {
 	crdList := &apiextensionsv1.CustomResourceDefinitionList{}
-	if err := r.List(ctx, crdList, util.OwnedBy(dcrd, r.Scheme)); err != nil {
+	if err := r.List(ctx, crdList, util.OwnedBy(dcr, r.Scheme)); err != nil {
 		return fmt.Errorf("listing owned CRDs: %w", err)
 	}
 
@@ -368,76 +368,76 @@ func (r *DerivedCustomResourceDefinitionReconciler) handleDeletion(ctx context.C
 	// remove referenced-by annotation
 	baseCRD := &apiextensionsv1.CustomResourceDefinition{}
 	err := r.Get(ctx, types.NamespacedName{
-		Name: dcrd.Spec.BaseCRD.Name,
+		Name: dcr.Spec.BaseCRD.Name,
 	}, baseCRD)
 	if err != nil && !errors.IsNotFound(err) {
 		return fmt.Errorf("getting baseCRD: %w", err)
 	}
 	if err == nil && baseCRD.Annotations != nil {
-		delete(baseCRD.Annotations, dcrdAnnotation)
+		delete(baseCRD.Annotations, dcrAnnotation)
 		if err := r.Update(ctx, baseCRD); err != nil {
 			return fmt.Errorf("updating base CRD: %w", err)
 		}
 	}
 
 	// remove finalizer
-	if util.RemoveFinalizer(dcrd, dcrdFinalizer) {
-		if err := r.Update(ctx, dcrd); err != nil {
-			return fmt.Errorf("updating DerivedCRD finalizer: %w", err)
+	if util.RemoveFinalizer(dcr, dcrFinalizer) {
+		if err := r.Update(ctx, dcr); err != nil {
+			return fmt.Errorf("updating DerivedCR finalizer: %w", err)
 		}
 	}
 	return nil
 }
 
-func (r *DerivedCustomResourceDefinitionReconciler) updateStatus(
-	ctx context.Context, dcrd *catalogv1alpha1.DerivedCustomResourceDefinition,
-	condition catalogv1alpha1.DerivedCustomResourceDefinitionCondition,
+func (r *DerivedCustomResourceReconciler) updateStatus(
+	ctx context.Context, dcr *catalogv1alpha1.DerivedCustomResource,
+	condition catalogv1alpha1.DerivedCustomResourceCondition,
 ) error {
-	dcrd.Status.ObservedGeneration = dcrd.Generation
-	dcrd.Status.SetCondition(condition)
+	dcr.Status.ObservedGeneration = dcr.Generation
+	dcr.Status.SetCondition(condition)
 
-	crdRegistered, _ := dcrd.Status.GetCondition(catalogv1alpha1.DerivedCustomResourceDefinitionEstablished)
-	controllerRunning, _ := dcrd.Status.GetCondition(catalogv1alpha1.DerivedCustomResourceDefinitionControllerReady)
+	crdRegistered, _ := dcr.Status.GetCondition(catalogv1alpha1.DerivedCustomResourceEstablished)
+	controllerRunning, _ := dcr.Status.GetCondition(catalogv1alpha1.DerivedCustomResourceControllerReady)
 
 	if crdRegistered.True() &&
 		controllerRunning.True() {
 		// Everything is ready
-		dcrd.Status.SetCondition(catalogv1alpha1.DerivedCustomResourceDefinitionCondition{
-			Type:    catalogv1alpha1.DerivedCustomResourceDefinitionReady,
+		dcr.Status.SetCondition(catalogv1alpha1.DerivedCustomResourceCondition{
+			Type:    catalogv1alpha1.DerivedCustomResourceReady,
 			Status:  catalogv1alpha1.ConditionTrue,
 			Reason:  "ComponentsReady",
 			Message: "The CRD is registered and the controller ist ready.",
 		})
 	} else if !crdRegistered.True() {
 		// CRD is not yet established
-		dcrd.Status.SetCondition(catalogv1alpha1.DerivedCustomResourceDefinitionCondition{
-			Type:    catalogv1alpha1.DerivedCustomResourceDefinitionReady,
+		dcr.Status.SetCondition(catalogv1alpha1.DerivedCustomResourceCondition{
+			Type:    catalogv1alpha1.DerivedCustomResourceReady,
 			Status:  catalogv1alpha1.ConditionFalse,
 			Reason:  "CRDNotEstablished",
 			Message: "The CRD is not yet established.",
 		})
 	} else if !controllerRunning.True() {
 		// Controller not ready
-		dcrd.Status.SetCondition(catalogv1alpha1.DerivedCustomResourceDefinitionCondition{
-			Type:    catalogv1alpha1.DerivedCustomResourceDefinitionReady,
+		dcr.Status.SetCondition(catalogv1alpha1.DerivedCustomResourceCondition{
+			Type:    catalogv1alpha1.DerivedCustomResourceReady,
 			Status:  catalogv1alpha1.ConditionFalse,
 			Reason:  "ControllerUnready",
 			Message: "The controller is unready.",
 		})
 	}
 
-	if err := r.Status().Update(ctx, dcrd); err != nil {
+	if err := r.Status().Update(ctx, dcr); err != nil {
 		return fmt.Errorf("updating status: %w", err)
 	}
 	return nil
 }
 
-func (r *DerivedCustomResourceDefinitionReconciler) applyExposeConfig(
-	dcrd *catalogv1alpha1.DerivedCustomResourceDefinition,
+func (r *DerivedCustomResourceReconciler) applyExposeConfig(
+	dcr *catalogv1alpha1.DerivedCustomResource,
 	crd *apiextensionsv1.CustomResourceDefinition,
 ) error {
 	versionExposeMap := map[string]catalogv1alpha1.VersionExposeConfig{}
-	for _, exposeConfig := range dcrd.Spec.Expose {
+	for _, exposeConfig := range dcr.Spec.Expose {
 		for _, version := range exposeConfig.Versions {
 			versionExposeMap[version] = exposeConfig
 		}

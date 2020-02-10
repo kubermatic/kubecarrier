@@ -41,6 +41,7 @@ type OfferingMetadata struct {
 // +kubebuilder:object:root=true
 // +kubebuilder:printcolumn:name="Display Name",type="string",JSONPath=".offering.displayName"
 // +kubebuilder:printcolumn:name="Age",type="date",JSONPath=".metadata.creationTimestamp"
+// +kubebuilder:resource:categories=kubecarrier-tenant,shortName=off
 type Offering struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`

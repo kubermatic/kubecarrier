@@ -10,6 +10,8 @@ metadata:
 spec:
   group: catalog.kubecarrier.io
   names:
+    categories:
+    - kubecarrier-admin
     kind: Provider
     listKind: ProviderList
     plural: providers

@@ -9,7 +9,7 @@ rules:
 - apiGroups:
   - kubecarrier.io
   resources:
-  - customresourcedefinitiondiscoveries
+  - customresourcediscoveries
   verbs:
   - get
   - list
@@ -19,7 +19,7 @@ rules:
 - apiGroups:
   - kubecarrier.io
   resources:
-  - customresourcedefinitiondiscoveries/status
+  - customresourcediscoveries/status
   verbs:
   - get
   - patch

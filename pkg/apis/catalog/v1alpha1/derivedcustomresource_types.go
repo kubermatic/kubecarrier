@@ -18,8 +18,8 @@ package v1alpha1
 
 import metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-// DerivedCustomResourceDefinitionSpec defines the desired state of DerivedCustomResourceDefinition.
-type DerivedCustomResourceDefinitionSpec struct {
+// DerivedCustomResourceSpec defines the desired state of DerivedCustomResource.
+type DerivedCustomResourceSpec struct {
 	// CRD that should be used as a base to derive a new CRD from.
 	BaseCRD ObjectReference `json:"baseCRD"`
 	// overrides the kind of the derived CRD.
@@ -43,24 +43,24 @@ type FieldPath struct {
 	JSONPath string `json:"jsonPath"`
 }
 
-// DerivedCustomResourceDefinitionStatus defines the observed state of DerivedCustomResourceDefinition.
-type DerivedCustomResourceDefinitionStatus struct {
-	// ObservedGeneration is the most recent generation observed for this DerivedCustomResourceDefinition by the controller.
+// DerivedCustomResourceStatus defines the observed state of DerivedCustomResource.
+type DerivedCustomResourceStatus struct {
+	// ObservedGeneration is the most recent generation observed for this DerivedCustomResource by the controller.
 	ObservedGeneration int64 `json:"observedGeneration,omitempty"`
-	// Conditions represents the latest available observations of a DerivedCustomResourceDefinition's current state.
-	Conditions []DerivedCustomResourceDefinitionCondition `json:"conditions,omitempty"`
+	// Conditions represents the latest available observations of a DerivedCustomResource's current state.
+	Conditions []DerivedCustomResourceCondition `json:"conditions,omitempty"`
 	// DEPRECATED.
 	// Phase represents the current lifecycle state of this object.
 	// Consider this field DEPRECATED, it will be removed as soon as there
 	// is a mechanism to map conditions to strings when printing the property.
 	// This is only for display purpose, for everything else use conditions.
-	Phase DerivedCustomResourceDefinitionPhaseType `json:"phase,omitempty"`
-	// DerivedCRD holds information about the derived CRD.
-	DerivedCRD *DerivedCustomResourceDefinitionReference `json:"derivedCRD,omitempty"`
+	Phase DerivedCustomResourcePhaseType `json:"phase,omitempty"`
+	// DerivedCR holds information about the derived CRD.
+	DerivedCR *DerivedCustomResourceReference `json:"derivedCR,omitempty"`
 }
 
-// DerivedCustomResourceDefinitionReference references the derived CRD controlled by this DerivedCustomResourceDefinition instance.
-type DerivedCustomResourceDefinitionReference struct {
+// DerivedCustomResourceReference references the derived CRD controlled by this DerivedCustomResource instance.
+type DerivedCustomResourceReference struct {
 	// Name of the derived CRD.
 	Name string `json:"name"`
 	// API Group of the derived CRD.
@@ -70,54 +70,54 @@ type DerivedCustomResourceDefinitionReference struct {
 	Singular string `json:"singular"`
 }
 
-// DerivedCustomResourceDefinitionPhaseType represents all conditions as a single string for printing by using kubectl commands.
-type DerivedCustomResourceDefinitionPhaseType string
+// DerivedCustomResourcePhaseType represents all conditions as a single string for printing by using kubectl commands.
+type DerivedCustomResourcePhaseType string
 
-// Values of DerivedCustomResourceDefinitionPhaseType.
+// Values of DerivedCustomResourcePhaseType.
 const (
-	DerivedCustomResourceDefinitionPhaseReady    DerivedCustomResourceDefinitionPhaseType = "Ready"
-	DerivedCustomResourceDefinitionPhaseNotReady DerivedCustomResourceDefinitionPhaseType = "NotReady"
-	DerivedCustomResourceDefinitionPhaseUnknown  DerivedCustomResourceDefinitionPhaseType = "Unknown"
+	DerivedCustomResourcePhaseReady    DerivedCustomResourcePhaseType = "Ready"
+	DerivedCustomResourcePhaseNotReady DerivedCustomResourcePhaseType = "NotReady"
+	DerivedCustomResourcePhaseUnknown  DerivedCustomResourcePhaseType = "Unknown"
 )
 
 // updatePhase updates the phase property based on the current conditions
 // this method should be called every time the conditions are updated.
-func (s *DerivedCustomResourceDefinitionStatus) updatePhase() {
+func (s *DerivedCustomResourceStatus) updatePhase() {
 	for _, condition := range s.Conditions {
-		if condition.Type != DerivedCustomResourceDefinitionReady {
+		if condition.Type != DerivedCustomResourceReady {
 			continue
 		}
 
 		switch condition.Status {
 		case ConditionTrue:
-			s.Phase = DerivedCustomResourceDefinitionPhaseReady
+			s.Phase = DerivedCustomResourcePhaseReady
 		case ConditionFalse:
-			s.Phase = DerivedCustomResourceDefinitionPhaseNotReady
+			s.Phase = DerivedCustomResourcePhaseNotReady
 		case ConditionUnknown:
-			s.Phase = DerivedCustomResourceDefinitionPhaseUnknown
+			s.Phase = DerivedCustomResourcePhaseUnknown
 		}
 		return
 	}
 
-	s.Phase = DerivedCustomResourceDefinitionPhaseUnknown
+	s.Phase = DerivedCustomResourcePhaseUnknown
 }
 
-// DerivedCustomResourceDefinitionConditionType represents a DerivedCustomResourceDefinitionCondition value.
-type DerivedCustomResourceDefinitionConditionType string
+// DerivedCustomResourceConditionType represents a DerivedCustomResourceCondition value.
+type DerivedCustomResourceConditionType string
 
 const (
-	// DerivedCustomResourceDefinitionReady represents a DerivedCustomResourceDefinition condition is in ready state.
-	DerivedCustomResourceDefinitionReady DerivedCustomResourceDefinitionConditionType = "Ready"
-	// DerivedCustomResourceDefinitionEstablished is True if the derived crd could be registered and is now served by the kube-apiserver.
-	DerivedCustomResourceDefinitionEstablished DerivedCustomResourceDefinitionConditionType = "Established"
-	// DerivedCustomResourceDefinitionControllerReady is Ture if the controller to propagate the derived and internal crd is ready.
-	DerivedCustomResourceDefinitionControllerReady DerivedCustomResourceDefinitionConditionType = "ControllerReady"
+	// DerivedCustomResourceReady represents a DerivedCustomResource condition is in ready state.
+	DerivedCustomResourceReady DerivedCustomResourceConditionType = "Ready"
+	// DerivedCustomResourceEstablished is True if the derived crd could be registered and is now served by the kube-apiserver.
+	DerivedCustomResourceEstablished DerivedCustomResourceConditionType = "Established"
+	// DerivedCustomResourceControllerReady is Ture if the controller to propagate the derived and internal crd is ready.
+	DerivedCustomResourceControllerReady DerivedCustomResourceConditionType = "ControllerReady"
 )
 
-// DerivedCustomResourceDefinitionCondition contains details for the current condition of this DerivedCustomResourceDefinition.
-type DerivedCustomResourceDefinitionCondition struct {
-	// Type is the type of the DerivedCustomResourceDefinition condition, currently ('Ready').
-	Type DerivedCustomResourceDefinitionConditionType `json:"type"`
+// DerivedCustomResourceCondition contains details for the current condition of this DerivedCustomResource.
+type DerivedCustomResourceCondition struct {
+	// Type is the type of the DerivedCustomResource condition, currently ('Ready').
+	Type DerivedCustomResourceConditionType `json:"type"`
 	// Status is the status of the condition, one of ('True', 'False', 'Unknown').
 	Status ConditionStatus `json:"status"`
 	// LastTransitionTime is the last time the condition transits from one status to another.
@@ -129,12 +129,12 @@ type DerivedCustomResourceDefinitionCondition struct {
 }
 
 // True returns whether .Status == "True"
-func (c DerivedCustomResourceDefinitionCondition) True() bool {
+func (c DerivedCustomResourceCondition) True() bool {
 	return c.Status == ConditionTrue
 }
 
 // GetCondition returns the Condition of the given condition type, if it exists.
-func (s *DerivedCustomResourceDefinitionStatus) GetCondition(t DerivedCustomResourceDefinitionConditionType) (condition DerivedCustomResourceDefinitionCondition, exists bool) {
+func (s *DerivedCustomResourceStatus) GetCondition(t DerivedCustomResourceConditionType) (condition DerivedCustomResourceCondition, exists bool) {
 	for _, cond := range s.Conditions {
 		if cond.Type == t {
 			condition = cond
@@ -146,7 +146,7 @@ func (s *DerivedCustomResourceDefinitionStatus) GetCondition(t DerivedCustomReso
 }
 
 // SetCondition replaces or adds the given condition.
-func (s *DerivedCustomResourceDefinitionStatus) SetCondition(condition DerivedCustomResourceDefinitionCondition) {
+func (s *DerivedCustomResourceStatus) SetCondition(condition DerivedCustomResourceCondition) {
 	defer s.updatePhase()
 
 	if condition.LastTransitionTime.IsZero() {
@@ -172,28 +172,29 @@ func (s *DerivedCustomResourceDefinitionStatus) SetCondition(condition DerivedCu
 	s.Conditions = append(s.Conditions, condition)
 }
 
-// DerivedCustomResourceDefinition derives a new CRD from a existing one.
+// DerivedCustomResource derives a new CRD from a existing one.
 // +kubebuilder:object:root=true
 // +kubebuilder:subresource:status
+// +kubebuilder:printcolumn:name="Base CRD",type="string",JSONPath=".spec.baseCRD.name"
 // +kubebuilder:printcolumn:name="Status",type="string",JSONPath=".status.phase"
 // +kubebuilder:printcolumn:name="Age",type="date",JSONPath=".metadata.creationTimestamp"
-// +kubebuilder:resource:shortName=dcrd
-type DerivedCustomResourceDefinition struct {
+// +kubebuilder:resource:categories=kubecarrier-provider,shortName=dcr
+type DerivedCustomResource struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec   DerivedCustomResourceDefinitionSpec   `json:"spec,omitempty"`
-	Status DerivedCustomResourceDefinitionStatus `json:"status,omitempty"`
+	Spec   DerivedCustomResourceSpec   `json:"spec,omitempty"`
+	Status DerivedCustomResourceStatus `json:"status,omitempty"`
 }
 
-// DerivedCustomResourceDefinitionList contains a list of DerivedCustomResourceDefinition.
+// DerivedCustomResourceList contains a list of DerivedCustomResource.
 // +kubebuilder:object:root=true
-type DerivedCustomResourceDefinitionList struct {
+type DerivedCustomResourceList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
-	Items           []DerivedCustomResourceDefinition `json:"items"`
+	Items           []DerivedCustomResource `json:"items"`
 }
 
 func init() {
-	SchemeBuilder.Register(&DerivedCustomResourceDefinition{}, &DerivedCustomResourceDefinitionList{})
+	SchemeBuilder.Register(&DerivedCustomResource{}, &DerivedCustomResourceList{})
 }

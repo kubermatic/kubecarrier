@@ -6,34 +6,32 @@ metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.2.4
   creationTimestamp: null
-  name: serviceclusters.kubecarrier.io
+  name: customresourcediscoverysets.kubecarrier.io
 spec:
   group: kubecarrier.io
   names:
     categories:
     - kubecarrier-provider
-    kind: ServiceCluster
-    listKind: ServiceClusterList
-    plural: serviceclusters
+    kind: CustomResourceDiscoverySet
+    listKind: CustomResourceDiscoverySetList
+    plural: customresourcediscoverysets
     shortNames:
-    - sc
-    singular: servicecluster
+    - crdisset
+    singular: customresourcediscoveryset
   scope: Namespaced
   versions:
   - additionalPrinterColumns:
+    - jsonPath: .spec.crd.name
+      name: CustomResourceDefinition
+      type: string
     - jsonPath: .status.phase
       name: Status
-      type: string
-    - jsonPath: .metadata.creationTimestamp
-      name: Age
-      type: date
-    - jsonPath: .spec.metadata.displayName
-      name: Display Name
       type: string
     name: v1alpha1
     schema:
       openAPIV3Schema:
-        description: ServiceCluster is a providers Kubernetes Cluster.
+        description: CustomResourceDiscoverySet manages multiple CustomResourceDiscovery
+          objects for a set of service clusters.
         properties:
           apiVersion:
             description: 'APIVersion defines the versioned schema of this representation
@@ -48,37 +46,77 @@ spec:
           metadata:
             type: object
           spec:
-            description: ServiceClusterSpec defines the desired state of ServiceCluster
             properties:
-              metadata:
-                description: ServiceClusterMetadata contains the metadata (display
-                  name, description, etc) of the ServiceCluster.
+              crd:
+                description: CRD references a CustomResourceDefinition within the
+                  ServiceCluster.
                 properties:
-                  description:
-                    description: Description shows the human-readable description
-                      of this ServiceCluster.
+                  name:
                     type: string
-                  displayName:
-                    description: DisplayName shows the human-readable name of this
-                      ServiceCluster.
-                    type: string
+                required:
+                - name
                 type: object
+              kindOverride:
+                description: KindOverride overrides resulting internal CRDs kind
+                type: string
+              serviceClusterSelector:
+                description: ServiceClusterSelector references a set of ServiceClusters
+                  to search the CustomResourceDefinition on.
+                properties:
+                  matchExpressions:
+                    description: matchExpressions is a list of label selector requirements.
+                      The requirements are ANDed.
+                    items:
+                      description: A label selector requirement is a selector that
+                        contains values, a key, and an operator that relates the key
+                        and values.
+                      properties:
+                        key:
+                          description: key is the label key that the selector applies
+                            to.
+                          type: string
+                        operator:
+                          description: operator represents a key's relationship to
+                            a set of values. Valid operators are In, NotIn, Exists
+                            and DoesNotExist.
+                          type: string
+                        values:
+                          description: values is an array of string values. If the
+                            operator is In or NotIn, the values array must be non-empty.
+                            If the operator is Exists or DoesNotExist, the values
+                            array must be empty. This array is replaced during a strategic
+                            merge patch.
+                          items:
+                            type: string
+                          type: array
+                      required:
+                      - key
+                      - operator
+                      type: object
+                    type: array
+                  matchLabels:
+                    additionalProperties:
+                      type: string
+                    description: matchLabels is a map of {key,value} pairs. A single
+                      {key,value} in the matchLabels map is equivalent to an element
+                      of matchExpressions, whose key field is "key", the operator
+                      is "In", and the values array contains only "value". The requirements
+                      are ANDed.
+                    type: object
+                type: object
+            required:
+            - crd
+            - serviceClusterSelector
             type: object
           status:
-            description: ServiceClusterStatus defines the observed state of ServiceCluster
             properties:
               conditions:
-                description: Conditions is a list of all conditions this ServiceCluster
+                description: Conditions is a list of all conditions this CustomResourceDiscovery
                   is in.
                 items:
-                  description: ServiceClusterCondition contains details for the current
-                    condition of this ServiceCluster.
+                  description: CustomResourceDiscoverySetCondition contains details
+                    for the current condition of this CustomResourceDiscoverySet.
                   properties:
-                    lastHeartbeatTime:
-                      description: LastHeartbeatTime is the timestamp corresponding
-                        to the last update of this condition.
-                      format: date-time
-                      type: string
                     lastTransitionTime:
                       description: LastTransitionTime is the last time the condition
                         transit from one status to another.
@@ -100,7 +138,6 @@ spec:
                       description: Type of the condition, currently ('Ready').
                       type: string
                   required:
-                  - lastHeartbeatTime
                   - lastTransitionTime
                   - message
                   - reason
@@ -108,38 +145,6 @@ spec:
                   - type
                   type: object
                 type: array
-              kubernetesVersion:
-                description: KubernetesVersion of the service cluster API Server
-                properties:
-                  buildDate:
-                    type: string
-                  compiler:
-                    type: string
-                  gitCommit:
-                    type: string
-                  gitTreeState:
-                    type: string
-                  gitVersion:
-                    type: string
-                  goVersion:
-                    type: string
-                  major:
-                    type: string
-                  minor:
-                    type: string
-                  platform:
-                    type: string
-                required:
-                - buildDate
-                - compiler
-                - gitCommit
-                - gitTreeState
-                - gitVersion
-                - goVersion
-                - major
-                - minor
-                - platform
-                type: object
               observedGeneration:
                 description: The most recent generation observed by the controller.
                 format: int64

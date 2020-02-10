@@ -63,7 +63,7 @@ func LogObject(t *testing.T, obj interface{}) {
 }
 
 const (
-	defaultWaitTimeout  = 60 * time.Second
+	defaultWaitTimeout  = 120 * time.Second
 	defaultPollInterval = time.Second
 )
 
@@ -154,10 +154,6 @@ func WaitUntilFound(c client.Client, obj runtime.Object, opts ...waitOption) err
 }
 
 func WaitUntilCondition(c client.Client, obj runtime.Object, ConditionType, conditionStatus interface{}, opts ...waitOption) error {
-	if err := WaitUntilFound(c, obj, opts...); err != nil {
-		return err
-	}
-
 	opt := &waitOptions{
 		timeout:      defaultWaitTimeout,
 		pollInterval: defaultPollInterval,
@@ -189,10 +185,15 @@ func WaitUntilCondition(c client.Client, obj runtime.Object, ConditionType, cond
 	})
 
 	if err != nil {
-		if lastErr != nil {
-			return fmt.Errorf("%s not found: %w, after %s", nn, lastErr, opt.timeout)
+		b, marshallErr := json.MarshalIndent(obj, "", "\t")
+		if marshallErr != nil {
+			return fmt.Errorf("cannot marshall indent obj!!! %v %w", marshallErr, err)
 		}
-		return fmt.Errorf("%s not found: %w, after %s", nn, err, opt.timeout)
+
+		if lastErr != nil {
+			return fmt.Errorf("%s not found: %w, after %s\n%s", nn, lastErr, opt.timeout, string(b))
+		}
+		return fmt.Errorf("%s not found: %w, after %s\n%s", nn, err, opt.timeout, string(b))
 	}
 	return nil
 }
