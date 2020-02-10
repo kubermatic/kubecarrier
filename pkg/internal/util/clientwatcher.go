@@ -21,7 +21,7 @@ import (
 	"fmt"
 
 	"k8s.io/apimachinery/pkg/api/meta"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/watch"
@@ -79,7 +79,7 @@ func (cl *ClientWatcher) WaitUntil(ctx context.Context, obj Object, cond ...func
 	}
 	ri := cl.client.Resource(rmap.Resource).Namespace(objNN.Namespace)
 	if _, err := clientwatch.ListWatchUntil(ctx, &cache.ListWatch{
-		ListFunc: func(options v1.ListOptions) (object runtime.Object, err error) {
+		ListFunc: func(options metav1.ListOptions) (object runtime.Object, err error) {
 			return ri.List(options)
 		},
 		WatchFunc: ri.Watch,
