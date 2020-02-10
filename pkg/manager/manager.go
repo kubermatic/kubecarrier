@@ -26,6 +26,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
 
 	catalogv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/catalog/v1alpha1"
@@ -40,6 +41,7 @@ import (
 type flags struct {
 	kubeCarrierSystemNamespace string
 	metricsAddr                string
+	healthAddr                 string
 	enableLeaderElection       bool
 	certDir                    string
 }
@@ -72,6 +74,7 @@ func NewManagerCommand() *cobra.Command {
 		},
 	}
 	cmd.Flags().StringVar(&flags.metricsAddr, "metrics-addr", ":8080", "The address the metric endpoint binds to.")
+	cmd.Flags().StringVar(&flags.healthAddr, "health-addr", ":9440", "The address the health endpoint binds to.")
 	cmd.Flags().BoolVar(&flags.enableLeaderElection, "enable-leader-election", true,
 		"Enable leader election for controller manager. Enabling this will ensure there is only one active controller manager.")
 	cmd.Flags().StringVar(&flags.kubeCarrierSystemNamespace, "kubecarrier-system-namespace", os.Getenv("KUBECARRIER_NAMESPACE"), "The namespace that KubeCarrier controller manager deploys to.")
@@ -88,6 +91,7 @@ func run(flags *flags, log logr.Logger) error {
 		LeaderElectionNamespace: flags.kubeCarrierSystemNamespace,
 		Port:                    9443,
 		CertDir:                 flags.certDir,
+		HealthProbeBindAddress:  flags.healthAddr,
 	})
 	if err != nil {
 		return fmt.Errorf("starting manager: %w", err)
@@ -236,6 +240,10 @@ func run(flags *flags, log logr.Logger) error {
 			ProviderLabel:        controllers.ProviderLabel,
 			Log:                  log.WithName("mutating webhooks").WithName("CatalogEntry"),
 		}})
+
+	if err := mgr.AddReadyzCheck("ping", healthz.Ping); err != nil {
+		return fmt.Errorf("adding readyz checker: %w", err)
+	}
 
 	log.Info("starting manager")
 	if err := mgr.Start(ctrl.SetupSignalHandler()); err != nil {
