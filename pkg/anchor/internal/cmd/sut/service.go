@@ -55,8 +55,7 @@ func newSUTSubcommand(log logr.Logger, component string) *cobra.Command {
 		Long:  strings.TrimSpace(``),
 		Short: "",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			fname := loader.GetDefaultFilename()
-			log.Info("loading kubeconfig", "filename", fname)
+			log.Info("loading kubeconfig", "filename", loader.GetDefaultFilename())
 			clientConfig := clientcmd.NewNonInteractiveDeferredLoadingClientConfig(
 				loader,
 				&clientcmd.ConfigOverrides{},
@@ -65,7 +64,7 @@ func newSUTSubcommand(log logr.Logger, component string) *cobra.Command {
 			if err != nil {
 				return fmt.Errorf("config: %w", err)
 			}
-			cl, err := client.New(cfg, client.Options{})
+			k8sClient, err := client.New(cfg, client.Options{})
 			if err != nil {
 				return fmt.Errorf("client: %w", err)
 			}
@@ -73,7 +72,7 @@ func newSUTSubcommand(log logr.Logger, component string) *cobra.Command {
 			defer closeCtx()
 
 			// get the deployment info from the k8s cluster
-			deployment, container, err := getDeploymentAndContainer(ctx, cl, deploymentNN, component, cmd)
+			deployment, container, err := getDeploymentAndContainer(ctx, k8sClient, deploymentNN, component, cmd)
 			if err != nil {
 				return fmt.Errorf("getting getDeploymentAndContainer: %w", err)
 			}
@@ -115,9 +114,11 @@ func newSUTSubcommand(log logr.Logger, component string) *cobra.Command {
 			_, _ = fmt.Fprintln(cmd.OutOrStdout(), "telepresence", strings.Join(telepresenceArgs, " "),
 				"\nWait for message \"T: Setup complete. Lunching your command.\" and press any key to continue...",
 			)
-			// pause
-			b := make([]byte, 1)
-			_, _ = cmd.InOrStdin().Read(b)
+			{
+				// pause
+				b := make([]byte, 1)
+				_, _ = cmd.InOrStdin().Read(b)
+			}
 
 			if err := writeServiceKubeconfig(clientConfig, rootMount, appKubeconfig); err != nil {
 				return fmt.Errorf("write kubeconfig: %w", err)
@@ -129,6 +130,9 @@ func newSUTSubcommand(log logr.Logger, component string) *cobra.Command {
 				volumeReplacementMap[mount.MountPath] = path.Join(rootMount, mount.MountPath)
 			}
 			envBytes, err := ioutil.ReadFile(envJson)
+			if err != nil {
+				return fmt.Errorf("reading envJson: %w", err)
+			}
 			env := make(map[string]string)
 			if err := json.Unmarshal(envBytes, &env); err != nil {
 				return fmt.Errorf("cannot unmarshall the environment")
@@ -166,7 +170,7 @@ func newSUTSubcommand(log logr.Logger, component string) *cobra.Command {
 				LDFlags: ldFlags,
 			}
 			{
-				b, err = json.MarshalIndent(task, "", "\t")
+				b, err := json.MarshalIndent(task, "", "\t")
 				if err != nil {
 					return fmt.Errorf("marshal task: %w", err)
 				}
