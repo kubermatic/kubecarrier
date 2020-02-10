@@ -36,7 +36,7 @@ import (
 	"k8s.io/client-go/tools/clientcmd/api"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	"github.com/kubermatic/kubecarrier/pkg/internal/ide"
+	"github.com/kubermatic/kubecarrier/pkg/ide"
 )
 
 func newSUTSubcommand(log logr.Logger, component string) *cobra.Command {
