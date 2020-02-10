@@ -192,7 +192,7 @@ func OwnedBy(owner Object, sc *runtime.Scheme) GeneralizedListOption {
 	}
 }
 
-// fieldIndexValue converts the ownerReference into a simple value for a client.FieldIndexer.
+// fieldIndexValue converts the ownerReference into a simple value for a dynamicClient.FieldIndexer.
 // to be used as key for indexing structure.
 func (n ownerReference) fieldIndexValue() string {
 	b, err := json.Marshal(n)
@@ -215,7 +215,7 @@ func toOwnerReference(owner Object, scheme *runtime.Scheme) ownerReference {
 	if err != nil {
 		// if this panic occurs many, many other stuff has gone wrong as well
 		// by owner type's safety ensures this is somewhat well formed k8s object
-		// When using client-go API, it needs to be able to deduce GVK in the same manner
+		// When using dynamicClient-go API, it needs to be able to deduce GVK in the same manner
 		// thus get/create/update/patch/delete shall error out long before this is called
 		// This massively simplifies the function interface and allows OwnedBy to be a
 		// one-liner instead of 3 line check which never errors
