@@ -30,7 +30,7 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/spf13/cobra"
 	appsv1 "k8s.io/api/apps/v1"
-	v1 "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/client-go/tools/clientcmd/api"
@@ -90,7 +90,7 @@ func newSUTSubcommand(log logr.Logger, component string) *cobra.Command {
 			rootMount := path.Join(workdir, "rootfs")
 			envJson := path.Join(workdir, "env.json")
 			logFile := path.Join(workdir, "telepresence.log")
-			appKubeconfig := path.Join(workdir, "kubeconfig")
+			taskKubeconfig := path.Join(workdir, "kubeconfig")
 
 			// configure telepresence args
 			telepresenceArgs := []string{
@@ -120,53 +120,22 @@ func newSUTSubcommand(log logr.Logger, component string) *cobra.Command {
 				_, _ = cmd.InOrStdin().Read(b)
 			}
 
-			if err := writeServiceKubeconfig(clientConfig, rootMount, appKubeconfig); err != nil {
+			if err := writeServiceKubeconfig(clientConfig, rootMount, taskKubeconfig); err != nil {
 				return fmt.Errorf("write kubeconfig: %w", err)
 			}
 
-			// translate path args from the container to IDE task
-			volumeReplacementMap := make(map[string]string)
-			for _, mount := range container.VolumeMounts {
-				volumeReplacementMap[mount.MountPath] = path.Join(rootMount, mount.MountPath)
-			}
-			envBytes, err := ioutil.ReadFile(envJson)
+			taskArgs, taskEnv, err := generateTaskArgsAndEnv(container, rootMount, extraArgs, envJson)
 			if err != nil {
-				return fmt.Errorf("reading envJson: %w", err)
+				return err
 			}
-			env := make(map[string]string)
-			if err := json.Unmarshal(envBytes, &env); err != nil {
-				return fmt.Errorf("cannot unmarshall the environment")
-			}
-			hostContainerArgs := make([]string, 0, len(container.Args))
-			for _, arg := range container.Args {
-				arg, err := k8sExpandEnvArg(arg, env)
-				if err != nil {
-					return fmt.Errorf("expanding arg: %w", err)
-				}
-				for containerPath, hostPath := range volumeReplacementMap {
-					arg = strings.ReplaceAll(arg, containerPath, hostPath)
-				}
-				hostContainerArgs = append(hostContainerArgs, arg)
-			}
-			hostContainerArgs = append(hostContainerArgs, extraArgs...)
-			for k, v := range env {
-				if !strings.HasPrefix(k, "TELEPRESENCE") {
-					for containerPath, hostPath := range volumeReplacementMap {
-						if strings.HasPrefix(v, containerPath) {
-							v = strings.ReplaceAll(v, containerPath, hostPath)
-						}
-					}
-					env[k] = v
-				}
-			}
-			env["KUBECONFIG"] = appKubeconfig
+			taskEnv["KUBECONFIG"] = taskKubeconfig
 
 			// generate tasks
 			task := ide.Task{
 				Name:    taskName,
 				Program: "cmd/" + component,
-				Args:    hostContainerArgs,
-				Env:     env,
+				Args:    taskArgs,
+				Env:     taskEnv,
 				LDFlags: ldFlags,
 			}
 			{
@@ -191,7 +160,46 @@ func newSUTSubcommand(log logr.Logger, component string) *cobra.Command {
 	return cmd
 }
 
-func getDeploymentAndContainer(ctx context.Context, cl client.Client, deploymentNN string, component string, cmd *cobra.Command) (*appsv1.Deployment, *v1.Container, error) {
+func generateTaskArgsAndEnv(container *corev1.Container, rootMount string, extraArgs []string, envJson string) ([]string, map[string]string, error) {
+	// translate path args from the container to IDE task
+	volumeReplacementMap := make(map[string]string)
+	for _, mount := range container.VolumeMounts {
+		volumeReplacementMap[mount.MountPath] = path.Join(rootMount, mount.MountPath)
+	}
+	envBytes, err := ioutil.ReadFile(envJson)
+	if err != nil {
+		return nil, nil, fmt.Errorf("reading envJson: %w", err)
+	}
+	env := make(map[string]string)
+	if err := json.Unmarshal(envBytes, &env); err != nil {
+		return nil, nil, fmt.Errorf("cannot unmarshall the environment")
+	}
+	hostContainerArgs := make([]string, 0, len(container.Args))
+	for _, arg := range container.Args {
+		arg, err := k8sExpandEnvArg(arg, env)
+		if err != nil {
+			return nil, nil, fmt.Errorf("expanding arg: %w", err)
+		}
+		for containerPath, hostPath := range volumeReplacementMap {
+			arg = strings.ReplaceAll(arg, containerPath, hostPath)
+		}
+		hostContainerArgs = append(hostContainerArgs, arg)
+	}
+	hostContainerArgs = append(hostContainerArgs, extraArgs...)
+	for k, v := range env {
+		if !strings.HasPrefix(k, "TELEPRESENCE") {
+			for containerPath, hostPath := range volumeReplacementMap {
+				if strings.HasPrefix(v, containerPath) {
+					v = strings.ReplaceAll(v, containerPath, hostPath)
+				}
+			}
+			env[k] = v
+		}
+	}
+	return hostContainerArgs, env, nil
+}
+
+func getDeploymentAndContainer(ctx context.Context, cl client.Client, deploymentNN string, component string, cmd *cobra.Command) (*appsv1.Deployment, *corev1.Container, error) {
 	var err error
 	deployment := &appsv1.Deployment{}
 	if deploymentNN == "" {
