@@ -10,6 +10,8 @@ metadata:
 spec:
   group: catalog.kubecarrier.io
   names:
+    categories:
+    - kubecarrier-tenant
     kind: ServiceClusterReference
     listKind: ServiceClusterReferenceList
     plural: serviceclusterreferences

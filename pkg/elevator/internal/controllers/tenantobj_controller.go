@@ -44,12 +44,12 @@ type TenantObjReconciler struct {
 	NamespacedClient client.Client
 
 	// Dynamic types we work with
-	ProviderGVK, TenantGVK            schema.GroupVersionKind
-	DerivedCRDName, ProviderNamespace string
+	ProviderGVK, TenantGVK           schema.GroupVersionKind
+	DerivedCRName, ProviderNamespace string
 }
 
-// +kubebuilder:rbac:groups=catalog.kubecarrier.io,resources=derivedcustomresourcedefinitions,verbs=get;list;watch
-// +kubebuilder:rbac:groups=catalog.kubecarrier.io,resources=derivedcustomresourcedefinitions/status,verbs=get
+// +kubebuilder:rbac:groups=catalog.kubecarrier.io,resources=derivedcustomresources,verbs=get;list;watch
+// +kubebuilder:rbac:groups=catalog.kubecarrier.io,resources=derivedcustomresources/status,verbs=get
 
 func (r *TenantObjReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	var (
@@ -62,16 +62,16 @@ func (r *TenantObjReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 		return result, client.IgnoreNotFound(err)
 	}
 
-	// Get DerivedCustomResourceDefinition field configs
-	derivedCRD := &catalogv1alpha1.DerivedCustomResourceDefinition{}
+	// Get DerivedCustomResource field configs
+	derivedCR := &catalogv1alpha1.DerivedCustomResource{}
 	if err := r.NamespacedClient.Get(ctx, types.NamespacedName{
-		Name:      r.DerivedCRDName,
+		Name:      r.DerivedCRName,
 		Namespace: r.ProviderNamespace,
-	}, derivedCRD); err != nil {
-		return result, fmt.Errorf("getting DerivedCustomResourceDefinition: %w", err)
+	}, derivedCR); err != nil {
+		return result, fmt.Errorf("getting DerivedCustomResource: %w", err)
 	}
 	version := r.ProviderGVK.Version
-	exposeConfig, ok := versionExposeConfigForVersion(derivedCRD.Spec.Expose, version)
+	exposeConfig, ok := versionExposeConfigForVersion(derivedCR.Spec.Expose, version)
 	if !ok {
 		return result, fmt.Errorf("missing version expose config for version %q", version)
 	}

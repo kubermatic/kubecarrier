@@ -140,13 +140,21 @@ func run(flags *flags, log logr.Logger) error {
 		return fmt.Errorf("creating Provider controller: %w", err)
 	}
 
-	if err = (&controllers.CustomResourceDefinitionDiscoveryReconciler{
+	if err = (&controllers.CustomResourceDiscoveryReconciler{
 		Client:                     mgr.GetClient(),
-		Log:                        log.WithName("controllers").WithName("CustomResourceDefinitionDiscovery"),
+		Log:                        log.WithName("controllers").WithName("CustomResourceDiscovery"),
 		Scheme:                     mgr.GetScheme(),
 		KubeCarrierSystemNamespace: flags.kubeCarrierSystemNamespace,
 	}).SetupWithManager(mgr); err != nil {
-		return fmt.Errorf("creating CustomResourceDefinitionDiscovery controller: %w", err)
+		return fmt.Errorf("creating CustomResourceDiscovery controller: %w", err)
+	}
+
+	if err = (&controllers.CustomResourceDiscoverySetReconciler{
+		Client: mgr.GetClient(),
+		Log:    log.WithName("controllers").WithName("CustomResourceDiscoverySet"),
+		Scheme: mgr.GetScheme(),
+	}).SetupWithManager(mgr); err != nil {
+		return fmt.Errorf("creating CustomResourceDiscoverySet controller: %w", err)
 	}
 
 	if err = (&controllers.CatalogEntryReconciler{
@@ -167,22 +175,22 @@ func run(flags *flags, log logr.Logger) error {
 		return fmt.Errorf("creating Catalog controller: %w", err)
 	}
 
-	if err = (&controllers.DerivedCustomResourceDefinitionReconciler{
+	if err = (&controllers.DerivedCustomResourceReconciler{
 		Client:                     mgr.GetClient(),
-		Log:                        log.WithName("controllers").WithName("DerivedCustomResourceDefinition"),
+		Log:                        log.WithName("controllers").WithName("DerivedCustomResource"),
 		Scheme:                     mgr.GetScheme(),
 		KubeCarrierSystemNamespace: flags.kubeCarrierSystemNamespace,
 	}).SetupWithManager(mgr); err != nil {
-		return fmt.Errorf("creating DerivedCustomResourceDefinition controller: %w", err)
+		return fmt.Errorf("creating DerivedCustomResource controller: %w", err)
 	}
 
 	// Register webhooks as handlers
 	wbh := mgr.GetWebhookServer()
 
 	// validating webhooks
-	wbh.Register(utilwebhook.GenerateValidateWebhookPath(&catalogv1alpha1.DerivedCustomResourceDefinition{}, mgr.GetScheme()),
-		&webhook.Admission{Handler: &webhooks.DerivedCustomResourceDefinitionWebhookHandler{
-			Log: log.WithName("validating webhooks").WithName("DerivedCustomResourceDefinition"),
+	wbh.Register(utilwebhook.GenerateValidateWebhookPath(&catalogv1alpha1.DerivedCustomResource{}, mgr.GetScheme()),
+		&webhook.Admission{Handler: &webhooks.DerivedCustomResourceWebhookHandler{
+			Log: log.WithName("validating webhooks").WithName("DerivedCustomResource"),
 		}})
 	wbh.Register(utilwebhook.GenerateValidateWebhookPath(&catalogv1alpha1.Offering{}, mgr.GetScheme()),
 		&webhook.Admission{Handler: &webhooks.OfferingWebhookHandler{
@@ -208,13 +216,17 @@ func run(flags *flags, log logr.Logger) error {
 		&webhook.Admission{Handler: &webhooks.TenantReferenceWebhookHandler{
 			Log: log.WithName("validating webhooks").WithName("TenantReference"),
 		}})
-	wbh.Register(utilwebhook.GenerateValidateWebhookPath(&corev1alpha1.CustomResourceDefinitionDiscovery{}, mgr.GetScheme()),
-		&webhook.Admission{Handler: &webhooks.CustomResourceDefinitionDiscoveryWebhookHandler{
-			Log: log.WithName("validating webhooks").WithName("CustomResourceDefinitionDiscovery"),
+	wbh.Register(utilwebhook.GenerateValidateWebhookPath(&corev1alpha1.CustomResourceDiscovery{}, mgr.GetScheme()),
+		&webhook.Admission{Handler: &webhooks.CustomResourceDiscoveryWebhookHandler{
+			Log: log.WithName("validating webhooks").WithName("CustomResourceDiscovery"),
 		}})
 	wbh.Register(utilwebhook.GenerateValidateWebhookPath(&corev1alpha1.ServiceCluster{}, mgr.GetScheme()),
 		&webhook.Admission{Handler: &webhooks.ServiceClusterWebhookHandler{
 			Log: log.WithName("validating webhooks").WithName("ServiceCluster"),
+		}})
+	wbh.Register(utilwebhook.GenerateValidateWebhookPath(&corev1alpha1.ServiceClusterAssignment{}, mgr.GetScheme()),
+		&webhook.Admission{Handler: &webhooks.ServiceClusterAssignmentWebhookHandler{
+			Log: log.WithName("validating webhooks").WithName("ServiceClusterAssignment"),
 		}})
 
 	// mutating webhooks

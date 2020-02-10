@@ -50,7 +50,7 @@ func TestAdoptionReconciler(t *testing.T) {
 	t.Run("creates tenant object", func(t *testing.T) {
 		log := testutil.NewLogger(t)
 		client := fakeclient.NewFakeClientWithScheme(
-			testScheme, dcrd, providerObj)
+			testScheme, dcr, providerObj)
 
 		r := AdoptionReconciler{
 			Client:           client,
@@ -61,7 +61,7 @@ func TestAdoptionReconciler(t *testing.T) {
 			ProviderGVK: providerGVK,
 			TenantGVK:   tenantGVK,
 
-			DerivedCRDName:    dcrd.Name,
+			DerivedCRName:     dcr.Name,
 			ProviderNamespace: providerNamespace,
 		}
 

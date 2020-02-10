@@ -8,6 +8,8 @@ metadata:
 spec:
   group: catalog.kubecarrier.io
   names:
+    categories:
+      - kubecarrier-provider
     kind: CatalogEntry
     listKind: CatalogEntryList
     plural: catalogentries
@@ -17,6 +19,9 @@ spec:
   scope: Namespaced
   versions:
     - additionalPrinterColumns:
+        - jsonPath: .status.phase
+          name: Status
+          type: string
         - jsonPath: .metadata.creationTimestamp
           name: Age
           type: date
