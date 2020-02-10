@@ -63,7 +63,7 @@ func LogObject(t *testing.T, obj interface{}) {
 }
 
 const (
-	defaultWaitTimeout  = 60 * time.Second
+	defaultWaitTimeout  = 120 * time.Second
 	defaultPollInterval = time.Second
 )
 
