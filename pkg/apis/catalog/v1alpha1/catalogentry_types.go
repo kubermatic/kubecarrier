@@ -24,8 +24,8 @@ import (
 type CatalogEntrySpec struct {
 	// Metadata contains the metadata (display name, description, etc) of the CatalogEntry.
 	Metadata CatalogEntryMetadata `json:"metadata,omitempty"`
-	// CRDSelector selects CRD objects that should be part of this catalog.
-	CRDSelector *metav1.LabelSelector `json:"crdSelector,omitempty"`
+	// ReferencedCRD is the underlying ReferencedCRD objects that this CatalogEntry refers to.
+	ReferencedCRD ObjectReference `json:"referencedCRD,omitempty"`
 }
 
 // CatalogEntryMetadata contains the metadata (display name, description, etc) of the CatalogEntry.
@@ -38,8 +38,8 @@ type CatalogEntryMetadata struct {
 
 // CatalogEntryStatus defines the observed state of CatalogEntry.
 type CatalogEntryStatus struct {
-	// CRDs holds the information about the underlying CRDs that are offered by this CatalogEntry.
-	CRDs []CRDInformation `json:"crds,omitempty"`
+	// CRD holds the information about the underlying ReferencedCRD that are offered by this CatalogEntry.
+	CRD CRDInformation `json:"crd,omitempty"`
 
 	// ObservedGeneration is the most recent generation observed for this CatalogEntry by the controller.
 	ObservedGeneration int64 `json:"observedGeneration,omitempty"`
@@ -160,7 +160,7 @@ func (s *CatalogEntryStatus) SetCondition(condition CatalogEntryCondition) {
 	s.Conditions = append(s.Conditions, condition)
 }
 
-// CatalogEntry adds additional metadata to a set of CRD's and groups the same Kind for multiple ServiceClusters
+// CatalogEntry reference to the CRD that the provider wants to provide as service to the tenant.
 // +kubebuilder:object:root=true
 // +kubebuilder:subresource:status
 // +kubebuilder:printcolumn:name="Status",type="string",JSONPath=".status.phase"

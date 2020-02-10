@@ -49,7 +49,7 @@ type TenantSuite struct {
 
 	// Objects that used in this test suite.
 	provider *catalogv1alpha1.Provider
-	crds     []*apiextensionsv1.CustomResourceDefinition
+	crd      *apiextensionsv1.CustomResourceDefinition
 }
 
 func (s *TenantSuite) SetupSuite() {
@@ -92,67 +92,36 @@ func (s *TenantSuite) SetupSuite() {
 	}), "getting the namespace for the Provider error")
 
 	// Create CRDs to execute tests
-	s.crds = append(s.crds,
-		&apiextensionsv1.CustomResourceDefinition{
-			ObjectMeta: metav1.ObjectMeta{
-				Name: "couchdbs.eu-west-1.example.cloud",
-				Labels: map[string]string{
-					"kubecarrier.io/provider":        s.provider.Name,
-					"kubecarrier.io/service-cluster": "eu-west-1",
-				},
-			},
-			Spec: apiextensionsv1.CustomResourceDefinitionSpec{
-				Group: "eu-west-1.example.cloud",
-				Names: apiextensionsv1.CustomResourceDefinitionNames{
-					Plural: "couchdbs",
-					Kind:   "CouchDB",
-				},
-				Versions: []apiextensionsv1.CustomResourceDefinitionVersion{
-					{
-						Name:    "v1alpha1",
-						Storage: true,
-						Schema: &apiextensionsv1.CustomResourceValidation{
-							OpenAPIV3Schema: &apiextensionsv1.JSONSchemaProps{
-								Type: "object",
-							},
-						},
-					},
-				},
-				Scope: apiextensionsv1.ClusterScoped,
+	s.crd = &apiextensionsv1.CustomResourceDefinition{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "couchdbs.eu-west-1.example.cloud",
+			Labels: map[string]string{
+				"kubecarrier.io/provider":        s.provider.Name,
+				"kubecarrier.io/service-cluster": "eu-west-1",
 			},
 		},
-		&apiextensionsv1.CustomResourceDefinition{
-			ObjectMeta: metav1.ObjectMeta{
-				Name: "couchdbs.us-east-1.example.cloud",
-				Labels: map[string]string{
-					"kubecarrier.io/provider":        s.provider.Name,
-					"kubecarrier.io/service-cluster": "us-east-1",
-				},
+		Spec: apiextensionsv1.CustomResourceDefinitionSpec{
+			Group: "eu-west-1.example.cloud",
+			Names: apiextensionsv1.CustomResourceDefinitionNames{
+				Plural: "couchdbs",
+				Kind:   "CouchDB",
 			},
-			Spec: apiextensionsv1.CustomResourceDefinitionSpec{
-				Group: "us-east-1.example.cloud",
-				Names: apiextensionsv1.CustomResourceDefinitionNames{
-					Plural: "couchdbs",
-					Kind:   "CouchDB",
-				},
-				Versions: []apiextensionsv1.CustomResourceDefinitionVersion{
-					{
-						Name:    "v1",
-						Storage: true,
-						Schema: &apiextensionsv1.CustomResourceValidation{
-							OpenAPIV3Schema: &apiextensionsv1.JSONSchemaProps{
-								Type: "object",
-							},
+			Versions: []apiextensionsv1.CustomResourceDefinitionVersion{
+				{
+					Name:    "v1alpha1",
+					Storage: true,
+					Schema: &apiextensionsv1.CustomResourceValidation{
+						OpenAPIV3Schema: &apiextensionsv1.JSONSchemaProps{
+							Type: "object",
 						},
 					},
 				},
-				Scope: apiextensionsv1.ClusterScoped,
 			},
-		})
-
-	for _, crd := range s.crds {
-		s.Require().NoError(s.masterClient.Create(ctx, crd), fmt.Sprintf("creating CRD: %s error", crd.Name))
+			Scope: apiextensionsv1.NamespaceScoped,
+		},
 	}
+
+	s.Require().NoError(s.masterClient.Create(ctx, s.crd), fmt.Sprintf("creating CRD: %s error", s.crd.Name))
 
 }
 
@@ -167,6 +136,9 @@ func (s *TenantSuite) TestCatalogEntryCreationAndDeletion() {
 			Metadata: catalogv1alpha1.CatalogEntryMetadata{
 				DisplayName: "Couch DB",
 				Description: "The comfy nosql database",
+			},
+			ReferencedCRD: catalogv1alpha1.ObjectReference{
+				Name: s.crd.Name,
 			},
 		},
 	}
@@ -186,7 +158,7 @@ func (s *TenantSuite) TestCatalogEntryCreationAndDeletion() {
 			}
 			return true, err
 		}
-		return len(catalogEntryFound.Status.CRDs) == 2, nil
+		return catalogEntryFound.Status.CRD.Name == s.crd.Name, nil
 	}), "getting the CatalogEntry error")
 
 	// Delete the CatalogEntry
@@ -204,17 +176,15 @@ func (s *TenantSuite) TestCatalogEntryCreationAndDeletion() {
 func (s *TenantSuite) TearDownSuite() {
 	ctx := context.Background()
 	// Remove the CRDs for testing.
-	for _, crd := range s.crds {
-		s.Require().NoError(wait.Poll(time.Second, 10*time.Second, func() (done bool, err error) {
-			if err = s.masterClient.Delete(ctx, crd); err != nil {
-				if errors.IsNotFound(err) {
-					return true, nil
-				}
-				return false, err
+	s.Require().NoError(wait.Poll(time.Second, 10*time.Second, func() (done bool, err error) {
+		if err = s.masterClient.Delete(ctx, s.crd); err != nil {
+			if errors.IsNotFound(err) {
+				return true, nil
 			}
-			return false, nil
-		}), fmt.Sprintf("deleting CRD: %s error", crd.Name))
-	}
+			return false, err
+		}
+		return false, nil
+	}), fmt.Sprintf("deleting CRD: %s error", s.crd.Name))
 
 	// Remove the provider for testing.
 	s.Require().NoError(wait.Poll(time.Second, 30*time.Second, func() (done bool, err error) {

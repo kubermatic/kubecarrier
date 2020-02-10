@@ -311,7 +311,7 @@ func (r *CatalogReconciler) buildDesiredOfferings(
 				Provider: catalogv1alpha1.ObjectReference{
 					Name: provider.Name,
 				},
-				CRDs: catalogEntry.Status.CRDs,
+				CRD: catalogEntry.Status.CRD,
 			},
 		})
 	}
@@ -342,9 +342,7 @@ func (r *CatalogReconciler) buildDesiredServiceClusterReferences(
 	var desiredServiceClusterReferences []catalogv1alpha1.ServiceClusterReference
 	serviceClusterNames := map[string]struct{}{}
 	for _, catalogEntry := range catalogEntries {
-		for _, crdInfo := range catalogEntry.Status.CRDs {
-			serviceClusterNames[crdInfo.ServiceCluster.Name] = struct{}{}
-		}
+		serviceClusterNames[catalogEntry.Status.CRD.ServiceCluster.Name] = struct{}{}
 	}
 	for serviceClusterName := range serviceClusterNames {
 		serviceCluster := &corev1alpha1.ServiceCluster{}

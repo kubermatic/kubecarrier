@@ -50,15 +50,13 @@ func TestCatalogEntryReconciler(t *testing.T) {
 				DisplayName: "Test CatalogEntry",
 				Description: "Test CatalogEntry",
 			},
-			CRDSelector: &metav1.LabelSelector{
-				MatchLabels: map[string]string{
-					ProviderLabel: "example.provider",
-				},
+			ReferencedCRD: catalogv1alpha1.ObjectReference{
+				Name: "test-crd-1.test-crd-group-1.test",
 			},
 		},
 	}
 
-	crd1 := &apiextensionsv1.CustomResourceDefinition{
+	crd := &apiextensionsv1.CustomResourceDefinition{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "test-crd-1.test-crd-group-1.test",
 			Labels: map[string]string{
@@ -76,56 +74,11 @@ func TestCatalogEntryReconciler(t *testing.T) {
 					Name: "v1alpha1",
 				},
 			},
+			Scope: apiextensionsv1.NamespaceScoped,
 		},
 	}
 
-	crd2 := &apiextensionsv1.CustomResourceDefinition{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: "test-crd-2.test-crd-group-2.test",
-			Labels: map[string]string{
-				ProviderLabel:       "example.provider",
-				serviceClusterLabel: "test-service-cluster-2",
-			},
-		},
-		Spec: apiextensionsv1.CustomResourceDefinitionSpec{
-			Group: "test-crd-group-2",
-			Names: apiextensionsv1.CustomResourceDefinitionNames{
-				Kind: "TestCRD2",
-			},
-			Versions: []apiextensionsv1.CustomResourceDefinitionVersion{
-				{
-					Name: "v1",
-				},
-			},
-		},
-	}
-
-	// This CRD is used to test that one crd can only be referenced by one CatalogEntry.
-	crd3 := &apiextensionsv1.CustomResourceDefinition{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: "test-crd-3.test-crd-group-3.test",
-			Annotations: map[string]string{
-				catalogEntryReferenceAnnotation: "test-catalogentry",
-			},
-			Labels: map[string]string{
-				ProviderLabel:       "example.provider",
-				serviceClusterLabel: "test-service-cluster-3",
-			},
-		},
-		Spec: apiextensionsv1.CustomResourceDefinitionSpec{
-			Group: "test-crd-group-3",
-			Names: apiextensionsv1.CustomResourceDefinitionNames{
-				Kind: "TestCRD3",
-			},
-			Versions: []apiextensionsv1.CustomResourceDefinitionVersion{
-				{
-					Name: "v1",
-				},
-			},
-		},
-	}
-
-	client := fakeclient.NewFakeClientWithScheme(testScheme, catalogEntry, crd1, crd2, crd3, provider)
+	client := fakeclient.NewFakeClientWithScheme(testScheme, catalogEntry, crd, provider)
 	log := testutil.NewLogger(t)
 	r := &CatalogEntryReconciler{
 		Client: client,
@@ -157,11 +110,10 @@ func TestCatalogEntryReconciler(t *testing.T) {
 		assert.Len(t, catalogEntryFound.Finalizers, 1, "finalizer should be added to CatalogEntry")
 
 		// Check CatalogEntry Status
-		assert.Len(t, catalogEntryFound.Status.CRDs, 2, "CRD information should be added to the CatalogEntry.Status.CRDs")
-		assert.Contains(t, catalogEntryFound.Status.CRDs[0].Kind, "TestCRD", "CRD Kind is wrong")
-		assert.Contains(t, catalogEntryFound.Status.CRDs[0].Name, "test-crd", "CRD Name is wrong")
-		assert.Contains(t, catalogEntryFound.Status.CRDs[0].ServiceCluster.Name, "test-service-cluster", "CRD ServiceCluster is wrong")
-		assert.Contains(t, catalogEntryFound.Status.CRDs[0].APIGroup, "test-crd-group", "CRD APIGroup is wrong")
+		assert.Equal(t, catalogEntryFound.Status.CRD.Kind, crd.Spec.Names.Kind, "CRD Kind is wrong")
+		assert.Equal(t, catalogEntryFound.Status.CRD.Name, crd.Name, "CRD Name is wrong")
+		assert.Equal(t, catalogEntryFound.Status.CRD.ServiceCluster.Name, crd.Labels[serviceClusterLabel], "CRD ServiceCluster is wrong")
+		assert.Equal(t, catalogEntryFound.Status.CRD.APIGroup, crd.Spec.Group, "CRD APIGroup is wrong")
 
 		// Check CatalogEntry Conditions
 		readyCondition, readyConditionExists := catalogEntryFound.Status.GetCondition(catalogv1alpha1.CatalogEntryReady)
@@ -170,7 +122,7 @@ func TestCatalogEntryReconciler(t *testing.T) {
 
 		// Check CRDs Annotation
 		require.NoError(t, client.Get(ctx, types.NamespacedName{
-			Name: crd1.Name,
+			Name: crd.Name,
 		}, crdFound), "error when getting crd")
 		assert.Contains(t, crdFound.Annotations, catalogEntryReferenceAnnotation, "the catalogEntry annotation should be added to the CRD")
 	}) {
@@ -211,7 +163,7 @@ func TestCatalogEntryReconciler(t *testing.T) {
 		// Check CRD Annotation
 		crdCheck := &apiextensionsv1.CustomResourceDefinition{}
 		require.NoError(t, client.Get(ctx, types.NamespacedName{
-			Name: crd1.Name,
+			Name: crd.Name,
 		}, crdCheck), "error when getting crd")
 		assert.NotContains(t, crdCheck.Annotations, catalogEntryReferenceAnnotation, "the catalogEntry annotation should be removed from the CRD")
 	})

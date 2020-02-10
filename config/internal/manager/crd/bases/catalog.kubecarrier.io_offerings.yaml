@@ -48,52 +48,48 @@ spec:
               description: OfferingData defines the data (metadata, provider, crds,
                 etc.) of Offering.
               properties:
-                crds:
-                  description: CRDs holds the information about the underlying CRDs
-                    that are offered by this offering.
-                  items:
-                    description: CRDInformation contains type information about the
-                      CRD.
-                    properties:
-                      apiGroup:
-                        type: string
-                      kind:
-                        type: string
-                      name:
-                        type: string
-                      serviceCluster:
-                        description: ServiceCluster references a ServiceClusterReference
-                          of this CRD.
+                crd:
+                  description: CRD holds the information about the underlying CRD
+                    that is offered by this offering.
+                  properties:
+                    apiGroup:
+                      type: string
+                    kind:
+                      type: string
+                    name:
+                      type: string
+                    serviceCluster:
+                      description: ServiceCluster references a ServiceClusterReference
+                        of this CRD.
+                      properties:
+                        name:
+                          type: string
+                      required:
+                        - name
+                      type: object
+                    versions:
+                      items:
+                        description: CRDVersion holds CRD version specific details.
                         properties:
                           name:
+                            description: 'Name of this version, for example: v1, v1alpha1,
+                              v1beta1'
                             type: string
+                          schema:
+                            description: Schema of this CRD version.
+                            type: object
+                            x-kubernetes-preserve-unknown-fields: true
                         required:
                           - name
                         type: object
-                      versions:
-                        items:
-                          description: CRDVersion holds CRD version specific details.
-                          properties:
-                            name:
-                              description: 'Name of this version, for example: v1,
-                                v1alpha1, v1beta1'
-                              type: string
-                            schema:
-                              description: Schema of this CRD version.
-                              type: object
-                              x-kubernetes-preserve-unknown-fields: true
-                          required:
-                            - name
-                          type: object
-                        type: array
-                    required:
-                      - apiGroup
-                      - kind
-                      - name
-                      - serviceCluster
-                      - versions
-                    type: object
-                  type: array
+                      type: array
+                  required:
+                    - apiGroup
+                    - kind
+                    - name
+                    - serviceCluster
+                    - versions
+                  type: object
                 metadata:
                   description: OfferingMetadata contains the metadata (display name,
                     description, etc) of the Offering.
