@@ -55,6 +55,7 @@ func newSUTSubcommand(log logr.Logger, component string) *cobra.Command {
 		Long:  strings.TrimSpace(``),
 		Short: "",
 		RunE: func(cmd *cobra.Command, args []string) error {
+			// k8s client setup
 			log.Info("loading kubeconfig", "filename", loader.GetDefaultFilename())
 			clientConfig := clientcmd.NewNonInteractiveDeferredLoadingClientConfig(
 				loader,
@@ -77,7 +78,7 @@ func newSUTSubcommand(log logr.Logger, component string) *cobra.Command {
 				return fmt.Errorf("getting getDeploymentAndContainer: %w", err)
 			}
 
-			// workdir setup
+			// SUT workdir setup
 			if workdir == "" {
 				tmpDir, err := ioutil.TempDir("", "sut-")
 				if err != nil {
@@ -114,11 +115,7 @@ func newSUTSubcommand(log logr.Logger, component string) *cobra.Command {
 			_, _ = fmt.Fprintln(cmd.OutOrStdout(), "telepresence", strings.Join(telepresenceArgs, " "),
 				"\nWait for message \"T: Setup complete. Lunching your command.\" and press any key to continue...",
 			)
-			{
-				// pause
-				b := make([]byte, 1)
-				_, _ = cmd.InOrStdin().Read(b)
-			}
+			pause(cmd.InOrStdin())
 
 			if err := writeServiceKubeconfig(clientConfig, rootMount, taskKubeconfig); err != nil {
 				return fmt.Errorf("write kubeconfig: %w", err)
@@ -158,6 +155,11 @@ func newSUTSubcommand(log logr.Logger, component string) *cobra.Command {
 	cmd.Flags().StringVar(&workdir, "workdir", "", "sut working for logs, rootfs mountpoints, etc. default to new temp dir")
 	cmd.Flags().StringArrayVar(&extraArgs, "extra-flags", nil, "extra flags to pass to the running task")
 	return cmd
+}
+
+func pause(in io.Reader) {
+	b := make([]byte, 1)
+	_, _ = in.Read(b)
 }
 
 func generateTaskArgsAndEnv(container *corev1.Container, rootMount string, extraArgs []string, envJson string) ([]string, map[string]string, error) {
