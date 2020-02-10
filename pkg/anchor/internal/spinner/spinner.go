@@ -44,6 +44,6 @@ func AttachSpinnerTo(spinner *wow.Wow, startTime time.Time, msg string, f func()
 		spinner.PersistWith(spin.Spinner{Frames: []string{fmt.Sprintf("%4.2fs %s ", float64(time.Since(startTime))/float64(time.Second), failed)}}, msg)
 		return err
 	}
-	spinner.PersistWith(spin.Spinner{Frames: []string{fmt.Sprintf("%4.2f %s ", float64(time.Since(startTime))/float64(time.Second), succeed)}}, msg)
+	spinner.PersistWith(spin.Spinner{Frames: []string{fmt.Sprintf("%4.2fs %s ", float64(time.Since(startTime))/float64(time.Second), succeed)}}, msg)
 	return nil
 }
