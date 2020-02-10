@@ -31,19 +31,13 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
-	watch2 "k8s.io/apimachinery/pkg/watch"
-	"k8s.io/client-go/dynamic"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
-	cache2 "k8s.io/client-go/tools/cache"
-	"k8s.io/client-go/tools/watch"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/client/apiutil"
 	"sigs.k8s.io/controller-runtime/pkg/client/config"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
@@ -124,7 +118,7 @@ func runE(flags *flags, log logr.Logger, cmd *cobra.Command) error {
 	if err != nil {
 		return fmt.Errorf("getting Kubernetes cluster config: %w", err)
 	}
-	c, err := newClientWatcher(conf)
+	c, err := util.NewClientWatcher(conf, scheme)
 	if err != nil {
 		return fmt.Errorf("creating Kubernetes client: %w", err)
 	}
@@ -182,7 +176,7 @@ func checkKubeconfig(kubeconfig string) error {
 	return nil
 }
 
-func reconcileOperator(ctx context.Context, log logr.Logger, c *clientWatcher, kubecarrierNamespace *corev1.Namespace) func() error {
+func reconcileOperator(ctx context.Context, log logr.Logger, c *util.ClientWatcher, kubecarrierNamespace *corev1.Namespace) func() error {
 	return func() error {
 		// Kustomize Build
 		objects, err := operator.Manifests(
@@ -231,7 +225,7 @@ func deployKubeCarrier(ctx context.Context, kubeCarrierNamespace *corev1.Namespa
 				Namespace: kubeCarrierNamespace.Name,
 			},
 		}
-		w, err := newClientWatcher(conf)
+		w, err := util.NewClientWatcher(conf, scheme)
 		if err != nil {
 			return err
 		}
@@ -244,82 +238,4 @@ func deployKubeCarrier(ctx context.Context, kubeCarrierNamespace *corev1.Namespa
 			return obj.(*operatorv1alpha1.KubeCarrier).IsReady(), nil
 		})
 	}
-}
-
-func newClientWatcher(conf *rest.Config) (*clientWatcher, error) {
-	mapper, err := apiutil.NewDynamicRESTMapper(conf, apiutil.WithLazyDiscovery)
-	if err != nil {
-		return nil, fmt.Errorf("rest mapper: %w", err)
-	}
-	d, err := dynamic.NewForConfig(conf)
-	if err != nil {
-		return nil, err
-	}
-	cll, err := client.New(conf, client.Options{
-		Scheme: scheme,
-		Mapper: mapper,
-	})
-	if err != nil {
-		return nil, err
-	}
-	return &clientWatcher{
-		client:     d,
-		restMapper: mapper,
-		scheme:     scheme,
-		Client:     cll,
-	}, nil
-}
-
-type clientWatcher struct {
-	client     dynamic.Interface
-	restMapper meta.RESTMapper
-	scheme     *runtime.Scheme
-	client.Client
-}
-
-func (cl *clientWatcher) WaitUntil(ctx context.Context, obj util.Object, cond ...func(obj runtime.Object) (bool, error)) error {
-	objGVK, err := apiutil.GVKForObject(obj, scheme)
-	if err != nil {
-		return err
-	}
-	rmap, err := cl.restMapper.RESTMapping(objGVK.GroupKind(), objGVK.Version)
-	if err != nil {
-		return err
-	}
-	objNN := types.NamespacedName{
-		Namespace: obj.GetNamespace(),
-		Name:      obj.GetName(),
-	}
-	ri := cl.client.Resource(rmap.Resource).Namespace(objNN.Namespace)
-	if _, err := watch.ListWatchUntil(ctx, &cache2.ListWatch{
-		ListFunc: func(options metav1.ListOptions) (object runtime.Object, err error) {
-			return ri.List(options)
-		},
-		WatchFunc: ri.Watch,
-	}, func(event watch2.Event) (b bool, err error) {
-		objTmp, err := scheme.New(objGVK)
-		if err != nil {
-			return false, err
-		}
-		obj := objTmp.(util.Object)
-		if err := scheme.Convert(event.Object, obj, nil); err != nil {
-			return false, err
-		}
-		if obj.GetNamespace() != objNN.Namespace || obj.GetName() != objNN.Name {
-			return false, nil
-		}
-		for _, f := range cond {
-			ok, err := f(objTmp)
-			if err != nil {
-				return false, err
-			}
-			if !ok {
-				return false, nil
-			}
-		}
-		return true, nil
-	}); err != nil {
-		return err
-	}
-	return nil
 }
