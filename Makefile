@@ -66,7 +66,7 @@ clean: e2e-test-clean
 .PHONEY: clean
 
 # Generate code
-generate:
+generate: docs
 	@hack/codegen.sh
 	# regenerate golden files to update tests
 	FIX_GOLDEN=1 go test ./pkg/internal/resources/...
@@ -187,4 +187,3 @@ docs: bin/docgen
 	@find ./pkg/apis -name '*types.go' | xargs ./bin/docgen > ./docs/api_reference.md
 
 .PHONEY: docs
-

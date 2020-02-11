@@ -27,6 +27,7 @@ import (
 	"go/parser"
 	"go/token"
 	"os"
+	"path"
 	"reflect"
 	"strings"
 )
@@ -83,6 +84,12 @@ type KubeTypes []Pair
 // need to be sure for the order of the fields). This function returns fields and
 // struct definitions that have no documentation as {name, ""}.
 func ParseDocumentationFrom(src string) []KubeTypes {
+	a, version := path.Split(path.Dir(src))
+	_, group := path.Split(path.Clean(a))
+	group = path.Clean(group)
+	gv := group + version
+	fmt.Fprintln(os.Stderr, src, gv)
+
 	var docForTypes []KubeTypes
 
 	pkg := astFrom(src)
@@ -90,14 +97,14 @@ func ParseDocumentationFrom(src string) []KubeTypes {
 	for _, kubType := range pkg.Types {
 		if structType, ok := kubType.Decl.Specs[0].(*ast.TypeSpec).Type.(*ast.StructType); ok {
 			var ks KubeTypes
-			ks = append(ks, Pair{kubType.Name, fmtRawDoc(kubType.Doc), "", false})
+			ks = append(ks, Pair{Name: gv + "." + kubType.Name, Doc: fmtRawDoc(kubType.Doc), Type: "", Mandatory: false})
 
 			for _, field := range structType.Fields.List {
-				typeString := fieldType(field.Type)
+				typeString := fieldType(field.Type, gv)
 				fieldMandatory := fieldRequired(field)
 				if n := fieldName(field); n != "-" {
 					fieldDoc := fmtRawDoc(field.Doc.Text())
-					ks = append(ks, Pair{n, fieldDoc, typeString, fieldMandatory})
+					ks = append(ks, Pair{Name: n, Doc: fieldDoc, Type: typeString, Mandatory: fieldMandatory})
 				}
 			}
 			docForTypes = append(docForTypes, ks)
@@ -214,22 +221,26 @@ func fieldRequired(field *ast.Field) bool {
 	return false
 }
 
-func fieldType(typ ast.Expr) string {
+func fieldType(typ ast.Expr, gv string) string {
 	switch typ.(type) {
 	case *ast.Ident:
-		return toLink(typ.(*ast.Ident).Name)
+		name := typ.(*ast.Ident).Name
+		if name != "string" {
+			name = gv + "." + name
+		}
+		return toLink(name)
 	case *ast.StarExpr:
-		return "*" + toLink(fieldType(typ.(*ast.StarExpr).X))
+		return "*" + toLink(fieldType(typ.(*ast.StarExpr).X, gv))
 	case *ast.SelectorExpr:
 		e := typ.(*ast.SelectorExpr)
 		pkg := e.X.(*ast.Ident)
 		t := e.Sel
 		return toLink(pkg.Name + "." + t.Name)
 	case *ast.ArrayType:
-		return "[]" + toLink(fieldType(typ.(*ast.ArrayType).Elt))
+		return "[]" + toLink(fieldType(typ.(*ast.ArrayType).Elt, gv))
 	case *ast.MapType:
 		mapType := typ.(*ast.MapType)
-		return "map[" + toLink(fieldType(mapType.Key)) + "]" + toLink(fieldType(mapType.Value))
+		return "map[" + toLink(fieldType(mapType.Key, gv)) + "]" + toLink(fieldType(mapType.Value, gv))
 	default:
 		return ""
 	}
