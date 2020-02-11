@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-// Sponson changes can be made visible by diffing this file with the
+// Kubecarrier changes can be made visible by diffing this file with the
 // https://github.com/coreos/prometheus-operator/blob/7ebb4eb798b3db78aad24c1fe3f4fd9e4c3dcf16/cmd/po-docgen/api.go version
 // It mainly consists of enforcing our linter rules, and supporting multiple files for docs generation
 //
