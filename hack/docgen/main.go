@@ -30,15 +30,16 @@ import (
 	"path"
 	"reflect"
 	"strings"
+	"time"
 )
 
-const (
-	firstParagraph = `---
+var (
+	firstParagraph = fmt.Sprintf(`---
 title: "API reference"
-date: 2019-05-29
+date: %s
 weight: 1500
 ---
-`
+`, time.Now().Format("2006-01-02"))
 )
 
 var (
