@@ -109,7 +109,7 @@ soft-reinstall: e2e-setup install
 	@kubectl --kubeconfig "${HOME}/.kube/kind-config-${MASTER_KIND_CLUSTER}" delete pod --all -n kubecarrier-system
 
 e2e-test: e2e-setup
-	@go run -ldflags "-w $(LD_FLAGS)" ./cmd/anchor e2e-test run --test.v --test-id=${TEST_ID} | richgo testfilter
+	@LD_FLAGS="$(LD_FLAGS)" TEST_ID=${TEST_ID} MASTER_KIND_CLUSTER=${MASTER_KIND_CLUSTER} SVC_KIND_CLUSTER=${SVC_KIND_CLUSTER} $(SHELL) ./hack/.e2e-test.sh
 
 .PHONY: e2e-test
 
