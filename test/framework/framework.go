@@ -26,11 +26,9 @@ import (
 	"github.com/stretchr/testify/require"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
-	"k8s.io/client-go/rest"
 	restclient "k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -128,11 +126,25 @@ func New(c Config) (f *Framework, err error) {
 }
 
 func (f *Framework) MasterClient() (*RecordingClient, error) {
-	return NewRecordClient(f.masterConfig, f.MasterScheme)
+	cfg := f.masterConfig
+	c, err := client.New(cfg, client.Options{
+		Scheme: f.MasterScheme,
+	})
+	if err != nil {
+		return nil, err
+	}
+	return RecordClient(c, f.MasterScheme), nil
 }
 
 func (f *Framework) ServiceClient() (*RecordingClient, error) {
-	return NewRecordClient(f.serviceConfig, f.ServiceScheme)
+	cfg := f.serviceConfig
+	c, err := client.New(cfg, client.Options{
+		Scheme: f.ServiceScheme,
+	})
+	if err != nil {
+		return nil, err
+	}
+	return RecordClient(c, f.ServiceScheme), nil
 }
 
 func (f *Framework) Config() Config {
@@ -140,23 +152,19 @@ func (f *Framework) Config() Config {
 }
 
 type RecordingClient struct {
-	*testutil.ClientWatcher
+	client.Client
 	scheme  *runtime.Scheme
 	objects map[string]runtime.Object
 	order   []string
 	mux     sync.Mutex
 }
 
-func NewRecordClient(cfg *rest.Config, scheme *runtime.Scheme) (*RecordingClient, error) {
-	cw, err := testutil.NewClientWatcher(cfg, scheme)
-	if err != nil {
-		return nil, err
-	}
+func RecordClient(c client.Client, scheme *runtime.Scheme) *RecordingClient {
 	return &RecordingClient{
-		ClientWatcher: cw,
-		scheme:        scheme,
-		objects:       map[string]runtime.Object{},
-	}, nil
+		Client:  c,
+		scheme:  scheme,
+		objects: map[string]runtime.Object{},
+	}
 }
 
 var _ client.Client = (*RecordingClient)(nil)
