@@ -58,6 +58,9 @@ bin/%: FORCE
 
 FORCE:
 
+bin/docgen: hack/docgen/main.go
+	$(GOARGS) go build -ldflags "-w $(LD_FLAGS)" -o bin/docgen ./hack/docgen
+
 clean: e2e-test-clean
 	rm -rf bin/$*
 .PHONEY: clean
@@ -179,3 +182,9 @@ cert-manager:
 	kubectl wait --for=condition=available deployment/cert-manager -n cert-manager --timeout=120s
 	kubectl wait --for=condition=available deployment/cert-manager-cainjector -n cert-manager --timeout=120s
 	kubectl wait --for=condition=available deployment/cert-manager-webhook -n cert-manager --timeout=120s
+
+docs: bin/docgen
+	@find ./pkg/apis -name '*types.go' | xargs ./bin/docgen > ./docs/api_reference.md
+
+.PHONEY: docs
+
