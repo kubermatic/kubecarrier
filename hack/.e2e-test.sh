@@ -24,6 +24,7 @@ function cleanup() {
   kind export logs --name ${MASTER_KIND_CLUSTER} ${workdir}/master
   kind export logs --name ${SVC_KIND_CLUSTER} ${workdir}/svc
 
+  # https://github.com/kubernetes/test-infra/blob/master/prow/jobs.md#job-environment-variables
   local JOB_LOG=${JOB_NAME:-}-${BUILD_ID:-}
   if [[ "${JOB_LOG}" != "-" ]]; then
     zip -r ${workdir}/${JOB_LOG}.zip ${workdir}/master ${workdir}/svc
