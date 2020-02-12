@@ -30,7 +30,6 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	fakeclient "sigs.k8s.io/controller-runtime/pkg/client/fake"
 
-	"github.com/kubermatic/kubecarrier/pkg/apis/catalog/v1alpha1"
 	corev1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/core/v1alpha1"
 	operatorv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/operator/v1alpha1"
 	"github.com/kubermatic/kubecarrier/pkg/testutil"
@@ -40,17 +39,10 @@ func TestCustomResourceDiscoveryReconciler(t *testing.T) {
 	const (
 		serviceClusterName = "eu-west-1"
 	)
-	provider := &v1alpha1.Provider{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "extreme-cloud",
-			Namespace: "kubecarrier-system",
-		},
-	}
-
 	crDiscovery := &corev1alpha1.CustomResourceDiscovery{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "redis.cloud",
-			Namespace: "tenant-hans",
+			Namespace: "extreme-cloud",
 		},
 		Spec: corev1alpha1.CustomResourceDiscoverySpec{
 			CRD:            corev1alpha1.ObjectReference{Name: "redis.cloud"},
@@ -81,10 +73,9 @@ func TestCustomResourceDiscoveryReconciler(t *testing.T) {
 		},
 	}
 	r := &CustomResourceDiscoveryReconciler{
-		Log:                        testutil.NewLogger(t),
-		Client:                     fakeclient.NewFakeClientWithScheme(testScheme, crDiscovery, provider),
-		Scheme:                     testScheme,
-		KubeCarrierSystemNamespace: provider.Namespace,
+		Log:    testutil.NewLogger(t),
+		Client: fakeclient.NewFakeClientWithScheme(testScheme, crDiscovery),
+		Scheme: testScheme,
 	}
 	ctx := context.Background()
 	reconcileLoop := func() {
@@ -116,7 +107,7 @@ func TestCustomResourceDiscoveryReconciler(t *testing.T) {
 
 	internalCRD := &apiextensionsv1.CustomResourceDefinition{}
 	require.NoError(t, r.Client.Get(ctx, types.NamespacedName{
-		Name: strings.Join([]string{"redis", serviceClusterName, provider.Name}, "."),
+		Name: strings.Join([]string{"redis", serviceClusterName, crDiscovery.Namespace}, "."),
 	}, internalCRD))
 
 	internalCRD.Status.Conditions = []apiextensionsv1.CustomResourceDefinitionCondition{

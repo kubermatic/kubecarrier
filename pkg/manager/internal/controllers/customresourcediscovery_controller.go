@@ -33,7 +33,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/source"
 
-	catalogv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/catalog/v1alpha1"
 	corev1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/core/v1alpha1"
 	operatorv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/operator/v1alpha1"
 	"github.com/kubermatic/kubecarrier/pkg/internal/util"
@@ -44,9 +43,8 @@ const crdiscoveryControllerFinalizer string = "crdiscovery.kubecarrier.io/contro
 // CustomResourceDiscoveryReconciler reconciles a CustomResourceDiscovery object
 type CustomResourceDiscoveryReconciler struct {
 	client.Client
-	Log                        logr.Logger
-	Scheme                     *runtime.Scheme
-	KubeCarrierSystemNamespace string
+	Log    logr.Logger
+	Scheme *runtime.Scheme
 }
 
 // +kubebuilder:rbac:groups=kubecarrier.io,resources=customresourcediscoveries,verbs=get;list;watch;update
@@ -85,12 +83,7 @@ func (r *CustomResourceDiscoveryReconciler) Reconcile(req ctrl.Request) (ctrl.Re
 		}
 	}
 
-	provider, err := catalogv1alpha1.GetProviderByProviderNamespace(ctx, r, r.KubeCarrierSystemNamespace, req.Namespace)
-	if err != nil {
-		return result, fmt.Errorf("getting Provider: %w", err)
-	}
-
-	currentCRD, err := r.reconcileCRD(ctx, crDiscovery, provider)
+	currentCRD, err := r.reconcileCRD(ctx, crDiscovery)
 	if err != nil {
 		return result, fmt.Errorf("reconciling CRD: %w", err)
 	}
@@ -147,7 +140,6 @@ func (r *CustomResourceDiscoveryReconciler) Reconcile(req ctrl.Request) (ctrl.Re
 
 func (r *CustomResourceDiscoveryReconciler) reconcileCRD(
 	ctx context.Context, crDiscovery *corev1alpha1.CustomResourceDiscovery,
-	provider *catalogv1alpha1.Provider,
 ) (*apiextensionsv1.CustomResourceDefinition, error) {
 	// Build desired CRD
 	kind := crDiscovery.Spec.KindOverride
@@ -157,7 +149,7 @@ func (r *CustomResourceDiscoveryReconciler) reconcileCRD(
 
 	desiredCRD := &apiextensionsv1.CustomResourceDefinition{
 		Spec: apiextensionsv1.CustomResourceDefinitionSpec{
-			Group: crDiscovery.Spec.ServiceCluster.Name + "." + provider.Name,
+			Group: crDiscovery.Spec.ServiceCluster.Name + "." + crDiscovery.Namespace,
 			Names: apiextensionsv1.CustomResourceDefinitionNames{
 				Plural:   flect.Pluralize(strings.ToLower(kind)),
 				Singular: strings.ToLower(kind),
