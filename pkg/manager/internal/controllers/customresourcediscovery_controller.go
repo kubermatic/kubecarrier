@@ -146,12 +146,20 @@ func (r *CustomResourceDiscoveryReconciler) reconcileCRD(
 	if kind == "" {
 		kind = crDiscovery.Status.CRD.Spec.Names.Kind
 	}
+	plural := flect.Pluralize(strings.ToLower(kind))
+	group := crDiscovery.Spec.ServiceCluster.Name + "." + crDiscovery.Namespace
 
 	desiredCRD := &apiextensionsv1.CustomResourceDefinition{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: plural + "." + group,
+			Labels: map[string]string{
+				"kubecarrier.io/origin-namespace": crDiscovery.Namespace,
+			},
+		},
 		Spec: apiextensionsv1.CustomResourceDefinitionSpec{
-			Group: crDiscovery.Spec.ServiceCluster.Name + "." + crDiscovery.Namespace,
+			Group: group,
 			Names: apiextensionsv1.CustomResourceDefinitionNames{
-				Plural:   flect.Pluralize(strings.ToLower(kind)),
+				Plural:   plural,
 				Singular: strings.ToLower(kind),
 				Kind:     kind,
 				ListKind: kind + "List",
@@ -161,7 +169,6 @@ func (r *CustomResourceDiscoveryReconciler) reconcileCRD(
 		},
 		Status: apiextensionsv1.CustomResourceDefinitionStatus{},
 	}
-	desiredCRD.Name = desiredCRD.Spec.Names.Plural + "." + desiredCRD.Spec.Group
 	if _, err := util.InsertOwnerReference(crDiscovery, desiredCRD, r.Scheme); err != nil {
 		return nil, fmt.Errorf("insert object reference: %w", err)
 	}
