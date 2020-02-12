@@ -25,8 +25,8 @@ function cleanup() {
   kind export logs --name ${SVC_KIND_CLUSTER} ${workdir}/svc
 
   # https://github.com/kubernetes/test-infra/blob/master/prow/jobs.md#job-environment-variables
-  local JOB_LOG=${JOB_NAME:-}-${BUILD_ID:-}
-  if [[ "${JOB_LOG}" != "-" ]]; then
+  local JOB_LOG=${PULL_NUMBER:-}-${JOB_NAME:-}-${BUILD_ID:-}
+  if [[ "${JOB_LOG}" != "--" ]]; then
     zip -r "${workdir}/${JOB_LOG}.zip" "${workdir}/master" "${workdir}/svc"
     aws s3 cp "${workdir}/${JOB_LOG}.zip" "s3://e2elogs.kubecarrier.io/${JOB_LOG}.zip"
   fi
