@@ -27,6 +27,7 @@ RUN apt-get -qq update && apt-get -qqy install \
   jq \
   python3-pip \
   software-properties-common \
+  zip \
   && rm -rf /var/lib/apt/lists/*
 
 RUN curl -fsSL https://get.docker.com | sh
@@ -45,7 +46,7 @@ ARG kubebuilder_version=2.1.0
 RUN curl -sL https://go.kubebuilder.io/dl/${kubebuilder_version}/linux/amd64 | tar -xz -C /tmp/ && mv /tmp/kubebuilder_${kubebuilder_version}_linux_amd64 /usr/local/kubebuilder
 
 RUN go get golang.org/x/tools/cmd/goimports
-RUN pip3 install pre-commit
+RUN pip3 install pre-commit awscli
 
 WORKDIR /src
 
