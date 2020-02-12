@@ -27,6 +27,7 @@ RUN apt-get -qq update && apt-get -qqy install \
   jq \
   python3-pip \
   software-properties-common \
+  zip \
   && rm -rf /var/lib/apt/lists/*
 
 RUN curl -fsSL https://get.docker.com | sh
