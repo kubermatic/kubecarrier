@@ -53,7 +53,7 @@ anchor sut manager
 
 the tool shall pause and print the telepresence command you ought to run in separate terminal. After the command reaches running state press any key to continue. The SUT utility shall generate necessary InteliJ/vscode configuration ready for this component.
 `),
-		Short: "SUT connects to running cluster, replaces target kubecarrier's component with telepresence, and configures IDE task setup for debugging purposes",
+		Short: "SUT connects to running cluster, replaces target KubeCarrier's component with telepresence, and configures IDE task setup for debugging purposes",
 	}
 
 	cmd.AddCommand(
