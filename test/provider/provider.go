@@ -162,7 +162,7 @@ func NewCatalogSuite(
 						},
 					},
 				},
-				Scope: apiextensionsv1.ClusterScoped,
+				Scope: apiextensionsv1.NamespaceScoped,
 			},
 		}
 		require.NoError(
@@ -181,6 +181,9 @@ func NewCatalogSuite(
 				Metadata: catalogv1alpha1.CatalogEntryMetadata{
 					DisplayName: "Couch DB",
 					Description: "The comfy nosql database",
+				},
+				ReferencedCRD: catalogv1alpha1.ObjectReference{
+					Name: crd.Name,
 				},
 			},
 		}
@@ -249,7 +252,7 @@ func NewCatalogSuite(
 				}
 				return true, err
 			}
-			return len(offeringFound.Offering.CRDs) == len(catalogEntry.Status.CRDs) && offeringFound.Offering.Provider.Name == provider.Name, nil
+			return offeringFound.Offering.CRD.Name == catalogEntry.Status.CRD.Name && offeringFound.Offering.Provider.Name == provider.Name, nil
 		}), "getting the Offering error")
 
 		// Check the ProviderReference object is created.

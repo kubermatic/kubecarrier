@@ -20,38 +20,15 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	catalogv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/catalog/v1alpha1"
-	"github.com/kubermatic/kubecarrier/pkg/manager/internal/controllers"
+	"github.com/kubermatic/kubecarrier/pkg/testutil"
 )
 
-func TestCatalogEntryDefaultMatchLabels(t *testing.T) {
+func TestCatalogEntryValidatingCreate(t *testing.T) {
 	catalogEntryWebhookHandler := CatalogEntryWebhookHandler{
-		ProviderLabel: controllers.ProviderLabel,
-	}
-	catalogEntry := &catalogv1alpha1.CatalogEntry{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "test-catalogEntry",
-			Namespace: "test-provider-namespace",
-		},
-	}
-	provider := &catalogv1alpha1.Provider{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "test-provider",
-			Namespace: "kubecarrier-system",
-		},
-	}
-
-	require.NoError(t, catalogEntryWebhookHandler.defaultMatchLabels(catalogEntry, provider))
-	assert.Equal(t, catalogEntry.Spec.CRDSelector.MatchLabels[controllers.ProviderLabel], provider.Name)
-
-}
-
-func TestCatalogEntryValidatingMetadata(t *testing.T) {
-	catalogEntryWebhookHandler := CatalogEntryWebhookHandler{
-		ProviderLabel: controllers.ProviderLabel,
+		Log: testutil.NewLogger(t),
 	}
 
 	tests := []struct {
@@ -66,6 +43,11 @@ func TestCatalogEntryValidatingMetadata(t *testing.T) {
 					Name:      "test-catalogEntry",
 					Namespace: "test-provider-namespace",
 				},
+				Spec: catalogv1alpha1.CatalogEntrySpec{
+					ReferencedCRD: catalogv1alpha1.ObjectReference{
+						Name: "test-crd",
+					},
+				},
 			},
 			expectedError: true,
 		},
@@ -79,6 +61,9 @@ func TestCatalogEntryValidatingMetadata(t *testing.T) {
 				Spec: catalogv1alpha1.CatalogEntrySpec{
 					Metadata: catalogv1alpha1.CatalogEntryMetadata{
 						DisplayName: "test CatalogEntry",
+					},
+					ReferencedCRD: catalogv1alpha1.ObjectReference{
+						Name: "test-crd",
 					},
 				},
 			},
@@ -95,12 +80,15 @@ func TestCatalogEntryValidatingMetadata(t *testing.T) {
 					Metadata: catalogv1alpha1.CatalogEntryMetadata{
 						Description: "test CatalogEntry",
 					},
+					ReferencedCRD: catalogv1alpha1.ObjectReference{
+						Name: "test-crd",
+					},
 				},
 			},
 			expectedError: true,
 		},
 		{
-			name: "can pass validating metadata",
+			name: "referencedCRD missing",
 			object: &catalogv1alpha1.CatalogEntry{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "test-catalogEntry",
@@ -113,13 +101,105 @@ func TestCatalogEntryValidatingMetadata(t *testing.T) {
 					},
 				},
 			},
+			expectedError: true,
+		},
+		{
+			name: "can pass validating create",
+			object: &catalogv1alpha1.CatalogEntry{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "test-catalogEntry",
+					Namespace: "test-provider-namespace",
+				},
+				Spec: catalogv1alpha1.CatalogEntrySpec{
+					Metadata: catalogv1alpha1.CatalogEntryMetadata{
+						Description: "test CatalogEntry",
+						DisplayName: "test CatalogEntry",
+					},
+					ReferencedCRD: catalogv1alpha1.ObjectReference{
+						Name: "test-crd",
+					},
+				},
+			},
 			expectedError: false,
 		},
 	}
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			assert.Equal(t, test.expectedError, catalogEntryWebhookHandler.validateMetadata(test.object) != nil)
+			assert.Equal(t, test.expectedError, catalogEntryWebhookHandler.validateCreate(test.object) != nil)
+		})
+	}
+}
+
+func TestCatalogEntryValidatingUpdate(t *testing.T) {
+	catalogEntryWebhookHandler := CatalogEntryWebhookHandler{
+		Log: testutil.NewLogger(t),
+	}
+
+	oldObj := &catalogv1alpha1.CatalogEntry{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "test-catalogEntry",
+			Namespace: "test-provider-namespace",
+		},
+		Spec: catalogv1alpha1.CatalogEntrySpec{
+			Metadata: catalogv1alpha1.CatalogEntryMetadata{
+				Description: "test CatalogEntry",
+				DisplayName: "test CatalogEntry",
+			},
+			ReferencedCRD: catalogv1alpha1.ObjectReference{
+				Name: "test-crd",
+			},
+		},
+	}
+
+	tests := []struct {
+		name          string
+		object        *catalogv1alpha1.CatalogEntry
+		expectedError bool
+	}{
+		{
+			name: "referenced crd immutable",
+			object: &catalogv1alpha1.CatalogEntry{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "test-catalogEntry",
+					Namespace: "test-provider-namespace",
+				},
+				Spec: catalogv1alpha1.CatalogEntrySpec{
+					Metadata: catalogv1alpha1.CatalogEntryMetadata{
+						Description: "test CatalogEntry",
+						DisplayName: "test CatalogEntry",
+					},
+					ReferencedCRD: catalogv1alpha1.ObjectReference{
+						Name: "test-crd2",
+					},
+				},
+			},
+			expectedError: true,
+		},
+		{
+			name: "can pass validating update",
+			object: &catalogv1alpha1.CatalogEntry{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "test-catalogEntry",
+					Namespace: "test-provider-namespace",
+				},
+				Spec: catalogv1alpha1.CatalogEntrySpec{
+					Metadata: catalogv1alpha1.CatalogEntryMetadata{
+						Description: "test CatalogEntry",
+						DisplayName: "test CatalogEntry",
+					},
+					ReferencedCRD: catalogv1alpha1.ObjectReference{
+						Name: "test-crd",
+					},
+				},
+			},
+			expectedError: false,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			assert.Equal(t, test.expectedError, catalogEntryWebhookHandler.validateUpdate(test.object, oldObj) != nil)
 		})
 	}
 }

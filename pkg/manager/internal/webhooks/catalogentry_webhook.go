@@ -18,72 +18,48 @@ package webhooks
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"net/http"
 
 	"github.com/go-logr/logr"
 	adminv1beta1 "k8s.io/api/admission/v1beta1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
 	catalogv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/catalog/v1alpha1"
 )
 
-// CatalogEntryWebhookHandler handles mutating/validating of CatalogEntries.
+// CatalogEntryWebhookHandler handles validating of CatalogEntries.
 type CatalogEntryWebhookHandler struct {
-	client  client.Client
 	decoder *admission.Decoder
 	Log     logr.Logger
-
-	KubeCarrierNamespace string
-	ProviderLabel        string
 }
 
 var _ admission.Handler = (*CatalogEntryWebhookHandler)(nil)
 
-// +kubebuilder:webhook:path=/mutate-catalog-kubecarrier-io-v1alpha1-catalogentry,mutating=true,failurePolicy=fail,groups=catalog.kubecarrier.io,resources=catalogentries,verbs=create;update,versions=v1alpha1,name=mcatalogentry.kubecarrier.io
+// +kubebuilder:webhook:path=/validate-catalog-kubecarrier-io-v1alpha1-catalogentry,mutating=false,failurePolicy=fail,groups=catalog.kubecarrier.io,resources=catalogentries,verbs=create;update,versions=v1alpha1,name=vcatalogentry.kubecarrier.io
 
-// Handle is the function to handle defaulting requests of CatalogEntries.
+// Handle is the function to handle validating requests of CatalogEntries.
 func (r *CatalogEntryWebhookHandler) Handle(ctx context.Context, req admission.Request) admission.Response {
 	obj := &catalogv1alpha1.CatalogEntry{}
 	if err := r.decoder.Decode(req, obj); err != nil {
 		return admission.Errored(http.StatusBadRequest, err)
 	}
-	// Default the object
-	r.Log.Info("default", "name", obj.Name)
-	provider, err := catalogv1alpha1.GetProviderByProviderNamespace(context.Background(), r.client, r.KubeCarrierNamespace, obj.Namespace)
-	if err != nil {
-		return admission.Denied(err.Error())
-	}
-	if err := r.defaultMatchLabels(obj, provider); err != nil {
-		return admission.Denied(err.Error())
-	}
 
-	// Validate the object
-	if req.Operation == adminv1beta1.Create || req.Operation == adminv1beta1.Update {
-		r.Log.Info("validate create/update", "name", obj.Name)
-		if err := r.validateMetadata(obj); err != nil {
+	switch req.Operation {
+	case adminv1beta1.Create:
+		if err := r.validateCreate(obj); err != nil {
+			return admission.Denied(err.Error())
+		}
+	case adminv1beta1.Update:
+		oldObj := &catalogv1alpha1.CatalogEntry{}
+		if err := r.decoder.DecodeRaw(req.OldObject, oldObj); err != nil {
+			return admission.Errored(http.StatusBadRequest, err)
+		}
+		if err := r.validateUpdate(oldObj, obj); err != nil {
 			return admission.Denied(err.Error())
 		}
 	}
-
-	marshalled, err := json.Marshal(obj)
-	if err != nil {
-		return admission.Errored(http.StatusInternalServerError, err)
-	}
-	// Create the patch
-	return admission.PatchResponseFromRaw(req.Object.Raw, marshalled)
-
-}
-
-// CatalogEntryWebhookHandler implements inject.Client.
-// A client will be automatically injected.
-// InjectClient injects the client.
-func (r *CatalogEntryWebhookHandler) InjectClient(c client.Client) error {
-	r.client = c
-	return nil
+	return admission.Allowed("allowed to commit the request")
 }
 
 // CatalogEntryWebhookHandler implements admission.DecoderInjector.
@@ -94,19 +70,20 @@ func (r *CatalogEntryWebhookHandler) InjectDecoder(d *admission.Decoder) error {
 	return nil
 }
 
-func (r *CatalogEntryWebhookHandler) defaultMatchLabels(catalogEntry *catalogv1alpha1.CatalogEntry, provider *catalogv1alpha1.Provider) error {
-	// Defaulting the `kubecarrier.io/provider` matchlabel
-	if catalogEntry.Spec.CRDSelector == nil {
-		catalogEntry.Spec.CRDSelector = &metav1.LabelSelector{}
+func (r *CatalogEntryWebhookHandler) validateCreate(catalogEntry *catalogv1alpha1.CatalogEntry) error {
+	r.Log.Info("validate create", "name", catalogEntry.Name)
+	if catalogEntry.Spec.ReferencedCRD.Name == "" {
+		return fmt.Errorf("the Referenced CRD of CatalogEntry is not specifed")
 	}
-	if catalogEntry.Spec.CRDSelector.MatchLabels == nil {
-		catalogEntry.Spec.CRDSelector.MatchLabels = map[string]string{}
-	}
-	if catalogEntry.Spec.CRDSelector.MatchLabels[r.ProviderLabel] != provider.Name {
-		catalogEntry.Spec.CRDSelector.MatchLabels[r.ProviderLabel] = provider.Name
-	}
+	return r.validateMetadata(catalogEntry)
+}
 
-	return nil
+func (r *CatalogEntryWebhookHandler) validateUpdate(oldObj, newObj *catalogv1alpha1.CatalogEntry) error {
+	r.Log.Info("validate create", "name", newObj.Name)
+	if newObj.Spec.ReferencedCRD.Name != oldObj.Spec.ReferencedCRD.Name {
+		return fmt.Errorf("the Referenced CRD of CatalogEntry is immutable")
+	}
+	return r.validateMetadata(newObj)
 }
 
 func (r *CatalogEntryWebhookHandler) validateMetadata(catalogEntry *catalogv1alpha1.CatalogEntry) error {
