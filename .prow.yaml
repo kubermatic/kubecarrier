@@ -58,8 +58,6 @@ presubmits:
   always_run: true
   decorate: true
   clone_uri: ssh://git@github.com/kubermatic/kubecarrier.git
-  labels:
-    kubecarrier.io/e2e: "true"
   spec:
     # DNS configuration allows inner cluster to access the internet.
     dnsPolicy: "None"
@@ -105,8 +103,6 @@ presubmits:
   always_run: true
   decorate: true
   clone_uri: ssh://git@github.com/kubermatic/kubecarrier.git
-  labels:
-    kubecarrier.io/e2e: "true"
   spec:
     # DNS configuration allows inner cluster to access the internet.
     dnsPolicy: "None"
@@ -183,9 +179,3 @@ postsubmits:
             requests:
               cpu: 800m
               memory: 2Gi
-presets:
-- labels:
-    kubecarrier.io/e2e: "true"
-  env:
-    - name: PRESENT_WORKS
-      value: "YES!"
