@@ -27,7 +27,7 @@ func NewCommand(log logr.Logger) *cobra.Command {
 	cmd := &cobra.Command{
 		Use: "sut",
 		Long: strings.TrimSpace(`
-SUT is the primary kubecarrier debugging utility.
+SUT is the primary KubeCarrier debugging utility.
 
 Upon running it "replaces" a running deployment with telepresence and prepares the necessary IDE tasks for its proper running with approximately similar config (mounts are remapped due to different mount points, i.e. containers root isn't your host's root). Currently the following components should work:
 
