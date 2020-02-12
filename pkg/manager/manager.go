@@ -189,6 +189,10 @@ func run(flags *flags, log logr.Logger) error {
 	wbh := mgr.GetWebhookServer()
 
 	// validating webhooks
+	wbh.Register(utilwebhook.GenerateValidateWebhookPath(&catalogv1alpha1.CatalogEntry{}, mgr.GetScheme()),
+		&webhook.Admission{Handler: &webhooks.CatalogEntryWebhookHandler{
+			Log: log.WithName("validating webhooks").WithName("CatalogEntry"),
+		}})
 	wbh.Register(utilwebhook.GenerateValidateWebhookPath(&catalogv1alpha1.DerivedCustomResource{}, mgr.GetScheme()),
 		&webhook.Admission{Handler: &webhooks.DerivedCustomResourceWebhookHandler{
 			Log: log.WithName("validating webhooks").WithName("DerivedCustomResource"),
@@ -228,14 +232,6 @@ func run(flags *flags, log logr.Logger) error {
 	wbh.Register(utilwebhook.GenerateValidateWebhookPath(&corev1alpha1.ServiceClusterAssignment{}, mgr.GetScheme()),
 		&webhook.Admission{Handler: &webhooks.ServiceClusterAssignmentWebhookHandler{
 			Log: log.WithName("validating webhooks").WithName("ServiceClusterAssignment"),
-		}})
-
-	// mutating webhooks
-	wbh.Register(utilwebhook.GenerateMutateWebhookPath(&catalogv1alpha1.CatalogEntry{}, mgr.GetScheme()),
-		&webhook.Admission{Handler: &webhooks.CatalogEntryWebhookHandler{
-			KubeCarrierNamespace: flags.kubeCarrierSystemNamespace,
-			ProviderLabel:        controllers.ProviderLabel,
-			Log:                  log.WithName("mutating webhooks").WithName("CatalogEntry"),
 		}})
 
 	if err := mgr.AddReadyzCheck("ping", healthz.Ping); err != nil {

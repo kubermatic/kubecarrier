@@ -29,8 +29,8 @@
       name: v1alpha1
       schema:
         openAPIV3Schema:
-          description: CatalogEntry adds additional metadata to a set of CRD's and
-            groups the same Kind for multiple ServiceClusters
+          description: CatalogEntry reference to the CRD that the provider wants to
+            provide as service to the tenant.
           properties:
             apiVersion:
               description: 'APIVersion defines the versioned schema of this representation
@@ -48,51 +48,6 @@
             spec:
               description: CatalogEntrySpec defines the desired state of CatalogEntry
               properties:
-                crdSelector:
-                  description: CRDSelector selects CRD objects that should be part
-                    of this catalog.
-                  properties:
-                    matchExpressions:
-                      description: matchExpressions is a list of label selector requirements.
-                        The requirements are ANDed.
-                      items:
-                        description: A label selector requirement is a selector that
-                          contains values, a key, and an operator that relates the
-                          key and values.
-                        properties:
-                          key:
-                            description: key is the label key that the selector applies
-                              to.
-                            type: string
-                          operator:
-                            description: operator represents a key's relationship
-                              to a set of values. Valid operators are In, NotIn, Exists
-                              and DoesNotExist.
-                            type: string
-                          values:
-                            description: values is an array of string values. If the
-                              operator is In or NotIn, the values array must be non-empty.
-                              If the operator is Exists or DoesNotExist, the values
-                              array must be empty. This array is replaced during a
-                              strategic merge patch.
-                            items:
-                              type: string
-                            type: array
-                        required:
-                        - key
-                        - operator
-                        type: object
-                      type: array
-                    matchLabels:
-                      additionalProperties:
-                        type: string
-                      description: matchLabels is a map of {key,value} pairs. A single
-                        {key,value} in the matchLabels map is equivalent to an element
-                        of matchExpressions, whose key field is "key", the operator
-                        is "In", and the values array contains only "value". The requirements
-                        are ANDed.
-                      type: object
-                  type: object
                 metadata:
                   description: Metadata contains the metadata (display name, description,
                     etc) of the CatalogEntry.
@@ -105,6 +60,15 @@
                       description: DisplayName shows the human-readable name of this
                         CatalogEntry.
                       type: string
+                  type: object
+                referencedCRD:
+                  description: ReferencedCRD is the underlying ReferencedCRD objects
+                    that this CatalogEntry refers to.
+                  properties:
+                    name:
+                      type: string
+                  required:
+                  - name
                   type: object
               type: object
             status:
@@ -146,52 +110,48 @@
                     - type
                     type: object
                   type: array
-                crds:
-                  description: CRDs holds the information about the underlying CRDs
+                crd:
+                  description: CRD holds the information about the underlying ReferencedCRD
                     that are offered by this CatalogEntry.
-                  items:
-                    description: CRDInformation contains type information about the
-                      CRD.
-                    properties:
-                      apiGroup:
-                        type: string
-                      kind:
-                        type: string
-                      name:
-                        type: string
-                      serviceCluster:
-                        description: ServiceCluster references a ServiceClusterReference
-                          of this CRD.
+                  properties:
+                    apiGroup:
+                      type: string
+                    kind:
+                      type: string
+                    name:
+                      type: string
+                    serviceCluster:
+                      description: ServiceCluster references a ServiceClusterReference
+                        of this CRD.
+                      properties:
+                        name:
+                          type: string
+                      required:
+                      - name
+                      type: object
+                    versions:
+                      items:
+                        description: CRDVersion holds CRD version specific details.
                         properties:
                           name:
+                            description: 'Name of this version, for example: v1, v1alpha1,
+                              v1beta1'
                             type: string
+                          schema:
+                            description: Schema of this CRD version.
+                            type: object
+                            x-kubernetes-preserve-unknown-fields: true
                         required:
                         - name
                         type: object
-                      versions:
-                        items:
-                          description: CRDVersion holds CRD version specific details.
-                          properties:
-                            name:
-                              description: 'Name of this version, for example: v1,
-                                v1alpha1, v1beta1'
-                              type: string
-                            schema:
-                              description: Schema of this CRD version.
-                              type: object
-                              x-kubernetes-preserve-unknown-fields: true
-                          required:
-                          - name
-                          type: object
-                        type: array
-                    required:
-                    - apiGroup
-                    - kind
-                    - name
-                    - serviceCluster
-                    - versions
-                    type: object
-                  type: array
+                      type: array
+                  required:
+                  - apiGroup
+                  - kind
+                  - name
+                  - serviceCluster
+                  - versions
+                  type: object
                 observedGeneration:
                   description: ObservedGeneration is the most recent generation observed
                     for this CatalogEntry by the controller.
@@ -684,52 +644,48 @@
               description: OfferingData defines the data (metadata, provider, crds,
                 etc.) of Offering.
               properties:
-                crds:
-                  description: CRDs holds the information about the underlying CRDs
-                    that are offered by this offering.
-                  items:
-                    description: CRDInformation contains type information about the
-                      CRD.
-                    properties:
-                      apiGroup:
-                        type: string
-                      kind:
-                        type: string
-                      name:
-                        type: string
-                      serviceCluster:
-                        description: ServiceCluster references a ServiceClusterReference
-                          of this CRD.
+                crd:
+                  description: CRD holds the information about the underlying CRD
+                    that is offered by this offering.
+                  properties:
+                    apiGroup:
+                      type: string
+                    kind:
+                      type: string
+                    name:
+                      type: string
+                    serviceCluster:
+                      description: ServiceCluster references a ServiceClusterReference
+                        of this CRD.
+                      properties:
+                        name:
+                          type: string
+                      required:
+                      - name
+                      type: object
+                    versions:
+                      items:
+                        description: CRDVersion holds CRD version specific details.
                         properties:
                           name:
+                            description: 'Name of this version, for example: v1, v1alpha1,
+                              v1beta1'
                             type: string
+                          schema:
+                            description: Schema of this CRD version.
+                            type: object
+                            x-kubernetes-preserve-unknown-fields: true
                         required:
                         - name
                         type: object
-                      versions:
-                        items:
-                          description: CRDVersion holds CRD version specific details.
-                          properties:
-                            name:
-                              description: 'Name of this version, for example: v1,
-                                v1alpha1, v1beta1'
-                              type: string
-                            schema:
-                              description: Schema of this CRD version.
-                              type: object
-                              x-kubernetes-preserve-unknown-fields: true
-                          required:
-                          - name
-                          type: object
-                        type: array
-                    required:
-                    - apiGroup
-                    - kind
-                    - name
-                    - serviceCluster
-                    - versions
-                    type: object
-                  type: array
+                      type: array
+                  required:
+                  - apiGroup
+                  - kind
+                  - name
+                  - serviceCluster
+                  - versions
+                  type: object
                 metadata:
                   description: OfferingMetadata contains the metadata (display name,
                     description, etc) of the Offering.
@@ -2177,21 +2133,21 @@
             defaultMode: 420
             secretName: webhook-server-cert
 - apiVersion: admissionregistration.k8s.io/v1beta1
-  kind: MutatingWebhookConfiguration
+  kind: ValidatingWebhookConfiguration
   metadata:
     annotations:
       cert-manager.io/inject-ca-from: test3000/kubecarrier-manager-serving-cert
     creationTimestamp: null
-    name: kubecarrier-manager-mutating-webhook-configuration
+    name: kubecarrier-manager-validating-webhook-configuration
   webhooks:
   - clientConfig:
       caBundle: Cg==
       service:
         name: kubecarrier-manager-webhook-service
         namespace: test3000
-        path: /mutate-catalog-kubecarrier-io-v1alpha1-catalogentry
+        path: /validate-catalog-kubecarrier-io-v1alpha1-catalogentry
     failurePolicy: Fail
-    name: mcatalogentry.kubecarrier.io
+    name: vcatalogentry.kubecarrier.io
     rules:
     - apiGroups:
       - catalog.kubecarrier.io
@@ -2202,14 +2158,6 @@
       - UPDATE
       resources:
       - catalogentries
-- apiVersion: admissionregistration.k8s.io/v1beta1
-  kind: ValidatingWebhookConfiguration
-  metadata:
-    annotations:
-      cert-manager.io/inject-ca-from: test3000/kubecarrier-manager-serving-cert
-    creationTimestamp: null
-    name: kubecarrier-manager-validating-webhook-configuration
-  webhooks:
   - clientConfig:
       caBundle: Cg==
       service:

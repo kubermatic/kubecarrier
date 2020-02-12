@@ -1,19 +1,19 @@
 
 ---
 apiVersion: admissionregistration.k8s.io/v1beta1
-kind: MutatingWebhookConfiguration
+kind: ValidatingWebhookConfiguration
 metadata:
   creationTimestamp: null
-  name: mutating-webhook-configuration
+  name: validating-webhook-configuration
 webhooks:
 - clientConfig:
     caBundle: Cg==
     service:
       name: webhook-service
       namespace: system
-      path: /mutate-catalog-kubecarrier-io-v1alpha1-catalogentry
+      path: /validate-catalog-kubecarrier-io-v1alpha1-catalogentry
   failurePolicy: Fail
-  name: mcatalogentry.kubecarrier.io
+  name: vcatalogentry.kubecarrier.io
   rules:
   - apiGroups:
     - catalog.kubecarrier.io
@@ -24,14 +24,6 @@ webhooks:
     - UPDATE
     resources:
     - catalogentries
-
----
-apiVersion: admissionregistration.k8s.io/v1beta1
-kind: ValidatingWebhookConfiguration
-metadata:
-  creationTimestamp: null
-  name: validating-webhook-configuration
-webhooks:
 - clientConfig:
     caBundle: Cg==
     service:
