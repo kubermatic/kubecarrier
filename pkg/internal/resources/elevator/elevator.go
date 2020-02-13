@@ -121,7 +121,6 @@ func Manifests(c Config) ([]unstructured.Unstructured, error) {
 		},
 	}
 	managerEnvBytes, err := yaml.Marshal(managerEnv)
-	fmt.Println(string(managerEnvBytes))
 	if err != nil {
 		return nil, fmt.Errorf("marshalling manager env patch: %w", err)
 	}
