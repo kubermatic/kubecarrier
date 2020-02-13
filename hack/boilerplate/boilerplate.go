@@ -79,6 +79,7 @@ var (
 		"_gopath":               {},
 		"_output":               {},
 		"hack/boilerplate/test": {},
+		"hack/docgen/main.go":   {},
 	}
 
 	// list all the files contain 'DO NOT EDIT', but are not generated
