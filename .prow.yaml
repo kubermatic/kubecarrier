@@ -73,10 +73,25 @@ presubmits:
           - make
           - e2e-test
         env:
-          - name: GO111MODULE
-            value: 'on'
           - name: KIND_NODE_IMAGE
             value: "kindest/node:v1.17.0@sha256:9512edae126da271b66b990b6fff768fbb7cd786c7d39e86bdf55906352fdf62"
+          - name: GO111MODULE
+            value: 'on'
+          - name: AWS_ACCESS_KEY_ID
+            valueFrom:
+              secretKeyRef:
+                name: kubecarrier-aws
+                key: key_id
+          - name: AWS_SECRET_ACCESS_KEY
+            valueFrom:
+              secretKeyRef:
+                name: kubecarrier-aws
+                key: key_secret
+          - name: AWS_DEFAULT_REGION
+            valueFrom:
+              secretKeyRef:
+                name: kubecarrier-aws
+                key: region
         # docker-in-docker needs privileged mode
         securityContext:
           privileged: true
@@ -103,10 +118,25 @@ presubmits:
           - make
           - e2e-test
         env:
-          - name: GO111MODULE
-            value: 'on'
           - name: KIND_NODE_IMAGE
             value: "kindest/node:v1.16.4@sha256:b91a2c2317a000f3a783489dfb755064177dbc3a0b2f4147d50f04825d016f55"
+          - name: GO111MODULE
+            value: 'on'
+          - name: AWS_ACCESS_KEY_ID
+            valueFrom:
+              secretKeyRef:
+                name: kubecarrier-aws
+                key: key_id
+          - name: AWS_SECRET_ACCESS_KEY
+            valueFrom:
+              secretKeyRef:
+                name: kubecarrier-aws
+                key: key_secret
+          - name: AWS_DEFAULT_REGION
+            valueFrom:
+              secretKeyRef:
+                name: kubecarrier-aws
+                key: region
         # docker-in-docker needs privileged mode
         securityContext:
           privileged: true
