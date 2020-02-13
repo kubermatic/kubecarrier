@@ -45,6 +45,7 @@ func TestCatalogReconciler(t *testing.T) {
 	}
 
 	providerNamespaceName := fmt.Sprintf("provider-%s", provider.Name)
+	provider.Status.NamespaceName = providerNamespaceName
 
 	providerNamespace := &corev1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{
@@ -127,9 +128,10 @@ func TestCatalogReconciler(t *testing.T) {
 	client := fakeclient.NewFakeClientWithScheme(testScheme, catalogEntry, catalog, provider, providerNamespace, tenant, tenantReference, tenantNamespace, serviceCluster)
 	log := testutil.NewLogger(t)
 	r := &CatalogReconciler{
-		Client: client,
-		Log:    log,
-		Scheme: testScheme,
+		Client:                     client,
+		Log:                        log,
+		Scheme:                     testScheme,
+		KubeCarrierSystemNamespace: "kubecarrier-system",
 	}
 	ctx := context.Background()
 
