@@ -4,6 +4,8 @@
     annotations:
       controller-gen.kubebuilder.io/version: v0.2.4
     creationTimestamp: null
+    labels:
+      kubecarrier.io/role: operator
     name: kubecarriers.operator.kubecarrier.io
   spec:
     group: operator.kubecarrier.io
@@ -112,6 +114,8 @@
     annotations:
       controller-gen.kubebuilder.io/version: v0.2.4
     creationTimestamp: null
+    labels:
+      kubecarrier.io/role: operator
     name: serviceclusterregistrations.operator.kubecarrier.io
   spec:
     group: operator.kubecarrier.io
@@ -242,6 +246,8 @@
     annotations:
       controller-gen.kubebuilder.io/version: v0.2.4
     creationTimestamp: null
+    labels:
+      kubecarrier.io/role: operator
     name: catapults.operator.kubecarrier.io
   spec:
     group: operator.kubecarrier.io
@@ -398,6 +404,8 @@
     annotations:
       controller-gen.kubebuilder.io/version: v0.2.4
     creationTimestamp: null
+    labels:
+      kubecarrier.io/role: operator
     name: elevators.operator.kubecarrier.io
   spec:
     group: operator.kubecarrier.io
@@ -557,6 +565,8 @@
   kind: ClusterRole
   metadata:
     creationTimestamp: null
+    labels:
+      kubecarrier.io/role: operator
     name: kubecarrier-operator-manager-role
   rules:
   - apiGroups:
@@ -790,6 +800,8 @@
 - apiVersion: rbac.authorization.k8s.io/v1
   kind: ClusterRoleBinding
   metadata:
+    labels:
+      kubecarrier.io/role: operator
     name: kubecarrier-operator-manager-rolebinding
   roleRef:
     apiGroup: rbac.authorization.k8s.io
@@ -802,6 +814,8 @@
 - apiVersion: rbac.authorization.k8s.io/v1
   kind: Role
   metadata:
+    labels:
+      kubecarrier.io/role: operator
     name: kubecarrier-operator-leader-election-role
     namespace: test3000
   rules:
@@ -834,6 +848,8 @@
 - apiVersion: rbac.authorization.k8s.io/v1
   kind: RoleBinding
   metadata:
+    labels:
+      kubecarrier.io/role: operator
     name: kubecarrier-operator-leader-election-rolebinding
     namespace: test3000
   roleRef:
@@ -849,6 +865,7 @@
   metadata:
     labels:
       control-plane: operator
+      kubecarrier.io/role: operator
     name: kubecarrier-operator-manager
     namespace: test3000
   spec:
@@ -856,10 +873,12 @@
     selector:
       matchLabels:
         control-plane: operator
+        kubecarrier.io/role: operator
     template:
       metadata:
         labels:
           control-plane: operator
+          kubecarrier.io/role: operator
       spec:
         containers:
         - image: quay.io/kubecarrier/operator:was not build properly

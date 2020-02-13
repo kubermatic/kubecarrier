@@ -2,6 +2,8 @@
   kind: Role
   metadata:
     creationTimestamp: null
+    labels:
+      kubecarrier.io/role: ferry
     name: hans-ferry-manager
     namespace: provider-1000
   rules:
@@ -73,11 +75,15 @@
 - apiVersion: v1
   kind: ServiceAccount
   metadata:
+    labels:
+      kubecarrier.io/role: ferry
     name: hans-ferry-sa
     namespace: provider-1000
 - apiVersion: rbac.authorization.k8s.io/v1
   kind: RoleBinding
   metadata:
+    labels:
+      kubecarrier.io/role: ferry
     name: hans-ferry-manager
     namespace: provider-1000
   roleRef:
@@ -91,6 +97,8 @@
 - apiVersion: rbac.authorization.k8s.io/v1
   kind: Role
   metadata:
+    labels:
+      kubecarrier.io/role: ferry
     name: hans-ferry-leader-election-role
     namespace: provider-1000
   rules:
@@ -123,6 +131,8 @@
 - apiVersion: rbac.authorization.k8s.io/v1
   kind: RoleBinding
   metadata:
+    labels:
+      kubecarrier.io/role: ferry
     name: hans-ferry-leader-election-rolebinding
     namespace: provider-1000
   roleRef:
@@ -138,6 +148,7 @@
   metadata:
     labels:
       control-plane: manager
+      kubecarrier.io/role: ferry
     name: hans-ferry-manager
     namespace: provider-1000
   spec:
@@ -145,10 +156,12 @@
     selector:
       matchLabels:
         control-plane: manager
+        kubecarrier.io/role: ferry
     template:
       metadata:
         labels:
           control-plane: manager
+          kubecarrier.io/role: ferry
       spec:
         containers:
         - args:

@@ -5,6 +5,8 @@
       cert-manager.io/inject-ca-from: test3000/kubecarrier-manager-serving-cert
       controller-gen.kubebuilder.io/version: v0.2.4
     creationTimestamp: null
+    labels:
+      kubecarrier.io/role: manager
     name: catalogentries.catalog.kubecarrier.io
   spec:
     group: catalog.kubecarrier.io
@@ -182,6 +184,8 @@
     annotations:
       controller-gen.kubebuilder.io/version: v0.2.4
     creationTimestamp: null
+    labels:
+      kubecarrier.io/role: manager
     name: catalogs.catalog.kubecarrier.io
   spec:
     group: catalog.kubecarrier.io
@@ -412,6 +416,8 @@
       cert-manager.io/inject-ca-from: test3000/kubecarrier-manager-serving-cert
       controller-gen.kubebuilder.io/version: v0.2.4
     creationTimestamp: null
+    labels:
+      kubecarrier.io/role: manager
     name: derivedcustomresources.catalog.kubecarrier.io
   spec:
     group: catalog.kubecarrier.io
@@ -600,6 +606,8 @@
       cert-manager.io/inject-ca-from: test3000/kubecarrier-manager-serving-cert
       controller-gen.kubebuilder.io/version: v0.2.4
     creationTimestamp: null
+    labels:
+      kubecarrier.io/role: manager
     name: offerings.catalog.kubecarrier.io
   spec:
     group: catalog.kubecarrier.io
@@ -727,6 +735,8 @@
       cert-manager.io/inject-ca-from: test3000/kubecarrier-manager-serving-cert
       controller-gen.kubebuilder.io/version: v0.2.4
     creationTimestamp: null
+    labels:
+      kubecarrier.io/role: manager
     name: providerreferences.catalog.kubecarrier.io
   spec:
     group: catalog.kubecarrier.io
@@ -803,6 +813,8 @@
       cert-manager.io/inject-ca-from: test3000/kubecarrier-manager-serving-cert
       controller-gen.kubebuilder.io/version: v0.2.4
     creationTimestamp: null
+    labels:
+      kubecarrier.io/role: manager
     name: providers.catalog.kubecarrier.io
   spec:
     group: catalog.kubecarrier.io
@@ -940,6 +952,8 @@
       cert-manager.io/inject-ca-from: test3000/kubecarrier-manager-serving-cert
       controller-gen.kubebuilder.io/version: v0.2.4
     creationTimestamp: null
+    labels:
+      kubecarrier.io/role: manager
     name: serviceclusterreferences.catalog.kubecarrier.io
   spec:
     group: catalog.kubecarrier.io
@@ -1031,6 +1045,8 @@
       cert-manager.io/inject-ca-from: test3000/kubecarrier-manager-serving-cert
       controller-gen.kubebuilder.io/version: v0.2.4
     creationTimestamp: null
+    labels:
+      kubecarrier.io/role: manager
     name: tenantreferences.catalog.kubecarrier.io
   spec:
     group: catalog.kubecarrier.io
@@ -1090,6 +1106,8 @@
       cert-manager.io/inject-ca-from: test3000/kubecarrier-manager-serving-cert
       controller-gen.kubebuilder.io/version: v0.2.4
     creationTimestamp: null
+    labels:
+      kubecarrier.io/role: manager
     name: tenants.catalog.kubecarrier.io
   spec:
     group: catalog.kubecarrier.io
@@ -1207,6 +1225,8 @@
       cert-manager.io/inject-ca-from: test3000/kubecarrier-manager-serving-cert
       controller-gen.kubebuilder.io/version: v0.2.4
     creationTimestamp: null
+    labels:
+      kubecarrier.io/role: manager
     name: customresourcediscoveries.kubecarrier.io
   spec:
     group: kubecarrier.io
@@ -1351,6 +1371,8 @@
     annotations:
       controller-gen.kubebuilder.io/version: v0.2.4
     creationTimestamp: null
+    labels:
+      kubecarrier.io/role: manager
     name: customresourcediscoverysets.kubecarrier.io
   spec:
     group: kubecarrier.io
@@ -1521,6 +1543,8 @@
       cert-manager.io/inject-ca-from: test3000/kubecarrier-manager-serving-cert
       controller-gen.kubebuilder.io/version: v0.2.4
     creationTimestamp: null
+    labels:
+      kubecarrier.io/role: manager
     name: serviceclusterassignments.kubecarrier.io
   spec:
     group: kubecarrier.io
@@ -1661,6 +1685,8 @@
       cert-manager.io/inject-ca-from: test3000/kubecarrier-manager-serving-cert
       controller-gen.kubebuilder.io/version: v0.2.4
     creationTimestamp: null
+    labels:
+      kubecarrier.io/role: manager
     name: serviceclusters.kubecarrier.io
   spec:
     group: kubecarrier.io
@@ -1823,6 +1849,8 @@
   kind: ClusterRole
   metadata:
     creationTimestamp: null
+    labels:
+      kubecarrier.io/role: manager
     name: kubecarrier-manager-manager-role
   rules:
   - apiGroups:
@@ -2025,6 +2053,8 @@
 - apiVersion: rbac.authorization.k8s.io/v1
   kind: ClusterRoleBinding
   metadata:
+    labels:
+      kubecarrier.io/role: manager
     name: kubecarrier-manager-manager-rolebinding
   roleRef:
     apiGroup: rbac.authorization.k8s.io
@@ -2037,6 +2067,8 @@
 - apiVersion: rbac.authorization.k8s.io/v1
   kind: Role
   metadata:
+    labels:
+      kubecarrier.io/role: manager
     name: kubecarrier-manager-leader-election-role
     namespace: test3000
   rules:
@@ -2069,6 +2101,8 @@
 - apiVersion: rbac.authorization.k8s.io/v1
   kind: RoleBinding
   metadata:
+    labels:
+      kubecarrier.io/role: manager
     name: kubecarrier-manager-leader-election-rolebinding
     namespace: test3000
   roleRef:
@@ -2084,6 +2118,7 @@
   metadata:
     labels:
       control-plane: controller-manager
+      kubecarrier.io/role: manager
     name: kubecarrier-manager-controller-manager
     namespace: test3000
   spec:
@@ -2091,17 +2126,23 @@
     selector:
       matchLabels:
         control-plane: controller-manager
+        kubecarrier.io/role: manager
     template:
       metadata:
         labels:
           control-plane: controller-manager
+          kubecarrier.io/role: manager
       spec:
         containers:
-        - env:
+        - args:
+          - --cert-dir=$(CERT_DIR)
+          env:
           - name: KUBECARRIER_NAMESPACE
             valueFrom:
               fieldRef:
                 fieldPath: metadata.namespace
+          - name: CERT_DIR
+            value: /tmp/k8s-webhook-server/serving-certs
           image: quay.io/kubecarrier/manager:was not build properly
           name: manager
           ports:
@@ -2138,6 +2179,8 @@
     annotations:
       cert-manager.io/inject-ca-from: test3000/kubecarrier-manager-serving-cert
     creationTimestamp: null
+    labels:
+      kubecarrier.io/role: manager
     name: kubecarrier-manager-validating-webhook-configuration
   webhooks:
   - clientConfig:
@@ -2338,6 +2381,8 @@
 - apiVersion: v1
   kind: Service
   metadata:
+    labels:
+      kubecarrier.io/role: manager
     name: kubecarrier-manager-webhook-service
     namespace: test3000
   spec:
@@ -2346,9 +2391,12 @@
       targetPort: 9443
     selector:
       control-plane: controller-manager
+      kubecarrier.io/role: manager
 - apiVersion: cert-manager.io/v1alpha2
   kind: Issuer
   metadata:
+    labels:
+      kubecarrier.io/role: manager
     name: kubecarrier-manager-selfsigned-issuer
     namespace: test3000
   spec:
@@ -2356,6 +2404,8 @@
 - apiVersion: cert-manager.io/v1alpha2
   kind: Certificate
   metadata:
+    labels:
+      kubecarrier.io/role: manager
     name: kubecarrier-manager-serving-cert
     namespace: test3000
   spec:

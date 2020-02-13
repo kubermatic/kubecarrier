@@ -2,6 +2,8 @@
   kind: Role
   metadata:
     creationTimestamp: null
+    labels:
+      kubecarrier.io/role: catapult
     name: db-eu-west-1-catapult-manager
     namespace: test3000
   rules:
@@ -26,6 +28,8 @@
   kind: ClusterRole
   metadata:
     creationTimestamp: null
+    labels:
+      kubecarrier.io/role: catapult
     name: db-eu-west-1-catapult-manager
   rules:
   - apiGroups:
@@ -51,11 +55,15 @@
 - apiVersion: v1
   kind: ServiceAccount
   metadata:
+    labels:
+      kubecarrier.io/role: catapult
     name: db-eu-west-1-catapult-sa
     namespace: test3000
 - apiVersion: rbac.authorization.k8s.io/v1
   kind: ClusterRoleBinding
   metadata:
+    labels:
+      kubecarrier.io/role: catapult
     name: db-eu-west-1-catapult-manager
   roleRef:
     apiGroup: rbac.authorization.k8s.io
@@ -68,6 +76,8 @@
 - apiVersion: rbac.authorization.k8s.io/v1
   kind: RoleBinding
   metadata:
+    labels:
+      kubecarrier.io/role: catapult
     name: db-eu-west-1-catapult-manager
     namespace: test3000
   roleRef:
@@ -81,6 +91,8 @@
 - apiVersion: rbac.authorization.k8s.io/v1
   kind: Role
   metadata:
+    labels:
+      kubecarrier.io/role: catapult
     name: db-eu-west-1-catapult-leader-election-role
     namespace: test3000
   rules:
@@ -113,6 +125,8 @@
 - apiVersion: rbac.authorization.k8s.io/v1
   kind: RoleBinding
   metadata:
+    labels:
+      kubecarrier.io/role: catapult
     name: db-eu-west-1-catapult-leader-election-rolebinding
     namespace: test3000
   roleRef:
@@ -128,6 +142,7 @@
   metadata:
     labels:
       control-plane: manager
+      kubecarrier.io/role: catapult
     name: db-eu-west-1-catapult-manager
     namespace: test3000
   spec:
@@ -135,10 +150,12 @@
     selector:
       matchLabels:
         control-plane: manager
+        kubecarrier.io/role: catapult
     template:
       metadata:
         labels:
           control-plane: manager
+          kubecarrier.io/role: catapult
       spec:
         containers:
         - env:

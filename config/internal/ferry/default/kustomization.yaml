@@ -8,9 +8,8 @@ namespace: kubecarrier-system
 # field above.
 namePrefix: ferry-
 
-# Labels to add to all resources and selectors.
-#commonLabels:
-#  someName: someValue
+commonLabels:
+  kubecarrier.io/role: ferry
 
 bases:
 - ../rbac
