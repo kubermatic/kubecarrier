@@ -81,7 +81,7 @@ func (r *OfferingWebhookHandler) validateCreate(offering *catalogv1alpha1.Offeri
 }
 
 func (r *OfferingWebhookHandler) validateUpdate(oldObj, newObj *catalogv1alpha1.Offering) error {
-	r.Log.Info("validate create", "name", newObj.Name)
+	r.Log.Info("validate update", "name", newObj.Name)
 	if newObj.Offering.Provider.Name != oldObj.Offering.Provider.Name {
 		return fmt.Errorf("the Provider of Offering is immutable")
 	}

@@ -79,7 +79,7 @@ func (r *CatalogEntryWebhookHandler) validateCreate(catalogEntry *catalogv1alpha
 }
 
 func (r *CatalogEntryWebhookHandler) validateUpdate(oldObj, newObj *catalogv1alpha1.CatalogEntry) error {
-	r.Log.Info("validate create", "name", newObj.Name)
+	r.Log.Info("validate update", "name", newObj.Name)
 	if newObj.Spec.ReferencedCRD.Name != oldObj.Spec.ReferencedCRD.Name {
 		return fmt.Errorf("the Referenced CRD of CatalogEntry is immutable")
 	}
