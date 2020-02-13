@@ -45,9 +45,8 @@ const (
 // CatalogEntryReconciler reconciles a CatalogEntry object
 type CatalogEntryReconciler struct {
 	client.Client
-	Log                        logr.Logger
-	Scheme                     *runtime.Scheme
-	KubeCarrierSystemNamespace string
+	Log    logr.Logger
+	Scheme *runtime.Scheme
 }
 
 // +kubebuilder:rbac:groups=catalog.kubecarrier.io,resources=catalogentries,verbs=get;list;watch;update
@@ -133,7 +132,7 @@ func (r *CatalogEntryReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error
 	}
 
 	// lookup Provider
-	provider, err := catalogv1alpha1.GetProviderByProviderNamespace(ctx, r.Client, r.KubeCarrierSystemNamespace, catalogEntry.Namespace)
+	provider, err := catalogv1alpha1.GetProviderByProviderNamespace(ctx, r.Client, catalogEntry.Namespace)
 	if err != nil {
 		return ctrl.Result{}, fmt.Errorf("getting the Provider by Provider Namespace: %w", err)
 	}

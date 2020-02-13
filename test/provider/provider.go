@@ -75,8 +75,7 @@ func NewProviderSuite(f *framework.Framework) func(t *testing.T) {
 
 					provider := &catalogv1alpha1.Provider{
 						ObjectMeta: metav1.ObjectMeta{
-							Name:      "test-" + strings.ToLower(name),
-							Namespace: "kubecarrier-system",
+							Name: "test-" + strings.ToLower(name),
 						},
 						Spec: catalogv1alpha1.ProviderSpec{
 							Metadata: catalogv1alpha1.ProviderMetadata{
@@ -112,8 +111,7 @@ func NewCatalogSuite(
 		// Create a Tenant to execute our tests in
 		tenant := &catalogv1alpha1.Tenant{
 			ObjectMeta: metav1.ObjectMeta{
-				Name:      "test-tenant-catalog",
-				Namespace: "kubecarrier-system",
+				Name: "test-tenant-catalog",
 			},
 		}
 		require.NoError(
@@ -307,8 +305,7 @@ func NewCatalogSuite(
 			// Recreate the tenant
 			tenant = &catalogv1alpha1.Tenant{
 				ObjectMeta: metav1.ObjectMeta{
-					Name:      "test-tenant2",
-					Namespace: "kubecarrier-system",
+					Name: "test-tenant2",
 				},
 			}
 			require.NoError(t, masterClient.Create(ctx, tenant), "creating tenant error")

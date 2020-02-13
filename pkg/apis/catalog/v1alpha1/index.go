@@ -39,10 +39,9 @@ func RegisterProviderNamespaceFieldIndex(mgr ctrl.Manager) error {
 		}))
 }
 
-func GetProviderByProviderNamespace(ctx context.Context, c client.Client, kubecarrierNamespace, providerNamespace string) (*Provider, error) {
+func GetProviderByProviderNamespace(ctx context.Context, c client.Client, providerNamespace string) (*Provider, error) {
 	providerList := &ProviderList{}
 	if err := c.List(ctx, providerList,
-		client.InNamespace(kubecarrierNamespace),
 		client.MatchingFields{
 			ProviderNamespaceFieldIndex: providerNamespace,
 		},

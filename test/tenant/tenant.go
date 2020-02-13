@@ -64,8 +64,7 @@ func (s *TenantSuite) SetupSuite() {
 	// Create a Provider to execute tests
 	s.provider = &catalogv1alpha1.Provider{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      "other-cloud",
-			Namespace: "kubecarrier-system",
+			Name: "other-cloud",
 		},
 		Spec: catalogv1alpha1.ProviderSpec{
 			Metadata: catalogv1alpha1.ProviderMetadata{

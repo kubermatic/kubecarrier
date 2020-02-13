@@ -82,8 +82,7 @@ func Test_DerivedCustomResourceReconciler(t *testing.T) {
 
 	provider := &catalogv1alpha1.Provider{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      "dcr",
-			Namespace: "kubecarrier-system",
+			Name: "dcr",
 		},
 		Status: catalogv1alpha1.ProviderStatus{
 			NamespaceName: "provider-dcr",
@@ -119,10 +118,9 @@ func Test_DerivedCustomResourceReconciler(t *testing.T) {
 		client := fakeclient.NewFakeClientWithScheme(testScheme, baseCRD, provider, derivedCR)
 		log := testutil.NewLogger(t)
 		r := &DerivedCustomResourceReconciler{
-			Client:                     client,
-			Log:                        log,
-			Scheme:                     testScheme,
-			KubeCarrierSystemNamespace: "kubecarrier-system",
+			Client: client,
+			Log:    log,
+			Scheme: testScheme,
 		}
 		ctx := context.Background()
 
