@@ -40,7 +40,7 @@ func TestCustomResourceDiscoveryValidatingCreate(t *testing.T) {
 			name: "servicecluster missing",
 			object: &corev1alpha1.CustomResourceDiscovery{
 				ObjectMeta: metav1.ObjectMeta{
-					Name:      "test-crdiscoveryy",
+					Name:      "test-crdiscovery",
 					Namespace: "test-namespace",
 				},
 				Spec: corev1alpha1.CustomResourceDiscoverySpec{
@@ -56,7 +56,7 @@ func TestCustomResourceDiscoveryValidatingCreate(t *testing.T) {
 			name: "crd missing",
 			object: &corev1alpha1.CustomResourceDiscovery{
 				ObjectMeta: metav1.ObjectMeta{
-					Name:      "test-crdiscoveryy",
+					Name:      "test-crdiscovery",
 					Namespace: "test-namespace",
 				},
 				Spec: corev1alpha1.CustomResourceDiscoverySpec{
@@ -72,7 +72,7 @@ func TestCustomResourceDiscoveryValidatingCreate(t *testing.T) {
 			name: "can pass validating create",
 			object: &corev1alpha1.CustomResourceDiscovery{
 				ObjectMeta: metav1.ObjectMeta{
-					Name:      "test-crdiscoveryy",
+					Name:      "test-crdiscovery",
 					Namespace: "test-namespace",
 				},
 				Spec: corev1alpha1.CustomResourceDiscoverySpec{
@@ -103,7 +103,7 @@ func TestCustomResourceDiscoveryValidatingUpdate(t *testing.T) {
 
 	oldObj := &corev1alpha1.CustomResourceDiscovery{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      "test-crdiscoveryy",
+			Name:      "test-crdiscovery",
 			Namespace: "test-namespace",
 		},
 		Spec: corev1alpha1.CustomResourceDiscoverySpec{
@@ -126,7 +126,7 @@ func TestCustomResourceDiscoveryValidatingUpdate(t *testing.T) {
 			name: "kind override immutable",
 			object: &corev1alpha1.CustomResourceDiscovery{
 				ObjectMeta: metav1.ObjectMeta{
-					Name:      "test-crdiscoveryy",
+					Name:      "test-crdiscovery",
 					Namespace: "test-namespace",
 				},
 				Spec: corev1alpha1.CustomResourceDiscoverySpec{
@@ -145,7 +145,7 @@ func TestCustomResourceDiscoveryValidatingUpdate(t *testing.T) {
 			name: "servicecluster immutable",
 			object: &corev1alpha1.CustomResourceDiscovery{
 				ObjectMeta: metav1.ObjectMeta{
-					Name:      "test-crdiscoveryy",
+					Name:      "test-crdiscovery",
 					Namespace: "test-namespace",
 				},
 				Spec: corev1alpha1.CustomResourceDiscoverySpec{
@@ -164,7 +164,7 @@ func TestCustomResourceDiscoveryValidatingUpdate(t *testing.T) {
 			name: "crd immutable",
 			object: &corev1alpha1.CustomResourceDiscovery{
 				ObjectMeta: metav1.ObjectMeta{
-					Name:      "test-crdiscoveryy",
+					Name:      "test-crdiscovery",
 					Namespace: "test-namespace",
 				},
 				Spec: corev1alpha1.CustomResourceDiscoverySpec{
@@ -183,7 +183,7 @@ func TestCustomResourceDiscoveryValidatingUpdate(t *testing.T) {
 			name: "can pass validating update",
 			object: &corev1alpha1.CustomResourceDiscovery{
 				ObjectMeta: metav1.ObjectMeta{
-					Name:      "test-crdiscoveryy",
+					Name:      "test-crdiscovery",
 					Namespace: "test-namespace",
 				},
 				Spec: corev1alpha1.CustomResourceDiscoverySpec{

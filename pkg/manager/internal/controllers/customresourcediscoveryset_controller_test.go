@@ -48,11 +48,11 @@ func TestCustomResourceDiscoverySetReconciler(t *testing.T) {
 		Spec: corev1alpha1.ServiceClusterSpec{},
 	}
 
-	crdiscoveriesnn := types.NamespacedName{
+	crDiscoveriesnn := types.NamespacedName{
 		Name:      "couchdb",
 		Namespace: "hans",
 	}
-	crdiscoveries := &corev1alpha1.CustomResourceDiscoverySet{
+	crDiscoveries := &corev1alpha1.CustomResourceDiscoverySet{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "couchdb",
 			Namespace: "hans",
@@ -69,65 +69,65 @@ func TestCustomResourceDiscoverySetReconciler(t *testing.T) {
 			Name:      "couchdb.us-east-1",
 			Namespace: "hans",
 			Labels: map[string]string{
-				crdiscoveriesLabel: crdiscoveries.Name,
+				crDiscoveriesLabel: crDiscoveries.Name,
 			},
 		},
 	}
 	r := &CustomResourceDiscoverySetReconciler{
 		Log:    testutil.NewLogger(t),
-		Client: fakeclient.NewFakeClientWithScheme(testScheme, serviceCluster1, serviceCluster2, crdiscoveries, crds),
+		Client: fakeclient.NewFakeClientWithScheme(testScheme, serviceCluster1, serviceCluster2, crDiscoveries, crds),
 		Scheme: testScheme,
 	}
 	ctx := context.Background()
 	reconcileLoop := func() {
 		for i := 0; i < 3; i++ {
 			_, err := r.Reconcile(ctrl.Request{
-				NamespacedName: crdiscoveriesnn,
+				NamespacedName: crDiscoveriesnn,
 			})
 			require.NoError(t, err)
-			require.NoError(t, r.Client.Get(ctx, crdiscoveriesnn, crdiscoveries))
+			require.NoError(t, r.Client.Get(ctx, crDiscoveriesnn, crDiscoveries))
 		}
 	}
 
 	reconcileLoop() // should create two CustomResourceDiscovery objects
 
-	crdiscoveryServicCluster1 := &corev1alpha1.CustomResourceDiscovery{}
+	crDiscoveryServicCluster1 := &corev1alpha1.CustomResourceDiscovery{}
 	require.NoError(t, r.Get(ctx, types.NamespacedName{
 		Name:      "couchdb.svc-1",
-		Namespace: crdiscoveries.Namespace,
-	}, crdiscoveryServicCluster1))
+		Namespace: crDiscoveries.Namespace,
+	}, crDiscoveryServicCluster1))
 
-	crdiscoveryServicCluster2 := &corev1alpha1.CustomResourceDiscovery{}
+	crDiscoveryServicCluster2 := &corev1alpha1.CustomResourceDiscovery{}
 	require.NoError(t, r.Get(ctx, types.NamespacedName{
 		Name:      "couchdb.svc-2",
-		Namespace: crdiscoveries.Namespace,
-	}, crdiscoveryServicCluster2))
+		Namespace: crDiscoveries.Namespace,
+	}, crDiscoveryServicCluster2))
 
-	ready, ok := crdiscoveries.Status.GetCondition(corev1alpha1.CustomResourceDiscoverySetReady)
+	ready, ok := crDiscoveries.Status.GetCondition(corev1alpha1.CustomResourceDiscoverySetReady)
 	if assert.True(t, ok) {
 		assert.Equal(t, corev1alpha1.ConditionFalse, ready.Status)
 		assert.Equal(t, "ComponentsUnready", ready.Reason)
 	}
 
-	crdiscoveryServicCluster1.Status.Conditions = []corev1alpha1.CustomResourceDiscoveryCondition{
+	crDiscoveryServicCluster1.Status.Conditions = []corev1alpha1.CustomResourceDiscoveryCondition{
 		{
 			Type:   corev1alpha1.CustomResourceDiscoveryReady,
 			Status: corev1alpha1.ConditionTrue,
 		},
 	}
-	require.NoError(t, r.Status().Update(ctx, crdiscoveryServicCluster1))
+	require.NoError(t, r.Status().Update(ctx, crDiscoveryServicCluster1))
 
-	crdiscoveryServicCluster2.Status.Conditions = []corev1alpha1.CustomResourceDiscoveryCondition{
+	crDiscoveryServicCluster2.Status.Conditions = []corev1alpha1.CustomResourceDiscoveryCondition{
 		{
 			Type:   corev1alpha1.CustomResourceDiscoveryReady,
 			Status: corev1alpha1.ConditionTrue,
 		},
 	}
-	require.NoError(t, r.Status().Update(ctx, crdiscoveryServicCluster2))
+	require.NoError(t, r.Status().Update(ctx, crDiscoveryServicCluster2))
 
 	reconcileLoop() // should update status
 
-	ready, ok = crdiscoveries.Status.GetCondition(corev1alpha1.CustomResourceDiscoverySetReady)
+	ready, ok = crDiscoveries.Status.GetCondition(corev1alpha1.CustomResourceDiscoverySetReady)
 	if assert.True(t, ok) {
 		assert.Equal(t, corev1alpha1.ConditionTrue, ready.Status)
 		assert.Equal(t, "ComponentsReady", ready.Reason)
