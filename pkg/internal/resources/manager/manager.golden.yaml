@@ -827,7 +827,7 @@
       shortNames:
       - pdr
       singular: provider
-    scope: Namespaced
+    scope: Cluster
     versions:
     - additionalPrinterColumns:
       - jsonPath: .status.namespaceName
@@ -1120,7 +1120,7 @@
       shortNames:
       - tn
       singular: tenant
-    scope: Namespaced
+    scope: Cluster
     versions:
     - additionalPrinterColumns:
       - jsonPath: .status.phase

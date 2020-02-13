@@ -151,7 +151,7 @@ func (s *TenantStatus) SetCondition(condition TenantCondition) {
 // +kubebuilder:subresource:status
 // +kubebuilder:printcolumn:name="Status",type="string",JSONPath=".status.phase"
 // +kubebuilder:printcolumn:name="Age",type="date",JSONPath=".metadata.creationTimestamp"
-// +kubebuilder:resource:categories=kubecarrier-admin,shortName=tn
+// +kubebuilder:resource:categories=kubecarrier-admin,shortName=tn,scope=Cluster
 type Tenant struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
