@@ -82,7 +82,7 @@ func (r *ProviderReferenceWebhookHandler) validateCreate(providerReference *cata
 }
 
 func (r *ProviderReferenceWebhookHandler) validateUpdate(oldObj, newObj *catalogv1alpha1.ProviderReference) error {
-	r.Log.Info("validate create", "name", newObj.Name)
+	r.Log.Info("validate update", "name", newObj.Name)
 	return r.validateMetadata(newObj)
 }
 
