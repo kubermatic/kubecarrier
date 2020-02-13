@@ -167,7 +167,7 @@ func NewServiceClusterSuite(
 		//
 		masterClusterObj := &unstructured.Unstructured{
 			Object: map[string]interface{}{
-				"apiVersion": "eu-west-1.test-servicecluster/v1alpha1",
+				"apiVersion": "eu-west-1.provider-test-servicecluster/v1alpha1",
 				"kind":       "RedisInternal",
 				"metadata": map[string]interface{}{
 					"name":      "test-instance-1",
@@ -221,7 +221,7 @@ func NewServiceClusterSuite(
 		// a object on the master cluster should have been created
 		masterClusterObj2 := &unstructured.Unstructured{
 			Object: map[string]interface{}{
-				"apiVersion": "eu-west-1.test-servicecluster/v1alpha1",
+				"apiVersion": "eu-west-1.provider-test-servicecluster/v1alpha1",
 				"kind":       "RedisInternal",
 				"metadata": map[string]interface{}{
 					"name":      serviceClusterObj2.GetName(),

@@ -29,6 +29,9 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
+	"sigs.k8s.io/controller-runtime/pkg/handler"
+	"sigs.k8s.io/controller-runtime/pkg/reconcile"
+	"sigs.k8s.io/controller-runtime/pkg/source"
 
 	corev1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/core/v1alpha1"
 )
@@ -187,8 +190,28 @@ func (r *CustomResourceDiscoverySetReconciler) reconcileCRDiscovery(
 }
 
 func (r *CustomResourceDiscoverySetReconciler) SetupWithManager(mgr ctrl.Manager) error {
+	enqueueAllCRDS := &handler.EnqueueRequestsFromMapFunc{
+		ToRequests: handler.ToRequestsFunc(func(mapObject handler.MapObject) (out []reconcile.Request) {
+			crdsList := &corev1alpha1.CustomResourceDiscoverySetList{}
+			if err := r.List(context.Background(), crdsList, client.InNamespace(mapObject.Meta.GetNamespace())); err != nil {
+				// This will makes the manager crashes, and it will restart and reconcile all objects again.
+				panic(fmt.Errorf("listting Catalog: %w", err))
+			}
+			for _, crds := range crdsList.Items {
+				out = append(out, reconcile.Request{
+					NamespacedName: types.NamespacedName{
+						Name:      crds.Name,
+						Namespace: crds.Namespace,
+					},
+				})
+			}
+			return
+		}),
+	}
+
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&corev1alpha1.CustomResourceDiscoverySet{}).
 		Owns(&corev1alpha1.CustomResourceDiscovery{}).
+		Watches(&source.Kind{Type: &corev1alpha1.ServiceCluster{}}, enqueueAllCRDS).
 		Complete(r)
 }
