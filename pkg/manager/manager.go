@@ -205,7 +205,9 @@ func run(flags *flags, log logr.Logger) error {
 		}})
 	wbh.Register(utilwebhook.GenerateValidateWebhookPath(&catalogv1alpha1.Provider{}, mgr.GetScheme()),
 		&webhook.Admission{Handler: &webhooks.ProviderWebhookHandler{
-			Log: log.WithName("validating webhooks").WithName("Provider"),
+			Client: mgr.GetClient(),
+			Scheme: mgr.GetScheme(),
+			Log:    log.WithName("validating webhooks").WithName("Provider"),
 		}})
 	wbh.Register(utilwebhook.GenerateValidateWebhookPath(&catalogv1alpha1.ProviderReference{}, mgr.GetScheme()),
 		&webhook.Admission{Handler: &webhooks.ProviderReferenceWebhookHandler{

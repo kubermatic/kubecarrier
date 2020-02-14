@@ -94,6 +94,7 @@ webhooks:
     operations:
     - CREATE
     - UPDATE
+    - DELETE
     resources:
     - providers
 - clientConfig:
