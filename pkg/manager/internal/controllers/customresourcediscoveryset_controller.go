@@ -67,7 +67,6 @@ func (r *CustomResourceDiscoverySetReconciler) Reconcile(req ctrl.Request) (ctrl
 			return ctrl.Result{}, fmt.Errorf("updating CustomResourceDiscoverySet finalizers: %w", err)
 		}
 	}
-
 	if crDiscoverySet.DeletionTimestamp.IsZero() {
 		// nothing to do, let kube controller-manager foregroundDeletion wait until every created object is deleted
 		return ctrl.Result{}, nil
