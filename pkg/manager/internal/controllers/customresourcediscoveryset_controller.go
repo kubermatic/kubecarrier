@@ -68,6 +68,11 @@ func (r *CustomResourceDiscoverySetReconciler) Reconcile(req ctrl.Request) (ctrl
 		}
 	}
 
+	if crDiscoverySet.DeletionTimestamp.IsZero() {
+		// nothing to do, let kube controller-manager foregroundDeletion wait until every created object is deleted
+		return ctrl.Result{}, nil
+	}
+
 	// List ServiceClusters
 	serviceClusterSelector, err := metav1.LabelSelectorAsSelector(&crDiscoverySet.Spec.ServiceClusterSelector)
 	if err != nil {
