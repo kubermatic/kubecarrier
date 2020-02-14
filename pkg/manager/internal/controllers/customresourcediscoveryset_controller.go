@@ -34,6 +34,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/source"
 
 	corev1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/core/v1alpha1"
+	"github.com/kubermatic/kubecarrier/pkg/internal/util"
 )
 
 const crdiscoveriesLabel = "crdiscoveries.kubecarrier.io/controlled-by"
@@ -59,6 +60,12 @@ func (r *CustomResourceDiscoverySetReconciler) Reconcile(req ctrl.Request) (ctrl
 	crDiscoverySet := &corev1alpha1.CustomResourceDiscoverySet{}
 	if err := r.Get(ctx, req.NamespacedName, crDiscoverySet); err != nil {
 		return result, client.IgnoreNotFound(err)
+	}
+
+	if util.AddFinalizer(crDiscoverySet, metav1.FinalizerDeleteDependents) {
+		if err := r.Client.Update(ctx, crDiscoverySet); err != nil {
+			return ctrl.Result{}, fmt.Errorf("updating CustomResourceDiscoverySet finalizers: %w", err)
+		}
 	}
 
 	// List ServiceClusters
