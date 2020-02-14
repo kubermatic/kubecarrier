@@ -144,6 +144,11 @@ func NewDerivedCRSuite(
 			assert.Equal(t, "testresources", dcr.Status.DerivedCR.Plural)
 			assert.Equal(t, "testresource", dcr.Status.DerivedCR.Singular)
 		}
+		err = masterClient.Delete(ctx, provider)
+		assert.Error(t, err, "dirty provider deletion should error out")
+		if err != nil {
+			t.Logf("deleting (dirty) provider %s, (should error) error message\n:%s", provider.Name, err.Error())
+		}
 
 		// Check created CRD
 		crd := &apiextensionsv1.CustomResourceDefinition{}

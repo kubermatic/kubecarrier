@@ -21,6 +21,7 @@ import (
 	"io/ioutil"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	corev1 "k8s.io/api/core/v1"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
@@ -132,6 +133,11 @@ func NewServiceClusterSuite(
 		}
 		require.NoError(t, masterClient.Create(ctx, crdiscoveries))
 		require.NoError(t, testutil.WaitUntilReady(masterClient, crdiscoveries))
+		err = masterClient.Delete(ctx, provider)
+		assert.Error(t, err, "dirty provider deletion should error out")
+		if err != nil {
+			t.Logf("deleting (dirty) provider %s, (should error) error message\n:%s", provider.Name, err.Error())
+		}
 
 		// We have created/registered new CRD's, so we need a new client
 		masterClient, err = f.MasterClient()
