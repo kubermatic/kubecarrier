@@ -49,17 +49,20 @@ var _ admission.Handler = (*ProviderWebhookHandler)(nil)
 
 // Handle is the function to handle create/update requests of Providers.
 func (r *ProviderWebhookHandler) Handle(ctx context.Context, req admission.Request) admission.Response {
-	obj := &catalogv1alpha1.Provider{}
-	if err := r.decoder.Decode(req, obj); err != nil {
-		return admission.Errored(http.StatusBadRequest, err)
-	}
-
 	switch req.Operation {
 	case adminv1beta1.Create:
+		obj := &catalogv1alpha1.Provider{}
+		if err := r.decoder.Decode(req, obj); err != nil {
+			return admission.Errored(http.StatusBadRequest, err)
+		}
 		if err := r.validateCreate(obj); err != nil {
 			return admission.Denied(err.Error())
 		}
 	case adminv1beta1.Update:
+		obj := &catalogv1alpha1.Provider{}
+		if err := r.decoder.Decode(req, obj); err != nil {
+			return admission.Errored(http.StatusBadRequest, err)
+		}
 		oldObj := &catalogv1alpha1.Provider{}
 		if err := r.decoder.DecodeRaw(req.OldObject, oldObj); err != nil {
 			return admission.Errored(http.StatusBadRequest, err)
@@ -77,7 +80,6 @@ func (r *ProviderWebhookHandler) Handle(ctx context.Context, req admission.Reque
 		}
 	}
 	return admission.Allowed("allowed to commit the request")
-
 }
 
 // ProviderWebhookHandler implements admission.DecoderInjector.
