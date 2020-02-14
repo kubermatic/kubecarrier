@@ -64,14 +64,6 @@
     - get
     - patch
     - update
-  - apiGroups:
-    - operator.kubecarrier.io
-    resources:
-    - ferries
-    verbs:
-    - get
-    - list
-    - watch
 - apiVersion: v1
   kind: ServiceAccount
   metadata:
