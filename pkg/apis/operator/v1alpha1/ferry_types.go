@@ -20,51 +20,51 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// ServiceClusterRegistrationSpec defines the desired state of ServiceClusterRegistration
-type ServiceClusterRegistrationSpec struct {
+// FerrySpec defines the desired state of Ferry
+type FerrySpec struct {
 	// KubeconfigSecret specifies the Kubeconfig to use when connecting to the ServiceCluster.
 	KubeconfigSecret ObjectReference `json:"kubeconfigSecret"`
 }
 
-// ServiceClusterRegistrationStatus defines the observed state of ServiceClusterRegistration
-type ServiceClusterRegistrationStatus struct {
+// FerryStatus defines the observed state of Ferry
+type FerryStatus struct {
 	// DEPRECATED.
 	// Phase represents the current lifecycle state of this object.
 	// Consider this field DEPRECATED, it will be removed as soon as there
 	// is a mechanism to map conditions to strings when printing the property.
 	// This is only for display purpose, for everything else use conditions.
-	Phase ServiceClusterRegistrationPhaseType `json:"phase,omitempty"`
-	// Conditions is a list of all conditions this ServiceClusterRegistration is in.
-	Conditions []ServiceClusterRegistrationCondition `json:"conditions,omitempty"`
+	Phase FerryPhaseType `json:"phase,omitempty"`
+	// Conditions is a list of all conditions this Ferry is in.
+	Conditions []FerryCondition `json:"conditions,omitempty"`
 	// The most recent generation observed by the controller.
 	ObservedGeneration int64 `json:"observedGeneration,omitempty"`
 }
 
-// ServiceClusterRegistrationPhaseType represents all conditions as a single string for printing in kubectl
-type ServiceClusterRegistrationPhaseType string
+// FerryPhaseType represents all conditions as a single string for printing in kubectl
+type FerryPhaseType string
 
-// Values of ServiceClusterRegistrationPhaseType
+// Values of FerryPhaseType
 const (
-	ServiceClusterRegistrationPhaseReady       ServiceClusterRegistrationPhaseType = "Ready"
-	ServiceClusterRegistrationPhaseNotReady    ServiceClusterRegistrationPhaseType = "NotReady"
-	ServiceClusterRegistrationPhaseTerminating ServiceClusterRegistrationPhaseType = "Terminating"
-	ServiceClusterRegistrationPhaseUnknown     ServiceClusterRegistrationPhaseType = "Unknown"
+	FerryPhaseReady       FerryPhaseType = "Ready"
+	FerryPhaseNotReady    FerryPhaseType = "NotReady"
+	FerryPhaseTerminating FerryPhaseType = "Terminating"
+	FerryPhaseUnknown     FerryPhaseType = "Unknown"
 )
 
-// ServiceClusterRegistrationConditionType represents a ServiceClusterRegistrationCondition value.
-type ServiceClusterRegistrationConditionType string
+// FerryConditionType represents a FerryCondition value.
+type FerryConditionType string
 
 const (
-	// ServiceClusterRegistrationReady represents a ServiceClusterRegistration condition is in ready state.
-	ServiceClusterRegistrationReady ServiceClusterRegistrationConditionType = "Ready"
+	// FerryReady represents a Ferry condition is in ready state.
+	FerryReady FerryConditionType = "Ready"
 )
 
 const (
-	ServiceClusterRegistrationTerminatingReason string = "Terminating"
+	FerryTerminatingReason string = "Terminating"
 )
 
-// ServiceClusterRegistrationCondition contains details for the current condition of this ServiceClusterRegistration.
-type ServiceClusterRegistrationCondition struct {
+// FerryCondition contains details for the current condition of this Ferry.
+type FerryCondition struct {
 	// LastTransitionTime is the last time the condition transit from one status to another.
 	LastTransitionTime metav1.Time `json:"lastTransitionTime"`
 	// Message is the human readable message indicating details about last transition.
@@ -74,41 +74,41 @@ type ServiceClusterRegistrationCondition struct {
 	// Status of the condition, one of ('True', 'False', 'Unknown').
 	Status ConditionStatus `json:"status"`
 	// Type of the condition, currently ('Ready').
-	Type ServiceClusterRegistrationConditionType `json:"type"`
+	Type FerryConditionType `json:"type"`
 }
 
 // True returns whether .Status == "True"
-func (c ServiceClusterRegistrationCondition) True() bool {
+func (c FerryCondition) True() bool {
 	return c.Status == ConditionTrue
 }
 
 // UpdatePhase updates the phase property based on the current conditions
 // this method should be called everytime the conditions are updated
-func (s *ServiceClusterRegistrationStatus) updatePhase() {
+func (s *FerryStatus) updatePhase() {
 	for _, condition := range s.Conditions {
-		if condition.Type != ServiceClusterRegistrationReady {
+		if condition.Type != FerryReady {
 			continue
 		}
 
 		switch condition.Status {
 		case ConditionTrue:
-			s.Phase = ServiceClusterRegistrationPhaseReady
+			s.Phase = FerryPhaseReady
 		case ConditionFalse:
-			if condition.Reason == ServiceClusterRegistrationTerminatingReason {
-				s.Phase = ServiceClusterRegistrationPhaseTerminating
+			if condition.Reason == FerryTerminatingReason {
+				s.Phase = FerryPhaseTerminating
 			} else {
-				s.Phase = ServiceClusterRegistrationPhaseNotReady
+				s.Phase = FerryPhaseNotReady
 			}
 		case ConditionUnknown:
-			s.Phase = ServiceClusterRegistrationPhaseUnknown
+			s.Phase = FerryPhaseUnknown
 		}
 		return
 	}
-	s.Phase = ServiceClusterRegistrationPhaseUnknown
+	s.Phase = FerryPhaseUnknown
 }
 
 // SetCondition replaces or adds the given condition
-func (s *ServiceClusterRegistrationStatus) SetCondition(condition ServiceClusterRegistrationCondition) {
+func (s *FerryStatus) SetCondition(condition FerryCondition) {
 	defer s.updatePhase()
 	if condition.LastTransitionTime.IsZero() {
 		condition.LastTransitionTime = metav1.Now()
@@ -130,7 +130,7 @@ func (s *ServiceClusterRegistrationStatus) SetCondition(condition ServiceCluster
 }
 
 // GetCondition returns the Condition of the given type, if it exists
-func (s *ServiceClusterRegistrationStatus) GetCondition(t ServiceClusterRegistrationConditionType) (condition ServiceClusterRegistrationCondition, exists bool) {
+func (s *FerryStatus) GetCondition(t FerryConditionType) (condition FerryCondition, exists bool) {
 	for _, cond := range s.Conditions {
 		if cond.Type == t {
 			condition = cond
@@ -141,39 +141,39 @@ func (s *ServiceClusterRegistrationStatus) GetCondition(t ServiceClusterRegistra
 	return
 }
 
-// ServiceClusterRegistration represents single kubernetes cluster belonging to the provider
+// Ferry represents single kubernetes cluster belonging to the provider
 //
-// ServiceClusterRegistration lives in the provider namespace. For each ferry the kubecarrier operator spins up
+// Ferry lives in the provider namespace. For each ferry the kubecarrier operator spins up
 // the ferry controller deployment, necessary roles, service accounts, and role bindings
 //
 // The reason for ferry controller deployment are multiples:
 // * security --> kubecarrier operator has greater privileges then ferry controller
 // * resource isolation --> each ferry controller pod operates only on a single service cluster,
-// 		thus resource allocation and monitoring is separate per ferrys. This allows finer grade
+// 		thus resource allocation and monitoring is separate per ferry. This allows finer grade
 // 		resource tuning and monitoring
-// * flexibility --> If needed different ferrys could have different deployments depending on
+// * flexibility --> If needed different ferries could have different deployments depending on
 // 		their specific need (e.g. kubecarrier image version for gradual rolling upgrade, different resource allocation, etc),
 // +kubebuilder:object:root=true
 // +kubebuilder:subresource:status
 // +kubebuilder:printcolumn:name="Status",type="string",JSONPath=".status.phase"
 // +kubebuilder:printcolumn:name="Age",type="date",JSONPath=".metadata.creationTimestamp"
-type ServiceClusterRegistration struct {
+type Ferry struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec   ServiceClusterRegistrationSpec   `json:"spec,omitempty"`
-	Status ServiceClusterRegistrationStatus `json:"status,omitempty"`
+	Spec   FerrySpec   `json:"spec,omitempty"`
+	Status FerryStatus `json:"status,omitempty"`
 }
 
 // +kubebuilder:object:root=true
 
-// ServiceClusterRegistrationList contains a list of ServiceClusterRegistration
-type ServiceClusterRegistrationList struct {
+// FerryList contains a list of Ferry
+type FerryList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
-	Items           []ServiceClusterRegistration `json:"items"`
+	Items           []Ferry `json:"items"`
 }
 
 func init() {
-	SchemeBuilder.Register(&ServiceClusterRegistration{}, &ServiceClusterRegistrationList{})
+	SchemeBuilder.Register(&Ferry{}, &FerryList{})
 }

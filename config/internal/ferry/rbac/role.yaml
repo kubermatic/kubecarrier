@@ -66,7 +66,7 @@ rules:
 - apiGroups:
   - operator.kubecarrier.io
   resources:
-  - serviceclusterregistrations
+  - ferries
   verbs:
   - get
   - list

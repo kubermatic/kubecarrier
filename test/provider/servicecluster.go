@@ -62,12 +62,12 @@ func NewServiceClusterSuite(
 			},
 		}
 
-		serviceClusterRegistration := &operatorv1alpha1.ServiceClusterRegistration{
+		ferry := &operatorv1alpha1.Ferry{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "eu-west-1",
 				Namespace: provider.Status.NamespaceName,
 			},
-			Spec: operatorv1alpha1.ServiceClusterRegistrationSpec{
+			Spec: operatorv1alpha1.FerrySpec{
 				KubeconfigSecret: operatorv1alpha1.ObjectReference{
 					Name: "eu-west-1",
 				},
@@ -107,13 +107,13 @@ func NewServiceClusterSuite(
 
 		ctx := context.Background()
 		require.NoError(t, masterClient.Create(ctx, serviceClusterSecret))
-		require.NoError(t, masterClient.Create(ctx, serviceClusterRegistration))
-		require.NoError(t, testutil.WaitUntilReady(masterClient, serviceClusterRegistration))
+		require.NoError(t, masterClient.Create(ctx, ferry))
+		require.NoError(t, testutil.WaitUntilReady(masterClient, ferry))
 		require.NoError(t, serviceClient.Create(ctx, crd))
 
 		// Check if the ServiceCluster becomes ready
 		serviceCluster := &corev1alpha1.ServiceCluster{}
-		serviceCluster.SetName(serviceClusterRegistration.Name)
+		serviceCluster.SetName(ferry.Name)
 		serviceCluster.SetNamespace(provider.Status.NamespaceName)
 		require.NoError(t, testutil.WaitUntilReady(masterClient, serviceCluster))
 
@@ -143,7 +143,7 @@ func NewServiceClusterSuite(
 		defer serviceClient.CleanUp(t)
 
 		// makes sure we delete the ServiceClusterAssignment object BEFORE
-		// the ServiceClusterRegistration - or the finalizer will block cleanup of the
+		// the Ferry - or the finalizer will block cleanup of the
 		// NOTE: we need to register this BEFORE creating the master cluster obj,
 		// so it will be cleaned up AFTER it.
 		// otherwise the controller will just recreate it.
