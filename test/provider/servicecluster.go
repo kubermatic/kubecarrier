@@ -134,9 +134,14 @@ func NewServiceClusterSuite(
 		require.NoError(t, masterClient.Create(ctx, crdiscoveries))
 		require.NoError(t, testutil.WaitUntilReady(masterClient, crdiscoveries))
 		err = masterClient.Delete(ctx, provider)
-		assert.Error(t, err, "dirty provider deletion should error out")
-		if err != nil {
-			t.Logf("deleting (dirty) provider %s, (should error) error message\n:%s", provider.Name, err.Error())
+		if assert.Error(t, err, "dirty provider %s deletion should error out", provider.Name) {
+			assert.Equal(t,
+				`admission webhook "vprovider.kubecarrier.io" denied the request: deletion blocking objects found:
+CustomResourceDiscovery.kubecarrier.io/v1alpha1: redis.eu-west-1
+CustomResourceDiscoverySet.kubecarrier.io/v1alpha1: redis
+`,
+				err.Error(),
+				"deleting dirty provider %s", provider.Name)
 		}
 
 		// We have created/registered new CRD's, so we need a new client
