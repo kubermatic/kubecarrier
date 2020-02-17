@@ -1,6 +1,6 @@
 ---
 title: "API reference"
-date: 2020-02-11
+date: 2020-02-14
 weight: 1500
 ---
 
@@ -18,6 +18,16 @@ weight: 1500
 * [catalogv1alpha1.CatalogEntryMetadata](#catalogv1alpha1.catalogentrymetadata)
 * [catalogv1alpha1.CatalogEntrySpec](#catalogv1alpha1.catalogentryspec)
 * [catalogv1alpha1.CatalogEntryStatus](#catalogv1alpha1.catalogentrystatus)
+* [catalogv1alpha1.CRDInformation](#catalogv1alpha1.crdinformation)
+* [catalogv1alpha1.CRDVersion](#catalogv1alpha1.crdversion)
+* [catalogv1alpha1.DerivedCustomResource](#catalogv1alpha1.derivedcustomresource)
+* [catalogv1alpha1.DerivedCustomResourceCondition](#catalogv1alpha1.derivedcustomresourcecondition)
+* [catalogv1alpha1.DerivedCustomResourceList](#catalogv1alpha1.derivedcustomresourcelist)
+* [catalogv1alpha1.DerivedCustomResourceReference](#catalogv1alpha1.derivedcustomresourcereference)
+* [catalogv1alpha1.DerivedCustomResourceSpec](#catalogv1alpha1.derivedcustomresourcespec)
+* [catalogv1alpha1.DerivedCustomResourceStatus](#catalogv1alpha1.derivedcustomresourcestatus)
+* [catalogv1alpha1.FieldPath](#catalogv1alpha1.fieldpath)
+* [catalogv1alpha1.VersionExposeConfig](#catalogv1alpha1.versionexposeconfig)
 * [catalogv1alpha1.Offering](#catalogv1alpha1.offering)
 * [catalogv1alpha1.OfferingData](#catalogv1alpha1.offeringdata)
 * [catalogv1alpha1.OfferingList](#catalogv1alpha1.offeringlist)
@@ -42,21 +52,16 @@ weight: 1500
 * [catalogv1alpha1.TenantReference](#catalogv1alpha1.tenantreference)
 * [catalogv1alpha1.TenantReferenceList](#catalogv1alpha1.tenantreferencelist)
 * [catalogv1alpha1.TenantReferenceSpec](#catalogv1alpha1.tenantreferencespec)
-* [catalogv1alpha1.DerivedCustomResource](#catalogv1alpha1.derivedcustomresource)
-* [catalogv1alpha1.DerivedCustomResourceCondition](#catalogv1alpha1.derivedcustomresourcecondition)
-* [catalogv1alpha1.DerivedCustomResourceList](#catalogv1alpha1.derivedcustomresourcelist)
-* [catalogv1alpha1.DerivedCustomResourceReference](#catalogv1alpha1.derivedcustomresourcereference)
-* [catalogv1alpha1.DerivedCustomResourceSpec](#catalogv1alpha1.derivedcustomresourcespec)
-* [catalogv1alpha1.DerivedCustomResourceStatus](#catalogv1alpha1.derivedcustomresourcestatus)
-* [catalogv1alpha1.FieldPath](#catalogv1alpha1.fieldpath)
-* [catalogv1alpha1.VersionExposeConfig](#catalogv1alpha1.versionexposeconfig)
-* [catalogv1alpha1.CRDInformation](#catalogv1alpha1.crdinformation)
-* [catalogv1alpha1.CRDVersion](#catalogv1alpha1.crdversion)
 * [operatorv1alpha1.Catapult](#operatorv1alpha1.catapult)
 * [operatorv1alpha1.CatapultCondition](#operatorv1alpha1.catapultcondition)
 * [operatorv1alpha1.CatapultList](#operatorv1alpha1.catapultlist)
 * [operatorv1alpha1.CatapultSpec](#operatorv1alpha1.catapultspec)
 * [operatorv1alpha1.CatapultStatus](#operatorv1alpha1.catapultstatus)
+* [operatorv1alpha1.Elevator](#operatorv1alpha1.elevator)
+* [operatorv1alpha1.ElevatorCondition](#operatorv1alpha1.elevatorcondition)
+* [operatorv1alpha1.ElevatorList](#operatorv1alpha1.elevatorlist)
+* [operatorv1alpha1.ElevatorSpec](#operatorv1alpha1.elevatorspec)
+* [operatorv1alpha1.ElevatorStatus](#operatorv1alpha1.elevatorstatus)
 * [operatorv1alpha1.KubeCarrier](#operatorv1alpha1.kubecarrier)
 * [operatorv1alpha1.KubeCarrierCondition](#operatorv1alpha1.kubecarriercondition)
 * [operatorv1alpha1.KubeCarrierList](#operatorv1alpha1.kubecarrierlist)
@@ -69,12 +74,11 @@ weight: 1500
 * [operatorv1alpha1.ServiceClusterRegistrationStatus](#operatorv1alpha1.serviceclusterregistrationstatus)
 * [operatorv1alpha1.CRDReference](#operatorv1alpha1.crdreference)
 * [operatorv1alpha1.ObjectReference](#operatorv1alpha1.objectreference)
-* [operatorv1alpha1.Elevator](#operatorv1alpha1.elevator)
-* [operatorv1alpha1.ElevatorCondition](#operatorv1alpha1.elevatorcondition)
-* [operatorv1alpha1.ElevatorList](#operatorv1alpha1.elevatorlist)
-* [operatorv1alpha1.ElevatorSpec](#operatorv1alpha1.elevatorspec)
-* [operatorv1alpha1.ElevatorStatus](#operatorv1alpha1.elevatorstatus)
-* [corev1alpha1.ObjectReference](#corev1alpha1.objectreference)
+* [corev1alpha1.CustomResourceDiscovery](#corev1alpha1.customresourcediscovery)
+* [corev1alpha1.CustomResourceDiscoveryCondition](#corev1alpha1.customresourcediscoverycondition)
+* [corev1alpha1.CustomResourceDiscoveryList](#corev1alpha1.customresourcediscoverylist)
+* [corev1alpha1.CustomResourceDiscoverySpec](#corev1alpha1.customresourcediscoveryspec)
+* [corev1alpha1.CustomResourceDiscoveryStatus](#corev1alpha1.customresourcediscoverystatus)
 * [corev1alpha1.CustomResourceDiscoverySet](#corev1alpha1.customresourcediscoveryset)
 * [corev1alpha1.CustomResourceDiscoverySetCondition](#corev1alpha1.customresourcediscoverysetcondition)
 * [corev1alpha1.CustomResourceDiscoverySetList](#corev1alpha1.customresourcediscoverysetlist)
@@ -91,11 +95,7 @@ weight: 1500
 * [corev1alpha1.ServiceClusterAssignmentList](#corev1alpha1.serviceclusterassignmentlist)
 * [corev1alpha1.ServiceClusterAssignmentSpec](#corev1alpha1.serviceclusterassignmentspec)
 * [corev1alpha1.ServiceClusterAssignmentStatus](#corev1alpha1.serviceclusterassignmentstatus)
-* [corev1alpha1.CustomResourceDiscovery](#corev1alpha1.customresourcediscovery)
-* [corev1alpha1.CustomResourceDiscoveryCondition](#corev1alpha1.customresourcediscoverycondition)
-* [corev1alpha1.CustomResourceDiscoveryList](#corev1alpha1.customresourcediscoverylist)
-* [corev1alpha1.CustomResourceDiscoverySpec](#corev1alpha1.customresourcediscoveryspec)
-* [corev1alpha1.CustomResourceDiscoveryStatus](#corev1alpha1.customresourcediscoverystatus)
+* [corev1alpha1.ObjectReference](#corev1alpha1.objectreference)
 
 ## catalogv1alpha1.ObjectReference
 
@@ -171,7 +171,7 @@ CatalogStatus defines the observed state of Catalog.
 
 ## catalogv1alpha1.CatalogEntry
 
-CatalogEntry adds additional metadata to a set of CRD's and groups the same Kind for multiple ServiceClusters
+CatalogEntry reference to the CRD that the provider wants to provide as service to the tenant.
 
 | Field | Description | Scheme | Required |
 | ----- | ----------- | ------ | -------- |
@@ -224,7 +224,7 @@ CatalogEntrySpec defines the desired state of CatalogEntry
 | Field | Description | Scheme | Required |
 | ----- | ----------- | ------ | -------- |
 | metadata | Metadata contains the metadata (display name, description, etc) of the CatalogEntry. | [catalogv1alpha1.CatalogEntryMetadata](#catalogv1alpha1.catalogentrymetadata) | false |
-| crdSelector | CRDSelector selects CRD objects that should be part of this catalog. | *[metav1.LabelSelector](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.14/#labelselector-v1-meta) | false |
+| referencedCRD | ReferencedCRD is the underlying ReferencedCRD objects that this CatalogEntry refers to. | [catalogv1alpha1.ObjectReference](#catalogv1alpha1.objectreference) | false |
 
 [Back to TOC](#table-of-contents)
 
@@ -234,10 +234,132 @@ CatalogEntryStatus defines the observed state of CatalogEntry.
 
 | Field | Description | Scheme | Required |
 | ----- | ----------- | ------ | -------- |
-| crds | CRDs holds the information about the underlying CRDs that are offered by this CatalogEntry. | [][catalogv1alpha1.CRDInformation](#catalogv1alpha1.crdinformation) | false |
+| crd | CRD holds the information about the underlying ReferencedCRD that are offered by this CatalogEntry. | [catalogv1alpha1.CRDInformation](#catalogv1alpha1.crdinformation) | false |
 | observedGeneration | ObservedGeneration is the most recent generation observed for this CatalogEntry by the controller. | catalogv1alpha1.int64 | false |
 | conditions | Conditions represents the latest available observations of a CatalogEntry's current state. | [][catalogv1alpha1.CatalogEntryCondition](#catalogv1alpha1.catalogentrycondition) | false |
 | phase | DEPRECATED. Phase represents the current lifecycle state of this object. Consider this field DEPRECATED, it will be removed as soon as there is a mechanism to map conditions to strings when printing the property. This is only for display purpose, for everything else use conditions. | catalogv1alpha1.CatalogEntryPhaseType | false |
+
+[Back to TOC](#table-of-contents)
+
+## catalogv1alpha1.CRDInformation
+
+CRDInformation contains type information about the CRD.
+
+| Field | Description | Scheme | Required |
+| ----- | ----------- | ------ | -------- |
+| name |  | string | true |
+| apiGroup |  | string | true |
+| kind |  | string | true |
+| versions |  | [][catalogv1alpha1.CRDVersion](#catalogv1alpha1.crdversion) | true |
+| serviceCluster | ServiceCluster references a ServiceClusterReference of this CRD. | [catalogv1alpha1.ObjectReference](#catalogv1alpha1.objectreference) | true |
+
+[Back to TOC](#table-of-contents)
+
+## catalogv1alpha1.CRDVersion
+
+CRDVersion holds CRD version specific details.
+
+| Field | Description | Scheme | Required |
+| ----- | ----------- | ------ | -------- |
+| name | Name of this version, for example: v1, v1alpha1, v1beta1 | string | true |
+| schema | Schema of this CRD version. | *apiextensionsv1.CustomResourceValidation | false |
+
+[Back to TOC](#table-of-contents)
+
+## catalogv1alpha1.DerivedCustomResource
+
+DerivedCustomResource derives a new CRD from a existing one.
+
+| Field | Description | Scheme | Required |
+| ----- | ----------- | ------ | -------- |
+| metadata |  | [metav1.ObjectMeta](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.14/#objectmeta-v1-meta) | false |
+| spec |  | [catalogv1alpha1.DerivedCustomResourceSpec](#catalogv1alpha1.derivedcustomresourcespec) | false |
+| status |  | [catalogv1alpha1.DerivedCustomResourceStatus](#catalogv1alpha1.derivedcustomresourcestatus) | false |
+
+[Back to TOC](#table-of-contents)
+
+## catalogv1alpha1.DerivedCustomResourceCondition
+
+DerivedCustomResourceCondition contains details for the current condition of this DerivedCustomResource.
+
+| Field | Description | Scheme | Required |
+| ----- | ----------- | ------ | -------- |
+| type | Type is the type of the DerivedCustomResource condition, currently ('Ready'). | catalogv1alpha1.DerivedCustomResourceConditionType | true |
+| status | Status is the status of the condition, one of ('True', 'False', 'Unknown'). | catalogv1alpha1.ConditionStatus | true |
+| lastTransitionTime | LastTransitionTime is the last time the condition transits from one status to another. | metav1.Time | true |
+| reason | Reason is the (brief) reason for the condition's last transition. | string | true |
+| message | Message is the human readable message indicating details about last transition. | string | true |
+
+[Back to TOC](#table-of-contents)
+
+## catalogv1alpha1.DerivedCustomResourceList
+
+DerivedCustomResourceList contains a list of DerivedCustomResource.
+
+| Field | Description | Scheme | Required |
+| ----- | ----------- | ------ | -------- |
+| metadata |  | [metav1.ListMeta](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.14/#listmeta-v1-meta) | false |
+| items |  | [][catalogv1alpha1.DerivedCustomResource](#catalogv1alpha1.derivedcustomresource) | true |
+
+[Back to TOC](#table-of-contents)
+
+## catalogv1alpha1.DerivedCustomResourceReference
+
+DerivedCustomResourceReference references the derived CRD controlled by this DerivedCustomResource instance.
+
+| Field | Description | Scheme | Required |
+| ----- | ----------- | ------ | -------- |
+| name | Name of the derived CRD. | string | true |
+| group | API Group of the derived CRD. | string | true |
+| kind |  | string | true |
+| plural |  | string | true |
+| singular |  | string | true |
+
+[Back to TOC](#table-of-contents)
+
+## catalogv1alpha1.DerivedCustomResourceSpec
+
+DerivedCustomResourceSpec defines the desired state of DerivedCustomResource.
+
+| Field | Description | Scheme | Required |
+| ----- | ----------- | ------ | -------- |
+| baseCRD | CRD that should be used as a base to derive a new CRD from. | [catalogv1alpha1.ObjectReference](#catalogv1alpha1.objectreference) | true |
+| kindOverride | overrides the kind of the derived CRD. | string | false |
+| expose | controls which fields will be present in the derived CRD. | [][catalogv1alpha1.VersionExposeConfig](#catalogv1alpha1.versionexposeconfig) | true |
+
+[Back to TOC](#table-of-contents)
+
+## catalogv1alpha1.DerivedCustomResourceStatus
+
+DerivedCustomResourceStatus defines the observed state of DerivedCustomResource.
+
+| Field | Description | Scheme | Required |
+| ----- | ----------- | ------ | -------- |
+| observedGeneration | ObservedGeneration is the most recent generation observed for this DerivedCustomResource by the controller. | catalogv1alpha1.int64 | false |
+| conditions | Conditions represents the latest available observations of a DerivedCustomResource's current state. | [][catalogv1alpha1.DerivedCustomResourceCondition](#catalogv1alpha1.derivedcustomresourcecondition) | false |
+| phase | DEPRECATED. Phase represents the current lifecycle state of this object. Consider this field DEPRECATED, it will be removed as soon as there is a mechanism to map conditions to strings when printing the property. This is only for display purpose, for everything else use conditions. | catalogv1alpha1.DerivedCustomResourcePhaseType | false |
+| derivedCR | DerivedCR holds information about the derived CRD. | *[catalogv1alpha1.DerivedCustomResourceReference](#catalogv1alpha1.derivedcustomresourcereference) | false |
+
+[Back to TOC](#table-of-contents)
+
+## catalogv1alpha1.FieldPath
+
+FieldPath is specifying how to address a certain field.
+
+| Field | Description | Scheme | Required |
+| ----- | ----------- | ------ | -------- |
+| jsonPath | JSONPath e.g. .spec.somefield.somesubfield | string | true |
+
+[Back to TOC](#table-of-contents)
+
+## catalogv1alpha1.VersionExposeConfig
+
+VersionExposeConfig specifies which fields to expose in the derived CRD.
+
+| Field | Description | Scheme | Required |
+| ----- | ----------- | ------ | -------- |
+| versions | specifies the versions of the referenced CRD, that this expose config applies to. The same version may not be specified in multiple VersionExposeConfigs. | []string | true |
+| fields | specifies the fields that should be present in the derived CRD. | [][catalogv1alpha1.FieldPath](#catalogv1alpha1.fieldpath) | true |
 
 [Back to TOC](#table-of-contents)
 
@@ -260,7 +382,7 @@ OfferingData defines the data (metadata, provider, crds, etc.) of Offering.
 | ----- | ----------- | ------ | -------- |
 | metadata |  | [catalogv1alpha1.OfferingMetadata](#catalogv1alpha1.offeringmetadata) | false |
 | provider | Provider references a ProviderReference of this Offering. | [catalogv1alpha1.ObjectReference](#catalogv1alpha1.objectreference) | true |
-| crds | CRDs holds the information about the underlying CRDs that are offered by this offering. | [][catalogv1alpha1.CRDInformation](#catalogv1alpha1.crdinformation) | false |
+| crd | CRD holds the information about the underlying CRD that is offered by this offering. | [catalogv1alpha1.CRDInformation](#catalogv1alpha1.crdinformation) | false |
 
 [Back to TOC](#table-of-contents)
 
@@ -512,128 +634,6 @@ TenantReferenceSpec defines the desired state of TenantReference
 
 [Back to TOC](#table-of-contents)
 
-## catalogv1alpha1.DerivedCustomResource
-
-DerivedCustomResource derives a new CRD from a existing one.
-
-| Field | Description | Scheme | Required |
-| ----- | ----------- | ------ | -------- |
-| metadata |  | [metav1.ObjectMeta](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.14/#objectmeta-v1-meta) | false |
-| spec |  | [catalogv1alpha1.DerivedCustomResourceSpec](#catalogv1alpha1.derivedcustomresourcespec) | false |
-| status |  | [catalogv1alpha1.DerivedCustomResourceStatus](#catalogv1alpha1.derivedcustomresourcestatus) | false |
-
-[Back to TOC](#table-of-contents)
-
-## catalogv1alpha1.DerivedCustomResourceCondition
-
-DerivedCustomResourceCondition contains details for the current condition of this DerivedCustomResource.
-
-| Field | Description | Scheme | Required |
-| ----- | ----------- | ------ | -------- |
-| type | Type is the type of the DerivedCustomResource condition, currently ('Ready'). | catalogv1alpha1.DerivedCustomResourceConditionType | true |
-| status | Status is the status of the condition, one of ('True', 'False', 'Unknown'). | catalogv1alpha1.ConditionStatus | true |
-| lastTransitionTime | LastTransitionTime is the last time the condition transits from one status to another. | metav1.Time | true |
-| reason | Reason is the (brief) reason for the condition's last transition. | string | true |
-| message | Message is the human readable message indicating details about last transition. | string | true |
-
-[Back to TOC](#table-of-contents)
-
-## catalogv1alpha1.DerivedCustomResourceList
-
-DerivedCustomResourceList contains a list of DerivedCustomResource.
-
-| Field | Description | Scheme | Required |
-| ----- | ----------- | ------ | -------- |
-| metadata |  | [metav1.ListMeta](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.14/#listmeta-v1-meta) | false |
-| items |  | [][catalogv1alpha1.DerivedCustomResource](#catalogv1alpha1.derivedcustomresource) | true |
-
-[Back to TOC](#table-of-contents)
-
-## catalogv1alpha1.DerivedCustomResourceReference
-
-DerivedCustomResourceReference references the derived CRD controlled by this DerivedCustomResource instance.
-
-| Field | Description | Scheme | Required |
-| ----- | ----------- | ------ | -------- |
-| name | Name of the derived CRD. | string | true |
-| group | API Group of the derived CRD. | string | true |
-| kind |  | string | true |
-| plural |  | string | true |
-| singular |  | string | true |
-
-[Back to TOC](#table-of-contents)
-
-## catalogv1alpha1.DerivedCustomResourceSpec
-
-DerivedCustomResourceSpec defines the desired state of DerivedCustomResource.
-
-| Field | Description | Scheme | Required |
-| ----- | ----------- | ------ | -------- |
-| baseCRD | CRD that should be used as a base to derive a new CRD from. | [catalogv1alpha1.ObjectReference](#catalogv1alpha1.objectreference) | true |
-| kindOverride | overrides the kind of the derived CRD. | string | false |
-| expose | controls which fields will be present in the derived CRD. | [][catalogv1alpha1.VersionExposeConfig](#catalogv1alpha1.versionexposeconfig) | true |
-
-[Back to TOC](#table-of-contents)
-
-## catalogv1alpha1.DerivedCustomResourceStatus
-
-DerivedCustomResourceStatus defines the observed state of DerivedCustomResource.
-
-| Field | Description | Scheme | Required |
-| ----- | ----------- | ------ | -------- |
-| observedGeneration | ObservedGeneration is the most recent generation observed for this DerivedCustomResource by the controller. | catalogv1alpha1.int64 | false |
-| conditions | Conditions represents the latest available observations of a DerivedCustomResource's current state. | [][catalogv1alpha1.DerivedCustomResourceCondition](#catalogv1alpha1.derivedcustomresourcecondition) | false |
-| phase | DEPRECATED. Phase represents the current lifecycle state of this object. Consider this field DEPRECATED, it will be removed as soon as there is a mechanism to map conditions to strings when printing the property. This is only for display purpose, for everything else use conditions. | catalogv1alpha1.DerivedCustomResourcePhaseType | false |
-| derivedCR | DerivedCR holds information about the derived CRD. | *[catalogv1alpha1.DerivedCustomResourceReference](#catalogv1alpha1.derivedcustomresourcereference) | false |
-
-[Back to TOC](#table-of-contents)
-
-## catalogv1alpha1.FieldPath
-
-FieldPath is specifying how to address a certain field.
-
-| Field | Description | Scheme | Required |
-| ----- | ----------- | ------ | -------- |
-| jsonPath | JSONPath e.g. .spec.somefield.somesubfield | string | true |
-
-[Back to TOC](#table-of-contents)
-
-## catalogv1alpha1.VersionExposeConfig
-
-VersionExposeConfig specifies which fields to expose in the derived CRD.
-
-| Field | Description | Scheme | Required |
-| ----- | ----------- | ------ | -------- |
-| versions | specifies the versions of the referenced CRD, that this expose config applies to. The same version may not be specified in multiple VersionExposeConfigs. | []string | true |
-| fields | specifies the fields that should be present in the derived CRD. | [][catalogv1alpha1.FieldPath](#catalogv1alpha1.fieldpath) | true |
-
-[Back to TOC](#table-of-contents)
-
-## catalogv1alpha1.CRDInformation
-
-CRDInformation contains type information about the CRD.
-
-| Field | Description | Scheme | Required |
-| ----- | ----------- | ------ | -------- |
-| name |  | string | true |
-| apiGroup |  | string | true |
-| kind |  | string | true |
-| versions |  | [][catalogv1alpha1.CRDVersion](#catalogv1alpha1.crdversion) | true |
-| serviceCluster | ServiceCluster references a ServiceClusterReference of this CRD. | [catalogv1alpha1.ObjectReference](#catalogv1alpha1.objectreference) | true |
-
-[Back to TOC](#table-of-contents)
-
-## catalogv1alpha1.CRDVersion
-
-CRDVersion holds CRD version specific details.
-
-| Field | Description | Scheme | Required |
-| ----- | ----------- | ------ | -------- |
-| name | Name of this version, for example: v1, v1alpha1, v1beta1 | string | true |
-| schema | Schema of this CRD version. | *apiextensionsv1.CustomResourceValidation | false |
-
-[Back to TOC](#table-of-contents)
-
 ## operatorv1alpha1.Catapult
 
 Catapult manages the deployment of the Catapult controller manager.
@@ -692,6 +692,67 @@ CatapultStatus defines the observed state of Catapult
 | observedGeneration | ObservedGeneration is the most recent generation observed for this Catapult by the controller. | operatorv1alpha1.int64 | false |
 | conditions | Conditions represents the latest available observations of a Catapult's current state. | [][operatorv1alpha1.CatapultCondition](#operatorv1alpha1.catapultcondition) | false |
 | phase | DEPRECATED. Phase represents the current lifecycle state of this object. Consider this field DEPRECATED, it will be removed as soon as there is a mechanism to map conditions to strings when printing the property. This is only for display purpose, for everything else use conditions. | operatorv1alpha1.CatapultPhaseType | false |
+
+[Back to TOC](#table-of-contents)
+
+## operatorv1alpha1.Elevator
+
+Elevator manages the deployment of the Elevator controller manager. For each `DerivedCustomResource` a Elevator instance is launched to propagate the derived CRD instance into the provider namespace. This component works hand-in-hand with the Catapult instance for the respective type.
+
+| Field | Description | Scheme | Required |
+| ----- | ----------- | ------ | -------- |
+| metadata |  | [metav1.ObjectMeta](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.14/#objectmeta-v1-meta) | false |
+| spec |  | [operatorv1alpha1.ElevatorSpec](#operatorv1alpha1.elevatorspec) | false |
+| status |  | [operatorv1alpha1.ElevatorStatus](#operatorv1alpha1.elevatorstatus) | false |
+
+[Back to TOC](#table-of-contents)
+
+## operatorv1alpha1.ElevatorCondition
+
+ElevatorCondition contains details for the current condition of this Elevator.
+
+| Field | Description | Scheme | Required |
+| ----- | ----------- | ------ | -------- |
+| type | Type is the type of the Elevator condition, currently ('Ready'). | operatorv1alpha1.ElevatorConditionType | true |
+| status | Status is the status of the condition, one of ('True', 'False', 'Unknown'). | operatorv1alpha1.ConditionStatus | true |
+| lastTransitionTime | LastTransitionTime is the last time the condition transits from one status to another. | metav1.Time | true |
+| reason | Reason is the (brief) reason for the condition's last transition. | string | true |
+| message | Message is the human readable message indicating details about last transition. | string | true |
+
+[Back to TOC](#table-of-contents)
+
+## operatorv1alpha1.ElevatorList
+
+ElevatorList contains a list of Elevator
+
+| Field | Description | Scheme | Required |
+| ----- | ----------- | ------ | -------- |
+| metadata |  | [metav1.ListMeta](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.14/#listmeta-v1-meta) | false |
+| items |  | [][operatorv1alpha1.Elevator](#operatorv1alpha1.elevator) | true |
+
+[Back to TOC](#table-of-contents)
+
+## operatorv1alpha1.ElevatorSpec
+
+ElevatorSpec defines the desired state of Elevator
+
+| Field | Description | Scheme | Required |
+| ----- | ----------- | ------ | -------- |
+| providerCRD | References the provider or internal CRD, that should be created in the provider namespace. | [operatorv1alpha1.CRDReference](#operatorv1alpha1.crdreference) | true |
+| tenantCRD | References the public CRD that will be synced into the provider namespace. | [operatorv1alpha1.CRDReference](#operatorv1alpha1.crdreference) | true |
+| derivedCR | References the DerivedCustomResource controlling the Tenant-side CRD. | [operatorv1alpha1.ObjectReference](#operatorv1alpha1.objectreference) | true |
+
+[Back to TOC](#table-of-contents)
+
+## operatorv1alpha1.ElevatorStatus
+
+ElevatorStatus defines the observed state of Elevator
+
+| Field | Description | Scheme | Required |
+| ----- | ----------- | ------ | -------- |
+| observedGeneration | ObservedGeneration is the most recent generation observed for this Elevator by the controller. | operatorv1alpha1.int64 | false |
+| conditions | Conditions represents the latest available observations of a Elevator's current state. | [][operatorv1alpha1.ElevatorCondition](#operatorv1alpha1.elevatorcondition) | false |
+| phase | DEPRECATED. Phase represents the current lifecycle state of this object. Consider this field DEPRECATED, it will be removed as soon as there is a mechanism to map conditions to strings when printing the property. This is only for display purpose, for everything else use conditions. | operatorv1alpha1.ElevatorPhaseType | false |
 
 [Back to TOC](#table-of-contents)
 
@@ -835,74 +896,65 @@ ObjectReference describes the link to another object in the same namespace
 
 [Back to TOC](#table-of-contents)
 
-## operatorv1alpha1.Elevator
+## corev1alpha1.CustomResourceDiscovery
 
-Elevator manages the deployment of the Elevator controller manager. For each `DerivedCustomResource` a Elevator instance is launched to propagate the derived CRD instance into the provider namespace. This component works hand-in-hand with the Catapult instance for the respective type.
+CustomResourceDiscovery is used inside KubeCarrier to fetch a CustomResourceDefinition from another cluster and to offload cross cluster access to another component.
 
 | Field | Description | Scheme | Required |
 | ----- | ----------- | ------ | -------- |
 | metadata |  | [metav1.ObjectMeta](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.14/#objectmeta-v1-meta) | false |
-| spec |  | [operatorv1alpha1.ElevatorSpec](#operatorv1alpha1.elevatorspec) | false |
-| status |  | [operatorv1alpha1.ElevatorStatus](#operatorv1alpha1.elevatorstatus) | false |
+| spec |  | [corev1alpha1.CustomResourceDiscoverySpec](#corev1alpha1.customresourcediscoveryspec) | false |
+| status |  | [corev1alpha1.CustomResourceDiscoveryStatus](#corev1alpha1.customresourcediscoverystatus) | false |
 
 [Back to TOC](#table-of-contents)
 
-## operatorv1alpha1.ElevatorCondition
+## corev1alpha1.CustomResourceDiscoveryCondition
 
-ElevatorCondition contains details for the current condition of this Elevator.
+CustomResourceDiscoveryCondition contains details for the current condition of this CustomResourceDiscovery.
 
 | Field | Description | Scheme | Required |
 | ----- | ----------- | ------ | -------- |
-| type | Type is the type of the Elevator condition, currently ('Ready'). | operatorv1alpha1.ElevatorConditionType | true |
-| status | Status is the status of the condition, one of ('True', 'False', 'Unknown'). | operatorv1alpha1.ConditionStatus | true |
-| lastTransitionTime | LastTransitionTime is the last time the condition transits from one status to another. | metav1.Time | true |
-| reason | Reason is the (brief) reason for the condition's last transition. | string | true |
+| lastTransitionTime | LastTransitionTime is the last time the condition transit from one status to another. | metav1.Time | true |
 | message | Message is the human readable message indicating details about last transition. | string | true |
+| reason | Reason is the (brief) reason for the condition's last transition. | string | true |
+| status | Status of the condition, one of ('True', 'False', 'Unknown'). | corev1alpha1.ConditionStatus | true |
+| type | Type of the condition, currently ('Ready'). | corev1alpha1.CustomResourceDiscoveryConditionType | true |
 
 [Back to TOC](#table-of-contents)
 
-## operatorv1alpha1.ElevatorList
+## corev1alpha1.CustomResourceDiscoveryList
 
-ElevatorList contains a list of Elevator
+CustomResourceDiscoveryList contains a list of crdreference
 
 | Field | Description | Scheme | Required |
 | ----- | ----------- | ------ | -------- |
 | metadata |  | [metav1.ListMeta](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.14/#listmeta-v1-meta) | false |
-| items |  | [][operatorv1alpha1.Elevator](#operatorv1alpha1.elevator) | true |
+| items |  | [][corev1alpha1.CustomResourceDiscovery](#corev1alpha1.customresourcediscovery) | true |
 
 [Back to TOC](#table-of-contents)
 
-## operatorv1alpha1.ElevatorSpec
+## corev1alpha1.CustomResourceDiscoverySpec
 
-ElevatorSpec defines the desired state of Elevator
+CustomResourceDiscoverySpec defines the desired state of crdreference
 
 | Field | Description | Scheme | Required |
 | ----- | ----------- | ------ | -------- |
-| providerCRD | References the provider or internal CRD, that should be created in the provider namespace. | [operatorv1alpha1.CRDReference](#operatorv1alpha1.crdreference) | true |
-| tenantCRD | References the public CRD that will be synced into the provider namespace. | [operatorv1alpha1.CRDReference](#operatorv1alpha1.crdreference) | true |
-| derivedCR | References the DerivedCustomResource controlling the Tenant-side CRD. | [operatorv1alpha1.ObjectReference](#operatorv1alpha1.objectreference) | true |
+| crd | CRD references a CustomResourceDefinition within the ServiceCluster. | [corev1alpha1.ObjectReference](#corev1alpha1.objectreference) | true |
+| serviceCluster | ServiceCluster references a ServiceCluster to search the CustomResourceDefinition on. | [corev1alpha1.ObjectReference](#corev1alpha1.objectreference) | true |
+| kindOverride | KindOverride overrides resulting internal CRDs kind | string | false |
 
 [Back to TOC](#table-of-contents)
 
-## operatorv1alpha1.ElevatorStatus
+## corev1alpha1.CustomResourceDiscoveryStatus
 
-ElevatorStatus defines the observed state of Elevator
-
-| Field | Description | Scheme | Required |
-| ----- | ----------- | ------ | -------- |
-| observedGeneration | ObservedGeneration is the most recent generation observed for this Elevator by the controller. | operatorv1alpha1.int64 | false |
-| conditions | Conditions represents the latest available observations of a Elevator's current state. | [][operatorv1alpha1.ElevatorCondition](#operatorv1alpha1.elevatorcondition) | false |
-| phase | DEPRECATED. Phase represents the current lifecycle state of this object. Consider this field DEPRECATED, it will be removed as soon as there is a mechanism to map conditions to strings when printing the property. This is only for display purpose, for everything else use conditions. | operatorv1alpha1.ElevatorPhaseType | false |
-
-[Back to TOC](#table-of-contents)
-
-## corev1alpha1.ObjectReference
-
-ObjectReference describes the link to another object in the same namespace
+CustomResourceDiscoveryStatus defines the observed state of crdreference
 
 | Field | Description | Scheme | Required |
 | ----- | ----------- | ------ | -------- |
-| name |  | string | true |
+| crd | CRD defines the original CustomResourceDefinition specification from the service cluster | *apiextensionsv1.CustomResourceDefinition | false |
+| phase | DEPRECATED. Phase represents the current lifecycle state of this object consider this field DEPRECATED, it will be removed as soon as there is a mechanism to map conditions to a string when printing the property is only present for display purposes, for everything else use conditions | corev1alpha1.CustomResourceDiscoveryPhaseType | false |
+| conditions | Conditions is a list of all conditions this CustomResourceDiscovery is in. | [][corev1alpha1.CustomResourceDiscoveryCondition](#corev1alpha1.customresourcediscoverycondition) | false |
+| observedGeneration | The most recent generation observed by the controller. | corev1alpha1.int64 | false |
 
 [Back to TOC](#table-of-contents)
 
@@ -1100,64 +1152,12 @@ ServiceClusterAssignmentStatus defines the observed state of ServiceClusterAssig
 
 [Back to TOC](#table-of-contents)
 
-## corev1alpha1.CustomResourceDiscovery
+## corev1alpha1.ObjectReference
 
-CustomResourceDiscovery is used inside KubeCarrier to fetch a CustomResourceDefinition from another cluster and to offload cross cluster access to another component.
-
-| Field | Description | Scheme | Required |
-| ----- | ----------- | ------ | -------- |
-| metadata |  | [metav1.ObjectMeta](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.14/#objectmeta-v1-meta) | false |
-| spec |  | [corev1alpha1.CustomResourceDiscoverySpec](#corev1alpha1.customresourcediscoveryspec) | false |
-| status |  | [corev1alpha1.CustomResourceDiscoveryStatus](#corev1alpha1.customresourcediscoverystatus) | false |
-
-[Back to TOC](#table-of-contents)
-
-## corev1alpha1.CustomResourceDiscoveryCondition
-
-CustomResourceDiscoveryCondition contains details for the current condition of this CustomResourceDiscovery.
+ObjectReference describes the link to another object in the same namespace
 
 | Field | Description | Scheme | Required |
 | ----- | ----------- | ------ | -------- |
-| lastTransitionTime | LastTransitionTime is the last time the condition transit from one status to another. | metav1.Time | true |
-| message | Message is the human readable message indicating details about last transition. | string | true |
-| reason | Reason is the (brief) reason for the condition's last transition. | string | true |
-| status | Status of the condition, one of ('True', 'False', 'Unknown'). | corev1alpha1.ConditionStatus | true |
-| type | Type of the condition, currently ('Ready'). | corev1alpha1.CustomResourceDiscoveryConditionType | true |
-
-[Back to TOC](#table-of-contents)
-
-## corev1alpha1.CustomResourceDiscoveryList
-
-CustomResourceDiscoveryList contains a list of crdreference
-
-| Field | Description | Scheme | Required |
-| ----- | ----------- | ------ | -------- |
-| metadata |  | [metav1.ListMeta](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.14/#listmeta-v1-meta) | false |
-| items |  | [][corev1alpha1.CustomResourceDiscovery](#corev1alpha1.customresourcediscovery) | true |
-
-[Back to TOC](#table-of-contents)
-
-## corev1alpha1.CustomResourceDiscoverySpec
-
-CustomResourceDiscoverySpec defines the desired state of crdreference
-
-| Field | Description | Scheme | Required |
-| ----- | ----------- | ------ | -------- |
-| crd | CRD references a CustomResourceDefinition within the ServiceCluster. | [corev1alpha1.ObjectReference](#corev1alpha1.objectreference) | true |
-| serviceCluster | ServiceCluster references a ServiceCluster to search the CustomResourceDefinition on. | [corev1alpha1.ObjectReference](#corev1alpha1.objectreference) | true |
-| kindOverride | KindOverride overrides resulting internal CRDs kind | string | false |
-
-[Back to TOC](#table-of-contents)
-
-## corev1alpha1.CustomResourceDiscoveryStatus
-
-CustomResourceDiscoveryStatus defines the observed state of crdreference
-
-| Field | Description | Scheme | Required |
-| ----- | ----------- | ------ | -------- |
-| crd | CRD defines the original CustomResourceDefinition specification from the service cluster | *apiextensionsv1.CustomResourceDefinition | false |
-| phase | DEPRECATED. Phase represents the current lifecycle state of this object consider this field DEPRECATED, it will be removed as soon as there is a mechanism to map conditions to a string when printing the property is only present for display purposes, for everything else use conditions | corev1alpha1.CustomResourceDiscoveryPhaseType | false |
-| conditions | Conditions is a list of all conditions this CustomResourceDiscovery is in. | [][corev1alpha1.CustomResourceDiscoveryCondition](#corev1alpha1.customresourcediscoverycondition) | false |
-| observedGeneration | The most recent generation observed by the controller. | corev1alpha1.int64 | false |
+| name |  | string | true |
 
 [Back to TOC](#table-of-contents)
