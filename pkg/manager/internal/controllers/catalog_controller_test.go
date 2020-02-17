@@ -39,8 +39,7 @@ func TestCatalogReconciler(t *testing.T) {
 
 	provider := &catalogv1alpha1.Provider{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      "example-provider",
-			Namespace: "kubecarrier-system",
+			Name: "example-provider",
 		},
 	}
 
@@ -55,8 +54,7 @@ func TestCatalogReconciler(t *testing.T) {
 
 	tenant := &catalogv1alpha1.Tenant{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      "example-tenant",
-			Namespace: "kubecarrier-system",
+			Name: "example-tenant",
 		},
 	}
 	tenant.Status.SetCondition(catalogv1alpha1.TenantCondition{
@@ -128,10 +126,9 @@ func TestCatalogReconciler(t *testing.T) {
 	client := fakeclient.NewFakeClientWithScheme(testScheme, catalogEntry, catalog, provider, providerNamespace, tenant, tenantReference, tenantNamespace, serviceCluster)
 	log := testutil.NewLogger(t)
 	r := &CatalogReconciler{
-		Client:                     client,
-		Log:                        log,
-		Scheme:                     testScheme,
-		KubeCarrierSystemNamespace: "kubecarrier-system",
+		Client: client,
+		Log:    log,
+		Scheme: testScheme,
 	}
 	ctx := context.Background()
 

@@ -49,8 +49,7 @@ func NewAdminSuite(f *framework.Framework) func(t *testing.T) {
 		// Create a Tenant
 		tenant := &catalogv1alpha1.Tenant{
 			ObjectMeta: metav1.ObjectMeta{
-				Name:      "test-tenant1",
-				Namespace: "kubecarrier-system",
+				Name: "test-tenant1",
 			},
 		}
 		require.NoError(t, masterClient.Create(ctx, tenant), "creating tenant error")
@@ -65,8 +64,7 @@ func NewAdminSuite(f *framework.Framework) func(t *testing.T) {
 		// Create a Provider
 		provider := &catalogv1alpha1.Provider{
 			ObjectMeta: metav1.ObjectMeta{
-				Name:      "test-provider1",
-				Namespace: "kubecarrier-system",
+				Name: "test-provider1",
 			},
 			Spec: catalogv1alpha1.ProviderSpec{
 				Metadata: catalogv1alpha1.ProviderMetadata{

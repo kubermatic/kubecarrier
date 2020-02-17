@@ -44,9 +44,8 @@ const (
 // CatalogReconciler reconciles a Catalog object
 type CatalogReconciler struct {
 	client.Client
-	Log                        logr.Logger
-	Scheme                     *runtime.Scheme
-	KubeCarrierSystemNamespace string
+	Log    logr.Logger
+	Scheme *runtime.Scheme
 }
 
 // +kubebuilder:rbac:groups=catalog.kubecarrier.io,resources=catalogs,verbs=get;list;watch;update
@@ -124,7 +123,7 @@ func (r *CatalogReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	}
 
 	// Get Provider
-	provider, err := catalogv1alpha1.GetProviderByProviderNamespace(ctx, r.Client, r.KubeCarrierSystemNamespace, req.Namespace)
+	provider, err := catalogv1alpha1.GetProviderByProviderNamespace(ctx, r.Client, req.Namespace)
 	if err != nil {
 		return ctrl.Result{}, fmt.Errorf("getting Provider: %w", err)
 	}
@@ -137,8 +136,7 @@ func (r *CatalogReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	for _, tenantReference := range tenantReferences {
 		tenant := &catalogv1alpha1.Tenant{}
 		if err := r.Get(ctx, types.NamespacedName{
-			Name:      tenantReference.Name,
-			Namespace: r.KubeCarrierSystemNamespace,
+			Name: tenantReference.Name,
 		}, tenant); err != nil {
 			return ctrl.Result{}, fmt.Errorf("getting Tenant: %w", err)
 		}

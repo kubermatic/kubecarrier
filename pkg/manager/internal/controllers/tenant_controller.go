@@ -43,9 +43,8 @@ const (
 // TenantReconciler reconciles a Tenant object
 type TenantReconciler struct {
 	client.Client
-	Log                        logr.Logger
-	Scheme                     *runtime.Scheme
-	KubeCarrierSystemNamespace string
+	Log    logr.Logger
+	Scheme *runtime.Scheme
 }
 
 // +kubebuilder:rbac:groups=catalog.kubecarrier.io,resources=tenants,verbs=get;list;watch;update;
@@ -159,7 +158,7 @@ func (r *TenantReconciler) handleDeletion(ctx context.Context, log logr.Logger, 
 
 	// 1. Clean up TenantReferences.
 	providerList := &catalogv1alpha1.ProviderList{}
-	if err := r.List(ctx, providerList, client.InNamespace(r.KubeCarrierSystemNamespace)); err != nil {
+	if err := r.List(ctx, providerList); err != nil {
 		return fmt.Errorf("listing Providers: %w", err)
 	}
 
@@ -282,7 +281,7 @@ func (r *TenantReconciler) reconcileNamespace(ctx context.Context, log logr.Logg
 
 func (r *TenantReconciler) reconcileTenantReferences(ctx context.Context, log logr.Logger, tenant *catalogv1alpha1.Tenant) error {
 	providerList := &catalogv1alpha1.ProviderList{}
-	if err := r.List(ctx, providerList, client.InNamespace(r.KubeCarrierSystemNamespace)); err != nil {
+	if err := r.List(ctx, providerList); err != nil {
 		return fmt.Errorf("listing Providers: %w", err)
 	}
 

@@ -128,10 +128,9 @@ func run(flags *flags, log logr.Logger) error {
 	}
 
 	if err = (&controllers.TenantReconciler{
-		Client:                     mgr.GetClient(),
-		Log:                        log.WithName("controllers").WithName("Tenant"),
-		Scheme:                     mgr.GetScheme(),
-		KubeCarrierSystemNamespace: flags.kubeCarrierSystemNamespace,
+		Client: mgr.GetClient(),
+		Log:    log.WithName("controllers").WithName("Tenant"),
+		Scheme: mgr.GetScheme(),
 	}).SetupWithManager(mgr); err != nil {
 		return fmt.Errorf("creating Tenant controller: %w", err)
 	}
@@ -161,28 +160,25 @@ func run(flags *flags, log logr.Logger) error {
 	}
 
 	if err = (&controllers.CatalogEntryReconciler{
-		Client:                     mgr.GetClient(),
-		Log:                        log.WithName("controllers").WithName("CatalogEntry"),
-		Scheme:                     mgr.GetScheme(),
-		KubeCarrierSystemNamespace: flags.kubeCarrierSystemNamespace,
+		Client: mgr.GetClient(),
+		Log:    log.WithName("controllers").WithName("CatalogEntry"),
+		Scheme: mgr.GetScheme(),
 	}).SetupWithManager(mgr); err != nil {
 		return fmt.Errorf("creating CatalogEntry controller: %w", err)
 	}
 
 	if err = (&controllers.CatalogReconciler{
-		Client:                     mgr.GetClient(),
-		Log:                        log.WithName("controllers").WithName("Catalog"),
-		Scheme:                     mgr.GetScheme(),
-		KubeCarrierSystemNamespace: flags.kubeCarrierSystemNamespace,
+		Client: mgr.GetClient(),
+		Log:    log.WithName("controllers").WithName("Catalog"),
+		Scheme: mgr.GetScheme(),
 	}).SetupWithManager(mgr); err != nil {
 		return fmt.Errorf("creating Catalog controller: %w", err)
 	}
 
 	if err = (&controllers.DerivedCustomResourceReconciler{
-		Client:                     mgr.GetClient(),
-		Log:                        log.WithName("controllers").WithName("DerivedCustomResource"),
-		Scheme:                     mgr.GetScheme(),
-		KubeCarrierSystemNamespace: flags.kubeCarrierSystemNamespace,
+		Client: mgr.GetClient(),
+		Log:    log.WithName("controllers").WithName("DerivedCustomResource"),
+		Scheme: mgr.GetScheme(),
 	}).SetupWithManager(mgr); err != nil {
 		return fmt.Errorf("creating DerivedCustomResource controller: %w", err)
 	}

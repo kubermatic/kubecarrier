@@ -49,9 +49,8 @@ const (
 
 type DerivedCustomResourceReconciler struct {
 	client.Client
-	Log                        logr.Logger
-	Scheme                     *runtime.Scheme
-	KubeCarrierSystemNamespace string
+	Log    logr.Logger
+	Scheme *runtime.Scheme
 }
 
 // +kubebuilder:rbac:groups=catalog.kubecarrier.io,resources=derivedcustomresources,verbs=get;list;watch;update
@@ -130,7 +129,7 @@ func (r *DerivedCustomResourceReconciler) Reconcile(req ctrl.Request) (ctrl.Resu
 	}
 
 	// lookup Provider
-	provider, err := catalogv1alpha1.GetProviderByProviderNamespace(ctx, r.Client, r.KubeCarrierSystemNamespace, dcr.Namespace)
+	provider, err := catalogv1alpha1.GetProviderByProviderNamespace(ctx, r.Client, dcr.Namespace)
 	if err != nil {
 		return result, fmt.Errorf("getting the Provider by Provider Namespace: %w", err)
 	}
