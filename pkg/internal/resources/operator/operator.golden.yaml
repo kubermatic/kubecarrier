@@ -116,14 +116,14 @@
     creationTimestamp: null
     labels:
       kubecarrier.io/role: operator
-    name: serviceclusterregistrations.operator.kubecarrier.io
+    name: ferries.operator.kubecarrier.io
   spec:
     group: operator.kubecarrier.io
     names:
-      kind: ServiceClusterRegistration
-      listKind: ServiceClusterRegistrationList
-      plural: serviceclusterregistrations
-      singular: serviceclusterregistration
+      kind: Ferry
+      listKind: FerryList
+      plural: ferries
+      singular: ferry
     scope: Namespaced
     versions:
     - additionalPrinterColumns:
@@ -136,18 +136,18 @@
       name: v1alpha1
       schema:
         openAPIV3Schema:
-          description: "ServiceClusterRegistration represents single kubernetes cluster
-            belonging to the provider \n ServiceClusterRegistration lives in the provider
-            namespace. For each ferry the kubecarrier operator spins up the ferry
-            controller deployment, necessary roles, service accounts, and role bindings
-            \n The reason for ferry controller deployment are multiples: * security
-            --> kubecarrier operator has greater privileges then ferry controller
-            * resource isolation --> each ferry controller pod operates only on a
-            single service cluster, \t\tthus resource allocation and monitoring is
-            separate per ferrys. This allows finer grade \t\tresource tuning and monitoring
-            * flexibility --> If needed different ferrys could have different deployments
-            depending on \t\ttheir specific need (e.g. kubecarrier image version for
-            gradual rolling upgrade, different resource allocation, etc),"
+          description: "Ferry represents single kubernetes cluster belonging to the
+            provider \n Ferry lives in the provider namespace. For each ferry the
+            kubecarrier operator spins up the ferry controller deployment, necessary
+            roles, service accounts, and role bindings \n The reason for ferry controller
+            deployment are multiples: * security --> kubecarrier operator has greater
+            privileges then ferry controller * resource isolation --> each ferry controller
+            pod operates only on a single service cluster, \t\tthus resource allocation
+            and monitoring is separate per ferry. This allows finer grade \t\tresource
+            tuning and monitoring * flexibility --> If needed different ferries could
+            have different deployments depending on \t\ttheir specific need (e.g.
+            kubecarrier image version for gradual rolling upgrade, different resource
+            allocation, etc),"
           properties:
             apiVersion:
               description: 'APIVersion defines the versioned schema of this representation
@@ -163,8 +163,7 @@
             metadata:
               type: object
             spec:
-              description: ServiceClusterRegistrationSpec defines the desired state
-                of ServiceClusterRegistration
+              description: FerrySpec defines the desired state of Ferry
               properties:
                 kubeconfigSecret:
                   description: KubeconfigSecret specifies the Kubeconfig to use when
@@ -179,15 +178,14 @@
               - kubeconfigSecret
               type: object
             status:
-              description: ServiceClusterRegistrationStatus defines the observed state
-                of ServiceClusterRegistration
+              description: FerryStatus defines the observed state of Ferry
               properties:
                 conditions:
-                  description: Conditions is a list of all conditions this ServiceClusterRegistration
-                    is in.
+                  description: Conditions is a list of all conditions this Ferry is
+                    in.
                   items:
-                    description: ServiceClusterRegistrationCondition contains details
-                      for the current condition of this ServiceClusterRegistration.
+                    description: FerryCondition contains details for the current condition
+                      of this Ferry.
                     properties:
                       lastTransitionTime:
                         description: LastTransitionTime is the last time the condition
@@ -708,6 +706,26 @@
   - apiGroups:
     - operator.kubecarrier.io
     resources:
+    - ferries
+    verbs:
+    - create
+    - delete
+    - get
+    - list
+    - patch
+    - update
+    - watch
+  - apiGroups:
+    - operator.kubecarrier.io
+    resources:
+    - ferries/status
+    verbs:
+    - get
+    - patch
+    - update
+  - apiGroups:
+    - operator.kubecarrier.io
+    resources:
     - kubecarriers
     verbs:
     - create
@@ -721,26 +739,6 @@
     - operator.kubecarrier.io
     resources:
     - kubecarriers/status
-    verbs:
-    - get
-    - patch
-    - update
-  - apiGroups:
-    - operator.kubecarrier.io
-    resources:
-    - serviceclusterregistrations
-    verbs:
-    - create
-    - delete
-    - get
-    - list
-    - patch
-    - update
-    - watch
-  - apiGroups:
-    - operator.kubecarrier.io
-    resources:
-    - serviceclusterregistrations/status
     verbs:
     - get
     - patch

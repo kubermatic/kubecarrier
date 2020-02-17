@@ -145,6 +145,26 @@ rules:
 - apiGroups:
   - operator.kubecarrier.io
   resources:
+  - ferries
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - operator.kubecarrier.io
+  resources:
+  - ferries/status
+  verbs:
+  - get
+  - patch
+  - update
+- apiGroups:
+  - operator.kubecarrier.io
+  resources:
   - kubecarriers
   verbs:
   - create
@@ -158,26 +178,6 @@ rules:
   - operator.kubecarrier.io
   resources:
   - kubecarriers/status
-  verbs:
-  - get
-  - patch
-  - update
-- apiGroups:
-  - operator.kubecarrier.io
-  resources:
-  - serviceclusterregistrations
-  verbs:
-  - create
-  - delete
-  - get
-  - list
-  - patch
-  - update
-  - watch
-- apiGroups:
-  - operator.kubecarrier.io
-  resources:
-  - serviceclusterregistrations/status
   verbs:
   - get
   - patch

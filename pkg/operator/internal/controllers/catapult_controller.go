@@ -89,13 +89,13 @@ func (r *CatapultReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 		}
 	}
 
-	// Lookup ServiceClusterRegistration to get name of secret.
-	serviceClusterRegistration := &operatorv1alpha1.ServiceClusterRegistration{}
+	// Lookup Ferry to get name of secret.
+	ferry := &operatorv1alpha1.Ferry{}
 	if err := r.Get(ctx, types.NamespacedName{
 		Name:      catapult.Spec.ServiceCluster.Name,
 		Namespace: catapult.Namespace,
-	}, serviceClusterRegistration); err != nil {
-		return ctrl.Result{}, fmt.Errorf("getting ServiceClusterRegistration: %w", err)
+	}, ferry); err != nil {
+		return ctrl.Result{}, fmt.Errorf("getting Ferry: %w", err)
 	}
 
 	// 3. Reconcile the objects that owned by Catapult object.
@@ -116,7 +116,7 @@ func (r *CatapultReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 			ServiceClusterPlural:  catapult.Spec.ServiceClusterCRD.Plural,
 
 			ServiceClusterName:   catapult.Spec.ServiceCluster.Name,
-			ServiceClusterSecret: serviceClusterRegistration.Spec.KubeconfigSecret.Name,
+			ServiceClusterSecret: ferry.Spec.KubeconfigSecret.Name,
 		})
 	if err != nil {
 		return ctrl.Result{}, fmt.Errorf("creating catapult manifests: %w", err)

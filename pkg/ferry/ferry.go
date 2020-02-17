@@ -69,7 +69,7 @@ func NewFerryCommand(log logr.Logger) *cobra.Command {
 	cmd := &cobra.Command{
 		Args:  cobra.NoArgs,
 		Use:   "ferry",
-		Short: "ServiceClusterRegistration controller manager",
+		Short: "Ferry controller manager",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return runE(flags, log)
 		},

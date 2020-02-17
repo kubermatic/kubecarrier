@@ -111,12 +111,12 @@ func run(flags *flags, log logr.Logger) error {
 	}).SetupWithManager(mgr); err != nil {
 		return fmt.Errorf("creating KubeCarrier controller: %w", err)
 	}
-	if err = (&controllers.ServiceClusterRegistrationReconciler{
+	if err = (&controllers.FerryReconciler{
 		Client: mgr.GetClient(),
 		Scheme: mgr.GetScheme(),
 		Log:    log.WithName("controllers").WithName("Ferry"),
 	}).SetupWithManager(mgr); err != nil {
-		return fmt.Errorf("creating ServiceClusterRegistration controller: %w", err)
+		return fmt.Errorf("creating Ferry controller: %w", err)
 	}
 	if err = (&controllers.CatapultReconciler{
 		Client: mgr.GetClient(),
