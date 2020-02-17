@@ -60,7 +60,7 @@ type CustomResourceDiscoveryReconciler struct {
 
 func (r *CustomResourceDiscoveryReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	ctx := context.Background()
-	log := r.Log.WithValues("crdiscoveryy", req.NamespacedName)
+	log := r.Log.WithValues("crdiscovery", req.NamespacedName)
 
 	crDiscovery := &corev1alpha1.CustomResourceDiscovery{}
 	if err := r.MasterClient.Get(ctx, req.NamespacedName, crDiscovery); err != nil {

@@ -21,6 +21,7 @@ import (
 	"io/ioutil"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	corev1 "k8s.io/api/core/v1"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
@@ -118,7 +119,7 @@ func NewServiceClusterSuite(
 		require.NoError(t, testutil.WaitUntilReady(masterClient, serviceCluster))
 
 		// Test CustomResourceDiscoverySet
-		crdiscoveries := &corev1alpha1.CustomResourceDiscoverySet{
+		crDiscoveries := &corev1alpha1.CustomResourceDiscoverySet{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "redis",
 				Namespace: provider.Status.NamespaceName,
@@ -130,8 +131,18 @@ func NewServiceClusterSuite(
 				},
 			},
 		}
-		require.NoError(t, masterClient.Create(ctx, crdiscoveries))
-		require.NoError(t, testutil.WaitUntilReady(masterClient, crdiscoveries))
+		require.NoError(t, masterClient.Create(ctx, crDiscoveries))
+		require.NoError(t, testutil.WaitUntilReady(masterClient, crDiscoveries))
+		err = masterClient.Delete(ctx, provider)
+		if assert.Error(t, err, "dirty provider %s deletion should error out", provider.Name) {
+			assert.Equal(t,
+				`admission webhook "vprovider.kubecarrier.io" denied the request: deletion blocking objects found:
+CustomResourceDiscovery.kubecarrier.io/v1alpha1: redis.eu-west-1
+CustomResourceDiscoverySet.kubecarrier.io/v1alpha1: redis
+`,
+				err.Error(),
+				"deleting dirty provider %s", provider.Name)
+		}
 
 		// We have created/registered new CRD's, so we need a new client
 		masterClient, err = f.MasterClient()

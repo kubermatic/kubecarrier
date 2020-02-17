@@ -37,7 +37,7 @@ import (
 	"github.com/kubermatic/kubecarrier/pkg/internal/util"
 )
 
-const crdiscoveriesLabel = "crdiscoveries.kubecarrier.io/controlled-by"
+const crDiscoveriesLabel = "crdiscoveries.kubecarrier.io/controlled-by"
 
 // CustomResourceDiscoverySetReconciler reconciles a CustomResourceDiscovery object
 type CustomResourceDiscoverySetReconciler struct {
@@ -103,21 +103,21 @@ func (r *CustomResourceDiscoverySetReconciler) Reconcile(req ctrl.Request) (ctrl
 	}
 
 	// Cleanup uncontrolled CRDiscoveries
-	crdiscoveryList := &corev1alpha1.CustomResourceDiscoveryList{}
-	if err := r.List(ctx, crdiscoveryList, client.MatchingLabels{
-		crdiscoveriesLabel: crDiscoverySet.Name,
+	crDiscoveryList := &corev1alpha1.CustomResourceDiscoveryList{}
+	if err := r.List(ctx, crDiscoveryList, client.MatchingLabels{
+		crDiscoveriesLabel: crDiscoverySet.Name,
 	}); err != nil {
 		return result, fmt.Errorf(
 			"listing all CustomResourceDiscovery for this Set: %w", err)
 	}
-	for _, crdiscovery := range crdiscoveryList.Items {
-		_, ok := existingCRDiscoveryNames[crdiscovery.Name]
+	for _, crDiscovery := range crDiscoveryList.Items {
+		_, ok := existingCRDiscoveryNames[crDiscovery.Name]
 		if ok {
 			continue
 		}
 
-		// delete crdiscovery that should no longer exist
-		if err := r.Delete(ctx, &crdiscovery); err != nil {
+		// delete crDiscovery that should no longer exist
+		if err := r.Delete(ctx, &crDiscovery); err != nil {
 			return result, fmt.Errorf("deleting CustomResourceDiscovery: %w", err)
 		}
 	}
@@ -158,7 +158,7 @@ func (r *CustomResourceDiscoverySetReconciler) reconcileCRDiscovery(
 			Name:      crDiscoverySet.Name + "." + serviceCluster.Name,
 			Namespace: crDiscoverySet.Namespace,
 			Labels: map[string]string{
-				crdiscoveriesLabel: crDiscoverySet.Name,
+				crDiscoveriesLabel: crDiscoverySet.Name,
 			},
 		},
 		Spec: corev1alpha1.CustomResourceDiscoverySpec{
@@ -206,7 +206,7 @@ func (r *CustomResourceDiscoverySetReconciler) SetupWithManager(mgr ctrl.Manager
 			crdsList := &corev1alpha1.CustomResourceDiscoverySetList{}
 			if err := r.List(context.Background(), crdsList, client.InNamespace(mapObject.Meta.GetNamespace())); err != nil {
 				// This will makes the manager crashes, and it will restart and reconcile all objects again.
-				panic(fmt.Errorf("listting Catalog: %w", err))
+				panic(fmt.Errorf("listting CustomResourceDiscovery: %w", err))
 			}
 			for _, crds := range crdsList.Items {
 				out = append(out, reconcile.Request{

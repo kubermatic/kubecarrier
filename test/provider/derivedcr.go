@@ -144,6 +144,15 @@ func NewDerivedCRSuite(
 			assert.Equal(t, "testresources", dcr.Status.DerivedCR.Plural)
 			assert.Equal(t, "testresource", dcr.Status.DerivedCR.Singular)
 		}
+		err = masterClient.Delete(ctx, provider)
+		if assert.Error(t, err, "dirty provider %s deletion should error out", provider.Name) {
+			assert.Equal(t,
+				`admission webhook "vprovider.kubecarrier.io" denied the request: deletion blocking objects found:
+DerivedCustomResource.catalog.kubecarrier.io/v1alpha1: test
+`,
+				err.Error(),
+				"deleting dirty provider %s", provider.Name)
+		}
 
 		// Check created CRD
 		crd := &apiextensionsv1.CustomResourceDefinition{}
