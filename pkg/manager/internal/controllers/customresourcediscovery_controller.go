@@ -38,7 +38,7 @@ import (
 	"github.com/kubermatic/kubecarrier/pkg/internal/util"
 )
 
-const crdiscoveryControllerFinalizer string = "crdiscovery.kubecarrier.io/controller"
+const crDiscoveryControllerFinalizer string = "crdiscovery.kubecarrier.io/controller"
 
 // CustomResourceDiscoveryReconciler reconciles a CustomResourceDiscovery object
 type CustomResourceDiscoveryReconciler struct {
@@ -54,7 +54,7 @@ type CustomResourceDiscoveryReconciler struct {
 func (r *CustomResourceDiscoveryReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	var (
 		ctx    = context.Background()
-		log    = r.Log.WithValues("crdiscoveryy", req.NamespacedName)
+		log    = r.Log.WithValues("crdiscovery", req.NamespacedName)
 		result ctrl.Result
 	)
 
@@ -77,7 +77,7 @@ func (r *CustomResourceDiscoveryReconciler) Reconcile(req ctrl.Request) (ctrl.Re
 		return result, nil
 	}
 
-	if util.AddFinalizer(crDiscovery, crdiscoveryControllerFinalizer) {
+	if util.AddFinalizer(crDiscovery, crDiscoveryControllerFinalizer) {
 		if err := r.Update(ctx, crDiscovery); err != nil {
 			return result, fmt.Errorf("updating CustomResourceDiscovery finalizers: %w", err)
 		}
@@ -260,20 +260,20 @@ func (r *CustomResourceDiscoveryReconciler) reconcileCatapult(
 }
 
 func (r *CustomResourceDiscoveryReconciler) updateStatus(
-	ctx context.Context, crdiscovery *corev1alpha1.CustomResourceDiscovery,
+	ctx context.Context, crDiscovery *corev1alpha1.CustomResourceDiscovery,
 	condition corev1alpha1.CustomResourceDiscoveryCondition,
 ) error {
-	crdiscovery.Status.ObservedGeneration = crdiscovery.Generation
-	crdiscovery.Status.SetCondition(condition)
+	crDiscovery.Status.ObservedGeneration = crDiscovery.Generation
+	crDiscovery.Status.SetCondition(condition)
 
-	established, _ := crdiscovery.Status.GetCondition(
+	established, _ := crDiscovery.Status.GetCondition(
 		corev1alpha1.CustomResourceDiscoveryEstablished)
-	controllerReady, _ := crdiscovery.Status.GetCondition(
+	controllerReady, _ := crDiscovery.Status.GetCondition(
 		corev1alpha1.CustomResourceDiscoveryControllerReady)
 
 	if established.True() && controllerReady.True() {
 		// Everything is ready
-		crdiscovery.Status.SetCondition(corev1alpha1.CustomResourceDiscoveryCondition{
+		crDiscovery.Status.SetCondition(corev1alpha1.CustomResourceDiscoveryCondition{
 			Type:    corev1alpha1.CustomResourceDiscoveryReady,
 			Status:  corev1alpha1.ConditionTrue,
 			Reason:  "ComponentsReady",
@@ -281,7 +281,7 @@ func (r *CustomResourceDiscoveryReconciler) updateStatus(
 		})
 	} else if !established.True() {
 		// CRD is not yet established
-		crdiscovery.Status.SetCondition(corev1alpha1.CustomResourceDiscoveryCondition{
+		crDiscovery.Status.SetCondition(corev1alpha1.CustomResourceDiscoveryCondition{
 			Type:    corev1alpha1.CustomResourceDiscoveryReady,
 			Status:  corev1alpha1.ConditionFalse,
 			Reason:  "CRDNotEstablished",
@@ -289,7 +289,7 @@ func (r *CustomResourceDiscoveryReconciler) updateStatus(
 		})
 	} else if !controllerReady.True() {
 		// Controller not ready
-		crdiscovery.Status.SetCondition(corev1alpha1.CustomResourceDiscoveryCondition{
+		crDiscovery.Status.SetCondition(corev1alpha1.CustomResourceDiscoveryCondition{
 			Type:    corev1alpha1.CustomResourceDiscoveryReady,
 			Status:  corev1alpha1.ConditionFalse,
 			Reason:  "ControllerUnready",
@@ -297,7 +297,7 @@ func (r *CustomResourceDiscoveryReconciler) updateStatus(
 		})
 	}
 
-	if err := r.Status().Update(ctx, crdiscovery); err != nil {
+	if err := r.Status().Update(ctx, crDiscovery); err != nil {
 		return fmt.Errorf("updating status: %w", err)
 	}
 	return nil
@@ -330,7 +330,7 @@ func (r *CustomResourceDiscoveryReconciler) handleDeletion(ctx context.Context, 
 		return nil
 	}
 
-	if util.RemoveFinalizer(crDiscovery, crdiscoveryControllerFinalizer) {
+	if util.RemoveFinalizer(crDiscovery, crDiscoveryControllerFinalizer) {
 		if err := r.Update(ctx, crDiscovery); err != nil {
 			return fmt.Errorf("updating CustomResourceDiscovery finalizers: %w", err)
 		}
@@ -346,14 +346,14 @@ func (r *CustomResourceDiscoveryReconciler) SetupWithManager(mgr ctrl.Manager) e
 			&source.Kind{Type: &apiextensionsv1.CustomResourceDefinition{}},
 			util.EnqueueRequestForOwner(&corev1alpha1.CustomResourceDiscovery{}, r.Scheme)).
 		WithEventFilter(util.PredicateFn(func(obj runtime.Object) bool {
-			crdiscovery, ok := obj.(*corev1alpha1.CustomResourceDiscovery)
+			crDiscovery, ok := obj.(*corev1alpha1.CustomResourceDiscovery)
 			if !ok {
 				// we only want to filter CustomResourceDiscovery objects
 				return true
 			}
 
 			// CustomResourceDiscoveryDiscovered that are not yet discovered, should be skipped.
-			discoveredCondition, _ := crdiscovery.Status.GetCondition(corev1alpha1.CustomResourceDiscoveryDiscovered)
+			discoveredCondition, _ := crDiscovery.Status.GetCondition(corev1alpha1.CustomResourceDiscoveryDiscovered)
 			return discoveredCondition.Status == corev1alpha1.ConditionTrue
 		})).
 		Complete(r)
