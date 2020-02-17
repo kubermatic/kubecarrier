@@ -165,6 +165,21 @@ type Ferry struct {
 	Status FerryStatus `json:"status,omitempty"`
 }
 
+// IsReady returns if the Ferry is ready.
+func (s *Ferry) IsReady() bool {
+	if s.Generation != s.Status.ObservedGeneration {
+		return false
+	}
+
+	for _, condition := range s.Status.Conditions {
+		if condition.Type == FerryReady &&
+			condition.Status == ConditionTrue {
+			return true
+		}
+	}
+	return false
+}
+
 // +kubebuilder:object:root=true
 
 // FerryList contains a list of Ferry

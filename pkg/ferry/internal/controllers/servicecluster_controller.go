@@ -23,14 +23,12 @@ import (
 
 	"github.com/go-logr/logr"
 	"k8s.io/apimachinery/pkg/api/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/version"
 	"k8s.io/client-go/util/workqueue"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
-	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
@@ -59,10 +57,15 @@ type ServiceClusterReconciler struct {
 
 func (r *ServiceClusterReconciler) Reconcile(req ctrl.Request) (res ctrl.Result, err error) {
 	ctx := context.Background()
-	log := r.Log.WithValues("servicecluster", req.NamespacedName)
+
+	serviceCluster := &corev1alpha1.ServiceCluster{}
+	if err := r.MasterClient.Get(ctx, req.NamespacedName, serviceCluster); err != nil {
+		// If the ServiceCluster object is already gone, we just ignore the NotFound error.
+		return ctrl.Result{}, client.IgnoreNotFound(err)
+	}
 
 	serverVersion, svcErr := r.ServiceClusterVersionInfo.ServerVersion()
-	var cond corev1alpha1.ServiceClusterCondition
+	serviceCluster.Status.KubernetesVersion = serverVersion
 
 	if svcErr != nil {
 		reason := "ClusterUnreachable"
@@ -70,47 +73,26 @@ func (r *ServiceClusterReconciler) Reconcile(req ctrl.Request) (res ctrl.Result,
 		if ok {
 			reason = string(statusErr.Status().Reason)
 		}
-		cond = corev1alpha1.ServiceClusterCondition{
-			Message: svcErr.Error(),
-			Reason:  reason,
+		if err = r.updateStatus(ctx, serviceCluster, corev1alpha1.ServiceClusterCondition{
+			Type:    corev1alpha1.ServiceClusterReachable,
 			Status:  corev1alpha1.ConditionFalse,
-			Type:    corev1alpha1.ServiceClusterReady,
+			Reason:  reason,
+			Message: svcErr.Error(),
+		}); err != nil {
+			return ctrl.Result{}, fmt.Errorf("updating status: %w", err)
 		}
-	} else {
-		cond = corev1alpha1.ServiceClusterCondition{
-			Message: "service cluster is posting ready status",
-			Reason:  "ServiceClusterReady",
-			Status:  corev1alpha1.ConditionTrue,
-			Type:    corev1alpha1.ServiceClusterReady,
-		}
-	}
-
-	serviceCluster := &corev1alpha1.ServiceCluster{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      r.ServiceClusterName,
-			Namespace: r.ProviderNamespace,
-		},
-	}
-
-	op, err := controllerutil.CreateOrUpdate(ctx, r.MasterClient, serviceCluster, func() error {
-		return nil
-	})
-	if err != nil {
-		return ctrl.Result{}, fmt.Errorf("cannot create or update ServiceCluster: %w", err)
-	}
-	log.Info(fmt.Sprintf("ServiceCluster: %s", string(op)))
-
-	serviceCluster.Status.ObservedGeneration = serviceCluster.Generation
-	serviceCluster.Status.SetCondition(cond)
-	serviceCluster.Status.KubernetesVersion = serverVersion
-
-	if err := r.MasterClient.Status().Update(ctx, serviceCluster); err != nil {
-		return ctrl.Result{}, fmt.Errorf("status update: %w", err)
-	}
-
-	if svcErr != nil {
 		return ctrl.Result{}, svcErr
 	}
+
+	if err = r.updateStatus(ctx, serviceCluster, corev1alpha1.ServiceClusterCondition{
+		Type:    corev1alpha1.ServiceClusterReachable,
+		Status:  corev1alpha1.ConditionTrue,
+		Reason:  "ServiceClusterReachable",
+		Message: "service cluster is posting ready status",
+	}); err != nil {
+		return ctrl.Result{}, fmt.Errorf("updateing status: %w", err)
+	}
+
 	return ctrl.Result{RequeueAfter: r.StatusUpdatePeriod}, nil
 }
 
@@ -157,5 +139,18 @@ func (r *ServiceClusterReconciler) enqueueOwnCluster(h handler.EventHandler, q w
 		Name:      r.ServiceClusterName,
 		Namespace: r.ProviderNamespace,
 	}})
+	return nil
+}
+
+func (r *ServiceClusterReconciler) updateStatus(
+	ctx context.Context, serviceCluster *corev1alpha1.ServiceCluster,
+	condition corev1alpha1.ServiceClusterCondition,
+) error {
+	serviceCluster.Status.ObservedGeneration = serviceCluster.Generation
+	serviceCluster.Status.SetCondition(condition)
+
+	if err := r.MasterClient.Status().Update(ctx, serviceCluster); err != nil {
+		return fmt.Errorf("updating status: %w", err)
+	}
 	return nil
 }

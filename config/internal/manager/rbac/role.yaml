@@ -202,4 +202,13 @@ rules:
   verbs:
   - get
   - list
+  - update
   - watch
+- apiGroups:
+  - kubecarrier.io
+  resources:
+  - serviceclusters/status
+  verbs:
+  - get
+  - patch
+  - update

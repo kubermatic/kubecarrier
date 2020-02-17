@@ -24,6 +24,8 @@ import (
 // ServiceClusterSpec defines the desired state of ServiceCluster
 type ServiceClusterSpec struct {
 	Metadata ServiceClusterMetadata `json:"metadata,omitempty"`
+	// KubeconfigSecret specifies the Kubeconfig to use when connecting to the ServiceCluster.
+	KubeconfigSecret ObjectReference `json:"kubeconfigSecret"`
 }
 
 // ServiceClusterMetadata contains the metadata (display name, description, etc) of the ServiceCluster.
@@ -58,7 +60,11 @@ const (
 	ServiceClusterPhaseUnknown     ServiceClusterPhaseType = "Unknown"
 	ServiceClusterPhaseReady       ServiceClusterPhaseType = "Ready"
 	ServiceClusterPhaseNotReady    ServiceClusterPhaseType = "NotReady"
-	ServiceClusterPhaseUnreachable ServiceClusterPhaseType = "Unreachable"
+	ServiceClusterPhaseTerminating ServiceClusterPhaseType = "Terminating"
+)
+
+const (
+	ServiceClusterTerminatingReason = "Deleting"
 )
 
 // ServiceClusterConditionType represents a ServiceClusterCondition value.
@@ -67,6 +73,10 @@ type ServiceClusterConditionType string
 const (
 	// ServiceClusterReady represents a ServiceCluster condition is in ready state.
 	ServiceClusterReady ServiceClusterConditionType = "Ready"
+	// ServiceClusterControllerReady is True if the Ferry component is ready.
+	ServiceClusterControllerReady ServiceClusterConditionType = "ControllerReady"
+	// ServiceClusterControllerReachable is True if the Remote Service Cluster is Reachable.
+	ServiceClusterReachable ServiceClusterConditionType = "ServiceClusterReachable"
 )
 
 // ServiceClusterCondition contains details for the current condition of this ServiceCluster.
@@ -104,17 +114,13 @@ func (s *ServiceClusterStatus) updatePhase() {
 			s.Phase = ServiceClusterPhaseReady
 		case ConditionFalse:
 			// Cluster reports its NotReady for a reason
-			s.Phase = ServiceClusterPhaseNotReady
-		case ConditionUnknown:
-			// Cluster state is unknown due to a heartbeat timeout (1), or
-			// because the cluster never reported a status in the first place (2)
-			switch condition.Reason {
-			case "ServiceClusterStatusUnknown":
-				// we want to make it simple for the user to see the difference of reasons 1/2 above
-				s.Phase = ServiceClusterPhaseUnreachable
-			default:
-				s.Phase = ServiceClusterPhaseUnknown
+			if condition.Reason == ServiceClusterTerminatingReason {
+				s.Phase = ServiceClusterPhaseTerminating
+			} else {
+				s.Phase = ServiceClusterPhaseNotReady
 			}
+		case ConditionUnknown:
+			s.Phase = ServiceClusterPhaseUnknown
 		}
 		return
 	}

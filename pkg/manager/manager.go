@@ -187,6 +187,14 @@ func run(flags *flags, log logr.Logger) error {
 		return fmt.Errorf("creating DerivedCustomResource controller: %w", err)
 	}
 
+	if err = (&controllers.ServiceClusterReconciler{
+		Client: mgr.GetClient(),
+		Log:    log.WithName("controllers").WithName("ServiceCluster"),
+		Scheme: mgr.GetScheme(),
+	}).SetupWithManager(mgr); err != nil {
+		return fmt.Errorf("creating ServiceCluster controller: %w", err)
+	}
+
 	// Register webhooks as handlers
 	wbh := mgr.GetWebhookServer()
 

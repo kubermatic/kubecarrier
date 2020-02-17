@@ -30,7 +30,6 @@ import (
 
 	catalogv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/catalog/v1alpha1"
 	corev1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/core/v1alpha1"
-	operatorv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/operator/v1alpha1"
 	"github.com/kubermatic/kubecarrier/pkg/testutil"
 	"github.com/kubermatic/kubecarrier/test/framework"
 )
@@ -63,13 +62,17 @@ func NewServiceClusterSuite(
 			},
 		}
 
-		ferry := &operatorv1alpha1.Ferry{
+		serviceCluster := &corev1alpha1.ServiceCluster{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "eu-west-1",
 				Namespace: provider.Status.NamespaceName,
 			},
-			Spec: operatorv1alpha1.FerrySpec{
-				KubeconfigSecret: operatorv1alpha1.ObjectReference{
+			Spec: corev1alpha1.ServiceClusterSpec{
+				Metadata: corev1alpha1.ServiceClusterMetadata{
+					DisplayName: "eu-west-1",
+					Description: "eu-west-1 service cluster",
+				},
+				KubeconfigSecret: corev1alpha1.ObjectReference{
 					Name: "eu-west-1",
 				},
 			},
@@ -108,15 +111,9 @@ func NewServiceClusterSuite(
 
 		ctx := context.Background()
 		require.NoError(t, masterClient.Create(ctx, serviceClusterSecret))
-		require.NoError(t, masterClient.Create(ctx, ferry))
-		require.NoError(t, testutil.WaitUntilReady(masterClient, ferry))
-		require.NoError(t, serviceClient.Create(ctx, crd))
-
-		// Check if the ServiceCluster becomes ready
-		serviceCluster := &corev1alpha1.ServiceCluster{}
-		serviceCluster.SetName(ferry.Name)
-		serviceCluster.SetNamespace(provider.Status.NamespaceName)
+		require.NoError(t, masterClient.Create(ctx, serviceCluster))
 		require.NoError(t, testutil.WaitUntilReady(masterClient, serviceCluster))
+		require.NoError(t, serviceClient.Create(ctx, crd))
 
 		// Test CustomResourceDiscoverySet
 		crDiscoveries := &corev1alpha1.CustomResourceDiscoverySet{
