@@ -119,7 +119,7 @@ func NewServiceClusterSuite(
 		require.NoError(t, testutil.WaitUntilReady(masterClient, serviceCluster))
 
 		// Test CustomResourceDiscoverySet
-		crdiscoveries := &corev1alpha1.CustomResourceDiscoverySet{
+		crDiscoveries := &corev1alpha1.CustomResourceDiscoverySet{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "redis",
 				Namespace: provider.Status.NamespaceName,
@@ -131,8 +131,8 @@ func NewServiceClusterSuite(
 				},
 			},
 		}
-		require.NoError(t, masterClient.Create(ctx, crdiscoveries))
-		require.NoError(t, testutil.WaitUntilReady(masterClient, crdiscoveries))
+		require.NoError(t, masterClient.Create(ctx, crDiscoveries))
+		require.NoError(t, testutil.WaitUntilReady(masterClient, crDiscoveries))
 		err = masterClient.Delete(ctx, provider)
 		if assert.Error(t, err, "dirty provider %s deletion should error out", provider.Name) {
 			assert.Equal(t,
