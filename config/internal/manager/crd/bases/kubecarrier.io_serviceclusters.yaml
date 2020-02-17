@@ -50,6 +50,15 @@ spec:
           spec:
             description: ServiceClusterSpec defines the desired state of ServiceCluster
             properties:
+              kubeconfigSecret:
+                description: KubeconfigSecret specifies the Kubeconfig to use when
+                  connecting to the ServiceCluster.
+                properties:
+                  name:
+                    type: string
+                required:
+                - name
+                type: object
               metadata:
                 description: ServiceClusterMetadata contains the metadata (display
                   name, description, etc) of the ServiceCluster.
@@ -63,6 +72,8 @@ spec:
                       ServiceCluster.
                     type: string
                 type: object
+            required:
+            - kubeconfigSecret
             type: object
           status:
             description: ServiceClusterStatus defines the observed state of ServiceCluster

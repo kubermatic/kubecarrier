@@ -24,6 +24,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/version"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -45,9 +46,15 @@ func (f *fakeServiceClusterVersionInfo) ServerVersion() (*version.Info, error) {
 }
 
 func TestServiceClusterReconciler(t *testing.T) {
+	serviceCluster := &corev1alpha1.ServiceCluster{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "eu-west-1",
+			Namespace: "my-provider",
+		},
+	}
 	scc := &ServiceClusterReconciler{
 		Log:          testutil.NewLogger(t),
-		MasterClient: fakeclient.NewFakeClientWithScheme(testScheme),
+		MasterClient: fakeclient.NewFakeClientWithScheme(testScheme, serviceCluster),
 		ServiceClusterVersionInfo: &fakeServiceClusterVersionInfo{
 			Info: &version.Info{
 				Major:        "1",
@@ -65,26 +72,27 @@ func TestServiceClusterReconciler(t *testing.T) {
 		ProviderNamespace:  "my-provider",
 		StatusUpdatePeriod: time.Second,
 	}
-	serviceClusterNN := types.NamespacedName{
-		Name:      "eu-west-1",
-		Namespace: "my-provider",
-	}
-
 	if !t.Run("service cluster registration", func(t *testing.T) {
 		scc.Log = testutil.NewLogger(t)
 		res, err := scc.Reconcile(ctrl.Request{
-			NamespacedName: serviceClusterNN,
+			NamespacedName: types.NamespacedName{
+				Name:      serviceCluster.Name,
+				Namespace: serviceCluster.Namespace,
+			},
 		})
 		require.NoError(t, err, "error reconciling ServiceCluster")
 		assert.Equal(t, scc.StatusUpdatePeriod, res.RequeueAfter)
 
 		ctx := context.Background()
-		serviceCluster := &corev1alpha1.ServiceCluster{}
-		require.NoError(t, scc.MasterClient.Get(ctx, serviceClusterNN, serviceCluster))
-		assert.Equal(t, serviceCluster.Generation, serviceCluster.Status.ObservedGeneration)
+		serviceClusterFound := &corev1alpha1.ServiceCluster{}
+		require.NoError(t, scc.MasterClient.Get(ctx, types.NamespacedName{
+			Name:      serviceCluster.Name,
+			Namespace: serviceCluster.Namespace,
+		}, serviceClusterFound))
+		assert.Equal(t, serviceClusterFound.Generation, serviceClusterFound.Status.ObservedGeneration)
 
-		cond, present := serviceCluster.Status.GetCondition(corev1alpha1.ServiceClusterReady)
-		if assert.True(t, present, "cluster ready condition missing") {
+		cond, present := serviceClusterFound.Status.GetCondition(corev1alpha1.ServiceClusterReachable)
+		if assert.True(t, present, "service cluster reachable condition missing") {
 			assert.Equal(t, corev1alpha1.ConditionTrue, cond.Status)
 		}
 	}) {
@@ -97,16 +105,22 @@ func TestServiceClusterReconciler(t *testing.T) {
 		scc.ServiceClusterVersionInfo.(*fakeServiceClusterVersionInfo).Info = nil
 
 		_, err := scc.Reconcile(ctrl.Request{
-			NamespacedName: serviceClusterNN,
+			NamespacedName: types.NamespacedName{
+				Name:      serviceCluster.Name,
+				Namespace: serviceCluster.Namespace,
+			},
 		})
 		require.Error(t, err)
 
-		serviceCluster := &corev1alpha1.ServiceCluster{}
-		require.NoError(t, scc.MasterClient.Get(ctx, serviceClusterNN, serviceCluster))
-		assert.Equal(t, serviceCluster.Generation, serviceCluster.Status.ObservedGeneration)
+		serviceClusterFound := &corev1alpha1.ServiceCluster{}
+		require.NoError(t, scc.MasterClient.Get(ctx, types.NamespacedName{
+			Name:      serviceCluster.Name,
+			Namespace: serviceCluster.Namespace,
+		}, serviceClusterFound))
+		assert.Equal(t, serviceClusterFound.Generation, serviceClusterFound.Status.ObservedGeneration)
 
-		cond, present := serviceCluster.Status.GetCondition(corev1alpha1.ServiceClusterReady)
-		if assert.True(t, present, "cluster ready condition missing") {
+		cond, present := serviceClusterFound.Status.GetCondition(corev1alpha1.ServiceClusterReachable)
+		if assert.True(t, present, "service cluster reachable condition missing") {
 			assert.Equal(t, corev1alpha1.ConditionFalse, cond.Status)
 			assert.Equal(t, "ClusterUnreachable", cond.Reason)
 			assert.Equal(t, `fake version info not found`, cond.Message)

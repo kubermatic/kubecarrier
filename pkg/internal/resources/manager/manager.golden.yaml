@@ -1732,6 +1732,15 @@
             spec:
               description: ServiceClusterSpec defines the desired state of ServiceCluster
               properties:
+                kubeconfigSecret:
+                  description: KubeconfigSecret specifies the Kubeconfig to use when
+                    connecting to the ServiceCluster.
+                  properties:
+                    name:
+                      type: string
+                  required:
+                  - name
+                  type: object
                 metadata:
                   description: ServiceClusterMetadata contains the metadata (display
                     name, description, etc) of the ServiceCluster.
@@ -1745,6 +1754,8 @@
                         ServiceCluster.
                       type: string
                   type: object
+              required:
+              - kubeconfigSecret
               type: object
             status:
               description: ServiceClusterStatus defines the observed state of ServiceCluster
@@ -2049,7 +2060,16 @@
     verbs:
     - get
     - list
+    - update
     - watch
+  - apiGroups:
+    - kubecarrier.io
+    resources:
+    - serviceclusters/status
+    verbs:
+    - get
+    - patch
+    - update
 - apiVersion: rbac.authorization.k8s.io/v1
   kind: ClusterRoleBinding
   metadata:

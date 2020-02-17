@@ -1,6 +1,6 @@
 ---
 title: "API reference"
-date: 2020-02-14
+date: 2020-02-17
 weight: 1500
 ---
 
@@ -175,9 +175,14 @@ CatalogEntry reference to the CRD that the provider wants to provide as service 
 
 | Field | Description | Scheme | Required |
 | ----- | ----------- | ------ | -------- |
+<<<<<<< Updated upstream
 | metadata |  | [metav1.ObjectMeta](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.14/#objectmeta-v1-meta) | false |
 | spec |  | [catalogv1alpha1.CatalogEntrySpec](#catalogv1alpha1.catalogentryspec) | false |
 | status |  | [catalogv1alpha1.CatalogEntryStatus](#catalogv1alpha1.catalogentrystatus) | false |
+=======
+| metadata |  | [corev1alpha1.ServiceClusterMetadata](#corev1alpha1.serviceclustermetadata) | false |
+| kubeconfigSecret | KubeconfigSecret specifies the Kubeconfig to use when connecting to the ServiceCluster. | [corev1alpha1.ObjectReference](#corev1alpha1.objectreference) | true |
+>>>>>>> Stashed changes
 
 [Back to TOC](#table-of-contents)
 
