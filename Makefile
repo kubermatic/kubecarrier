@@ -177,7 +177,6 @@ install-git-hooks:
 
 # Install cert-manager in the configured Kubernetes cluster
 cert-manager:
-	kubectl create namespace cert-manager || true
 	kubectl apply -f https://github.com/jetstack/cert-manager/releases/download/v0.13.0/cert-manager.yaml
 	kubectl wait --for=condition=available deployment/cert-manager -n cert-manager --timeout=120s
 	kubectl wait --for=condition=available deployment/cert-manager-cainjector -n cert-manager --timeout=120s
