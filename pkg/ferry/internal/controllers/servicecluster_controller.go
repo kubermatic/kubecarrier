@@ -111,26 +111,6 @@ func (r *ServiceClusterReconciler) SetupWithManager(masterMgr ctrl.Manager) erro
 	); err != nil {
 		return fmt.Errorf("initial watch: %w", err)
 	}
-
-	err = c.Watch(
-		&source.Kind{Type: &corev1alpha1.ServiceCluster{}},
-		&handler.EnqueueRequestsFromMapFunc{
-			ToRequests: handler.ToRequestsFunc(func(obj handler.MapObject) []reconcile.Request {
-				if obj.Meta.GetName() == r.ServiceClusterName {
-					return []reconcile.Request{{
-						NamespacedName: types.NamespacedName{
-							Namespace: r.ProviderNamespace,
-							Name:      r.ServiceClusterName,
-						},
-					}}
-				}
-				return nil
-			}),
-		},
-	)
-	if err != nil {
-		return fmt.Errorf("serviceCluster watch: %w", err)
-	}
 	return nil
 }
 
