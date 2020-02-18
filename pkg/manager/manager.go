@@ -191,6 +191,14 @@ func run(flags *flags, log logr.Logger) error {
 		return fmt.Errorf("creating ServiceCluster controller: %w", err)
 	}
 
+	if err = (&controllers.NamespaceReconciler{
+		Client: mgr.GetClient(),
+		Log:    log.WithName("controllers").WithName("Namespace"),
+		Scheme: mgr.GetScheme(),
+	}).SetupWithManager(mgr); err != nil {
+		return fmt.Errorf("creating Namespace controller: %w", err)
+	}
+
 	// Register webhooks as handlers
 	wbh := mgr.GetWebhookServer()
 

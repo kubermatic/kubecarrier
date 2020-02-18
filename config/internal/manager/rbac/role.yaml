@@ -198,6 +198,16 @@ rules:
 - apiGroups:
   - kubecarrier.io
   resources:
+  - serviceclusterassignments
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - watch
+- apiGroups:
+  - kubecarrier.io
+  resources:
   - serviceclusters
   verbs:
   - get

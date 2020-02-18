@@ -231,6 +231,11 @@ func run(flags *flags, log logr.Logger) error {
 		Group:   flags.serviceClusterGroup,
 	}
 
+	// Setup field indexes
+	if err := corev1alpha1.RegisterServiceClusterAssignmentNamespaceFieldIndex(namespacedCache); err != nil {
+		return fmt.Errorf("registering ServiceClusterAssignment ServiceClusterNamespace field index: %w", err)
+	}
+
 	// Setup Controllers
 	if err := (&controllers.MasterClusterObjReconciler{
 		Log:              log.WithName("controllers").WithName("MasterClusterObjReconciler"),
@@ -250,8 +255,9 @@ func run(flags *flags, log logr.Logger) error {
 	}
 
 	if err := (&controllers.AdoptionReconciler{
-		Log:    log.WithName("controllers").WithName("AdoptionReconciler"),
-		Client: mgr.GetClient(),
+		Log:              log.WithName("controllers").WithName("AdoptionReconciler"),
+		Client:           mgr.GetClient(),
+		NamespacedClient: namespacedClient,
 
 		ServiceClusterClient: serviceCachedClient,
 		ServiceClusterCache:  serviceCache,
