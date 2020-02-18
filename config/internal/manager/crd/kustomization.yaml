@@ -2,6 +2,7 @@
 # since it depends on service name and namespace that are out of this kustomize package.
 # It should be run by config/default
 resources:
+- bases/catalog.kubecarrier.io_accounts.yaml
 - bases/catalog.kubecarrier.io_catalogentries.yaml
 - bases/catalog.kubecarrier.io_catalogs.yaml
 - bases/catalog.kubecarrier.io_derivedcustomresources.yaml
