@@ -33,6 +33,23 @@ rules:
 - apiGroups:
   - catalog.kubecarrier.io
   resources:
+  - accounts
+  verbs:
+  - get
+  - list
+  - update
+  - watch
+- apiGroups:
+  - catalog.kubecarrier.io
+  resources:
+  - accounts/status
+  verbs:
+  - get
+  - patch
+  - update
+- apiGroups:
+  - catalog.kubecarrier.io
+  resources:
   - catalogentries
   verbs:
   - get

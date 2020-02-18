@@ -185,6 +185,15 @@ type Account struct {
 	Status AccountStatus `json:"status,omitempty"`
 }
 
+func (account *Account) HasRole(role AccountRole) bool {
+	for _, r := range account.Spec.Roles {
+		if r == role {
+			return true
+		}
+	}
+	return false
+}
+
 // AccountList contains a list of Account.
 // +kubebuilder:object:root=true
 type AccountList struct {

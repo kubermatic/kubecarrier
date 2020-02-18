@@ -26,6 +26,7 @@ import (
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	catalogv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/catalog/v1alpha1"
 	"github.com/kubermatic/kubecarrier/pkg/testutil"
@@ -40,73 +41,126 @@ func NewAdminSuite(f *framework.Framework) func(t *testing.T) {
 		require.NoError(t, err, "creating master client")
 		defer masterClient.CleanUp(t)
 
-		serviceClient, err := f.ServiceClient()
-		require.NoError(t, err, "creating service client")
-		defer serviceClient.CleanUp(t)
-
 		ctx := context.Background()
 
-		// Create a Tenant
-		tenant := &catalogv1alpha1.Tenant{
-			ObjectMeta: metav1.ObjectMeta{
-				Name: "test-tenant1",
-			},
-		}
-		require.NoError(t, masterClient.Create(ctx, tenant), "creating tenant error")
-		require.NoError(t, testutil.WaitUntilReady(masterClient, tenant))
-
-		tenantNamespaceName := tenant.Status.NamespaceName
-		tenantNamespace := &corev1.Namespace{}
-		assert.NoError(t, masterClient.Get(ctx, types.NamespacedName{
-			Name: tenantNamespaceName,
-		}, tenantNamespace))
-
-		// Create a Provider
-		provider := &catalogv1alpha1.Provider{
-			ObjectMeta: metav1.ObjectMeta{
-				Name: "test-provider1",
-			},
-			Spec: catalogv1alpha1.ProviderSpec{
-				Metadata: catalogv1alpha1.ProviderMetadata{
-					DisplayName: "provider",
-					Description: "provider test description",
+		var (
+			mdata = catalogv1alpha1.AccountMetadata{
+				DisplayName: "metadata name",
+				Description: "metadata desc",
+			}
+			provider = &catalogv1alpha1.Account{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "test-provider1",
 				},
-			},
-		}
-
-		require.NoError(t, masterClient.Create(ctx, provider), "creating provider error")
+				Spec: catalogv1alpha1.AccountSpec{
+					Metadata: mdata,
+					Roles: []catalogv1alpha1.AccountRole{
+						catalogv1alpha1.ProviderRole,
+					},
+				},
+			}
+			tenant = &catalogv1alpha1.Account{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "test-tenant",
+				},
+				Spec: catalogv1alpha1.AccountSpec{
+					Metadata: mdata,
+					Roles: []catalogv1alpha1.AccountRole{
+						catalogv1alpha1.TenantRole,
+					},
+				},
+			}
+			providerTenant = &catalogv1alpha1.Account{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "test-tenantprovider",
+				},
+				Spec: catalogv1alpha1.AccountSpec{
+					Metadata: mdata,
+					Roles: []catalogv1alpha1.AccountRole{
+						catalogv1alpha1.TenantRole,
+						catalogv1alpha1.ProviderRole,
+					},
+				},
+			}
+		)
+		// simple single account operations
+		t.Log("creating single provider")
+		require.NoError(t, masterClient.Create(ctx, provider), "creating provider")
 		require.NoError(t, testutil.WaitUntilReady(masterClient, provider))
-
-		providerNamespaceName := provider.Status.NamespaceName
-		providerNamespace := &corev1.Namespace{}
+		ns := &corev1.Namespace{}
 		assert.NoError(t, masterClient.Get(ctx, types.NamespacedName{
-			Name: providerNamespaceName,
-		}, providerNamespace))
+			Name: provider.Status.NamespaceName,
+		}, ns))
 
-		tenantReference := &catalogv1alpha1.TenantReference{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      tenant.Name,
-				Namespace: providerNamespaceName,
-			},
-		}
-		require.NoError(t, testutil.WaitUntilFound(masterClient, tenantReference))
+		t.Log("adding single tenant")
+		require.NoError(t, masterClient.Create(ctx, tenant), "creating tenant")
+		require.NoError(t, testutil.WaitUntilReady(masterClient, tenant))
+		assert.NoError(t, masterClient.Get(ctx, types.NamespacedName{
+			Name: tenant.Status.NamespaceName,
+		}, ns))
 
-		// Delete Tenant
+		tenantReferencePresent(t, masterClient, ctx, tenant, provider, true)
+		tenantReferencePresent(t, masterClient, ctx, tenant, tenant, false)
+
+		t.Log("adding providerTenant")
+		require.NoError(t, masterClient.Create(ctx, providerTenant), "creating providerTenant")
+		require.NoError(t, testutil.WaitUntilReady(masterClient, providerTenant))
+		assert.NoError(t, masterClient.Get(ctx, types.NamespacedName{
+			Name: providerTenant.Status.NamespaceName,
+		}, ns))
+
+		tenantReferencePresent(t, masterClient, ctx, tenant, provider, true)
+		tenantReferencePresent(t, masterClient, ctx, tenant, providerTenant, true)
+		tenantReferencePresent(t, masterClient, ctx, tenant, tenant, false)
+
+		tenantReferencePresent(t, masterClient, ctx, provider, provider, false)
+		tenantReferencePresent(t, masterClient, ctx, provider, providerTenant, false)
+		tenantReferencePresent(t, masterClient, ctx, provider, tenant, false)
+
+		tenantReferencePresent(t, masterClient, ctx, providerTenant, provider, true)
+		tenantReferencePresent(t, masterClient, ctx, providerTenant, providerTenant, true)
+		tenantReferencePresent(t, masterClient, ctx, providerTenant, tenant, false)
+
+		t.Log("deleting tenant")
 		require.NoError(t, testutil.DeleteAndWaitUntilNotFound(masterClient, tenant))
-
 		assert.True(t, errors.IsNotFound(masterClient.Get(ctx, types.NamespacedName{
-			Name: tenantNamespaceName,
-		}, tenantNamespace)), "namespace should also be deleted.")
+			Name: tenant.Status.NamespaceName,
+		}, ns)), "namespace should also be deleted.")
 
-		assert.True(t, errors.IsNotFound(masterClient.Get(ctx, types.NamespacedName{
-			Name:      tenant.Name,
-			Namespace: tenantNamespaceName,
-		}, tenantReference)), "TenantReference should also be deleted.")
+		tenantReferencePresent(t, masterClient, ctx, tenant, provider, false)
+		tenantReferencePresent(t, masterClient, ctx, tenant, providerTenant, false)
+		tenantReferencePresent(t, masterClient, ctx, tenant, tenant, false)
 
-		// Delete Provider
+		tenantReferencePresent(t, masterClient, ctx, provider, provider, false)
+		tenantReferencePresent(t, masterClient, ctx, provider, providerTenant, false)
+		tenantReferencePresent(t, masterClient, ctx, provider, tenant, false)
+
+		tenantReferencePresent(t, masterClient, ctx, providerTenant, provider, true)
+		tenantReferencePresent(t, masterClient, ctx, providerTenant, providerTenant, true)
+		tenantReferencePresent(t, masterClient, ctx, providerTenant, tenant, false)
+
+		t.Log("deleting provider")
 		require.NoError(t, testutil.DeleteAndWaitUntilNotFound(masterClient, provider))
 		assert.True(t, errors.IsNotFound(masterClient.Get(ctx, types.NamespacedName{
-			Name: providerNamespaceName,
-		}, providerNamespace)), "namespace should also be deleted.")
+			Name: provider.Status.NamespaceName,
+		}, ns)), "namespace should also be deleted.")
+
+		t.Log("deleting providerTenant")
+		require.NoError(t, testutil.DeleteAndWaitUntilNotFound(masterClient, providerTenant))
+		assert.True(t, errors.IsNotFound(masterClient.Get(ctx, types.NamespacedName{
+			Name: providerTenant.Status.NamespaceName,
+		}, ns)), "namespace should also be deleted.")
 	}
+}
+
+func tenantReferencePresent(t *testing.T, masterClient client.Client, ctx context.Context, tenant *catalogv1alpha1.Account, provider *catalogv1alpha1.Account, expected bool) {
+	trefs := &catalogv1alpha1.TenantReferenceList{}
+	require.NoError(t, masterClient.List(ctx, trefs, client.InNamespace(provider.Status.NamespaceName)))
+	var found bool
+	for _, tref := range trefs.Items {
+		if tref.Name == tenant.Name {
+			found = true
+		}
+	}
+	assert.Equalf(t, expected, found, "tenantReference %s presence in provider %s", tenant.Name, provider.Name)
 }

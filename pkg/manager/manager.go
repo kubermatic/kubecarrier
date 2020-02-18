@@ -22,6 +22,7 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/spf13/cobra"
+	corev1 "k8s.io/api/core/v1"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
@@ -126,6 +127,16 @@ func run(flags *flags, log logr.Logger) error {
 	); err != nil {
 		return fmt.Errorf("registering ServiceCluster owner field index: %w", err)
 	}
+	if err := util.AddOwnerReverseFieldIndex(
+		mgr.GetFieldIndexer(), fieldIndexerLog.WithName("Namespace"), &corev1.Namespace{},
+	); err != nil {
+		return fmt.Errorf("registering Namespace owner field indexer: %w", err)
+	}
+	if err := util.AddOwnerReverseFieldIndex(
+		mgr.GetFieldIndexer(), fieldIndexerLog.WithName("TenantReference"), &catalogv1alpha1.TenantReference{},
+	); err != nil {
+		return fmt.Errorf("registering TenantReference owner field indexer: %w", err)
+	}
 
 	if err = (&controllers.TenantReconciler{
 		Client: mgr.GetClient(),
@@ -135,6 +146,13 @@ func run(flags *flags, log logr.Logger) error {
 		return fmt.Errorf("creating Tenant controller: %w", err)
 	}
 
+	if err = (&controllers.AccountReconciler{
+		Client: mgr.GetClient(),
+		Log:    log.WithName("controllers").WithName("Account"),
+		Scheme: mgr.GetScheme(),
+	}).SetupWithManager(mgr); err != nil {
+		return fmt.Errorf("creating Account controller: %w", err)
+	}
 	if err = (&controllers.ProviderReconciler{
 		Client: mgr.GetClient(),
 		Log:    log.WithName("controllers").WithName("Provider"),
