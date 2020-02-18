@@ -119,3 +119,16 @@ ed config/internal/elevator/rbac/role.yaml <<EOF || true
 w
 EOF
 statik-gen elevator config/internal/elevator
+
+#Service cluster RBAC
+serviceClusterDir=tmp
+mkdir -p ${serviceClusterDir}
+echo "package tmp" > ${serviceClusterDir}/ferry.go
+grep  --no-filename  -r "servicecluster:" pkg/ferry | sed 's/servicecluster://g'  >> ${serviceClusterDir}/ferry.go
+$CONTROLLER_GEN rbac:roleName=manager paths="./${serviceClusterDir}/..." output:rbac:artifacts:config=config/serviceCluster
+ed config/serviceCluster/role.yaml <<EOF || true
+,s/manager/kubecarrier:service-cluster-admin/g
+w
+EOF
+echo "generated service cluster role"
+rm -Rf ${serviceClusterDir}  # cleanup

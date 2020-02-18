@@ -20,9 +20,11 @@ import (
 	"context"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/client-go/tools/clientcmd"
 
 	"github.com/kubermatic/kubecarrier/test/framework"
 )
@@ -54,6 +56,17 @@ func NewVerifySuite(f *framework.Framework) func(t *testing.T) {
 					Name:      "cluster-info",
 					Namespace: "kube-public",
 				}, cm), "cannot fetch cluster-info")
+			})
+			t.Run("internal service cluster config validation", func(t *testing.T) {
+				loader := clientcmd.NewDefaultClientConfigLoadingRules()
+				loader.ExplicitPath = f.Config().ServiceInternalKubeconfigPath
+				clientConfig := clientcmd.NewNonInteractiveDeferredLoadingClientConfig(
+					loader,
+					&clientcmd.ConfigOverrides{},
+				)
+				cfg, err := clientConfig.ClientConfig()
+				require.NoError(t, err)
+				assert.Equal(t, "system:serviceaccount:default:kubecarrier", cfg.Impersonate.UserName, "internal service cluster kubeconfig has wrong impersonation")
 			})
 		})
 
