@@ -48,21 +48,21 @@ type OwnedObjectReconciler struct {
 }
 
 func (r *OwnedObjectReconciler) Do(ctx context.Context, cl client.Client) (changed bool, err error) {
-	existing, err := ListOwnedObjects(ctx, cl, r.Scheme, r.Owner, r.TypeFilter)
+	existing, err := ListObjects(ctx, cl, r.Scheme, r.TypeFilter, OwnedBy(r.Owner, r.Scheme))
 	if err != nil {
-		return false, fmt.Errorf("ListOwnedObjects: %w", err)
+		return false, fmt.Errorf("ListObjects: %w", err)
 	}
 	return r.ensureCreatedObject(ctx, cl, existing)
 }
 
-func ListOwnedObjects(ctx context.Context, cl client.Client, scheme *runtime.Scheme, owner Object, lsts []List) ([]runtime.Object, error) {
+func ListObjects(ctx context.Context, cl client.Client, scheme *runtime.Scheme, lsts []List, options ...client.ListOption) ([]runtime.Object, error) {
 	objs := make([]runtime.Object, 0)
 	for _, lst := range lsts {
 		gvk, err := apiutil.GVKForObject(lst, scheme)
 		if err != nil {
 			return nil, fmt.Errorf("cannot get GVK for %T: %w", lst, err)
 		}
-		if err := cl.List(ctx, lst, OwnedBy(owner, scheme)); err != nil {
+		if err := cl.List(ctx, lst, options...); err != nil {
 			return nil, fmt.Errorf("listing %s.%s: %w", strings.ToLower(gvk.Kind), gvk.Group, err)
 		}
 
