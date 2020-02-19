@@ -19,8 +19,6 @@ package controllers
 import (
 	"context"
 	"fmt"
-	"reflect"
-	"strings"
 
 	"github.com/go-logr/logr"
 	corev1 "k8s.io/api/core/v1"
@@ -29,7 +27,6 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/client/apiutil"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 	"sigs.k8s.io/controller-runtime/pkg/source"
@@ -83,10 +80,8 @@ func (r *AccountReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	if err := r.reconcileNamespace(ctx, log, account); err != nil {
 		return ctrl.Result{}, fmt.Errorf("reconciling namespace: %w", err)
 	}
-	if account.HasRole(catalogv1alpha1.TenantRole) {
-		if err := r.reconcileTenantReferences(ctx, log, account); err != nil {
-			return ctrl.Result{}, fmt.Errorf("reconciling tenant references: %w", err)
-		}
+	if err := r.reconcileTenantReferences(ctx, log, account); err != nil {
+		return ctrl.Result{}, fmt.Errorf("reconciling tenant references: %w", err)
 	}
 
 	return ctrl.Result{}, nil
@@ -146,31 +141,21 @@ func (r *AccountReconciler) handleDeletion(ctx context.Context, log logr.Logger,
 		}
 	}
 
-	objs := make([]runtime.Object, 0)
-	for _, lst := range []runtime.Object{
-		&corev1.NamespaceList{},
-		&catalogv1alpha1.TenantReferenceList{},
-	} {
-		gvk, err := apiutil.GVKForObject(lst, r.Scheme)
-		if err != nil {
-			return fmt.Errorf("cannot get GVK for %T: %w", lst, err)
-		}
-		if err := r.Client.List(ctx, lst, util.OwnedBy(account, r.Scheme)); err != nil {
-			return fmt.Errorf("listing %s.%s: %w", strings.ToLower(gvk.Kind), gvk.Group, err)
-		}
-		// for some reason there's no function in the list object for getting all the items...
-		// but they all have .Items struct field
-		items := reflect.ValueOf(lst).Elem().FieldByName("Items")
-		for i := 0; i < items.Len(); i++ {
-			objs = append(objs, items.Index(i).Addr().Interface().(runtime.Object))
-		}
+	changed, err := (&util.OwnedObjectReconciler{
+		Scheme:      r.Scheme,
+		Log:         log,
+		Owner:       account,
+		WantedState: nil,
+		TypeFilter: []util.List{
+			&corev1.NamespaceList{},
+			&catalogv1alpha1.TenantReferenceList{},
+		},
+	}).Do(ctx, r.Client)
+	if err != nil {
+		return fmt.Errorf("cannot reconcile objects: %w", err)
 	}
-	for _, obj := range objs {
-		if err := r.Client.Delete(ctx, obj); client.IgnoreNotFound(err) != nil {
-			return fmt.Errorf("deleting %v", obj)
-		}
-	}
-	if len(objs) == 0 && util.RemoveFinalizer(account, accountControllerFinalizer) {
+
+	if !changed && util.RemoveFinalizer(account, accountControllerFinalizer) {
 		if err := r.Update(ctx, account); err != nil {
 			return fmt.Errorf("updating Account Status: %w", err)
 		}
@@ -211,33 +196,39 @@ func (r *AccountReconciler) reconcileTenantReferences(ctx context.Context, log l
 		return fmt.Errorf("listing Accounts: %w", err)
 	}
 
-	for _, providerAccount := range accountList.Items {
-		if !providerAccount.HasRole(catalogv1alpha1.ProviderRole) {
-			continue
-		}
-		if condition, _ := providerAccount.Status.GetCondition(catalogv1alpha1.AccountReady); condition.Status != catalogv1alpha1.ConditionTrue {
-			continue
-		}
-		tenantReference := &catalogv1alpha1.TenantReference{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      account.Name,
-				Namespace: providerAccount.Status.NamespaceName,
-			},
-		}
-		mutateFn := func() error {
+	wantedRefs := make([]util.Object, 0)
+	if account.HasRole(catalogv1alpha1.TenantRole) {
+		for _, providerAccount := range accountList.Items {
+			if !providerAccount.HasRole(catalogv1alpha1.ProviderRole) {
+				continue
+			}
+			if condition, _ := providerAccount.Status.GetCondition(catalogv1alpha1.AccountReady); condition.Status != catalogv1alpha1.ConditionTrue {
+				continue
+			}
+			tenantReference := &catalogv1alpha1.TenantReference{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      account.Name,
+					Namespace: providerAccount.Status.NamespaceName,
+				},
+			}
 			if _, err := util.InsertOwnerReference(account, tenantReference, r.Scheme); err != nil {
 				return fmt.Errorf("insert owner ref: %w", err)
 			}
-			return nil
+			wantedRefs = append(wantedRefs, tenantReference)
 		}
-		if err := mutateFn(); err != nil {
-			return err
-		}
-		op, err := ctrl.CreateOrUpdate(ctx, r.Client, tenantReference, mutateFn)
-		if err != nil {
-			return fmt.Errorf("cannot create or update: %w", err)
-		}
-		log.V(6).Info(fmt.Sprintf("tenantReference %s", op), "provider", providerAccount.Name, "tenant", account.Name)
 	}
-	return nil
+
+	_, err := (&util.OwnedObjectReconciler{
+		Scheme:      r.Scheme,
+		Log:         log,
+		Owner:       account,
+		WantedState: wantedRefs,
+		TypeFilter: []util.List{
+			&catalogv1alpha1.TenantReferenceList{},
+		},
+	}).Do(ctx, r.Client)
+	if err != nil {
+		return fmt.Errorf("cannot reconcile objects: %w", err)
+	}
+	return err
 }

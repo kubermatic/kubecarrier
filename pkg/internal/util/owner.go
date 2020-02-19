@@ -36,8 +36,8 @@ const (
 	OwnerAnnotation = "kubecarrier.io/owner"
 )
 
-// ownerReference references an owning/controlling object across Namespaces.
-type ownerReference struct {
+// objectReference references an owning/controlling object across Namespaces.
+type objectReference struct {
 	// Name of the referent.
 	Name string `json:"name"`
 	// Namespace that the referent object lives in.
@@ -55,7 +55,7 @@ type GeneralizedListOption interface {
 
 // InsertOwnerReference adds an OwnerReference to the given object.
 func InsertOwnerReference(owner, object Object, scheme *runtime.Scheme) (changed bool, err error) {
-	ownerReference := toOwnerReference(owner, scheme)
+	ownerReference := toObjectReference(owner, scheme)
 
 	refs, err := getRefs(object)
 	if err != nil {
@@ -78,14 +78,14 @@ func InsertOwnerReference(owner, object Object, scheme *runtime.Scheme) (changed
 
 // DeleteOwnerReference removes an owner from the given object.
 func DeleteOwnerReference(owner, object Object, scheme *runtime.Scheme) (changed bool, err error) {
-	reference := toOwnerReference(owner, scheme)
+	reference := toObjectReference(owner, scheme)
 
 	refs, err := getRefs(object)
 	if err != nil {
 		return false, err
 	}
 
-	var newRefs []ownerReference
+	var newRefs []objectReference
 	for _, ref := range refs {
 		if ref != reference {
 			newRefs = append(newRefs, ref)
@@ -117,9 +117,9 @@ func IsUnowned(object metav1.Object) (unowned bool, err error) {
 
 // EnqueueRequestForOwner enqueues requests for all owners of an object.
 //
-// It implements the same behavior as handler.EnqueueRequestForOwner, but for our custom ownerReference.
+// It implements the same behavior as handler.EnqueueRequestForOwner, but for our custom objectReference.
 func EnqueueRequestForOwner(ownerType Object, scheme *runtime.Scheme) handler.EventHandler {
-	ownerTypeRef := toOwnerReference(ownerType, scheme)
+	ownerTypeRef := toObjectReference(ownerType, scheme)
 	ownerKind, ownerGroup := ownerTypeRef.Kind, ownerTypeRef.Group
 
 	return &handler.EnqueueRequestsFromMapFunc{
@@ -188,13 +188,13 @@ func AddOwnerReverseFieldIndex(indexer client.FieldIndexer, log logr.Logger, obj
 // See also: AddOwnerReverseFieldIndex
 func OwnedBy(owner Object, sc *runtime.Scheme) GeneralizedListOption {
 	return client.MatchingFields{
-		OwnerAnnotation: toOwnerReference(owner, sc).fieldIndexValue(),
+		OwnerAnnotation: toObjectReference(owner, sc).fieldIndexValue(),
 	}
 }
 
-// fieldIndexValue converts the ownerReference into a simple value for a client.FieldIndexer.
+// fieldIndexValue converts the objectReference into a simple value for a client.FieldIndexer.
 // to be used as key for indexing structure.
-func (n ownerReference) fieldIndexValue() string {
+func (n objectReference) fieldIndexValue() string {
 	b, err := json.Marshal(n)
 	if err != nil {
 		// this should never ever happen
@@ -209,8 +209,8 @@ type Object interface {
 	metav1.Object
 }
 
-// toOwnerReference converts the given object into an ownerReference.
-func toOwnerReference(owner Object, scheme *runtime.Scheme) ownerReference {
+// toObjectReference converts the given object into an objectReference.
+func toObjectReference(owner Object, scheme *runtime.Scheme) objectReference {
 	gvk, err := apiutil.GVKForObject(owner, scheme)
 	if err != nil {
 		// if this panic occurs many, many other stuff has gone wrong as well
@@ -224,7 +224,7 @@ func toOwnerReference(owner Object, scheme *runtime.Scheme) ownerReference {
 		panic(fmt.Sprintf("cannot deduce GVK for owner (type %T)", owner))
 	}
 
-	return ownerReference{
+	return objectReference{
 		Name:      owner.GetName(),
 		Namespace: owner.GetNamespace(),
 		Kind:      gvk.Kind,
@@ -232,7 +232,7 @@ func toOwnerReference(owner Object, scheme *runtime.Scheme) ownerReference {
 	}
 }
 
-func getRefs(object metav1.Object) (refs []ownerReference, err error) {
+func getRefs(object metav1.Object) (refs []objectReference, err error) {
 	annotations := object.GetAnnotations()
 	if annotations == nil {
 		return nil, nil
@@ -245,7 +245,7 @@ func getRefs(object metav1.Object) (refs []ownerReference, err error) {
 	return
 }
 
-func setRefs(object metav1.Object, refs []ownerReference) error {
+func setRefs(object metav1.Object, refs []objectReference) error {
 	annotations := object.GetAnnotations()
 	if annotations == nil {
 		annotations = make(map[string]string)
