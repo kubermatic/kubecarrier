@@ -139,7 +139,7 @@ func testAnchorSetup(ctx context.Context, f *framework.Framework, kubeCarrier *o
 		// CRD
 		crd := &apiextensionsv1.CustomResourceDefinition{}
 		assert.NoError(t, masterClient.Get(ctx, types.NamespacedName{
-			Name: "providers.catalog.kubecarrier.io",
+			Name: "accounts.catalog.kubecarrier.io",
 		}, crd), "get the CRD that owned by KubeCarrier object")
 	}
 }
@@ -196,7 +196,7 @@ func testAnchorTeardown(ctx context.Context, f *framework.Framework, kubeCarrier
 		// CRD
 		crd := &apiextensionsv1.CustomResourceDefinition{}
 		assert.True(t, errors.IsNotFound(masterClient.Get(ctx, types.NamespacedName{
-			Name: "providers.catalog.kubecarrier.io",
+			Name: "accounts.catalog.kubecarrier.io",
 		}, crd)), "get the CRD that owned by KubeCarrier object")
 	}
 }
