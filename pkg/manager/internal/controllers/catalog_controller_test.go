@@ -32,14 +32,20 @@ import (
 
 	catalogv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/catalog/v1alpha1"
 	corev1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/core/v1alpha1"
+	"github.com/kubermatic/kubecarrier/pkg/internal/util"
 	"github.com/kubermatic/kubecarrier/pkg/testutil"
 )
 
 func TestCatalogReconciler(t *testing.T) {
 
-	provider := &catalogv1alpha1.Provider{
+	provider := &catalogv1alpha1.Account{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "example-provider",
+		},
+		Spec: catalogv1alpha1.AccountSpec{
+			Roles: []catalogv1alpha1.AccountRole{
+				catalogv1alpha1.ProviderRole,
+			},
 		},
 	}
 
@@ -51,14 +57,21 @@ func TestCatalogReconciler(t *testing.T) {
 			Name: providerNamespaceName,
 		},
 	}
+	_, err := util.InsertOwnerReference(provider, providerNamespace, testScheme)
+	require.NoError(t, err)
 
-	tenant := &catalogv1alpha1.Tenant{
+	tenant := &catalogv1alpha1.Account{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "example-tenant",
 		},
+		Spec: catalogv1alpha1.AccountSpec{
+			Roles: []catalogv1alpha1.AccountRole{
+				catalogv1alpha1.TenantRole,
+			},
+		},
 	}
-	tenant.Status.SetCondition(catalogv1alpha1.TenantCondition{
-		Type:    catalogv1alpha1.TenantReady,
+	tenant.Status.SetCondition(catalogv1alpha1.AccountCondition{
+		Type:    catalogv1alpha1.AccountReady,
 		Status:  catalogv1alpha1.ConditionTrue,
 		Reason:  "SetupComplete",
 		Message: "Tenant setup is complete.",
@@ -78,6 +91,8 @@ func TestCatalogReconciler(t *testing.T) {
 			Name: tenantNamespaceName,
 		},
 	}
+	_, err = util.InsertOwnerReference(tenant, tenantNamespace, testScheme)
+	require.NoError(t, err)
 
 	catalogEntry := &catalogv1alpha1.CatalogEntry{
 		ObjectMeta: metav1.ObjectMeta{

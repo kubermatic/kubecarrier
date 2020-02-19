@@ -194,6 +194,25 @@ func (account *Account) HasRole(role AccountRole) bool {
 	return false
 }
 
+// IsReady returns if the Account is ready.
+func (account *Account) IsReady() bool {
+	if !account.DeletionTimestamp.IsZero() {
+		return false
+	}
+
+	if account.Generation != account.Status.ObservedGeneration {
+		return false
+	}
+
+	for _, condition := range account.Status.Conditions {
+		if condition.Type == AccountReady &&
+			condition.Status == ConditionTrue {
+			return true
+		}
+	}
+	return false
+}
+
 // AccountList contains a list of Account.
 // +kubebuilder:object:root=true
 type AccountList struct {

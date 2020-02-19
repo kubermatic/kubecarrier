@@ -49,7 +49,7 @@ func NewProviderSuite(f *framework.Framework) func(t *testing.T) {
 			// parallel-group
 			suites := []struct {
 				name  string
-				suite func(*framework.Framework, *catalogv1alpha1.Provider) func(t *testing.T)
+				suite func(*framework.Framework, *catalogv1alpha1.Account) func(t *testing.T)
 			}{
 				{
 					name:  "DerivedCR",
@@ -73,14 +73,17 @@ func NewProviderSuite(f *framework.Framework) func(t *testing.T) {
 					suite := s.suite
 					t.Parallel()
 
-					provider := &catalogv1alpha1.Provider{
+					provider := &catalogv1alpha1.Account{
 						ObjectMeta: metav1.ObjectMeta{
 							Name: "test-" + strings.ToLower(name),
 						},
-						Spec: catalogv1alpha1.ProviderSpec{
-							Metadata: catalogv1alpha1.ProviderMetadata{
+						Spec: catalogv1alpha1.AccountSpec{
+							Metadata: catalogv1alpha1.AccountMetadata{
 								DisplayName: "provider",
 								Description: "provider test description",
+							},
+							Roles: []catalogv1alpha1.AccountRole{
+								catalogv1alpha1.ProviderRole,
 							},
 						},
 					}
@@ -97,7 +100,7 @@ func NewProviderSuite(f *framework.Framework) func(t *testing.T) {
 
 func NewCatalogSuite(
 	f *framework.Framework,
-	provider *catalogv1alpha1.Provider,
+	provider *catalogv1alpha1.Account,
 ) func(t *testing.T) {
 	return func(t *testing.T) {
 		// Catalog
@@ -109,9 +112,14 @@ func NewCatalogSuite(
 		ctx := context.Background()
 
 		// Create a Tenant to execute our tests in
-		tenant := &catalogv1alpha1.Tenant{
+		tenant := &catalogv1alpha1.Account{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: "test-tenant-catalog",
+			},
+			Spec: catalogv1alpha1.AccountSpec{
+				Roles: []catalogv1alpha1.AccountRole{
+					catalogv1alpha1.TenantRole,
+				},
 			},
 		}
 		require.NoError(
@@ -303,9 +311,14 @@ func NewCatalogSuite(
 			}), catalogCheck.Status.Tenants)
 
 			// Recreate the tenant
-			tenant = &catalogv1alpha1.Tenant{
+			tenant = &catalogv1alpha1.Account{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "test-tenant2",
+				},
+				Spec: catalogv1alpha1.AccountSpec{
+					Roles: []catalogv1alpha1.AccountRole{
+						catalogv1alpha1.TenantRole,
+					},
 				},
 			}
 			require.NoError(t, masterClient.Create(ctx, tenant), "creating tenant error")

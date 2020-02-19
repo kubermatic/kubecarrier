@@ -123,7 +123,7 @@ func (r *CatalogReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	}
 
 	// Get Provider
-	provider, err := catalogv1alpha1.GetProviderByProviderNamespace(ctx, r.Client, req.Namespace)
+	provider, err := catalogv1alpha1.GetProviderByProviderNamespace(ctx, r.Client, r.Scheme, req.Namespace)
 	if err != nil {
 		return ctrl.Result{}, fmt.Errorf("getting Provider: %w", err)
 	}
@@ -134,7 +134,7 @@ func (r *CatalogReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 		desiredServiceClusterReferences []catalogv1alpha1.ServiceClusterReference
 	)
 	for _, tenantReference := range tenantReferences {
-		tenant := &catalogv1alpha1.Tenant{}
+		tenant := &catalogv1alpha1.Account{}
 		if err := r.Get(ctx, types.NamespacedName{
 			Name: tenantReference.Name,
 		}, tenant); err != nil {
@@ -290,8 +290,8 @@ func (r *CatalogReconciler) listSelectedTenantReferences(ctx context.Context, lo
 }
 
 func (r *CatalogReconciler) buildDesiredOfferings(
-	provider *catalogv1alpha1.Provider,
-	tenant *catalogv1alpha1.Tenant,
+	provider *catalogv1alpha1.Account,
+	tenant *catalogv1alpha1.Account,
 	catalogEntries []catalogv1alpha1.CatalogEntry,
 ) []catalogv1alpha1.Offering {
 	var desiredOfferings []catalogv1alpha1.Offering
@@ -317,8 +317,8 @@ func (r *CatalogReconciler) buildDesiredOfferings(
 }
 
 func (r *CatalogReconciler) buildDesiredProviderReference(
-	provider *catalogv1alpha1.Provider,
-	tenant *catalogv1alpha1.Tenant,
+	provider *catalogv1alpha1.Account,
+	tenant *catalogv1alpha1.Account,
 ) catalogv1alpha1.ProviderReference {
 	return catalogv1alpha1.ProviderReference{
 		ObjectMeta: metav1.ObjectMeta{
@@ -333,8 +333,8 @@ func (r *CatalogReconciler) buildDesiredProviderReference(
 
 func (r *CatalogReconciler) buildDesiredServiceClusterReferences(
 	ctx context.Context, log logr.Logger,
-	provider *catalogv1alpha1.Provider,
-	tenant *catalogv1alpha1.Tenant,
+	provider *catalogv1alpha1.Account,
+	tenant *catalogv1alpha1.Account,
 	catalogEntries []catalogv1alpha1.CatalogEntry,
 ) ([]catalogv1alpha1.ServiceClusterReference, error) {
 	var desiredServiceClusterReferences []catalogv1alpha1.ServiceClusterReference

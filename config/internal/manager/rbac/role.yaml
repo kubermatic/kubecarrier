@@ -123,23 +123,6 @@ rules:
 - apiGroups:
   - catalog.kubecarrier.io
   resources:
-  - providers
-  verbs:
-  - get
-  - list
-  - update
-  - watch
-- apiGroups:
-  - catalog.kubecarrier.io
-  resources:
-  - providers/status
-  verbs:
-  - get
-  - patch
-  - update
-- apiGroups:
-  - catalog.kubecarrier.io
-  resources:
   - serviceclusterreferences
   verbs:
   - create
@@ -159,23 +142,6 @@ rules:
   - list
   - update
   - watch
-- apiGroups:
-  - catalog.kubecarrier.io
-  resources:
-  - tenants
-  verbs:
-  - get
-  - list
-  - update
-  - watch
-- apiGroups:
-  - catalog.kubecarrier.io
-  resources:
-  - tenants/status
-  verbs:
-  - get
-  - patch
-  - update
 - apiGroups:
   - kubecarrier.io
   resources:

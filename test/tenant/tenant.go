@@ -48,7 +48,7 @@ type TenantSuite struct {
 	serviceClient client.Client
 
 	// Objects that used in this test suite.
-	provider *catalogv1alpha1.Provider
+	provider *catalogv1alpha1.Account
 	crd      *apiextensionsv1.CustomResourceDefinition
 }
 
@@ -62,14 +62,17 @@ func (s *TenantSuite) SetupSuite() {
 	s.Require().NoError(err, "creating service client")
 
 	// Create a Provider to execute tests
-	s.provider = &catalogv1alpha1.Provider{
+	s.provider = &catalogv1alpha1.Account{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "other-cloud",
 		},
-		Spec: catalogv1alpha1.ProviderSpec{
-			Metadata: catalogv1alpha1.ProviderMetadata{
+		Spec: catalogv1alpha1.AccountSpec{
+			Metadata: catalogv1alpha1.AccountMetadata{
 				DisplayName: "provider1",
 				Description: "provider1 test description",
+			},
+			Roles: []catalogv1alpha1.AccountRole{
+				catalogv1alpha1.ProviderRole,
 			},
 		},
 	}

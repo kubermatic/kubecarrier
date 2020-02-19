@@ -22,6 +22,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	corev1 "k8s.io/api/core/v1"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
@@ -29,21 +30,30 @@ import (
 	fakeclient "sigs.k8s.io/controller-runtime/pkg/client/fake"
 
 	catalogv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/catalog/v1alpha1"
+	"github.com/kubermatic/kubecarrier/pkg/internal/util"
 	"github.com/kubermatic/kubecarrier/pkg/testutil"
 )
 
 func TestCatalogEntryReconciler(t *testing.T) {
-	provider := &catalogv1alpha1.Provider{
+	provider := &catalogv1alpha1.Account{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "example.provider",
 			Namespace: "kubecarrier-system",
 		},
+		Spec: catalogv1alpha1.AccountSpec{
+			Roles: []catalogv1alpha1.AccountRole{
+				catalogv1alpha1.ProviderRole,
+			},
+		},
 	}
+	providerNS := &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: "test-provider-namespace"}}
+	_, err := util.InsertOwnerReference(provider, providerNS, testScheme)
+	require.NoError(t, err)
 
 	catalogEntry := &catalogv1alpha1.CatalogEntry{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "test-catalogEntry",
-			Namespace: "test-provider-namespace",
+			Namespace: providerNS.Name,
 		},
 		Spec: catalogv1alpha1.CatalogEntrySpec{
 			Metadata: catalogv1alpha1.CatalogEntryMetadata{
@@ -78,7 +88,7 @@ func TestCatalogEntryReconciler(t *testing.T) {
 		},
 	}
 
-	client := fakeclient.NewFakeClientWithScheme(testScheme, catalogEntry, crd, provider)
+	client := fakeclient.NewFakeClientWithScheme(testScheme, catalogEntry, crd, provider, providerNS)
 	log := testutil.NewLogger(t)
 	r := &CatalogEntryReconciler{
 		Client: client,

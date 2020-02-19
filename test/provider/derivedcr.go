@@ -36,7 +36,7 @@ import (
 
 func NewDerivedCRSuite(
 	f *framework.Framework,
-	provider *catalogv1alpha1.Provider,
+	provider *catalogv1alpha1.Account,
 ) func(t *testing.T) {
 	return func(t *testing.T) {
 		// Setup

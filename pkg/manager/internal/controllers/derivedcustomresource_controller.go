@@ -129,7 +129,7 @@ func (r *DerivedCustomResourceReconciler) Reconcile(req ctrl.Request) (ctrl.Resu
 	}
 
 	// lookup Provider
-	provider, err := catalogv1alpha1.GetProviderByProviderNamespace(ctx, r.Client, dcr.Namespace)
+	provider, err := catalogv1alpha1.GetProviderByProviderNamespace(ctx, r.Client, r.Scheme, dcr.Namespace)
 	if err != nil {
 		return result, fmt.Errorf("getting the Provider by Provider Namespace: %w", err)
 	}

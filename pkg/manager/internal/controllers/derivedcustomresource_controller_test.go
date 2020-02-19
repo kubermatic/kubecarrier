@@ -22,6 +22,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	corev1 "k8s.io/api/core/v1"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
@@ -31,6 +32,7 @@ import (
 
 	catalogv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/catalog/v1alpha1"
 	operatorv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/operator/v1alpha1"
+	"github.com/kubermatic/kubecarrier/pkg/internal/util"
 	"github.com/kubermatic/kubecarrier/pkg/testutil"
 )
 
@@ -80,14 +82,23 @@ func Test_DerivedCustomResourceReconciler(t *testing.T) {
 	}
 	baseCRD.Status.AcceptedNames = baseCRD.Spec.Names
 
-	provider := &catalogv1alpha1.Provider{
+	provider := &catalogv1alpha1.Account{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "dcr",
 		},
-		Status: catalogv1alpha1.ProviderStatus{
+		Spec: catalogv1alpha1.AccountSpec{
+			Roles: []catalogv1alpha1.AccountRole{
+				catalogv1alpha1.ProviderRole,
+			},
+		},
+		Status: catalogv1alpha1.AccountStatus{
 			NamespaceName: "provider-dcr",
 		},
 	}
+
+	providerNS := &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: "provider-dcr"}}
+	_, err := util.InsertOwnerReference(provider, providerNS, testScheme)
+	require.NoError(t, err)
 
 	derivedCR := &catalogv1alpha1.DerivedCustomResource{
 		ObjectMeta: metav1.ObjectMeta{
@@ -115,7 +126,7 @@ func Test_DerivedCustomResourceReconciler(t *testing.T) {
 	t.Run("Reconcile", func(t *testing.T) {
 		derivedCR := derivedCR.DeepCopy()
 
-		client := fakeclient.NewFakeClientWithScheme(testScheme, baseCRD, provider, derivedCR)
+		client := fakeclient.NewFakeClientWithScheme(testScheme, baseCRD, provider, derivedCR, providerNS)
 		log := testutil.NewLogger(t)
 		r := &DerivedCustomResourceReconciler{
 			Client: client,

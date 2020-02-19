@@ -28,6 +28,7 @@ import (
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	fakeclient "sigs.k8s.io/controller-runtime/pkg/client/fake"
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 
@@ -189,5 +190,48 @@ func TestCRUDOwnerMethods(t *testing.T) {
 		require.NoError(t, err, "delete owner reference")
 		assert.False(t, changed, "obj changed status")
 		check()
+	}
+}
+
+func TestListOwnedObjects(t *testing.T) {
+	sc := runtime.NewScheme()
+	require.NoError(t, corev1.AddToScheme(sc))
+
+	ownerA := &corev1.ConfigMap{ObjectMeta: v1.ObjectMeta{
+		Name:      "A",
+		Namespace: "default",
+	},
+		Data: map[string]string{"aa": "aa"}}
+	ownerB := &corev1.ConfigMap{ObjectMeta: v1.ObjectMeta{
+		Name:      "B",
+		Namespace: "default",
+	},
+		Data: map[string]string{"bb": "bb"},
+	}
+
+	obj := &corev1.ConfigMap{ObjectMeta: v1.ObjectMeta{
+		Name:      "obj",
+		Namespace: "default",
+	}}
+	cl := fakeclient.NewFakeClientWithScheme(sc, ownerA, ownerB, obj)
+
+	_, err := InsertOwnerReference(ownerA, obj, sc)
+	require.NoError(t, err)
+
+	_, err = InsertOwnerReference(ownerB, obj, sc)
+	require.NoError(t, err)
+
+	objs, err := ListOwners(context.Background(), cl, sc, obj)
+	assert.NoError(t, err)
+
+	if assert.Len(t, objs, 2) {
+		assert.Equal(t, ownerA.Name, objs[0].(*corev1.ConfigMap).GetName())
+		assert.Equal(t, ownerA.Namespace, objs[0].(*corev1.ConfigMap).GetNamespace())
+		assert.Equal(t, ownerA.Data, objs[0].(*corev1.ConfigMap).Data)
+		assert.Equal(t, ownerA.BinaryData, objs[0].(*corev1.ConfigMap).BinaryData)
+		assert.Equal(t, ownerB.Name, objs[1].(*corev1.ConfigMap).GetName())
+		assert.Equal(t, ownerB.Namespace, objs[1].(*corev1.ConfigMap).GetNamespace())
+		assert.Equal(t, ownerB.Data, objs[1].(*corev1.ConfigMap).Data)
+		assert.Equal(t, ownerB.BinaryData, objs[1].(*corev1.ConfigMap).BinaryData)
 	}
 }

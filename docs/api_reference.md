@@ -1,12 +1,11 @@
 ---
 title: "API reference"
-date: 2020-02-18
+date: 2020-02-19
 weight: 1500
 ---
 
 
 ## Table of Contents
-* [catalogv1alpha1.ObjectReference](#catalogv1alpha1.objectreference)
 * [catalogv1alpha1.Catalog](#catalogv1alpha1.catalog)
 * [catalogv1alpha1.CatalogCondition](#catalogv1alpha1.catalogcondition)
 * [catalogv1alpha1.CatalogList](#catalogv1alpha1.cataloglist)
@@ -41,17 +40,7 @@ weight: 1500
 * [catalogv1alpha1.TenantReferenceSpec](#catalogv1alpha1.tenantreferencespec)
 * [catalogv1alpha1.CRDInformation](#catalogv1alpha1.crdinformation)
 * [catalogv1alpha1.CRDVersion](#catalogv1alpha1.crdversion)
-* [catalogv1alpha1.Provider](#catalogv1alpha1.provider)
-* [catalogv1alpha1.ProviderCondition](#catalogv1alpha1.providercondition)
-* [catalogv1alpha1.ProviderList](#catalogv1alpha1.providerlist)
-* [catalogv1alpha1.ProviderMetadata](#catalogv1alpha1.providermetadata)
-* [catalogv1alpha1.ProviderSpec](#catalogv1alpha1.providerspec)
-* [catalogv1alpha1.ProviderStatus](#catalogv1alpha1.providerstatus)
-* [catalogv1alpha1.Tenant](#catalogv1alpha1.tenant)
-* [catalogv1alpha1.TenantCondition](#catalogv1alpha1.tenantcondition)
-* [catalogv1alpha1.TenantList](#catalogv1alpha1.tenantlist)
-* [catalogv1alpha1.TenantSpec](#catalogv1alpha1.tenantspec)
-* [catalogv1alpha1.TenantStatus](#catalogv1alpha1.tenantstatus)
+* [catalogv1alpha1.ObjectReference](#catalogv1alpha1.objectreference)
 * [catalogv1alpha1.Account](#catalogv1alpha1.account)
 * [catalogv1alpha1.AccountCondition](#catalogv1alpha1.accountcondition)
 * [catalogv1alpha1.AccountList](#catalogv1alpha1.accountlist)
@@ -102,16 +91,6 @@ weight: 1500
 * [corev1alpha1.ServiceClusterMetadata](#corev1alpha1.serviceclustermetadata)
 * [corev1alpha1.ServiceClusterSpec](#corev1alpha1.serviceclusterspec)
 * [corev1alpha1.ServiceClusterStatus](#corev1alpha1.serviceclusterstatus)
-
-## catalogv1alpha1.ObjectReference
-
-ObjectReference describes the link to another object in the same namespace.
-
-| Field | Description | Scheme | Required |
-| ----- | ----------- | ------ | -------- |
-| name |  | string | true |
-
-[Back to TOC](#table-of-contents)
 
 ## catalogv1alpha1.Catalog
 
@@ -417,7 +396,7 @@ ProviderReferenceSpec defines the desired state of ProviderReference
 
 | Field | Description | Scheme | Required |
 | ----- | ----------- | ------ | -------- |
-| metadata | Metadata contains the metadata (display name, description, etc) of the Provider. | [catalogv1alpha1.ProviderMetadata](#catalogv1alpha1.providermetadata) | false |
+| metadata | Metadata contains the metadata (display name, description, etc) of the Provider. | [catalogv1alpha1.AccountMetadata](#catalogv1alpha1.accountmetadata) | false |
 
 [Back to TOC](#table-of-contents)
 
@@ -510,133 +489,13 @@ CRDVersion holds CRD version specific details.
 
 [Back to TOC](#table-of-contents)
 
-## catalogv1alpha1.Provider
+## catalogv1alpha1.ObjectReference
 
-Provider is the service provider representation in the KubeCarrier control-plane.
-
-| Field | Description | Scheme | Required |
-| ----- | ----------- | ------ | -------- |
-| metadata |  | [metav1.ObjectMeta](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.14/#objectmeta-v1-meta) | false |
-| spec |  | [catalogv1alpha1.ProviderSpec](#catalogv1alpha1.providerspec) | false |
-| status |  | [catalogv1alpha1.ProviderStatus](#catalogv1alpha1.providerstatus) | false |
-
-[Back to TOC](#table-of-contents)
-
-## catalogv1alpha1.ProviderCondition
-
-ProviderCondition contains details for the current condition of this Provider.
+ObjectReference describes the link to another object in the same namespace.
 
 | Field | Description | Scheme | Required |
 | ----- | ----------- | ------ | -------- |
-| type | Type is the type of the Provider condition, currently ('Ready'). | catalogv1alpha1.ProviderConditionType | true |
-| status | Status is the status of the condition, one of ('True', 'False', 'Unknown'). | catalogv1alpha1.ConditionStatus | true |
-| lastTransitionTime | LastTransitionTime is the last time the condition transits from one status to another. | metav1.Time | true |
-| reason | Reason is the (brief) reason for the condition's last transition. | string | true |
-| message | Message is the human readable message indicating details about last transition. | string | true |
-
-[Back to TOC](#table-of-contents)
-
-## catalogv1alpha1.ProviderList
-
-ProviderList contains a list of Provider.
-
-| Field | Description | Scheme | Required |
-| ----- | ----------- | ------ | -------- |
-| metadata |  | [metav1.ListMeta](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.14/#listmeta-v1-meta) | false |
-| items |  | [][catalogv1alpha1.Provider](#catalogv1alpha1.provider) | true |
-
-[Back to TOC](#table-of-contents)
-
-## catalogv1alpha1.ProviderMetadata
-
-ProviderMetadata contains the metadata (display name, description, etc) of the Provider.
-
-| Field | Description | Scheme | Required |
-| ----- | ----------- | ------ | -------- |
-| displayName | DisplayName shows the human-readable name of this Provider. | string | false |
-| description | Description shows the human-readable description of this Provider. | string | false |
-
-[Back to TOC](#table-of-contents)
-
-## catalogv1alpha1.ProviderSpec
-
-ProviderSpec defines the desired state of Provider.
-
-| Field | Description | Scheme | Required |
-| ----- | ----------- | ------ | -------- |
-| metadata |  | [catalogv1alpha1.ProviderMetadata](#catalogv1alpha1.providermetadata) | false |
-
-[Back to TOC](#table-of-contents)
-
-## catalogv1alpha1.ProviderStatus
-
-ProviderStatus defines the observed state of Provider.
-
-| Field | Description | Scheme | Required |
-| ----- | ----------- | ------ | -------- |
-| namespaceName | NamespaceName is the name of the namespace that the Provider manages. | string | false |
-| observedGeneration | ObservedGeneration is the most recent generation observed for this Provider by the controller. | catalogv1alpha1.int64 | false |
-| conditions | Conditions represents the latest available observations of a Provider's current state. | [][catalogv1alpha1.ProviderCondition](#catalogv1alpha1.providercondition) | false |
-| phase | DEPRECATED. Phase represents the current lifecycle state of this object. Consider this field DEPRECATED, it will be removed as soon as there is a mechanism to map conditions to strings when printing the property. This is only for display purpose, for everything else use conditions. | catalogv1alpha1.ProviderPhaseType | false |
-
-[Back to TOC](#table-of-contents)
-
-## catalogv1alpha1.Tenant
-
-Tenant sets up permissions and references to allow a end-user group to interact with providers' services.
-
-| Field | Description | Scheme | Required |
-| ----- | ----------- | ------ | -------- |
-| metadata |  | [metav1.ObjectMeta](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.14/#objectmeta-v1-meta) | false |
-| spec |  | [catalogv1alpha1.TenantSpec](#catalogv1alpha1.tenantspec) | false |
-| status |  | [catalogv1alpha1.TenantStatus](#catalogv1alpha1.tenantstatus) | false |
-
-[Back to TOC](#table-of-contents)
-
-## catalogv1alpha1.TenantCondition
-
-TenantCondition contains details for the current condition of this Tenant.
-
-| Field | Description | Scheme | Required |
-| ----- | ----------- | ------ | -------- |
-| type | Type is the type of the Tenant condition, currently ('Ready'). | catalogv1alpha1.TenantConditionType | true |
-| status | Status is the status of the condition, one of ('True', 'False', 'Unknown'). | catalogv1alpha1.ConditionStatus | true |
-| lastTransitionTime | LastTransitionTime is the last time the condition transits from one status to another. | metav1.Time | true |
-| reason | Reason is the (brief) reason for the condition's last transition. | string | true |
-| message | Message is the human readable message indicating details about last transition. | string | true |
-
-[Back to TOC](#table-of-contents)
-
-## catalogv1alpha1.TenantList
-
-TenantList contains a list of Tenant.
-
-| Field | Description | Scheme | Required |
-| ----- | ----------- | ------ | -------- |
-| metadata |  | [metav1.ListMeta](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.14/#listmeta-v1-meta) | false |
-| items |  | [][catalogv1alpha1.Tenant](#catalogv1alpha1.tenant) | true |
-
-[Back to TOC](#table-of-contents)
-
-## catalogv1alpha1.TenantSpec
-
-TenantSpec defines the desired state of Tenant.
-
-| Field | Description | Scheme | Required |
-| ----- | ----------- | ------ | -------- |
-
-[Back to TOC](#table-of-contents)
-
-## catalogv1alpha1.TenantStatus
-
-TenantStatus defines the observed state of Tenant.
-
-| Field | Description | Scheme | Required |
-| ----- | ----------- | ------ | -------- |
-| namespaceName | NamespaceName is the name of the namespace that the Tenant manages. | string | false |
-| observedGeneration | ObservedGeneration is the most recent generation observed for this Tenant by the controller. | catalogv1alpha1.int64 | false |
-| conditions | Conditions represents the latest available observations of a Tenant's current state. | [][catalogv1alpha1.TenantCondition](#catalogv1alpha1.tenantcondition) | false |
-| phase | DEPRECATED. Phase represents the current lifecycle state of this object. Consider this field DEPRECATED, it will be removed as soon as there is a mechanism to map conditions to strings when printing the property. This is only for display purpose, for everything else use conditions. | catalogv1alpha1.TenantPhaseType | false |
+| name |  | string | true |
 
 [Back to TOC](#table-of-contents)
 

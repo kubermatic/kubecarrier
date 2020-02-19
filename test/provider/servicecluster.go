@@ -37,7 +37,7 @@ import (
 // ServiceClusterSuite registers a ServiceCluster and tests apis interacting with it.
 func NewServiceClusterSuite(
 	f *framework.Framework,
-	provider *catalogv1alpha1.Provider,
+	provider *catalogv1alpha1.Account,
 ) func(t *testing.T) {
 	return func(t *testing.T) {
 		masterClient, err := f.MasterClient()

@@ -102,11 +102,6 @@ func run(flags *flags, log logr.Logger) error {
 		return fmt.Errorf("-kubecarrier-system-namespace or ENVVAR KUBECARRIER_NAMESPACE must be set")
 	}
 
-	// Register a field index for Provider.Status.NamespaceName
-	if err := catalogv1alpha1.RegisterProviderNamespaceFieldIndex(mgr); err != nil {
-		return fmt.Errorf("registering ProviderNamespace field index: %w", err)
-	}
-
 	// Register Owner field indexes
 	fieldIndexerLog := ctrl.Log.WithName("fieldindex")
 	if err := util.AddOwnerReverseFieldIndex(
@@ -138,14 +133,6 @@ func run(flags *flags, log logr.Logger) error {
 		return fmt.Errorf("registering TenantReference owner field indexer: %w", err)
 	}
 
-	if err = (&controllers.TenantReconciler{
-		Client: mgr.GetClient(),
-		Log:    log.WithName("controllers").WithName("Tenant"),
-		Scheme: mgr.GetScheme(),
-	}).SetupWithManager(mgr); err != nil {
-		return fmt.Errorf("creating Tenant controller: %w", err)
-	}
-
 	if err = (&controllers.AccountReconciler{
 		Client: mgr.GetClient(),
 		Log:    log.WithName("controllers").WithName("Account"),
@@ -153,14 +140,6 @@ func run(flags *flags, log logr.Logger) error {
 	}).SetupWithManager(mgr); err != nil {
 		return fmt.Errorf("creating Account controller: %w", err)
 	}
-	if err = (&controllers.ProviderReconciler{
-		Client: mgr.GetClient(),
-		Log:    log.WithName("controllers").WithName("Provider"),
-		Scheme: mgr.GetScheme(),
-	}).SetupWithManager(mgr); err != nil {
-		return fmt.Errorf("creating Provider controller: %w", err)
-	}
-
 	if err = (&controllers.CustomResourceDiscoveryReconciler{
 		Client: mgr.GetClient(),
 		Log:    log.WithName("controllers").WithName("CustomResourceDiscovery"),
@@ -225,12 +204,6 @@ func run(flags *flags, log logr.Logger) error {
 		&webhook.Admission{Handler: &webhooks.OfferingWebhookHandler{
 			Log: log.WithName("validating webhooks").WithName("Offering"),
 		}})
-	wbh.Register(utilwebhook.GenerateValidateWebhookPath(&catalogv1alpha1.Provider{}, mgr.GetScheme()),
-		&webhook.Admission{Handler: &webhooks.ProviderWebhookHandler{
-			Client: mgr.GetClient(),
-			Scheme: mgr.GetScheme(),
-			Log:    log.WithName("validating webhooks").WithName("Provider"),
-		}})
 	wbh.Register(utilwebhook.GenerateValidateWebhookPath(&catalogv1alpha1.Account{}, mgr.GetScheme()),
 		&webhook.Admission{Handler: &webhooks.AccountWebhookHandler{
 			Client: mgr.GetClient(),
@@ -244,10 +217,6 @@ func run(flags *flags, log logr.Logger) error {
 	wbh.Register(utilwebhook.GenerateValidateWebhookPath(&catalogv1alpha1.ServiceClusterReference{}, mgr.GetScheme()),
 		&webhook.Admission{Handler: &webhooks.ServiceClusterReferenceWebhookHandler{
 			Log: log.WithName("validating webhooks").WithName("ServiceClusterReference"),
-		}})
-	wbh.Register(utilwebhook.GenerateValidateWebhookPath(&catalogv1alpha1.Tenant{}, mgr.GetScheme()),
-		&webhook.Admission{Handler: &webhooks.TenantWebhookHandler{
-			Log: log.WithName("validating webhooks").WithName("Tenant"),
 		}})
 	wbh.Register(utilwebhook.GenerateValidateWebhookPath(&catalogv1alpha1.TenantReference{}, mgr.GetScheme()),
 		&webhook.Admission{Handler: &webhooks.TenantReferenceWebhookHandler{
