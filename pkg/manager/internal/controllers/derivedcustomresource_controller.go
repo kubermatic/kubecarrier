@@ -53,7 +53,7 @@ type DerivedCustomResourceReconciler struct {
 	Scheme *runtime.Scheme
 }
 
-// +kubebuilder:rbac:groups=catalog.kubecarrier.io,resources=derivedcustomresources,verbs=get;list;watch;update
+// +kubebuilder:rbac:groups=catalog.kubecarrier.io,resources=derivedcustomresources,verbs=create;get;list;watch;update
 // +kubebuilder:rbac:groups=catalog.kubecarrier.io,resources=derivedcustomresources/status,verbs=get;update;patch
 // +kubebuilder:rbac:groups=apiextensions.k8s.io,resources=customresourcedefinitions,verbs=get;list;watch;update;create;delete
 

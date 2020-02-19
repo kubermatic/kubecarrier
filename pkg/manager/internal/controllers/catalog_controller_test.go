@@ -91,7 +91,7 @@ func TestCatalogReconciler(t *testing.T) {
 			},
 		},
 		Status: catalogv1alpha1.CatalogEntryStatus{
-			CRD: catalogv1alpha1.CRDInformation{
+			CRD: &catalogv1alpha1.CRDInformation{
 				ServiceCluster: catalogv1alpha1.ObjectReference{
 					Name: "test-service-cluster",
 				},
@@ -174,7 +174,7 @@ func TestCatalogReconciler(t *testing.T) {
 		}, offeringFound), "getting Offering error")
 		assert.Equal(t, offeringFound.Offering.Provider.Name, provider.Name, "Wrong Offering provider name")
 		assert.Equal(t, offeringFound.Offering.Metadata.Description, catalogEntry.Spec.Metadata.Description, "Wrong Offering description")
-		assert.Equal(t, offeringFound.Offering.CRD, catalogEntry.Status.CRD, "Wrong Offering description")
+		assert.Equal(t, offeringFound.Offering.CRD, *catalogEntry.Status.CRD, "Wrong Offering description")
 
 		// Check ProviderReference
 		require.NoError(t, client.Get(ctx, types.NamespacedName{

@@ -309,7 +309,7 @@ func (r *CatalogReconciler) buildDesiredOfferings(
 				Provider: catalogv1alpha1.ObjectReference{
 					Name: provider.Name,
 				},
-				CRD: catalogEntry.Status.CRD,
+				CRD: *catalogEntry.Status.CRD,
 			},
 		})
 	}

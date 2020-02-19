@@ -24,8 +24,17 @@ import (
 type CatalogEntrySpec struct {
 	// Metadata contains the metadata (display name, description, etc) of the CatalogEntry.
 	Metadata CatalogEntryMetadata `json:"metadata,omitempty"`
-	// ReferencedCRD is the underlying ReferencedCRD objects that this CatalogEntry refers to.
-	ReferencedCRD ObjectReference `json:"referencedCRD,omitempty"`
+	// BaseCRD is the underlying BaseCRD objects that this CatalogEntry refers to.
+	BaseCRD ObjectReference `json:"baseCRD,omitempty"`
+	// DerivedConfig contains the configuration to generate DerivedCustomResource from the BaseCRD of this CatalogEntry.
+	DerivedConfig *DerivedConfig `json:"derivedConfig,omitempty"`
+}
+
+type DerivedConfig struct {
+	// overrides the kind of the derived CRD.
+	KindOverride string `json:"kindOverride,omitempty"`
+	// controls which fields will be present in the derived CRD.
+	Expose []VersionExposeConfig `json:"expose"`
 }
 
 // CatalogEntryMetadata contains the metadata (display name, description, etc) of the CatalogEntry.
@@ -38,8 +47,8 @@ type CatalogEntryMetadata struct {
 
 // CatalogEntryStatus defines the observed state of CatalogEntry.
 type CatalogEntryStatus struct {
-	// CRD holds the information about the underlying ReferencedCRD that are offered by this CatalogEntry.
-	CRD CRDInformation `json:"crd,omitempty"`
+	// CRD holds the information about the underlying BaseCRD that are offered by this CatalogEntry.
+	CRD *CRDInformation `json:"crd,omitempty"`
 
 	// ObservedGeneration is the most recent generation observed for this CatalogEntry by the controller.
 	ObservedGeneration int64 `json:"observedGeneration,omitempty"`

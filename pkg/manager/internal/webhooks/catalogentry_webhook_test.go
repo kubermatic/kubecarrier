@@ -44,7 +44,7 @@ func TestCatalogEntryValidatingCreate(t *testing.T) {
 					Namespace: "test-provider-namespace",
 				},
 				Spec: catalogv1alpha1.CatalogEntrySpec{
-					ReferencedCRD: catalogv1alpha1.ObjectReference{
+					BaseCRD: catalogv1alpha1.ObjectReference{
 						Name: "test-crd",
 					},
 				},
@@ -62,7 +62,7 @@ func TestCatalogEntryValidatingCreate(t *testing.T) {
 					Metadata: catalogv1alpha1.CatalogEntryMetadata{
 						DisplayName: "test CatalogEntry",
 					},
-					ReferencedCRD: catalogv1alpha1.ObjectReference{
+					BaseCRD: catalogv1alpha1.ObjectReference{
 						Name: "test-crd",
 					},
 				},
@@ -80,7 +80,7 @@ func TestCatalogEntryValidatingCreate(t *testing.T) {
 					Metadata: catalogv1alpha1.CatalogEntryMetadata{
 						Description: "test CatalogEntry",
 					},
-					ReferencedCRD: catalogv1alpha1.ObjectReference{
+					BaseCRD: catalogv1alpha1.ObjectReference{
 						Name: "test-crd",
 					},
 				},
@@ -115,7 +115,7 @@ func TestCatalogEntryValidatingCreate(t *testing.T) {
 						Description: "test CatalogEntry",
 						DisplayName: "test CatalogEntry",
 					},
-					ReferencedCRD: catalogv1alpha1.ObjectReference{
+					BaseCRD: catalogv1alpha1.ObjectReference{
 						Name: "test-crd",
 					},
 				},
@@ -146,7 +146,7 @@ func TestCatalogEntryValidatingUpdate(t *testing.T) {
 				Description: "test CatalogEntry",
 				DisplayName: "test CatalogEntry",
 			},
-			ReferencedCRD: catalogv1alpha1.ObjectReference{
+			BaseCRD: catalogv1alpha1.ObjectReference{
 				Name: "test-crd",
 			},
 		},
@@ -169,7 +169,7 @@ func TestCatalogEntryValidatingUpdate(t *testing.T) {
 						Description: "test CatalogEntry",
 						DisplayName: "test CatalogEntry",
 					},
-					ReferencedCRD: catalogv1alpha1.ObjectReference{
+					BaseCRD: catalogv1alpha1.ObjectReference{
 						Name: "test-crd2",
 					},
 				},
@@ -188,7 +188,7 @@ func TestCatalogEntryValidatingUpdate(t *testing.T) {
 						Description: "test CatalogEntry",
 						DisplayName: "test CatalogEntry",
 					},
-					ReferencedCRD: catalogv1alpha1.ObjectReference{
+					BaseCRD: catalogv1alpha1.ObjectReference{
 						Name: "test-crd",
 					},
 				},

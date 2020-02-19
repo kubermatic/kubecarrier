@@ -19,6 +19,7 @@ package provider
 import (
 	"context"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -105,36 +106,49 @@ func NewDerivedCRSuite(
 		require.NoError(t, masterClient.Create(ctx, baseCRD), "creating base CRD")
 
 		// Test
-		//
-		dcr := &catalogv1alpha1.DerivedCustomResource{
+		// Create a CatalogEntry to execute our tests in
+		catalogEntry := &catalogv1alpha1.CatalogEntry{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "test",
 				Namespace: provider.Status.NamespaceName,
 			},
-			Spec: catalogv1alpha1.DerivedCustomResourceSpec{
+			Spec: catalogv1alpha1.CatalogEntrySpec{
+				Metadata: catalogv1alpha1.CatalogEntryMetadata{
+					DisplayName: "Catapult",
+					Description: "Catapult",
+				},
 				BaseCRD: catalogv1alpha1.ObjectReference{
 					Name: baseCRD.Name,
 				},
-				KindOverride: "TestResource",
-				Expose: []catalogv1alpha1.VersionExposeConfig{
-					{
-						Versions: []string{
-							"v1alpha1",
-						},
-						Fields: []catalogv1alpha1.FieldPath{
-							{JSONPath: ".spec.prop1"},
-							{JSONPath: ".status.observedGeneration"},
-							{JSONPath: ".status.prop1"},
+				DerivedConfig: &catalogv1alpha1.DerivedConfig{
+					KindOverride: "TestResource",
+					Expose: []catalogv1alpha1.VersionExposeConfig{
+						{
+							Versions: []string{
+								"v1alpha1",
+							},
+							Fields: []catalogv1alpha1.FieldPath{
+								{JSONPath: ".spec.prop1"},
+								{JSONPath: ".status.observedGeneration"},
+								{JSONPath: ".status.prop1"},
+							},
 						},
 					},
 				},
 			},
 		}
+
 		require.NoError(
-			t, masterClient.Create(ctx, dcr), "creating DerivedCustomResource")
+			t, masterClient.Create(ctx, catalogEntry), "creating CatalogEntry")
 
 		// Wait for DCR to be ready
-		require.NoError(t, testutil.WaitUntilReady(masterClient, dcr))
+		dcr := &catalogv1alpha1.DerivedCustomResource{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      catalogEntry.Name,
+				Namespace: catalogEntry.Namespace,
+			},
+		}
+		require.NoError(t, testutil.WaitUntilReady(masterClient, dcr, testutil.WithTimeout(300*time.Second)))
 
 		// Check reported status
 		if assert.NotNil(t, dcr.Status.DerivedCR, ".status.derivedCR should be set") {

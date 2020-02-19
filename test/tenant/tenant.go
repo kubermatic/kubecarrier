@@ -136,7 +136,7 @@ func (s *TenantSuite) TestCatalogEntryCreationAndDeletion() {
 				DisplayName: "Couch DB",
 				Description: "The comfy nosql database",
 			},
-			ReferencedCRD: catalogv1alpha1.ObjectReference{
+			BaseCRD: catalogv1alpha1.ObjectReference{
 				Name: s.crd.Name,
 			},
 		},
