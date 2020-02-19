@@ -231,6 +231,12 @@ func run(flags *flags, log logr.Logger) error {
 			Scheme: mgr.GetScheme(),
 			Log:    log.WithName("validating webhooks").WithName("Provider"),
 		}})
+	wbh.Register(utilwebhook.GenerateValidateWebhookPath(&catalogv1alpha1.Account{}, mgr.GetScheme()),
+		&webhook.Admission{Handler: &webhooks.AccountWebhookHandler{
+			Client: mgr.GetClient(),
+			Scheme: mgr.GetScheme(),
+			Log:    log.WithName("validating webhooks").WithName("Account"),
+		}})
 	wbh.Register(utilwebhook.GenerateValidateWebhookPath(&catalogv1alpha1.ProviderReference{}, mgr.GetScheme()),
 		&webhook.Admission{Handler: &webhooks.ProviderReferenceWebhookHandler{
 			Log: log.WithName("validating webhooks").WithName("ProviderReference"),

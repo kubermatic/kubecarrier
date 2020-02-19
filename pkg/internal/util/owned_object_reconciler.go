@@ -48,14 +48,14 @@ type OwnedObjectReconciler struct {
 }
 
 func (r *OwnedObjectReconciler) Do(ctx context.Context, cl client.Client) (changed bool, err error) {
-	existing, err := listOwnedObjects(ctx, cl, r.Scheme, r.Owner, r.TypeFilter)
+	existing, err := ListOwnedObjects(ctx, cl, r.Scheme, r.Owner, r.TypeFilter)
 	if err != nil {
-		return false, fmt.Errorf("listOwnedObjects: %w", err)
+		return false, fmt.Errorf("ListOwnedObjects: %w", err)
 	}
 	return r.ensureCreatedObject(ctx, cl, existing)
 }
 
-func listOwnedObjects(ctx context.Context, cl client.Client, scheme *runtime.Scheme, owner Object, lsts []List) ([]runtime.Object, error) {
+func ListOwnedObjects(ctx context.Context, cl client.Client, scheme *runtime.Scheme, owner Object, lsts []List) ([]runtime.Object, error) {
 	objs := make([]runtime.Object, 0)
 	for _, lst := range lsts {
 		gvk, err := apiutil.GVKForObject(lst, scheme)
