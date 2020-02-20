@@ -18,6 +18,7 @@ package provider
 
 import (
 	"context"
+	"fmt"
 	"io/ioutil"
 	"testing"
 
@@ -179,7 +180,7 @@ ServiceClusterAssignment.kubecarrier.io/v1alpha1: servicecluster-svc-test.eu-wes
 		//
 		masterClusterObj := &unstructured.Unstructured{
 			Object: map[string]interface{}{
-				"apiVersion": "eu-west-1.provider-test-servicecluster/v1alpha1",
+				"apiVersion": fmt.Sprintf("%s.%s/v1alpha1", serviceCluster.Name, provider.Name),
 				"kind":       "RedisInternal",
 				"metadata": map[string]interface{}{
 					"name":      "test-instance-1",
@@ -229,7 +230,7 @@ ServiceClusterAssignment.kubecarrier.io/v1alpha1: servicecluster-svc-test.eu-wes
 		// a object on the master cluster should have been created
 		masterClusterObj2 := &unstructured.Unstructured{
 			Object: map[string]interface{}{
-				"apiVersion": "eu-west-1.provider-test-servicecluster/v1alpha1",
+				"apiVersion": fmt.Sprintf("%s.%s/v1alpha1", serviceCluster.Name, provider.Name),
 				"kind":       "RedisInternal",
 				"metadata": map[string]interface{}{
 					"name":      serviceClusterObj2.GetName(),

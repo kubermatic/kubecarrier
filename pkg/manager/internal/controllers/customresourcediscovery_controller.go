@@ -33,6 +33,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/source"
 
+	catalogv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/catalog/v1alpha1"
 	corev1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/core/v1alpha1"
 	operatorv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/operator/v1alpha1"
 	"github.com/kubermatic/kubecarrier/pkg/internal/util"
@@ -50,6 +51,7 @@ type CustomResourceDiscoveryReconciler struct {
 // +kubebuilder:rbac:groups=kubecarrier.io,resources=customresourcediscoveries,verbs=get;list;watch;update
 // +kubebuilder:rbac:groups=kubecarrier.io,resources=customresourcediscoveries/status,verbs=get;update;patch
 // +kubebuilder:rbac:groups=apiextensions.k8s.io,resources=customresourcedefinitions,verbs=get;list;watch;update;create;patch;delete
+// +kubebuilder:rbac:groups=catalog.kubecarrier.io,resources=accounts,verbs=get;list;watch
 
 func (r *CustomResourceDiscoveryReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	var (
@@ -83,7 +85,12 @@ func (r *CustomResourceDiscoveryReconciler) Reconcile(req ctrl.Request) (ctrl.Re
 		}
 	}
 
-	currentCRD, err := r.reconcileCRD(ctx, crDiscovery)
+	provider, err := catalogv1alpha1.GetProviderByProviderNamespace(ctx, r.Client, r.Scheme, req.Namespace)
+	if err != nil {
+		return ctrl.Result{}, fmt.Errorf("getting provider: %w", err)
+	}
+
+	currentCRD, err := r.reconcileCRD(ctx, crDiscovery, provider)
 	if err != nil {
 		return result, fmt.Errorf("reconciling CRD: %w", err)
 	}
@@ -139,7 +146,7 @@ func (r *CustomResourceDiscoveryReconciler) Reconcile(req ctrl.Request) (ctrl.Re
 }
 
 func (r *CustomResourceDiscoveryReconciler) reconcileCRD(
-	ctx context.Context, crDiscovery *corev1alpha1.CustomResourceDiscovery,
+	ctx context.Context, crDiscovery *corev1alpha1.CustomResourceDiscovery, provider *catalogv1alpha1.Account,
 ) (*apiextensionsv1.CustomResourceDefinition, error) {
 	// Build desired CRD
 	kind := crDiscovery.Spec.KindOverride
@@ -147,7 +154,7 @@ func (r *CustomResourceDiscoveryReconciler) reconcileCRD(
 		kind = crDiscovery.Status.CRD.Spec.Names.Kind
 	}
 	plural := flect.Pluralize(strings.ToLower(kind))
-	group := crDiscovery.Spec.ServiceCluster.Name + "." + crDiscovery.Namespace
+	group := crDiscovery.Spec.ServiceCluster.Name + "." + provider.Name
 
 	desiredCRD := &apiextensionsv1.CustomResourceDefinition{
 		ObjectMeta: metav1.ObjectMeta{
