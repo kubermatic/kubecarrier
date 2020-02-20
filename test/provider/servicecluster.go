@@ -109,10 +109,34 @@ func NewServiceClusterSuite(
 			},
 		}
 
+		serviceNamespace := &corev1.Namespace{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: "servicecluster-svc-test",
+			},
+		}
+
+		serviceClusterAssignment := &corev1alpha1.ServiceClusterAssignment{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      serviceNamespace.Name + "." + serviceCluster.Name,
+				Namespace: provider.Status.NamespaceName,
+			},
+			Spec: corev1alpha1.ServiceClusterAssignmentSpec{
+				ServiceCluster: corev1alpha1.ObjectReference{
+					Name: serviceCluster.Name,
+				},
+				MasterClusterNamespace: corev1alpha1.ObjectReference{
+					Name: serviceNamespace.Name,
+				},
+			},
+		}
+
 		ctx := context.Background()
 		require.NoError(t, masterClient.Create(ctx, serviceClusterSecret))
 		require.NoError(t, masterClient.Create(ctx, serviceCluster))
+		require.NoError(t, masterClient.Create(ctx, serviceNamespace))
+		require.NoError(t, masterClient.Create(ctx, serviceClusterAssignment))
 		require.NoError(t, testutil.WaitUntilReady(masterClient, serviceCluster))
+		require.NoError(t, testutil.WaitUntilReady(masterClient, serviceClusterAssignment))
 		require.NoError(t, serviceClient.Create(ctx, crd))
 
 		// Test CustomResourceDiscoverySet
@@ -150,27 +174,6 @@ CustomResourceDiscoverySet.kubecarrier.io/v1alpha1: redis
 		require.NoError(t, err, "creating service client")
 		defer serviceClient.CleanUp(t)
 
-		// makes sure we delete the ServiceClusterAssignment object BEFORE
-		// the Ferry - or the finalizer will block cleanup of the
-		// NOTE: we need to register this BEFORE creating the master cluster obj,
-		// so it will be cleaned up AFTER it.
-		// otherwise the controller will just recreate it.
-		serviceClusterAssignment := &corev1alpha1.ServiceClusterAssignment{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      provider.Status.NamespaceName + "." + serviceCluster.Name,
-				Namespace: provider.Status.NamespaceName,
-			},
-			Spec: corev1alpha1.ServiceClusterAssignmentSpec{
-				ServiceCluster: corev1alpha1.ObjectReference{
-					Name: serviceCluster.Name,
-				},
-				MasterClusterNamespace: corev1alpha1.ObjectReference{
-					Name: provider.Status.NamespaceName,
-				},
-			},
-		}
-		masterClient.RegisterForCleanup(serviceClusterAssignment)
-
 		// master cluster -> service cluster
 		//
 		masterClusterObj := &unstructured.Unstructured{
@@ -179,7 +182,7 @@ CustomResourceDiscoverySet.kubecarrier.io/v1alpha1: redis
 				"kind":       "RedisInternal",
 				"metadata": map[string]interface{}{
 					"name":      "test-instance-1",
-					"namespace": provider.Status.NamespaceName,
+					"namespace": serviceNamespace.Name,
 				},
 				"spec": map[string]interface{}{
 					"prop1": "test1",
@@ -187,10 +190,6 @@ CustomResourceDiscoverySet.kubecarrier.io/v1alpha1: redis
 			},
 		}
 		require.NoError(t, masterClient.Create(ctx, masterClusterObj))
-
-		// there should be a ServiceClusterAssignment for this namespace
-		require.NoError(
-			t, testutil.WaitUntilReady(masterClient, serviceClusterAssignment))
 
 		// a object on the service cluster should have been created
 		serviceClusterObj := &unstructured.Unstructured{
@@ -233,7 +232,7 @@ CustomResourceDiscoverySet.kubecarrier.io/v1alpha1: redis
 				"kind":       "RedisInternal",
 				"metadata": map[string]interface{}{
 					"name":      serviceClusterObj2.GetName(),
-					"namespace": provider.Status.NamespaceName,
+					"namespace": serviceNamespace.Name,
 				},
 			},
 		}

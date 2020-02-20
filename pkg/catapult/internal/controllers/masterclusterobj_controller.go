@@ -22,7 +22,6 @@ import (
 
 	"github.com/go-logr/logr"
 	"k8s.io/apimachinery/pkg/api/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -54,7 +53,7 @@ type MasterClusterObjReconciler struct {
 	MasterClusterGVK, ServiceClusterGVK schema.GroupVersionKind
 }
 
-// +kubebuilder:rbac:groups=kubecarrier.io,resources=serviceclusterassignments,verbs=get;list;watch;create;update;patch
+// +kubebuilder:rbac:groups=kubecarrier.io,resources=serviceclusterassignments,verbs=get;list;watch
 // +kubebuilder:rbac:groups=kubecarrier.io,resources=serviceclusterassignments/status,verbs=get
 
 func (r *MasterClusterObjReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
@@ -83,9 +82,12 @@ func (r *MasterClusterObjReconciler) Reconcile(req ctrl.Request) (ctrl.Result, e
 
 	// There needs to be a ServiceClusterAssignment Object
 	// so we know where to put this object on the ServiceCluster.
-	sca, err := r.reconcileServiceClusterAssignment(ctx, masterClusterObj)
-	if err != nil {
-		return result, fmt.Errorf("reconciling ServiceClusterAssignment: %w", err)
+	sca := &corev1alpha1.ServiceClusterAssignment{}
+	if err := r.NamespacedClient.Get(ctx, types.NamespacedName{
+		Name:      masterClusterObj.GetNamespace() + "." + r.ServiceCluster,
+		Namespace: r.ProviderNamespace,
+	}, sca); err != nil {
+		return result, fmt.Errorf("getting ServiceClusterAssignment: %w", err)
 	}
 	if readyCondition, _ := sca.Status.GetCondition(
 		corev1alpha1.ServiceClusterAssignmentReady,
@@ -114,7 +116,7 @@ func (r *MasterClusterObjReconciler) Reconcile(req ctrl.Request) (ctrl.Result, e
 
 	// Reconcile
 	currentServiceClusterObj := r.newServiceObject()
-	err = r.ServiceClusterClient.Get(ctx, types.NamespacedName{
+	err := r.ServiceClusterClient.Get(ctx, types.NamespacedName{
 		Name:      desiredServiceClusterObj.GetName(),
 		Namespace: desiredServiceClusterObj.GetNamespace(),
 	}, currentServiceClusterObj)
@@ -251,41 +253,4 @@ func (r *MasterClusterObjReconciler) handleDeletion(
 		}
 	}
 	return nil
-}
-
-func (r *MasterClusterObjReconciler) reconcileServiceClusterAssignment(
-	ctx context.Context, masterClusterObj *unstructured.Unstructured,
-) (*corev1alpha1.ServiceClusterAssignment, error) {
-	desiredServiceClusterAssignment := &corev1alpha1.ServiceClusterAssignment{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      masterClusterObj.GetNamespace() + "." + r.ServiceCluster,
-			Namespace: r.ProviderNamespace,
-		},
-		Spec: corev1alpha1.ServiceClusterAssignmentSpec{
-			MasterClusterNamespace: corev1alpha1.ObjectReference{
-				Name: masterClusterObj.GetNamespace(),
-			},
-			ServiceCluster: corev1alpha1.ObjectReference{
-				Name: r.ServiceCluster,
-			},
-		},
-	}
-
-	currentServiceClusterAssignment := &corev1alpha1.ServiceClusterAssignment{}
-	err := r.NamespacedClient.Get(ctx, types.NamespacedName{
-		Name:      desiredServiceClusterAssignment.Name,
-		Namespace: r.ProviderNamespace,
-	}, currentServiceClusterAssignment)
-	if err != nil && !errors.IsNotFound(err) {
-		return nil, fmt.Errorf("getting ServiceClusterAssignment: %w", err)
-	}
-
-	if errors.IsNotFound(err) {
-		// create ServiceClusterAssignment
-		if err = r.NamespacedClient.Create(ctx, desiredServiceClusterAssignment); err != nil {
-			return nil, fmt.Errorf("creating ServiceClusterAssignment: %w", err)
-		}
-		return desiredServiceClusterAssignment, nil
-	}
-	return currentServiceClusterAssignment, nil
 }
