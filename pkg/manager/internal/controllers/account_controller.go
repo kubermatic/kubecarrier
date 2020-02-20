@@ -146,11 +146,11 @@ func (r *AccountReconciler) handleDeletion(ctx context.Context, log logr.Logger,
 		Log:         log,
 		Owner:       account,
 		WantedState: nil,
-		TypeFilter: []util.List{
-			&corev1.NamespaceList{},
-			&catalogv1alpha1.TenantReferenceList{},
+		TypeFilter: []runtime.Object{
+			&corev1.Namespace{},
+			&catalogv1alpha1.TenantReference{},
 		},
-	}).Do(ctx, r.Client)
+	}).Reconcile(ctx, r.Client)
 	if err != nil {
 		return fmt.Errorf("cannot reconcile objects: %w", err)
 	}
@@ -223,10 +223,10 @@ func (r *AccountReconciler) reconcileTenantReferences(ctx context.Context, log l
 		Log:         log,
 		Owner:       account,
 		WantedState: wantedRefs,
-		TypeFilter: []util.List{
-			&catalogv1alpha1.TenantReferenceList{},
+		TypeFilter: []runtime.Object{
+			&catalogv1alpha1.TenantReference{},
 		},
-	}).Do(ctx, r.Client)
+	}).Reconcile(ctx, r.Client)
 	if err != nil {
 		return fmt.Errorf("cannot reconcile objects: %w", err)
 	}

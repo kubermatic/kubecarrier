@@ -131,10 +131,10 @@ func (r *AccountWebhookHandler) validateDelete(ctx context.Context, obj *catalog
 		return nil
 	}
 
-	deletionBlockingObjects, err := util.ListObjects(ctx, r.Client, r.Scheme, []util.List{
-		&catalogv1alpha1.DerivedCustomResourceList{},
-		&corev1alpha1.CustomResourceDiscoveryList{},
-		&corev1alpha1.CustomResourceDiscoverySetList{},
+	deletionBlockingObjects, err := util.ListObjects(ctx, r.Client, r.Scheme, []runtime.Object{
+		&catalogv1alpha1.DerivedCustomResource{},
+		&corev1alpha1.CustomResourceDiscovery{},
+		&corev1alpha1.CustomResourceDiscoverySet{},
 	}, client.InNamespace(obj.Status.NamespaceName))
 	if err != nil {
 		return fmt.Errorf("listingOwnedObjects: %w", err)

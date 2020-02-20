@@ -32,22 +32,16 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 )
 
-// TODO: replace list with something easier on the eyes
-type List interface {
-	runtime.Object
-	metav1.ListInterface
-}
-
 type OwnedObjectReconciler struct {
 	Scheme      *runtime.Scheme
 	Log         logr.Logger
 	Owner       Object
-	TypeFilter  []List
+	TypeFilter  []runtime.Object
 	WantedState []Object
 	MutateFn    func(obj runtime.Object) error
 }
 
-func (r *OwnedObjectReconciler) Do(ctx context.Context, cl client.Client) (changed bool, err error) {
+func (r *OwnedObjectReconciler) Reconcile(ctx context.Context, cl client.Client) (changed bool, err error) {
 	existing, err := ListObjects(ctx, cl, r.Scheme, r.TypeFilter, OwnedBy(r.Owner, r.Scheme))
 	if err != nil {
 		return false, fmt.Errorf("ListObjects: %w", err)
@@ -55,20 +49,34 @@ func (r *OwnedObjectReconciler) Do(ctx context.Context, cl client.Client) (chang
 	return r.ensureCreatedObject(ctx, cl, existing)
 }
 
-func ListObjects(ctx context.Context, cl client.Client, scheme *runtime.Scheme, lsts []List, options ...client.ListOption) ([]runtime.Object, error) {
+func ListObjects(ctx context.Context, cl client.Client, scheme *runtime.Scheme, listTypes []runtime.Object, options ...client.ListOption) ([]runtime.Object, error) {
 	objs := make([]runtime.Object, 0)
-	for _, lst := range lsts {
-		gvk, err := apiutil.GVKForObject(lst, scheme)
+	for _, objType := range listTypes {
+		gvk, err := apiutil.GVKForObject(objType, scheme)
 		if err != nil {
-			return nil, fmt.Errorf("cannot get GVK for %T: %w", lst, err)
+			return nil, fmt.Errorf("cannot get GVK for %T: %w", objType, err)
 		}
-		if err := cl.List(ctx, lst, options...); err != nil {
+		if _, isList := objType.(metav1.ListInterface); !isList {
+			return nil, fmt.Errorf("should not pass ListInterface as listTypes, got %v", gvk)
+		}
+
+		ListGVK := gvk
+		ListGVK.Kind = gvk.Kind + "List"
+		ListObjType, err := scheme.New(ListGVK)
+		if err != nil {
+			return nil, fmt.Errorf("cannot make a list out of a types: %v", gvk)
+		}
+		if _, isList := ListObjType.(metav1.ListInterface); !isList {
+			return nil, fmt.Errorf("cannot make a list out of a types: %v", gvk)
+		}
+
+		if err := cl.List(ctx, ListObjType, options...); err != nil {
 			return nil, fmt.Errorf("listing %s.%s: %w", strings.ToLower(gvk.Kind), gvk.Group, err)
 		}
 
 		// for some reason there's no function in the list object for getting all the items...
 		// but they all have .Items struct field
-		items := reflect.ValueOf(lst).Elem().FieldByName("Items")
+		items := reflect.ValueOf(ListObjType).Elem().FieldByName("Items")
 		for i := 0; i < items.Len(); i++ {
 			objs = append(objs, items.Index(i).Addr().Interface().(runtime.Object))
 		}
