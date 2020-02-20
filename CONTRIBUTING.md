@@ -27,8 +27,8 @@ By doing this you state that you can certify the following (from https://develop
 ## Email and Chat
 
 The Kubecarrier project currently uses the general Loodse email list and Slack channel:
-- Email: [loodse-dev](https://groups.google.com/forum/#!forum/loodse-dev)
-- Slack: #[kubecarrier](http://slack.kubermatic.io/) on Slack
+- Email: [loodse-dev][11]
+- Slack: #[kubecarrier][12] on Slack
 
 Please avoid emailing maintainers directly. They
 are very busy and read the mailing lists.
@@ -56,3 +56,6 @@ This is a rough outline of what a contributor's workflow looks like:
 - Submit a pull request to the original repository.
 
 Thanks for your contributions!
+
+[11]: https://groups.google.com/forum/#!forum/loodse-dev
+[12]: https://kubermatic.slack.com/messages/kubecarrier
