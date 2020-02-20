@@ -160,6 +160,7 @@ func NewServiceClusterSuite(
 				`admission webhook "vaccount.kubecarrier.io" denied the request: deletion blocking objects found:
 CustomResourceDiscovery.kubecarrier.io/v1alpha1: redis.eu-west-1
 CustomResourceDiscoverySet.kubecarrier.io/v1alpha1: redis
+ServiceClusterAssignment.kubecarrier.io/v1alpha1: servicecluster-svc-test.eu-west-1
 `,
 				err.Error(),
 				"deleting dirty provider %s", provider.Name)
