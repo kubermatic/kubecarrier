@@ -2062,6 +2062,7 @@
     - delete
     - get
     - list
+    - update
     - watch
   - apiGroups:
     - kubecarrier.io
