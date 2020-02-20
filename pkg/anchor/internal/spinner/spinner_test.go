@@ -20,6 +20,7 @@ import (
 	"bytes"
 	"fmt"
 	"testing"
+	"time"
 
 	"github.com/gernest/wow"
 	"github.com/gernest/wow/spin"
@@ -53,7 +54,7 @@ func TestAttachSpinnerTo(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			var b bytes.Buffer
 			s := wow.New(&b, spin.Get(spin.Dots), "")
-			require.Equal(t, tt.wantErr, AttachSpinnerTo(s, msg, tt.f) != nil, "the error status is different")
+			require.Equal(t, tt.wantErr, AttachSpinnerTo(s, time.Now(), msg, tt.f) != nil, "the error status is different")
 			out := b.String()
 			assert.Contains(t, msg, out, "the output should contain the initial message")
 			if !tt.wantErr {

@@ -35,12 +35,14 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/source"
 
+	corev1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/core/v1alpha1"
 	"github.com/kubermatic/kubecarrier/pkg/internal/util"
 )
 
 type AdoptionReconciler struct {
 	client.Client
 	Log                  logr.Logger
+	NamespacedClient     client.Client
 	ServiceClusterClient client.Client
 	ServiceClusterCache  cache.Cache
 
@@ -61,6 +63,12 @@ func (r *AdoptionReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 		return result, client.IgnoreNotFound(err)
 	}
 
+	// Lookup SCA to see where we need to put this in the master cluster.
+	sca, err := corev1alpha1.GetServiceClusterAssignmentByServiceClusterNamespace(ctx, r.NamespacedClient, serviceClusterObj.GetNamespace())
+	if err != nil {
+		return result, fmt.Errorf("getting ServiceClusterAssignment: %w", err)
+	}
+
 	// Build desired master cluster object
 	desiredMasterClusterObj := serviceClusterObj.DeepCopy()
 	desiredMasterClusterObj.SetGroupVersionKind(r.MasterClusterGVK)
@@ -69,18 +77,17 @@ func (r *AdoptionReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 		return result, fmt.Errorf("deleting %s .metadata: %w", r.MasterClusterGVK.Kind, err)
 	}
 	desiredMasterClusterObj.SetName(serviceClusterObj.GetName())
-	desiredMasterClusterObj.SetNamespace(r.ProviderNamespace)
+	desiredMasterClusterObj.SetNamespace(sca.Spec.MasterClusterNamespace.Name)
 
 	// Reconcile
 	currentMasterClusterObj := r.newMasterObject()
-	err := r.Get(ctx, types.NamespacedName{
+	err = r.Get(ctx, types.NamespacedName{
 		Name:      desiredMasterClusterObj.GetName(),
 		Namespace: desiredMasterClusterObj.GetNamespace(),
 	}, currentMasterClusterObj)
 	if err != nil && !errors.IsNotFound(err) {
 		return result, fmt.Errorf("getting %s: %w", r.MasterClusterGVK.Kind, err)
 	}
-
 	if errors.IsNotFound(err) {
 		// Create the master cluster object
 		if err = r.Create(ctx, desiredMasterClusterObj); err != nil {

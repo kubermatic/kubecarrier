@@ -12,11 +12,8 @@
     resources:
     - serviceclusterassignments
     verbs:
-    - create
     - get
     - list
-    - patch
-    - update
     - watch
   - apiGroups:
     - kubecarrier.io

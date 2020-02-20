@@ -18,6 +18,7 @@ package spinner
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/gernest/wow"
 	"github.com/gernest/wow/spin"
@@ -36,13 +37,13 @@ const (
 // ✔ This is a spinner
 // If function returns an error, then the output will be:
 // ✖ This is a spinner
-func AttachSpinnerTo(spinner *wow.Wow, msg string, f func() error) error {
+func AttachSpinnerTo(spinner *wow.Wow, startTime time.Time, msg string, f func() error) error {
 	spinner.Text(fmt.Sprintf(" %s...", msg))
 	spinner.Start()
 	if err := f(); err != nil {
-		spinner.PersistWith(spin.Spinner{Frames: []string{failed}}, msg)
+		spinner.PersistWith(spin.Spinner{Frames: []string{fmt.Sprintf("%4.2fs %s ", float64(time.Since(startTime))/float64(time.Second), failed)}}, msg)
 		return err
 	}
-	spinner.PersistWith(spin.Spinner{Frames: []string{succeed}}, msg)
+	spinner.PersistWith(spin.Spinner{Frames: []string{fmt.Sprintf("%4.2fs %s ", float64(time.Since(startTime))/float64(time.Second), succeed)}}, msg)
 	return nil
 }

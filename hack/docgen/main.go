@@ -30,16 +30,6 @@ import (
 	"path"
 	"reflect"
 	"strings"
-	"time"
-)
-
-var (
-	firstParagraph = fmt.Sprintf(`---
-title: "API reference"
-date: %s
-weight: 1500
----
-`, time.Now().Format("2006-01-02"))
 )
 
 var (
@@ -88,7 +78,12 @@ func ParseDocumentationFrom(src string) []KubeTypes {
 	a, version := path.Split(path.Dir(src))
 	_, group := path.Split(path.Clean(a))
 	group = path.Clean(group)
-	gv := group + version
+	if group == "core" {
+		group = "kubecarrier.io"
+	} else {
+		group = group + ".kubecarrier.io"
+	}
+	gv := group + "/" + version
 	fmt.Fprintln(os.Stderr, src, gv)
 
 	var docForTypes []KubeTypes
@@ -98,7 +93,7 @@ func ParseDocumentationFrom(src string) []KubeTypes {
 	for _, kubType := range pkg.Types {
 		if structType, ok := kubType.Decl.Specs[0].(*ast.TypeSpec).Type.(*ast.StructType); ok {
 			var ks KubeTypes
-			ks = append(ks, Pair{Name: gv + "." + kubType.Name, Doc: fmtRawDoc(kubType.Doc), Type: "", Mandatory: false})
+			ks = append(ks, Pair{Name: kubType.Name + "." + gv, Doc: fmtRawDoc(kubType.Doc), Type: "", Mandatory: false})
 
 			for _, field := range structType.Fields.List {
 				typeString := fieldType(field.Type, gv)
@@ -246,8 +241,6 @@ func fieldType(typ ast.Expr, gv string) string {
 }
 
 func printAPIDocs(paths []string) {
-	fmt.Println(firstParagraph)
-
 	for _, path := range paths {
 		types := ParseDocumentationFrom(path)
 		for _, t := range types {

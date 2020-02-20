@@ -4,7 +4,7 @@
 Here is an overview of the KubeCarrier repository organization:
 ```
 ├── cmd
-│   ├── {anchor, manager, operator, ferry, catapult}
+│   ├── {anchor, manager, operator, ferry, catapult, elevator}
 │   │   └── main.go
 ├── config
 │   ├── dockerfiles
@@ -14,7 +14,7 @@ Here is an overview of the KubeCarrier repository organization:
 ├── docs
 ├── hack
 ├── pkg
-│   ├── {anchor, manager, operator, ferry, catapult}
+│   ├── {anchor, manager, operator, ferry, catapult, elevator}
 │   │   └── internal
 │   ├── apis
 │   │   ├── core
