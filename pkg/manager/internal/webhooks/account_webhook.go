@@ -123,6 +123,8 @@ func (r *AccountWebhookHandler) validateMetadataAndRoles(account *catalogv1alpha
 	return nil
 }
 
+// +kubebuilder:rbac:groups=kubecarrier.io,resources=serviceclusterassignments,verbs=get;list;watch
+
 func (r *AccountWebhookHandler) validateDelete(ctx context.Context, obj *catalogv1alpha1.Account) error {
 	// if no namespace was created for the object, we are safe to delete it
 	// there's unlikely race condition here if the namespace was created, but not propagated to the account and
@@ -135,6 +137,7 @@ func (r *AccountWebhookHandler) validateDelete(ctx context.Context, obj *catalog
 		&catalogv1alpha1.DerivedCustomResource{},
 		&corev1alpha1.CustomResourceDiscovery{},
 		&corev1alpha1.CustomResourceDiscoverySet{},
+		&corev1alpha1.ServiceClusterAssignment{},
 	}, client.InNamespace(obj.Status.NamespaceName))
 	if err != nil {
 		return fmt.Errorf("listingOwnedObjects: %w", err)

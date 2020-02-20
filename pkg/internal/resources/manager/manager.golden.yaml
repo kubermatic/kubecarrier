@@ -1937,6 +1937,14 @@
   - apiGroups:
     - kubecarrier.io
     resources:
+    - serviceclusterassignments
+    verbs:
+    - get
+    - list
+    - watch
+  - apiGroups:
+    - kubecarrier.io
+    resources:
     - serviceclusters
     verbs:
     - get

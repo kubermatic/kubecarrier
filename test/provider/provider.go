@@ -320,6 +320,10 @@ func NewCatalogSuite(
 					Name: "test-tenant2",
 				},
 				Spec: catalogv1alpha1.AccountSpec{
+					Metadata: catalogv1alpha1.AccountMetadata{
+						DisplayName: "test tenant 2",
+						Description: "A lovely perky tenant from the German capital",
+					},
 					Roles: []catalogv1alpha1.AccountRole{
 						catalogv1alpha1.TenantRole,
 					},
