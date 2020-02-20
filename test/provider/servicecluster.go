@@ -18,7 +18,6 @@ package provider
 
 import (
 	"context"
-	"fmt"
 	"io/ioutil"
 	"testing"
 
@@ -113,8 +112,20 @@ func NewServiceClusterSuite(
 		serviceNamespace := &corev1.Namespace{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: "servicecluster-svc-test",
-				Labels: map[string]string{
-					fmt.Sprintf("assignment.kubecarrier.io/%s.%s", serviceCluster.Name, provider.Status.NamespaceName): "true",
+			},
+		}
+
+		serviceClusterAssignment := &corev1alpha1.ServiceClusterAssignment{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      serviceNamespace.Name + "." + serviceCluster.Name,
+				Namespace: provider.Status.NamespaceName,
+			},
+			Spec: corev1alpha1.ServiceClusterAssignmentSpec{
+				ServiceCluster: corev1alpha1.ObjectReference{
+					Name: serviceCluster.Name,
+				},
+				MasterClusterNamespace: corev1alpha1.ObjectReference{
+					Name: serviceNamespace.Name,
 				},
 			},
 		}
@@ -123,7 +134,9 @@ func NewServiceClusterSuite(
 		require.NoError(t, masterClient.Create(ctx, serviceClusterSecret))
 		require.NoError(t, masterClient.Create(ctx, serviceCluster))
 		require.NoError(t, masterClient.Create(ctx, serviceNamespace))
+		require.NoError(t, masterClient.Create(ctx, serviceClusterAssignment))
 		require.NoError(t, testutil.WaitUntilReady(masterClient, serviceCluster))
+		require.NoError(t, testutil.WaitUntilReady(masterClient, serviceClusterAssignment))
 		require.NoError(t, serviceClient.Create(ctx, crd))
 
 		// Test CustomResourceDiscoverySet
@@ -177,16 +190,6 @@ CustomResourceDiscoverySet.kubecarrier.io/v1alpha1: redis
 			},
 		}
 		require.NoError(t, masterClient.Create(ctx, masterClusterObj))
-
-		// there should be a ServiceClusterAssignment for this namespace
-		serviceClusterAssignment := &corev1alpha1.ServiceClusterAssignment{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      serviceNamespace.Name + "." + serviceCluster.Name,
-				Namespace: provider.Status.NamespaceName,
-			},
-		}
-		require.NoError(
-			t, testutil.WaitUntilReady(masterClient, serviceClusterAssignment))
 
 		// a object on the service cluster should have been created
 		serviceClusterObj := &unstructured.Unstructured{
