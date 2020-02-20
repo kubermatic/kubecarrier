@@ -56,7 +56,7 @@ func ListObjects(ctx context.Context, cl client.Client, scheme *runtime.Scheme, 
 		if err != nil {
 			return nil, fmt.Errorf("cannot get GVK for %T: %w", objType, err)
 		}
-		if _, isList := objType.(metav1.ListInterface); !isList {
+		if _, isList := objType.(metav1.ListInterface); isList {
 			return nil, fmt.Errorf("should not pass ListInterface as listTypes, got %v", gvk)
 		}
 
