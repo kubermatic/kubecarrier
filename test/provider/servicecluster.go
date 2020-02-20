@@ -133,7 +133,7 @@ func NewServiceClusterSuite(
 		err = masterClient.Delete(ctx, provider)
 		if assert.Error(t, err, "dirty provider %s deletion should error out", provider.Name) {
 			assert.Equal(t,
-				`admission webhook "vprovider.kubecarrier.io" denied the request: deletion blocking objects found:
+				`admission webhook "vaccount.kubecarrier.io" denied the request: deletion blocking objects found:
 CustomResourceDiscovery.kubecarrier.io/v1alpha1: redis.eu-west-1
 CustomResourceDiscoverySet.kubecarrier.io/v1alpha1: redis
 `,
