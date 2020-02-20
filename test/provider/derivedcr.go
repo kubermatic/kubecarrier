@@ -141,22 +141,22 @@ func NewDerivedCRSuite(
 		require.NoError(
 			t, masterClient.Create(ctx, catalogEntry), "creating CatalogEntry")
 
-		// Wait for DCR to be ready
-		dcr := &catalogv1alpha1.DerivedCustomResource{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      catalogEntry.Name,
-				Namespace: catalogEntry.Namespace,
-			},
-		}
-		require.NoError(t, testutil.WaitUntilReady(masterClient, dcr, testutil.WithTimeout(300*time.Second)))
+		// Wait for the CatalogEntry to be ready, it takes more time since it requires the
+		// DerivedCustomResource Object and Elevator get ready
+		require.NoError(t, testutil.WaitUntilReady(masterClient, catalogEntry, testutil.WithTimeout(300*time.Second)))
 
+		// Check the DerivedCustomResource Object
+		dcr := &catalogv1alpha1.DerivedCustomResource{}
+		require.NoError(t, masterClient.Get(ctx, types.NamespacedName{
+			Name:      catalogEntry.Name,
+			Namespace: catalogEntry.Namespace,
+		}, dcr), "getting derived CRD")
 		// Check reported status
-		if assert.NotNil(t, dcr.Status.DerivedCR, ".status.derivedCR should be set") {
-			assert.Equal(t, "testresources.eu-west-1.test-derivedcr", dcr.Status.DerivedCR.Name)
-			assert.Equal(t, "eu-west-1.test-derivedcr", dcr.Status.DerivedCR.Group)
-			assert.Equal(t, "TestResource", dcr.Status.DerivedCR.Kind)
-			assert.Equal(t, "testresources", dcr.Status.DerivedCR.Plural)
-			assert.Equal(t, "testresource", dcr.Status.DerivedCR.Singular)
+		if assert.NotNil(t, dcr.Status.DerivedCR, ".status.derivedCR should be set") &&
+			assert.NotNil(t, catalogEntry.Status.CRD, ".status.CRD should be set") {
+			assert.Equal(t, catalogEntry.Status.CRD.Name, dcr.Status.DerivedCR.Name)
+			assert.Equal(t, catalogEntry.Status.CRD.APIGroup, dcr.Status.DerivedCR.Group)
+			assert.Equal(t, catalogEntry.Status.CRD.Kind, dcr.Status.DerivedCR.Kind)
 		}
 		err = masterClient.Delete(ctx, provider)
 		if assert.Error(t, err, "dirty provider %s deletion should error out", provider.Name) {
