@@ -26,7 +26,7 @@ By doing this you state that you can certify the following (from https://develop
 
 ## Email and Chat
 
-The Kubecarrier project currently uses the general Loodse email list and Slack channel:
+The KubeCarrier project currently uses the general Loodse email list and Slack channel:
 - Email: [loodse-dev][11]
 - Slack: #[kubecarrier][12] on Slack
 
