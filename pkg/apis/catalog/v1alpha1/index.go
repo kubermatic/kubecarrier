@@ -18,39 +18,16 @@ package v1alpha1
 
 import (
 	"context"
-	"fmt"
 
-	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-
-	"github.com/kubermatic/kubecarrier/pkg/internal/util"
 )
 
 func GetProviderByProviderNamespace(ctx context.Context, c client.Client, scheme *runtime.Scheme, providerNamespace string) (*Account, error) {
-	ns := &corev1.Namespace{}
-	if err := c.Get(ctx, types.NamespacedName{Name: providerNamespace}, ns); err != nil {
-		return nil, fmt.Errorf("getting namespace: %w", err)
-	}
-
-	owners, err := util.ListOwners(ctx, c, scheme, ns)
-	if err != nil {
-		return nil, fmt.Errorf("listing owners: %w", err)
-	}
-
-	var provider *Account
-	for _, own := range owners {
-		candidate, ok := own.(*Account)
-		if ok && candidate.HasRole(ProviderRole) {
-			if provider != nil {
-				return nil, fmt.Errorf("multiple providers owning the namespace %s", providerNamespace)
-			}
-			provider = candidate
-		}
-	}
-	if provider == nil {
-		return nil, fmt.Errorf("provider with namespace %s not found", providerNamespace)
-	}
-	return provider, nil
+	provider := &Account{}
+	err := c.Get(ctx, types.NamespacedName{
+		Name: providerNamespace,
+	}, provider)
+	return provider, err
 }

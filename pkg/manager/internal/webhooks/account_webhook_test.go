@@ -21,7 +21,9 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	fakeclient "sigs.k8s.io/controller-runtime/pkg/client/fake"
 
@@ -31,21 +33,18 @@ import (
 )
 
 func TestAccountValidatingCreate(t *testing.T) {
-	accountWebhookHandler := AccountWebhookHandler{
-		Log: testutil.NewLogger(t),
-	}
 
 	tests := []struct {
-		name          string
-		object        *catalogv1alpha1.Account
-		expectedError bool
+		name            string
+		object          *catalogv1alpha1.Account
+		existingObjects []runtime.Object
+		expectedError   bool
 	}{
 		{
 			name: "invalid account name",
 			object: &catalogv1alpha1.Account{
 				ObjectMeta: metav1.ObjectMeta{
-					Name:      "test.account",
-					Namespace: "test-account-namespace",
+					Name: "test.account",
 				},
 				Spec: catalogv1alpha1.AccountSpec{
 					Metadata: catalogv1alpha1.AccountMetadata{
@@ -60,8 +59,7 @@ func TestAccountValidatingCreate(t *testing.T) {
 			name: "metadata missing",
 			object: &catalogv1alpha1.Account{
 				ObjectMeta: metav1.ObjectMeta{
-					Name:      "test-account",
-					Namespace: "test-account-namespace",
+					Name: "test-account",
 				},
 			},
 			expectedError: true,
@@ -70,8 +68,7 @@ func TestAccountValidatingCreate(t *testing.T) {
 			name: "description missing",
 			object: &catalogv1alpha1.Account{
 				ObjectMeta: metav1.ObjectMeta{
-					Name:      "test-account",
-					Namespace: "test-account-namespace",
+					Name: "test-account",
 				},
 				Spec: catalogv1alpha1.AccountSpec{
 					Metadata: catalogv1alpha1.AccountMetadata{
@@ -85,8 +82,7 @@ func TestAccountValidatingCreate(t *testing.T) {
 			name: "displayName missing",
 			object: &catalogv1alpha1.Account{
 				ObjectMeta: metav1.ObjectMeta{
-					Name:      "test-account",
-					Namespace: "test-account-namespace",
+					Name: "test-account",
 				},
 				Spec: catalogv1alpha1.AccountSpec{
 					Metadata: catalogv1alpha1.AccountMetadata{
@@ -100,8 +96,7 @@ func TestAccountValidatingCreate(t *testing.T) {
 			name: "duplicate roles",
 			object: &catalogv1alpha1.Account{
 				ObjectMeta: metav1.ObjectMeta{
-					Name:      "test-account",
-					Namespace: "test-account-namespace",
+					Name: "test-account",
 				},
 				Spec: catalogv1alpha1.AccountSpec{
 					Metadata: catalogv1alpha1.AccountMetadata{
@@ -117,11 +112,31 @@ func TestAccountValidatingCreate(t *testing.T) {
 			expectedError: true,
 		},
 		{
+			name: "namespace already exists",
+			object: &catalogv1alpha1.Account{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "test-account",
+				},
+				Spec: catalogv1alpha1.AccountSpec{
+					Metadata: catalogv1alpha1.AccountMetadata{
+						Description: "test Account",
+						DisplayName: "test Account",
+					},
+					Roles: []catalogv1alpha1.AccountRole{
+						catalogv1alpha1.ProviderRole,
+					},
+				},
+			},
+			existingObjects: []runtime.Object{
+				&corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: "test-account"}},
+			},
+			expectedError: true,
+		},
+		{
 			name: "can pass validate create",
 			object: &catalogv1alpha1.Account{
 				ObjectMeta: metav1.ObjectMeta{
-					Name:      "test-account",
-					Namespace: "test-account-namespace",
+					Name: "test-account",
 				},
 				Spec: catalogv1alpha1.AccountSpec{
 					Metadata: catalogv1alpha1.AccountMetadata{
@@ -139,7 +154,15 @@ func TestAccountValidatingCreate(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			assert.Equal(t, test.expectedError, accountWebhookHandler.validateCreate(test.object) != nil)
+			accountWebhookHandler := AccountWebhookHandler{
+				Log:    testutil.NewLogger(t),
+				Client: fakeclient.NewFakeClientWithScheme(testScheme, test.existingObjects...),
+			}
+			if test.expectedError {
+				assert.Error(t, accountWebhookHandler.validateCreate(context.Background(), test.object))
+			} else {
+				assert.NoError(t, accountWebhookHandler.validateCreate(context.Background(), test.object))
+			}
 		})
 	}
 }

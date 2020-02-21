@@ -24,8 +24,11 @@ import (
 
 	"github.com/go-logr/logr"
 	adminv1beta1 "k8s.io/api/admission/v1beta1"
+	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
@@ -55,7 +58,7 @@ func (r *AccountWebhookHandler) Handle(ctx context.Context, req admission.Reques
 		if err := r.decoder.Decode(req, obj); err != nil {
 			return admission.Errored(http.StatusBadRequest, err)
 		}
-		if err := r.validateCreate(obj); err != nil {
+		if err := r.validateCreate(ctx, obj); err != nil {
 			return admission.Denied(err.Error())
 		}
 	case adminv1beta1.Update:
@@ -91,10 +94,21 @@ func (r *AccountWebhookHandler) InjectDecoder(d *admission.Decoder) error {
 	return nil
 }
 
-func (r *AccountWebhookHandler) validateCreate(account *catalogv1alpha1.Account) error {
+func (r *AccountWebhookHandler) validateCreate(ctx context.Context, account *catalogv1alpha1.Account) error {
 	r.Log.Info("validate create", "name", account.Name)
 	if !webhook.IsDNS1123Label(account.Name) {
 		return fmt.Errorf("account name: %s is not a valid DNS 1123 Label, %s", account.Name, webhook.DNS1123LabelDescription)
+	}
+	err := r.Client.Get(ctx, types.NamespacedName{
+		Name: account.Name,
+	}, &corev1.Namespace{})
+	switch {
+	case errors.IsNotFound(err):
+		break
+	case err == nil:
+		return fmt.Errorf("namespace %s already exists: %w", account.Name, err)
+	default:
+		return fmt.Errorf("getting namespace: %w", err)
 	}
 	return r.validateMetadataAndRoles(account)
 }

@@ -164,10 +164,20 @@ func (r *AccountReconciler) handleDeletion(ctx context.Context, log logr.Logger,
 }
 
 func (r *AccountReconciler) reconcileNamespace(ctx context.Context, log logr.Logger, account *catalogv1alpha1.Account) error {
-	ns, err := util.EnsureUniqueNamespace(ctx, r.Client, r.Scheme, account)
+	ns := &corev1.Namespace{}
+	ns.Name = account.Name
+	_, err := util.InsertOwnerReference(account, ns, r.Scheme)
 	if err != nil {
-		return fmt.Errorf("ensure unique namespace: %w", err)
+		return fmt.Errorf("insertOwnerRef: %w", err)
 	}
+	_, err = ctrl.CreateOrUpdate(ctx, r.Client, ns, func() error {
+		_, err := util.InsertOwnerReference(account, ns, r.Scheme)
+		return err
+	})
+	if err != nil {
+		return fmt.Errorf("create or update namespace: %w", err)
+	}
+
 	if account.Status.NamespaceName == "" {
 		account.Status.NamespaceName = ns.Name
 		if err := r.Status().Update(ctx, account); err != nil {
