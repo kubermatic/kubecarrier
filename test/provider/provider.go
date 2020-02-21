@@ -340,6 +340,7 @@ func NewCatalogSuite(
 				},
 			}
 			require.NoError(t, masterClient.Create(ctx, tenant), "creating tenant error")
+			require.NoError(t, testutil.WaitUntilReady(masterClient, tenant))
 
 			require.NoError(t, wait.Poll(time.Second, 30*time.Second, func() (done bool, err error) {
 				if err := masterClient.Get(ctx, types.NamespacedName{
