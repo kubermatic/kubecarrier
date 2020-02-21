@@ -49,12 +49,11 @@ func TestCatalogReconciler(t *testing.T) {
 		},
 	}
 
-	providerNamespaceName := fmt.Sprintf("provider-%s", provider.Name)
-	provider.Status.NamespaceName = providerNamespaceName
+	provider.Status.NamespaceName = provider.Name
 
 	providerNamespace := &corev1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: providerNamespaceName,
+			Name: provider.Name,
 		},
 	}
 	_, err := util.InsertOwnerReference(provider, providerNamespace, testScheme)
@@ -76,19 +75,18 @@ func TestCatalogReconciler(t *testing.T) {
 		Reason:  "SetupComplete",
 		Message: "Tenant setup is complete.",
 	})
-	tenantNamespaceName := fmt.Sprintf("tenant-%s", tenant.Name)
-	tenant.Status.NamespaceName = tenantNamespaceName
+	tenant.Status.NamespaceName = tenant.Name
 
 	tenantReference := &catalogv1alpha1.TenantReference{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      tenant.Name,
-			Namespace: providerNamespaceName,
+			Namespace: providerNamespace.Name,
 		},
 	}
 
 	tenantNamespace := &corev1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: tenantNamespaceName,
+			Name: tenant.Name,
 		},
 	}
 	_, err = util.InsertOwnerReference(tenant, tenantNamespace, testScheme)
@@ -97,7 +95,7 @@ func TestCatalogReconciler(t *testing.T) {
 	catalogEntry := &catalogv1alpha1.CatalogEntry{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "test-catalogEntry",
-			Namespace: providerNamespaceName,
+			Namespace: providerNamespace.Name,
 		},
 		Spec: catalogv1alpha1.CatalogEntrySpec{
 			Metadata: catalogv1alpha1.CatalogEntryMetadata{
@@ -117,7 +115,7 @@ func TestCatalogReconciler(t *testing.T) {
 	serviceCluster := &corev1alpha1.ServiceCluster{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "test-service-cluster",
-			Namespace: providerNamespaceName,
+			Namespace: providerNamespace.Name,
 		},
 		Spec: corev1alpha1.ServiceClusterSpec{
 			Metadata: corev1alpha1.ServiceClusterMetadata{
@@ -130,7 +128,7 @@ func TestCatalogReconciler(t *testing.T) {
 	catalog := &catalogv1alpha1.Catalog{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "test-catalog",
-			Namespace: providerNamespaceName,
+			Namespace: providerNamespace.Name,
 		},
 		Spec: catalogv1alpha1.CatalogSpec{
 			CatalogEntrySelector:    &metav1.LabelSelector{},
@@ -185,7 +183,7 @@ func TestCatalogReconciler(t *testing.T) {
 		// Check Offering
 		require.NoError(t, client.Get(ctx, types.NamespacedName{
 			Name:      catalogEntry.Name,
-			Namespace: tenantNamespaceName,
+			Namespace: tenantNamespace.Name,
 		}, offeringFound), "getting Offering error")
 		assert.Equal(t, offeringFound.Offering.Provider.Name, provider.Name, "Wrong Offering provider name")
 		assert.Equal(t, offeringFound.Offering.Metadata.Description, catalogEntry.Spec.Metadata.Description, "Wrong Offering description")
@@ -194,7 +192,7 @@ func TestCatalogReconciler(t *testing.T) {
 		// Check ProviderReference
 		require.NoError(t, client.Get(ctx, types.NamespacedName{
 			Name:      provider.Name,
-			Namespace: tenantNamespaceName,
+			Namespace: tenantNamespace.Name,
 		}, providerReferenceFound), "getting ProviderReference error")
 		assert.Equal(t, providerReferenceFound.Spec.Metadata.Description, provider.Spec.Metadata.Description, "Wrong ProviderReference Metadata.Description")
 		assert.Equal(t, providerReferenceFound.Spec.Metadata.DisplayName, provider.Spec.Metadata.DisplayName, "Wrong ProviderReference Metadata.DisplayName")
@@ -202,7 +200,7 @@ func TestCatalogReconciler(t *testing.T) {
 		// Check ServiceClusterReference
 		require.NoError(t, client.Get(ctx, types.NamespacedName{
 			Name:      fmt.Sprintf("%s.%s", serviceCluster.Name, provider.Name),
-			Namespace: tenantNamespaceName,
+			Namespace: tenantNamespace.Name,
 		}, serviceClusterReferenceFound), "getting ServiceClusterReference error")
 		assert.Equal(t, serviceClusterReferenceFound.Spec.Provider.Name, provider.Name, "Wrong ServiceClusterReference provider name")
 		assert.Equal(t, serviceClusterReferenceFound.Spec.Metadata.Description, serviceCluster.Spec.Metadata.Description, "Wrong ServiceClusterReference description")

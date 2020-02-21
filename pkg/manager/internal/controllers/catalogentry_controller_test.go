@@ -37,8 +37,7 @@ import (
 func TestCatalogEntryReconciler(t *testing.T) {
 	provider := &catalogv1alpha1.Account{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      "example.provider",
-			Namespace: "kubecarrier-system",
+			Name: "example.provider",
 		},
 		Spec: catalogv1alpha1.AccountSpec{
 			Roles: []catalogv1alpha1.AccountRole{
@@ -46,7 +45,7 @@ func TestCatalogEntryReconciler(t *testing.T) {
 			},
 		},
 	}
-	providerNS := &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: "test-provider-namespace"}}
+	providerNS := &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: provider.Name}}
 	_, err := util.InsertOwnerReference(provider, providerNS, testScheme)
 	require.NoError(t, err)
 

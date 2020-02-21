@@ -92,11 +92,11 @@ func Test_DerivedCustomResourceReconciler(t *testing.T) {
 			},
 		},
 		Status: catalogv1alpha1.AccountStatus{
-			NamespaceName: "provider-dcr",
+			NamespaceName: "dcr",
 		},
 	}
 
-	providerNS := &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: "provider-dcr"}}
+	providerNS := &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: provider.Name}}
 	_, err := util.InsertOwnerReference(provider, providerNS, testScheme)
 	require.NoError(t, err)
 
