@@ -183,6 +183,21 @@ type CatalogEntry struct {
 	Status CatalogEntryStatus `json:"status,omitempty"`
 }
 
+// IsReady returns if the CatalogEntry is ready.
+func (s *CatalogEntry) IsReady() bool {
+	if s.Generation != s.Status.ObservedGeneration {
+		return false
+	}
+
+	for _, condition := range s.Status.Conditions {
+		if condition.Type == CatalogEntryReady &&
+			condition.Status == ConditionTrue {
+			return true
+		}
+	}
+	return false
+}
+
 // CatalogEntryList contains a list of CatalogEntry
 // +kubebuilder:object:root=true
 type CatalogEntryList struct {

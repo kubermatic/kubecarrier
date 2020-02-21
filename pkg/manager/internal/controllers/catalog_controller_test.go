@@ -96,6 +96,12 @@ func TestCatalogReconciler(t *testing.T) {
 					Name: "test-service-cluster",
 				},
 			},
+			Conditions: []catalogv1alpha1.CatalogEntryCondition{
+				{
+					Type:   catalogv1alpha1.CatalogEntryReady,
+					Status: catalogv1alpha1.ConditionTrue,
+				},
+			},
 		},
 	}
 

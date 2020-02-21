@@ -94,11 +94,15 @@ func (r *CatalogReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	}
 
 	var entries []catalogv1alpha1.ObjectReference
+	var readyCatalogEntries []catalogv1alpha1.CatalogEntry
 	for _, catalogEntry := range catalogEntries {
-		entries = append(entries,
-			catalogv1alpha1.ObjectReference{
-				Name: catalogEntry.Name,
-			})
+		if catalogEntry.IsReady() {
+			entries = append(entries,
+				catalogv1alpha1.ObjectReference{
+					Name: catalogEntry.Name,
+				})
+			readyCatalogEntries = append(readyCatalogEntries, catalogEntry)
+		}
 	}
 	catalog.Status.Entries = entries
 
@@ -109,11 +113,22 @@ func (r *CatalogReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	}
 
 	var tenants []catalogv1alpha1.ObjectReference
+	var readyTenants []*catalogv1alpha1.Tenant
 	for _, tenantReference := range tenantReferences {
-		tenants = append(tenants,
-			catalogv1alpha1.ObjectReference{
-				Name: tenantReference.Name,
-			})
+		tenant := &catalogv1alpha1.Tenant{}
+		if err := r.Get(ctx, types.NamespacedName{
+			Name: tenantReference.Name,
+		}, tenant); err != nil {
+			return ctrl.Result{}, fmt.Errorf("getting Tenant: %w", err)
+		}
+
+		if tenant.IsReady() {
+			tenants = append(tenants,
+				catalogv1alpha1.ObjectReference{
+					Name: tenantReference.Name,
+				})
+			readyTenants = append(readyTenants, tenant)
+		}
 	}
 	catalog.Status.Tenants = tenants
 
@@ -133,21 +148,11 @@ func (r *CatalogReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 		desiredOfferings                []catalogv1alpha1.Offering
 		desiredServiceClusterReferences []catalogv1alpha1.ServiceClusterReference
 	)
-	for _, tenantReference := range tenantReferences {
-		tenant := &catalogv1alpha1.Tenant{}
-		if err := r.Get(ctx, types.NamespacedName{
-			Name: tenantReference.Name,
-		}, tenant); err != nil {
-			return ctrl.Result{}, fmt.Errorf("getting Tenant: %w", err)
-		}
-
-		if !tenant.IsReady() {
-			continue
-		}
+	for _, tenant := range readyTenants {
 
 		desiredProviderReferences = append(desiredProviderReferences, r.buildDesiredProviderReference(provider, tenant))
-		desiredOfferings = append(desiredOfferings, r.buildDesiredOfferings(provider, tenant, catalogEntries)...)
-		desiredServiceClusterReferencesForTenant, err := r.buildDesiredServiceClusterReferences(ctx, log, provider, tenant, catalogEntries)
+		desiredOfferings = append(desiredOfferings, r.buildDesiredOfferings(provider, tenant, readyCatalogEntries)...)
+		desiredServiceClusterReferencesForTenant, err := r.buildDesiredServiceClusterReferences(ctx, log, provider, tenant, readyCatalogEntries)
 		if err != nil {
 			return ctrl.Result{}, fmt.Errorf("building ServiceClusterReference: %w", err)
 		}
