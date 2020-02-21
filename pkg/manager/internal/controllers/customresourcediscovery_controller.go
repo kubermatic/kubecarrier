@@ -154,6 +154,7 @@ func (r *CustomResourceDiscoveryReconciler) reconcileCRD(
 			Name: plural + "." + group,
 			Labels: map[string]string{
 				"kubecarrier.io/origin-namespace": crDiscovery.Namespace,
+				"kubecarrier.io/service-cluster":  crDiscovery.Spec.ServiceCluster.Name,
 			},
 		},
 		Spec: apiextensionsv1.CustomResourceDefinitionSpec{
