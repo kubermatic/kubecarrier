@@ -275,6 +275,17 @@ func NewCatalogSuite(
 		assert.Equal(t, serviceClusterReferenceFound.Spec.Provider.Name, provider.Name)
 		assert.Equal(t, serviceClusterReferenceFound.Spec.Metadata.Description, serviceCluster.Spec.Metadata.Description)
 
+		// Check the ServiceClusterAssignment object is created.
+		serviceClusterAssignmentFound := &corev1alpha1.ServiceClusterAssignment{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      fmt.Sprintf("%s.%s", tenant.Status.NamespaceName, serviceCluster.Name),
+				Namespace: tenant.Status.NamespaceName,
+			},
+		}
+		require.NoError(t, testutil.WaitUntilFound(masterClient, serviceClusterAssignmentFound), "getting the ServiceClusterAssignment error")
+		assert.Equal(t, serviceClusterAssignmentFound.Spec.ServiceCluster.Name, serviceCluster.Name)
+		assert.Equal(t, serviceClusterAssignmentFound.Spec.MasterClusterNamespace.Name, tenant.Status.NamespaceName)
+
 		// Check if the status will be updated when tenant is removed.
 		t.Run("Catalog status updates when adding and removing Tenant", func(t *testing.T) {
 			// Remove the tenant
@@ -348,6 +359,13 @@ func NewCatalogSuite(
 				Name:      serviceClusterReferenceFound.Name,
 				Namespace: serviceClusterReferenceFound.Namespace,
 			}, serviceClusterReferenceCheck)), "serviceClusterReference object should also be deleted.")
+
+			// ServiceClusterAssignment object should also be removed
+			serviceClusterAssignmentCheck := &corev1alpha1.ServiceClusterAssignment{}
+			assert.True(t, errors.IsNotFound(masterClient.Get(ctx, types.NamespacedName{
+				Name:      serviceClusterAssignmentFound.Name,
+				Namespace: serviceClusterAssignmentFound.Namespace,
+			}, serviceClusterAssignmentCheck)), "serviceClusterAssignment object should also be deleted.")
 		})
 	}
 }
