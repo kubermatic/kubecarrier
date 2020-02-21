@@ -142,6 +142,7 @@ func TestCatalogReconciler(t *testing.T) {
 	offeringFound := &catalogv1alpha1.Offering{}
 	providerReferenceFound := &catalogv1alpha1.ProviderReference{}
 	serviceClusterReferenceFound := &catalogv1alpha1.ServiceClusterReference{}
+	serviceClusterAssignmentFound := &corev1alpha1.ServiceClusterAssignment{}
 	if !t.Run("create/update Catalog", func(t *testing.T) {
 		for i := 0; i < 5; i++ {
 			// Run Reconcile multiple times, because
@@ -198,6 +199,14 @@ func TestCatalogReconciler(t *testing.T) {
 		assert.Equal(t, serviceClusterReferenceFound.Spec.Provider.Name, provider.Name, "Wrong ServiceClusterReference provider name")
 		assert.Equal(t, serviceClusterReferenceFound.Spec.Metadata.Description, serviceCluster.Spec.Metadata.Description, "Wrong ServiceClusterReference description")
 		assert.Equal(t, serviceClusterReferenceFound.Spec.Metadata.DisplayName, serviceCluster.Spec.Metadata.DisplayName, "Wrong ServiceClusterReference display name")
+
+		// Check ServiceClusterAssignment
+		require.NoError(t, client.Get(ctx, types.NamespacedName{
+			Name:      fmt.Sprintf("%s.%s", tenantNamespaceName, serviceCluster.Name),
+			Namespace: providerNamespaceName,
+		}, serviceClusterAssignmentFound), "getting ServiceClusterAssignment error")
+		assert.Equal(t, serviceClusterAssignmentFound.Spec.ServiceCluster.Name, serviceCluster.Name, "Wrong ServiceCluster name")
+		assert.Equal(t, serviceClusterAssignmentFound.Spec.MasterClusterNamespace.Name, tenantNamespaceName, "Wrong MasterCluster Namespace name.")
 	}) {
 		t.FailNow()
 	}
@@ -253,5 +262,12 @@ func TestCatalogReconciler(t *testing.T) {
 			Name:      serviceClusterReferenceFound.Name,
 			Namespace: serviceClusterReferenceFound.Namespace,
 		}, serviceClusterReferenceCheck)), "ServiceClusterReference should be gone")
+
+		// Check ServiceClusterAssignment
+		serviceClusterAssignmentCheck := &corev1alpha1.ServiceClusterAssignment{}
+		assert.True(t, errors.IsNotFound(client.Get(ctx, types.NamespacedName{
+			Name:      serviceClusterAssignmentFound.Name,
+			Namespace: serviceClusterAssignmentFound.Namespace,
+		}, serviceClusterAssignmentCheck)), "ServiceClusterAssignment should be gone")
 	})
 }

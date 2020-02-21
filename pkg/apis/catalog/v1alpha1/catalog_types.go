@@ -94,6 +94,9 @@ type CatalogConditionType string
 const (
 	// CatalogReady represents a Catalog condition is in ready state.
 	CatalogReady CatalogConditionType = "Ready"
+	// ServiceClusterAssignmentReady represents a CatalogEntry condition that all ServiceClusterAssignments
+	// which managed by this Catalog are in ready state.
+	ServiceClusterAssignmentReady CatalogConditionType = "ServiceClusterAssignmentReady"
 )
 
 // CatalogCondition contains details for the current condition of this Catalog.

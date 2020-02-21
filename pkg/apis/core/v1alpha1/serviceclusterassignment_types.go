@@ -154,6 +154,21 @@ type ServiceClusterAssignment struct {
 	Status ServiceClusterAssignmentStatus `json:"status,omitempty"`
 }
 
+// IsReady returns if the ServiceClusterAssignment is ready.
+func (s *ServiceClusterAssignment) IsReady() bool {
+	if s.Generation != s.Status.ObservedGeneration {
+		return false
+	}
+
+	for _, condition := range s.Status.Conditions {
+		if condition.Type == ServiceClusterAssignmentReady &&
+			condition.Status == ConditionTrue {
+			return true
+		}
+	}
+	return false
+}
+
 // ServiceClusterAssignmentList contains a list of ServiceClusterAssignment
 // +kubebuilder:object:root=true
 type ServiceClusterAssignmentList struct {
