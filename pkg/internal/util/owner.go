@@ -17,14 +17,12 @@ limitations under the License.
 package util
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 
 	"github.com/go-logr/logr"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -192,38 +190,6 @@ func OwnedBy(owner Object, sc *runtime.Scheme) GeneralizedListOption {
 	return client.MatchingFields{
 		OwnerAnnotation: toObjectReference(owner, sc).fieldIndexValue(),
 	}
-}
-
-func ListOwners(ctx context.Context, cl client.Client, scheme *runtime.Scheme, obj Object) ([]runtime.Object, error) {
-	refs, err := getRefs(obj)
-	if err != nil {
-		return nil, fmt.Errorf("owner references improperly formatted: %w", err)
-	}
-
-	objs := make([]runtime.Object, 0, len(refs))
-	for _, ref := range refs {
-		groupVersions := scheme.PrioritizedVersionsForGroup(ref.Group)
-		if len(groupVersions) == 0 {
-			return nil, fmt.Errorf("no versions registed for group %s", ref.Group)
-		}
-
-		obj, err := scheme.New(schema.GroupVersionKind{
-			Group:   ref.Group,
-			Kind:    ref.Kind,
-			Version: groupVersions[0].Version,
-		})
-		if err != nil {
-			return nil, err
-		}
-		if err := cl.Get(ctx, types.NamespacedName{
-			Namespace: ref.Namespace,
-			Name:      ref.Name,
-		}, obj); err != nil {
-			return nil, fmt.Errorf("get: %w", err)
-		}
-		objs = append(objs, obj)
-	}
-	return objs, nil
 }
 
 // fieldIndexValue converts the objectReference into a simple value for a client.FieldIndexer.
