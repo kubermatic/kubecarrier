@@ -124,7 +124,12 @@ func run(flags *flags, log logr.Logger) error {
 	if err := util.AddOwnerReverseFieldIndex(
 		mgr.GetFieldIndexer(), fieldIndexerLog.WithName("ServiceClusterReference"), &catalogv1alpha1.ServiceClusterReference{},
 	); err != nil {
-		return fmt.Errorf("registering ServiceCluster owner field index: %w", err)
+		return fmt.Errorf("registering ServiceClusterReference owner field index: %w", err)
+	}
+	if err := util.AddOwnerReverseFieldIndex(
+		mgr.GetFieldIndexer(), fieldIndexerLog.WithName("ServiceClusterAssignment"), &corev1alpha1.ServiceClusterAssignment{},
+	); err != nil {
+		return fmt.Errorf("registering ServiceClusterAssignment owner field index: %w", err)
 	}
 
 	if err = (&controllers.TenantReconciler{
