@@ -279,7 +279,7 @@ func NewCatalogSuite(
 		serviceClusterAssignmentFound := &corev1alpha1.ServiceClusterAssignment{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      fmt.Sprintf("%s.%s", tenant.Status.NamespaceName, serviceCluster.Name),
-				Namespace: tenant.Status.NamespaceName,
+				Namespace: provider.Status.NamespaceName,
 			},
 		}
 		require.NoError(t, testutil.WaitUntilFound(masterClient, serviceClusterAssignmentFound), "getting the ServiceClusterAssignment error")
