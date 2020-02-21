@@ -68,8 +68,8 @@ func TestCustomResourceDiscoveryReconciler(t *testing.T) {
 
 	r := &CustomResourceDiscoveryReconciler{
 		MasterClient:       fakeclient.NewFakeClientWithScheme(testScheme, crdRef),
-		ServiceClient:      fakeclient.NewFakeClientWithScheme(testScheme, crd),
 		MasterScheme:       testScheme,
+		ServiceClient:      fakeclient.NewFakeClientWithScheme(testScheme, crd),
 		ServiceClusterName: serviceClusterName,
 	}
 

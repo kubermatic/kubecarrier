@@ -36,6 +36,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/source"
 
 	corev1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/core/v1alpha1"
+	"github.com/kubermatic/kubecarrier/pkg/internal/owner"
 	"github.com/kubermatic/kubecarrier/pkg/internal/util"
 )
 
@@ -122,11 +123,7 @@ func (r *AdoptionReconciler) SetupWithManager(mgr ctrl.Manager) error {
 			if !ok {
 				return false
 			}
-			unowned, err := util.IsUnowned(meta)
-			if err != nil {
-				return false
-			}
-			return unowned
+			return !owner.IsOwned(meta)
 		}))
 }
 

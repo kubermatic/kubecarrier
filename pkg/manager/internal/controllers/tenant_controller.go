@@ -33,6 +33,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/source"
 
 	catalogv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/catalog/v1alpha1"
+	"github.com/kubermatic/kubecarrier/pkg/internal/owner"
 	"github.com/kubermatic/kubecarrier/pkg/internal/util"
 )
 
@@ -43,8 +44,8 @@ const (
 // TenantReconciler reconciles a Tenant object
 type TenantReconciler struct {
 	client.Client
-	Log    logr.Logger
 	Scheme *runtime.Scheme
+	Log    logr.Logger
 }
 
 // +kubebuilder:rbac:groups=catalog.kubecarrier.io,resources=tenants,verbs=get;list;watch;update;
@@ -109,8 +110,7 @@ func (r *TenantReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 }
 
 func (r *TenantReconciler) SetupWithManager(mgr ctrl.Manager) error {
-	owner := &catalogv1alpha1.Tenant{}
-	enqueuer := util.EnqueueRequestForOwner(owner, mgr.GetScheme())
+	enqueuer := owner.EnqueueRequestForOwner(&catalogv1alpha1.Tenant{}, r.Scheme)
 
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&catalogv1alpha1.Tenant{}).
@@ -271,9 +271,8 @@ func (r *TenantReconciler) reconcileNamespace(ctx context.Context, log logr.Logg
 	}
 
 	ns.Name = tenant.Status.NamespaceName
-	if _, err := util.InsertOwnerReference(tenant, ns, r.Scheme); err != nil {
-		return fmt.Errorf("setting cross-namespaced owner reference: %w", err)
-	}
+	owner.SetOwnerReference(tenant, ns, r.Scheme)
+
 	// Reconcile the namespace
 	if err = r.Create(ctx, ns); err != nil && !errors.IsAlreadyExists(err) {
 		return fmt.Errorf("creating Tenant namespace: %w", err)
@@ -309,9 +308,8 @@ func (r *TenantReconciler) reconcileTenantReferences(ctx context.Context, log lo
 		// The TenantReference is not found, then we just create it.
 		tenantReference.Name = tenant.Name
 		tenantReference.Namespace = provider.Status.NamespaceName
-		if _, err := util.InsertOwnerReference(tenant, tenantReference, r.Scheme); err != nil {
-			return fmt.Errorf("setting cross-namespaced owner reference: %w", err)
-		}
+		owner.SetOwnerReference(tenant, tenantReference, r.Scheme)
+
 		// Create the TenantReference
 		if err = r.Create(ctx, tenantReference); err != nil && !errors.IsAlreadyExists(err) {
 			return fmt.Errorf("creating TenantReference: %w", err)

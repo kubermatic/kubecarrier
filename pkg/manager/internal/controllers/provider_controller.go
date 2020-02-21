@@ -32,6 +32,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/source"
 
 	catalogv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/catalog/v1alpha1"
+	"github.com/kubermatic/kubecarrier/pkg/internal/owner"
 	"github.com/kubermatic/kubecarrier/pkg/internal/util"
 )
 
@@ -100,8 +101,7 @@ func (r *ProviderReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 }
 
 func (r *ProviderReconciler) SetupWithManager(mgr ctrl.Manager) error {
-	owner := &catalogv1alpha1.Provider{}
-	enqueuer := util.EnqueueRequestForOwner(owner, mgr.GetScheme())
+	enqueuer := owner.EnqueueRequestForOwner(&catalogv1alpha1.Provider{}, r.Scheme)
 
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&catalogv1alpha1.Provider{}).
@@ -208,9 +208,8 @@ func (r *ProviderReconciler) reconcileNamespace(ctx context.Context, log logr.Lo
 	}
 
 	ns.Name = provider.Status.NamespaceName
-	if _, err := util.InsertOwnerReference(provider, ns, r.Scheme); err != nil {
-		return fmt.Errorf("setting cross-namespaceed owner reference: %w", err)
-	}
+	owner.SetOwnerReference(provider, ns, r.Scheme)
+
 	// Reconcile the namespace
 	if err = r.Create(ctx, ns); err != nil && !errors.IsAlreadyExists(err) {
 		return fmt.Errorf("creating Provider namespace: %w", err)

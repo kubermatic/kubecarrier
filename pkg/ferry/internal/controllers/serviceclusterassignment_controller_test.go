@@ -39,6 +39,9 @@ func TestServiceClusterAssignmentReconciler(t *testing.T) {
 			Namespace: "provider-bar",
 		},
 		Spec: corev1alpha1.ServiceClusterAssignmentSpec{
+			MasterClusterNamespace: corev1alpha1.ObjectReference{
+				Name: "foo",
+			},
 			ServiceCluster: corev1alpha1.ObjectReference{
 				Name: "eu-west-1",
 			},
@@ -63,6 +66,6 @@ func TestServiceClusterAssignmentReconciler(t *testing.T) {
 	namespaceList := &corev1.NamespaceList{}
 	require.NoError(t, r.ServiceClient.List(ctx, namespaceList), "listing Namespaces")
 	if assert.Len(t, namespaceList.Items, 1) {
-		assert.Equal(t, "serviceclusterassignment-", namespaceList.Items[0].GenerateName)
+		assert.Equal(t, "foo-", namespaceList.Items[0].GenerateName)
 	}
 }

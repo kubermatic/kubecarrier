@@ -14,27 +14,12 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package controllers
+package util
 
 import (
-	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 )
-
-const (
-	ProviderLabel       = "kubecarrier.io/provider"
-	serviceClusterLabel = "kubecarrier.io/service-cluster"
-)
-
-func getStorageVersion(crd *apiextensionsv1.CustomResourceDefinition) string {
-	for _, version := range crd.Spec.Versions {
-		if version.Storage {
-			return version.Name
-		}
-	}
-	return ""
-}
 
 // object generic k8s object with metav1 and runtime Object interfaces implemented
 type object interface {

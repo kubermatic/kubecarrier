@@ -31,6 +31,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/source"
 
 	corev1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/core/v1alpha1"
+	"github.com/kubermatic/kubecarrier/pkg/internal/owner"
 	"github.com/kubermatic/kubecarrier/pkg/internal/util"
 )
 
@@ -45,10 +46,10 @@ type CustomResourceDiscoveryReconciler struct {
 	Log logr.Logger
 
 	MasterClient  client.Client
+	MasterScheme  *runtime.Scheme
 	ServiceClient client.Client
 	ServiceCache  cache.Cache
 
-	MasterScheme       *runtime.Scheme
 	ServiceClusterName string
 }
 
@@ -103,11 +104,7 @@ func (r *CustomResourceDiscoveryReconciler) Reconcile(req ctrl.Request) (ctrl.Re
 		return ctrl.Result{Requeue: true}, nil
 	case err == nil:
 		// Add owner ref on CRD in the service cluster
-		changed, err := util.InsertOwnerReference(crDiscovery, crd, r.MasterScheme)
-		if err != nil {
-			return ctrl.Result{}, fmt.Errorf("inserting OwnerReference: %w", err)
-		}
-		if changed {
+		if owner.SetOwnerReference(crDiscovery, crd, r.MasterScheme) {
 			if err := r.ServiceClient.Update(ctx, crd); err != nil {
 				return ctrl.Result{}, fmt.Errorf("updating CRD: %w", err)
 			}
@@ -144,11 +141,7 @@ func (r *CustomResourceDiscoveryReconciler) handleDeletion(ctx context.Context, 
 		return nil
 	case err == nil:
 		// CRD still exists, ensure we're not owning it anymore
-		changed, err := util.DeleteOwnerReference(crDiscovery, crd, r.MasterScheme)
-		if err != nil {
-			return fmt.Errorf("deleting OwnerReference: %w", err)
-		}
-		if changed {
+		if owner.RemoveOwnerReference(crDiscovery, crd) {
 			if err = r.ServiceClient.Update(ctx, crd); err != nil {
 				return fmt.Errorf("updating CRD: %w", err)
 			}
@@ -172,7 +165,7 @@ func (r *CustomResourceDiscoveryReconciler) SetupWithManager(masterMgr ctrl.Mana
 
 	return ctrl.NewControllerManagedBy(masterMgr).
 		For(&corev1alpha1.CustomResourceDiscovery{}).
-		Watches(source.Func(crdSource.Start), util.EnqueueRequestForOwner(&corev1alpha1.CustomResourceDiscovery{}, r.MasterScheme)).
+		Watches(source.Func(crdSource.Start), owner.EnqueueRequestForOwner(&corev1alpha1.CustomResourceDiscovery{}, r.MasterScheme)).
 		WithEventFilter(util.PredicateFn(func(obj runtime.Object) bool {
 			if crDiscovery, ok := obj.(*corev1alpha1.CustomResourceDiscovery); ok {
 				if crDiscovery.Spec.ServiceCluster.Name == r.ServiceClusterName {

@@ -112,6 +112,9 @@ func TestCustomResourceDiscoveryReconciler(t *testing.T) {
 	assert.Equal(t, map[string]string{
 		"kubecarrier.io/origin-namespace": crDiscovery.Namespace,
 		"kubecarrier.io/service-cluster":  crDiscovery.Spec.ServiceCluster.Name,
+		"owner.kubecarrier.io/name":       "redis.cloud",
+		"owner.kubecarrier.io/namespace":  "extreme-cloud",
+		"owner.kubecarrier.io/type":       "CustomResourceDiscovery.kubecarrier.io",
 	}, internalCRD.Labels)
 
 	internalCRD.Status.Conditions = []apiextensionsv1.CustomResourceDefinitionCondition{

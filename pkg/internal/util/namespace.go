@@ -25,34 +25,29 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/client/apiutil"
+
+	ownerhelpers "github.com/kubermatic/kubecarrier/pkg/internal/owner"
 )
 
 // EnsureUniqueNamespace generates unique namespace for obj if one already doesn't exists
 //
 // It's required that OwnerReverseFieldIndex exists for corev1.Namespace
-func EnsureUniqueNamespace(ctx context.Context, c client.Client, scheme *runtime.Scheme, owner Object) (*corev1.Namespace, error) {
+func EnsureUniqueNamespace(ctx context.Context, c client.Client, owner object, prefix string, scheme *runtime.Scheme) (*corev1.Namespace, error) {
 	namespaceList := &corev1.NamespaceList{}
-	if err := c.List(ctx, namespaceList, OwnedBy(owner, scheme)); err != nil {
+	if err := c.List(ctx, namespaceList, ownerhelpers.OwnedBy(owner, scheme)); err != nil {
 		return nil, fmt.Errorf("listing Namespaces: %w", err)
 	}
 
 	switch len(namespaceList.Items) {
 	case 0:
 		// Create Namespace
-		gvk, err := apiutil.GVKForObject(owner, scheme)
-		if err != nil {
-			return nil, fmt.Errorf("kind from scheme: %w", err)
-		}
 		namespace := &corev1.Namespace{
 			ObjectMeta: metav1.ObjectMeta{
-				GenerateName: strings.ToLower(gvk.Kind) + "-",
+				GenerateName: prefix + "-",
 			},
 		}
-		if _, err := InsertOwnerReference(owner, namespace, scheme); err != nil {
-			return nil, fmt.Errorf("inserting Owner Reference: %w", err)
-		}
-		if err = c.Create(ctx, namespace); err != nil {
+		ownerhelpers.SetOwnerReference(owner, namespace, scheme)
+		if err := c.Create(ctx, namespace); err != nil {
 			return nil, fmt.Errorf("creating Namespace: %w", err)
 		}
 		return namespace, nil
@@ -63,6 +58,6 @@ func EnsureUniqueNamespace(ctx context.Context, c client.Client, scheme *runtime
 		for i, ns := range namespaceList.Items {
 			nss[i] = ns.Name
 		}
-		return nil, fmt.Errorf("MultipleNamespaces owned namespaces found: %s", strings.Join(nss, ","))
+		return nil, fmt.Errorf("multiple owned namespaces found: %s", strings.Join(nss, ","))
 	}
 }

@@ -28,7 +28,6 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	ctrl "sigs.k8s.io/controller-runtime"
-	"sigs.k8s.io/controller-runtime/pkg/client/apiutil"
 
 	operatorv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/operator/v1alpha1"
 	"github.com/kubermatic/kubecarrier/pkg/internal/util"
@@ -83,25 +82,6 @@ func run(flags *flags, log logr.Logger) error {
 	})
 	if err != nil {
 		return fmt.Errorf("starting manager: %w", err)
-	}
-
-	// Field Index
-	for _, obj := range []runtime.Object{
-		&rbacv1.ClusterRole{},
-		&rbacv1.ClusterRoleBinding{},
-		&apiextensionsv1.CustomResourceDefinition{},
-		&adminv1beta1.MutatingWebhookConfiguration{},
-		&adminv1beta1.ValidatingWebhookConfiguration{},
-	} {
-		gvk, err := apiutil.GVKForObject(obj, mgr.GetScheme())
-		if err != nil {
-			return fmt.Errorf("gvk: %T, %w", obj, err)
-		}
-		if err := util.AddOwnerReverseFieldIndex(
-			mgr.GetFieldIndexer(), ctrl.Log.WithName("fieldindex").WithName(gvk.Kind), obj,
-		); err != nil {
-			return fmt.Errorf("cannot add %s owner field indexer: %w", gvk.Kind, err)
-		}
 	}
 
 	if err = (&controllers.KubeCarrierReconciler{

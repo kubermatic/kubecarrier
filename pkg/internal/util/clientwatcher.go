@@ -65,7 +65,7 @@ type ClientWatcher struct {
 }
 
 // WaitUntil waits until the object's condition function is true, or the context deadline is reached
-func (cw *ClientWatcher) WaitUntil(ctx context.Context, obj Object, cond ...func(obj runtime.Object) (bool, error)) error {
+func (cw *ClientWatcher) WaitUntil(ctx context.Context, obj object, cond ...func(obj runtime.Object) (bool, error)) error {
 	objGVK, err := apiutil.GVKForObject(obj, cw.scheme)
 	if err != nil {
 		return err
@@ -89,7 +89,7 @@ func (cw *ClientWatcher) WaitUntil(ctx context.Context, obj Object, cond ...func
 		if err != nil {
 			return false, err
 		}
-		obj := objTmp.(Object)
+		obj := objTmp.(object)
 		if err := cw.scheme.Convert(event.Object, obj, nil); err != nil {
 			return false, err
 		}
