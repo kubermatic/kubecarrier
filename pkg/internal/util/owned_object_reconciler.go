@@ -38,7 +38,7 @@ type OwnedObjectReconciler struct {
 	Owner       Object
 	TypeFilter  []runtime.Object
 	WantedState []Object
-	MutateFn    func(obj runtime.Object) error
+	MutateFn    func(oldObj, wantedObj runtime.Object) error
 }
 
 func (r *OwnedObjectReconciler) Reconcile(ctx context.Context, cl client.Client) (changed bool, err error) {
@@ -108,13 +108,16 @@ func (r *OwnedObjectReconciler) ensureCreatedObject(ctx context.Context, cl clie
 		if err != nil {
 			return changed, fmt.Errorf("inserting owner ref %v: %w", obj, err)
 		}
+		// ctrl.CreateOrUpdate shall override obj with the current k8s value, thus we're performing a
+		// deep copy to preserve wanted object data
+		wantedObj := obj.DeepCopyObject()
 		op, err := ctrl.CreateOrUpdate(ctx, cl, obj, func() error {
 			_, err := InsertOwnerReference(r.Owner, obj.(Object), r.Scheme)
 			if err != nil {
 				return fmt.Errorf("inserting owner ref %v: %w", obj, err)
 			}
 			if r.MutateFn != nil {
-				return r.MutateFn(obj)
+				return r.MutateFn(obj, wantedObj)
 			}
 			return nil
 		})
