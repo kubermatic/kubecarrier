@@ -52,8 +52,8 @@ func NewDerivedCRSuite(
 			ObjectMeta: metav1.ObjectMeta{
 				Name: "catapults.test.kubecarrier.io",
 				Labels: map[string]string{
-					"kubecarrier.io/service-cluster": "eu-west-1",
-					"kubecarrier.io/provider":        provider.Name,
+					"kubecarrier.io/service-cluster":  "eu-west-1",
+					"kubecarrier.io/origin-namespace": provider.Status.NamespaceName,
 				},
 			},
 			Spec: apiextensionsv1.CustomResourceDefinitionSpec{

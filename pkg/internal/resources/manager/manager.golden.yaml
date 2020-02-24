@@ -666,7 +666,7 @@
     scope: Namespaced
     versions:
     - additionalPrinterColumns:
-      - jsonPath: .offering.displayName
+      - jsonPath: .offering.metadata.displayName
         name: Display Name
         type: string
       - jsonPath: .metadata.creationTimestamp
@@ -876,7 +876,7 @@
       - jsonPath: .status.namespaceName
         name: Provider Namespace
         type: string
-      - jsonPath: .spec.displayName
+      - jsonPath: .spec.metadata.displayName
         name: Display Name
         type: string
       - jsonPath: .status.phase

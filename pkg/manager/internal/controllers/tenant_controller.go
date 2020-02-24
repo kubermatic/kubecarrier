@@ -19,6 +19,7 @@ package controllers
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/go-logr/logr"
 	corev1 "k8s.io/api/core/v1"
@@ -88,7 +89,7 @@ func (r *TenantReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 
 	// check/update the NamespaceName
 	if tenant.Status.NamespaceName == "" {
-		tenant.Status.NamespaceName = fmt.Sprintf("tenant-%s", tenant.Name)
+		tenant.Status.NamespaceName = strings.Replace(tenant.Name, ".", "-", -1)
 		if err := r.Status().Update(ctx, tenant); err != nil {
 			return ctrl.Result{}, fmt.Errorf("updating NamespaceName: %w", err)
 		}

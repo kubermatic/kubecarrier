@@ -39,7 +39,7 @@ type OfferingMetadata struct {
 
 // Offering is used for Tenants to discover services that have been made available to them.
 // +kubebuilder:object:root=true
-// +kubebuilder:printcolumn:name="Display Name",type="string",JSONPath=".offering.displayName"
+// +kubebuilder:printcolumn:name="Display Name",type="string",JSONPath=".offering.metadata.displayName"
 // +kubebuilder:printcolumn:name="Age",type="date",JSONPath=".metadata.creationTimestamp"
 // +kubebuilder:resource:categories=kubecarrier-tenant,shortName=off
 type Offering struct {
