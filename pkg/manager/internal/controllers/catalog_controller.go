@@ -414,15 +414,15 @@ func (r *CatalogReconciler) reconcileOfferings(
 
 		foundOffering := &catalogv1alpha1.Offering{}
 		err := r.Get(ctx, types.NamespacedName{
-			Namespace: desiredOffering.Name,
-			Name:      desiredOffering.Namespace,
+			Name:      desiredOffering.Name,
+			Namespace: desiredOffering.Namespace,
 		}, foundOffering)
 		if err != nil && !errors.IsNotFound(err) {
 			return fmt.Errorf("getting Offering: %w", err)
 		}
 		if errors.IsNotFound(err) {
 			// Create the Offering.
-			if err := r.Create(ctx, &desiredOffering); err != nil && !errors.IsAlreadyExists(err) {
+			if err := r.Create(ctx, &desiredOffering); err != nil {
 				return fmt.Errorf("creating Offering: %w", err)
 			}
 			foundOffering = &desiredOffering
@@ -458,15 +458,15 @@ func (r *CatalogReconciler) reconcileProviderReferences(
 
 		foundProviderReference := &catalogv1alpha1.ProviderReference{}
 		err := r.Get(ctx, types.NamespacedName{
-			Namespace: desiredProviderReference.Name,
-			Name:      desiredProviderReference.Namespace,
+			Name:      desiredProviderReference.Name,
+			Namespace: desiredProviderReference.Namespace,
 		}, foundProviderReference)
 		if err != nil && !errors.IsNotFound(err) {
 			return fmt.Errorf("getting ProviderReference: %w", err)
 		}
 		if errors.IsNotFound(err) {
 			// Create the ProviderReference.
-			if err := r.Create(ctx, &desiredProviderReference); err != nil && !errors.IsAlreadyExists(err) {
+			if err := r.Create(ctx, &desiredProviderReference); err != nil {
 				return fmt.Errorf("creating ProviderReference: %w", err)
 			}
 			foundProviderReference = &desiredProviderReference
@@ -502,15 +502,15 @@ func (r *CatalogReconciler) reconcileServiceClusterReferences(
 
 		foundServiceClusterReference := &catalogv1alpha1.ServiceClusterReference{}
 		err := r.Get(ctx, types.NamespacedName{
-			Namespace: desiredServiceClusterReference.Name,
-			Name:      desiredServiceClusterReference.Namespace,
+			Name:      desiredServiceClusterReference.Name,
+			Namespace: desiredServiceClusterReference.Namespace,
 		}, foundServiceClusterReference)
 		if err != nil && !errors.IsNotFound(err) {
 			return fmt.Errorf("getting ServiceClusterReference: %w", err)
 		}
 		if errors.IsNotFound(err) {
 			// Create the ServiceClusterReference.
-			if err := r.Create(ctx, &desiredServiceClusterReference); err != nil && !errors.IsAlreadyExists(err) {
+			if err := r.Create(ctx, &desiredServiceClusterReference); err != nil {
 				return fmt.Errorf("creating ServiceClusterReference: %w", err)
 			}
 			foundServiceClusterReference = &desiredServiceClusterReference
@@ -547,15 +547,15 @@ func (r *CatalogReconciler) reconcileServiceClusterAssignments(
 
 		foundServiceClusterAssignment := &corev1alpha1.ServiceClusterAssignment{}
 		err := r.Get(ctx, types.NamespacedName{
-			Namespace: desiredServiceClusterAssignment.Name,
-			Name:      desiredServiceClusterAssignment.Namespace,
+			Name:      desiredServiceClusterAssignment.Name,
+			Namespace: desiredServiceClusterAssignment.Namespace,
 		}, foundServiceClusterAssignment)
 		if err != nil && !errors.IsNotFound(err) {
 			return fmt.Errorf("getting ServiceClusterAssignment: %w", err)
 		}
 		if errors.IsNotFound(err) {
 			// Create the ServiceClusterAssignment.
-			if err := r.Create(ctx, &desiredServiceClusterAssignment); err != nil && !errors.IsAlreadyExists(err) {
+			if err := r.Create(ctx, &desiredServiceClusterAssignment); err != nil {
 				return fmt.Errorf("creating ServiceClusterAssignment: %w", err)
 			}
 			foundServiceClusterAssignment = &desiredServiceClusterAssignment
