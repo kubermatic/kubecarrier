@@ -166,13 +166,16 @@ func (r *AccountReconciler) handleDeletion(ctx context.Context, log logr.Logger,
 func (r *AccountReconciler) reconcileNamespace(ctx context.Context, log logr.Logger, account *catalogv1alpha1.Account) error {
 	ns := &corev1.Namespace{}
 	ns.Name = account.Name
-	owner.SetOwnerReference(account, ns, r.Scheme)
-	_, err := ctrl.CreateOrUpdate(ctx, r.Client, ns, func() error {
-		owner.SetOwnerReference(account, ns, r.Scheme)
-		return nil
-	})
-	if err != nil {
-		return fmt.Errorf("create or update namespace: %w", err)
+	if _, err := (&util.OwnedObjectReconciler{
+		Scheme: r.Scheme,
+		Log:    log,
+		Owner:  account,
+		TypeFilter: []runtime.Object{
+			&corev1.Namespace{},
+		},
+		WantedState: []util.Object{ns},
+	}).Reconcile(ctx, r.Client); err != nil {
+		return fmt.Errorf("cannot reconcile namespace: %w", err)
 	}
 
 	if account.Status.NamespaceName == "" {
