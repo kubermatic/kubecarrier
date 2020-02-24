@@ -24,10 +24,12 @@ import (
 	"github.com/go-logr/logr"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 	"sigs.k8s.io/controller-runtime/pkg/source"
@@ -37,7 +39,7 @@ import (
 )
 
 const (
-	// This annotation is used to make sure a ReferencedCRD can only be referenced by a single CatalogEntry object.
+	// This annotation is used to make sure a BaseCRD can only be referenced by a single CatalogEntry object.
 	catalogEntryReferenceAnnotation = "kubecarrier.io/catalog-entry"
 	catalogEntryControllerFinalizer = "catalogentry.kubecarrier.io/controller"
 )
@@ -55,7 +57,7 @@ type CatalogEntryReconciler struct {
 
 // Reconcile function reconciles the CatalogEntry object which specified by the request. Currently, it does the following:
 // - Fetch the CatalogEntry object.
-// - Handle the deletion of the CatalogEntry object (Remove the annotations from the ReferencedCRD, and remove the finalizer).
+// - Handle the deletion of the CatalogEntry object (Remove the annotations from the BaseCRD, and remove the finalizer).
 // - Manipulate/Update the CRDInformation in the CatalogEntry status.
 // - Update the status of the CatalogEntry object.
 func (r *CatalogEntryReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
@@ -87,17 +89,17 @@ func (r *CatalogEntryReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error
 
 	crd := &apiextensionsv1.CustomResourceDefinition{}
 	if err := r.Client.Get(ctx, types.NamespacedName{
-		Name: catalogEntry.Spec.ReferencedCRD.Name,
+		Name: catalogEntry.Spec.BaseCRD.Name,
 	}, crd); err != nil {
 		if errors.IsNotFound(err) {
 			return ctrl.Result{}, r.updateStatus(ctx, catalogEntry, &catalogv1alpha1.CatalogEntryCondition{
 				Type:    catalogv1alpha1.CatalogEntryReady,
 				Status:  catalogv1alpha1.ConditionFalse,
 				Reason:  "NotFound",
-				Message: "The referenced ReferencedCRD was not found.",
+				Message: "The referenced BaseCRD was not found.",
 			})
 		}
-		return ctrl.Result{}, fmt.Errorf("getting ReferencedCRD: %w", err)
+		return ctrl.Result{}, fmt.Errorf("getting BaseCRD: %w", err)
 	}
 	if crd.Spec.Scope != apiextensionsv1.NamespaceScoped {
 		return ctrl.Result{}, r.updateStatus(ctx, catalogEntry, &catalogv1alpha1.CatalogEntryCondition{
@@ -108,7 +110,7 @@ func (r *CatalogEntryReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error
 		})
 	}
 
-	// check the annotation of the ReferencedCRD
+	// check the annotation of the BaseCRD
 	annotations := crd.GetAnnotations()
 	if annotations == nil {
 		annotations = map[string]string{}
@@ -120,14 +122,14 @@ func (r *CatalogEntryReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error
 			Type:    catalogv1alpha1.CatalogEntryReady,
 			Status:  catalogv1alpha1.ConditionFalse,
 			Reason:  "AlreadyInUse",
-			Message: fmt.Sprintf("The referenced ReferencedCRD is already referenced by %q.", catalogEntryNamespacedName),
+			Message: fmt.Sprintf("The referenced BaseCRD is already referenced by %q.", catalogEntryNamespacedName),
 		})
 	} else if !ok {
 		// not yet referenced
 		annotations[catalogEntryReferenceAnnotation] = namespacedName
 		crd.SetAnnotations(annotations)
 		if err := r.Update(ctx, crd); err != nil {
-			return ctrl.Result{}, fmt.Errorf("updating ReferencedCRD annotation: %w", err)
+			return ctrl.Result{}, fmt.Errorf("updating BaseCRD annotation: %w", err)
 		}
 	}
 
@@ -144,7 +146,7 @@ func (r *CatalogEntryReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error
 			Type:    catalogv1alpha1.CatalogEntryReady,
 			Status:  catalogv1alpha1.ConditionFalse,
 			Reason:  "NotAssignedToProvider",
-			Message: fmt.Sprintf("The referenced CRD not assigned to this Provider or is missing a %s label.", ProviderLabel),
+			Message: fmt.Sprintf("The base CRD not assigned to this Provider or is missing a %s label.", ProviderLabel),
 		})
 	}
 
@@ -155,15 +157,61 @@ func (r *CatalogEntryReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error
 			Type:    catalogv1alpha1.CatalogEntryReady,
 			Status:  catalogv1alpha1.ConditionFalse,
 			Reason:  "MissingServiceClusterLabel",
-			Message: fmt.Sprintf("The referenced CRD is missing a %s label.", serviceClusterLabel),
+			Message: fmt.Sprintf("The base CRD is missing a %s label.", serviceClusterLabel),
 		})
 	}
-	crdInfo, err := getCRDInformation(crd)
-	if err != nil {
-		return ctrl.Result{}, fmt.Errorf("getting CRD Info: %w", err)
+
+	if catalogEntry.Spec.DerivedConfig == nil {
+		// If the DerivedConfig is not specified, we just put the info of the BaseCRD as CatalogEntry.Status.CRD
+		crdInfo, err := getCRDInformation(crd)
+		if err != nil {
+			return ctrl.Result{}, fmt.Errorf("getting CRDInformation: %w", err)
+		}
+		catalogEntry.Status.CRD = &crdInfo
+
+		return ctrl.Result{}, r.updateStatus(ctx, catalogEntry, &catalogv1alpha1.CatalogEntryCondition{
+			Type:    catalogv1alpha1.CatalogEntryReady,
+			Status:  catalogv1alpha1.ConditionTrue,
+			Reason:  "CatalogEntryReady",
+			Message: "CatalogEntry is Ready.",
+		})
 	}
 
-	catalogEntry.Status.CRD = crdInfo
+	currentDerivedCustomResource, err := r.reconcileDerivedCustomResource(ctx, catalogEntry)
+	if err != nil {
+		return ctrl.Result{}, fmt.Errorf("reconciling Ferry: %w", err)
+	}
+
+	if !currentDerivedCustomResource.IsReady() {
+		if err = r.updateStatus(ctx, catalogEntry, &catalogv1alpha1.CatalogEntryCondition{
+			Type:    catalogv1alpha1.CatalogEntryReady,
+			Status:  catalogv1alpha1.ConditionFalse,
+			Reason:  "DerivedCustomResourceUnready",
+			Message: fmt.Sprintf("The DerivedCustomResource object is not ready"),
+		}); err != nil {
+			return ctrl.Result{}, fmt.Errorf("updating status: %w", err)
+		}
+		return ctrl.Result{}, nil
+	}
+
+	derivedCRD := &apiextensionsv1.CustomResourceDefinition{}
+	if err := r.Get(ctx, types.NamespacedName{
+		Name: currentDerivedCustomResource.Status.DerivedCR.Name,
+	}, derivedCRD); err != nil {
+		return ctrl.Result{}, r.updateStatus(ctx, catalogEntry, &catalogv1alpha1.CatalogEntryCondition{
+			Type:    catalogv1alpha1.CatalogEntryReady,
+			Status:  catalogv1alpha1.ConditionFalse,
+			Reason:  "DerivedCustomResourceDefinitionNotFound",
+			Message: fmt.Sprintf("The derived CRD from DerivedCustomResource %s is not found.", currentDerivedCustomResource.Name),
+		})
+	}
+
+	crdInfo, err := getCRDInformation(derivedCRD)
+	if err != nil {
+		return ctrl.Result{}, fmt.Errorf("getting CRDInformation: %w", err)
+	}
+	catalogEntry.Status.CRD = &crdInfo
+
 	return ctrl.Result{}, r.updateStatus(ctx, catalogEntry, &catalogv1alpha1.CatalogEntryCondition{
 		Type:    catalogv1alpha1.CatalogEntryReady,
 		Status:  catalogv1alpha1.ConditionTrue,
@@ -175,6 +223,7 @@ func (r *CatalogEntryReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error
 func (r *CatalogEntryReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&catalogv1alpha1.CatalogEntry{}).
+		Owns(&catalogv1alpha1.DerivedCustomResource{}).
 		Watches(&source.Kind{Type: &apiextensionsv1.CustomResourceDefinition{}}, &handler.EnqueueRequestsFromMapFunc{
 			ToRequests: handler.ToRequestsFunc(func(o handler.MapObject) (requests []reconcile.Request) {
 				annotations := o.Meta.GetAnnotations()
@@ -196,6 +245,48 @@ func (r *CatalogEntryReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		Complete(r)
 }
 
+func (r *CatalogEntryReconciler) reconcileDerivedCustomResource(ctx context.Context,
+	catalogEntry *catalogv1alpha1.CatalogEntry) (*catalogv1alpha1.DerivedCustomResource, error) {
+	desiredDerivedCustomResource := &catalogv1alpha1.DerivedCustomResource{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      catalogEntry.Name,
+			Namespace: catalogEntry.Namespace,
+		},
+		Spec: catalogv1alpha1.DerivedCustomResourceSpec{
+			BaseCRD:      catalogEntry.Spec.BaseCRD,
+			KindOverride: catalogEntry.Spec.DerivedConfig.KindOverride,
+			Expose:       catalogEntry.Spec.DerivedConfig.Expose,
+		},
+	}
+
+	if err := controllerutil.SetControllerReference(catalogEntry, desiredDerivedCustomResource, r.Scheme); err != nil {
+		return nil, fmt.Errorf("set controller reference %w", err)
+	}
+
+	currentDerivedCustomResource := &catalogv1alpha1.DerivedCustomResource{}
+	err := r.Get(ctx, types.NamespacedName{
+		Name:      desiredDerivedCustomResource.Name,
+		Namespace: desiredDerivedCustomResource.Namespace,
+	}, currentDerivedCustomResource)
+	if err != nil && !errors.IsNotFound(err) {
+		return nil, fmt.Errorf("getting DerivedCustomResource: %w", err)
+	}
+
+	if errors.IsNotFound(err) {
+		if err = r.Create(ctx, desiredDerivedCustomResource); err != nil {
+			return nil, fmt.Errorf("creating DerivedCustomResource: %w", err)
+		}
+		return desiredDerivedCustomResource, nil
+	}
+
+	currentDerivedCustomResource.Spec = desiredDerivedCustomResource.Spec
+	if err = r.Update(ctx, currentDerivedCustomResource); err != nil {
+		return nil, fmt.Errorf("upating Ferry: %w", err)
+	}
+
+	return currentDerivedCustomResource, nil
+}
+
 func (r *CatalogEntryReconciler) handleDeletion(ctx context.Context, log logr.Logger, catalogEntry *catalogv1alpha1.CatalogEntry, desiredNamespacedName string) error {
 	// Update the CatalogEntry Status to Terminating.
 	readyCondition, _ := catalogEntry.Status.GetCondition(catalogv1alpha1.CatalogEntryReady)
@@ -213,18 +304,18 @@ func (r *CatalogEntryReconciler) handleDeletion(ctx context.Context, log logr.Lo
 		}
 	}
 
-	// Clean up annotation for the ReferencedCRD
+	// Clean up annotation for the BaseCRD
 	crd := &apiextensionsv1.CustomResourceDefinition{}
 	err := r.Get(ctx, types.NamespacedName{
-		Name: catalogEntry.Spec.ReferencedCRD.Name,
+		Name: catalogEntry.Spec.BaseCRD.Name,
 	}, crd)
 	if err != nil && !errors.IsNotFound(err) {
-		return fmt.Errorf("getting ReferencedCRD: %w", err)
+		return fmt.Errorf("getting BaseCRD: %w", err)
 	}
 	if err == nil && crd.Annotations != nil {
 		delete(crd.Annotations, catalogEntryReferenceAnnotation)
 		if err := r.Update(ctx, crd); err != nil {
-			return fmt.Errorf("updating ReferencedCRD: %w", err)
+			return fmt.Errorf("updating BaseCRD: %w", err)
 		}
 	}
 
@@ -254,7 +345,7 @@ func getCRDInformation(crd *apiextensionsv1.CustomResourceDefinition) (catalogv1
 	// Service Cluster
 	serviceCluster, present := crd.Labels[serviceClusterLabel]
 	if !present {
-		return catalogv1alpha1.CRDInformation{}, fmt.Errorf("getting ServiceCluster of the ReferencedCRD error: ReferencedCRD should have an annotation to indicate the ServiceCluster")
+		return catalogv1alpha1.CRDInformation{}, fmt.Errorf("getting ServiceCluster of the BaseCRD error: BaseCRD should have an annotation to indicate the ServiceCluster")
 	}
 
 	crdInfo.ServiceCluster = catalogv1alpha1.ObjectReference{

@@ -110,7 +110,7 @@ const (
 	DerivedCustomResourceReady DerivedCustomResourceConditionType = "Ready"
 	// DerivedCustomResourceEstablished is True if the derived crd could be registered and is now served by the kube-apiserver.
 	DerivedCustomResourceEstablished DerivedCustomResourceConditionType = "Established"
-	// DerivedCustomResourceControllerReady is Ture if the controller to propagate the derived and internal crd is ready.
+	// DerivedCustomResourceControllerReady is True if the controller to propagate the derived and internal crd is ready.
 	DerivedCustomResourceControllerReady DerivedCustomResourceConditionType = "ControllerReady"
 )
 
@@ -185,6 +185,21 @@ type DerivedCustomResource struct {
 
 	Spec   DerivedCustomResourceSpec   `json:"spec,omitempty"`
 	Status DerivedCustomResourceStatus `json:"status,omitempty"`
+}
+
+// IsReady returns if the DerivedCustomResource is ready.
+func (s *DerivedCustomResource) IsReady() bool {
+	if s.Generation != s.Status.ObservedGeneration {
+		return false
+	}
+
+	for _, condition := range s.Status.Conditions {
+		if condition.Type == DerivedCustomResourceReady &&
+			condition.Status == ConditionTrue {
+			return true
+		}
+	}
+	return false
 }
 
 // DerivedCustomResourceList contains a list of DerivedCustomResource.

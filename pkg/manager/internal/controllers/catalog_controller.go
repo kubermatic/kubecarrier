@@ -89,13 +89,13 @@ func (r *CatalogReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	}
 
 	// Get CatalogEntries.
-	catalogEntries, err := r.listSelectedCatalogEntries(ctx, log, catalog)
+	readyCatalogEntries, err := r.listSelectedReadyCatalogEntries(ctx, log, catalog)
 	if err != nil {
 		return ctrl.Result{}, fmt.Errorf("getting selected CatalogEntries: %w", err)
 	}
 
 	var entries []catalogv1alpha1.ObjectReference
-	for _, catalogEntry := range catalogEntries {
+	for _, catalogEntry := range readyCatalogEntries {
 		entries = append(entries,
 			catalogv1alpha1.ObjectReference{
 				Name: catalogEntry.Name,
@@ -104,16 +104,16 @@ func (r *CatalogReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	catalog.Status.Entries = entries
 
 	// Get TenantReferences.
-	tenantReferences, err := r.listSelectedTenantReferences(ctx, log, catalog)
+	readyTenants, err := r.listSelectedReadyTenants(ctx, log, catalog)
 	if err != nil {
 		return ctrl.Result{}, fmt.Errorf("getting selected TenantReferences: %w", err)
 	}
 
 	var tenants []catalogv1alpha1.ObjectReference
-	for _, tenantReference := range tenantReferences {
+	for _, tenant := range readyTenants {
 		tenants = append(tenants,
 			catalogv1alpha1.ObjectReference{
-				Name: tenantReference.Name,
+				Name: tenant.Name,
 			})
 	}
 	catalog.Status.Tenants = tenants
@@ -135,21 +135,11 @@ func (r *CatalogReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 		desiredServiceClusterReferences  []catalogv1alpha1.ServiceClusterReference
 		desiredServiceClusterAssignments []corev1alpha1.ServiceClusterAssignment
 	)
-	for _, tenantReference := range tenantReferences {
-		tenant := &catalogv1alpha1.Tenant{}
-		if err := r.Get(ctx, types.NamespacedName{
-			Name: tenantReference.Name,
-		}, tenant); err != nil {
-			return ctrl.Result{}, fmt.Errorf("getting Tenant: %w", err)
-		}
-
-		if !tenant.IsReady() {
-			continue
-		}
+	for _, tenant := range readyTenants {
 
 		desiredProviderReferences = append(desiredProviderReferences, r.buildDesiredProviderReference(provider, tenant))
-		desiredOfferings = append(desiredOfferings, r.buildDesiredOfferings(provider, tenant, catalogEntries)...)
-		desiredServiceClusterReferencesForTenant, desiredServiceClusterAssignmentsForTenant, err := r.buildDesiredServiceClusterReferencesAndAssignments(ctx, log, provider, tenant, catalogEntries)
+		desiredOfferings = append(desiredOfferings, r.buildDesiredOfferings(provider, tenant, readyCatalogEntries)...)
+		desiredServiceClusterReferencesForTenant, desiredServiceClusterAssignmentsForTenant, err := r.buildDesiredServiceClusterReferencesAndAssignments(ctx, log, provider, tenant, readyCatalogEntries)
 		if err != nil {
 			return ctrl.Result{}, fmt.Errorf("building ServiceClusterReferenceAndAssignment: %w", err)
 		}
@@ -281,7 +271,7 @@ func (r *CatalogReconciler) updateStatus(
 	return nil
 }
 
-func (r *CatalogReconciler) listSelectedCatalogEntries(ctx context.Context, log logr.Logger, catalog *catalogv1alpha1.Catalog) ([]catalogv1alpha1.CatalogEntry, error) {
+func (r *CatalogReconciler) listSelectedReadyCatalogEntries(ctx context.Context, log logr.Logger, catalog *catalogv1alpha1.Catalog) ([]catalogv1alpha1.CatalogEntry, error) {
 	catalogEntrySelector, err := metav1.LabelSelectorAsSelector(catalog.Spec.CatalogEntrySelector)
 	if err != nil {
 		return nil, fmt.Errorf("parsing CatalogEntry selector: %w", err)
@@ -290,10 +280,16 @@ func (r *CatalogReconciler) listSelectedCatalogEntries(ctx context.Context, log 
 	if err := r.List(ctx, catalogEntries, client.InNamespace(catalog.Namespace), client.MatchingLabelsSelector{Selector: catalogEntrySelector}); err != nil {
 		return nil, fmt.Errorf("listing CatalogEntry: %w", err)
 	}
-	return catalogEntries.Items, nil
+	var readyCatalogEntries []catalogv1alpha1.CatalogEntry
+	for _, catalogEntry := range catalogEntries.Items {
+		if catalogEntry.IsReady() {
+			readyCatalogEntries = append(readyCatalogEntries, catalogEntry)
+		}
+	}
+	return readyCatalogEntries, nil
 }
 
-func (r *CatalogReconciler) listSelectedTenantReferences(ctx context.Context, log logr.Logger, catalog *catalogv1alpha1.Catalog) ([]catalogv1alpha1.TenantReference, error) {
+func (r *CatalogReconciler) listSelectedReadyTenants(ctx context.Context, log logr.Logger, catalog *catalogv1alpha1.Catalog) ([]*catalogv1alpha1.Tenant, error) {
 	tenantReferenceSelector, err := metav1.LabelSelectorAsSelector(catalog.Spec.TenantReferenceSelector)
 	if err != nil {
 		return nil, fmt.Errorf("parsing TenantReference selector: %w", err)
@@ -302,7 +298,20 @@ func (r *CatalogReconciler) listSelectedTenantReferences(ctx context.Context, lo
 	if err := r.List(ctx, tenantReferences, client.InNamespace(catalog.Namespace), client.MatchingLabelsSelector{Selector: tenantReferenceSelector}); err != nil {
 		return nil, fmt.Errorf("listing TenantReference: %w", err)
 	}
-	return tenantReferences.Items, nil
+	var readyTenants []*catalogv1alpha1.Tenant
+	for _, tenantReference := range tenantReferences.Items {
+		tenant := &catalogv1alpha1.Tenant{}
+		if err := r.Get(ctx, types.NamespacedName{
+			Name: tenantReference.Name,
+		}, tenant); err != nil {
+			return nil, fmt.Errorf("getting Tenant: %w", err)
+		}
+
+		if tenant.IsReady() {
+			readyTenants = append(readyTenants, tenant)
+		}
+	}
+	return readyTenants, nil
 }
 
 func (r *CatalogReconciler) buildDesiredOfferings(
@@ -325,7 +334,7 @@ func (r *CatalogReconciler) buildDesiredOfferings(
 				Provider: catalogv1alpha1.ObjectReference{
 					Name: provider.Name,
 				},
-				CRD: catalogEntry.Status.CRD,
+				CRD: *catalogEntry.Status.CRD,
 			},
 		})
 	}

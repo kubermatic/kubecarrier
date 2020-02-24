@@ -47,6 +47,58 @@ spec:
             spec:
               description: CatalogEntrySpec defines the desired state of CatalogEntry
               properties:
+                baseCRD:
+                  description: BaseCRD is the underlying BaseCRD objects that this
+                    CatalogEntry refers to.
+                  properties:
+                    name:
+                      type: string
+                  required:
+                    - name
+                  type: object
+                derivedConfig:
+                  description: DerivedConfig contains the configuration to generate
+                    DerivedCustomResource from the BaseCRD of this CatalogEntry.
+                  properties:
+                    expose:
+                      description: controls which fields will be present in the derived
+                        CRD.
+                      items:
+                        description: VersionExposeConfig specifies which fields to
+                          expose in the derived CRD.
+                        properties:
+                          fields:
+                            description: specifies the fields that should be present
+                              in the derived CRD.
+                            items:
+                              description: FieldPath is specifying how to address
+                                a certain field.
+                              properties:
+                                jsonPath:
+                                  description: JSONPath e.g. .spec.somefield.somesubfield
+                                  type: string
+                              required:
+                                - jsonPath
+                              type: object
+                            type: array
+                          versions:
+                            description: specifies the versions of the referenced
+                              CRD, that this expose config applies to. The same version
+                              may not be specified in multiple VersionExposeConfigs.
+                            items:
+                              type: string
+                            type: array
+                        required:
+                          - fields
+                          - versions
+                        type: object
+                      type: array
+                    kindOverride:
+                      description: overrides the kind of the derived CRD.
+                      type: string
+                  required:
+                    - expose
+                  type: object
                 metadata:
                   description: Metadata contains the metadata (display name, description,
                     etc) of the CatalogEntry.
@@ -59,15 +111,6 @@ spec:
                       description: DisplayName shows the human-readable name of this
                         CatalogEntry.
                       type: string
-                  type: object
-                referencedCRD:
-                  description: ReferencedCRD is the underlying ReferencedCRD objects
-                    that this CatalogEntry refers to.
-                  properties:
-                    name:
-                      type: string
-                  required:
-                    - name
                   type: object
               type: object
             status:
@@ -110,7 +153,7 @@ spec:
                     type: object
                   type: array
                 crd:
-                  description: CRD holds the information about the underlying ReferencedCRD
+                  description: CRD holds the information about the underlying BaseCRD
                     that are offered by this CatalogEntry.
                   properties:
                     apiGroup:

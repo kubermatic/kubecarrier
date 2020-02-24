@@ -69,6 +69,7 @@ rules:
   resources:
   - derivedcustomresources
   verbs:
+  - create
   - get
   - list
   - update

@@ -155,6 +155,26 @@ func NewCatalogSuite(
 						Storage: true,
 						Schema: &apiextensionsv1.CustomResourceValidation{
 							OpenAPIV3Schema: &apiextensionsv1.JSONSchemaProps{
+								Properties: map[string]apiextensionsv1.JSONSchemaProps{
+									"apiVersion": {Type: "string"},
+									"kind":       {Type: "string"},
+									"metadata":   {Type: "object"},
+									"spec": {
+										Type: "object",
+										Properties: map[string]apiextensionsv1.JSONSchemaProps{
+											"prop1": {Type: "string"},
+											"prop2": {Type: "string"},
+										},
+									},
+									"status": {
+										Type: "object",
+										Properties: map[string]apiextensionsv1.JSONSchemaProps{
+											"observedGeneration": {Type: "integer"},
+											"prop1":              {Type: "string"},
+											"prop2":              {Type: "string"},
+										},
+									},
+								},
 								Type: "object",
 							},
 						},
@@ -180,7 +200,7 @@ func NewCatalogSuite(
 					DisplayName: "Couch DB",
 					Description: "The comfy nosql database",
 				},
-				ReferencedCRD: catalogv1alpha1.ObjectReference{
+				BaseCRD: catalogv1alpha1.ObjectReference{
 					Name: crd.Name,
 				},
 			},
@@ -320,6 +340,7 @@ func NewCatalogSuite(
 				},
 			}
 			require.NoError(t, masterClient.Create(ctx, tenant), "creating tenant error")
+			require.NoError(t, testutil.WaitUntilReady(masterClient, tenant))
 
 			require.NoError(t, wait.Poll(time.Second, 30*time.Second, func() (done bool, err error) {
 				if err := masterClient.Get(ctx, types.NamespacedName{

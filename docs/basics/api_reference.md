@@ -68,6 +68,7 @@
 * [CatalogEntryMetadata.catalog.kubecarrier.io/v1alpha1](#catalogentrymetadata.catalog.kubecarrier.io/v1alpha1)
 * [CatalogEntrySpec.catalog.kubecarrier.io/v1alpha1](#catalogentryspec.catalog.kubecarrier.io/v1alpha1)
 * [CatalogEntryStatus.catalog.kubecarrier.io/v1alpha1](#catalogentrystatus.catalog.kubecarrier.io/v1alpha1)
+* [DerivedConfig.catalog.kubecarrier.io/v1alpha1](#derivedconfig.catalog.kubecarrier.io/v1alpha1)
 * [KubeCarrier.operator.kubecarrier.io/v1alpha1](#kubecarrier.operator.kubecarrier.io/v1alpha1)
 * [KubeCarrierCondition.operator.kubecarrier.io/v1alpha1](#kubecarriercondition.operator.kubecarrier.io/v1alpha1)
 * [KubeCarrierList.operator.kubecarrier.io/v1alpha1](#kubecarrierlist.operator.kubecarrier.io/v1alpha1)
@@ -878,7 +879,8 @@ CatalogEntrySpec defines the desired state of CatalogEntry
 | Field | Description | Scheme | Required |
 | ----- | ----------- | ------ | -------- |
 | metadata | Metadata contains the metadata (display name, description, etc) of the CatalogEntry. | catalog.kubecarrier.io/v1alpha1.CatalogEntryMetadata | false |
-| referencedCRD | ReferencedCRD is the underlying ReferencedCRD objects that this CatalogEntry refers to. | catalog.kubecarrier.io/v1alpha1.ObjectReference | false |
+| baseCRD | BaseCRD is the underlying BaseCRD objects that this CatalogEntry refers to. | catalog.kubecarrier.io/v1alpha1.ObjectReference | false |
+| derivedConfig | DerivedConfig contains the configuration to generate DerivedCustomResource from the BaseCRD of this CatalogEntry. | *catalog.kubecarrier.io/v1alpha1.DerivedConfig | false |
 
 [Back to TOC](#table-of-contents)
 
@@ -888,10 +890,21 @@ CatalogEntryStatus defines the observed state of CatalogEntry.
 
 | Field | Description | Scheme | Required |
 | ----- | ----------- | ------ | -------- |
-| crd | CRD holds the information about the underlying ReferencedCRD that are offered by this CatalogEntry. | catalog.kubecarrier.io/v1alpha1.CRDInformation | false |
+| crd | CRD holds the information about the underlying BaseCRD that are offered by this CatalogEntry. | *catalog.kubecarrier.io/v1alpha1.CRDInformation | false |
 | observedGeneration | ObservedGeneration is the most recent generation observed for this CatalogEntry by the controller. | catalog.kubecarrier.io/v1alpha1.int64 | false |
 | conditions | Conditions represents the latest available observations of a CatalogEntry's current state. | []catalog.kubecarrier.io/v1alpha1.CatalogEntryCondition | false |
 | phase | DEPRECATED. Phase represents the current lifecycle state of this object. Consider this field DEPRECATED, it will be removed as soon as there is a mechanism to map conditions to strings when printing the property. This is only for display purpose, for everything else use conditions. | catalog.kubecarrier.io/v1alpha1.CatalogEntryPhaseType | false |
+
+[Back to TOC](#table-of-contents)
+
+## DerivedConfig.catalog.kubecarrier.io/v1alpha1
+
+
+
+| Field | Description | Scheme | Required |
+| ----- | ----------- | ------ | -------- |
+| kindOverride | overrides the kind of the derived CRD. | string | false |
+| expose | controls which fields will be present in the derived CRD. | []catalog.kubecarrier.io/v1alpha1.VersionExposeConfig | true |
 
 [Back to TOC](#table-of-contents)
 
