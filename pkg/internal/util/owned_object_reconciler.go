@@ -51,6 +51,7 @@ func (r *OwnedObjectReconciler) Reconcile(ctx context.Context, cl client.Client)
 	return r.ensureCreatedObject(ctx, cl, existing)
 }
 
+// ListObjects lists all object of given types adhering to additional ListOptions
 func ListObjects(ctx context.Context, cl client.Client, scheme *runtime.Scheme, listTypes []runtime.Object, options ...client.ListOption) ([]runtime.Object, error) {
 	objs := make([]runtime.Object, 0)
 	for _, objType := range listTypes {
