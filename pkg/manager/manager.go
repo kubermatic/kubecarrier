@@ -32,6 +32,7 @@ import (
 	catalogv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/catalog/v1alpha1"
 	corev1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/core/v1alpha1"
 	operatorv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/operator/v1alpha1"
+	"github.com/kubermatic/kubecarrier/pkg/internal/multiowner"
 	"github.com/kubermatic/kubecarrier/pkg/internal/util"
 	utilwebhook "github.com/kubermatic/kubecarrier/pkg/internal/util/webhook"
 	"github.com/kubermatic/kubecarrier/pkg/manager/internal/controllers"
@@ -108,25 +109,22 @@ func run(flags *flags, log logr.Logger) error {
 
 	// Register Owner field indexes
 	fieldIndexerLog := ctrl.Log.WithName("fieldindex")
-	if err := util.AddOwnerReverseFieldIndex(
+	if err := multiowner.AddOwnerReverseFieldIndex(
 		mgr.GetFieldIndexer(), fieldIndexerLog.WithName("Offering"), &catalogv1alpha1.Offering{},
 	); err != nil {
 		return fmt.Errorf("registering Offering owner field index: %w", err)
 	}
-	if err := util.AddOwnerReverseFieldIndex(mgr.GetFieldIndexer(), fieldIndexerLog.WithName("CRD"), &apiextensionsv1.CustomResourceDefinition{}); err != nil {
-		return fmt.Errorf("registering CRD owner field index: %w", err)
-	}
-	if err := util.AddOwnerReverseFieldIndex(
+	if err := multiowner.AddOwnerReverseFieldIndex(
 		mgr.GetFieldIndexer(), fieldIndexerLog.WithName("ProviderReference"), &catalogv1alpha1.ProviderReference{},
 	); err != nil {
 		return fmt.Errorf("registering ProviderReference owner field indexer: %w", err)
 	}
-	if err := util.AddOwnerReverseFieldIndex(
+	if err := multiowner.AddOwnerReverseFieldIndex(
 		mgr.GetFieldIndexer(), fieldIndexerLog.WithName("ServiceClusterReference"), &catalogv1alpha1.ServiceClusterReference{},
 	); err != nil {
 		return fmt.Errorf("registering ServiceClusterReference owner field index: %w", err)
 	}
-	if err := util.AddOwnerReverseFieldIndex(
+	if err := multiowner.AddOwnerReverseFieldIndex(
 		mgr.GetFieldIndexer(), fieldIndexerLog.WithName("ServiceClusterAssignment"), &corev1alpha1.ServiceClusterAssignment{},
 	); err != nil {
 		return fmt.Errorf("registering ServiceClusterAssignment owner field index: %w", err)

@@ -31,6 +31,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/source"
 
 	operatorv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/operator/v1alpha1"
+	"github.com/kubermatic/kubecarrier/pkg/internal/owner"
 	"github.com/kubermatic/kubecarrier/pkg/internal/reconcile"
 	resourceselevator "github.com/kubermatic/kubecarrier/pkg/internal/resources/elevator"
 	"github.com/kubermatic/kubecarrier/pkg/internal/util"
@@ -125,11 +126,10 @@ func (r *ElevatorReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 }
 
 func (r *ElevatorReconciler) SetupWithManager(mgr ctrl.Manager) error {
-	owner := &operatorv1alpha1.Elevator{}
-	enqueuer := util.EnqueueRequestForOwner(owner, mgr.GetScheme())
+	enqueuer := owner.EnqueueRequestForOwner(&operatorv1alpha1.Elevator{}, r.Scheme)
 
 	return ctrl.NewControllerManagedBy(mgr).
-		For(owner).
+		For(&operatorv1alpha1.Elevator{}).
 		Owns(&appsv1.Deployment{}).
 		Owns(&corev1.Service{}).
 		Owns(&rbacv1.Role{}).
@@ -163,7 +163,7 @@ func (r *ElevatorReconciler) handleDeletion(ctx context.Context, elevator *opera
 	}
 
 	// 2. Delete Objects.
-	ownedByFilter := util.OwnedBy(elevator, r.Scheme)
+	ownedByFilter := owner.OwnedBy(elevator, r.Scheme)
 
 	clusterRoleBindingsCleaned, err := cleanupClusterRoleBindings(ctx, r.Client, ownedByFilter)
 	if err != nil {

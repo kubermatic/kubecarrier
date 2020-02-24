@@ -32,6 +32,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/source"
 
 	corev1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/core/v1alpha1"
+	"github.com/kubermatic/kubecarrier/pkg/internal/owner"
 	"github.com/kubermatic/kubecarrier/pkg/internal/util"
 )
 
@@ -42,8 +43,8 @@ const catapultControllerFinalizer string = "catapult.kubecarrier.io/controller"
 type MasterClusterObjReconciler struct {
 	client.Client
 	Log              logr.Logger
-	Scheme           *runtime.Scheme
 	NamespacedClient client.Client
+	Scheme           *runtime.Scheme
 
 	ServiceClusterClient              client.Client
 	ServiceClusterCache               cache.Cache
@@ -108,11 +109,8 @@ func (r *MasterClusterObjReconciler) Reconcile(req ctrl.Request) (ctrl.Result, e
 	desiredServiceClusterObj.SetGroupVersionKind(r.ServiceClusterGVK)
 	desiredServiceClusterObj.SetName(masterClusterObj.GetName())
 	desiredServiceClusterObj.SetNamespace(sca.Status.ServiceClusterNamespace.Name)
-
-	if _, err := util.InsertOwnerReference(
-		masterClusterObj, desiredServiceClusterObj, r.Scheme); err != nil {
-		return result, fmt.Errorf("inserting owner reference: %w", err)
-	}
+	owner.SetOwnerReference(
+		masterClusterObj, desiredServiceClusterObj, r.Scheme)
 
 	// Reconcile
 	currentServiceClusterObj := r.newServiceObject()
@@ -136,10 +134,8 @@ func (r *MasterClusterObjReconciler) Reconcile(req ctrl.Request) (ctrl.Result, e
 
 	// Make sure we take ownership of the service cluster instance,
 	// if the OwnerReference is not yet set.
-	if _, err := util.InsertOwnerReference(
-		masterClusterObj, currentServiceClusterObj, r.Scheme); err != nil {
-		return result, fmt.Errorf("inserting owner reference: %w", err)
-	}
+	owner.SetOwnerReference(
+		masterClusterObj, currentServiceClusterObj, r.Scheme)
 
 	// Update existing service cluster instance
 	// This is a bit complicated, because we want to support arbitrary fields and not only .spec.
@@ -192,7 +188,7 @@ func (r *MasterClusterObjReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		For(r.newMasterObject()).
 		Watches(
 			source.Func(serviceClusterSource.Start),
-			util.EnqueueRequestForOwner(r.newMasterObject(), r.Scheme),
+			owner.EnqueueRequestForOwner(r.newMasterObject(), mgr.GetScheme()),
 		).
 		Complete(r)
 }

@@ -35,6 +35,7 @@ import (
 
 	corev1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/core/v1alpha1"
 	operatorv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/operator/v1alpha1"
+	"github.com/kubermatic/kubecarrier/pkg/internal/owner"
 	"github.com/kubermatic/kubecarrier/pkg/internal/util"
 )
 
@@ -170,9 +171,7 @@ func (r *CustomResourceDiscoveryReconciler) reconcileCRD(
 		},
 		Status: apiextensionsv1.CustomResourceDefinitionStatus{},
 	}
-	if _, err := util.InsertOwnerReference(crDiscovery, desiredCRD, r.Scheme); err != nil {
-		return nil, fmt.Errorf("insert object reference: %w", err)
-	}
+	owner.SetOwnerReference(crDiscovery, desiredCRD, r.Scheme)
 
 	currentCRD := &apiextensionsv1.CustomResourceDefinition{}
 	err := r.Get(ctx, types.NamespacedName{
@@ -319,7 +318,7 @@ func (r *CustomResourceDiscoveryReconciler) handleDeletion(ctx context.Context, 
 	}
 
 	crds := &apiextensionsv1.CustomResourceDefinitionList{}
-	if err := r.List(ctx, crds, util.OwnedBy(crDiscovery, r.Scheme)); err != nil {
+	if err := r.List(ctx, crds, owner.OwnedBy(crDiscovery, r.Scheme)); err != nil {
 		return fmt.Errorf("cannot list crds: %w", err)
 	}
 	if len(crds.Items) > 0 {
@@ -345,7 +344,7 @@ func (r *CustomResourceDiscoveryReconciler) SetupWithManager(mgr ctrl.Manager) e
 		Owns(&operatorv1alpha1.Catapult{}).
 		Watches(
 			&source.Kind{Type: &apiextensionsv1.CustomResourceDefinition{}},
-			util.EnqueueRequestForOwner(&corev1alpha1.CustomResourceDiscovery{}, r.Scheme)).
+			owner.EnqueueRequestForOwner(&corev1alpha1.CustomResourceDiscovery{}, r.Scheme)).
 		WithEventFilter(util.PredicateFn(func(obj runtime.Object) bool {
 			crDiscovery, ok := obj.(*corev1alpha1.CustomResourceDiscovery)
 			if !ok {

@@ -24,24 +24,34 @@ import (
 	rbacv1 "k8s.io/api/rbac/v1"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
-	"github.com/kubermatic/kubecarrier/pkg/internal/util"
+	ownerhelpers "github.com/kubermatic/kubecarrier/pkg/internal/owner"
 )
 
+type generalizedListOption interface {
+	client.ListOption
+	client.DeleteAllOfOption
+}
+
+// object generic k8s object with metav1 and runtime Object interfaces implemented
+type object interface {
+	runtime.Object
+	metav1.Object
+}
+
 // addOwnerReference adds an OwnerReference to an object.
-func addOwnerReference(owner util.Object, object *unstructured.Unstructured, scheme *runtime.Scheme) error {
+func addOwnerReference(owner object, object *unstructured.Unstructured, scheme *runtime.Scheme) error {
 	switch object.GetKind() {
 	case "ClusterRole", "ClusterRoleBinding",
 		"CustomResourceDefinition",
 		"MutatingWebhookConfiguration", "ValidatingWebhookConfiguration":
 		// Non-Namespaced objects
-		if _, err := util.InsertOwnerReference(owner, object, scheme); err != nil {
-			return fmt.Errorf("insert corss-namespaced ownerReference: %w", err)
-		}
+		ownerhelpers.SetOwnerReference(owner, object, scheme)
 	default:
 		if err := controllerutil.SetControllerReference(owner, object, scheme); err != nil {
 			return fmt.Errorf("set ownerReference: %w, obj: %s, %s", err, object.GetKind(), object.GetName())
@@ -52,7 +62,7 @@ func addOwnerReference(owner util.Object, object *unstructured.Unstructured, sch
 
 // cleanupClusterRoles deletes owned ClusterRoles
 // cleaned is true when all ClusterRoles have been cleaned up.
-func cleanupClusterRoles(ctx context.Context, c client.Client, ownedBy util.GeneralizedListOption) (cleaned bool, err error) {
+func cleanupClusterRoles(ctx context.Context, c client.Client, ownedBy generalizedListOption) (cleaned bool, err error) {
 	clusterRoleList := &rbacv1.ClusterRoleList{}
 	if err := c.List(ctx, clusterRoleList, ownedBy); err != nil {
 		return false, fmt.Errorf("listing ClusterRoles: %w", err)
@@ -67,7 +77,7 @@ func cleanupClusterRoles(ctx context.Context, c client.Client, ownedBy util.Gene
 
 // cleanupClusterRoleBindings deletes owned ClusterRoleBindings
 // cleaned is true when all ClusterRoleBindings have been cleaned up.
-func cleanupClusterRoleBindings(ctx context.Context, c client.Client, ownedBy util.GeneralizedListOption) (cleaned bool, err error) {
+func cleanupClusterRoleBindings(ctx context.Context, c client.Client, ownedBy generalizedListOption) (cleaned bool, err error) {
 	clusterRoleBindingList := &rbacv1.ClusterRoleBindingList{}
 	if err := c.List(ctx, clusterRoleBindingList, ownedBy); err != nil {
 		return false, fmt.Errorf("listing ClusterRoleBindings: %w", err)
@@ -82,7 +92,7 @@ func cleanupClusterRoleBindings(ctx context.Context, c client.Client, ownedBy ut
 
 // cleanupCustomResourceDefinitions deletes owned CustomResourceDefinitions
 // cleaned is true when all CustomResourceDefinitions have been cleaned up.
-func cleanupCustomResourceDefinitions(ctx context.Context, c client.Client, ownedBy util.GeneralizedListOption) (cleaned bool, err error) {
+func cleanupCustomResourceDefinitions(ctx context.Context, c client.Client, ownedBy generalizedListOption) (cleaned bool, err error) {
 	customResourceDefinitionList := &apiextensionsv1.CustomResourceDefinitionList{}
 	if err := c.List(ctx, customResourceDefinitionList, ownedBy); err != nil {
 		return false, fmt.Errorf("listing CustomResourceDefinitions: %w", err)
@@ -97,7 +107,7 @@ func cleanupCustomResourceDefinitions(ctx context.Context, c client.Client, owne
 
 // cleanupMutatingWebhookConfigurations deletes owned MutatingWebhookConfigurations
 // cleaned is true when all MutatingWebhookConfigurations have been cleaned up.
-func cleanupMutatingWebhookConfigurations(ctx context.Context, c client.Client, ownedBy util.GeneralizedListOption) (cleaned bool, err error) {
+func cleanupMutatingWebhookConfigurations(ctx context.Context, c client.Client, ownedBy generalizedListOption) (cleaned bool, err error) {
 	mutatingWebhookConfigurationList := &adminv1beta1.MutatingWebhookConfigurationList{}
 	if err := c.List(ctx, mutatingWebhookConfigurationList, ownedBy); err != nil {
 		return false, fmt.Errorf("listing MutatingWebhookConfigurations: %w", err)
@@ -112,7 +122,7 @@ func cleanupMutatingWebhookConfigurations(ctx context.Context, c client.Client, 
 
 // cleanupValidatingWebhookConfigurations deletes owned ValidatingWebhookConfigurations
 // cleaned is true when all ValidatingWebhookConfigurations have been cleaned up.
-func cleanupValidatingWebhookConfigurations(ctx context.Context, c client.Client, ownedBy util.GeneralizedListOption) (cleaned bool, err error) {
+func cleanupValidatingWebhookConfigurations(ctx context.Context, c client.Client, ownedBy generalizedListOption) (cleaned bool, err error) {
 	validatingWebhookConfigurationList := &adminv1beta1.ValidatingWebhookConfigurationList{}
 	if err := c.List(ctx, validatingWebhookConfigurationList, ownedBy); err != nil {
 		return false, fmt.Errorf("listing ValidatingWebhookConfigurations: %w", err)

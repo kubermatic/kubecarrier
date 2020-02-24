@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package util
+package multiowner
 
 import (
 	"encoding/json"
@@ -48,13 +48,19 @@ type ownerReference struct {
 	Kind string `json:"kind"`
 }
 
-type GeneralizedListOption interface {
+type generalizedListOption interface {
 	client.ListOption
 	client.DeleteAllOfOption
 }
 
+// object generic k8s object with metav1 and runtime Object interfaces implemented
+type object interface {
+	runtime.Object
+	metav1.Object
+}
+
 // InsertOwnerReference adds an OwnerReference to the given object.
-func InsertOwnerReference(owner, object Object, scheme *runtime.Scheme) (changed bool, err error) {
+func InsertOwnerReference(owner, object object, scheme *runtime.Scheme) (changed bool, err error) {
 	ownerReference := toOwnerReference(owner, scheme)
 
 	refs, err := getRefs(object)
@@ -77,7 +83,7 @@ func InsertOwnerReference(owner, object Object, scheme *runtime.Scheme) (changed
 }
 
 // DeleteOwnerReference removes an owner from the given object.
-func DeleteOwnerReference(owner, object Object, scheme *runtime.Scheme) (changed bool, err error) {
+func DeleteOwnerReference(owner, object object, scheme *runtime.Scheme) (changed bool, err error) {
 	reference := toOwnerReference(owner, scheme)
 
 	refs, err := getRefs(object)
@@ -106,49 +112,51 @@ func DeleteOwnerReference(owner, object Object, scheme *runtime.Scheme) (changed
 	return changed, nil
 }
 
-// IsUnowned checks if any owners claim ownership of this object.
-func IsUnowned(object metav1.Object) (unowned bool, err error) {
+// IsOwned checks if any owners claim ownership of this object.
+func IsOwned(object metav1.Object) (owned bool, err error) {
 	refs, err := getRefs(object)
 	if err != nil {
-		return
+		return false, err
 	}
-	return len(refs) == 0, nil
+	return len(refs) > 0, nil
 }
 
 // EnqueueRequestForOwner enqueues requests for all owners of an object.
 //
 // It implements the same behavior as handler.EnqueueRequestForOwner, but for our custom ownerReference.
-func EnqueueRequestForOwner(ownerType Object, scheme *runtime.Scheme) handler.EventHandler {
+func EnqueueRequestForOwner(ownerType object, scheme *runtime.Scheme) handler.EventHandler {
 	ownerTypeRef := toOwnerReference(ownerType, scheme)
 	ownerKind, ownerGroup := ownerTypeRef.Kind, ownerTypeRef.Group
 
+	h := func(obj handler.MapObject) []reconcile.Request {
+		obj.Object.GetObjectKind().GroupVersionKind()
+		refs, err := getRefs(obj.Meta)
+		if err != nil {
+			utilruntime.HandleError(
+				fmt.Errorf("parsing owner references name=%s namespace=%s gvk=%s: %w",
+					obj.Meta.GetName(),
+					obj.Meta.GetNamespace(),
+					obj.Object.GetObjectKind().GroupVersionKind().String(),
+					err,
+				))
+			return nil
+		}
+		var req []reconcile.Request
+		for _, r := range refs {
+			if ownerKind == r.Kind && ownerGroup == r.Group {
+				req = append(req, reconcile.Request{
+					NamespacedName: types.NamespacedName{
+						Namespace: r.Namespace,
+						Name:      r.Name,
+					},
+				})
+			}
+		}
+		return req
+	}
+
 	return &handler.EnqueueRequestsFromMapFunc{
-		ToRequests: handler.ToRequestsFunc(func(obj handler.MapObject) []reconcile.Request {
-			obj.Object.GetObjectKind().GroupVersionKind()
-			refs, err := getRefs(obj.Meta)
-			if err != nil {
-				utilruntime.HandleError(
-					fmt.Errorf("parsing owner references name=%s namespace=%s gvk=%s: %w",
-						obj.Meta.GetName(),
-						obj.Meta.GetNamespace(),
-						obj.Object.GetObjectKind().GroupVersionKind().String(),
-						err,
-					))
-				return nil
-			}
-			var req []reconcile.Request
-			for _, r := range refs {
-				if ownerKind == r.Kind && ownerGroup == r.Group {
-					req = append(req, reconcile.Request{
-						NamespacedName: types.NamespacedName{
-							Namespace: r.Namespace,
-							Name:      r.Name,
-						},
-					})
-				}
-			}
-			return req
-		}),
+		ToRequests: handler.ToRequestsFunc(h),
 	}
 }
 
@@ -186,7 +194,7 @@ func AddOwnerReverseFieldIndex(indexer client.FieldIndexer, log logr.Logger, obj
 // OwnedBy returns owner filter for listing objects.
 //
 // See also: AddOwnerReverseFieldIndex
-func OwnedBy(owner Object, sc *runtime.Scheme) GeneralizedListOption {
+func OwnedBy(owner object, sc *runtime.Scheme) generalizedListOption {
 	return client.MatchingFields{
 		OwnerAnnotation: toOwnerReference(owner, sc).fieldIndexValue(),
 	}
@@ -203,14 +211,8 @@ func (n ownerReference) fieldIndexValue() string {
 	return string(b)
 }
 
-// Object generic k8s object with metav1 and runtime Object interfaces implemented
-type Object interface {
-	runtime.Object
-	metav1.Object
-}
-
 // toOwnerReference converts the given object into an ownerReference.
-func toOwnerReference(owner Object, scheme *runtime.Scheme) ownerReference {
+func toOwnerReference(owner object, scheme *runtime.Scheme) ownerReference {
 	gvk, err := apiutil.GVKForObject(owner, scheme)
 	if err != nil {
 		// if this panic occurs many, many other stuff has gone wrong as well

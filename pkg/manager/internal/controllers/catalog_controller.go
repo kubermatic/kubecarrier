@@ -34,6 +34,7 @@ import (
 
 	catalogv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/catalog/v1alpha1"
 	corev1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/core/v1alpha1"
+	"github.com/kubermatic/kubecarrier/pkg/internal/multiowner"
 	"github.com/kubermatic/kubecarrier/pkg/internal/util"
 )
 
@@ -195,7 +196,7 @@ func (r *CatalogReconciler) SetupWithManager(mgr ctrl.Manager) error {
 			return
 		}),
 	}
-	enqueuerForOwner := util.EnqueueRequestForOwner(&catalogv1alpha1.Catalog{}, mgr.GetScheme())
+	enqueuerForOwner := multiowner.EnqueueRequestForOwner(&catalogv1alpha1.Catalog{}, mgr.GetScheme())
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&catalogv1alpha1.Catalog{}).
 		Watches(&source.Kind{Type: &catalogv1alpha1.TenantReference{}}, enqueueAllCatalogsInNamespace).
@@ -417,7 +418,7 @@ func (r *CatalogReconciler) reconcileOfferings(
 	}
 
 	for _, desiredOffering := range desiredOfferings {
-		if _, err := util.InsertOwnerReference(catalog, &desiredOffering, r.Scheme); err != nil {
+		if _, err := multiowner.InsertOwnerReference(catalog, &desiredOffering, r.Scheme); err != nil {
 			return fmt.Errorf("inserting OwnerReference: %w", err)
 		}
 
@@ -437,7 +438,7 @@ func (r *CatalogReconciler) reconcileOfferings(
 			foundOffering = &desiredOffering
 		}
 
-		ownerChanged, err := util.InsertOwnerReference(catalog, foundOffering, r.Scheme)
+		ownerChanged, err := multiowner.InsertOwnerReference(catalog, foundOffering, r.Scheme)
 		if err != nil {
 			return fmt.Errorf("inserting OwnerReference: %w", err)
 		}
@@ -461,7 +462,7 @@ func (r *CatalogReconciler) reconcileProviderReferences(
 	}
 
 	for _, desiredProviderReference := range desiredProviderReferences {
-		if _, err := util.InsertOwnerReference(catalog, &desiredProviderReference, r.Scheme); err != nil {
+		if _, err := multiowner.InsertOwnerReference(catalog, &desiredProviderReference, r.Scheme); err != nil {
 			return fmt.Errorf("inserting OwnerReference: %w", err)
 		}
 
@@ -481,7 +482,7 @@ func (r *CatalogReconciler) reconcileProviderReferences(
 			foundProviderReference = &desiredProviderReference
 		}
 
-		ownerChanged, err := util.InsertOwnerReference(catalog, foundProviderReference, r.Scheme)
+		ownerChanged, err := multiowner.InsertOwnerReference(catalog, foundProviderReference, r.Scheme)
 		if err != nil {
 			return fmt.Errorf("inserting OwnerReference: %w", err)
 		}
@@ -505,7 +506,7 @@ func (r *CatalogReconciler) reconcileServiceClusterReferences(
 	}
 
 	for _, desiredServiceClusterReference := range desiredServiceClusterReferences {
-		if _, err := util.InsertOwnerReference(catalog, &desiredServiceClusterReference, r.Scheme); err != nil {
+		if _, err := multiowner.InsertOwnerReference(catalog, &desiredServiceClusterReference, r.Scheme); err != nil {
 			return fmt.Errorf("inserting OwnerReference: %w", err)
 		}
 
@@ -525,7 +526,7 @@ func (r *CatalogReconciler) reconcileServiceClusterReferences(
 			foundServiceClusterReference = &desiredServiceClusterReference
 		}
 
-		ownerChanged, err := util.InsertOwnerReference(catalog, foundServiceClusterReference, r.Scheme)
+		ownerChanged, err := multiowner.InsertOwnerReference(catalog, foundServiceClusterReference, r.Scheme)
 		if err != nil {
 			return fmt.Errorf("inserting OwnerReference: %w", err)
 		}
@@ -550,7 +551,7 @@ func (r *CatalogReconciler) reconcileServiceClusterAssignments(
 
 	var readyServiceClusterAssignmentsCounter int
 	for _, desiredServiceClusterAssignment := range desiredServiceClusterAssignments {
-		if _, err := util.InsertOwnerReference(catalog, &desiredServiceClusterAssignment, r.Scheme); err != nil {
+		if _, err := multiowner.InsertOwnerReference(catalog, &desiredServiceClusterAssignment, r.Scheme); err != nil {
 			return fmt.Errorf("inserting OwnerReference: %w", err)
 		}
 
@@ -570,7 +571,7 @@ func (r *CatalogReconciler) reconcileServiceClusterAssignments(
 			foundServiceClusterAssignment = &desiredServiceClusterAssignment
 		}
 
-		ownerChanged, err := util.InsertOwnerReference(catalog, foundServiceClusterAssignment, r.Scheme)
+		ownerChanged, err := multiowner.InsertOwnerReference(catalog, foundServiceClusterAssignment, r.Scheme)
 		if err != nil {
 			return fmt.Errorf("inserting OwnerReference: %w", err)
 		}
@@ -617,7 +618,7 @@ func (r *CatalogReconciler) cleanupOfferings(
 ) (deletedOfferingCounter int, err error) {
 	// Fetch existing Offerings.
 	foundOfferingList := &catalogv1alpha1.OfferingList{}
-	if err := r.List(ctx, foundOfferingList, util.OwnedBy(catalog, r.Scheme)); err != nil {
+	if err := r.List(ctx, foundOfferingList, multiowner.OwnedBy(catalog, r.Scheme)); err != nil {
 		return 0, fmt.Errorf("listing Offerings: %w", err)
 	}
 	return r.cleanupOutdatedReferences(ctx, log,
@@ -633,7 +634,7 @@ func (r *CatalogReconciler) cleanupProviderReferences(
 ) (deletedProviderReferenceCounter int, err error) {
 	// Fetch existing ProviderReferences.
 	foundProviderReferenceList := &catalogv1alpha1.ProviderReferenceList{}
-	if err := r.List(ctx, foundProviderReferenceList, util.OwnedBy(catalog, r.Scheme)); err != nil {
+	if err := r.List(ctx, foundProviderReferenceList, multiowner.OwnedBy(catalog, r.Scheme)); err != nil {
 		return 0, fmt.Errorf("listing ProviderReferences: %w", err)
 	}
 
@@ -650,7 +651,7 @@ func (r *CatalogReconciler) cleanupServiceClusterReferences(
 ) (deletedServiceClusterReferenceCounter int, err error) {
 	// Fetch existing ServiceClusterReferences.
 	foundServiceClusterReferenceList := &catalogv1alpha1.ServiceClusterReferenceList{}
-	if err := r.List(ctx, foundServiceClusterReferenceList, util.OwnedBy(catalog, r.Scheme)); err != nil {
+	if err := r.List(ctx, foundServiceClusterReferenceList, multiowner.OwnedBy(catalog, r.Scheme)); err != nil {
 		return 0, fmt.Errorf("listing ServiceClusterReferences: %w", err)
 	}
 	return r.cleanupOutdatedReferences(ctx, log,
@@ -666,7 +667,7 @@ func (r *CatalogReconciler) cleanupServiceClusterAssignments(
 ) (deletedServiceClusterAssignmentCounter int, err error) {
 	// Fetch existing ServiceClusterAssignments.
 	foundServiceClusterAssignmentList := &corev1alpha1.ServiceClusterAssignmentList{}
-	if err := r.List(ctx, foundServiceClusterAssignmentList, util.OwnedBy(catalog, r.Scheme), client.InNamespace(catalog.Namespace)); err != nil {
+	if err := r.List(ctx, foundServiceClusterAssignmentList, multiowner.OwnedBy(catalog, r.Scheme), client.InNamespace(catalog.Namespace)); err != nil {
 		return 0, fmt.Errorf("listing ServiceClusterAssignments: %w", err)
 	}
 	return r.cleanupOutdatedReferences(ctx, log,
@@ -675,32 +676,32 @@ func (r *CatalogReconciler) cleanupServiceClusterAssignments(
 		serviceClusterAssignmentsToObjectArray(desiredServiceClusterAssignments))
 }
 
-func offeringsToObjectArray(offerings []catalogv1alpha1.Offering) []util.Object {
-	out := make([]util.Object, len(offerings))
+func offeringsToObjectArray(offerings []catalogv1alpha1.Offering) []object {
+	out := make([]object, len(offerings))
 	for i := range offerings {
 		out[i] = &offerings[i]
 	}
 	return out
 }
 
-func providerReferencesToObjectArray(providerReferences []catalogv1alpha1.ProviderReference) []util.Object {
-	out := make([]util.Object, len(providerReferences))
+func providerReferencesToObjectArray(providerReferences []catalogv1alpha1.ProviderReference) []object {
+	out := make([]object, len(providerReferences))
 	for i := range providerReferences {
 		out[i] = &providerReferences[i]
 	}
 	return out
 }
 
-func serviceClusterReferencesToObjectArray(serviceClusterReferences []catalogv1alpha1.ServiceClusterReference) []util.Object {
-	out := make([]util.Object, len(serviceClusterReferences))
+func serviceClusterReferencesToObjectArray(serviceClusterReferences []catalogv1alpha1.ServiceClusterReference) []object {
+	out := make([]object, len(serviceClusterReferences))
 	for i := range serviceClusterReferences {
 		out[i] = &serviceClusterReferences[i]
 	}
 	return out
 }
 
-func serviceClusterAssignmentsToObjectArray(serviceClusterAssignments []corev1alpha1.ServiceClusterAssignment) []util.Object {
-	out := make([]util.Object, len(serviceClusterAssignments))
+func serviceClusterAssignmentsToObjectArray(serviceClusterAssignments []corev1alpha1.ServiceClusterAssignment) []object {
+	out := make([]object, len(serviceClusterAssignments))
 	for i := range serviceClusterAssignments {
 		out[i] = &serviceClusterAssignments[i]
 	}
@@ -710,8 +711,8 @@ func serviceClusterAssignmentsToObjectArray(serviceClusterAssignments []corev1al
 func (r *CatalogReconciler) cleanupOutdatedReferences(
 	ctx context.Context, log logr.Logger,
 	catalog *catalogv1alpha1.Catalog,
-	foundObjects []util.Object,
-	desiredObjects []util.Object,
+	foundObjects []object,
+	desiredObjects []object,
 ) (deletedObjectCounter int, err error) {
 	desiredObjectMap := map[string]struct{}{}
 	for _, desiredObject := range desiredObjects {
@@ -729,18 +730,18 @@ func (r *CatalogReconciler) cleanupOutdatedReferences(
 		}.String()]; present {
 			continue
 		}
-		ownerReferenceChanged, err := util.DeleteOwnerReference(catalog, foundObject, r.Scheme)
+		ownerReferenceChanged, err := multiowner.DeleteOwnerReference(catalog, foundObject, r.Scheme)
 		if err != nil {
 			return 0, fmt.Errorf("deleting OwnerReference: %w", err)
 		}
 
-		unowned, err := util.IsUnowned(foundObject)
+		owned, err := multiowner.IsOwned(foundObject)
 		if err != nil {
 			return 0, fmt.Errorf("checking object isUnowned: %w", err)
 		}
 
 		switch {
-		case unowned:
+		case !owned:
 			// The Object object is unowned by any Catalog objects, it can be removed.
 			if err := r.Delete(ctx, foundObject); err != nil && !errors.IsNotFound(err) {
 				return 0, fmt.Errorf("deleting Object: %w", err)
@@ -749,7 +750,7 @@ func (r *CatalogReconciler) cleanupOutdatedReferences(
 				"ObjectName", foundObject.GetName(),
 				"ObjectNamespace", foundObject.GetNamespace())
 			deletedObjectCounter++
-		case !unowned && ownerReferenceChanged:
+		case owned && ownerReferenceChanged:
 			if err := r.Update(ctx, foundObject); err != nil {
 				return 0, fmt.Errorf("updating Object: %w", err)
 			}

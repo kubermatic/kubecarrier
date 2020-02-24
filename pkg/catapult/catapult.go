@@ -241,7 +241,6 @@ func run(flags *flags, log logr.Logger) error {
 		Log:              log.WithName("controllers").WithName("MasterClusterObjReconciler"),
 		Client:           mgr.GetClient(),
 		NamespacedClient: namespacedClient,
-		Scheme:           mgr.GetScheme(),
 
 		ServiceClusterClient: serviceCachedClient,
 		ServiceClusterCache:  serviceCache,

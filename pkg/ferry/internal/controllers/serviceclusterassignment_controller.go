@@ -30,6 +30,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/source"
 
 	corev1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/core/v1alpha1"
+	"github.com/kubermatic/kubecarrier/pkg/internal/owner"
 	"github.com/kubermatic/kubecarrier/pkg/internal/util"
 )
 
@@ -74,7 +75,11 @@ func (r *ServiceClusterAssignmentReconciler) Reconcile(req ctrl.Request) (ctrl.R
 		}
 	}
 
-	ns, err := util.EnsureUniqueNamespace(ctx, r.ServiceClient, r.MasterScheme, serviceClusterAssignment)
+	ns, err := util.EnsureUniqueNamespace(
+		ctx, r.ServiceClient,
+		serviceClusterAssignment,
+		serviceClusterAssignment.Spec.MasterClusterNamespace.Name,
+		r.MasterScheme)
 	if err != nil {
 		serviceClusterAssignment.Status.ObservedGeneration = serviceClusterAssignment.Generation
 		serviceClusterAssignment.Status.SetCondition(corev1alpha1.ServiceClusterAssignmentCondition{
@@ -123,7 +128,7 @@ func (r *ServiceClusterAssignmentReconciler) handleDeletion(ctx context.Context,
 	}
 
 	nsList := &corev1.NamespaceList{}
-	if err := r.ServiceClient.List(ctx, nsList, util.OwnedBy(serviceClusterAssignment, r.MasterScheme)); err != nil {
+	if err := r.ServiceClient.List(ctx, nsList, owner.OwnedBy(serviceClusterAssignment, r.MasterScheme)); err != nil {
 		return fmt.Errorf("listing Namespaces: %w", err)
 	}
 
@@ -153,7 +158,7 @@ func (r *ServiceClusterAssignmentReconciler) SetupWithManager(mgr ctrl.Manager) 
 
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&corev1alpha1.ServiceClusterAssignment{}).
-		Watches(source.Func(namespaceSource.Start), util.EnqueueRequestForOwner(&corev1alpha1.ServiceClusterAssignment{}, r.MasterScheme)).
+		Watches(source.Func(namespaceSource.Start), owner.EnqueueRequestForOwner(&corev1alpha1.ServiceClusterAssignment{}, r.MasterScheme)).
 		WithEventFilter(util.PredicateFn(func(obj runtime.Object) bool {
 			if serviceClusterAssignment, ok := obj.(*corev1alpha1.ServiceClusterAssignment); ok {
 				if serviceClusterAssignment.Spec.ServiceCluster.Name == r.ServiceClusterName {
