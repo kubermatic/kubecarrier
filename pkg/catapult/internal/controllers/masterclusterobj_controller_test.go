@@ -104,7 +104,6 @@ func TestMasterClusterObjReconciler(t *testing.T) {
 		r := MasterClusterObjReconciler{
 			Client:               masterClient,
 			Log:                  log,
-			Scheme:               testScheme,
 			ServiceClusterClient: serviceClient,
 			NamespacedClient:     masterClient,
 
@@ -136,8 +135,10 @@ func TestMasterClusterObjReconciler(t *testing.T) {
 			"apiVersion": "couchdb.io/v1alpha1",
 			"kind":       "CouchDB",
 			"metadata": map[string]interface{}{
-				"annotations": map[string]interface{}{
-					"kubecarrier.io/owner": `[{"name":"test-1","namespace":"another-namespace","group":"eu-west-1.provider","kind":"CouchDBInternal"}]`,
+				"labels": map[string]interface{}{
+					"owner.kubecarrier.io/name":      "test-1",
+					"owner.kubecarrier.io/namespace": "another-namespace",
+					"owner.kubecarrier.io/type":      "CouchDBInternal.eu-west-1.provider",
 				},
 				"name":            "test-1",
 				"namespace":       "sc-test-123",
@@ -194,7 +195,6 @@ func TestMasterClusterObjReconciler(t *testing.T) {
 		r := MasterClusterObjReconciler{
 			Client:               masterClient,
 			Log:                  log,
-			Scheme:               testScheme,
 			NamespacedClient:     masterClient,
 			ServiceClusterClient: serviceClient,
 
@@ -236,8 +236,10 @@ func TestMasterClusterObjReconciler(t *testing.T) {
 			"apiVersion": "couchdb.io/v1alpha1",
 			"kind":       "CouchDB",
 			"metadata": map[string]interface{}{
-				"annotations": map[string]interface{}{
-					"kubecarrier.io/owner": `[{"name":"test-1","namespace":"another-namespace","group":"eu-west-1.provider","kind":"CouchDBInternal"}]`,
+				"labels": map[string]interface{}{
+					"owner.kubecarrier.io/name":      "test-1",
+					"owner.kubecarrier.io/namespace": "another-namespace",
+					"owner.kubecarrier.io/type":      "CouchDBInternal.eu-west-1.provider",
 				},
 				"name":            "test-1",
 				"namespace":       "sc-test-123",

@@ -1,24 +1,5 @@
 
 ## Table of Contents
-* [Catalog.catalog.kubecarrier.io/v1alpha1](#catalog.catalog.kubecarrier.io/v1alpha1)
-* [CatalogCondition.catalog.kubecarrier.io/v1alpha1](#catalogcondition.catalog.kubecarrier.io/v1alpha1)
-* [CatalogList.catalog.kubecarrier.io/v1alpha1](#cataloglist.catalog.kubecarrier.io/v1alpha1)
-* [CatalogSpec.catalog.kubecarrier.io/v1alpha1](#catalogspec.catalog.kubecarrier.io/v1alpha1)
-* [CatalogStatus.catalog.kubecarrier.io/v1alpha1](#catalogstatus.catalog.kubecarrier.io/v1alpha1)
-* [CatalogEntry.catalog.kubecarrier.io/v1alpha1](#catalogentry.catalog.kubecarrier.io/v1alpha1)
-* [CatalogEntryCondition.catalog.kubecarrier.io/v1alpha1](#catalogentrycondition.catalog.kubecarrier.io/v1alpha1)
-* [CatalogEntryList.catalog.kubecarrier.io/v1alpha1](#catalogentrylist.catalog.kubecarrier.io/v1alpha1)
-* [CatalogEntryMetadata.catalog.kubecarrier.io/v1alpha1](#catalogentrymetadata.catalog.kubecarrier.io/v1alpha1)
-* [CatalogEntrySpec.catalog.kubecarrier.io/v1alpha1](#catalogentryspec.catalog.kubecarrier.io/v1alpha1)
-* [CatalogEntryStatus.catalog.kubecarrier.io/v1alpha1](#catalogentrystatus.catalog.kubecarrier.io/v1alpha1)
-* [DerivedCustomResource.catalog.kubecarrier.io/v1alpha1](#derivedcustomresource.catalog.kubecarrier.io/v1alpha1)
-* [DerivedCustomResourceCondition.catalog.kubecarrier.io/v1alpha1](#derivedcustomresourcecondition.catalog.kubecarrier.io/v1alpha1)
-* [DerivedCustomResourceList.catalog.kubecarrier.io/v1alpha1](#derivedcustomresourcelist.catalog.kubecarrier.io/v1alpha1)
-* [DerivedCustomResourceReference.catalog.kubecarrier.io/v1alpha1](#derivedcustomresourcereference.catalog.kubecarrier.io/v1alpha1)
-* [DerivedCustomResourceSpec.catalog.kubecarrier.io/v1alpha1](#derivedcustomresourcespec.catalog.kubecarrier.io/v1alpha1)
-* [DerivedCustomResourceStatus.catalog.kubecarrier.io/v1alpha1](#derivedcustomresourcestatus.catalog.kubecarrier.io/v1alpha1)
-* [FieldPath.catalog.kubecarrier.io/v1alpha1](#fieldpath.catalog.kubecarrier.io/v1alpha1)
-* [VersionExposeConfig.catalog.kubecarrier.io/v1alpha1](#versionexposeconfig.catalog.kubecarrier.io/v1alpha1)
 * [Offering.catalog.kubecarrier.io/v1alpha1](#offering.catalog.kubecarrier.io/v1alpha1)
 * [OfferingData.catalog.kubecarrier.io/v1alpha1](#offeringdata.catalog.kubecarrier.io/v1alpha1)
 * [OfferingList.catalog.kubecarrier.io/v1alpha1](#offeringlist.catalog.kubecarrier.io/v1alpha1)
@@ -31,7 +12,6 @@
 * [TenantReferenceSpec.catalog.kubecarrier.io/v1alpha1](#tenantreferencespec.catalog.kubecarrier.io/v1alpha1)
 * [CRDInformation.catalog.kubecarrier.io/v1alpha1](#crdinformation.catalog.kubecarrier.io/v1alpha1)
 * [CRDVersion.catalog.kubecarrier.io/v1alpha1](#crdversion.catalog.kubecarrier.io/v1alpha1)
-* [ObjectReference.catalog.kubecarrier.io/v1alpha1](#objectreference.catalog.kubecarrier.io/v1alpha1)
 * [Account.catalog.kubecarrier.io/v1alpha1](#account.catalog.kubecarrier.io/v1alpha1)
 * [AccountCondition.catalog.kubecarrier.io/v1alpha1](#accountcondition.catalog.kubecarrier.io/v1alpha1)
 * [AccountList.catalog.kubecarrier.io/v1alpha1](#accountlist.catalog.kubecarrier.io/v1alpha1)
@@ -41,6 +21,27 @@
 * [ProviderReference.catalog.kubecarrier.io/v1alpha1](#providerreference.catalog.kubecarrier.io/v1alpha1)
 * [ProviderReferenceList.catalog.kubecarrier.io/v1alpha1](#providerreferencelist.catalog.kubecarrier.io/v1alpha1)
 * [ProviderReferenceSpec.catalog.kubecarrier.io/v1alpha1](#providerreferencespec.catalog.kubecarrier.io/v1alpha1)
+* [ObjectReference.catalog.kubecarrier.io/v1alpha1](#objectreference.catalog.kubecarrier.io/v1alpha1)
+* [Catalog.catalog.kubecarrier.io/v1alpha1](#catalog.catalog.kubecarrier.io/v1alpha1)
+* [CatalogCondition.catalog.kubecarrier.io/v1alpha1](#catalogcondition.catalog.kubecarrier.io/v1alpha1)
+* [CatalogList.catalog.kubecarrier.io/v1alpha1](#cataloglist.catalog.kubecarrier.io/v1alpha1)
+* [CatalogSpec.catalog.kubecarrier.io/v1alpha1](#catalogspec.catalog.kubecarrier.io/v1alpha1)
+* [CatalogStatus.catalog.kubecarrier.io/v1alpha1](#catalogstatus.catalog.kubecarrier.io/v1alpha1)
+* [CatalogEntry.catalog.kubecarrier.io/v1alpha1](#catalogentry.catalog.kubecarrier.io/v1alpha1)
+* [CatalogEntryCondition.catalog.kubecarrier.io/v1alpha1](#catalogentrycondition.catalog.kubecarrier.io/v1alpha1)
+* [CatalogEntryList.catalog.kubecarrier.io/v1alpha1](#catalogentrylist.catalog.kubecarrier.io/v1alpha1)
+* [CatalogEntryMetadata.catalog.kubecarrier.io/v1alpha1](#catalogentrymetadata.catalog.kubecarrier.io/v1alpha1)
+* [CatalogEntrySpec.catalog.kubecarrier.io/v1alpha1](#catalogentryspec.catalog.kubecarrier.io/v1alpha1)
+* [CatalogEntryStatus.catalog.kubecarrier.io/v1alpha1](#catalogentrystatus.catalog.kubecarrier.io/v1alpha1)
+* [DerivedConfig.catalog.kubecarrier.io/v1alpha1](#derivedconfig.catalog.kubecarrier.io/v1alpha1)
+* [DerivedCustomResource.catalog.kubecarrier.io/v1alpha1](#derivedcustomresource.catalog.kubecarrier.io/v1alpha1)
+* [DerivedCustomResourceCondition.catalog.kubecarrier.io/v1alpha1](#derivedcustomresourcecondition.catalog.kubecarrier.io/v1alpha1)
+* [DerivedCustomResourceList.catalog.kubecarrier.io/v1alpha1](#derivedcustomresourcelist.catalog.kubecarrier.io/v1alpha1)
+* [DerivedCustomResourceReference.catalog.kubecarrier.io/v1alpha1](#derivedcustomresourcereference.catalog.kubecarrier.io/v1alpha1)
+* [DerivedCustomResourceSpec.catalog.kubecarrier.io/v1alpha1](#derivedcustomresourcespec.catalog.kubecarrier.io/v1alpha1)
+* [DerivedCustomResourceStatus.catalog.kubecarrier.io/v1alpha1](#derivedcustomresourcestatus.catalog.kubecarrier.io/v1alpha1)
+* [FieldPath.catalog.kubecarrier.io/v1alpha1](#fieldpath.catalog.kubecarrier.io/v1alpha1)
+* [VersionExposeConfig.catalog.kubecarrier.io/v1alpha1](#versionexposeconfig.catalog.kubecarrier.io/v1alpha1)
 * [Catapult.operator.kubecarrier.io/v1alpha1](#catapult.operator.kubecarrier.io/v1alpha1)
 * [CatapultCondition.operator.kubecarrier.io/v1alpha1](#catapultcondition.operator.kubecarrier.io/v1alpha1)
 * [CatapultList.operator.kubecarrier.io/v1alpha1](#catapultlist.operator.kubecarrier.io/v1alpha1)
@@ -73,11 +74,6 @@
 * [CustomResourceDiscoverySetList.kubecarrier.io/v1alpha1](#customresourcediscoverysetlist.kubecarrier.io/v1alpha1)
 * [CustomResourceDiscoverySetSpec.kubecarrier.io/v1alpha1](#customresourcediscoverysetspec.kubecarrier.io/v1alpha1)
 * [CustomResourceDiscoverySetStatus.kubecarrier.io/v1alpha1](#customresourcediscoverysetstatus.kubecarrier.io/v1alpha1)
-* [ServiceClusterAssignment.kubecarrier.io/v1alpha1](#serviceclusterassignment.kubecarrier.io/v1alpha1)
-* [ServiceClusterAssignmentCondition.kubecarrier.io/v1alpha1](#serviceclusterassignmentcondition.kubecarrier.io/v1alpha1)
-* [ServiceClusterAssignmentList.kubecarrier.io/v1alpha1](#serviceclusterassignmentlist.kubecarrier.io/v1alpha1)
-* [ServiceClusterAssignmentSpec.kubecarrier.io/v1alpha1](#serviceclusterassignmentspec.kubecarrier.io/v1alpha1)
-* [ServiceClusterAssignmentStatus.kubecarrier.io/v1alpha1](#serviceclusterassignmentstatus.kubecarrier.io/v1alpha1)
 * [ObjectReference.kubecarrier.io/v1alpha1](#objectreference.kubecarrier.io/v1alpha1)
 * [ServiceCluster.kubecarrier.io/v1alpha1](#servicecluster.kubecarrier.io/v1alpha1)
 * [ServiceClusterCondition.kubecarrier.io/v1alpha1](#serviceclustercondition.kubecarrier.io/v1alpha1)
@@ -85,237 +81,11 @@
 * [ServiceClusterMetadata.kubecarrier.io/v1alpha1](#serviceclustermetadata.kubecarrier.io/v1alpha1)
 * [ServiceClusterSpec.kubecarrier.io/v1alpha1](#serviceclusterspec.kubecarrier.io/v1alpha1)
 * [ServiceClusterStatus.kubecarrier.io/v1alpha1](#serviceclusterstatus.kubecarrier.io/v1alpha1)
-
-## Catalog.catalog.kubecarrier.io/v1alpha1
-
-Catalog publishes a selection of CatalogEntries to a selection of Tenants.
-
-| Field | Description | Scheme | Required |
-| ----- | ----------- | ------ | -------- |
-| metadata |  | [metav1.ObjectMeta](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.14/#objectmeta-v1-meta) | false |
-| spec |  | catalog.kubecarrier.io/v1alpha1.CatalogSpec | false |
-| status |  | catalog.kubecarrier.io/v1alpha1.CatalogStatus | false |
-
-[Back to TOC](#table-of-contents)
-
-## CatalogCondition.catalog.kubecarrier.io/v1alpha1
-
-CatalogCondition contains details for the current condition of this Catalog.
-
-| Field | Description | Scheme | Required |
-| ----- | ----------- | ------ | -------- |
-| type | Type is the type of the Catalog condition, currently ('Ready'). | catalog.kubecarrier.io/v1alpha1.CatalogConditionType | true |
-| status | Status is the status of the condition, one of ('True', 'False', 'Unknown'). | catalog.kubecarrier.io/v1alpha1.ConditionStatus | true |
-| lastTransitionTime | LastTransitionTime is the last time the condition transits from one status to another. | metav1.Time | true |
-| reason | Reason is the (brief) reason for the condition's last transition. | string | true |
-| message | Message is the human readable message indicating details about last transition. | string | true |
-
-[Back to TOC](#table-of-contents)
-
-## CatalogList.catalog.kubecarrier.io/v1alpha1
-
-CatalogList contains a list of Catalog
-
-| Field | Description | Scheme | Required |
-| ----- | ----------- | ------ | -------- |
-| metadata |  | [metav1.ListMeta](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.14/#listmeta-v1-meta) | false |
-| items |  | []catalog.kubecarrier.io/v1alpha1.Catalog | true |
-
-[Back to TOC](#table-of-contents)
-
-## CatalogSpec.catalog.kubecarrier.io/v1alpha1
-
-CatalogSpec defines the desired contents of a Catalog.
-
-| Field | Description | Scheme | Required |
-| ----- | ----------- | ------ | -------- |
-| catalogEntrySelector | CatalogEntrySelector selects CatalogEntry objects that should be part of this catalog. | *[metav1.LabelSelector](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.14/#labelselector-v1-meta) | false |
-| tenantReferenceSelector | TenantReferenceSelector selects TenantReference objects that the catalog should be published to. | *[metav1.LabelSelector](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.14/#labelselector-v1-meta) | false |
-
-[Back to TOC](#table-of-contents)
-
-## CatalogStatus.catalog.kubecarrier.io/v1alpha1
-
-CatalogStatus defines the observed state of Catalog.
-
-| Field | Description | Scheme | Required |
-| ----- | ----------- | ------ | -------- |
-| tenants | Tenants is the list of the Tenants(TenantReference) that selected by this Catalog. | []catalog.kubecarrier.io/v1alpha1.ObjectReference | false |
-| entries | Entries is the list of the CatalogEntries that selected by this Catalog. | []catalog.kubecarrier.io/v1alpha1.ObjectReference | false |
-| observedGeneration | ObservedGeneration is the most recent generation observed for this Catalog by the controller. | catalog.kubecarrier.io/v1alpha1.int64 | false |
-| conditions | Conditions represents the latest available observations of a Catalog's current state. | []catalog.kubecarrier.io/v1alpha1.CatalogCondition | false |
-| phase | DEPRECATED. Phase represents the current lifecycle state of this object. Consider this field DEPRECATED, it will be removed as soon as there is a mechanism to map conditions to strings when printing the property. This is only for display purpose, for everything else use conditions. | catalog.kubecarrier.io/v1alpha1.CatalogPhaseType | false |
-
-[Back to TOC](#table-of-contents)
-
-## CatalogEntry.catalog.kubecarrier.io/v1alpha1
-
-CatalogEntry reference to the CRD that the provider wants to provide as service to the tenant.
-
-| Field | Description | Scheme | Required |
-| ----- | ----------- | ------ | -------- |
-| metadata |  | [metav1.ObjectMeta](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.14/#objectmeta-v1-meta) | false |
-| spec |  | catalog.kubecarrier.io/v1alpha1.CatalogEntrySpec | false |
-| status |  | catalog.kubecarrier.io/v1alpha1.CatalogEntryStatus | false |
-
-[Back to TOC](#table-of-contents)
-
-## CatalogEntryCondition.catalog.kubecarrier.io/v1alpha1
-
-CatalogEntryCondition contains details for the current condition of this CatalogEntry.
-
-| Field | Description | Scheme | Required |
-| ----- | ----------- | ------ | -------- |
-| type | Type is the type of the CatalogEntry condition, currently ('Ready'). | catalog.kubecarrier.io/v1alpha1.CatalogEntryConditionType | true |
-| status | Status is the status of the condition, one of ('True', 'False', 'Unknown'). | catalog.kubecarrier.io/v1alpha1.ConditionStatus | true |
-| lastTransitionTime | LastTransitionTime is the last time the condition transits from one status to another. | metav1.Time | true |
-| reason | Reason is the (brief) reason for the condition's last transition. | string | true |
-| message | Message is the human readable message indicating details about last transition. | string | true |
-
-[Back to TOC](#table-of-contents)
-
-## CatalogEntryList.catalog.kubecarrier.io/v1alpha1
-
-CatalogEntryList contains a list of CatalogEntry
-
-| Field | Description | Scheme | Required |
-| ----- | ----------- | ------ | -------- |
-| metadata |  | [metav1.ListMeta](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.14/#listmeta-v1-meta) | false |
-| items |  | []catalog.kubecarrier.io/v1alpha1.CatalogEntry | true |
-
-[Back to TOC](#table-of-contents)
-
-## CatalogEntryMetadata.catalog.kubecarrier.io/v1alpha1
-
-CatalogEntryMetadata contains the metadata (display name, description, etc) of the CatalogEntry.
-
-| Field | Description | Scheme | Required |
-| ----- | ----------- | ------ | -------- |
-| displayName | DisplayName shows the human-readable name of this CatalogEntry. | string | false |
-| description | Description shows the human-readable description of this CatalogEntry. | string | false |
-
-[Back to TOC](#table-of-contents)
-
-## CatalogEntrySpec.catalog.kubecarrier.io/v1alpha1
-
-CatalogEntrySpec defines the desired state of CatalogEntry
-
-| Field | Description | Scheme | Required |
-| ----- | ----------- | ------ | -------- |
-| metadata | Metadata contains the metadata (display name, description, etc) of the CatalogEntry. | catalog.kubecarrier.io/v1alpha1.CatalogEntryMetadata | false |
-| referencedCRD | ReferencedCRD is the underlying ReferencedCRD objects that this CatalogEntry refers to. | catalog.kubecarrier.io/v1alpha1.ObjectReference | false |
-
-[Back to TOC](#table-of-contents)
-
-## CatalogEntryStatus.catalog.kubecarrier.io/v1alpha1
-
-CatalogEntryStatus defines the observed state of CatalogEntry.
-
-| Field | Description | Scheme | Required |
-| ----- | ----------- | ------ | -------- |
-| crd | CRD holds the information about the underlying ReferencedCRD that are offered by this CatalogEntry. | catalog.kubecarrier.io/v1alpha1.CRDInformation | false |
-| observedGeneration | ObservedGeneration is the most recent generation observed for this CatalogEntry by the controller. | catalog.kubecarrier.io/v1alpha1.int64 | false |
-| conditions | Conditions represents the latest available observations of a CatalogEntry's current state. | []catalog.kubecarrier.io/v1alpha1.CatalogEntryCondition | false |
-| phase | DEPRECATED. Phase represents the current lifecycle state of this object. Consider this field DEPRECATED, it will be removed as soon as there is a mechanism to map conditions to strings when printing the property. This is only for display purpose, for everything else use conditions. | catalog.kubecarrier.io/v1alpha1.CatalogEntryPhaseType | false |
-
-[Back to TOC](#table-of-contents)
-
-## DerivedCustomResource.catalog.kubecarrier.io/v1alpha1
-
-DerivedCustomResource derives a new CRD from a existing one.
-
-| Field | Description | Scheme | Required |
-| ----- | ----------- | ------ | -------- |
-| metadata |  | [metav1.ObjectMeta](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.14/#objectmeta-v1-meta) | false |
-| spec |  | catalog.kubecarrier.io/v1alpha1.DerivedCustomResourceSpec | false |
-| status |  | catalog.kubecarrier.io/v1alpha1.DerivedCustomResourceStatus | false |
-
-[Back to TOC](#table-of-contents)
-
-## DerivedCustomResourceCondition.catalog.kubecarrier.io/v1alpha1
-
-DerivedCustomResourceCondition contains details for the current condition of this DerivedCustomResource.
-
-| Field | Description | Scheme | Required |
-| ----- | ----------- | ------ | -------- |
-| type | Type is the type of the DerivedCustomResource condition, currently ('Ready'). | catalog.kubecarrier.io/v1alpha1.DerivedCustomResourceConditionType | true |
-| status | Status is the status of the condition, one of ('True', 'False', 'Unknown'). | catalog.kubecarrier.io/v1alpha1.ConditionStatus | true |
-| lastTransitionTime | LastTransitionTime is the last time the condition transits from one status to another. | metav1.Time | true |
-| reason | Reason is the (brief) reason for the condition's last transition. | string | true |
-| message | Message is the human readable message indicating details about last transition. | string | true |
-
-[Back to TOC](#table-of-contents)
-
-## DerivedCustomResourceList.catalog.kubecarrier.io/v1alpha1
-
-DerivedCustomResourceList contains a list of DerivedCustomResource.
-
-| Field | Description | Scheme | Required |
-| ----- | ----------- | ------ | -------- |
-| metadata |  | [metav1.ListMeta](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.14/#listmeta-v1-meta) | false |
-| items |  | []catalog.kubecarrier.io/v1alpha1.DerivedCustomResource | true |
-
-[Back to TOC](#table-of-contents)
-
-## DerivedCustomResourceReference.catalog.kubecarrier.io/v1alpha1
-
-DerivedCustomResourceReference references the derived CRD controlled by this DerivedCustomResource instance.
-
-| Field | Description | Scheme | Required |
-| ----- | ----------- | ------ | -------- |
-| name | Name of the derived CRD. | string | true |
-| group | API Group of the derived CRD. | string | true |
-| kind |  | string | true |
-| plural |  | string | true |
-| singular |  | string | true |
-
-[Back to TOC](#table-of-contents)
-
-## DerivedCustomResourceSpec.catalog.kubecarrier.io/v1alpha1
-
-DerivedCustomResourceSpec defines the desired state of DerivedCustomResource.
-
-| Field | Description | Scheme | Required |
-| ----- | ----------- | ------ | -------- |
-| baseCRD | CRD that should be used as a base to derive a new CRD from. | catalog.kubecarrier.io/v1alpha1.ObjectReference | true |
-| kindOverride | overrides the kind of the derived CRD. | string | false |
-| expose | controls which fields will be present in the derived CRD. | []catalog.kubecarrier.io/v1alpha1.VersionExposeConfig | true |
-
-[Back to TOC](#table-of-contents)
-
-## DerivedCustomResourceStatus.catalog.kubecarrier.io/v1alpha1
-
-DerivedCustomResourceStatus defines the observed state of DerivedCustomResource.
-
-| Field | Description | Scheme | Required |
-| ----- | ----------- | ------ | -------- |
-| observedGeneration | ObservedGeneration is the most recent generation observed for this DerivedCustomResource by the controller. | catalog.kubecarrier.io/v1alpha1.int64 | false |
-| conditions | Conditions represents the latest available observations of a DerivedCustomResource's current state. | []catalog.kubecarrier.io/v1alpha1.DerivedCustomResourceCondition | false |
-| phase | DEPRECATED. Phase represents the current lifecycle state of this object. Consider this field DEPRECATED, it will be removed as soon as there is a mechanism to map conditions to strings when printing the property. This is only for display purpose, for everything else use conditions. | catalog.kubecarrier.io/v1alpha1.DerivedCustomResourcePhaseType | false |
-| derivedCR | DerivedCR holds information about the derived CRD. | *catalog.kubecarrier.io/v1alpha1.DerivedCustomResourceReference | false |
-
-[Back to TOC](#table-of-contents)
-
-## FieldPath.catalog.kubecarrier.io/v1alpha1
-
-FieldPath is specifying how to address a certain field.
-
-| Field | Description | Scheme | Required |
-| ----- | ----------- | ------ | -------- |
-| jsonPath | JSONPath e.g. .spec.somefield.somesubfield | string | true |
-
-[Back to TOC](#table-of-contents)
-
-## VersionExposeConfig.catalog.kubecarrier.io/v1alpha1
-
-VersionExposeConfig specifies which fields to expose in the derived CRD.
-
-| Field | Description | Scheme | Required |
-| ----- | ----------- | ------ | -------- |
-| versions | specifies the versions of the referenced CRD, that this expose config applies to. The same version may not be specified in multiple VersionExposeConfigs. | []string | true |
-| fields | specifies the fields that should be present in the derived CRD. | []catalog.kubecarrier.io/v1alpha1.FieldPath | true |
-
-[Back to TOC](#table-of-contents)
+* [ServiceClusterAssignment.kubecarrier.io/v1alpha1](#serviceclusterassignment.kubecarrier.io/v1alpha1)
+* [ServiceClusterAssignmentCondition.kubecarrier.io/v1alpha1](#serviceclusterassignmentcondition.kubecarrier.io/v1alpha1)
+* [ServiceClusterAssignmentList.kubecarrier.io/v1alpha1](#serviceclusterassignmentlist.kubecarrier.io/v1alpha1)
+* [ServiceClusterAssignmentSpec.kubecarrier.io/v1alpha1](#serviceclusterassignmentspec.kubecarrier.io/v1alpha1)
+* [ServiceClusterAssignmentStatus.kubecarrier.io/v1alpha1](#serviceclusterassignmentstatus.kubecarrier.io/v1alpha1)
 
 ## Offering.catalog.kubecarrier.io/v1alpha1
 
@@ -451,16 +221,6 @@ CRDVersion holds CRD version specific details.
 
 [Back to TOC](#table-of-contents)
 
-## ObjectReference.catalog.kubecarrier.io/v1alpha1
-
-ObjectReference describes the link to another object in the same namespace.
-
-| Field | Description | Scheme | Required |
-| ----- | ----------- | ------ | -------- |
-| name |  | string | true |
-
-[Back to TOC](#table-of-contents)
-
 ## Account.catalog.kubecarrier.io/v1alpha1
 
 Account is the service provider representation in the KubeCarrier control-plane.
@@ -562,6 +322,259 @@ ProviderReferenceSpec defines the desired state of ProviderReference
 | Field | Description | Scheme | Required |
 | ----- | ----------- | ------ | -------- |
 | metadata | Metadata contains the metadata (display name, description, etc) of the Provider. | catalog.kubecarrier.io/v1alpha1.AccountMetadata | false |
+
+[Back to TOC](#table-of-contents)
+
+## ObjectReference.catalog.kubecarrier.io/v1alpha1
+
+ObjectReference describes the link to another object in the same namespace.
+
+| Field | Description | Scheme | Required |
+| ----- | ----------- | ------ | -------- |
+| name |  | string | true |
+
+[Back to TOC](#table-of-contents)
+
+## Catalog.catalog.kubecarrier.io/v1alpha1
+
+Catalog publishes a selection of CatalogEntries to a selection of Tenants.
+
+| Field | Description | Scheme | Required |
+| ----- | ----------- | ------ | -------- |
+| metadata |  | [metav1.ObjectMeta](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.14/#objectmeta-v1-meta) | false |
+| spec |  | catalog.kubecarrier.io/v1alpha1.CatalogSpec | false |
+| status |  | catalog.kubecarrier.io/v1alpha1.CatalogStatus | false |
+
+[Back to TOC](#table-of-contents)
+
+## CatalogCondition.catalog.kubecarrier.io/v1alpha1
+
+CatalogCondition contains details for the current condition of this Catalog.
+
+| Field | Description | Scheme | Required |
+| ----- | ----------- | ------ | -------- |
+| type | Type is the type of the Catalog condition, currently ('Ready'). | catalog.kubecarrier.io/v1alpha1.CatalogConditionType | true |
+| status | Status is the status of the condition, one of ('True', 'False', 'Unknown'). | catalog.kubecarrier.io/v1alpha1.ConditionStatus | true |
+| lastTransitionTime | LastTransitionTime is the last time the condition transits from one status to another. | metav1.Time | true |
+| reason | Reason is the (brief) reason for the condition's last transition. | string | true |
+| message | Message is the human readable message indicating details about last transition. | string | true |
+
+[Back to TOC](#table-of-contents)
+
+## CatalogList.catalog.kubecarrier.io/v1alpha1
+
+CatalogList contains a list of Catalog
+
+| Field | Description | Scheme | Required |
+| ----- | ----------- | ------ | -------- |
+| metadata |  | [metav1.ListMeta](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.14/#listmeta-v1-meta) | false |
+| items |  | []catalog.kubecarrier.io/v1alpha1.Catalog | true |
+
+[Back to TOC](#table-of-contents)
+
+## CatalogSpec.catalog.kubecarrier.io/v1alpha1
+
+CatalogSpec defines the desired contents of a Catalog.
+
+| Field | Description | Scheme | Required |
+| ----- | ----------- | ------ | -------- |
+| catalogEntrySelector | CatalogEntrySelector selects CatalogEntry objects that should be part of this catalog. | *[metav1.LabelSelector](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.14/#labelselector-v1-meta) | false |
+| tenantReferenceSelector | TenantReferenceSelector selects TenantReference objects that the catalog should be published to. | *[metav1.LabelSelector](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.14/#labelselector-v1-meta) | false |
+
+[Back to TOC](#table-of-contents)
+
+## CatalogStatus.catalog.kubecarrier.io/v1alpha1
+
+CatalogStatus defines the observed state of Catalog.
+
+| Field | Description | Scheme | Required |
+| ----- | ----------- | ------ | -------- |
+| tenants | Tenants is the list of the Tenants(TenantReference) that selected by this Catalog. | []catalog.kubecarrier.io/v1alpha1.ObjectReference | false |
+| entries | Entries is the list of the CatalogEntries that selected by this Catalog. | []catalog.kubecarrier.io/v1alpha1.ObjectReference | false |
+| observedGeneration | ObservedGeneration is the most recent generation observed for this Catalog by the controller. | catalog.kubecarrier.io/v1alpha1.int64 | false |
+| conditions | Conditions represents the latest available observations of a Catalog's current state. | []catalog.kubecarrier.io/v1alpha1.CatalogCondition | false |
+| phase | DEPRECATED. Phase represents the current lifecycle state of this object. Consider this field DEPRECATED, it will be removed as soon as there is a mechanism to map conditions to strings when printing the property. This is only for display purpose, for everything else use conditions. | catalog.kubecarrier.io/v1alpha1.CatalogPhaseType | false |
+
+[Back to TOC](#table-of-contents)
+
+## CatalogEntry.catalog.kubecarrier.io/v1alpha1
+
+CatalogEntry reference to the CRD that the provider wants to provide as service to the tenant.
+
+| Field | Description | Scheme | Required |
+| ----- | ----------- | ------ | -------- |
+| metadata |  | [metav1.ObjectMeta](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.14/#objectmeta-v1-meta) | false |
+| spec |  | catalog.kubecarrier.io/v1alpha1.CatalogEntrySpec | false |
+| status |  | catalog.kubecarrier.io/v1alpha1.CatalogEntryStatus | false |
+
+[Back to TOC](#table-of-contents)
+
+## CatalogEntryCondition.catalog.kubecarrier.io/v1alpha1
+
+CatalogEntryCondition contains details for the current condition of this CatalogEntry.
+
+| Field | Description | Scheme | Required |
+| ----- | ----------- | ------ | -------- |
+| type | Type is the type of the CatalogEntry condition, currently ('Ready'). | catalog.kubecarrier.io/v1alpha1.CatalogEntryConditionType | true |
+| status | Status is the status of the condition, one of ('True', 'False', 'Unknown'). | catalog.kubecarrier.io/v1alpha1.ConditionStatus | true |
+| lastTransitionTime | LastTransitionTime is the last time the condition transits from one status to another. | metav1.Time | true |
+| reason | Reason is the (brief) reason for the condition's last transition. | string | true |
+| message | Message is the human readable message indicating details about last transition. | string | true |
+
+[Back to TOC](#table-of-contents)
+
+## CatalogEntryList.catalog.kubecarrier.io/v1alpha1
+
+CatalogEntryList contains a list of CatalogEntry
+
+| Field | Description | Scheme | Required |
+| ----- | ----------- | ------ | -------- |
+| metadata |  | [metav1.ListMeta](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.14/#listmeta-v1-meta) | false |
+| items |  | []catalog.kubecarrier.io/v1alpha1.CatalogEntry | true |
+
+[Back to TOC](#table-of-contents)
+
+## CatalogEntryMetadata.catalog.kubecarrier.io/v1alpha1
+
+CatalogEntryMetadata contains the metadata (display name, description, etc) of the CatalogEntry.
+
+| Field | Description | Scheme | Required |
+| ----- | ----------- | ------ | -------- |
+| displayName | DisplayName shows the human-readable name of this CatalogEntry. | string | false |
+| description | Description shows the human-readable description of this CatalogEntry. | string | false |
+
+[Back to TOC](#table-of-contents)
+
+## CatalogEntrySpec.catalog.kubecarrier.io/v1alpha1
+
+CatalogEntrySpec defines the desired state of CatalogEntry
+
+| Field | Description | Scheme | Required |
+| ----- | ----------- | ------ | -------- |
+| metadata | Metadata contains the metadata (display name, description, etc) of the CatalogEntry. | catalog.kubecarrier.io/v1alpha1.CatalogEntryMetadata | false |
+| baseCRD | BaseCRD is the underlying BaseCRD objects that this CatalogEntry refers to. | catalog.kubecarrier.io/v1alpha1.ObjectReference | false |
+| derivedConfig | DerivedConfig contains the configuration to generate DerivedCustomResource from the BaseCRD of this CatalogEntry. | *catalog.kubecarrier.io/v1alpha1.DerivedConfig | false |
+
+[Back to TOC](#table-of-contents)
+
+## CatalogEntryStatus.catalog.kubecarrier.io/v1alpha1
+
+CatalogEntryStatus defines the observed state of CatalogEntry.
+
+| Field | Description | Scheme | Required |
+| ----- | ----------- | ------ | -------- |
+| crd | CRD holds the information about the underlying BaseCRD that are offered by this CatalogEntry. | *catalog.kubecarrier.io/v1alpha1.CRDInformation | false |
+| observedGeneration | ObservedGeneration is the most recent generation observed for this CatalogEntry by the controller. | catalog.kubecarrier.io/v1alpha1.int64 | false |
+| conditions | Conditions represents the latest available observations of a CatalogEntry's current state. | []catalog.kubecarrier.io/v1alpha1.CatalogEntryCondition | false |
+| phase | DEPRECATED. Phase represents the current lifecycle state of this object. Consider this field DEPRECATED, it will be removed as soon as there is a mechanism to map conditions to strings when printing the property. This is only for display purpose, for everything else use conditions. | catalog.kubecarrier.io/v1alpha1.CatalogEntryPhaseType | false |
+
+[Back to TOC](#table-of-contents)
+
+## DerivedConfig.catalog.kubecarrier.io/v1alpha1
+
+
+
+| Field | Description | Scheme | Required |
+| ----- | ----------- | ------ | -------- |
+| kindOverride | overrides the kind of the derived CRD. | string | false |
+| expose | controls which fields will be present in the derived CRD. | []catalog.kubecarrier.io/v1alpha1.VersionExposeConfig | true |
+
+[Back to TOC](#table-of-contents)
+
+## DerivedCustomResource.catalog.kubecarrier.io/v1alpha1
+
+DerivedCustomResource derives a new CRD from a existing one.
+
+| Field | Description | Scheme | Required |
+| ----- | ----------- | ------ | -------- |
+| metadata |  | [metav1.ObjectMeta](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.14/#objectmeta-v1-meta) | false |
+| spec |  | catalog.kubecarrier.io/v1alpha1.DerivedCustomResourceSpec | false |
+| status |  | catalog.kubecarrier.io/v1alpha1.DerivedCustomResourceStatus | false |
+
+[Back to TOC](#table-of-contents)
+
+## DerivedCustomResourceCondition.catalog.kubecarrier.io/v1alpha1
+
+DerivedCustomResourceCondition contains details for the current condition of this DerivedCustomResource.
+
+| Field | Description | Scheme | Required |
+| ----- | ----------- | ------ | -------- |
+| type | Type is the type of the DerivedCustomResource condition, currently ('Ready'). | catalog.kubecarrier.io/v1alpha1.DerivedCustomResourceConditionType | true |
+| status | Status is the status of the condition, one of ('True', 'False', 'Unknown'). | catalog.kubecarrier.io/v1alpha1.ConditionStatus | true |
+| lastTransitionTime | LastTransitionTime is the last time the condition transits from one status to another. | metav1.Time | true |
+| reason | Reason is the (brief) reason for the condition's last transition. | string | true |
+| message | Message is the human readable message indicating details about last transition. | string | true |
+
+[Back to TOC](#table-of-contents)
+
+## DerivedCustomResourceList.catalog.kubecarrier.io/v1alpha1
+
+DerivedCustomResourceList contains a list of DerivedCustomResource.
+
+| Field | Description | Scheme | Required |
+| ----- | ----------- | ------ | -------- |
+| metadata |  | [metav1.ListMeta](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.14/#listmeta-v1-meta) | false |
+| items |  | []catalog.kubecarrier.io/v1alpha1.DerivedCustomResource | true |
+
+[Back to TOC](#table-of-contents)
+
+## DerivedCustomResourceReference.catalog.kubecarrier.io/v1alpha1
+
+DerivedCustomResourceReference references the derived CRD controlled by this DerivedCustomResource instance.
+
+| Field | Description | Scheme | Required |
+| ----- | ----------- | ------ | -------- |
+| name | Name of the derived CRD. | string | true |
+| group | API Group of the derived CRD. | string | true |
+| kind |  | string | true |
+| plural |  | string | true |
+| singular |  | string | true |
+
+[Back to TOC](#table-of-contents)
+
+## DerivedCustomResourceSpec.catalog.kubecarrier.io/v1alpha1
+
+DerivedCustomResourceSpec defines the desired state of DerivedCustomResource.
+
+| Field | Description | Scheme | Required |
+| ----- | ----------- | ------ | -------- |
+| baseCRD | CRD that should be used as a base to derive a new CRD from. | catalog.kubecarrier.io/v1alpha1.ObjectReference | true |
+| kindOverride | overrides the kind of the derived CRD. | string | false |
+| expose | controls which fields will be present in the derived CRD. | []catalog.kubecarrier.io/v1alpha1.VersionExposeConfig | true |
+
+[Back to TOC](#table-of-contents)
+
+## DerivedCustomResourceStatus.catalog.kubecarrier.io/v1alpha1
+
+DerivedCustomResourceStatus defines the observed state of DerivedCustomResource.
+
+| Field | Description | Scheme | Required |
+| ----- | ----------- | ------ | -------- |
+| observedGeneration | ObservedGeneration is the most recent generation observed for this DerivedCustomResource by the controller. | catalog.kubecarrier.io/v1alpha1.int64 | false |
+| conditions | Conditions represents the latest available observations of a DerivedCustomResource's current state. | []catalog.kubecarrier.io/v1alpha1.DerivedCustomResourceCondition | false |
+| phase | DEPRECATED. Phase represents the current lifecycle state of this object. Consider this field DEPRECATED, it will be removed as soon as there is a mechanism to map conditions to strings when printing the property. This is only for display purpose, for everything else use conditions. | catalog.kubecarrier.io/v1alpha1.DerivedCustomResourcePhaseType | false |
+| derivedCR | DerivedCR holds information about the derived CRD. | *catalog.kubecarrier.io/v1alpha1.DerivedCustomResourceReference | false |
+
+[Back to TOC](#table-of-contents)
+
+## FieldPath.catalog.kubecarrier.io/v1alpha1
+
+FieldPath is specifying how to address a certain field.
+
+| Field | Description | Scheme | Required |
+| ----- | ----------- | ------ | -------- |
+| jsonPath | JSONPath e.g. .spec.somefield.somesubfield | string | true |
+
+[Back to TOC](#table-of-contents)
+
+## VersionExposeConfig.catalog.kubecarrier.io/v1alpha1
+
+VersionExposeConfig specifies which fields to expose in the derived CRD.
+
+| Field | Description | Scheme | Required |
+| ----- | ----------- | ------ | -------- |
+| versions | specifies the versions of the referenced CRD, that this expose config applies to. The same version may not be specified in multiple VersionExposeConfigs. | []string | true |
+| fields | specifies the fields that should be present in the derived CRD. | []catalog.kubecarrier.io/v1alpha1.FieldPath | true |
 
 [Back to TOC](#table-of-contents)
 
@@ -950,67 +963,6 @@ CustomResourceDiscoverySetCondition contains details for the current condition o
 
 [Back to TOC](#table-of-contents)
 
-## ServiceClusterAssignment.kubecarrier.io/v1alpha1
-
-ServiceClusterAssignment represents the assignment of a Tenant to a ServiceCluster.
-
-| Field | Description | Scheme | Required |
-| ----- | ----------- | ------ | -------- |
-| metadata |  | [metav1.ObjectMeta](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.14/#objectmeta-v1-meta) | false |
-| spec |  | kubecarrier.io/v1alpha1.ServiceClusterAssignmentSpec | false |
-| status |  | kubecarrier.io/v1alpha1.ServiceClusterAssignmentStatus | false |
-
-[Back to TOC](#table-of-contents)
-
-## ServiceClusterAssignmentCondition.kubecarrier.io/v1alpha1
-
-ServiceClusterAssignmentCondition contains details for the current condition of this ServiceClusterAssignment.
-
-| Field | Description | Scheme | Required |
-| ----- | ----------- | ------ | -------- |
-| lastTransitionTime | LastTransitionTime is the last time the condition transit from one status to another. | metav1.Time | true |
-| message | Message is the human readable message indicating details about last transition. | string | true |
-| reason | Reason is the (brief) reason for the condition's last transition. | string | true |
-| status | Status of the condition, one of ('True', 'False', 'Unknown'). | kubecarrier.io/v1alpha1.ConditionStatus | true |
-| type | Type of the condition, currently ('Ready'). | kubecarrier.io/v1alpha1.ServiceClusterAssignmentConditionType | true |
-
-[Back to TOC](#table-of-contents)
-
-## ServiceClusterAssignmentList.kubecarrier.io/v1alpha1
-
-ServiceClusterAssignmentList contains a list of ServiceClusterAssignment
-
-| Field | Description | Scheme | Required |
-| ----- | ----------- | ------ | -------- |
-| metadata |  | [metav1.ListMeta](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.14/#listmeta-v1-meta) | false |
-| items |  | []kubecarrier.io/v1alpha1.ServiceClusterAssignment | true |
-
-[Back to TOC](#table-of-contents)
-
-## ServiceClusterAssignmentSpec.kubecarrier.io/v1alpha1
-
-ServiceClusterAssignmentSpec defines the desired state of ServiceClusterAssignment
-
-| Field | Description | Scheme | Required |
-| ----- | ----------- | ------ | -------- |
-| serviceCluster | References the ServiceCluster. | kubecarrier.io/v1alpha1.ObjectReference | true |
-| masterNamespace | References the source namespace in the master cluster. | kubecarrier.io/v1alpha1.ObjectReference | true |
-
-[Back to TOC](#table-of-contents)
-
-## ServiceClusterAssignmentStatus.kubecarrier.io/v1alpha1
-
-ServiceClusterAssignmentStatus defines the observed state of ServiceClusterAssignment
-
-| Field | Description | Scheme | Required |
-| ----- | ----------- | ------ | -------- |
-| phase | DEPRECATED. Phase represents the current lifecycle state of this object consider this field DEPRECATED, it will be removed as soon as there is a mechanism to map conditions to a string when printing the property is only present for display purposes, for everything else use conditions | kubecarrier.io/v1alpha1.ServiceClusterAssignmentPhaseType | false |
-| conditions | Conditions is a list of all conditions this ServiceClusterAssignment is in. | []kubecarrier.io/v1alpha1.ServiceClusterAssignmentCondition | false |
-| observedGeneration | The most recent generation observed by the controller. | kubecarrier.io/v1alpha1.int64 | false |
-| serviceClusterNamespace | ServiceClusterNamespace references the Namespace on the ServiceCluster that was assigned. | kubecarrier.io/v1alpha1.ObjectReference | false |
-
-[Back to TOC](#table-of-contents)
-
 ## ObjectReference.kubecarrier.io/v1alpha1
 
 ObjectReference describes the link to another object in the same namespace
@@ -1091,5 +1043,66 @@ ServiceClusterStatus defines the observed state of ServiceCluster
 | conditions | Conditions is a list of all conditions this ServiceCluster is in. | []kubecarrier.io/v1alpha1.ServiceClusterCondition | false |
 | observedGeneration | The most recent generation observed by the controller. | kubecarrier.io/v1alpha1.int64 | false |
 | kubernetesVersion | KubernetesVersion of the service cluster API Server | *version.Info | false |
+
+[Back to TOC](#table-of-contents)
+
+## ServiceClusterAssignment.kubecarrier.io/v1alpha1
+
+ServiceClusterAssignment represents the assignment of a Tenant to a ServiceCluster.
+
+| Field | Description | Scheme | Required |
+| ----- | ----------- | ------ | -------- |
+| metadata |  | [metav1.ObjectMeta](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.14/#objectmeta-v1-meta) | false |
+| spec |  | kubecarrier.io/v1alpha1.ServiceClusterAssignmentSpec | false |
+| status |  | kubecarrier.io/v1alpha1.ServiceClusterAssignmentStatus | false |
+
+[Back to TOC](#table-of-contents)
+
+## ServiceClusterAssignmentCondition.kubecarrier.io/v1alpha1
+
+ServiceClusterAssignmentCondition contains details for the current condition of this ServiceClusterAssignment.
+
+| Field | Description | Scheme | Required |
+| ----- | ----------- | ------ | -------- |
+| lastTransitionTime | LastTransitionTime is the last time the condition transit from one status to another. | metav1.Time | true |
+| message | Message is the human readable message indicating details about last transition. | string | true |
+| reason | Reason is the (brief) reason for the condition's last transition. | string | true |
+| status | Status of the condition, one of ('True', 'False', 'Unknown'). | kubecarrier.io/v1alpha1.ConditionStatus | true |
+| type | Type of the condition, currently ('Ready'). | kubecarrier.io/v1alpha1.ServiceClusterAssignmentConditionType | true |
+
+[Back to TOC](#table-of-contents)
+
+## ServiceClusterAssignmentList.kubecarrier.io/v1alpha1
+
+ServiceClusterAssignmentList contains a list of ServiceClusterAssignment
+
+| Field | Description | Scheme | Required |
+| ----- | ----------- | ------ | -------- |
+| metadata |  | [metav1.ListMeta](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.14/#listmeta-v1-meta) | false |
+| items |  | []kubecarrier.io/v1alpha1.ServiceClusterAssignment | true |
+
+[Back to TOC](#table-of-contents)
+
+## ServiceClusterAssignmentSpec.kubecarrier.io/v1alpha1
+
+ServiceClusterAssignmentSpec defines the desired state of ServiceClusterAssignment
+
+| Field | Description | Scheme | Required |
+| ----- | ----------- | ------ | -------- |
+| serviceCluster | References the ServiceCluster. | kubecarrier.io/v1alpha1.ObjectReference | true |
+| masterNamespace | References the source namespace in the master cluster. | kubecarrier.io/v1alpha1.ObjectReference | true |
+
+[Back to TOC](#table-of-contents)
+
+## ServiceClusterAssignmentStatus.kubecarrier.io/v1alpha1
+
+ServiceClusterAssignmentStatus defines the observed state of ServiceClusterAssignment
+
+| Field | Description | Scheme | Required |
+| ----- | ----------- | ------ | -------- |
+| phase | DEPRECATED. Phase represents the current lifecycle state of this object consider this field DEPRECATED, it will be removed as soon as there is a mechanism to map conditions to a string when printing the property is only present for display purposes, for everything else use conditions | kubecarrier.io/v1alpha1.ServiceClusterAssignmentPhaseType | false |
+| conditions | Conditions is a list of all conditions this ServiceClusterAssignment is in. | []kubecarrier.io/v1alpha1.ServiceClusterAssignmentCondition | false |
+| observedGeneration | The most recent generation observed by the controller. | kubecarrier.io/v1alpha1.int64 | false |
+| serviceClusterNamespace | ServiceClusterNamespace references the Namespace on the ServiceCluster that was assigned. | kubecarrier.io/v1alpha1.ObjectReference | false |
 
 [Back to TOC](#table-of-contents)

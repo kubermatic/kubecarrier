@@ -14,7 +14,6 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-// TODO: Write unit tests for this functionality
 package util
 
 import (
@@ -24,12 +23,15 @@ import (
 	"strings"
 
 	"github.com/go-logr/logr"
+	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/apiutil"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
+
+	"github.com/kubermatic/kubecarrier/pkg/internal/owner"
 )
 
 type OwnedObjectReconciler struct {
@@ -42,7 +44,7 @@ type OwnedObjectReconciler struct {
 }
 
 func (r *OwnedObjectReconciler) Reconcile(ctx context.Context, cl client.Client) (changed bool, err error) {
-	existing, err := ListObjects(ctx, cl, r.Scheme, r.TypeFilter, OwnedBy(r.Owner, r.Scheme))
+	existing, err := ListObjects(ctx, cl, r.Scheme, r.TypeFilter, owner.OwnedBy(r.Owner, r.Scheme))
 	if err != nil {
 		return false, fmt.Errorf("ListObjects: %w", err)
 	}
@@ -85,34 +87,37 @@ func ListObjects(ctx context.Context, cl client.Client, scheme *runtime.Scheme, 
 }
 
 func (r *OwnedObjectReconciler) ensureCreatedObject(ctx context.Context, cl client.Client, existing []runtime.Object) (changed bool, err error) {
-	wantedMap := make(map[objectReference]runtime.Object)
+	wantedMap := make(map[ObjectReference]runtime.Object)
 	for _, it := range r.WantedState {
-		wantedMap[toObjectReference(it, r.Scheme)] = it
+		wantedMap[ToObjectReference(it, r.Scheme)] = it
 	}
 
 	for _, obj := range existing {
-		key := toObjectReference(obj.(Object), r.Scheme)
+		key := ToObjectReference(obj.(Object), r.Scheme)
 		if _, shouldExists := wantedMap[key]; !shouldExists {
-			changed = true
-			if err := cl.Delete(ctx, obj); client.IgnoreNotFound(err) != nil {
+			err := cl.Delete(ctx, obj)
+			switch {
+			case err == nil:
+				changed = true
+				if r.Log != nil {
+					r.Log.V(6).Info("object deleted", "group", key.Group, "kind", key.Kind, "name", key.Name, "namespace", key.Namespace)
+				}
+			case errors.IsNotFound(err):
+				break
+			default:
 				return changed, fmt.Errorf("deleting %v: %w", obj, err)
-			}
-			if r.Log != nil {
-				r.Log.V(6).Info("object deleted", "group", key.Group, "kind", key.Kind, "name", key.Name, "namespace", key.Namespace)
 			}
 		}
 	}
 
 	for _, obj := range r.WantedState {
-		_, err := InsertOwnerReference(r.Owner, obj, r.Scheme)
-		if err != nil {
-			return changed, fmt.Errorf("inserting owner ref %v: %w", obj, err)
-		}
+		owner.SetOwnerReference(r.Owner, obj, r.Scheme)
+
 		// ctrl.CreateOrUpdate shall override obj with the current k8s value, thus we're performing a
 		// deep copy to preserve wanted object data
 		wantedObj := obj.DeepCopyObject()
 		op, err := ctrl.CreateOrUpdate(ctx, cl, obj, func() error {
-			_, err := InsertOwnerReference(r.Owner, obj.(Object), r.Scheme)
+			owner.SetOwnerReference(r.Owner, obj.(Object), r.Scheme)
 			if err != nil {
 				return fmt.Errorf("inserting owner ref %v: %w", obj, err)
 			}
@@ -129,7 +134,7 @@ func (r *OwnedObjectReconciler) ensureCreatedObject(ctx context.Context, cl clie
 			return changed, fmt.Errorf("create or deleting %v: %w", obj, err)
 		}
 
-		key := toObjectReference(obj, r.Scheme)
+		key := ToObjectReference(obj, r.Scheme)
 		if r.Log != nil {
 			r.Log.V(6).Info("object "+string(op), "group", key.Group, "kind", key.Kind, "name", key.Name, "namespace", key.Namespace)
 		}

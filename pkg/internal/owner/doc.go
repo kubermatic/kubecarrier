@@ -14,19 +14,5 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package v1alpha1
-
-import (
-	"context"
-
-	"k8s.io/apimachinery/pkg/types"
-	"sigs.k8s.io/controller-runtime/pkg/client"
-)
-
-func GetAccountByAccountNamespace(ctx context.Context, c client.Client, accountNamespace string) (*Account, error) {
-	account := &Account{}
-	err := c.Get(ctx, types.NamespacedName{
-		Name: accountNamespace,
-	}, account)
-	return account, err
-}
+// Package owner implements helpers to use object Owners across clusters and namespace boundaries.
+package owner

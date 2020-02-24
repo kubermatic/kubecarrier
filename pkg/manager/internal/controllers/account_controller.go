@@ -32,6 +32,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/source"
 
 	catalogv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/catalog/v1alpha1"
+	"github.com/kubermatic/kubecarrier/pkg/internal/owner"
 	"github.com/kubermatic/kubecarrier/pkg/internal/util"
 )
 
@@ -88,8 +89,7 @@ func (r *AccountReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 }
 
 func (r *AccountReconciler) SetupWithManager(mgr ctrl.Manager) error {
-	owner := &catalogv1alpha1.Account{}
-	enqueuer := util.EnqueueRequestForOwner(owner, mgr.GetScheme())
+	enqueuer := owner.EnqueueRequestForOwner(&catalogv1alpha1.Account{}, mgr.GetScheme())
 
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&catalogv1alpha1.Account{}).
@@ -166,13 +166,10 @@ func (r *AccountReconciler) handleDeletion(ctx context.Context, log logr.Logger,
 func (r *AccountReconciler) reconcileNamespace(ctx context.Context, log logr.Logger, account *catalogv1alpha1.Account) error {
 	ns := &corev1.Namespace{}
 	ns.Name = account.Name
-	_, err := util.InsertOwnerReference(account, ns, r.Scheme)
-	if err != nil {
-		return fmt.Errorf("insertOwnerRef: %w", err)
-	}
-	_, err = ctrl.CreateOrUpdate(ctx, r.Client, ns, func() error {
-		_, err := util.InsertOwnerReference(account, ns, r.Scheme)
-		return err
+	owner.SetOwnerReference(account, ns, r.Scheme)
+	_, err := ctrl.CreateOrUpdate(ctx, r.Client, ns, func() error {
+		owner.SetOwnerReference(account, ns, r.Scheme)
+		return nil
 	})
 	if err != nil {
 		return fmt.Errorf("create or update namespace: %w", err)
@@ -221,9 +218,7 @@ func (r *AccountReconciler) reconcileTenantReferences(ctx context.Context, log l
 					Namespace: providerAccount.Status.NamespaceName,
 				},
 			}
-			if _, err := util.InsertOwnerReference(account, tenantReference, r.Scheme); err != nil {
-				return fmt.Errorf("insert owner ref: %w", err)
-			}
+			owner.SetOwnerReference(account, tenantReference, r.Scheme)
 			wantedRefs = append(wantedRefs, tenantReference)
 		}
 	}

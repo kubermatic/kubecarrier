@@ -22,72 +22,144 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	corev1 "k8s.io/api/core/v1"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
+	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	ctrl "sigs.k8s.io/controller-runtime"
 	fakeclient "sigs.k8s.io/controller-runtime/pkg/client/fake"
 
 	catalogv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/catalog/v1alpha1"
-	"github.com/kubermatic/kubecarrier/pkg/internal/util"
 	"github.com/kubermatic/kubecarrier/pkg/testutil"
 )
 
 func TestCatalogEntryReconciler(t *testing.T) {
-	provider := &catalogv1alpha1.Account{
+	provider := &catalogv1alpha1.Provider{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: "example.provider",
+			Name:      "example.provider",
+			Namespace: "kubecarrier-system",
 		},
-		Spec: catalogv1alpha1.AccountSpec{
-			Roles: []catalogv1alpha1.AccountRole{
-				catalogv1alpha1.ProviderRole,
+	}
+
+	baseCRD := &apiextensionsv1.CustomResourceDefinition{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "catapults.test.kubecarrier.io",
+			Labels: map[string]string{
+				"kubecarrier.io/service-cluster": "eu-west-1",
+				"kubecarrier.io/provider":        "example.provider",
+			},
+		},
+		Spec: apiextensionsv1.CustomResourceDefinitionSpec{
+			Group: "test.kubecarrier.io",
+			Names: apiextensionsv1.CustomResourceDefinitionNames{
+				Kind:     "Catapult",
+				ListKind: "CatapultList",
+				Plural:   "catapults",
+				Singular: "catapult",
+			},
+			Scope: apiextensionsv1.NamespaceScoped,
+			Versions: []apiextensionsv1.CustomResourceDefinitionVersion{
+				{
+					Name:    "v1alpha1",
+					Served:  true,
+					Storage: true,
+					Schema: &apiextensionsv1.CustomResourceValidation{
+						OpenAPIV3Schema: &apiextensionsv1.JSONSchemaProps{
+							Properties: map[string]apiextensionsv1.JSONSchemaProps{
+								"apiVersion": {Type: "string"},
+								"kind":       {Type: "string"},
+								"metadata":   {Type: "object"},
+								"spec": {
+									Type: "object",
+									Properties: map[string]apiextensionsv1.JSONSchemaProps{
+										"prop1": {Type: "string"},
+										"prop2": {Type: "string"},
+									},
+								},
+							},
+							Type: "object",
+						},
+					},
+				},
 			},
 		},
 	}
-	providerNS := &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: provider.Name}}
-	_, err := util.InsertOwnerReference(provider, providerNS, testScheme)
-	require.NoError(t, err)
+	baseCRD.Status.AcceptedNames = baseCRD.Spec.Names
 
 	catalogEntry := &catalogv1alpha1.CatalogEntry{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "test-catalogEntry",
-			Namespace: providerNS.Name,
+			Namespace: "test-provider-namespace",
 		},
 		Spec: catalogv1alpha1.CatalogEntrySpec{
 			Metadata: catalogv1alpha1.CatalogEntryMetadata{
 				DisplayName: "Test CatalogEntry",
 				Description: "Test CatalogEntry",
 			},
-			ReferencedCRD: catalogv1alpha1.ObjectReference{
-				Name: "test-crd-1.test-crd-group-1.test",
+			BaseCRD: catalogv1alpha1.ObjectReference{
+				Name: baseCRD.Name,
+			},
+			DerivedConfig: &catalogv1alpha1.DerivedConfig{
+				KindOverride: "TestResource",
+				Expose: []catalogv1alpha1.VersionExposeConfig{
+					{
+						Versions: []string{
+							"v1alpha1",
+						},
+						Fields: []catalogv1alpha1.FieldPath{
+							{JSONPath: ".spec.prop1"},
+						},
+					},
+				},
 			},
 		},
 	}
 
-	crd := &apiextensionsv1.CustomResourceDefinition{
+	derivedCRD := &apiextensionsv1.CustomResourceDefinition{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: "test-crd-1.test-crd-group-1.test",
+			Name: "testresources.test.kubecarrier.io",
 			Labels: map[string]string{
-				ProviderLabel:       "example.provider",
-				serviceClusterLabel: "test-service-cluster-1",
+				"kubecarrier.io/service-cluster": "eu-west-1",
+				"kubecarrier.io/provider":        "example.provider",
 			},
 		},
 		Spec: apiextensionsv1.CustomResourceDefinitionSpec{
-			Group: "test-crd-group-1",
+			Group: "test.kubecarrier.io",
 			Names: apiextensionsv1.CustomResourceDefinitionNames{
-				Kind: "TestCRD1",
-			},
-			Versions: []apiextensionsv1.CustomResourceDefinitionVersion{
-				{
-					Name: "v1alpha1",
-				},
+				Kind:     "TestResource",
+				ListKind: "TestResourceList",
+				Plural:   "testresources",
+				Singular: "testresource",
 			},
 			Scope: apiextensionsv1.NamespaceScoped,
+			Versions: []apiextensionsv1.CustomResourceDefinitionVersion{
+				{
+					Name:    "v1alpha1",
+					Served:  true,
+					Storage: true,
+					Schema: &apiextensionsv1.CustomResourceValidation{
+						OpenAPIV3Schema: &apiextensionsv1.JSONSchemaProps{
+							Properties: map[string]apiextensionsv1.JSONSchemaProps{
+								"apiVersion": {Type: "string"},
+								"kind":       {Type: "string"},
+								"metadata":   {Type: "object"},
+								"spec": {
+									Type: "object",
+									Properties: map[string]apiextensionsv1.JSONSchemaProps{
+										"prop1": {Type: "string"},
+									},
+								},
+							},
+							Type: "object",
+						},
+					},
+				},
+			},
 		},
 	}
+	derivedCRD.Status.AcceptedNames = derivedCRD.Spec.Names
 
-	client := fakeclient.NewFakeClientWithScheme(testScheme, catalogEntry, crd, provider, providerNS)
+	client := fakeclient.NewFakeClientWithScheme(testScheme, catalogEntry, baseCRD, provider, derivedCRD)
 	log := testutil.NewLogger(t)
 	r := &CatalogEntryReconciler{
 		Client: client,
@@ -95,13 +167,8 @@ func TestCatalogEntryReconciler(t *testing.T) {
 		Scheme: testScheme,
 	}
 	ctx := context.Background()
-
-	catalogEntryFound := &catalogv1alpha1.CatalogEntry{}
-	crdFound := &apiextensionsv1.CustomResourceDefinition{}
-	if !t.Run("create/update CatalogEntry", func(t *testing.T) {
+	reconcileLoop := func() {
 		for i := 0; i < 5; i++ {
-			// Run Reconcile multiple times, because
-			// the reconcilation stops after changing the CatalogEntry
 			_, err := r.Reconcile(ctrl.Request{
 				NamespacedName: types.NamespacedName{
 					Name:      catalogEntry.Name,
@@ -109,31 +176,54 @@ func TestCatalogEntryReconciler(t *testing.T) {
 				},
 			})
 			require.NoError(t, err, "unexpected error returned by Reconcile")
+			require.NoError(t, client.Get(ctx, types.NamespacedName{
+				Name:      catalogEntry.Name,
+				Namespace: catalogEntry.Namespace,
+			}, catalogEntry))
 		}
+	}
 
+	crdFound := &apiextensionsv1.CustomResourceDefinition{}
+	derivedCustomResource := &catalogv1alpha1.DerivedCustomResource{}
+	if !t.Run("create/update CatalogEntry", func(t *testing.T) {
+		reconcileLoop()
 		// Check CatalogEntry
+		assert.Len(t, catalogEntry.Finalizers, 1, "finalizer should be added to CatalogEntry")
+
+		// Check DerivedCustomResource
 		require.NoError(t, client.Get(ctx, types.NamespacedName{
 			Name:      catalogEntry.Name,
 			Namespace: catalogEntry.Namespace,
-		}, catalogEntryFound), "error when getting catalogEntry")
-		assert.Len(t, catalogEntryFound.Finalizers, 1, "finalizer should be added to CatalogEntry")
+		}, derivedCustomResource), "error when getting DerivedCustomResource")
+		derivedCustomResource.Status.Conditions = []catalogv1alpha1.DerivedCustomResourceCondition{
+			{
+				Type:   catalogv1alpha1.DerivedCustomResourceReady,
+				Status: catalogv1alpha1.ConditionTrue,
+			},
+		}
+		derivedCustomResource.Status.DerivedCR = &catalogv1alpha1.DerivedCustomResourceReference{
+			Name: derivedCRD.Name,
+		}
+		require.NoError(t, client.Status().Update(ctx, derivedCustomResource))
 
-		// Check CatalogEntry Status
-		assert.Equal(t, catalogEntryFound.Status.CRD.Kind, crd.Spec.Names.Kind, "CRD Kind is wrong")
-		assert.Equal(t, catalogEntryFound.Status.CRD.Name, crd.Name, "CRD Name is wrong")
-		assert.Equal(t, catalogEntryFound.Status.CRD.ServiceCluster.Name, crd.Labels[serviceClusterLabel], "CRD ServiceCluster is wrong")
-		assert.Equal(t, catalogEntryFound.Status.CRD.APIGroup, crd.Spec.Group, "CRD APIGroup is wrong")
-
+		reconcileLoop()
 		// Check CatalogEntry Conditions
-		readyCondition, readyConditionExists := catalogEntryFound.Status.GetCondition(catalogv1alpha1.CatalogEntryReady)
+		readyCondition, readyConditionExists := catalogEntry.Status.GetCondition(catalogv1alpha1.CatalogEntryReady)
 		assert.True(t, readyConditionExists, "Ready Condition is not set")
 		assert.Equal(t, catalogv1alpha1.ConditionTrue, readyCondition.Status, "Wrong Ready condition.Status")
 
+		// Check CatalogEntry Status
+		assert.Equal(t, catalogEntry.Status.CRD.Kind, derivedCRD.Spec.Names.Kind, "CRD Kind is wrong")
+		assert.Equal(t, catalogEntry.Status.CRD.Name, derivedCRD.Name, "CRD Name is wrong")
+		assert.Equal(t, catalogEntry.Status.CRD.ServiceCluster.Name, derivedCRD.Labels[serviceClusterLabel], "CRD ServiceCluster is wrong")
+		assert.Equal(t, catalogEntry.Status.CRD.APIGroup, derivedCRD.Spec.Group, "CRD APIGroup is wrong")
+
 		// Check CRDs Annotation
 		require.NoError(t, client.Get(ctx, types.NamespacedName{
-			Name: crd.Name,
+			Name: baseCRD.Name,
 		}, crdFound), "error when getting crd")
 		assert.Contains(t, crdFound.Annotations, catalogEntryReferenceAnnotation, "the catalogEntry annotation should be added to the CRD")
+
 	}) {
 		t.FailNow()
 	}
@@ -141,25 +231,14 @@ func TestCatalogEntryReconciler(t *testing.T) {
 	t.Run("delete CatalogEntry", func(t *testing.T) {
 		// Setup
 		ts := metav1.Now()
-		catalogEntryFound.DeletionTimestamp = &ts
-		require.NoError(t, client.Update(ctx, catalogEntryFound), "unexpected error updating catalogEntry")
+		catalogEntry.DeletionTimestamp = &ts
+		require.NoError(t, client.Update(ctx, catalogEntry), "unexpected error updating catalogEntry")
 
-		for i := 0; i < 5; i++ {
-			// Run Reconcile multiple times, because
-			// the reconcilation stops after changing the CatalogEntry
-			_, err := r.Reconcile(ctrl.Request{
-				NamespacedName: types.NamespacedName{
-					Name:      catalogEntryFound.Name,
-					Namespace: catalogEntryFound.Namespace,
-				},
-			})
-			require.NoError(t, err, "unexpected error returned by Reconcile")
-		}
-
+		reconcileLoop()
 		catalogEntryCheck := &catalogv1alpha1.CatalogEntry{}
 		require.NoError(t, client.Get(ctx, types.NamespacedName{
-			Name:      catalogEntryFound.Name,
-			Namespace: catalogEntryFound.Namespace,
+			Name:      catalogEntry.Name,
+			Namespace: catalogEntry.Namespace,
 		}, catalogEntryCheck), "cannot check CatalogEntry")
 		assert.Len(t, catalogEntryCheck.Finalizers, 0, "finalizers should have been removed")
 
@@ -172,8 +251,15 @@ func TestCatalogEntryReconciler(t *testing.T) {
 		// Check CRD Annotation
 		crdCheck := &apiextensionsv1.CustomResourceDefinition{}
 		require.NoError(t, client.Get(ctx, types.NamespacedName{
-			Name: crd.Name,
+			Name: baseCRD.Name,
 		}, crdCheck), "error when getting crd")
 		assert.NotContains(t, crdCheck.Annotations, catalogEntryReferenceAnnotation, "the catalogEntry annotation should be removed from the CRD")
 	})
+
+	// Check TenantReference
+	derivedCustomResourceCheck := &catalogv1alpha1.TenantReference{}
+	assert.True(t, errors.IsNotFound(client.Get(ctx, types.NamespacedName{
+		Name:      derivedCustomResource.Name,
+		Namespace: derivedCustomResource.Namespace,
+	}, derivedCustomResourceCheck)), "DerivedCustomResource should be gone")
 }

@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package util
+package multiowner
 
 import (
 	"context"
@@ -141,16 +141,16 @@ func TestCRUDOwnerMethods(t *testing.T) {
 	}}
 
 	t.Log("===== Initial state =====")
-	unowned, err := IsUnowned(obj)
-	require.NoError(t, err, "unowned")
-	assert.True(t, unowned)
+	owned, err := IsOwned(obj)
+	require.NoError(t, err, "owned")
+	assert.False(t, owned)
 
 	for i, own := range []*corev1.Pod{ownerA, ownerB} {
 		t.Logf("===== Adding owner %s =====", own.Name)
 		check := func() {
-			unowned, err = IsUnowned(obj)
-			require.NoError(t, err, "unowned")
-			assert.False(t, unowned, "obj unowned status")
+			owned, err = IsOwned(obj)
+			require.NoError(t, err, "owned")
+			assert.True(t, owned, "obj owned status")
 
 			refs, err := getRefs(obj)
 			require.NoError(t, err, "getRefs")
@@ -171,9 +171,9 @@ func TestCRUDOwnerMethods(t *testing.T) {
 	for i, own := range []*corev1.Pod{ownerA, ownerB} {
 		t.Logf("===== Removing owner %s =====", own.Name)
 		check := func() {
-			unowned, err = IsUnowned(obj)
-			require.NoError(t, err, "unowned")
-			assert.Equal(t, i == 1, unowned, "obj unowned status")
+			owned, err = IsOwned(obj)
+			require.NoError(t, err, "owned")
+			assert.Equal(t, i != 1, owned, "obj owned status")
 
 			refs, err := getRefs(obj)
 			require.NoError(t, err, "getRefs")

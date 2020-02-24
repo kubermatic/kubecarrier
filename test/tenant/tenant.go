@@ -94,7 +94,7 @@ func NewTenantSuite(f *framework.Framework) func(t *testing.T) {
 					DisplayName: "Couch DB",
 					Description: "The comfy nosql database",
 				},
-				ReferencedCRD: catalogv1alpha1.ObjectReference{
+				BaseCRD: catalogv1alpha1.ObjectReference{
 					Name: crd.Name,
 				},
 			},

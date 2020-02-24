@@ -38,6 +38,7 @@ import (
 
 	catalogv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/catalog/v1alpha1"
 	operatorv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/operator/v1alpha1"
+	"github.com/kubermatic/kubecarrier/pkg/internal/owner"
 	internalreconcile "github.com/kubermatic/kubecarrier/pkg/internal/reconcile"
 	"github.com/kubermatic/kubecarrier/pkg/internal/util"
 )
@@ -53,7 +54,7 @@ type DerivedCustomResourceReconciler struct {
 	Scheme *runtime.Scheme
 }
 
-// +kubebuilder:rbac:groups=catalog.kubecarrier.io,resources=derivedcustomresources,verbs=get;list;watch;update
+// +kubebuilder:rbac:groups=catalog.kubecarrier.io,resources=derivedcustomresources,verbs=create;get;list;watch;update
 // +kubebuilder:rbac:groups=catalog.kubecarrier.io,resources=derivedcustomresources/status,verbs=get;update;patch
 // +kubebuilder:rbac:groups=apiextensions.k8s.io,resources=customresourcedefinitions,verbs=get;list;watch;update;create;delete
 
@@ -129,7 +130,7 @@ func (r *DerivedCustomResourceReconciler) Reconcile(req ctrl.Request) (ctrl.Resu
 	}
 
 	// lookup Provider
-	provider, err := catalogv1alpha1.GetProviderByProviderNamespace(ctx, r.Client, r.Scheme, dcr.Namespace)
+	provider, err := catalogv1alpha1.GetAccountByAccountNamespace(ctx, r.Client, dcr.Namespace)
 	if err != nil {
 		return result, fmt.Errorf("getting the Provider by Provider Namespace: %w", err)
 	}
@@ -181,10 +182,8 @@ func (r *DerivedCustomResourceReconciler) Reconcile(req ctrl.Request) (ctrl.Resu
 	}
 	derivedCR.Spec.Group = group
 	derivedCR.Spec.Names = names
+	owner.SetOwnerReference(dcr, derivedCR, r.Scheme)
 
-	if _, err = util.InsertOwnerReference(dcr, derivedCR, r.Scheme); err != nil {
-		return result, fmt.Errorf("setting owner reference: %w", err)
-	}
 	if err = r.applyExposeConfig(dcr, derivedCR); err != nil {
 		return result, fmt.Errorf("apply expose config: %w", err)
 	}
@@ -312,8 +311,7 @@ func isCRDReady(crd *apiextensionsv1.CustomResourceDefinition) bool {
 }
 
 func (r *DerivedCustomResourceReconciler) SetupWithManager(mgr ctrl.Manager) error {
-	owner := &catalogv1alpha1.DerivedCustomResource{}
-	enqueuer := util.EnqueueRequestForOwner(owner, mgr.GetScheme())
+	enqueuer := owner.EnqueueRequestForOwner(&catalogv1alpha1.DerivedCustomResource{}, r.Scheme)
 
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&catalogv1alpha1.DerivedCustomResource{}).
@@ -349,7 +347,7 @@ func (r *DerivedCustomResourceReconciler) SetupWithManager(mgr ctrl.Manager) err
 
 func (r *DerivedCustomResourceReconciler) handleDeletion(ctx context.Context, dcr *catalogv1alpha1.DerivedCustomResource) error {
 	crdList := &apiextensionsv1.CustomResourceDefinitionList{}
-	if err := r.List(ctx, crdList, util.OwnedBy(dcr, r.Scheme)); err != nil {
+	if err := r.List(ctx, crdList, owner.OwnedBy(dcr, r.Scheme)); err != nil {
 		return fmt.Errorf("listing owned CRDs: %w", err)
 	}
 

@@ -167,6 +167,26 @@ func NewCatalogSuite(
 						Storage: true,
 						Schema: &apiextensionsv1.CustomResourceValidation{
 							OpenAPIV3Schema: &apiextensionsv1.JSONSchemaProps{
+								Properties: map[string]apiextensionsv1.JSONSchemaProps{
+									"apiVersion": {Type: "string"},
+									"kind":       {Type: "string"},
+									"metadata":   {Type: "object"},
+									"spec": {
+										Type: "object",
+										Properties: map[string]apiextensionsv1.JSONSchemaProps{
+											"prop1": {Type: "string"},
+											"prop2": {Type: "string"},
+										},
+									},
+									"status": {
+										Type: "object",
+										Properties: map[string]apiextensionsv1.JSONSchemaProps{
+											"observedGeneration": {Type: "integer"},
+											"prop1":              {Type: "string"},
+											"prop2":              {Type: "string"},
+										},
+									},
+								},
 								Type: "object",
 							},
 						},
@@ -192,7 +212,7 @@ func NewCatalogSuite(
 					DisplayName: "Couch DB",
 					Description: "The comfy nosql database",
 				},
-				ReferencedCRD: catalogv1alpha1.ObjectReference{
+				BaseCRD: catalogv1alpha1.ObjectReference{
 					Name: crd.Name,
 				},
 			},
@@ -287,6 +307,17 @@ func NewCatalogSuite(
 		assert.Equal(t, serviceClusterReferenceFound.Spec.Provider.Name, provider.Name)
 		assert.Equal(t, serviceClusterReferenceFound.Spec.Metadata.Description, serviceCluster.Spec.Metadata.Description)
 
+		// Check the ServiceClusterAssignment object is created.
+		serviceClusterAssignmentFound := &corev1alpha1.ServiceClusterAssignment{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      fmt.Sprintf("%s.%s", tenant.Status.NamespaceName, serviceCluster.Name),
+				Namespace: provider.Status.NamespaceName,
+			},
+		}
+		require.NoError(t, testutil.WaitUntilFound(masterClient, serviceClusterAssignmentFound), "getting the ServiceClusterAssignment error")
+		assert.Equal(t, serviceClusterAssignmentFound.Spec.ServiceCluster.Name, serviceCluster.Name)
+		assert.Equal(t, serviceClusterAssignmentFound.Spec.MasterClusterNamespace.Name, tenant.Status.NamespaceName)
+
 		// Check if the status will be updated when tenant is removed.
 		t.Run("Catalog status updates when adding and removing Tenant", func(t *testing.T) {
 			// Remove the tenant
@@ -330,6 +361,7 @@ func NewCatalogSuite(
 				},
 			}
 			require.NoError(t, masterClient.Create(ctx, tenant), "creating tenant error")
+			require.NoError(t, testutil.WaitUntilReady(masterClient, tenant))
 
 			require.NoError(t, wait.Poll(time.Second, 30*time.Second, func() (done bool, err error) {
 				if err := masterClient.Get(ctx, types.NamespacedName{
@@ -369,6 +401,13 @@ func NewCatalogSuite(
 				Name:      serviceClusterReferenceFound.Name,
 				Namespace: serviceClusterReferenceFound.Namespace,
 			}, serviceClusterReferenceCheck)), "serviceClusterReference object should also be deleted.")
+
+			// ServiceClusterAssignment object should also be removed
+			serviceClusterAssignmentCheck := &corev1alpha1.ServiceClusterAssignment{}
+			assert.True(t, errors.IsNotFound(masterClient.Get(ctx, types.NamespacedName{
+				Name:      serviceClusterAssignmentFound.Name,
+				Namespace: serviceClusterAssignmentFound.Namespace,
+			}, serviceClusterAssignmentCheck)), "serviceClusterAssignment object should also be deleted.")
 		})
 	}
 }

@@ -22,7 +22,6 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/spf13/cobra"
-	corev1 "k8s.io/api/core/v1"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/discovery"
@@ -148,15 +147,6 @@ func runE(flags *flags, log logr.Logger) error {
 		StatusClient: serviceClient,
 	}
 
-	// Register indices
-	if err := util.AddOwnerReverseFieldIndex(
-		serviceCache,
-		log.WithName("reverseIndex").WithName("namespace"),
-		&corev1.Namespace{},
-	); err != nil {
-		return fmt.Errorf("cannot add Namespace owner field indexer: %w", err)
-	}
-
 	serviceClusterDiscoveryClient, err := discovery.NewDiscoveryClientForConfig(serviceCfg)
 	if err != nil {
 		return fmt.Errorf("cannot create discovery client for service cluster: %w", err)
@@ -185,10 +175,13 @@ func runE(flags *flags, log logr.Logger) error {
 	}
 
 	if err := (&controllers.ServiceClusterAssignmentReconciler{
-		Log:                log.WithName("controllers").WithName("ServiceClusterAssignmentReconciler"),
-		MasterClient:       mgr.GetClient(),
-		MasterScheme:       mgr.GetScheme(),
-		ServiceClient:      serviceCachedClient,
+		Log:          log.WithName("controllers").WithName("ServiceClusterAssignmentReconciler"),
+		MasterClient: mgr.GetClient(),
+		MasterScheme: mgr.GetScheme(),
+		// We need the uncached client here or we might create a second namespace
+		// because there is a short timeframe where the cache is not yet synced
+		// and the controller would think it did not yet create the namespace.
+		ServiceClient:      serviceClient,
 		ServiceCache:       serviceCache,
 		ServiceClusterName: flags.serviceClusterName,
 	}).SetupWithManager(mgr); err != nil {

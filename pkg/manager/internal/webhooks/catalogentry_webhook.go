@@ -72,7 +72,7 @@ func (r *CatalogEntryWebhookHandler) InjectDecoder(d *admission.Decoder) error {
 
 func (r *CatalogEntryWebhookHandler) validateCreate(catalogEntry *catalogv1alpha1.CatalogEntry) error {
 	r.Log.Info("validate create", "name", catalogEntry.Name)
-	if catalogEntry.Spec.ReferencedCRD.Name == "" {
+	if catalogEntry.Spec.BaseCRD.Name == "" {
 		return fmt.Errorf("the Referenced CRD of CatalogEntry is not specifed")
 	}
 	return r.validateMetadata(catalogEntry)
@@ -80,7 +80,7 @@ func (r *CatalogEntryWebhookHandler) validateCreate(catalogEntry *catalogv1alpha
 
 func (r *CatalogEntryWebhookHandler) validateUpdate(oldObj, newObj *catalogv1alpha1.CatalogEntry) error {
 	r.Log.Info("validate update", "name", newObj.Name)
-	if newObj.Spec.ReferencedCRD.Name != oldObj.Spec.ReferencedCRD.Name {
+	if newObj.Spec.BaseCRD.Name != oldObj.Spec.BaseCRD.Name {
 		return fmt.Errorf("the Referenced CRD of CatalogEntry is immutable")
 	}
 	return r.validateMetadata(newObj)

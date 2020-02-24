@@ -86,6 +86,7 @@ rules:
   resources:
   - derivedcustomresources
   verbs:
+  - create
   - get
   - list
   - update
@@ -183,8 +184,11 @@ rules:
   resources:
   - serviceclusterassignments
   verbs:
+  - create
+  - delete
   - get
   - list
+  - update
   - watch
 - apiGroups:
   - kubecarrier.io
