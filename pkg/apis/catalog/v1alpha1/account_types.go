@@ -169,7 +169,8 @@ func (s *AccountStatus) SetCondition(condition AccountCondition) {
 	s.Conditions = append(s.Conditions, condition)
 }
 
-// Account is the service provider representation in the KubeCarrier control-plane.
+// Account is the generic Kubecarrier actor representation in the KubeCarrier control-plane. It has its own namespace and
+// uses various roles, provider and tenant role being the most important.
 // +kubebuilder:object:root=true
 // +kubebuilder:subresource:status
 // +kubebuilder:printcolumn:name="Account Namespace",type="string",JSONPath=".status.namespaceName"
