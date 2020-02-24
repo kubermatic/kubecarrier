@@ -24,7 +24,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client/apiutil"
 )
 
-// objectReference references an owning/controlling object across Namespaces.
+// ObjectReference references an owning/controlling object across Namespaces.
 type ObjectReference struct {
 	// Name of the referent.
 	Name string `json:"name"`
@@ -41,7 +41,7 @@ type Object interface {
 	metav1.Object
 }
 
-// toOwnerReference converts the given object into an ownerReference.
+// ToOwnerReference converts the given object into an ownerReference.
 func ToObjectReference(owner Object, scheme *runtime.Scheme) ObjectReference {
 	gvk, err := apiutil.GVKForObject(owner, scheme)
 	if err != nil {

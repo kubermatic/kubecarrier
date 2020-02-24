@@ -32,7 +32,7 @@ import (
 
 	catalogv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/catalog/v1alpha1"
 	corev1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/core/v1alpha1"
-	"github.com/kubermatic/kubecarrier/pkg/internal/util"
+	"github.com/kubermatic/kubecarrier/pkg/internal/owner"
 	"github.com/kubermatic/kubecarrier/pkg/testutil"
 )
 
@@ -56,8 +56,7 @@ func TestCatalogReconciler(t *testing.T) {
 			Name: provider.Name,
 		},
 	}
-	_, err := util.InsertOwnerReference(provider, providerNamespace, testScheme)
-	require.NoError(t, err)
+	owner.SetOwnerReference(provider, providerNamespace, testScheme)
 
 	tenant := &catalogv1alpha1.Account{
 		ObjectMeta: metav1.ObjectMeta{
@@ -89,8 +88,7 @@ func TestCatalogReconciler(t *testing.T) {
 			Name: tenant.Name,
 		},
 	}
-	_, err = util.InsertOwnerReference(tenant, tenantNamespace, testScheme)
-	require.NoError(t, err)
+	owner.SetOwnerReference(tenant, tenantNamespace, testScheme)
 
 	catalogEntry := &catalogv1alpha1.CatalogEntry{
 		ObjectMeta: metav1.ObjectMeta{
@@ -215,11 +213,11 @@ func TestCatalogReconciler(t *testing.T) {
 
 		// Check ServiceClusterAssignment
 		require.NoError(t, client.Get(ctx, types.NamespacedName{
-			Name:      fmt.Sprintf("%s.%s", tenantNamespaceName, serviceCluster.Name),
-			Namespace: providerNamespaceName,
+			Name:      fmt.Sprintf("%s.%s", tenantNamespace.Name, serviceCluster.Name),
+			Namespace: providerNamespace.Name,
 		}, serviceClusterAssignmentFound), "getting ServiceClusterAssignment error")
 		assert.Equal(t, serviceClusterAssignmentFound.Spec.ServiceCluster.Name, serviceCluster.Name, "Wrong ServiceCluster name")
-		assert.Equal(t, serviceClusterAssignmentFound.Spec.MasterClusterNamespace.Name, tenantNamespaceName, "Wrong MasterCluster Namespace name.")
+		assert.Equal(t, serviceClusterAssignmentFound.Spec.MasterClusterNamespace.Name, tenantNamespace.Name, "Wrong MasterCluster Namespace name.")
 	}) {
 		t.FailNow()
 	}

@@ -22,6 +22,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	corev1 "k8s.io/api/core/v1"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -34,12 +35,15 @@ import (
 )
 
 func TestCatalogEntryReconciler(t *testing.T) {
-	provider := &catalogv1alpha1.Provider{
+	provider := &catalogv1alpha1.Account{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      "example.provider",
-			Namespace: "kubecarrier-system",
+			Name: "example.provider",
+		},
+		Status: catalogv1alpha1.AccountStatus{
+			NamespaceName: "example.provider",
 		},
 	}
+	providerNS := &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: "example.provider"}}
 
 	baseCRD := &apiextensionsv1.CustomResourceDefinition{
 		ObjectMeta: metav1.ObjectMeta{
@@ -89,7 +93,7 @@ func TestCatalogEntryReconciler(t *testing.T) {
 	catalogEntry := &catalogv1alpha1.CatalogEntry{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "test-catalogEntry",
-			Namespace: "test-provider-namespace",
+			Namespace: providerNS.Name,
 		},
 		Spec: catalogv1alpha1.CatalogEntrySpec{
 			Metadata: catalogv1alpha1.CatalogEntryMetadata{
@@ -159,7 +163,7 @@ func TestCatalogEntryReconciler(t *testing.T) {
 	}
 	derivedCRD.Status.AcceptedNames = derivedCRD.Spec.Names
 
-	client := fakeclient.NewFakeClientWithScheme(testScheme, catalogEntry, baseCRD, provider, derivedCRD)
+	client := fakeclient.NewFakeClientWithScheme(testScheme, catalogEntry, baseCRD, provider, derivedCRD, providerNS)
 	log := testutil.NewLogger(t)
 	r := &CatalogEntryReconciler{
 		Client: client,

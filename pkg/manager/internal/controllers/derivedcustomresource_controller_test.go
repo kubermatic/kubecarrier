@@ -32,7 +32,7 @@ import (
 
 	catalogv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/catalog/v1alpha1"
 	operatorv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/operator/v1alpha1"
-	"github.com/kubermatic/kubecarrier/pkg/internal/util"
+	"github.com/kubermatic/kubecarrier/pkg/internal/owner"
 	"github.com/kubermatic/kubecarrier/pkg/testutil"
 )
 
@@ -97,8 +97,7 @@ func Test_DerivedCustomResourceReconciler(t *testing.T) {
 	}
 
 	providerNS := &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: provider.Name}}
-	_, err := util.InsertOwnerReference(provider, providerNS, testScheme)
-	require.NoError(t, err)
+	owner.SetOwnerReference(provider, providerNS, testScheme)
 
 	derivedCR := &catalogv1alpha1.DerivedCustomResource{
 		ObjectMeta: metav1.ObjectMeta{

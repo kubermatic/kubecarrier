@@ -34,7 +34,7 @@ import (
 	catalogv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/catalog/v1alpha1"
 	corev1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/core/v1alpha1"
 	operatorv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/operator/v1alpha1"
-	"github.com/kubermatic/kubecarrier/pkg/internal/util"
+	"github.com/kubermatic/kubecarrier/pkg/internal/owner"
 	"github.com/kubermatic/kubecarrier/pkg/testutil"
 )
 
@@ -60,8 +60,7 @@ func TestCustomResourceDiscoveryReconciler(t *testing.T) {
 			NamespaceName: ns.Name,
 		},
 	}
-	_, err := util.InsertOwnerReference(provider, ns, testScheme)
-	require.NoError(t, err)
+	owner.SetOwnerReference(provider, ns, testScheme)
 
 	crDiscovery := &corev1alpha1.CustomResourceDiscovery{
 		ObjectMeta: metav1.ObjectMeta{
