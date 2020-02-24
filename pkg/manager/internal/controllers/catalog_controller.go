@@ -422,7 +422,7 @@ func (r *CatalogReconciler) reconcileOfferings(
 		}
 		if errors.IsNotFound(err) {
 			// Create the Offering.
-			if err := r.Create(ctx, &desiredOffering); err != nil && !errors.IsAlreadyExists(err) {
+			if err := r.Create(ctx, &desiredOffering); err != nil {
 				return fmt.Errorf("creating Offering: %w", err)
 			}
 			foundOffering = &desiredOffering
@@ -466,7 +466,7 @@ func (r *CatalogReconciler) reconcileProviderReferences(
 		}
 		if errors.IsNotFound(err) {
 			// Create the ProviderReference.
-			if err := r.Create(ctx, &desiredProviderReference); err != nil && !errors.IsAlreadyExists(err) {
+			if err := r.Create(ctx, &desiredProviderReference); err != nil {
 				return fmt.Errorf("creating ProviderReference: %w", err)
 			}
 			foundProviderReference = &desiredProviderReference
@@ -510,7 +510,7 @@ func (r *CatalogReconciler) reconcileServiceClusterReferences(
 		}
 		if errors.IsNotFound(err) {
 			// Create the ServiceClusterReference.
-			if err := r.Create(ctx, &desiredServiceClusterReference); err != nil && !errors.IsAlreadyExists(err) {
+			if err := r.Create(ctx, &desiredServiceClusterReference); err != nil {
 				return fmt.Errorf("creating ServiceClusterReference: %w", err)
 			}
 			foundServiceClusterReference = &desiredServiceClusterReference
@@ -555,7 +555,7 @@ func (r *CatalogReconciler) reconcileServiceClusterAssignments(
 		}
 		if errors.IsNotFound(err) {
 			// Create the ServiceClusterAssignment.
-			if err := r.Create(ctx, &desiredServiceClusterAssignment); err != nil && !errors.IsAlreadyExists(err) {
+			if err := r.Create(ctx, &desiredServiceClusterAssignment); err != nil {
 				return fmt.Errorf("creating ServiceClusterAssignment: %w", err)
 			}
 			foundServiceClusterAssignment = &desiredServiceClusterAssignment
