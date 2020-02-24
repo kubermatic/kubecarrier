@@ -99,8 +99,10 @@ func (r *TenantReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	}
 
 	// Reconcile the TenantReferences for the tenant
-	if err := r.reconcileTenantReferences(ctx, log, tenant); err != nil {
-		return ctrl.Result{}, fmt.Errorf("reconciling TenantReferences: %w", err)
+	if tenant.IsReady() {
+		if err := r.reconcileTenantReferences(ctx, log, tenant); err != nil {
+			return ctrl.Result{}, fmt.Errorf("reconciling TenantReferences: %w", err)
+		}
 	}
 
 	return ctrl.Result{}, nil
