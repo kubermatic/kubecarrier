@@ -24,9 +24,9 @@ KubeCarrier's `Ferry` component is responsible for managing the connection to a 
 
 ### Catapult
 
-A `Catapult` instance is automatically created when a `CustomResourceDiscovery` instance was able to discover a CustomResource from a service cluster and the CRD was successfully established within the managements api machinery.
+A `Catapult` instance is automatically created when a `CustomResourceDiscovery` instance was able to discover a CustomResource from a service cluster and the CRD was successfully established within the management cluster's api machinery.
 
-Each `Catapult` instance is responsible for reconciling one `CustomResourceDefinition` type from the management to a service cluster.
+Each `Catapult` instance is responsible for reconciling one `CustomResourceDefinition` type from the management cluster to a service cluster.
 
 ### Elevator
 

@@ -42,7 +42,7 @@ func NewVerifySuite(f *framework.Framework) func(t *testing.T) {
 
 		t.Run("", func(t *testing.T) {
 			// parallel-group
-			t.Run("validate management connection", func(t *testing.T) {
+			t.Run("validate management cluster connection", func(t *testing.T) {
 				cm := &corev1.ConfigMap{}
 				require.NoError(t, managementClient.Get(context.Background(), types.NamespacedName{
 					Name:      "cluster-info",
