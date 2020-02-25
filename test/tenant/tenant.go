@@ -44,8 +44,8 @@ type TenantSuite struct {
 	suite.Suite
 	*framework.Framework
 
-	managementClient  client.Client
-	serviceClient client.Client
+	managementClient client.Client
+	serviceClient    client.Client
 
 	// Objects that used in this test suite.
 	provider *catalogv1alpha1.Provider

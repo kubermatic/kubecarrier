@@ -42,15 +42,15 @@ type flags struct {
 	metricsAddr          string
 	enableLeaderElection bool
 
-	managementClusterKind, managementClusterVersion, managementClusterGroup    string
-	serviceClusterKind, serviceClusterVersion, serviceClusterGroup string
-	serviceClusterName, serviceClusterKubeconfig                   string
-	providerNamespace                                              string
+	managementClusterKind, managementClusterVersion, managementClusterGroup string
+	serviceClusterKind, serviceClusterVersion, serviceClusterGroup          string
+	serviceClusterName, serviceClusterKubeconfig                            string
+	providerNamespace                                                       string
 }
 
 var (
-	managementScheme  = runtime.NewScheme()
-	serviceScheme = runtime.NewScheme()
+	managementScheme = runtime.NewScheme()
+	serviceScheme    = runtime.NewScheme()
 )
 
 func init() {
@@ -247,8 +247,8 @@ func run(flags *flags, log logr.Logger) error {
 		ServiceCluster:       flags.serviceClusterName,
 		ProviderNamespace:    flags.providerNamespace,
 
-		ManagementClusterGVK:  managementClusterGVK,
-		ServiceClusterGVK: serviceClusterGVK,
+		ManagementClusterGVK: managementClusterGVK,
+		ServiceClusterGVK:    serviceClusterGVK,
 	}).SetupWithManager(mgr); err != nil {
 		return fmt.Errorf("cannot add %s controller: %w", "ManagementClusterObjReconciler", err)
 	}
@@ -262,8 +262,8 @@ func run(flags *flags, log logr.Logger) error {
 		ServiceClusterCache:  serviceCache,
 		ProviderNamespace:    flags.providerNamespace,
 
-		ManagementClusterGVK:  managementClusterGVK,
-		ServiceClusterGVK: serviceClusterGVK,
+		ManagementClusterGVK: managementClusterGVK,
+		ServiceClusterGVK:    serviceClusterGVK,
 	}).SetupWithManager(mgr); err != nil {
 		return fmt.Errorf("cannot add %s controller: %w", "AdoptionReconciler", err)
 	}

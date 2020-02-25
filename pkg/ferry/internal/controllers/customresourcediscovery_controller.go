@@ -45,10 +45,10 @@ var (
 type CustomResourceDiscoveryReconciler struct {
 	Log logr.Logger
 
-	ManagementClient  client.Client
-	ManagementScheme  *runtime.Scheme
-	ServiceClient client.Client
-	ServiceCache  cache.Cache
+	ManagementClient client.Client
+	ManagementScheme *runtime.Scheme
+	ServiceClient    client.Client
+	ServiceCache     cache.Cache
 
 	ServiceClusterName string
 }

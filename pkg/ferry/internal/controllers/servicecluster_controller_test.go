@@ -53,7 +53,7 @@ func TestServiceClusterReconciler(t *testing.T) {
 		},
 	}
 	scc := &ServiceClusterReconciler{
-		Log:          testutil.NewLogger(t),
+		Log:              testutil.NewLogger(t),
 		ManagementClient: fakeclient.NewFakeClientWithScheme(testScheme, serviceCluster),
 		ServiceClusterVersionInfo: &fakeServiceClusterVersionInfo{
 			Info: &version.Info{

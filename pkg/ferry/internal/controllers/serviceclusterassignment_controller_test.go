@@ -49,10 +49,10 @@ func TestServiceClusterAssignmentReconciler(t *testing.T) {
 	}
 
 	r := ServiceClusterAssignmentReconciler{
-		Log:           testutil.NewLogger(t),
-		ManagementClient:  fakeclient.NewFakeClientWithScheme(testScheme, serviceClusterAssignment),
-		ManagementScheme:  testScheme,
-		ServiceClient: fakeclient.NewFakeClientWithScheme(testScheme),
+		Log:              testutil.NewLogger(t),
+		ManagementClient: fakeclient.NewFakeClientWithScheme(testScheme, serviceClusterAssignment),
+		ManagementScheme: testScheme,
+		ServiceClient:    fakeclient.NewFakeClientWithScheme(testScheme),
 	}
 	_, err := r.Reconcile(ctrl.Request{
 		NamespacedName: types.NamespacedName{

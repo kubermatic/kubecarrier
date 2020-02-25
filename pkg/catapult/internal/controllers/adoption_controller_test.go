@@ -87,9 +87,9 @@ func TestAdoptionReconciler(t *testing.T) {
 			Log:                  log,
 			ServiceClusterClient: serviceClient,
 
-			ServiceClusterGVK: serviceClusterGVK,
-			ManagementClusterGVK:  managementClusterGVK,
-			ProviderNamespace: providerNamespace,
+			ServiceClusterGVK:    serviceClusterGVK,
+			ManagementClusterGVK: managementClusterGVK,
+			ProviderNamespace:    providerNamespace,
 		}
 
 		_, err := r.Reconcile(reconcile.Request{

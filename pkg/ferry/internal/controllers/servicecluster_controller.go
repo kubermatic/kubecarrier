@@ -45,7 +45,7 @@ type ServerVersionInfo interface {
 type ServiceClusterReconciler struct {
 	Log logr.Logger
 
-	ManagementClient              client.Client
+	ManagementClient          client.Client
 	ServiceClusterVersionInfo ServerVersionInfo
 	ProviderNamespace         string
 	ServiceClusterName        string

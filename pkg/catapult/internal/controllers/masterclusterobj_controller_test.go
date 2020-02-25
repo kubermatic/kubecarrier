@@ -107,8 +107,8 @@ func TestManagementClusterObjReconciler(t *testing.T) {
 			ServiceClusterClient: serviceClient,
 			NamespacedClient:     managementClient,
 
-			ManagementClusterGVK:  managementClusterGVK,
-			ServiceClusterGVK: serviceClusterGVK,
+			ManagementClusterGVK: managementClusterGVK,
+			ServiceClusterGVK:    serviceClusterGVK,
 
 			ServiceCluster:    "eu-west-1",
 			ProviderNamespace: providerNamespace,
@@ -198,8 +198,8 @@ func TestManagementClusterObjReconciler(t *testing.T) {
 			NamespacedClient:     managementClient,
 			ServiceClusterClient: serviceClient,
 
-			ManagementClusterGVK:  managementClusterGVK,
-			ServiceClusterGVK: serviceClusterGVK,
+			ManagementClusterGVK: managementClusterGVK,
+			ServiceClusterGVK:    serviceClusterGVK,
 
 			ServiceCluster:    "eu-west-1",
 			ProviderNamespace: providerNamespace,

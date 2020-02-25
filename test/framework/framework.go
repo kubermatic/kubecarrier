@@ -43,10 +43,10 @@ import (
 type Config struct {
 	TestID string
 
-	ManagementExternalKubeconfigPath  string
-	ManagementInternalKubeconfigPath  string
-	ServiceExternalKubeconfigPath string
-	ServiceInternalKubeconfigPath string
+	ManagementExternalKubeconfigPath string
+	ManagementInternalKubeconfigPath string
+	ServiceExternalKubeconfigPath    string
+	ServiceInternalKubeconfigPath    string
 }
 
 func (c *Config) ManagementClusterName() string {
@@ -76,11 +76,11 @@ func (c *Config) Default() {
 }
 
 type Framework struct {
-	ManagementScheme  *runtime.Scheme
-	managementConfig  *restclient.Config
-	ServiceScheme *runtime.Scheme
-	serviceConfig *restclient.Config
-	config        Config
+	ManagementScheme *runtime.Scheme
+	managementConfig *restclient.Config
+	ServiceScheme    *runtime.Scheme
+	serviceConfig    *restclient.Config
+	config           Config
 }
 
 func New(c Config) (f *Framework, err error) {

@@ -38,8 +38,8 @@ import (
 )
 
 var (
-	managementScheme  = runtime.NewScheme()
-	serviceScheme = runtime.NewScheme()
+	managementScheme = runtime.NewScheme()
+	serviceScheme    = runtime.NewScheme()
 )
 
 type flags struct {
@@ -154,7 +154,7 @@ func runE(flags *flags, log logr.Logger) error {
 
 	if err := (&controllers.ServiceClusterReconciler{
 		Log:                       log.WithName("controllers").WithName("ServiceCluster"),
-		ManagementClient:              mgr.GetClient(),
+		ManagementClient:          mgr.GetClient(),
 		ServiceClusterVersionInfo: serviceClusterDiscoveryClient,
 		ProviderNamespace:         flags.providerNamespace,
 		ServiceClusterName:        flags.serviceClusterName,
@@ -165,8 +165,8 @@ func runE(flags *flags, log logr.Logger) error {
 
 	if err := (&controllers.CustomResourceDiscoveryReconciler{
 		Log:                log.WithName("controllers").WithName("CustomResourceDiscovery"),
-		ManagementClient:       mgr.GetClient(),
-		ManagementScheme:       mgr.GetScheme(),
+		ManagementClient:   mgr.GetClient(),
+		ManagementScheme:   mgr.GetScheme(),
 		ServiceClient:      serviceCachedClient,
 		ServiceCache:       serviceCache,
 		ServiceClusterName: flags.serviceClusterName,
@@ -175,7 +175,7 @@ func runE(flags *flags, log logr.Logger) error {
 	}
 
 	if err := (&controllers.ServiceClusterAssignmentReconciler{
-		Log:          log.WithName("controllers").WithName("ServiceClusterAssignmentReconciler"),
+		Log:              log.WithName("controllers").WithName("ServiceClusterAssignmentReconciler"),
 		ManagementClient: mgr.GetClient(),
 		ManagementScheme: mgr.GetScheme(),
 		// We need the uncached client here or we might create a second namespace

@@ -40,10 +40,10 @@ const serviceClusterAssignmentControllerFinalizer string = "serviceclusterassign
 type ServiceClusterAssignmentReconciler struct {
 	Log logr.Logger
 
-	ManagementClient       client.Client
+	ManagementClient   client.Client
 	ServiceClient      client.Client
 	ServiceCache       cache.Cache
-	ManagementScheme       *runtime.Scheme
+	ManagementScheme   *runtime.Scheme
 	ServiceClusterName string
 }
 
