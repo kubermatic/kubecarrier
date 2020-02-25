@@ -35,7 +35,6 @@ import (
 
 	operatorv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/operator/v1alpha1"
 	"github.com/kubermatic/kubecarrier/pkg/testutil"
-	"github.com/kubermatic/kubecarrier/test/framework"
 )
 
 const (
@@ -43,7 +42,7 @@ const (
 	prefix            = "kubecarrier-manager"
 )
 
-func NewInstallationSuite(f *framework.Framework) func(t *testing.T) {
+func NewInstallationSuite(f *testutil.Framework) func(t *testing.T) {
 	return func(t *testing.T) {
 		ctx := context.Background()
 		kubeCarrier := &operatorv1alpha1.KubeCarrier{}
@@ -63,7 +62,7 @@ func NewInstallationSuite(f *framework.Framework) func(t *testing.T) {
 	}
 }
 
-func testAnchorSetup(ctx context.Context, f *framework.Framework, kubeCarrier *operatorv1alpha1.KubeCarrier) func(t *testing.T) {
+func testAnchorSetup(ctx context.Context, f *testutil.Framework, kubeCarrier *operatorv1alpha1.KubeCarrier) func(t *testing.T) {
 	return func(t *testing.T) {
 		var out bytes.Buffer
 		c := exec.Command("anchor", "setup", "--kubeconfig", f.Config().ManagementExternalKubeconfigPath)
@@ -144,7 +143,7 @@ func testAnchorSetup(ctx context.Context, f *framework.Framework, kubeCarrier *o
 	}
 }
 
-func testAnchorTeardown(ctx context.Context, f *framework.Framework, kubeCarrier *operatorv1alpha1.KubeCarrier) func(t *testing.T) {
+func testAnchorTeardown(ctx context.Context, f *testutil.Framework, kubeCarrier *operatorv1alpha1.KubeCarrier) func(t *testing.T) {
 	return func(t *testing.T) {
 		managementClient, err := f.ManagementClient()
 		require.NoError(t, err, "creating management client")

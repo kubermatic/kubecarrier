@@ -31,12 +31,11 @@ import (
 	catalogv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/catalog/v1alpha1"
 	corev1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/core/v1alpha1"
 	"github.com/kubermatic/kubecarrier/pkg/testutil"
-	"github.com/kubermatic/kubecarrier/test/framework"
 )
 
 // ServiceClusterSuite registers a ServiceCluster and tests apis interacting with it.
 func NewServiceClusterSuite(
-	f *framework.Framework,
+	f *testutil.Framework,
 	provider *catalogv1alpha1.Provider,
 ) func(t *testing.T) {
 	return func(t *testing.T) {

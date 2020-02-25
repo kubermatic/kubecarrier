@@ -31,7 +31,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	catalogv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/catalog/v1alpha1"
-	"github.com/kubermatic/kubecarrier/test/framework"
+	"github.com/kubermatic/kubecarrier/pkg/testutil"
 )
 
 var (
@@ -42,7 +42,7 @@ var (
 // TenantSuite verify Tenant related operations (CatalogEntries, creating service instances).
 type TenantSuite struct {
 	suite.Suite
-	*framework.Framework
+	*testutil.Framework
 
 	managementClient client.Client
 	serviceClient    client.Client

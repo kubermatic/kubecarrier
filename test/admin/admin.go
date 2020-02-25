@@ -29,11 +29,10 @@ import (
 
 	catalogv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/catalog/v1alpha1"
 	"github.com/kubermatic/kubecarrier/pkg/testutil"
-	"github.com/kubermatic/kubecarrier/test/framework"
 )
 
 // AdminSuite tests administrator operations - notably the management of Tenants and Providers.
-func NewAdminSuite(f *framework.Framework) func(t *testing.T) {
+func NewAdminSuite(f *testutil.Framework) func(t *testing.T) {
 	return func(t *testing.T) {
 		// Setup
 		managementClient, err := f.ManagementClient()

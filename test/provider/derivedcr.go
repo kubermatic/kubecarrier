@@ -32,11 +32,10 @@ import (
 
 	catalogv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/catalog/v1alpha1"
 	"github.com/kubermatic/kubecarrier/pkg/testutil"
-	"github.com/kubermatic/kubecarrier/test/framework"
 )
 
 func NewDerivedCRSuite(
-	f *framework.Framework,
+	f *testutil.Framework,
 	provider *catalogv1alpha1.Provider,
 ) func(t *testing.T) {
 	return func(t *testing.T) {

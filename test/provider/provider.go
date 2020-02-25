@@ -34,10 +34,9 @@ import (
 	catalogv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/catalog/v1alpha1"
 	corev1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/core/v1alpha1"
 	"github.com/kubermatic/kubecarrier/pkg/testutil"
-	"github.com/kubermatic/kubecarrier/test/framework"
 )
 
-func NewProviderSuite(f *framework.Framework) func(t *testing.T) {
+func NewProviderSuite(f *testutil.Framework) func(t *testing.T) {
 	return func(t *testing.T) {
 		managementClient, err := f.ManagementClient()
 		require.NoError(t, err, "creating management client")
@@ -49,7 +48,7 @@ func NewProviderSuite(f *framework.Framework) func(t *testing.T) {
 			// parallel-group
 			suites := []struct {
 				name  string
-				suite func(*framework.Framework, *catalogv1alpha1.Provider) func(t *testing.T)
+				suite func(*testutil.Framework, *catalogv1alpha1.Provider) func(t *testing.T)
 			}{
 				{
 					name:  "DerivedCR",
@@ -96,7 +95,7 @@ func NewProviderSuite(f *framework.Framework) func(t *testing.T) {
 }
 
 func NewCatalogSuite(
-	f *framework.Framework,
+	f *testutil.Framework,
 	provider *catalogv1alpha1.Provider,
 ) func(t *testing.T) {
 	return func(t *testing.T) {

@@ -22,16 +22,16 @@ import (
 
 	"github.com/stretchr/testify/suite"
 
+	"github.com/kubermatic/kubecarrier/pkg/testutil"
 	"github.com/kubermatic/kubecarrier/test/admin"
-	"github.com/kubermatic/kubecarrier/test/framework"
 	"github.com/kubermatic/kubecarrier/test/installation"
 	"github.com/kubermatic/kubecarrier/test/provider"
 	"github.com/kubermatic/kubecarrier/test/tenant"
 	"github.com/kubermatic/kubecarrier/test/verify"
 )
 
-func AllTests(config framework.Config) ([]testing.InternalTest, error) {
-	f, err := framework.New(config)
+func AllTests(config testutil.FrameworkConfig) ([]testing.InternalTest, error) {
+	f, err := testutil.New(config)
 	if err != nil {
 		return nil, fmt.Errorf("creating test framework:%w", err)
 	}

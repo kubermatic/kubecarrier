@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package framework
+package testutil
 
 import (
 	"context"
@@ -37,10 +37,9 @@ import (
 	catalogv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/catalog/v1alpha1"
 	corev1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/core/v1alpha1"
 	operatorv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/operator/v1alpha1"
-	"github.com/kubermatic/kubecarrier/pkg/testutil"
 )
 
-type Config struct {
+type FrameworkConfig struct {
 	TestID string
 
 	ManagementExternalKubeconfigPath string
@@ -49,15 +48,15 @@ type Config struct {
 	ServiceInternalKubeconfigPath    string
 }
 
-func (c *Config) ManagementClusterName() string {
+func (c *FrameworkConfig) ManagementClusterName() string {
 	return "kubecarrier-" + c.TestID
 }
 
-func (c *Config) ServiceClusterName() string {
+func (c *FrameworkConfig) ServiceClusterName() string {
 	return "kubecarrier-svc-" + c.TestID
 }
 
-func (c *Config) Default() {
+func (c *FrameworkConfig) Default() {
 	// Management Cluster
 	if c.ManagementInternalKubeconfigPath == "" {
 		c.ManagementInternalKubeconfigPath = os.ExpandEnv("${HOME}/.kube/internal-kind-config-" + c.ManagementClusterName())
@@ -80,10 +79,10 @@ type Framework struct {
 	managementConfig *restclient.Config
 	ServiceScheme    *runtime.Scheme
 	serviceConfig    *restclient.Config
-	config           Config
+	config           FrameworkConfig
 }
 
-func New(c Config) (f *Framework, err error) {
+func New(c FrameworkConfig) (f *Framework, err error) {
 	f = &Framework{config: c}
 
 	// Management Setup
@@ -147,7 +146,7 @@ func (f *Framework) ServiceClient() (*RecordingClient, error) {
 	return RecordClient(c, f.ServiceScheme), nil
 }
 
-func (f *Framework) Config() Config {
+func (f *Framework) Config() FrameworkConfig {
 	return f.config
 }
 
@@ -219,7 +218,7 @@ func (rc *RecordingClient) CleanUp(t *testing.T) {
 			continue
 		}
 
-		err := testutil.DeleteAndWaitUntilNotFound(rc.Client, obj)
+		err := DeleteAndWaitUntilNotFound(rc.Client, obj)
 		if err != nil {
 			err = fmt.Errorf("cleanup %s: %w", key, err)
 		}

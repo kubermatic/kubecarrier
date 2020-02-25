@@ -26,12 +26,12 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/clientcmd"
 
-	"github.com/kubermatic/kubecarrier/test/framework"
+	"github.com/kubermatic/kubecarrier/pkg/testutil"
 )
 
 // VerifySuite verifies if we can reach both kubernetes clusters (management and service).
 // and whether they are configured for our e2e tests.
-func NewVerifySuite(f *framework.Framework) func(t *testing.T) {
+func NewVerifySuite(f *testutil.Framework) func(t *testing.T) {
 	return func(t *testing.T) {
 		// Setup
 		managementClient, err := f.ManagementClient()

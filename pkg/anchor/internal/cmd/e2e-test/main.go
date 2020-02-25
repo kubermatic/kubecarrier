@@ -20,11 +20,11 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/spf13/cobra"
 
-	"github.com/kubermatic/kubecarrier/test/framework"
+	"github.com/kubermatic/kubecarrier/pkg/testutil"
 )
 
 func NewCommand(log logr.Logger) *cobra.Command {
-	cfg := &framework.Config{}
+	cfg := &testutil.FrameworkConfig{}
 	cmd := &cobra.Command{
 		Use:   "e2e-test",
 		Short: "end2end testing utilities",
