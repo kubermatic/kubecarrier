@@ -80,7 +80,7 @@ func TestProviderReconciler(t *testing.T) {
 
 		// Check Namespace
 		require.NoError(t, client.Get(ctx, types.NamespacedName{
-			Name: "provider-" + provider.Name,
+			Name: provider.Name,
 		}, namespaceFound), "getting namespace error")
 	}) {
 		t.FailNow()
