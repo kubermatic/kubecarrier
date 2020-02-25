@@ -17,11 +17,14 @@ limitations under the License.
 package v1alpha1
 
 import (
+	rbacv1 "k8s.io/api/rbac/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 // TenantSpec defines the desired state of Tenant.
-type TenantSpec struct{}
+type TenantSpec struct {
+	Subjects []rbacv1.Subject `json:"subjects,omitempty"`
+}
 
 // TenantStatus defines the observed state of Tenant.
 type TenantStatus struct {

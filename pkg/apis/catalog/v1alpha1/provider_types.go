@@ -17,12 +17,14 @@ limitations under the License.
 package v1alpha1
 
 import (
+	rbacv1 "k8s.io/api/rbac/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 // ProviderSpec defines the desired state of Provider.
 type ProviderSpec struct {
 	Metadata ProviderMetadata `json:"metadata,omitempty"`
+	Subjects []rbacv1.Subject `json:"subjects,omitempty"`
 }
 
 // ProviderMetadata contains the metadata (display name, description, etc) of the Provider.
