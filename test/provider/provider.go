@@ -139,8 +139,8 @@ func NewCatalogSuite(
 			ObjectMeta: metav1.ObjectMeta{
 				Name: "couchdbs.eu-west-1.example.cloud",
 				Labels: map[string]string{
-					"kubecarrier.io/provider":        provider.Name,
-					"kubecarrier.io/service-cluster": "eu-west-1",
+					"kubecarrier.io/origin-namespace": provider.Status.NamespaceName,
+					"kubecarrier.io/service-cluster":  "eu-west-1",
 				},
 			},
 			Spec: apiextensionsv1.CustomResourceDefinitionSpec{

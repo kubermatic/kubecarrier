@@ -155,7 +155,7 @@ func (s *ProviderStatus) SetCondition(condition ProviderCondition) {
 // +kubebuilder:object:root=true
 // +kubebuilder:subresource:status
 // +kubebuilder:printcolumn:name="Provider Namespace",type="string",JSONPath=".status.namespaceName"
-// +kubebuilder:printcolumn:name="Display Name",type="string",JSONPath=".spec.displayName"
+// +kubebuilder:printcolumn:name="Display Name",type="string",JSONPath=".spec.metadata.displayName"
 // +kubebuilder:printcolumn:name="Status",type="string",JSONPath=".status.phase"
 // +kubebuilder:printcolumn:name="Age",type="date",JSONPath=".metadata.creationTimestamp"
 // +kubebuilder:resource:categories=kubecarrier-admin,shortName=pdr,scope=Cluster

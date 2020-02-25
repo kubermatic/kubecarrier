@@ -179,7 +179,7 @@ CustomResourceDiscoverySet.kubecarrier.io/v1alpha1: redis
 		//
 		managementClusterObj := &unstructured.Unstructured{
 			Object: map[string]interface{}{
-				"apiVersion": "eu-west-1.provider-test-servicecluster/v1alpha1",
+				"apiVersion": "eu-west-1.test-servicecluster/v1alpha1",
 				"kind":       "RedisInternal",
 				"metadata": map[string]interface{}{
 					"name":      "test-instance-1",
@@ -229,7 +229,7 @@ CustomResourceDiscoverySet.kubecarrier.io/v1alpha1: redis
 		// a object on the management cluster should have been created
 		managementClusterObj2 := &unstructured.Unstructured{
 			Object: map[string]interface{}{
-				"apiVersion": "eu-west-1.provider-test-servicecluster/v1alpha1",
+				"apiVersion": "eu-west-1.test-servicecluster/v1alpha1",
 				"kind":       "RedisInternal",
 				"metadata": map[string]interface{}{
 					"name":      serviceClusterObj2.GetName(),

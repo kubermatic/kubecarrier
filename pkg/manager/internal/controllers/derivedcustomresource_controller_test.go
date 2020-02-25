@@ -35,12 +35,21 @@ import (
 )
 
 func Test_DerivedCustomResourceReconciler(t *testing.T) {
+	provider := &catalogv1alpha1.Provider{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "dcr",
+		},
+		Status: catalogv1alpha1.ProviderStatus{
+			NamespaceName: "provider-dcr",
+		},
+	}
+
 	baseCRD := &apiextensionsv1.CustomResourceDefinition{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "catapults.test.kubecarrier.io",
 			Labels: map[string]string{
-				"kubecarrier.io/service-cluster": "eu-west-1",
-				"kubecarrier.io/provider":        "dcr",
+				"kubecarrier.io/service-cluster":  "eu-west-1",
+				"kubecarrier.io/origin-namespace": provider.Status.NamespaceName,
 			},
 		},
 		Spec: apiextensionsv1.CustomResourceDefinitionSpec{
@@ -79,15 +88,6 @@ func Test_DerivedCustomResourceReconciler(t *testing.T) {
 		},
 	}
 	baseCRD.Status.AcceptedNames = baseCRD.Spec.Names
-
-	provider := &catalogv1alpha1.Provider{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: "dcr",
-		},
-		Status: catalogv1alpha1.ProviderStatus{
-			NamespaceName: "provider-dcr",
-		},
-	}
 
 	derivedCR := &catalogv1alpha1.DerivedCustomResource{
 		ObjectMeta: metav1.ObjectMeta{

@@ -19,7 +19,7 @@ spec:
   scope: Namespaced
   versions:
     - additionalPrinterColumns:
-        - jsonPath: .offering.displayName
+        - jsonPath: .offering.metadata.displayName
           name: Display Name
           type: string
         - jsonPath: .metadata.creationTimestamp

@@ -23,8 +23,9 @@ import (
 )
 
 const (
-	ProviderLabel       = "kubecarrier.io/provider"
-	serviceClusterLabel = "kubecarrier.io/service-cluster"
+	ProviderLabel        = "kubecarrier.io/provider"
+	ServiceClusterLabel  = "kubecarrier.io/service-cluster"
+	OriginNamespaceLabel = "kubecarrier.io/origin-namespace"
 )
 
 func getStorageVersion(crd *apiextensionsv1.CustomResourceDefinition) string {
