@@ -278,7 +278,7 @@ func main() {
 	if args[0] == "--" {
 		args = args[1:]
 	}
-	sort.Sort(sort.StringSlice(args))
+	sort.Strings(args)
 	_, _ = fmt.Fprint(os.Stderr, len(args), args)
 	printAPIDocs(args)
 }
