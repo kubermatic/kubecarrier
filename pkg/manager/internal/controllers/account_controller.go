@@ -150,7 +150,7 @@ func (r *AccountReconciler) handleDeletion(ctx context.Context, log logr.Logger,
 			&corev1.Namespace{},
 			&catalogv1alpha1.TenantReference{},
 		},
-	}).Reconcile(ctx, r.Client)
+	}).ReconcileOwnedObjects(ctx, r.Client)
 	if err != nil {
 		return fmt.Errorf("cannot reconcile objects: %w", err)
 	}
@@ -174,7 +174,7 @@ func (r *AccountReconciler) reconcileNamespace(ctx context.Context, log logr.Log
 			&corev1.Namespace{},
 		},
 		WantedState: []util.Object{ns},
-	}).Reconcile(ctx, r.Client); err != nil {
+	}).ReconcileOwnedObjects(ctx, r.Client); err != nil {
 		return fmt.Errorf("cannot reconcile namespace: %w", err)
 	}
 
@@ -234,7 +234,7 @@ func (r *AccountReconciler) reconcileTenantReferences(ctx context.Context, log l
 		TypeFilter: []runtime.Object{
 			&catalogv1alpha1.TenantReference{},
 		},
-	}).Reconcile(ctx, r.Client)
+	}).ReconcileOwnedObjects(ctx, r.Client)
 	if err != nil {
 		return fmt.Errorf("cannot reconcile objects: %w", err)
 	}
