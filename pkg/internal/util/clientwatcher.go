@@ -64,8 +64,8 @@ type ClientWatcher struct {
 	client.Client
 }
 
-// WaitUntil waits until the object's condition function is true, or the context deadline is reached
-func (cw *ClientWatcher) WaitUntil(ctx context.Context, obj object, cond ...func(obj runtime.Object) (bool, error)) error {
+// WaitUntil waits until the Object's condition function is true, or the context deadline is reached
+func (cw *ClientWatcher) WaitUntil(ctx context.Context, obj Object, cond ...func(obj runtime.Object, eventType watch.EventType) (bool, error)) error {
 	objGVK, err := apiutil.GVKForObject(obj, cw.scheme)
 	if err != nil {
 		return err
@@ -89,16 +89,16 @@ func (cw *ClientWatcher) WaitUntil(ctx context.Context, obj object, cond ...func
 		if err != nil {
 			return false, err
 		}
-		obj := objTmp.(object)
+		obj := objTmp.(Object)
 		if err := cw.scheme.Convert(event.Object, obj, nil); err != nil {
 			return false, err
 		}
 		if obj.GetNamespace() != objNN.Namespace || obj.GetName() != objNN.Name {
-			// not the right object
+			// not the right Object
 			return false, nil
 		}
 		for _, f := range cond {
-			ok, err := f(objTmp)
+			ok, err := f(objTmp, event.Type)
 			if err != nil {
 				return false, err
 			}

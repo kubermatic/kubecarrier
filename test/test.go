@@ -20,13 +20,9 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/stretchr/testify/suite"
-
 	"github.com/kubermatic/kubecarrier/pkg/testutil"
 	"github.com/kubermatic/kubecarrier/test/admin"
 	"github.com/kubermatic/kubecarrier/test/installation"
-	"github.com/kubermatic/kubecarrier/test/provider"
-	"github.com/kubermatic/kubecarrier/test/tenant"
 	"github.com/kubermatic/kubecarrier/test/verify"
 )
 
@@ -50,16 +46,6 @@ func AllTests(config testutil.FrameworkConfig) ([]testing.InternalTest, error) {
 		testing.InternalTest{
 			Name: "AdminSuite",
 			F:    admin.NewAdminSuite(f),
-		},
-		testing.InternalTest{
-			Name: "ProviderSuite",
-			F:    provider.NewProviderSuite(f),
-		},
-		testing.InternalTest{
-			Name: "TenantSuite",
-			F: func(t *testing.T) {
-				suite.Run(t, &tenant.TenantSuite{Framework: f})
-			},
 		},
 	)
 

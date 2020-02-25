@@ -37,6 +37,7 @@ import (
 	catalogv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/catalog/v1alpha1"
 	corev1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/core/v1alpha1"
 	operatorv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/operator/v1alpha1"
+	"github.com/kubermatic/kubecarrier/pkg/internal/util"
 )
 
 type FrameworkConfig struct {
@@ -126,24 +127,20 @@ func New(c FrameworkConfig) (f *Framework, err error) {
 
 func (f *Framework) ManagementClient() (*RecordingClient, error) {
 	cfg := f.managementConfig
-	c, err := client.New(cfg, client.Options{
-		Scheme: f.ManagementScheme,
-	})
+	c, err := util.NewClientWatcher(cfg, f.ManagementScheme)
 	if err != nil {
 		return nil, err
 	}
-	return RecordClient(c, f.ManagementScheme), nil
+	return recordingClient(c, f.ManagementScheme), nil
 }
 
 func (f *Framework) ServiceClient() (*RecordingClient, error) {
 	cfg := f.serviceConfig
-	c, err := client.New(cfg, client.Options{
-		Scheme: f.ServiceScheme,
-	})
+	c, err := util.NewClientWatcher(cfg, f.ServiceScheme)
 	if err != nil {
 		return nil, err
 	}
-	return RecordClient(c, f.ServiceScheme), nil
+	return recordingClient(c, f.ServiceScheme), nil
 }
 
 func (f *Framework) Config() FrameworkConfig {
@@ -151,18 +148,18 @@ func (f *Framework) Config() FrameworkConfig {
 }
 
 type RecordingClient struct {
-	client.Client
+	*util.ClientWatcher
 	scheme  *runtime.Scheme
 	objects map[string]runtime.Object
 	order   []string
 	mux     sync.Mutex
 }
 
-func RecordClient(c client.Client, scheme *runtime.Scheme) *RecordingClient {
+func recordingClient(cw *util.ClientWatcher, scheme *runtime.Scheme) *RecordingClient {
 	return &RecordingClient{
-		Client:  c,
-		scheme:  scheme,
-		objects: map[string]runtime.Object{},
+		ClientWatcher: cw,
+		scheme:        scheme,
+		objects:       map[string]runtime.Object{},
 	}
 }
 

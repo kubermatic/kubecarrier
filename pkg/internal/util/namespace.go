@@ -32,7 +32,7 @@ import (
 // EnsureUniqueNamespace generates unique namespace for obj if one already doesn't exists
 //
 // It's required that OwnerReverseFieldIndex exists for corev1.Namespace
-func EnsureUniqueNamespace(ctx context.Context, c client.Client, owner object, prefix string, scheme *runtime.Scheme) (*corev1.Namespace, error) {
+func EnsureUniqueNamespace(ctx context.Context, c client.Client, owner Object, prefix string, scheme *runtime.Scheme) (*corev1.Namespace, error) {
 	namespaceList := &corev1.NamespaceList{}
 	if err := c.List(ctx, namespaceList, ownerhelpers.OwnedBy(owner, scheme)); err != nil {
 		return nil, fmt.Errorf("listing Namespaces: %w", err)

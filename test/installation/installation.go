@@ -152,7 +152,7 @@ func testAnchorTeardown(ctx context.Context, f *testutil.Framework, kubeCarrier 
 		require.NoError(t, managementClient.Delete(ctx, kubeCarrier), "deleting the KubeCarrier object")
 
 		// Deployment
-		assert.NoError(t, testutil.WaitUntilNotFound(managementClient, &appsv1.Deployment{
+		assert.NoError(t, testutil.WaitUntilNotFound(ctx, managementClient, &appsv1.Deployment{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      fmt.Sprintf("%s-controller-manager", prefix),
 				Namespace: kubecarrierSystem,

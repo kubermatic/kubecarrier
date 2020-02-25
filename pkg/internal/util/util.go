@@ -21,8 +21,8 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 )
 
-// object generic k8s object with metav1 and runtime Object interfaces implemented
-type object interface {
+// Object generic k8s Object with metav1 and runtime Object interfaces implemented
+type Object interface {
 	runtime.Object
 	metav1.Object
 }

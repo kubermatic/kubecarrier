@@ -19,6 +19,7 @@ package admin
 import (
 	"context"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -43,7 +44,7 @@ func NewAdminSuite(f *testutil.Framework) func(t *testing.T) {
 		require.NoError(t, err, "creating service client")
 		defer serviceClient.CleanUp(t)
 
-		ctx := context.Background()
+		ctx, _ := context.WithTimeout(context.Background(), 260*time.Second)
 
 		// Create a Tenant
 		tenant := &catalogv1alpha1.Tenant{
@@ -52,7 +53,7 @@ func NewAdminSuite(f *testutil.Framework) func(t *testing.T) {
 			},
 		}
 		require.NoError(t, managementClient.Create(ctx, tenant), "creating tenant error")
-		require.NoError(t, testutil.WaitUntilReady(managementClient, tenant))
+		require.NoError(t, testutil.WaitUntilReady(ctx, managementClient, tenant))
 
 		tenantNamespaceName := tenant.Status.NamespaceName
 		tenantNamespace := &corev1.Namespace{}
@@ -74,7 +75,7 @@ func NewAdminSuite(f *testutil.Framework) func(t *testing.T) {
 		}
 
 		require.NoError(t, managementClient.Create(ctx, provider), "creating provider error")
-		require.NoError(t, testutil.WaitUntilReady(managementClient, provider))
+		require.NoError(t, testutil.WaitUntilReady(ctx, managementClient, provider))
 
 		providerNamespaceName := provider.Status.NamespaceName
 		providerNamespace := &corev1.Namespace{}
@@ -88,10 +89,10 @@ func NewAdminSuite(f *testutil.Framework) func(t *testing.T) {
 				Namespace: providerNamespaceName,
 			},
 		}
-		require.NoError(t, testutil.WaitUntilFound(managementClient, tenantReference))
+		require.NoError(t, testutil.WaitUntilFound(ctx, managementClient, tenantReference))
 
 		// Delete Tenant
-		require.NoError(t, testutil.DeleteAndWaitUntilNotFound(managementClient, tenant))
+		require.NoError(t, testutil.DeleteAndWaitUntilNotFound(ctx, managementClient, tenant))
 
 		assert.True(t, errors.IsNotFound(managementClient.Get(ctx, types.NamespacedName{
 			Name: tenantNamespaceName,
@@ -103,7 +104,7 @@ func NewAdminSuite(f *testutil.Framework) func(t *testing.T) {
 		}, tenantReference)), "TenantReference should also be deleted.")
 
 		// Delete Provider
-		require.NoError(t, testutil.DeleteAndWaitUntilNotFound(managementClient, provider))
+		require.NoError(t, testutil.DeleteAndWaitUntilNotFound(ctx, managementClient, provider))
 		assert.True(t, errors.IsNotFound(managementClient.Get(ctx, types.NamespacedName{
 			Name: providerNamespaceName,
 		}, providerNamespace)), "namespace should also be deleted.")

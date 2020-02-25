@@ -34,6 +34,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/apimachinery/pkg/watch"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -203,7 +204,7 @@ func reconcileOperator(ctx context.Context, log logr.Logger, c *util.ClientWatch
 				Namespace: kubecarrierNamespaceName,
 			},
 		}
-		return c.WaitUntil(ctx, deployment, func(obj runtime.Object) (b bool, err error) {
+		return c.WaitUntil(ctx, deployment, func(obj runtime.Object, eventType watch.EventType) (b bool, err error) {
 			return util.DeploymentIsAvailable(obj.(*appsv1.Deployment)), nil
 		})
 
@@ -234,7 +235,7 @@ func deployKubeCarrier(ctx context.Context, kubeCarrierNamespace *corev1.Namespa
 		}); err != nil {
 			return fmt.Errorf("cannot create or update kubecarrier: %w", err)
 		}
-		return w.WaitUntil(ctx, kubeCarrier, func(obj runtime.Object) (b bool, err error) {
+		return w.WaitUntil(ctx, kubeCarrier, func(obj runtime.Object, eventType watch.EventType) (b bool, err error) {
 			return obj.(*operatorv1alpha1.KubeCarrier).IsReady(), nil
 		})
 	}
