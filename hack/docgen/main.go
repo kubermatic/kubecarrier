@@ -29,6 +29,7 @@ import (
 	"os"
 	"path"
 	"reflect"
+	"sort"
 	"strings"
 )
 
@@ -277,6 +278,7 @@ func main() {
 	if args[0] == "--" {
 		args = args[1:]
 	}
-	_, _ = fmt.Fprint(os.Stderr, args)
+	sort.Sort(sort.StringSlice(args))
+	_, _ = fmt.Fprint(os.Stderr, len(args), args)
 	printAPIDocs(args)
 }
