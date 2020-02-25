@@ -129,7 +129,7 @@ func (s *TenantSuite) TestCatalogEntryCreationAndDeletion() {
 	catalogEntry := &catalogv1alpha1.CatalogEntry{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "couchdbs",
-			Namespace: s.provider.Status.NamespaceName,
+			Namespace: s.provider.Name,
 		},
 		Spec: catalogv1alpha1.CatalogEntrySpec{
 			Metadata: catalogv1alpha1.CatalogEntryMetadata{
