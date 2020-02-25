@@ -206,7 +206,7 @@ func TestCatalogReconciler(t *testing.T) {
 			Namespace: providerNamespaceName,
 		}, serviceClusterAssignmentFound), "getting ServiceClusterAssignment error")
 		assert.Equal(t, serviceClusterAssignmentFound.Spec.ServiceCluster.Name, serviceCluster.Name, "Wrong ServiceCluster name")
-		assert.Equal(t, serviceClusterAssignmentFound.Spec.MasterClusterNamespace.Name, tenantNamespaceName, "Wrong MasterCluster Namespace name.")
+		assert.Equal(t, serviceClusterAssignmentFound.Spec.ManagementClusterNamespace.Name, tenantNamespaceName, "Wrong ManagementCluster Namespace name.")
 	}) {
 		t.FailNow()
 	}

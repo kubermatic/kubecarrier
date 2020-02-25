@@ -97,7 +97,7 @@ func TestCustomResourceDiscoveryReconciler(t *testing.T) {
 	})
 	require.NoError(t, r.Client.Status().Update(ctx, crDiscovery))
 
-	reconcileLoop() // creates the CRD in the master cluster
+	reconcileLoop() // creates the CRD in the management cluster
 
 	establishedCondition, ok := crDiscovery.Status.GetCondition(corev1alpha1.CustomResourceDiscoveryEstablished)
 	if assert.True(t, ok) {

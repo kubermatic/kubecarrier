@@ -36,10 +36,10 @@ func TestManifests(t *testing.T) {
 		Name:      "db.eu-west-1",
 		Namespace: "test3000",
 
-		MasterClusterKind:    "CouchDBInternal",
-		MasterClusterVersion: "v1alpha1",
-		MasterClusterGroup:   "eu-west-1.provider",
-		MasterClusterPlural:  "couchdbinternals",
+		ManagementClusterKind:    "CouchDBInternal",
+		ManagementClusterVersion: "v1alpha1",
+		ManagementClusterGroup:   "eu-west-1.provider",
+		ManagementClusterPlural:  "couchdbinternals",
 
 		ServiceClusterKind:    "CouchDB",
 		ServiceClusterVersion: "v1alpha1",

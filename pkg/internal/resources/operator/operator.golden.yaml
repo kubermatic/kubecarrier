@@ -285,8 +285,8 @@
             spec:
               description: CatapultSpec defines the desired state of Catapult
               properties:
-                masterClusterCRD:
-                  description: References the CRD in the master cluster.
+                managementClusterCRD:
+                  description: References the CRD in the management cluster.
                   properties:
                     group:
                       type: string
@@ -329,7 +329,7 @@
                   - version
                   type: object
               required:
-              - masterClusterCRD
+              - managementClusterCRD
               - serviceCluster
               - serviceClusterCRD
               type: object

@@ -53,8 +53,8 @@ func TestServiceClusterReconciler(t *testing.T) {
 		},
 	}
 	scc := &ServiceClusterReconciler{
-		Log:          testutil.NewLogger(t),
-		MasterClient: fakeclient.NewFakeClientWithScheme(testScheme, serviceCluster),
+		Log:              testutil.NewLogger(t),
+		ManagementClient: fakeclient.NewFakeClientWithScheme(testScheme, serviceCluster),
 		ServiceClusterVersionInfo: &fakeServiceClusterVersionInfo{
 			Info: &version.Info{
 				Major:        "1",
@@ -85,7 +85,7 @@ func TestServiceClusterReconciler(t *testing.T) {
 
 		ctx := context.Background()
 		serviceClusterFound := &corev1alpha1.ServiceCluster{}
-		require.NoError(t, scc.MasterClient.Get(ctx, types.NamespacedName{
+		require.NoError(t, scc.ManagementClient.Get(ctx, types.NamespacedName{
 			Name:      serviceCluster.Name,
 			Namespace: serviceCluster.Namespace,
 		}, serviceClusterFound))
@@ -113,7 +113,7 @@ func TestServiceClusterReconciler(t *testing.T) {
 		require.Error(t, err)
 
 		serviceClusterFound := &corev1alpha1.ServiceCluster{}
-		require.NoError(t, scc.MasterClient.Get(ctx, types.NamespacedName{
+		require.NoError(t, scc.ManagementClient.Get(ctx, types.NamespacedName{
 			Name:      serviceCluster.Name,
 			Namespace: serviceCluster.Namespace,
 		}, serviceClusterFound))

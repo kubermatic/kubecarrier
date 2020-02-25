@@ -24,8 +24,8 @@ import (
 type ServiceClusterAssignmentSpec struct {
 	// References the ServiceCluster.
 	ServiceCluster ObjectReference `json:"serviceCluster"`
-	// References the source namespace in the master cluster.
-	MasterClusterNamespace ObjectReference `json:"masterNamespace"`
+	// References the source namespace in the management cluster.
+	ManagementClusterNamespace ObjectReference `json:"managementNamespace"`
 }
 
 // ServiceClusterAssignmentStatus defines the observed state of ServiceClusterAssignment

@@ -1630,8 +1630,8 @@
               description: ServiceClusterAssignmentSpec defines the desired state
                 of ServiceClusterAssignment
               properties:
-                masterNamespace:
-                  description: References the source namespace in the master cluster.
+                managementNamespace:
+                  description: References the source namespace in the management cluster.
                   properties:
                     name:
                       type: string
@@ -1647,7 +1647,7 @@
                   - name
                   type: object
               required:
-              - masterNamespace
+              - managementNamespace
               - serviceCluster
               type: object
             status:

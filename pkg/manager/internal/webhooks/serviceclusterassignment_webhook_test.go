@@ -40,15 +40,15 @@ func TestServiceClusterAssignmentValidatingCreate(t *testing.T) {
 			name: "serviceClusterAssignment name incorrect",
 			object: &corev1alpha1.ServiceClusterAssignment{
 				ObjectMeta: metav1.ObjectMeta{
-					Name:      "master-namespace.service-cluster2",
+					Name:      "management-namespace.service-cluster2",
 					Namespace: "test-namespace",
 				},
 				Spec: corev1alpha1.ServiceClusterAssignmentSpec{
 					ServiceCluster: corev1alpha1.ObjectReference{
 						Name: "service-cluster",
 					},
-					MasterClusterNamespace: corev1alpha1.ObjectReference{
-						Name: "master-namespace",
+					ManagementClusterNamespace: corev1alpha1.ObjectReference{
+						Name: "management-namespace",
 					},
 				},
 			},
@@ -58,22 +58,22 @@ func TestServiceClusterAssignmentValidatingCreate(t *testing.T) {
 			name: "service cluster missing",
 			object: &corev1alpha1.ServiceClusterAssignment{
 				ObjectMeta: metav1.ObjectMeta{
-					Name:      "master-namespace.service-cluster",
+					Name:      "management-namespace.service-cluster",
 					Namespace: "test-namespace",
 				},
 				Spec: corev1alpha1.ServiceClusterAssignmentSpec{
-					MasterClusterNamespace: corev1alpha1.ObjectReference{
-						Name: "master-namespace",
+					ManagementClusterNamespace: corev1alpha1.ObjectReference{
+						Name: "management-namespace",
 					},
 				},
 			},
 			expectedError: true,
 		},
 		{
-			name: "master cluster namespace missing",
+			name: "management cluster namespace missing",
 			object: &corev1alpha1.ServiceClusterAssignment{
 				ObjectMeta: metav1.ObjectMeta{
-					Name:      "master-namespace.service-cluster",
+					Name:      "management-namespace.service-cluster",
 					Namespace: "test-namespace",
 				},
 				Spec: corev1alpha1.ServiceClusterAssignmentSpec{
@@ -88,15 +88,15 @@ func TestServiceClusterAssignmentValidatingCreate(t *testing.T) {
 			name: "can pass validating create",
 			object: &corev1alpha1.ServiceClusterAssignment{
 				ObjectMeta: metav1.ObjectMeta{
-					Name:      "master-namespace.service-cluster",
+					Name:      "management-namespace.service-cluster",
 					Namespace: "test-namespace",
 				},
 				Spec: corev1alpha1.ServiceClusterAssignmentSpec{
 					ServiceCluster: corev1alpha1.ObjectReference{
 						Name: "service-cluster",
 					},
-					MasterClusterNamespace: corev1alpha1.ObjectReference{
-						Name: "master-namespace",
+					ManagementClusterNamespace: corev1alpha1.ObjectReference{
+						Name: "management-namespace",
 					},
 				},
 			},
@@ -118,15 +118,15 @@ func TestServiceClusterAssignmentValidatingUpdate(t *testing.T) {
 
 	oldObj := &corev1alpha1.ServiceClusterAssignment{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      "master-namespace.service-cluster",
+			Name:      "management-namespace.service-cluster",
 			Namespace: "test-namespace",
 		},
 		Spec: corev1alpha1.ServiceClusterAssignmentSpec{
 			ServiceCluster: corev1alpha1.ObjectReference{
 				Name: "service-cluster",
 			},
-			MasterClusterNamespace: corev1alpha1.ObjectReference{
-				Name: "master-namespace",
+			ManagementClusterNamespace: corev1alpha1.ObjectReference{
+				Name: "management-namespace",
 			},
 		},
 	}
@@ -140,33 +140,33 @@ func TestServiceClusterAssignmentValidatingUpdate(t *testing.T) {
 			name: "service cluster immutable",
 			object: &corev1alpha1.ServiceClusterAssignment{
 				ObjectMeta: metav1.ObjectMeta{
-					Name:      "master-namespace.service-cluster",
+					Name:      "management-namespace.service-cluster",
 					Namespace: "test-namespace",
 				},
 				Spec: corev1alpha1.ServiceClusterAssignmentSpec{
 					ServiceCluster: corev1alpha1.ObjectReference{
 						Name: "service-cluster2",
 					},
-					MasterClusterNamespace: corev1alpha1.ObjectReference{
-						Name: "master-namespace",
+					ManagementClusterNamespace: corev1alpha1.ObjectReference{
+						Name: "management-namespace",
 					},
 				},
 			},
 			expectedError: true,
 		},
 		{
-			name: "master cluster namespace immutable",
+			name: "management cluster namespace immutable",
 			object: &corev1alpha1.ServiceClusterAssignment{
 				ObjectMeta: metav1.ObjectMeta{
-					Name:      "master-namespace.service-cluster",
+					Name:      "management-namespace.service-cluster",
 					Namespace: "test-namespace",
 				},
 				Spec: corev1alpha1.ServiceClusterAssignmentSpec{
 					ServiceCluster: corev1alpha1.ObjectReference{
 						Name: "service-cluster",
 					},
-					MasterClusterNamespace: corev1alpha1.ObjectReference{
-						Name: "master-namespace2",
+					ManagementClusterNamespace: corev1alpha1.ObjectReference{
+						Name: "management-namespace2",
 					},
 				},
 			},
@@ -176,15 +176,15 @@ func TestServiceClusterAssignmentValidatingUpdate(t *testing.T) {
 			name: "can pass validating update",
 			object: &corev1alpha1.ServiceClusterAssignment{
 				ObjectMeta: metav1.ObjectMeta{
-					Name:      "master-namespace.service-cluster",
+					Name:      "management-namespace.service-cluster",
 					Namespace: "test-namespace",
 				},
 				Spec: corev1alpha1.ServiceClusterAssignmentSpec{
 					ServiceCluster: corev1alpha1.ObjectReference{
 						Name: "service-cluster",
 					},
-					MasterClusterNamespace: corev1alpha1.ObjectReference{
-						Name: "master-namespace",
+					ManagementClusterNamespace: corev1alpha1.ObjectReference{
+						Name: "management-namespace",
 					},
 				},
 			},

@@ -58,7 +58,7 @@ func TestAdoptionReconciler(t *testing.T) {
 			ServiceCluster: corev1alpha1.ObjectReference{
 				Name: "eu-west-1",
 			},
-			MasterClusterNamespace: corev1alpha1.ObjectReference{
+			ManagementClusterNamespace: corev1alpha1.ObjectReference{
 				Name: "another-namespace",
 			},
 		},
@@ -75,21 +75,21 @@ func TestAdoptionReconciler(t *testing.T) {
 		},
 	}
 
-	t.Run("creates master cluster object", func(t *testing.T) {
+	t.Run("creates management cluster object", func(t *testing.T) {
 		log := testutil.NewLogger(t)
-		masterClient := fakeclient.NewFakeClientWithScheme(testScheme, sca)
+		managementClient := fakeclient.NewFakeClientWithScheme(testScheme, sca)
 		serviceClient := fakeclient.NewFakeClientWithScheme(
 			testScheme, serviceClusterObj)
 
 		r := AdoptionReconciler{
-			Client:               masterClient,
-			NamespacedClient:     masterClient,
+			Client:               managementClient,
+			NamespacedClient:     managementClient,
 			Log:                  log,
 			ServiceClusterClient: serviceClient,
 
-			ServiceClusterGVK: serviceClusterGVK,
-			MasterClusterGVK:  masterClusterGVK,
-			ProviderNamespace: providerNamespace,
+			ServiceClusterGVK:    serviceClusterGVK,
+			ManagementClusterGVK: managementClusterGVK,
+			ProviderNamespace:    providerNamespace,
 		}
 
 		_, err := r.Reconcile(reconcile.Request{
@@ -101,12 +101,12 @@ func TestAdoptionReconciler(t *testing.T) {
 		require.NoError(t, err)
 
 		ctx := context.Background()
-		checkMasterClusterObj := &unstructured.Unstructured{}
-		checkMasterClusterObj.SetGroupVersionKind(masterClusterGVK)
-		err = masterClient.Get(ctx, types.NamespacedName{
+		checkManagementClusterObj := &unstructured.Unstructured{}
+		checkManagementClusterObj.SetGroupVersionKind(managementClusterGVK)
+		err = managementClient.Get(ctx, types.NamespacedName{
 			Name:      serviceClusterObj.GetName(),
-			Namespace: sca.Spec.MasterClusterNamespace.Name,
-		}, checkMasterClusterObj)
+			Namespace: sca.Spec.ManagementClusterNamespace.Name,
+		}, checkManagementClusterObj)
 		require.NoError(t, err)
 
 		assert.Equal(t, map[string]interface{}{
@@ -114,7 +114,7 @@ func TestAdoptionReconciler(t *testing.T) {
 			"kind":       "CouchDBInternal",
 			"metadata": map[string]interface{}{
 				"name":            "test-1",
-				"namespace":       sca.Spec.MasterClusterNamespace.Name,
+				"namespace":       sca.Spec.ManagementClusterNamespace.Name,
 				"resourceVersion": "1",
 			},
 			"spec": map[string]interface{}{
@@ -122,6 +122,6 @@ func TestAdoptionReconciler(t *testing.T) {
 				"test2": "spec2000",
 				"test3": "spec2000",
 			},
-		}, checkMasterClusterObj.Object)
+		}, checkManagementClusterObj.Object)
 	})
 }

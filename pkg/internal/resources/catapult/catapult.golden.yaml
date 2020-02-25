@@ -156,11 +156,11 @@
       spec:
         containers:
         - env:
-          - name: CATAPULT_MASTER_CLUSTER_KIND
+          - name: CATAPULT_MANAGEMENT_CLUSTER_KIND
             value: CouchDBInternal
-          - name: CATAPULT_MASTER_CLUSTER_VERSION
+          - name: CATAPULT_MANAGEMENT_CLUSTER_VERSION
             value: v1alpha1
-          - name: CATAPULT_MASTER_CLUSTER_GROUP
+          - name: CATAPULT_MANAGEMENT_CLUSTER_GROUP
             value: eu-west-1.provider
           - name: CATAPULT_SERVICE_CLUSTER_KIND
             value: CouchDB

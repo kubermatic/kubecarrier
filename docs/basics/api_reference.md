@@ -342,7 +342,7 @@ ServiceClusterAssignmentSpec defines the desired state of ServiceClusterAssignme
 | Field | Description | Scheme | Required |
 | ----- | ----------- | ------ | -------- |
 | serviceCluster | References the ServiceCluster. | kubecarrier.io/v1alpha1.ObjectReference | true |
-| masterNamespace | References the source namespace in the master cluster. | kubecarrier.io/v1alpha1.ObjectReference | true |
+| managementNamespace | References the source namespace in the management cluster. | kubecarrier.io/v1alpha1.ObjectReference | true |
 
 [Back to TOC](#table-of-contents)
 
@@ -1152,7 +1152,7 @@ CatapultSpec defines the desired state of Catapult
 
 | Field | Description | Scheme | Required |
 | ----- | ----------- | ------ | -------- |
-| masterClusterCRD | References the CRD in the master cluster. | operator.kubecarrier.io/v1alpha1.CRDReference | true |
+| managementClusterCRD | References the CRD in the management cluster. | operator.kubecarrier.io/v1alpha1.CRDReference | true |
 | serviceClusterCRD | References the CRD in the service cluster. | operator.kubecarrier.io/v1alpha1.CRDReference | true |
 | serviceCluster | References the ServiceCluster object that this object belongs to. | operator.kubecarrier.io/v1alpha1.ObjectReference | true |
 

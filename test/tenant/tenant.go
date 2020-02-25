@@ -44,8 +44,8 @@ type TenantSuite struct {
 	suite.Suite
 	*framework.Framework
 
-	masterClient  client.Client
-	serviceClient client.Client
+	managementClient client.Client
+	serviceClient    client.Client
 
 	// Objects that used in this test suite.
 	provider *catalogv1alpha1.Provider
@@ -55,8 +55,8 @@ type TenantSuite struct {
 func (s *TenantSuite) SetupSuite() {
 	var err error
 	ctx := context.Background()
-	s.masterClient, err = s.MasterClient()
-	s.Require().NoError(err, "creating master client")
+	s.managementClient, err = s.ManagementClient()
+	s.Require().NoError(err, "creating management client")
 
 	s.serviceClient, err = s.ServiceClient()
 	s.Require().NoError(err, "creating service client")
@@ -73,12 +73,12 @@ func (s *TenantSuite) SetupSuite() {
 			},
 		},
 	}
-	s.Require().NoError(s.masterClient.Create(ctx, s.provider), "creating provider error")
+	s.Require().NoError(s.managementClient.Create(ctx, s.provider), "creating provider error")
 
 	// Try to get the namespace that created for this provider.
 	namespace := &corev1.Namespace{}
 	s.NoError(wait.Poll(time.Second, 10*time.Second, func() (done bool, err error) {
-		if err := s.masterClient.Get(ctx, types.NamespacedName{
+		if err := s.managementClient.Get(ctx, types.NamespacedName{
 			Name: fmt.Sprintf("provider-%s", s.provider.Name),
 		}, namespace); err != nil {
 			if errors.IsNotFound(err) {
@@ -120,7 +120,7 @@ func (s *TenantSuite) SetupSuite() {
 		},
 	}
 
-	s.Require().NoError(s.masterClient.Create(ctx, s.crd), fmt.Sprintf("creating CRD: %s error", s.crd.Name))
+	s.Require().NoError(s.managementClient.Create(ctx, s.crd), fmt.Sprintf("creating CRD: %s error", s.crd.Name))
 
 }
 
@@ -143,12 +143,12 @@ func (s *TenantSuite) TestCatalogEntryCreationAndDeletion() {
 	}
 
 	// Create the CatalogEntry
-	s.Require().NoError(s.masterClient.Create(ctx, catalogEntry), "creating catalogEntry error")
+	s.Require().NoError(s.managementClient.Create(ctx, catalogEntry), "creating catalogEntry error")
 
 	// Check the status of the CatalogEntry.
 	catalogEntryFound := &catalogv1alpha1.CatalogEntry{}
 	s.NoError(wait.Poll(time.Second, 10*time.Second, func() (done bool, err error) {
-		if err := s.masterClient.Get(ctx, types.NamespacedName{
+		if err := s.managementClient.Get(ctx, types.NamespacedName{
 			Name:      catalogEntry.Name,
 			Namespace: catalogEntry.Namespace,
 		}, catalogEntryFound); err != nil {
@@ -162,7 +162,7 @@ func (s *TenantSuite) TestCatalogEntryCreationAndDeletion() {
 
 	// Delete the CatalogEntry
 	s.Require().NoError(wait.Poll(time.Second, 10*time.Second, func() (done bool, err error) {
-		if err = s.masterClient.Delete(ctx, catalogEntry); err != nil {
+		if err = s.managementClient.Delete(ctx, catalogEntry); err != nil {
 			if errors.IsNotFound(err) {
 				return true, nil
 			}
@@ -176,7 +176,7 @@ func (s *TenantSuite) TearDownSuite() {
 	ctx := context.Background()
 	// Remove the CRDs for testing.
 	s.Require().NoError(wait.Poll(time.Second, 10*time.Second, func() (done bool, err error) {
-		if err = s.masterClient.Delete(ctx, s.crd); err != nil {
+		if err = s.managementClient.Delete(ctx, s.crd); err != nil {
 			if errors.IsNotFound(err) {
 				return true, nil
 			}
@@ -187,7 +187,7 @@ func (s *TenantSuite) TearDownSuite() {
 
 	// Remove the provider for testing.
 	s.Require().NoError(wait.Poll(time.Second, 30*time.Second, func() (done bool, err error) {
-		if err = s.masterClient.Delete(ctx, s.provider); err != nil {
+		if err = s.managementClient.Delete(ctx, s.provider); err != nil {
 			if errors.IsNotFound(err) {
 				return true, nil
 			}
