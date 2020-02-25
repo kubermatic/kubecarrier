@@ -1,6 +1,6 @@
 # Architecture
 
-KubeCarrier consists of multiple components that are installed on a single Kubernetes Cluster, referred to as *Master Cluster* or just *Master*.
+KubeCarrier consists of multiple components that are installed on a single Kubernetes Cluster, referred to as *Management Cluster*.
 
 All components take the form of Kubernetes Controllers working with `CustomResourceDefinitions` and are build using the [kubebuilder project](https://github.com/kubernetes-sigs/kubebuilder).
 
@@ -24,9 +24,9 @@ KubeCarrier's `Ferry` component is responsible for managing the connection to a 
 
 ### Catapult
 
-A `Catapult` instance is automatically created when a `CustomResourceDiscovery` instance was able to discover a CustomResource from a service cluster and the CRD was successfully established within the masters api machinery.
+A `Catapult` instance is automatically created when a `CustomResourceDiscovery` instance was able to discover a CustomResource from a service cluster and the CRD was successfully established within the managements api machinery.
 
-Each `Catapult` instance is responsible for reconciling one `CustomResourceDefinition` type from the master to a service cluster.
+Each `Catapult` instance is responsible for reconciling one `CustomResourceDefinition` type from the management to a service cluster.
 
 ### Elevator
 

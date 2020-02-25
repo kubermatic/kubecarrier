@@ -32,8 +32,8 @@ import (
 	"github.com/kubermatic/kubecarrier/pkg/testutil"
 )
 
-func TestMasterClusterObjReconciler(t *testing.T) {
-	masterClusterObj := &unstructured.Unstructured{
+func TestManagementClusterObjReconciler(t *testing.T) {
+	managementClusterObj := &unstructured.Unstructured{
 		Object: map[string]interface{}{
 			"metadata": map[string]interface{}{
 				"name":      "test-1",
@@ -48,7 +48,7 @@ func TestMasterClusterObjReconciler(t *testing.T) {
 			},
 		},
 	}
-	masterClusterObj.SetGroupVersionKind(masterClusterGVK)
+	managementClusterObj.SetGroupVersionKind(managementClusterGVK)
 
 	sca := &corev1alpha1.ServiceClusterAssignment{
 		ObjectMeta: metav1.ObjectMeta{
@@ -59,7 +59,7 @@ func TestMasterClusterObjReconciler(t *testing.T) {
 			ServiceCluster: corev1alpha1.ObjectReference{
 				Name: "eu-west-1",
 			},
-			MasterClusterNamespace: corev1alpha1.ObjectReference{
+			ManagementClusterNamespace: corev1alpha1.ObjectReference{
 				Name: "another-namespace",
 			},
 		},
@@ -98,16 +98,16 @@ func TestMasterClusterObjReconciler(t *testing.T) {
 		serviceClusterObj.SetGroupVersionKind(serviceClusterGVK)
 
 		log := testutil.NewLogger(t)
-		masterClient := fakeclient.NewFakeClientWithScheme(testScheme, masterClusterObj, sca)
+		managementClient := fakeclient.NewFakeClientWithScheme(testScheme, managementClusterObj, sca)
 		serviceClient := fakeclient.NewFakeClientWithScheme(testScheme, serviceClusterObj)
 
-		r := MasterClusterObjReconciler{
-			Client:               masterClient,
+		r := ManagementClusterObjReconciler{
+			Client:               managementClient,
 			Log:                  log,
 			ServiceClusterClient: serviceClient,
-			NamespacedClient:     masterClient,
+			NamespacedClient:     managementClient,
 
-			MasterClusterGVK:  masterClusterGVK,
+			ManagementClusterGVK:  managementClusterGVK,
 			ServiceClusterGVK: serviceClusterGVK,
 
 			ServiceCluster:    "eu-west-1",
@@ -116,8 +116,8 @@ func TestMasterClusterObjReconciler(t *testing.T) {
 
 		_, err := r.Reconcile(reconcile.Request{
 			NamespacedName: types.NamespacedName{
-				Name:      masterClusterObj.GetName(),
-				Namespace: masterClusterObj.GetNamespace(),
+				Name:      managementClusterObj.GetName(),
+				Namespace: managementClusterObj.GetNamespace(),
 			},
 		})
 		require.NoError(t, err)
@@ -127,7 +127,7 @@ func TestMasterClusterObjReconciler(t *testing.T) {
 		checkServiceClusterObj.SetGroupVersionKind(serviceClusterGVK)
 
 		require.NoError(t, serviceClient.Get(ctx, types.NamespacedName{
-			Name:      masterClusterObj.GetName(),
+			Name:      managementClusterObj.GetName(),
 			Namespace: sca.Status.ServiceClusterNamespace.Name,
 		}, checkServiceClusterObj))
 
@@ -154,20 +154,20 @@ func TestMasterClusterObjReconciler(t *testing.T) {
 			},
 		}, checkServiceClusterObj.Object)
 
-		// Check master cluster instance
-		checkMasterClusterObj := &unstructured.Unstructured{}
-		checkMasterClusterObj.SetGroupVersionKind(masterClusterGVK)
-		require.NoError(t, masterClient.Get(ctx, types.NamespacedName{
-			Name:      masterClusterObj.GetName(),
-			Namespace: masterClusterObj.GetNamespace(),
-		}, checkMasterClusterObj))
+		// Check management cluster instance
+		checkManagementClusterObj := &unstructured.Unstructured{}
+		checkManagementClusterObj.SetGroupVersionKind(managementClusterGVK)
+		require.NoError(t, managementClient.Get(ctx, types.NamespacedName{
+			Name:      managementClusterObj.GetName(),
+			Namespace: managementClusterObj.GetNamespace(),
+		}, checkManagementClusterObj))
 
 		assert.Equal(t, map[string]interface{}{
 			"apiVersion": "eu-west-1.provider/v1alpha1",
 			"kind":       "CouchDBInternal",
 			"metadata": map[string]interface{}{
-				"name":            masterClusterObj.GetName(),
-				"namespace":       masterClusterObj.GetNamespace(),
+				"name":            managementClusterObj.GetName(),
+				"namespace":       managementClusterObj.GetNamespace(),
 				"resourceVersion": "2",
 				"generation":      int64(2),
 				"labels": map[string]interface{}{
@@ -184,21 +184,21 @@ func TestMasterClusterObjReconciler(t *testing.T) {
 				"test1":              "status3000",
 				"observedGeneration": int64(2),
 			},
-		}, checkMasterClusterObj.Object)
+		}, checkManagementClusterObj.Object)
 	})
 
 	t.Run("creates service cluster obj", func(t *testing.T) {
 		log := testutil.NewLogger(t)
-		masterClient := fakeclient.NewFakeClientWithScheme(testScheme, masterClusterObj, sca)
+		managementClient := fakeclient.NewFakeClientWithScheme(testScheme, managementClusterObj, sca)
 		serviceClient := fakeclient.NewFakeClientWithScheme(testScheme)
 
-		r := MasterClusterObjReconciler{
-			Client:               masterClient,
+		r := ManagementClusterObjReconciler{
+			Client:               managementClient,
 			Log:                  log,
-			NamespacedClient:     masterClient,
+			NamespacedClient:     managementClient,
 			ServiceClusterClient: serviceClient,
 
-			MasterClusterGVK:  masterClusterGVK,
+			ManagementClusterGVK:  managementClusterGVK,
 			ServiceClusterGVK: serviceClusterGVK,
 
 			ServiceCluster:    "eu-west-1",
@@ -215,12 +215,12 @@ func TestMasterClusterObjReconciler(t *testing.T) {
 		sca.Status.ServiceClusterNamespace = corev1alpha1.ObjectReference{
 			Name: "sc-test-123",
 		}
-		require.NoError(t, masterClient.Status().Update(ctx, sca))
+		require.NoError(t, managementClient.Status().Update(ctx, sca))
 
 		_, err := r.Reconcile(reconcile.Request{
 			NamespacedName: types.NamespacedName{
-				Name:      masterClusterObj.GetName(),
-				Namespace: masterClusterObj.GetNamespace(),
+				Name:      managementClusterObj.GetName(),
+				Namespace: managementClusterObj.GetNamespace(),
 			},
 		})
 		require.NoError(t, err)
@@ -228,7 +228,7 @@ func TestMasterClusterObjReconciler(t *testing.T) {
 		serviceClusterObj := &unstructured.Unstructured{}
 		serviceClusterObj.SetGroupVersionKind(serviceClusterGVK)
 		require.NoError(t, serviceClient.Get(ctx, types.NamespacedName{
-			Name:      masterClusterObj.GetName(),
+			Name:      managementClusterObj.GetName(),
 			Namespace: sca.Status.ServiceClusterNamespace.Name,
 		}, serviceClusterObj))
 

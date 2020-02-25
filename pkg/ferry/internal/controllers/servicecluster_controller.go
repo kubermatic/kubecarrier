@@ -45,7 +45,7 @@ type ServerVersionInfo interface {
 type ServiceClusterReconciler struct {
 	Log logr.Logger
 
-	MasterClient              client.Client
+	ManagementClient              client.Client
 	ServiceClusterVersionInfo ServerVersionInfo
 	ProviderNamespace         string
 	ServiceClusterName        string
@@ -59,7 +59,7 @@ func (r *ServiceClusterReconciler) Reconcile(req ctrl.Request) (res ctrl.Result,
 	ctx := context.Background()
 
 	serviceCluster := &corev1alpha1.ServiceCluster{}
-	if err := r.MasterClient.Get(ctx, req.NamespacedName, serviceCluster); err != nil {
+	if err := r.ManagementClient.Get(ctx, req.NamespacedName, serviceCluster); err != nil {
 		// If the ServiceCluster object is already gone, we just ignore the NotFound error.
 		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
@@ -96,8 +96,8 @@ func (r *ServiceClusterReconciler) Reconcile(req ctrl.Request) (res ctrl.Result,
 	return ctrl.Result{RequeueAfter: r.StatusUpdatePeriod}, nil
 }
 
-func (r *ServiceClusterReconciler) SetupWithManager(masterMgr ctrl.Manager) error {
-	c, err := controller.New("servicecluster-controller", masterMgr, controller.Options{
+func (r *ServiceClusterReconciler) SetupWithManager(managementMgr ctrl.Manager) error {
+	c, err := controller.New("servicecluster-controller", managementMgr, controller.Options{
 		Reconciler: r,
 	})
 	if err != nil {
@@ -129,7 +129,7 @@ func (r *ServiceClusterReconciler) updateStatus(
 	serviceCluster.Status.ObservedGeneration = serviceCluster.Generation
 	serviceCluster.Status.SetCondition(condition)
 
-	if err := r.MasterClient.Status().Update(ctx, serviceCluster); err != nil {
+	if err := r.ManagementClient.Status().Update(ctx, serviceCluster); err != nil {
 		return fmt.Errorf("updating status: %w", err)
 	}
 	return nil

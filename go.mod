@@ -14,6 +14,8 @@ require (
 	github.com/google/go-cmp v0.3.1
 	github.com/huandu/xstrings v1.3.0 // indirect
 	github.com/jetstack/cert-manager v0.13.0
+	github.com/masterminds/sprig v2.22.0+incompatible
+	github.com/mikefarah/yq/v2 v2.4.1 // indirect
 	github.com/rakyll/statik v0.1.6
 	github.com/spf13/cobra v0.0.5
 	github.com/spf13/pflag v1.0.5
@@ -25,6 +27,7 @@ require (
 	k8s.io/apimachinery v0.17.2
 	k8s.io/client-go v11.0.0+incompatible
 	sigs.k8s.io/controller-runtime v0.5.0
+	sigs.k8s.io/controller-tools v0.2.4 // indirect
 	sigs.k8s.io/kustomize/v3 v3.3.1
 	sigs.k8s.io/yaml v1.1.0
 )

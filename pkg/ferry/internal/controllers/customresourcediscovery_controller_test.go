@@ -67,8 +67,8 @@ func TestCustomResourceDiscoveryReconciler(t *testing.T) {
 	}
 
 	r := &CustomResourceDiscoveryReconciler{
-		MasterClient:       fakeclient.NewFakeClientWithScheme(testScheme, crdRef),
-		MasterScheme:       testScheme,
+		ManagementClient:       fakeclient.NewFakeClientWithScheme(testScheme, crdRef),
+		ManagementScheme:       testScheme,
 		ServiceClient:      fakeclient.NewFakeClientWithScheme(testScheme, crd),
 		ServiceClusterName: serviceClusterName,
 	}
@@ -83,7 +83,7 @@ func TestCustomResourceDiscoveryReconciler(t *testing.T) {
 			require.NoError(t, err, "cannot reconcile the CRD Reference")
 		}
 		crdRef = &corev1alpha1.CustomResourceDiscovery{}
-		require.NoError(t, r.MasterClient.Get(context.Background(), crdRefNN, crdRef))
+		require.NoError(t, r.ManagementClient.Get(context.Background(), crdRefNN, crdRef))
 		require.NoError(t, testutil.ConditionStatusEqual(crdRef, corev1alpha1.CustomResourceDiscoveryDiscovered, corev1alpha1.ConditionTrue))
 
 		assert.Equal(t, crd.Spec.Group, crdRef.Status.CRD.Spec.Group)
@@ -103,7 +103,7 @@ func TestCustomResourceDiscoveryReconciler(t *testing.T) {
 			assert.True(t, res.Requeue)
 		}
 		crdRef = &corev1alpha1.CustomResourceDiscovery{}
-		require.NoError(t, r.MasterClient.Get(context.Background(), crdRefNN, crdRef))
+		require.NoError(t, r.ManagementClient.Get(context.Background(), crdRefNN, crdRef))
 		assert.NoError(t, testutil.ConditionStatusEqual(crdRef, corev1alpha1.CustomResourceDiscoveryDiscovered, corev1alpha1.ConditionFalse))
 		assert.Equal(t, (*apiextensionsv1.CustomResourceDefinition)(nil), crdRef.Status.CRD)
 	}) {
@@ -119,17 +119,17 @@ func TestCustomResourceDiscoveryReconciler(t *testing.T) {
 			require.NoError(t, err, "cannot reconcile the CRD Reference")
 		}
 		crdRef = &corev1alpha1.CustomResourceDiscovery{}
-		require.NoError(t, r.MasterClient.Get(context.Background(), crdRefNN, crdRef))
+		require.NoError(t, r.ManagementClient.Get(context.Background(), crdRefNN, crdRef))
 		require.NoError(t, testutil.ConditionStatusEqual(crdRef, corev1alpha1.CustomResourceDiscoveryDiscovered, corev1alpha1.ConditionTrue))
 
-		require.NoError(t, r.MasterClient.Delete(context.Background(), crdRef))
+		require.NoError(t, r.ManagementClient.Delete(context.Background(), crdRef))
 		for i := 0; i < 2; i++ {
 			_, err := r.Reconcile(ctrl.Request{
 				NamespacedName: crdRefNN,
 			})
 			require.NoError(t, err, "cannot reconcile the CRD Reference")
 		}
-		require.True(t, errors.IsNotFound(r.MasterClient.Get(context.Background(), crdRefNN, crdRef)))
+		require.True(t, errors.IsNotFound(r.ManagementClient.Get(context.Background(), crdRefNN, crdRef)))
 	}) {
 		t.FailNow()
 	}

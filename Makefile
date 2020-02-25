@@ -80,7 +80,7 @@ vet:
 	go vet ./...
 
 test:
-	CGO_ENABLED=1 go test -race -v ./...
+	CGO_ENABLED=1 go test -count=1 -race -v ./...
 .PHONY: test
 
 install:
@@ -88,17 +88,17 @@ install:
 .PHONY: install
 
 TEST_ID?=1
-MASTER_KIND_CLUSTER?=kubecarrier-${TEST_ID}
+MANAGEMENT_KIND_CLUSTER?=kubecarrier-${TEST_ID}
 SVC_KIND_CLUSTER?=kubecarrier-svc-${TEST_ID}
 
 e2e-setup: install require-docker
 	@unset KUBECONFIG
-	@kind create cluster --name=${MASTER_KIND_CLUSTER} --image=${KIND_NODE_IMAGE} || true
-	@kind get kubeconfig --internal --name=${MASTER_KIND_CLUSTER} > "${HOME}/.kube/internal-kind-config-${MASTER_KIND_CLUSTER}"
-	@kind get kubeconfig --name=${MASTER_KIND_CLUSTER} > "${HOME}/.kube/kind-config-${MASTER_KIND_CLUSTER}"
-	@echo "Deploy cert-manger in master cluster"
-	# Deploy cert-manager right after the creation of the master cluster, since the deployments of cert-manger take some time to get ready.
-	@$(MAKE) KUBECONFIG=${HOME}/.kube/kind-config-${MASTER_KIND_CLUSTER} cert-manager
+	@kind create cluster --name=${MANAGEMENT_KIND_CLUSTER} --image=${KIND_NODE_IMAGE} || true
+	@kind get kubeconfig --internal --name=${MANAGEMENT_KIND_CLUSTER} > "${HOME}/.kube/internal-kind-config-${MANAGEMENT_KIND_CLUSTER}"
+	@kind get kubeconfig --name=${MANAGEMENT_KIND_CLUSTER} > "${HOME}/.kube/kind-config-${MANAGEMENT_KIND_CLUSTER}"
+	@echo "Deploy cert-manger in management cluster"
+	# Deploy cert-manager right after the creation of the management cluster, since the deployments of cert-manger take some time to get ready.
+	@$(MAKE) KUBECONFIG=${HOME}/.kube/kind-config-${MANAGEMENT_KIND_CLUSTER} cert-manager
 	@kind create cluster --name=${SVC_KIND_CLUSTER} --image=${KIND_NODE_IMAGE} || true
 	@kind get kubeconfig --internal --name=${SVC_KIND_CLUSTER} > "${HOME}/.kube/internal-kind-config-${SVC_KIND_CLUSTER}"
 	@kind get kubeconfig --name=${SVC_KIND_CLUSTER} > "${HOME}/.kube/kind-config-${SVC_KIND_CLUSTER}"
@@ -109,20 +109,20 @@ e2e-setup: install require-docker
 	@go run ./hack/impersonate --kubeconfig "${HOME}/.kube/internal-kind-config-${SVC_KIND_CLUSTER}" --as "system:serviceaccount:default:kubecarrier"
 	@echo "service cluster service account created"
 	@echo "Loading the images"
-	@$(MAKE) KIND_CLUSTER=${MASTER_KIND_CLUSTER} kind-load -j 5
+	@$(MAKE) KIND_CLUSTER=${MANAGEMENT_KIND_CLUSTER} kind-load -j 5
 
 # soft-reinstall reinstall kubecarrier in the e2e cluster. It's intended for usage during development
 soft-reinstall: e2e-setup install
-	@anchor setup --kubeconfig "${HOME}/.kube/kind-config-${MASTER_KIND_CLUSTER}"
-	@kubectl --kubeconfig "${HOME}/.kube/kind-config-${MASTER_KIND_CLUSTER}" delete pod --all -n kubecarrier-system
+	@anchor setup --kubeconfig "${HOME}/.kube/kind-config-${MANAGEMENT_KIND_CLUSTER}"
+	@kubectl --kubeconfig "${HOME}/.kube/kind-config-${MANAGEMENT_KIND_CLUSTER}" delete pod --all -n kubecarrier-system
 
 e2e-test: e2e-setup
-	@LD_FLAGS="$(LD_FLAGS)" TEST_ID=${TEST_ID} MASTER_KIND_CLUSTER=${MASTER_KIND_CLUSTER} SVC_KIND_CLUSTER=${SVC_KIND_CLUSTER} $(SHELL) ./hack/.e2e-test.sh
+	@LD_FLAGS="$(LD_FLAGS)" TEST_ID=${TEST_ID} MANAGEMENT_KIND_CLUSTER=${MANAGEMENT_KIND_CLUSTER} SVC_KIND_CLUSTER=${SVC_KIND_CLUSTER} $(SHELL) ./hack/.e2e-test.sh
 
 .PHONY: e2e-test
 
 e2e-test-clean:
-	@kind delete cluster --name=${MASTER_KIND_CLUSTER} || true
+	@kind delete cluster --name=${MANAGEMENT_KIND_CLUSTER} || true
 	@kind delete cluster --name=${SVC_KIND_CLUSTER} || true
 .PHONY: e2e-test-clean
 

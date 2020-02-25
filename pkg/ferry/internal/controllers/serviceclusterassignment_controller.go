@@ -40,10 +40,10 @@ const serviceClusterAssignmentControllerFinalizer string = "serviceclusterassign
 type ServiceClusterAssignmentReconciler struct {
 	Log logr.Logger
 
-	MasterClient       client.Client
+	ManagementClient       client.Client
 	ServiceClient      client.Client
 	ServiceCache       cache.Cache
-	MasterScheme       *runtime.Scheme
+	ManagementScheme       *runtime.Scheme
 	ServiceClusterName string
 }
 
@@ -57,7 +57,7 @@ func (r *ServiceClusterAssignmentReconciler) Reconcile(req ctrl.Request) (ctrl.R
 	log := r.Log.WithValues("serviceClusterAssignment", req.NamespacedName)
 
 	serviceClusterAssignment := &corev1alpha1.ServiceClusterAssignment{}
-	if err := r.MasterClient.Get(ctx, req.NamespacedName, serviceClusterAssignment); err != nil {
+	if err := r.ManagementClient.Get(ctx, req.NamespacedName, serviceClusterAssignment); err != nil {
 		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
 
@@ -70,7 +70,7 @@ func (r *ServiceClusterAssignmentReconciler) Reconcile(req ctrl.Request) (ctrl.R
 	}
 
 	if util.AddFinalizer(serviceClusterAssignment, serviceClusterAssignmentControllerFinalizer) {
-		if err := r.MasterClient.Update(ctx, serviceClusterAssignment); err != nil {
+		if err := r.ManagementClient.Update(ctx, serviceClusterAssignment); err != nil {
 			return ctrl.Result{}, fmt.Errorf("updating %s finalizers: %w", serviceClusterAssignment.Kind, err)
 		}
 	}
@@ -78,8 +78,8 @@ func (r *ServiceClusterAssignmentReconciler) Reconcile(req ctrl.Request) (ctrl.R
 	ns, err := util.EnsureUniqueNamespace(
 		ctx, r.ServiceClient,
 		serviceClusterAssignment,
-		serviceClusterAssignment.Spec.MasterClusterNamespace.Name,
-		r.MasterScheme)
+		serviceClusterAssignment.Spec.ManagementClusterNamespace.Name,
+		r.ManagementScheme)
 	if err != nil {
 		serviceClusterAssignment.Status.ObservedGeneration = serviceClusterAssignment.Generation
 		serviceClusterAssignment.Status.SetCondition(corev1alpha1.ServiceClusterAssignmentCondition{
@@ -88,7 +88,7 @@ func (r *ServiceClusterAssignmentReconciler) Reconcile(req ctrl.Request) (ctrl.R
 			Message: err.Error(),
 			Reason:  "CreatingNamespace",
 		})
-		if err := r.MasterClient.Status().Update(ctx, serviceClusterAssignment); err != nil {
+		if err := r.ManagementClient.Status().Update(ctx, serviceClusterAssignment); err != nil {
 			return ctrl.Result{}, fmt.Errorf("updating ServiceClusterAssignment Status: %w", err)
 		}
 		return ctrl.Result{}, fmt.Errorf("cannot create TenantAssignment namespace: %w", err)
@@ -104,7 +104,7 @@ func (r *ServiceClusterAssignmentReconciler) Reconcile(req ctrl.Request) (ctrl.R
 		Message: "Namespace has been setup.",
 		Reason:  "SetupComplete",
 	})
-	if err = r.MasterClient.Status().Update(ctx, serviceClusterAssignment); err != nil {
+	if err = r.ManagementClient.Status().Update(ctx, serviceClusterAssignment); err != nil {
 		return ctrl.Result{}, fmt.Errorf("updating ServiceClusterAssignment Status: %w", err)
 	}
 	return ctrl.Result{}, nil
@@ -122,13 +122,13 @@ func (r *ServiceClusterAssignmentReconciler) handleDeletion(ctx context.Context,
 			Reason:  corev1alpha1.TerminatingReason,
 			Message: "ServiceClusterAssignment is being terminated",
 		})
-		if err := r.MasterClient.Status().Update(ctx, serviceClusterAssignment); err != nil {
+		if err := r.ManagementClient.Status().Update(ctx, serviceClusterAssignment); err != nil {
 			return fmt.Errorf("updating ServiceClusterAssignment status: %w", err)
 		}
 	}
 
 	nsList := &corev1.NamespaceList{}
-	if err := r.ServiceClient.List(ctx, nsList, owner.OwnedBy(serviceClusterAssignment, r.MasterScheme)); err != nil {
+	if err := r.ServiceClient.List(ctx, nsList, owner.OwnedBy(serviceClusterAssignment, r.ManagementScheme)); err != nil {
 		return fmt.Errorf("listing Namespaces: %w", err)
 	}
 
@@ -143,7 +143,7 @@ func (r *ServiceClusterAssignmentReconciler) handleDeletion(ctx context.Context,
 
 	// Remove Finalizer
 	if util.RemoveFinalizer(serviceClusterAssignment, serviceClusterAssignmentControllerFinalizer) {
-		if err := r.MasterClient.Update(ctx, serviceClusterAssignment); err != nil {
+		if err := r.ManagementClient.Update(ctx, serviceClusterAssignment); err != nil {
 			return fmt.Errorf("updating %s finalizers: %w", serviceClusterAssignment.Kind, err)
 		}
 	}
@@ -158,7 +158,7 @@ func (r *ServiceClusterAssignmentReconciler) SetupWithManager(mgr ctrl.Manager) 
 
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&corev1alpha1.ServiceClusterAssignment{}).
-		Watches(source.Func(namespaceSource.Start), owner.EnqueueRequestForOwner(&corev1alpha1.ServiceClusterAssignment{}, r.MasterScheme)).
+		Watches(source.Func(namespaceSource.Start), owner.EnqueueRequestForOwner(&corev1alpha1.ServiceClusterAssignment{}, r.ManagementScheme)).
 		WithEventFilter(util.PredicateFn(func(obj runtime.Object) bool {
 			if serviceClusterAssignment, ok := obj.(*corev1alpha1.ServiceClusterAssignment); ok {
 				if serviceClusterAssignment.Spec.ServiceCluster.Name == r.ServiceClusterName {

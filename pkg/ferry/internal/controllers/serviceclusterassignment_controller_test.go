@@ -39,7 +39,7 @@ func TestServiceClusterAssignmentReconciler(t *testing.T) {
 			Namespace: "provider-bar",
 		},
 		Spec: corev1alpha1.ServiceClusterAssignmentSpec{
-			MasterClusterNamespace: corev1alpha1.ObjectReference{
+			ManagementClusterNamespace: corev1alpha1.ObjectReference{
 				Name: "foo",
 			},
 			ServiceCluster: corev1alpha1.ObjectReference{
@@ -50,8 +50,8 @@ func TestServiceClusterAssignmentReconciler(t *testing.T) {
 
 	r := ServiceClusterAssignmentReconciler{
 		Log:           testutil.NewLogger(t),
-		MasterClient:  fakeclient.NewFakeClientWithScheme(testScheme, serviceClusterAssignment),
-		MasterScheme:  testScheme,
+		ManagementClient:  fakeclient.NewFakeClientWithScheme(testScheme, serviceClusterAssignment),
+		ManagementScheme:  testScheme,
 		ServiceClient: fakeclient.NewFakeClientWithScheme(testScheme),
 	}
 	_, err := r.Reconcile(ctrl.Request{

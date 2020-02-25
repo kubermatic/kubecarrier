@@ -38,7 +38,7 @@ import (
 )
 
 var (
-	masterScheme  = runtime.NewScheme()
+	managementScheme  = runtime.NewScheme()
 	serviceScheme = runtime.NewScheme()
 )
 
@@ -47,8 +47,8 @@ type flags struct {
 	enableLeaderElection             bool
 	serviceClusterStatusUpdatePeriod time.Duration
 
-	// master
-	masterMetricsAddr string
+	// management
+	managementMetricsAddr string
 
 	// service
 	serviceMetricsAddr string
@@ -59,8 +59,8 @@ type flags struct {
 func init() {
 	_ = apiextensionsv1.AddToScheme(serviceScheme)
 	_ = clientgoscheme.AddToScheme(serviceScheme)
-	_ = clientgoscheme.AddToScheme(masterScheme)
-	_ = corev1alpha1.AddToScheme(masterScheme)
+	_ = clientgoscheme.AddToScheme(managementScheme)
+	_ = corev1alpha1.AddToScheme(managementScheme)
 }
 
 func NewFerryCommand(log logr.Logger) *cobra.Command {
@@ -74,13 +74,13 @@ func NewFerryCommand(log logr.Logger) *cobra.Command {
 		},
 	}
 
-	cmd.Flags().StringVar(&flags.providerNamespace, "provider-namespace", "", "Name of the providers namespace in the master cluster.")
+	cmd.Flags().StringVar(&flags.providerNamespace, "provider-namespace", "", "Name of the providers namespace in the management cluster.")
 	cmd.Flags().BoolVar(&flags.enableLeaderElection, "enable-leader-election", true,
 		"Enable leader election for controller manager. Enabling this will ensure there is only one active controller manager.")
-	cmd.Flags().DurationVar(&flags.serviceClusterStatusUpdatePeriod, "service-cluster-status-update-period", 10*time.Second, "Specifies how often the ferry posts service cluster status to master. Note: must work with service-cluster-monitor-grace-period in kubecarrier-controller-manager.")
+	cmd.Flags().DurationVar(&flags.serviceClusterStatusUpdatePeriod, "service-cluster-status-update-period", 10*time.Second, "Specifies how often the ferry posts service cluster status to management. Note: must work with service-cluster-monitor-grace-period in kubecarrier-controller-manager.")
 
-	// master
-	cmd.Flags().StringVar(&flags.masterMetricsAddr, "master-metrics-addr", ":8080", "The address the metric endpoint binds to.")
+	// management
+	cmd.Flags().StringVar(&flags.managementMetricsAddr, "management-metrics-addr", ":8080", "The address the metric endpoint binds to.")
 
 	// service cluster client settings
 	cmd.Flags().StringVar(&flags.serviceMetricsAddr, "service-cluster-metrics-addr", ":8081", "The address the metric endpoint binds to.")
@@ -101,17 +101,17 @@ func NewFerryCommand(log logr.Logger) *cobra.Command {
 
 func runE(flags *flags, log logr.Logger) error {
 	// KubeCarrier cluster manager
-	masterCfg := ctrl.GetConfigOrDie()
-	mgr, err := ctrl.NewManager(masterCfg, ctrl.Options{
-		Scheme:                  masterScheme,
-		MetricsBindAddress:      flags.masterMetricsAddr,
+	managementCfg := ctrl.GetConfigOrDie()
+	mgr, err := ctrl.NewManager(managementCfg, ctrl.Options{
+		Scheme:                  managementScheme,
+		MetricsBindAddress:      flags.managementMetricsAddr,
 		LeaderElection:          flags.enableLeaderElection,
 		LeaderElectionNamespace: flags.providerNamespace,
 		LeaderElectionID:        "ferry-" + flags.serviceClusterName,
 		Namespace:               flags.providerNamespace,
 	})
 	if err != nil {
-		return fmt.Errorf("unable to start manager for master cluster: %w", err)
+		return fmt.Errorf("unable to start manager for management cluster: %w", err)
 	}
 
 	// Setup additional client and cache for Service Cluster
@@ -154,7 +154,7 @@ func runE(flags *flags, log logr.Logger) error {
 
 	if err := (&controllers.ServiceClusterReconciler{
 		Log:                       log.WithName("controllers").WithName("ServiceCluster"),
-		MasterClient:              mgr.GetClient(),
+		ManagementClient:              mgr.GetClient(),
 		ServiceClusterVersionInfo: serviceClusterDiscoveryClient,
 		ProviderNamespace:         flags.providerNamespace,
 		ServiceClusterName:        flags.serviceClusterName,
@@ -165,8 +165,8 @@ func runE(flags *flags, log logr.Logger) error {
 
 	if err := (&controllers.CustomResourceDiscoveryReconciler{
 		Log:                log.WithName("controllers").WithName("CustomResourceDiscovery"),
-		MasterClient:       mgr.GetClient(),
-		MasterScheme:       mgr.GetScheme(),
+		ManagementClient:       mgr.GetClient(),
+		ManagementScheme:       mgr.GetScheme(),
 		ServiceClient:      serviceCachedClient,
 		ServiceCache:       serviceCache,
 		ServiceClusterName: flags.serviceClusterName,
@@ -176,8 +176,8 @@ func runE(flags *flags, log logr.Logger) error {
 
 	if err := (&controllers.ServiceClusterAssignmentReconciler{
 		Log:          log.WithName("controllers").WithName("ServiceClusterAssignmentReconciler"),
-		MasterClient: mgr.GetClient(),
-		MasterScheme: mgr.GetScheme(),
+		ManagementClient: mgr.GetClient(),
+		ManagementScheme: mgr.GetScheme(),
 		// We need the uncached client here or we might create a second namespace
 		// because there is a short timeframe where the cache is not yet synced
 		// and the controller would think it did not yet create the namespace.

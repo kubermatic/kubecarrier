@@ -47,7 +47,7 @@ func main() {
 		os.ExpandEnv("$"+ServiceClusterENV),
 		"provider namespace to use in task generation",
 	)
-	masterKubeconfigPath := path.Join(home, ".kube", "kind-config-kubecarrier-1")
+	managementKubeconfigPath := path.Join(home, ".kube", "kind-config-kubecarrier-1")
 	svcKubeconfigPath := path.Join(home, ".kube", "kind-config-kubecarrier-svc-1")
 	flag.Parse()
 	fmt.Printf("generating IDE tasks\n")
@@ -60,7 +60,7 @@ func main() {
 			LDFlags: *ldFlags,
 			Args:    []string{"version"},
 			Env: map[string]string{
-				"KUBECONFIG": masterKubeconfigPath,
+				"KUBECONFIG": managementKubeconfigPath,
 			},
 		},
 		{
@@ -73,7 +73,7 @@ func main() {
 				"--metrics-addr=0",
 			},
 			Env: map[string]string{
-				"KUBECONFIG": masterKubeconfigPath,
+				"KUBECONFIG": managementKubeconfigPath,
 			},
 		},
 		{
@@ -84,7 +84,7 @@ func main() {
 				"--enable-leader-election=false",
 			},
 			Env: map[string]string{
-				"KUBECONFIG": masterKubeconfigPath,
+				"KUBECONFIG": managementKubeconfigPath,
 			},
 		},
 		{
@@ -98,7 +98,7 @@ func main() {
 				"--enable-leader-election=false",
 			},
 			Env: map[string]string{
-				"KUBECONFIG": masterKubeconfigPath,
+				"KUBECONFIG": managementKubeconfigPath,
 			},
 		},
 		{
@@ -112,7 +112,7 @@ func main() {
 				"--enable-leader-election=false",
 			},
 			Env: map[string]string{
-				"KUBECONFIG": masterKubeconfigPath,
+				"KUBECONFIG": managementKubeconfigPath,
 			},
 		},
 		{
@@ -123,7 +123,7 @@ func main() {
 				"--provider-namespace=default",
 			},
 			Env: map[string]string{
-				"KUBECONFIG": masterKubeconfigPath,
+				"KUBECONFIG": managementKubeconfigPath,
 			},
 		},
 	}

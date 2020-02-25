@@ -43,13 +43,13 @@ import (
 type Config struct {
 	TestID string
 
-	MasterExternalKubeconfigPath  string
-	MasterInternalKubeconfigPath  string
+	ManagementExternalKubeconfigPath  string
+	ManagementInternalKubeconfigPath  string
 	ServiceExternalKubeconfigPath string
 	ServiceInternalKubeconfigPath string
 }
 
-func (c *Config) MasterClusterName() string {
+func (c *Config) ManagementClusterName() string {
 	return "kubecarrier-" + c.TestID
 }
 
@@ -58,12 +58,12 @@ func (c *Config) ServiceClusterName() string {
 }
 
 func (c *Config) Default() {
-	// Master Cluster
-	if c.MasterInternalKubeconfigPath == "" {
-		c.MasterInternalKubeconfigPath = os.ExpandEnv("${HOME}/.kube/internal-kind-config-" + c.MasterClusterName())
+	// Management Cluster
+	if c.ManagementInternalKubeconfigPath == "" {
+		c.ManagementInternalKubeconfigPath = os.ExpandEnv("${HOME}/.kube/internal-kind-config-" + c.ManagementClusterName())
 	}
-	if c.MasterExternalKubeconfigPath == "" {
-		c.MasterExternalKubeconfigPath = os.ExpandEnv("${HOME}/.kube/kind-config-" + c.MasterClusterName())
+	if c.ManagementExternalKubeconfigPath == "" {
+		c.ManagementExternalKubeconfigPath = os.ExpandEnv("${HOME}/.kube/kind-config-" + c.ManagementClusterName())
 	}
 
 	// Service Cluster
@@ -76,8 +76,8 @@ func (c *Config) Default() {
 }
 
 type Framework struct {
-	MasterScheme  *runtime.Scheme
-	masterConfig  *restclient.Config
+	ManagementScheme  *runtime.Scheme
+	managementConfig  *restclient.Config
 	ServiceScheme *runtime.Scheme
 	serviceConfig *restclient.Config
 	config        Config
@@ -86,27 +86,27 @@ type Framework struct {
 func New(c Config) (f *Framework, err error) {
 	f = &Framework{config: c}
 
-	// Master Setup
-	f.MasterScheme = runtime.NewScheme()
-	if err = clientgoscheme.AddToScheme(f.MasterScheme); err != nil {
-		return nil, fmt.Errorf("adding clientgo scheme to master scheme: %w", err)
+	// Management Setup
+	f.ManagementScheme = runtime.NewScheme()
+	if err = clientgoscheme.AddToScheme(f.ManagementScheme); err != nil {
+		return nil, fmt.Errorf("adding clientgo scheme to management scheme: %w", err)
 	}
-	if err = apiextensionsv1.AddToScheme(f.MasterScheme); err != nil {
-		return nil, fmt.Errorf("adding apiextensionsv1 scheme to master scheme: %w", err)
+	if err = apiextensionsv1.AddToScheme(f.ManagementScheme); err != nil {
+		return nil, fmt.Errorf("adding apiextensionsv1 scheme to management scheme: %w", err)
 	}
-	if err = operatorv1alpha1.AddToScheme(f.MasterScheme); err != nil {
-		return nil, fmt.Errorf("adding operatorv1alpha1 scheme to master scheme: %w", err)
+	if err = operatorv1alpha1.AddToScheme(f.ManagementScheme); err != nil {
+		return nil, fmt.Errorf("adding operatorv1alpha1 scheme to management scheme: %w", err)
 	}
-	if err = catalogv1alpha1.AddToScheme(f.MasterScheme); err != nil {
-		return nil, fmt.Errorf("adding catalogv1alpha1 scheme to master scheme: %w", err)
+	if err = catalogv1alpha1.AddToScheme(f.ManagementScheme); err != nil {
+		return nil, fmt.Errorf("adding catalogv1alpha1 scheme to management scheme: %w", err)
 	}
-	if err = corev1alpha1.AddToScheme(f.MasterScheme); err != nil {
-		return nil, fmt.Errorf("adding corev1alpha1 scheme to master scheme: %w", err)
+	if err = corev1alpha1.AddToScheme(f.ManagementScheme); err != nil {
+		return nil, fmt.Errorf("adding corev1alpha1 scheme to management scheme: %w", err)
 	}
 
-	f.masterConfig, err = clientcmd.BuildConfigFromFlags("", f.config.MasterExternalKubeconfigPath)
+	f.managementConfig, err = clientcmd.BuildConfigFromFlags("", f.config.ManagementExternalKubeconfigPath)
 	if err != nil {
-		return nil, fmt.Errorf("build restconfig for master: %w", err)
+		return nil, fmt.Errorf("build restconfig for management: %w", err)
 	}
 
 	// Service Setup
@@ -125,15 +125,15 @@ func New(c Config) (f *Framework, err error) {
 	return
 }
 
-func (f *Framework) MasterClient() (*RecordingClient, error) {
-	cfg := f.masterConfig
+func (f *Framework) ManagementClient() (*RecordingClient, error) {
+	cfg := f.managementConfig
 	c, err := client.New(cfg, client.Options{
-		Scheme: f.MasterScheme,
+		Scheme: f.ManagementScheme,
 	})
 	if err != nil {
 		return nil, err
 	}
-	return RecordClient(c, f.MasterScheme), nil
+	return RecordClient(c, f.ManagementScheme), nil
 }
 
 func (f *Framework) ServiceClient() (*RecordingClient, error) {

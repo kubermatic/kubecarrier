@@ -76,8 +76,8 @@ func (r *ServiceClusterAssignmentWebhookHandler) InjectDecoder(d *admission.Deco
 func (r *ServiceClusterAssignmentWebhookHandler) validateCreate(serviceClusterAssignment *corev1alpha1.ServiceClusterAssignment) error {
 	r.Log.Info("validate create", "name", serviceClusterAssignment.Name)
 	if serviceClusterAssignment.Spec.ServiceCluster.Name == "" ||
-		serviceClusterAssignment.Spec.MasterClusterNamespace.Name == "" {
-		return fmt.Errorf("the ServiceCluster or MasterClusterNamespace of ServiceClusterAssignment is specified as empty string")
+		serviceClusterAssignment.Spec.ManagementClusterNamespace.Name == "" {
+		return fmt.Errorf("the ServiceCluster or ManagementClusterNamespace of ServiceClusterAssignment is specified as empty string")
 	}
 	return r.validateName(serviceClusterAssignment)
 }
@@ -85,20 +85,20 @@ func (r *ServiceClusterAssignmentWebhookHandler) validateCreate(serviceClusterAs
 func (r *ServiceClusterAssignmentWebhookHandler) validateUpdate(oldObj, newObj *corev1alpha1.ServiceClusterAssignment) error {
 	r.Log.Info("validate update", "name", newObj.Name)
 	if newObj.Spec.ServiceCluster.Name != oldObj.Spec.ServiceCluster.Name ||
-		newObj.Spec.MasterClusterNamespace.Name != oldObj.Spec.MasterClusterNamespace.Name {
-		return fmt.Errorf("the ServiceCluster and MasterClusterNamespace of ServiceClusterAssignment are immutable")
+		newObj.Spec.ManagementClusterNamespace.Name != oldObj.Spec.ManagementClusterNamespace.Name {
+		return fmt.Errorf("the ServiceCluster and ManagementClusterNamespace of ServiceClusterAssignment are immutable")
 	}
 	return r.validateName(newObj)
 }
 
 func (r *ServiceClusterAssignmentWebhookHandler) validateName(serviceClusterAssignment *corev1alpha1.ServiceClusterAssignment) error {
 	desiredName := fmt.Sprintf("%s.%s",
-		serviceClusterAssignment.Spec.MasterClusterNamespace.Name,
+		serviceClusterAssignment.Spec.ManagementClusterNamespace.Name,
 		serviceClusterAssignment.Spec.ServiceCluster.Name)
 	if serviceClusterAssignment.Name != desiredName {
-		return fmt.Errorf("the Name of the ServiceClusterAssignment should be the compound of <master cluster namespace>.<service cluster>, found: %s, master cluster namespace: %s, service cluster: %s",
+		return fmt.Errorf("the Name of the ServiceClusterAssignment should be the compound of <management cluster namespace>.<service cluster>, found: %s, management cluster namespace: %s, service cluster: %s",
 			serviceClusterAssignment.Name,
-			serviceClusterAssignment.Spec.MasterClusterNamespace.Name,
+			serviceClusterAssignment.Spec.ManagementClusterNamespace.Name,
 			serviceClusterAssignment.Spec.ServiceCluster.Name)
 	}
 	return nil

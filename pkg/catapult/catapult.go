@@ -42,20 +42,20 @@ type flags struct {
 	metricsAddr          string
 	enableLeaderElection bool
 
-	masterClusterKind, masterClusterVersion, masterClusterGroup    string
+	managementClusterKind, managementClusterVersion, managementClusterGroup    string
 	serviceClusterKind, serviceClusterVersion, serviceClusterGroup string
 	serviceClusterName, serviceClusterKubeconfig                   string
 	providerNamespace                                              string
 }
 
 var (
-	masterScheme  = runtime.NewScheme()
+	managementScheme  = runtime.NewScheme()
 	serviceScheme = runtime.NewScheme()
 )
 
 func init() {
-	_ = clientgoscheme.AddToScheme(masterScheme)
-	_ = corev1alpha1.AddToScheme(masterScheme)
+	_ = clientgoscheme.AddToScheme(managementScheme)
+	_ = corev1alpha1.AddToScheme(managementScheme)
 	_ = clientgoscheme.AddToScheme(serviceScheme)
 }
 
@@ -79,14 +79,14 @@ func NewCatapult() *cobra.Command {
 		"Enable leader election for controller manager. Enabling this will ensure there is only one active controller manager.")
 
 	cmd.Flags().StringVar(
-		&flags.masterClusterKind, "master-cluster-kind",
-		os.Getenv("CATAPULT_MASTER_CLUSTER_KIND"), "Kind of master cluster CRD.")
+		&flags.managementClusterKind, "management-cluster-kind",
+		os.Getenv("CATAPULT_MANAGEMENT_CLUSTER_KIND"), "Kind of management cluster CRD.")
 	cmd.Flags().StringVar(
-		&flags.masterClusterVersion, "master-cluster-version",
-		os.Getenv("CATAPULT_MASTER_CLUSTER_VERSION"), "Version of master cluster CRD.")
+		&flags.managementClusterVersion, "management-cluster-version",
+		os.Getenv("CATAPULT_MANAGEMENT_CLUSTER_VERSION"), "Version of management cluster CRD.")
 	cmd.Flags().StringVar(
-		&flags.masterClusterGroup, "master-cluster-group",
-		os.Getenv("CATAPULT_MASTER_CLUSTER_GROUP"), "Group of master cluster CRD.")
+		&flags.managementClusterGroup, "management-cluster-group",
+		os.Getenv("CATAPULT_MANAGEMENT_CLUSTER_GROUP"), "Group of management cluster CRD.")
 
 	cmd.Flags().StringVar(
 		&flags.serviceClusterKind, "service-cluster-kind",
@@ -107,7 +107,7 @@ func NewCatapult() *cobra.Command {
 
 	cmd.Flags().StringVar(
 		&flags.providerNamespace, "provider-namespace",
-		os.Getenv("KUBERNETES_NAMESPACE"), "Name of the provider namespace in the master cluster.")
+		os.Getenv("KUBERNETES_NAMESPACE"), "Name of the provider namespace in the management cluster.")
 
 	return util.CmdLogMixin(cmd)
 }
@@ -117,9 +117,9 @@ func run(flags *flags, log logr.Logger) error {
 	checks := []struct {
 		value, env, flag string
 	}{
-		{value: flags.masterClusterKind, env: "CATAPULT_MASTER_CLUSTER_KIND", flag: "master-cluster-kind"},
-		{value: flags.masterClusterVersion, env: "CATAPULT_MASTER_CLUSTER_VERSION", flag: "master-cluster-version"},
-		{value: flags.masterClusterGroup, env: "CATAPULT_MASTER_CLUSTER_GROUP", flag: "master-cluster-group"},
+		{value: flags.managementClusterKind, env: "CATAPULT_MANAGEMENT_CLUSTER_KIND", flag: "management-cluster-kind"},
+		{value: flags.managementClusterVersion, env: "CATAPULT_MANAGEMENT_CLUSTER_VERSION", flag: "management-cluster-version"},
+		{value: flags.managementClusterGroup, env: "CATAPULT_MANAGEMENT_CLUSTER_GROUP", flag: "management-cluster-group"},
 
 		{value: flags.serviceClusterKind, env: "CATAPULT_SERVICE_CLUSTER_KIND", flag: "service-cluster-kind"},
 		{value: flags.serviceClusterVersion, env: "CATAPULT_SERVICE_CLUSTER_VERSION", flag: "service-cluster-version"},
@@ -141,9 +141,9 @@ func run(flags *flags, log logr.Logger) error {
 	}
 
 	// Setup Manager
-	masterCfg := ctrl.GetConfigOrDie()
-	mgr, err := ctrl.NewManager(masterCfg, ctrl.Options{
-		Scheme:             masterScheme,
+	managementCfg := ctrl.GetConfigOrDie()
+	mgr, err := ctrl.NewManager(managementCfg, ctrl.Options{
+		Scheme:             managementScheme,
 		MetricsBindAddress: flags.metricsAddr,
 		LeaderElection:     flags.enableLeaderElection,
 		Port:               9443,
@@ -167,8 +167,8 @@ func run(flags *flags, log logr.Logger) error {
 		return fmt.Errorf("starting manager: %w", err)
 	}
 
-	// Setup additional namesapced client for master cluster
-	namespacedCache, err := cache.New(masterCfg, cache.Options{
+	// Setup additional namespaced client for management cluster
+	namespacedCache, err := cache.New(managementCfg, cache.Options{
 		Scheme:    mgr.GetScheme(),
 		Mapper:    mgr.GetRESTMapper(),
 		Namespace: flags.providerNamespace,
@@ -220,10 +220,10 @@ func run(flags *flags, log logr.Logger) error {
 	}
 
 	// Setup Types
-	masterClusterGVK := schema.GroupVersionKind{
-		Kind:    flags.masterClusterKind,
-		Version: flags.masterClusterVersion,
-		Group:   flags.masterClusterGroup,
+	managementClusterGVK := schema.GroupVersionKind{
+		Kind:    flags.managementClusterKind,
+		Version: flags.managementClusterVersion,
+		Group:   flags.managementClusterGroup,
 	}
 	serviceClusterGVK := schema.GroupVersionKind{
 		Kind:    flags.serviceClusterKind,
@@ -237,8 +237,8 @@ func run(flags *flags, log logr.Logger) error {
 	}
 
 	// Setup Controllers
-	if err := (&controllers.MasterClusterObjReconciler{
-		Log:              log.WithName("controllers").WithName("MasterClusterObjReconciler"),
+	if err := (&controllers.ManagementClusterObjReconciler{
+		Log:              log.WithName("controllers").WithName("ManagementClusterObjReconciler"),
 		Client:           mgr.GetClient(),
 		NamespacedClient: namespacedClient,
 
@@ -247,10 +247,10 @@ func run(flags *flags, log logr.Logger) error {
 		ServiceCluster:       flags.serviceClusterName,
 		ProviderNamespace:    flags.providerNamespace,
 
-		MasterClusterGVK:  masterClusterGVK,
+		ManagementClusterGVK:  managementClusterGVK,
 		ServiceClusterGVK: serviceClusterGVK,
 	}).SetupWithManager(mgr); err != nil {
-		return fmt.Errorf("cannot add %s controller: %w", "MasterClusterObjReconciler", err)
+		return fmt.Errorf("cannot add %s controller: %w", "ManagementClusterObjReconciler", err)
 	}
 
 	if err := (&controllers.AdoptionReconciler{
@@ -262,7 +262,7 @@ func run(flags *flags, log logr.Logger) error {
 		ServiceClusterCache:  serviceCache,
 		ProviderNamespace:    flags.providerNamespace,
 
-		MasterClusterGVK:  masterClusterGVK,
+		ManagementClusterGVK:  managementClusterGVK,
 		ServiceClusterGVK: serviceClusterGVK,
 	}).SetupWithManager(mgr); err != nil {
 		return fmt.Errorf("cannot add %s controller: %w", "AdoptionReconciler", err)

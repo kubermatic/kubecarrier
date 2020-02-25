@@ -56,7 +56,7 @@ func NewInstallationSuite(f *framework.Framework) func(t *testing.T) {
 		}
 
 		var out bytes.Buffer
-		c := exec.Command("anchor", "setup", "--kubeconfig", f.Config().MasterExternalKubeconfigPath)
+		c := exec.Command("anchor", "setup", "--kubeconfig", f.Config().ManagementExternalKubeconfigPath)
 		c.Stdout = &out
 		c.Stderr = &out
 		require.NoError(t, c.Run(), "\"anchor setup\" returned an error: %s", out.String())
@@ -66,7 +66,7 @@ func NewInstallationSuite(f *framework.Framework) func(t *testing.T) {
 func testAnchorSetup(ctx context.Context, f *framework.Framework, kubeCarrier *operatorv1alpha1.KubeCarrier) func(t *testing.T) {
 	return func(t *testing.T) {
 		var out bytes.Buffer
-		c := exec.Command("anchor", "setup", "--kubeconfig", f.Config().MasterExternalKubeconfigPath)
+		c := exec.Command("anchor", "setup", "--kubeconfig", f.Config().ManagementExternalKubeconfigPath)
 		c.Stdout = &out
 		c.Stderr = &out
 		require.NoError(t, c.Run(), "\"anchor setup\" returned an error: %s", out.String())
@@ -76,21 +76,21 @@ func testAnchorSetup(ctx context.Context, f *framework.Framework, kubeCarrier *o
 		// it will complain about: `no matches for kind "KubeCarrier" in version "operator.kubecarrier.io/v1alpha1"`,
 		// but actually, the scheme is already added to the runtime scheme.
 		// And in the following, reinitializing the client solves the issue.
-		masterClient, err := f.MasterClient()
-		require.NoError(t, err, "creating master client")
+		managementClient, err := f.ManagementClient()
+		require.NoError(t, err, "creating management client")
 
 		operatorDeployment := &appsv1.Deployment{}
-		assert.NoError(t, masterClient.Get(ctx, types.NamespacedName{
+		assert.NoError(t, managementClient.Get(ctx, types.NamespacedName{
 			Name:      "kubecarrier-operator-manager",
 			Namespace: kubecarrierSystem,
 		}, operatorDeployment), "getting the KubeCarrier operator deployment error")
 
 		namespace := &corev1.Namespace{}
-		assert.NoError(t, masterClient.Get(ctx, types.NamespacedName{
+		assert.NoError(t, managementClient.Get(ctx, types.NamespacedName{
 			Name: kubecarrierSystem,
 		}, namespace), "getting the KubeCarrier system namespace error")
 
-		assert.NoError(t, masterClient.Get(ctx, types.NamespacedName{
+		assert.NoError(t, managementClient.Get(ctx, types.NamespacedName{
 			Name:      "kubecarrier",
 			Namespace: kubecarrierSystem,
 		}, kubeCarrier), "getting the KubeCarrier object")
@@ -98,47 +98,47 @@ func testAnchorSetup(ctx context.Context, f *framework.Framework, kubeCarrier *o
 		// Check objects that owned by the KubeCarrier object.
 		// Deployment
 		deployment := &appsv1.Deployment{}
-		assert.NoError(t, masterClient.Get(ctx, types.NamespacedName{
+		assert.NoError(t, managementClient.Get(ctx, types.NamespacedName{
 			Name:      fmt.Sprintf("%s-controller-manager", prefix),
 			Namespace: kubecarrierSystem,
 		}, deployment), "get the Deployment that owned by KubeCarrier object")
 
 		// Webhook Service
 		service := &corev1.Service{}
-		assert.NoError(t, masterClient.Get(ctx, types.NamespacedName{
+		assert.NoError(t, managementClient.Get(ctx, types.NamespacedName{
 			Name:      fmt.Sprintf("%s-webhook-service", prefix),
 			Namespace: kubecarrierSystem,
 		}, service), "get the Webhook Service that owned by KubeCarrier object")
 
 		// ClusterRoleBinding
 		clusterRoleBinding := &rbacv1.ClusterRoleBinding{}
-		assert.NoError(t, masterClient.Get(ctx, types.NamespacedName{
+		assert.NoError(t, managementClient.Get(ctx, types.NamespacedName{
 			Name: fmt.Sprintf("%s-manager-rolebinding", prefix),
 		}, clusterRoleBinding), "get the ClusterRoleBinding that owned by KubeCarrier object")
 
 		// ClusterRole
 		clusterRole := &rbacv1.ClusterRole{}
-		assert.NoError(t, masterClient.Get(ctx, types.NamespacedName{
+		assert.NoError(t, managementClient.Get(ctx, types.NamespacedName{
 			Name: fmt.Sprintf("%s-manager-role", prefix),
 		}, clusterRole), "get the ClusterRole that owned by KubeCarrier object")
 
 		// RoleBinding
 		roleBinding := &rbacv1.RoleBinding{}
-		assert.NoError(t, masterClient.Get(ctx, types.NamespacedName{
+		assert.NoError(t, managementClient.Get(ctx, types.NamespacedName{
 			Name:      fmt.Sprintf("%s-leader-election-rolebinding", prefix),
 			Namespace: kubecarrierSystem,
 		}, roleBinding), "get the RoleBinding that owned by KubeCarrier object")
 
 		// Role
 		role := &rbacv1.Role{}
-		assert.NoError(t, masterClient.Get(ctx, types.NamespacedName{
+		assert.NoError(t, managementClient.Get(ctx, types.NamespacedName{
 			Name:      fmt.Sprintf("%s-leader-election-role", prefix),
 			Namespace: kubecarrierSystem,
 		}, role), "get the Role that owned by KubeCarrier object")
 
 		// CRD
 		crd := &apiextensionsv1.CustomResourceDefinition{}
-		assert.NoError(t, masterClient.Get(ctx, types.NamespacedName{
+		assert.NoError(t, managementClient.Get(ctx, types.NamespacedName{
 			Name: "providers.catalog.kubecarrier.io",
 		}, crd), "get the CRD that owned by KubeCarrier object")
 	}
@@ -146,14 +146,14 @@ func testAnchorSetup(ctx context.Context, f *framework.Framework, kubeCarrier *o
 
 func testAnchorTeardown(ctx context.Context, f *framework.Framework, kubeCarrier *operatorv1alpha1.KubeCarrier) func(t *testing.T) {
 	return func(t *testing.T) {
-		masterClient, err := f.MasterClient()
-		require.NoError(t, err, "creating master client")
+		managementClient, err := f.ManagementClient()
+		require.NoError(t, err, "creating management client")
 
 		// Delete the KubeCarrier object.
-		require.NoError(t, masterClient.Delete(ctx, kubeCarrier), "deleting the KubeCarrier object")
+		require.NoError(t, managementClient.Delete(ctx, kubeCarrier), "deleting the KubeCarrier object")
 
 		// Deployment
-		assert.NoError(t, testutil.WaitUntilNotFound(masterClient, &appsv1.Deployment{
+		assert.NoError(t, testutil.WaitUntilNotFound(managementClient, &appsv1.Deployment{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      fmt.Sprintf("%s-controller-manager", prefix),
 				Namespace: kubecarrierSystem,
@@ -162,40 +162,40 @@ func testAnchorTeardown(ctx context.Context, f *framework.Framework, kubeCarrier
 
 		// Webhook Service
 		service := &corev1.Service{}
-		assert.True(t, errors.IsNotFound(masterClient.Get(ctx, types.NamespacedName{
+		assert.True(t, errors.IsNotFound(managementClient.Get(ctx, types.NamespacedName{
 			Name:      fmt.Sprintf("%s-webhook-service", prefix),
 			Namespace: kubecarrierSystem,
 		}, service)), "get the Webhook Service that is owned by the KubeCarrier object")
 
 		// ClusterRoleBinding
 		clusterRoleBinding := &rbacv1.ClusterRoleBinding{}
-		assert.True(t, errors.IsNotFound(masterClient.Get(ctx, types.NamespacedName{
+		assert.True(t, errors.IsNotFound(managementClient.Get(ctx, types.NamespacedName{
 			Name: fmt.Sprintf("%s-manager-rolebinding", prefix),
 		}, clusterRoleBinding)), "get the ClusterRoleBinding that owned by KubeCarrier object")
 
 		// ClusterRole
 		clusterRole := &rbacv1.ClusterRole{}
-		assert.True(t, errors.IsNotFound(masterClient.Get(ctx, types.NamespacedName{
+		assert.True(t, errors.IsNotFound(managementClient.Get(ctx, types.NamespacedName{
 			Name: fmt.Sprintf("%s-manager-role", prefix),
 		}, clusterRole)), "get the ClusterRole that owned by KubeCarrier object")
 
 		// RoleBinding
 		roleBinding := &rbacv1.RoleBinding{}
-		assert.True(t, errors.IsNotFound(masterClient.Get(ctx, types.NamespacedName{
+		assert.True(t, errors.IsNotFound(managementClient.Get(ctx, types.NamespacedName{
 			Name:      fmt.Sprintf("%s-leader-election-rolebinding", prefix),
 			Namespace: kubecarrierSystem,
 		}, roleBinding)), "get the RoleBinding that owned by KubeCarrier object")
 
 		// Role
 		role := &rbacv1.Role{}
-		assert.True(t, errors.IsNotFound(masterClient.Get(ctx, types.NamespacedName{
+		assert.True(t, errors.IsNotFound(managementClient.Get(ctx, types.NamespacedName{
 			Name:      fmt.Sprintf("%s-leader-election-role", prefix),
 			Namespace: kubecarrierSystem,
 		}, role)), "get the Role that owned by KubeCarrier object")
 
 		// CRD
 		crd := &apiextensionsv1.CustomResourceDefinition{}
-		assert.True(t, errors.IsNotFound(masterClient.Get(ctx, types.NamespacedName{
+		assert.True(t, errors.IsNotFound(managementClient.Get(ctx, types.NamespacedName{
 			Name: "providers.catalog.kubecarrier.io",
 		}, crd)), "get the CRD that owned by KubeCarrier object")
 	}

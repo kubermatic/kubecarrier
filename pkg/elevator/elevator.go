@@ -100,7 +100,7 @@ func NewElevator() *cobra.Command {
 
 	cmd.Flags().StringVar(
 		&flags.providerNamespace, "provider-namespace",
-		os.Getenv("KUBERNETES_NAMESPACE"), "Name of the provider namespace in the master cluster.")
+		os.Getenv("KUBERNETES_NAMESPACE"), "Name of the provider namespace in the management cluster.")
 
 	return util.CmdLogMixin(cmd)
 }

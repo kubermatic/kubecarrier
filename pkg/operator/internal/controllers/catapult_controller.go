@@ -106,10 +106,10 @@ func (r *CatapultReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 			Name:      catapult.Name,
 			Namespace: catapult.Namespace,
 
-			MasterClusterKind:    catapult.Spec.MasterClusterCRD.Kind,
-			MasterClusterVersion: catapult.Spec.MasterClusterCRD.Version,
-			MasterClusterGroup:   catapult.Spec.MasterClusterCRD.Group,
-			MasterClusterPlural:  catapult.Spec.MasterClusterCRD.Plural,
+			ManagementClusterKind:    catapult.Spec.ManagementClusterCRD.Kind,
+			ManagementClusterVersion: catapult.Spec.ManagementClusterCRD.Version,
+			ManagementClusterGroup:   catapult.Spec.ManagementClusterCRD.Group,
+			ManagementClusterPlural:  catapult.Spec.ManagementClusterCRD.Plural,
 
 			ServiceClusterKind:    catapult.Spec.ServiceClusterCRD.Kind,
 			ServiceClusterVersion: catapult.Spec.ServiceClusterCRD.Version,

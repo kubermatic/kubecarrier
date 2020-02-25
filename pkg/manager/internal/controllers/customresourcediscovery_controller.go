@@ -211,7 +211,7 @@ func (r *CustomResourceDiscoveryReconciler) reconcileCatapult(
 			Namespace: crDiscovery.Namespace,
 		},
 		Spec: operatorv1alpha1.CatapultSpec{
-			MasterClusterCRD: operatorv1alpha1.CRDReference{
+			ManagementClusterCRD: operatorv1alpha1.CRDReference{
 				Kind:    currentCRD.Status.AcceptedNames.Kind,
 				Group:   currentCRD.Spec.Group,
 				Version: storageVersion,

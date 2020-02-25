@@ -36,9 +36,9 @@ import (
 func NewAdminSuite(f *framework.Framework) func(t *testing.T) {
 	return func(t *testing.T) {
 		// Setup
-		masterClient, err := f.MasterClient()
-		require.NoError(t, err, "creating master client")
-		defer masterClient.CleanUp(t)
+		managementClient, err := f.ManagementClient()
+		require.NoError(t, err, "creating management client")
+		defer managementClient.CleanUp(t)
 
 		serviceClient, err := f.ServiceClient()
 		require.NoError(t, err, "creating service client")
@@ -52,12 +52,12 @@ func NewAdminSuite(f *framework.Framework) func(t *testing.T) {
 				Name: "test-tenant1",
 			},
 		}
-		require.NoError(t, masterClient.Create(ctx, tenant), "creating tenant error")
-		require.NoError(t, testutil.WaitUntilReady(masterClient, tenant))
+		require.NoError(t, managementClient.Create(ctx, tenant), "creating tenant error")
+		require.NoError(t, testutil.WaitUntilReady(managementClient, tenant))
 
 		tenantNamespaceName := tenant.Status.NamespaceName
 		tenantNamespace := &corev1.Namespace{}
-		assert.NoError(t, masterClient.Get(ctx, types.NamespacedName{
+		assert.NoError(t, managementClient.Get(ctx, types.NamespacedName{
 			Name: tenantNamespaceName,
 		}, tenantNamespace))
 
@@ -74,12 +74,12 @@ func NewAdminSuite(f *framework.Framework) func(t *testing.T) {
 			},
 		}
 
-		require.NoError(t, masterClient.Create(ctx, provider), "creating provider error")
-		require.NoError(t, testutil.WaitUntilReady(masterClient, provider))
+		require.NoError(t, managementClient.Create(ctx, provider), "creating provider error")
+		require.NoError(t, testutil.WaitUntilReady(managementClient, provider))
 
 		providerNamespaceName := provider.Status.NamespaceName
 		providerNamespace := &corev1.Namespace{}
-		assert.NoError(t, masterClient.Get(ctx, types.NamespacedName{
+		assert.NoError(t, managementClient.Get(ctx, types.NamespacedName{
 			Name: providerNamespaceName,
 		}, providerNamespace))
 
@@ -89,23 +89,23 @@ func NewAdminSuite(f *framework.Framework) func(t *testing.T) {
 				Namespace: providerNamespaceName,
 			},
 		}
-		require.NoError(t, testutil.WaitUntilFound(masterClient, tenantReference))
+		require.NoError(t, testutil.WaitUntilFound(managementClient, tenantReference))
 
 		// Delete Tenant
-		require.NoError(t, testutil.DeleteAndWaitUntilNotFound(masterClient, tenant))
+		require.NoError(t, testutil.DeleteAndWaitUntilNotFound(managementClient, tenant))
 
-		assert.True(t, errors.IsNotFound(masterClient.Get(ctx, types.NamespacedName{
+		assert.True(t, errors.IsNotFound(managementClient.Get(ctx, types.NamespacedName{
 			Name: tenantNamespaceName,
 		}, tenantNamespace)), "namespace should also be deleted.")
 
-		assert.True(t, errors.IsNotFound(masterClient.Get(ctx, types.NamespacedName{
+		assert.True(t, errors.IsNotFound(managementClient.Get(ctx, types.NamespacedName{
 			Name:      tenant.Name,
 			Namespace: tenantNamespaceName,
 		}, tenantReference)), "TenantReference should also be deleted.")
 
 		// Delete Provider
-		require.NoError(t, testutil.DeleteAndWaitUntilNotFound(masterClient, provider))
-		assert.True(t, errors.IsNotFound(masterClient.Get(ctx, types.NamespacedName{
+		require.NoError(t, testutil.DeleteAndWaitUntilNotFound(managementClient, provider))
+		assert.True(t, errors.IsNotFound(managementClient.Get(ctx, types.NamespacedName{
 			Name: providerNamespaceName,
 		}, providerNamespace)), "namespace should also be deleted.")
 	}

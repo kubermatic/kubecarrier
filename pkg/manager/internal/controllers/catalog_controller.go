@@ -399,7 +399,7 @@ func (r *CatalogReconciler) buildDesiredServiceClusterReferencesAndAssignments(
 				ServiceCluster: corev1alpha1.ObjectReference{
 					Name: serviceClusterName,
 				},
-				MasterClusterNamespace: corev1alpha1.ObjectReference{
+				ManagementClusterNamespace: corev1alpha1.ObjectReference{
 					Name: tenant.Status.NamespaceName,
 				},
 			},
