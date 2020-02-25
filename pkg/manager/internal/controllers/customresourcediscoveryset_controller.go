@@ -166,7 +166,8 @@ func (r *CustomResourceDiscoverySetReconciler) reconcileCRDiscovery(
 			ServiceCluster: corev1alpha1.ObjectReference{
 				Name: serviceCluster.Name,
 			},
-			KindOverride: crDiscoverySet.Spec.KindOverride,
+			KindOverride:    crDiscoverySet.Spec.KindOverride,
+			WebhookStrategy: crDiscoverySet.Spec.WebhookStrategy,
 		},
 	}
 	err := controllerutil.SetControllerReference(

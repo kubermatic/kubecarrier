@@ -32,20 +32,28 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/cache"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/apiutil"
+	"sigs.k8s.io/controller-runtime/pkg/healthz"
+	"sigs.k8s.io/controller-runtime/pkg/webhook"
 
 	corev1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/core/v1alpha1"
 	"github.com/kubermatic/kubecarrier/pkg/catapult/internal/controllers"
+	"github.com/kubermatic/kubecarrier/pkg/catapult/internal/webhooks"
 	"github.com/kubermatic/kubecarrier/pkg/internal/util"
 )
 
 type flags struct {
 	metricsAddr          string
+	healthAddr           string
 	enableLeaderElection bool
+	certDir              string
 
 	managementClusterKind, managementClusterVersion, managementClusterGroup string
 	serviceClusterKind, serviceClusterVersion, serviceClusterGroup          string
 	serviceClusterName, serviceClusterKubeconfig                            string
 	providerNamespace                                                       string
+
+	mutatingWebhookPath string
+	webhookStrategy     string
 }
 
 var (
@@ -75,8 +83,10 @@ func NewCatapult() *cobra.Command {
 		},
 	}
 	cmd.Flags().StringVar(&flags.metricsAddr, "metrics-addr", ":8080", "The address the metric endpoint binds to.")
+	cmd.Flags().StringVar(&flags.healthAddr, "health-addr", ":9440", "The address the health endpoint binds to.")
 	cmd.Flags().BoolVar(&flags.enableLeaderElection, "enable-leader-election", false,
 		"Enable leader election for controller manager. Enabling this will ensure there is only one active controller manager.")
+	cmd.Flags().StringVar(&flags.certDir, "cert-dir", "/tmp/k8s-webhook-server/serving-certs", "The webhook TLS certificates directory")
 
 	cmd.Flags().StringVar(
 		&flags.managementClusterKind, "management-cluster-kind",
@@ -109,6 +119,13 @@ func NewCatapult() *cobra.Command {
 		&flags.providerNamespace, "provider-namespace",
 		os.Getenv("KUBERNETES_NAMESPACE"), "Name of the provider namespace in the management cluster.")
 
+	cmd.Flags().StringVar(
+		&flags.mutatingWebhookPath, "mutating-webhook-path",
+		os.Getenv("CATAPULT_MUTATING_WEBHOOK_PATH"), "The URL path of the mutating webhook service.")
+	cmd.Flags().StringVar(
+		&flags.webhookStrategy, "webhook-strategy",
+		os.Getenv("CATAPULT_WEBHOOK_STRATEGY"), "The strategy of deploying the catapult webhook service {None (by default), ServiceCluster}")
+
 	return util.CmdLogMixin(cmd)
 }
 
@@ -129,6 +146,9 @@ func run(flags *flags, log logr.Logger) error {
 		{value: flags.serviceClusterKubeconfig, env: "CATAPULT_SERVICE_CLUSTER_NAME", flag: "service-cluster-name"},
 
 		{value: flags.providerNamespace, env: "KUBERNETES_NAMESPACE", flag: "provider-namespace"},
+
+		{value: flags.mutatingWebhookPath, env: "CATAPULT_MUTATING_WEBHOOK_PATH", flag: "mutating-webhook-path"},
+		{value: flags.webhookStrategy, env: "CATAPULT_WEBHOOK_STRATEGY", flag: "webhook-strategy"},
 	}
 	var errs []string
 	for _, check := range checks {
@@ -143,10 +163,12 @@ func run(flags *flags, log logr.Logger) error {
 	// Setup Manager
 	managementCfg := ctrl.GetConfigOrDie()
 	mgr, err := ctrl.NewManager(managementCfg, ctrl.Options{
-		Scheme:             managementScheme,
-		MetricsBindAddress: flags.metricsAddr,
-		LeaderElection:     flags.enableLeaderElection,
-		Port:               9443,
+		Scheme:                 managementScheme,
+		MetricsBindAddress:     flags.metricsAddr,
+		HealthProbeBindAddress: flags.healthAddr,
+		LeaderElection:         flags.enableLeaderElection,
+		Port:                   9443,
+		CertDir:                flags.certDir,
 		NewClient: func(cache cache.Cache, config *rest.Config, options client.Options) (client.Client, error) {
 			// Create the Client for Write operations.
 			c, err := client.New(config, options)
@@ -267,6 +289,31 @@ func run(flags *flags, log logr.Logger) error {
 	}).SetupWithManager(mgr); err != nil {
 		return fmt.Errorf("cannot add %s controller: %w", "AdoptionReconciler", err)
 	}
+
+	if err := mgr.AddReadyzCheck("ping", healthz.Ping); err != nil {
+		return fmt.Errorf("adding readyz checker: %w", err)
+	}
+
+	// Register webhooks as handlers
+	wbh := mgr.GetWebhookServer()
+
+	// mutating webhook
+	wbh.Register(flags.mutatingWebhookPath,
+		&webhook.Admission{Handler: &webhooks.ManagementClusterObjWebhookHandler{
+			Log:    log.WithName("mutating webhooks").WithName(managementClusterGVK.Kind),
+			Scheme: mgr.GetScheme(),
+
+			ManagementClusterClient: namespacedClient,
+			ServiceClusterClient:    serviceCachedClient,
+
+			ManagementClusterGVK: managementClusterGVK,
+			ServiceClusterGVK:    serviceClusterGVK,
+
+			ProviderNamespace: flags.providerNamespace,
+			ServiceCluster:    flags.serviceClusterName,
+
+			WebhookStrategy: corev1alpha1.WebhookStrategyType(flags.webhookStrategy),
+		}})
 
 	log.Info("starting manager")
 	if err := mgr.Start(ctrl.SetupSignalHandler()); err != nil {

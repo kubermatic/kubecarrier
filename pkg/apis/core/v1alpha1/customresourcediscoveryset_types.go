@@ -27,6 +27,12 @@ type CustomResourceDiscoverySetSpec struct {
 	ServiceClusterSelector metav1.LabelSelector `json:"serviceClusterSelector"`
 	// KindOverride overrides resulting internal CRDs kind
 	KindOverride string `json:"kindOverride,omitempty"`
+	// WebhookStrategy configs the webhooks of the CRDs which are registered in the management cluster by this CustomResourceDiscoverySet.
+	// There are two possible values for this configuration {None (by default), ServiceCluster}
+	// None (by default): Webhook will only check if there is an available ServiceClusterAssignment in the current Namespace.
+	// ServiceCluster: Webhook will call webhooks of the CRD in the ServiceCluster with dry-run flag.
+	// +kubebuilder:default:=None
+	WebhookStrategy WebhookStrategyType `json:"webhookStrategy,omitempty"`
 }
 
 type CustomResourceDiscoverySetStatus struct {

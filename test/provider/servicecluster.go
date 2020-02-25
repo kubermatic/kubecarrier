@@ -150,6 +150,7 @@ func NewServiceClusterSuite(
 				CRD: corev1alpha1.ObjectReference{
 					Name: crd.Name,
 				},
+				WebhookStrategy: corev1alpha1.WebhookStrategyTypeServiceCluster,
 			},
 		}
 		require.NoError(t, managementClient.Create(ctx, crDiscoveries))
