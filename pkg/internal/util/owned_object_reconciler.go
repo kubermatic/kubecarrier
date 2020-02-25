@@ -34,16 +34,32 @@ import (
 	"github.com/kubermatic/kubecarrier/pkg/internal/owner"
 )
 
+// OwnedObjectReconciler struct defines needed configuration for (singly) owned owner reconciliation
+//
+// It works as following. We have an objects, the Owner, owning multiple objects in the kubernetes. And we want
+// ensuring that after this Reconciliation of owned objects finishes the only owned objects existing are those that
+// are wanted. Also this would only operate on the kubernetes objects kinds defined in the TypeFilter. See the
+// tests for example usage
 type OwnedObjectReconciler struct {
-	Scheme      *runtime.Scheme
-	Log         logr.Logger
-	Owner       Object
-	TypeFilter  []runtime.Object
+	Scheme *runtime.Scheme
+	Log    logr.Logger
+	Owner  Object
+	// TypeFilter on which this operation should operate. E.g. if you only want operating on Configmaps
+	// Set Typefiler: []runtime.Object{&corev1.ConfigMap{}}
+	// All other types will be ignored when fetching currently existing objects
+	TypeFilter []runtime.Object
+
 	WantedState []Object
-	MutateFn    func(oldObj, wantedObj runtime.Object) error
+	// MutateFn is called whenever wanted object's namespaceName already exist in the current cluster
+	// if nil, it does nothing. If not nil, the current object state is passed as a obj parameter, and
+	// wanted objects state as a second. The function should modify the current obj state, the first
+	// parameter to apply any necessary modifications. It could return an error signaling mutation isn't
+	// feasible and erroring out this operation
+	MutateFn func(obj, wantedObj runtime.Object) error
 }
 
-func (r *OwnedObjectReconciler) Reconcile(ctx context.Context, cl client.Client) (changed bool, err error) {
+// ReconcileOwnedObjects
+func (r *OwnedObjectReconciler) ReconcileOwnedObjects(ctx context.Context, cl client.Client) (changed bool, err error) {
 	existing, err := ListObjects(ctx, cl, r.Scheme, r.TypeFilter, owner.OwnedBy(r.Owner, r.Scheme))
 	if err != nil {
 		return false, fmt.Errorf("ListObjects: %w", err)

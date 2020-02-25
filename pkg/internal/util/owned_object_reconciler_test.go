@@ -25,6 +25,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	fakeclient "sigs.k8s.io/controller-runtime/pkg/client/fake"
 
@@ -119,6 +120,16 @@ func TestOwnedObjectReconciler_Reconcile(t *testing.T) {
 			"cm": "a",
 		},
 	}
+	cmAPrime := &corev1.ConfigMap{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "cma",
+			Namespace: "default",
+		},
+		Data: map[string]string{
+			"cm": "a prime",
+		},
+	}
+
 	cmB := &corev1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "cmb",
@@ -132,7 +143,8 @@ func TestOwnedObjectReconciler_Reconcile(t *testing.T) {
 	for name, testCase := range map[string]struct {
 		existingState []runtime.Object
 		wantedState   []Object
-		muateFn       func(oldObj, wantedObj runtime.Object) error
+		finalState    []*corev1.ConfigMap
+		muateFn       func(obj, wantedObj runtime.Object) error
 		change        bool
 	}{
 		"clearing": {
@@ -141,21 +153,35 @@ func TestOwnedObjectReconciler_Reconcile(t *testing.T) {
 		},
 		"creating": {
 			wantedState: []Object{cmA.DeepCopy(), cmB.DeepCopy()},
+			finalState:  []*corev1.ConfigMap{cmA.DeepCopy(), cmB.DeepCopy()},
 			change:      true,
 		},
 		"delete & create": {
 			existingState: []runtime.Object{cmA.DeepCopy()},
 			wantedState:   []Object{cmB.DeepCopy()},
+			finalState:    []*corev1.ConfigMap{cmB.DeepCopy()},
 			change:        true,
 		},
 		"nothing-changes": {
 			existingState: []runtime.Object{cmA.DeepCopy()},
 			wantedState:   []Object{cmA.DeepCopy()},
+			finalState:    []*corev1.ConfigMap{cmA.DeepCopy()},
 			change:        false,
+		},
+		"mutation": {
+			existingState: []runtime.Object{cmA.DeepCopy()},
+			wantedState:   []Object{cmA.DeepCopy()},
+			finalState:    []*corev1.ConfigMap{cmAPrime.DeepCopy()},
+			muateFn: func(obj, wantedObj runtime.Object) error {
+				objCM := obj.(*corev1.ConfigMap)
+				objCM.Data["cm"] = "a prime"
+				return nil
+			},
+			change: true,
 		},
 	} {
 		t.Run(name, func(t *testing.T) {
-			ownerObj := &corev1.ConfigMap{ObjectMeta: metav1.ObjectMeta{
+			ownerObj := &corev1.Secret{ObjectMeta: metav1.ObjectMeta{
 				Name:      "ownerObj",
 				Namespace: "default",
 			}}
@@ -173,9 +199,28 @@ func TestOwnedObjectReconciler_Reconcile(t *testing.T) {
 				TypeFilter:  []runtime.Object{&corev1.ConfigMap{}},
 				WantedState: testCase.wantedState,
 				MutateFn:    testCase.muateFn,
-			}).Reconcile(ctx, cl)
+			}).ReconcileOwnedObjects(ctx, cl)
 			assert.NoError(t, err)
 			assert.Equal(t, testCase.change, changed)
+
+			cmLst := &corev1.ConfigMapList{}
+			require.NoError(t, cl.List(ctx, cmLst))
+			wants := make(map[ObjectReference]struct{})
+			for _, obj := range testCase.finalState {
+				wants[ToObjectReference(obj, testScheme)] = struct{}{}
+				cm := &corev1.ConfigMap{}
+				if assert.NoError(t, cl.Get(ctx, types.NamespacedName{
+					Namespace: obj.Namespace,
+					Name:      obj.Name,
+				}, cm)) {
+					assert.Equal(t, obj.Data, cm.Data)
+				}
+			}
+			got := make(map[ObjectReference]struct{})
+			for _, obj := range cmLst.Items {
+				got[ToObjectReference(&obj, testScheme)] = struct{}{}
+			}
+			assert.Equal(t, wants, got, "some object exist and shouldn't or vice versa")
 		})
 	}
 }
