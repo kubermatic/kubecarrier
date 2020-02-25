@@ -97,7 +97,7 @@ func TestTenantReconciler(t *testing.T) {
 
 		// Check Namespace
 		require.NoError(t, client.Get(ctx, types.NamespacedName{
-			Name: "tenant-" + tenant.Name,
+			Name: tenant.Name,
 		}, namespaceFound), "getting namespace error")
 
 		// Check TenantReference

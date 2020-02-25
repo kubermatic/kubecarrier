@@ -79,7 +79,7 @@ func (s *TenantSuite) SetupSuite() {
 	namespace := &corev1.Namespace{}
 	s.NoError(wait.Poll(time.Second, 10*time.Second, func() (done bool, err error) {
 		if err := s.managementClient.Get(ctx, types.NamespacedName{
-			Name: fmt.Sprintf("provider-%s", s.provider.Name),
+			Name: s.provider.Name,
 		}, namespace); err != nil {
 			if errors.IsNotFound(err) {
 				return false, nil
@@ -95,8 +95,8 @@ func (s *TenantSuite) SetupSuite() {
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "couchdbs.eu-west-1.example.cloud",
 			Labels: map[string]string{
-				"kubecarrier.io/provider":        s.provider.Name,
-				"kubecarrier.io/service-cluster": "eu-west-1",
+				"kubecarrier.io/origin-namespace": s.provider.Name,
+				"kubecarrier.io/service-cluster":  "eu-west-1",
 			},
 		},
 		Spec: apiextensionsv1.CustomResourceDefinitionSpec{
@@ -129,7 +129,7 @@ func (s *TenantSuite) TestCatalogEntryCreationAndDeletion() {
 	catalogEntry := &catalogv1alpha1.CatalogEntry{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "couchdbs",
-			Namespace: fmt.Sprintf("provider-%s", s.provider.Name),
+			Namespace: s.provider.Name,
 		},
 		Spec: catalogv1alpha1.CatalogEntrySpec{
 			Metadata: catalogv1alpha1.CatalogEntryMetadata{
@@ -147,7 +147,7 @@ func (s *TenantSuite) TestCatalogEntryCreationAndDeletion() {
 
 	// Check the status of the CatalogEntry.
 	catalogEntryFound := &catalogv1alpha1.CatalogEntry{}
-	s.NoError(wait.Poll(time.Second, 10*time.Second, func() (done bool, err error) {
+	s.Require().NoError(wait.Poll(time.Second, 10*time.Second, func() (done bool, err error) {
 		if err := s.managementClient.Get(ctx, types.NamespacedName{
 			Name:      catalogEntry.Name,
 			Namespace: catalogEntry.Namespace,
@@ -156,6 +156,9 @@ func (s *TenantSuite) TestCatalogEntryCreationAndDeletion() {
 				return false, nil
 			}
 			return true, err
+		}
+		if catalogEntryFound.Status.CRD == nil {
+			return false, nil
 		}
 		return catalogEntryFound.Status.CRD.Name == s.crd.Name, nil
 	}), "getting the CatalogEntry error")

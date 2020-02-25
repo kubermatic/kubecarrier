@@ -86,7 +86,7 @@ func (r *ProviderReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 
 	// check/update the NamespaceName
 	if provider.Status.NamespaceName == "" {
-		provider.Status.NamespaceName = fmt.Sprintf("provider-%s", strings.Replace(provider.Name, ".", "-", -1))
+		provider.Status.NamespaceName = strings.Replace(provider.Name, ".", "-", -1)
 		if err := r.Status().Update(ctx, provider); err != nil {
 			return ctrl.Result{}, fmt.Errorf("updating NamespaceName: %w", err)
 		}
