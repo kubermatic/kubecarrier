@@ -157,6 +157,9 @@ func (s *TenantSuite) TestCatalogEntryCreationAndDeletion() {
 			}
 			return true, err
 		}
+		if catalogEntryFound.Status.CRD == nil {
+			return false, nil
+		}
 		return catalogEntryFound.Status.CRD.Name == s.crd.Name, nil
 	}), "getting the CatalogEntry error")
 
