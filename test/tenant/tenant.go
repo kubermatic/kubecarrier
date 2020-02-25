@@ -95,7 +95,7 @@ func (s *TenantSuite) SetupSuite() {
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "couchdbs.eu-west-1.example.cloud",
 			Labels: map[string]string{
-				"kubecarrier.io/origin-namespace": s.provider.Status.NamespaceName,
+				"kubecarrier.io/origin-namespace": s.provider.Name,
 				"kubecarrier.io/service-cluster":  "eu-west-1",
 			},
 		},
@@ -147,7 +147,7 @@ func (s *TenantSuite) TestCatalogEntryCreationAndDeletion() {
 
 	// Check the status of the CatalogEntry.
 	catalogEntryFound := &catalogv1alpha1.CatalogEntry{}
-	s.NoError(wait.Poll(time.Second, 10*time.Second, func() (done bool, err error) {
+	s.Require().NoError(wait.Poll(time.Second, 10*time.Second, func() (done bool, err error) {
 		if err := s.managementClient.Get(ctx, types.NamespacedName{
 			Name:      catalogEntry.Name,
 			Namespace: catalogEntry.Namespace,
