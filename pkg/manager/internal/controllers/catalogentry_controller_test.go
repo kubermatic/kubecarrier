@@ -49,8 +49,8 @@ func TestCatalogEntryReconciler(t *testing.T) {
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "catapults.test.kubecarrier.io",
 			Labels: map[string]string{
-				"kubecarrier.io/service-cluster": "eu-west-1",
-				"kubecarrier.io/provider":        "example.provider",
+				ServiceClusterLabel:  "eu-west-1",
+				OriginNamespaceLabel: "example.provider",
 			},
 		},
 		Spec: apiextensionsv1.CustomResourceDefinitionSpec{
@@ -123,8 +123,8 @@ func TestCatalogEntryReconciler(t *testing.T) {
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "testresources.test.kubecarrier.io",
 			Labels: map[string]string{
-				"kubecarrier.io/service-cluster": "eu-west-1",
-				"kubecarrier.io/provider":        "example.provider",
+				ServiceClusterLabel:  "eu-west-1",
+				OriginNamespaceLabel: "example.provider",
 			},
 		},
 		Spec: apiextensionsv1.CustomResourceDefinitionSpec{

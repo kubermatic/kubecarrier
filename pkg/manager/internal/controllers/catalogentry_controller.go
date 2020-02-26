@@ -140,19 +140,32 @@ func (r *CatalogEntryReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error
 	}
 
 	// check if Provider is allowed to use the CRD
-	if crd.Labels == nil ||
-		crd.Labels[OriginNamespaceLabel] != provider.Status.NamespaceName {
+	if crd.Labels == nil {
 		return ctrl.Result{}, r.updateStatus(ctx, catalogEntry, &catalogv1alpha1.CatalogEntryCondition{
 			Type:    catalogv1alpha1.CatalogEntryReady,
 			Status:  catalogv1alpha1.ConditionFalse,
 			Reason:  "NotAssignedToProvider",
-			Message: fmt.Sprintf("The base CRD not assigned to this Provider or is missing a %s label.", OriginNamespaceLabel),
+			Message: fmt.Sprintf("The base CRD is missing a %s label.", OriginNamespaceLabel),
+		})
+	}
+
+	if originNamespace, present := crd.Labels[OriginNamespaceLabel]; originNamespace != provider.Status.NamespaceName {
+		var message string
+		if !present {
+			message = fmt.Sprintf("The base CRD  is missing a %s label", OriginNamespaceLabel)
+		} else {
+			message = fmt.Sprintf("the base CRD is not assigned to this Provider. Expected %s, got %s", provider.Status.NamespaceName, originNamespace)
+		}
+		return ctrl.Result{}, r.updateStatus(ctx, catalogEntry, &catalogv1alpha1.CatalogEntryCondition{
+			Type:    catalogv1alpha1.CatalogEntryReady,
+			Status:  catalogv1alpha1.ConditionFalse,
+			Reason:  "NotAssignedToProvider",
+			Message: message,
 		})
 	}
 
 	// lookup ServiceCluster
-	if crd.Labels == nil ||
-		crd.Labels[ServiceClusterLabel] == "" {
+	if _, present := crd.Labels[ServiceClusterLabel]; !present {
 		return ctrl.Result{}, r.updateStatus(ctx, catalogEntry, &catalogv1alpha1.CatalogEntryCondition{
 			Type:    catalogv1alpha1.CatalogEntryReady,
 			Status:  catalogv1alpha1.ConditionFalse,
