@@ -42,9 +42,9 @@ func NewDerivedCRSuite(
 	return func(t *testing.T) {
 		// Setup
 		//
-		masterClient, err := f.MasterClient()
-		require.NoError(t, err, "creating master client")
-		defer masterClient.CleanUp(t)
+		managementClient, err := f.ManagementClient()
+		require.NoError(t, err, "creating management client")
+		defer managementClient.CleanUp(t)
 
 		ctx := context.Background()
 
@@ -52,8 +52,8 @@ func NewDerivedCRSuite(
 			ObjectMeta: metav1.ObjectMeta{
 				Name: "catapults.test.kubecarrier.io",
 				Labels: map[string]string{
-					"kubecarrier.io/service-cluster": "eu-west-1",
-					"kubecarrier.io/provider":        provider.Name,
+					"kubecarrier.io/service-cluster":  "eu-west-1",
+					"kubecarrier.io/origin-namespace": provider.Status.NamespaceName,
 				},
 			},
 			Spec: apiextensionsv1.CustomResourceDefinitionSpec{
@@ -103,7 +103,7 @@ func NewDerivedCRSuite(
 			},
 		}
 		// create base CRD
-		require.NoError(t, masterClient.Create(ctx, baseCRD), "creating base CRD")
+		require.NoError(t, managementClient.Create(ctx, baseCRD), "creating base CRD")
 
 		// Test
 		// Create a CatalogEntry to execute our tests in
@@ -139,15 +139,15 @@ func NewDerivedCRSuite(
 		}
 
 		require.NoError(
-			t, masterClient.Create(ctx, catalogEntry), "creating CatalogEntry")
+			t, managementClient.Create(ctx, catalogEntry), "creating CatalogEntry")
 
 		// Wait for the CatalogEntry to be ready, it takes more time since it requires the
 		// DerivedCustomResource Object and Elevator get ready
-		require.NoError(t, testutil.WaitUntilReady(masterClient, catalogEntry, testutil.WithTimeout(300*time.Second)))
+		require.NoError(t, testutil.WaitUntilReady(managementClient, catalogEntry, testutil.WithTimeout(300*time.Second)))
 
 		// Check the DerivedCustomResource Object
 		dcr := &catalogv1alpha1.DerivedCustomResource{}
-		require.NoError(t, masterClient.Get(ctx, types.NamespacedName{
+		require.NoError(t, managementClient.Get(ctx, types.NamespacedName{
 			Name:      catalogEntry.Name,
 			Namespace: catalogEntry.Namespace,
 		}, dcr), "getting derived CRD")
@@ -158,7 +158,7 @@ func NewDerivedCRSuite(
 			assert.Equal(t, catalogEntry.Status.CRD.APIGroup, dcr.Status.DerivedCR.Group)
 			assert.Equal(t, catalogEntry.Status.CRD.Kind, dcr.Status.DerivedCR.Kind)
 		}
-		err = masterClient.Delete(ctx, provider)
+		err = managementClient.Delete(ctx, provider)
 		if assert.Error(t, err, "dirty provider %s deletion should error out", provider.Name) {
 			assert.Equal(t,
 				`admission webhook "vaccount.kubecarrier.io" denied the request: deletion blocking objects found:
@@ -170,7 +170,7 @@ DerivedCustomResource.catalog.kubecarrier.io/v1alpha1: test
 
 		// Check created CRD
 		crd := &apiextensionsv1.CustomResourceDefinition{}
-		require.NoError(t, masterClient.Get(ctx, types.NamespacedName{
+		require.NoError(t, managementClient.Get(ctx, types.NamespacedName{
 			Name: dcr.Status.DerivedCR.Name,
 		}, crd), "getting derived CRD")
 
@@ -204,11 +204,11 @@ type: object
 			},
 		}
 		require.NoError(
-			t, masterClient.Create(ctx, someNamespace), "creating a Namespace")
+			t, managementClient.Create(ctx, someNamespace), "creating a Namespace")
 
 		// to be able to work with the new CRD, we have to re-create the client
-		masterClient, err = f.MasterClient()
-		require.NoError(t, err, "recreating master client")
+		managementClient, err = f.ManagementClient()
+		require.NoError(t, err, "recreating management client")
 
 		// Check Tenant -> Provider
 		tenantObj := &unstructured.Unstructured{
@@ -225,7 +225,7 @@ type: object
 			},
 		}
 		require.NoError(
-			t, masterClient.Create(ctx, tenantObj), "creating a TestResource")
+			t, managementClient.Create(ctx, tenantObj), "creating a TestResource")
 
 		providerObj := &unstructured.Unstructured{
 			Object: map[string]interface{}{
@@ -237,7 +237,7 @@ type: object
 				},
 			},
 		}
-		require.NoError(t, testutil.WaitUntilFound(masterClient, providerObj))
+		require.NoError(t, testutil.WaitUntilFound(managementClient, providerObj))
 
 		// Check Provider -> Tenant
 		providerObj2 := &unstructured.Unstructured{
@@ -255,7 +255,7 @@ type: object
 			},
 		}
 		require.NoError(
-			t, masterClient.Create(ctx, providerObj2), "creating a Catapult")
+			t, managementClient.Create(ctx, providerObj2), "creating a Catapult")
 
 		tenantObj2 := &unstructured.Unstructured{
 			Object: map[string]interface{}{
@@ -270,6 +270,6 @@ type: object
 				},
 			},
 		}
-		require.NoError(t, testutil.WaitUntilFound(masterClient, tenantObj2))
+		require.NoError(t, testutil.WaitUntilFound(managementClient, tenantObj2))
 	}
 }

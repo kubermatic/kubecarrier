@@ -29,12 +29,12 @@ import (
 	"github.com/kubermatic/kubecarrier/test/framework"
 )
 
-// VerifySuite verifies if we can reach both kubernetes clusters (master and service).
+// VerifySuite verifies if we can reach both kubernetes clusters (management and service).
 // and whether they are configured for our e2e tests.
 func NewVerifySuite(f *framework.Framework) func(t *testing.T) {
 	return func(t *testing.T) {
 		// Setup
-		masterClient, err := f.MasterClient()
+		managementClient, err := f.ManagementClient()
 		require.NoError(t, err)
 
 		serviceClient, err := f.ServiceClient()
@@ -42,9 +42,9 @@ func NewVerifySuite(f *framework.Framework) func(t *testing.T) {
 
 		t.Run("", func(t *testing.T) {
 			// parallel-group
-			t.Run("validate master connection", func(t *testing.T) {
+			t.Run("validate management cluster connection", func(t *testing.T) {
 				cm := &corev1.ConfigMap{}
-				require.NoError(t, masterClient.Get(context.Background(), types.NamespacedName{
+				require.NoError(t, managementClient.Get(context.Background(), types.NamespacedName{
 					Name:      "cluster-info",
 					Namespace: "kube-public",
 				}, cm), "cannot fetch cluster-info")

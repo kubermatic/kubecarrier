@@ -32,57 +32,57 @@ import (
 
 func NewTenantSuite(f *framework.Framework) func(t *testing.T) {
 	return func(t *testing.T) {
-		masterClient, err := f.MasterClient()
-		require.NoError(t, err, "creating master client")
-		defer masterClient.CleanUp(t)
+		managementClient, err := f.ManagementClient()
+		require.NoError(t, err, "creating management client")
+		defer managementClient.CleanUp(t)
 		ctx := context.Background()
-		var (
-			provider = &catalogv1alpha1.Account{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "other-cloud",
+		provider := &catalogv1alpha1.Account{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: "other-cloud",
+			},
+			Spec: catalogv1alpha1.AccountSpec{
+				Metadata: catalogv1alpha1.AccountMetadata{
+					DisplayName: "provider1",
+					Description: "provider1 test description",
 				},
-				Spec: catalogv1alpha1.AccountSpec{
-					Metadata: catalogv1alpha1.AccountMetadata{
-						DisplayName: "provider1",
-						Description: "provider1 test description",
-					},
-					Roles: []catalogv1alpha1.AccountRole{
-						catalogv1alpha1.ProviderRole,
-					},
+				Roles: []catalogv1alpha1.AccountRole{
+					catalogv1alpha1.ProviderRole,
 				},
-			}
-			crd = &apiextensionsv1.CustomResourceDefinition{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "couchdbs.eu-east-1.example.cloud",
-					Labels: map[string]string{
-						"kubecarrier.io/provider":        provider.Name,
-						"kubecarrier.io/service-cluster": "eu-east-1",
-					},
+			},
+		}
+		require.NoError(t, managementClient.Create(ctx, provider))
+		require.NoError(t, testutil.WaitUntilReady(managementClient, provider))
+
+		crd := &apiextensionsv1.CustomResourceDefinition{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: "couchdbs.eu-east-1.example.cloud",
+				Labels: map[string]string{
+					"kubecarrier.io/origin-namespace": provider.Status.NamespaceName,
+					"kubecarrier.io/service-cluster":  "eu-east-1",
 				},
-				Spec: apiextensionsv1.CustomResourceDefinitionSpec{
-					Group: "eu-east-1.example.cloud",
-					Names: apiextensionsv1.CustomResourceDefinitionNames{
-						Plural: "couchdbs",
-						Kind:   "CouchDB",
-					},
-					Versions: []apiextensionsv1.CustomResourceDefinitionVersion{
-						{
-							Name:    "v1alpha1",
-							Storage: true,
-							Schema: &apiextensionsv1.CustomResourceValidation{
-								OpenAPIV3Schema: &apiextensionsv1.JSONSchemaProps{
-									Type: "object",
-								},
+			},
+			Spec: apiextensionsv1.CustomResourceDefinitionSpec{
+				Group: "eu-east-1.example.cloud",
+				Names: apiextensionsv1.CustomResourceDefinitionNames{
+					Plural: "couchdbs",
+					Kind:   "CouchDB",
+				},
+				Versions: []apiextensionsv1.CustomResourceDefinitionVersion{
+					{
+						Name:    "v1alpha1",
+						Storage: true,
+						Schema: &apiextensionsv1.CustomResourceValidation{
+							OpenAPIV3Schema: &apiextensionsv1.JSONSchemaProps{
+								Type: "object",
 							},
 						},
 					},
-					Scope: apiextensionsv1.NamespaceScoped,
 				},
-			}
-		)
-		require.NoError(t, masterClient.Create(ctx, provider))
-		require.NoError(t, masterClient.Create(ctx, crd))
-		require.NoError(t, testutil.WaitUntilReady(masterClient, provider))
+				Scope: apiextensionsv1.NamespaceScoped,
+			},
+		}
+
+		require.NoError(t, managementClient.Create(ctx, crd))
 
 		catalogEntry := &catalogv1alpha1.CatalogEntry{
 			ObjectMeta: metav1.ObjectMeta{
@@ -99,7 +99,7 @@ func NewTenantSuite(f *framework.Framework) func(t *testing.T) {
 				},
 			},
 		}
-		require.NoError(t, masterClient.Create(ctx, catalogEntry), "creating catalogEntry error")
-		assert.NoError(t, testutil.WaitUntilReady(masterClient, catalogEntry), "catalog entry not ready within time limit")
+		require.NoError(t, managementClient.Create(ctx, catalogEntry), "creating catalogEntry error")
+		assert.NoError(t, testutil.WaitUntilReady(managementClient, catalogEntry), "catalog entry not ready within time limit")
 	}
 }

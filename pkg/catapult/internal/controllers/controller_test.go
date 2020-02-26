@@ -27,7 +27,7 @@ import (
 var (
 	testScheme = runtime.NewScheme()
 
-	masterClusterGVK = schema.GroupVersionKind{
+	managementClusterGVK = schema.GroupVersionKind{
 		Kind:    "CouchDBInternal",
 		Version: "v1alpha1",
 		Group:   "eu-west-1.provider",

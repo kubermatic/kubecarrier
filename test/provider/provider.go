@@ -39,9 +39,9 @@ import (
 
 func NewProviderSuite(f *framework.Framework) func(t *testing.T) {
 	return func(t *testing.T) {
-		masterClient, err := f.MasterClient()
-		require.NoError(t, err, "creating master client")
-		defer masterClient.CleanUp(t)
+		managementClient, err := f.ManagementClient()
+		require.NoError(t, err, "creating management client")
+		defer managementClient.CleanUp(t)
 
 		ctx := context.Background()
 
@@ -88,8 +88,8 @@ func NewProviderSuite(f *framework.Framework) func(t *testing.T) {
 						},
 					}
 
-					require.NoError(t, masterClient.Create(ctx, provider))
-					require.NoError(t, testutil.WaitUntilReady(masterClient, provider))
+					require.NoError(t, managementClient.Create(ctx, provider))
+					require.NoError(t, testutil.WaitUntilReady(managementClient, provider))
 
 					suite(f, provider)(t)
 				})
@@ -105,9 +105,9 @@ func NewCatalogSuite(
 	return func(t *testing.T) {
 		// Catalog
 		// Setup
-		masterClient, err := f.MasterClient()
-		require.NoError(t, err, "creating master client")
-		defer masterClient.CleanUp(t)
+		managementClient, err := f.ManagementClient()
+		require.NoError(t, err, "creating management client")
+		defer managementClient.CleanUp(t)
 
 		ctx := context.Background()
 
@@ -127,14 +127,14 @@ func NewCatalogSuite(
 			},
 		}
 		require.NoError(
-			t, masterClient.Create(ctx, tenant), "creating Tenant error")
-		require.NoError(t, testutil.WaitUntilReady(masterClient, tenant))
+			t, managementClient.Create(ctx, tenant), "creating Tenant error")
+		require.NoError(t, testutil.WaitUntilReady(managementClient, tenant))
 
 		// wait for the TenantReference to be created.
 		tenantReference := &catalogv1alpha1.TenantReference{}
 		require.NoError(
 			t, wait.Poll(time.Second, 10*time.Second, func() (done bool, err error) {
-				if err := masterClient.Get(ctx, types.NamespacedName{
+				if err := managementClient.Get(ctx, types.NamespacedName{
 					Name:      tenant.Name,
 					Namespace: provider.Status.NamespaceName,
 				}, tenantReference); err != nil {
@@ -151,8 +151,8 @@ func NewCatalogSuite(
 			ObjectMeta: metav1.ObjectMeta{
 				Name: "couchdbs.eu-west-1.example.cloud",
 				Labels: map[string]string{
-					"kubecarrier.io/provider":        provider.Name,
-					"kubecarrier.io/service-cluster": "eu-west-1",
+					"kubecarrier.io/origin-namespace": provider.Status.NamespaceName,
+					"kubecarrier.io/service-cluster":  "eu-west-1",
 				},
 			},
 			Spec: apiextensionsv1.CustomResourceDefinitionSpec{
@@ -196,7 +196,7 @@ func NewCatalogSuite(
 			},
 		}
 		require.NoError(
-			t, masterClient.Create(ctx, crd), fmt.Sprintf("creating CRD: %s error", crd.Name))
+			t, managementClient.Create(ctx, crd), fmt.Sprintf("creating CRD: %s error", crd.Name))
 
 		// Create a CatalogEntry to execute our tests in
 		catalogEntry := &catalogv1alpha1.CatalogEntry{
@@ -218,8 +218,8 @@ func NewCatalogSuite(
 			},
 		}
 		require.NoError(
-			t, masterClient.Create(ctx, catalogEntry), "could not create CatalogEntry")
-		require.NoError(t, testutil.WaitUntilReady(masterClient, catalogEntry))
+			t, managementClient.Create(ctx, catalogEntry), "could not create CatalogEntry")
+		require.NoError(t, testutil.WaitUntilReady(managementClient, catalogEntry))
 
 		// Create a ServiceCluster to execute our tests in
 		serviceCluster := &corev1alpha1.ServiceCluster{
@@ -235,7 +235,7 @@ func NewCatalogSuite(
 			},
 		}
 		require.NoError(
-			t, masterClient.Create(ctx, serviceCluster), "could not create ServiceCluster")
+			t, managementClient.Create(ctx, serviceCluster), "could not create ServiceCluster")
 
 		// Catalog
 		// Test case
@@ -253,12 +253,12 @@ func NewCatalogSuite(
 				TenantReferenceSelector: &metav1.LabelSelector{},
 			},
 		}
-		require.NoError(t, masterClient.Create(ctx, catalog), "creating Catalog error")
+		require.NoError(t, managementClient.Create(ctx, catalog), "creating Catalog error")
 
 		// Check the status of the Catalog.
 		catalogFound := &catalogv1alpha1.Catalog{}
 		assert.NoError(t, wait.Poll(time.Second, 10*time.Second, func() (done bool, err error) {
-			if err := masterClient.Get(ctx, types.NamespacedName{
+			if err := managementClient.Get(ctx, types.NamespacedName{
 				Name:      catalog.Name,
 				Namespace: catalog.Namespace,
 			}, catalogFound); err != nil {
@@ -273,7 +273,7 @@ func NewCatalogSuite(
 		// Check the Offering object is created.
 		offeringFound := &catalogv1alpha1.Offering{}
 		assert.NoError(t, wait.Poll(time.Second, 10*time.Second, func() (done bool, err error) {
-			if err := masterClient.Get(ctx, types.NamespacedName{
+			if err := managementClient.Get(ctx, types.NamespacedName{
 				Name:      catalogEntry.Name,
 				Namespace: tenant.Status.NamespaceName,
 			}, offeringFound); err != nil {
@@ -292,7 +292,7 @@ func NewCatalogSuite(
 				Namespace: tenant.Status.NamespaceName,
 			},
 		}
-		require.NoError(t, testutil.WaitUntilFound(masterClient, providerReferenceFound), "getting the ProviderReference error")
+		require.NoError(t, testutil.WaitUntilFound(managementClient, providerReferenceFound), "getting the ProviderReference error")
 		assert.Equal(t, providerReferenceFound.Spec.Metadata.DisplayName, provider.Spec.Metadata.DisplayName)
 		assert.Equal(t, providerReferenceFound.Spec.Metadata.Description, provider.Spec.Metadata.Description)
 
@@ -303,7 +303,7 @@ func NewCatalogSuite(
 				Namespace: tenant.Status.NamespaceName,
 			},
 		}
-		require.NoError(t, testutil.WaitUntilFound(masterClient, serviceClusterReferenceFound), "getting the ServiceClusterReference error")
+		require.NoError(t, testutil.WaitUntilFound(managementClient, serviceClusterReferenceFound), "getting the ServiceClusterReference error")
 		assert.Equal(t, serviceClusterReferenceFound.Spec.Provider.Name, provider.Name)
 		assert.Equal(t, serviceClusterReferenceFound.Spec.Metadata.Description, serviceCluster.Spec.Metadata.Description)
 
@@ -314,19 +314,19 @@ func NewCatalogSuite(
 				Namespace: provider.Status.NamespaceName,
 			},
 		}
-		require.NoError(t, testutil.WaitUntilFound(masterClient, serviceClusterAssignmentFound), "getting the ServiceClusterAssignment error")
+		require.NoError(t, testutil.WaitUntilFound(managementClient, serviceClusterAssignmentFound), "getting the ServiceClusterAssignment error")
 		assert.Equal(t, serviceClusterAssignmentFound.Spec.ServiceCluster.Name, serviceCluster.Name)
-		assert.Equal(t, serviceClusterAssignmentFound.Spec.MasterClusterNamespace.Name, tenant.Status.NamespaceName)
+		assert.Equal(t, serviceClusterAssignmentFound.Spec.ManagementClusterNamespace.Name, tenant.Status.NamespaceName)
 
 		// Check if the status will be updated when tenant is removed.
 		t.Run("Catalog status updates when adding and removing Tenant", func(t *testing.T) {
 			// Remove the tenant
-			require.NoError(t, masterClient.Delete(ctx, tenant), "deleting Tenant")
-			require.NoError(t, testutil.WaitUntilNotFound(masterClient, tenant))
+			require.NoError(t, managementClient.Delete(ctx, tenant), "deleting Tenant")
+			require.NoError(t, testutil.WaitUntilNotFound(managementClient, tenant))
 
 			catalogCheck := &catalogv1alpha1.Catalog{}
 			assert.NoError(t, wait.Poll(time.Second, 30*time.Second, func() (done bool, err error) {
-				if err := masterClient.Get(ctx, types.NamespacedName{
+				if err := managementClient.Get(ctx, types.NamespacedName{
 					Name:      catalog.Name,
 					Namespace: catalog.Namespace,
 				}, catalogCheck); err != nil {
@@ -360,11 +360,11 @@ func NewCatalogSuite(
 					},
 				},
 			}
-			require.NoError(t, masterClient.Create(ctx, tenant), "creating tenant error")
-			require.NoError(t, testutil.WaitUntilReady(masterClient, tenant))
+			require.NoError(t, managementClient.Create(ctx, tenant), "creating tenant error")
+			require.NoError(t, testutil.WaitUntilReady(managementClient, tenant))
 
 			require.NoError(t, wait.Poll(time.Second, 30*time.Second, func() (done bool, err error) {
-				if err := masterClient.Get(ctx, types.NamespacedName{
+				if err := managementClient.Get(ctx, types.NamespacedName{
 					Name:      catalog.Name,
 					Namespace: catalog.Namespace,
 				}, catalogCheck); err != nil {
@@ -378,33 +378,33 @@ func NewCatalogSuite(
 		})
 
 		t.Run("cleanup", func(t *testing.T) {
-			require.NoError(t, masterClient.Delete(ctx, catalog), "deleting Catalog")
-			require.NoError(t, testutil.WaitUntilNotFound(masterClient, catalog))
+			require.NoError(t, managementClient.Delete(ctx, catalog), "deleting Catalog")
+			require.NoError(t, testutil.WaitUntilNotFound(managementClient, catalog))
 
 			// Offering object should also be removed
 			offeringCheck := &catalogv1alpha1.Offering{}
-			assert.True(t, errors.IsNotFound(masterClient.Get(ctx, types.NamespacedName{
+			assert.True(t, errors.IsNotFound(managementClient.Get(ctx, types.NamespacedName{
 				Name:      offeringFound.Name,
 				Namespace: offeringFound.Namespace,
 			}, offeringCheck)), "offering object should also be deleted.")
 
 			// ProviderReference object should also be removed
 			providerReferenceCheck := &catalogv1alpha1.ProviderReference{}
-			assert.True(t, errors.IsNotFound(masterClient.Get(ctx, types.NamespacedName{
+			assert.True(t, errors.IsNotFound(managementClient.Get(ctx, types.NamespacedName{
 				Name:      providerReferenceFound.Name,
 				Namespace: providerReferenceFound.Namespace,
 			}, providerReferenceCheck)), "providerReference object should also be deleted.")
 
 			// ServiceClusterReference object should also be removed
 			serviceClusterReferenceCheck := &catalogv1alpha1.ServiceClusterReference{}
-			assert.True(t, errors.IsNotFound(masterClient.Get(ctx, types.NamespacedName{
+			assert.True(t, errors.IsNotFound(managementClient.Get(ctx, types.NamespacedName{
 				Name:      serviceClusterReferenceFound.Name,
 				Namespace: serviceClusterReferenceFound.Namespace,
 			}, serviceClusterReferenceCheck)), "serviceClusterReference object should also be deleted.")
 
 			// ServiceClusterAssignment object should also be removed
 			serviceClusterAssignmentCheck := &corev1alpha1.ServiceClusterAssignment{}
-			assert.True(t, errors.IsNotFound(masterClient.Get(ctx, types.NamespacedName{
+			assert.True(t, errors.IsNotFound(managementClient.Get(ctx, types.NamespacedName{
 				Name:      serviceClusterAssignmentFound.Name,
 				Namespace: serviceClusterAssignmentFound.Namespace,
 			}, serviceClusterAssignmentCheck)), "serviceClusterAssignment object should also be deleted.")

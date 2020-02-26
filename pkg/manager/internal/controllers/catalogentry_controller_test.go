@@ -219,7 +219,7 @@ func TestCatalogEntryReconciler(t *testing.T) {
 		// Check CatalogEntry Status
 		assert.Equal(t, catalogEntry.Status.CRD.Kind, derivedCRD.Spec.Names.Kind, "CRD Kind is wrong")
 		assert.Equal(t, catalogEntry.Status.CRD.Name, derivedCRD.Name, "CRD Name is wrong")
-		assert.Equal(t, catalogEntry.Status.CRD.ServiceCluster.Name, derivedCRD.Labels[serviceClusterLabel], "CRD ServiceCluster is wrong")
+		assert.Equal(t, catalogEntry.Status.CRD.ServiceCluster.Name, derivedCRD.Labels[ServiceClusterLabel], "CRD ServiceCluster is wrong")
 		assert.Equal(t, catalogEntry.Status.CRD.APIGroup, derivedCRD.Spec.Group, "CRD APIGroup is wrong")
 
 		// Check CRDs Annotation

@@ -48,7 +48,7 @@ type AdoptionReconciler struct {
 	ServiceClusterCache  cache.Cache
 
 	// Dynamic types we work with
-	MasterClusterGVK, ServiceClusterGVK schema.GroupVersionKind
+	ManagementClusterGVK, ServiceClusterGVK schema.GroupVersionKind
 
 	ProviderNamespace string
 }
@@ -64,35 +64,35 @@ func (r *AdoptionReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 		return result, client.IgnoreNotFound(err)
 	}
 
-	// Lookup SCA to see where we need to put this in the master cluster.
+	// Lookup SCA to see where we need to put this in the management cluster.
 	sca, err := corev1alpha1.GetServiceClusterAssignmentByServiceClusterNamespace(ctx, r.NamespacedClient, serviceClusterObj.GetNamespace())
 	if err != nil {
 		return result, fmt.Errorf("getting ServiceClusterAssignment: %w", err)
 	}
 
-	// Build desired master cluster object
-	desiredMasterClusterObj := serviceClusterObj.DeepCopy()
-	desiredMasterClusterObj.SetGroupVersionKind(r.MasterClusterGVK)
+	// Build desired management cluster object
+	desiredManagementClusterObj := serviceClusterObj.DeepCopy()
+	desiredManagementClusterObj.SetGroupVersionKind(r.ManagementClusterGVK)
 	if err := unstructured.SetNestedField(
-		desiredMasterClusterObj.Object, map[string]interface{}{}, "metadata"); err != nil {
-		return result, fmt.Errorf("deleting %s .metadata: %w", r.MasterClusterGVK.Kind, err)
+		desiredManagementClusterObj.Object, map[string]interface{}{}, "metadata"); err != nil {
+		return result, fmt.Errorf("deleting %s .metadata: %w", r.ManagementClusterGVK.Kind, err)
 	}
-	desiredMasterClusterObj.SetName(serviceClusterObj.GetName())
-	desiredMasterClusterObj.SetNamespace(sca.Spec.MasterClusterNamespace.Name)
+	desiredManagementClusterObj.SetName(serviceClusterObj.GetName())
+	desiredManagementClusterObj.SetNamespace(sca.Spec.ManagementClusterNamespace.Name)
 
 	// Reconcile
-	currentMasterClusterObj := r.newMasterObject()
+	currentManagementClusterObj := r.newManagementObject()
 	err = r.Get(ctx, types.NamespacedName{
-		Name:      desiredMasterClusterObj.GetName(),
-		Namespace: desiredMasterClusterObj.GetNamespace(),
-	}, currentMasterClusterObj)
+		Name:      desiredManagementClusterObj.GetName(),
+		Namespace: desiredManagementClusterObj.GetNamespace(),
+	}, currentManagementClusterObj)
 	if err != nil && !errors.IsNotFound(err) {
-		return result, fmt.Errorf("getting %s: %w", r.MasterClusterGVK.Kind, err)
+		return result, fmt.Errorf("getting %s: %w", r.ManagementClusterGVK.Kind, err)
 	}
 	if errors.IsNotFound(err) {
-		// Create the master cluster object
-		if err = r.Create(ctx, desiredMasterClusterObj); err != nil {
-			return result, fmt.Errorf("creating %s: %w", r.MasterClusterGVK.Kind, err)
+		// Create the management cluster object
+		if err = r.Create(ctx, desiredManagementClusterObj); err != nil {
+			return result, fmt.Errorf("creating %s: %w", r.ManagementClusterGVK.Kind, err)
 		}
 	}
 
@@ -133,8 +133,8 @@ func (r *AdoptionReconciler) newServiceObject() *unstructured.Unstructured {
 	return obj
 }
 
-func (r *AdoptionReconciler) newMasterObject() *unstructured.Unstructured {
+func (r *AdoptionReconciler) newManagementObject() *unstructured.Unstructured {
 	obj := &unstructured.Unstructured{}
-	obj.SetGroupVersionKind(r.MasterClusterGVK)
+	obj.SetGroupVersionKind(r.ManagementClusterGVK)
 	return obj
 }

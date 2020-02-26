@@ -141,23 +141,23 @@ func (r *CatalogEntryReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error
 
 	// check if Provider is allowed to use the CRD
 	if crd.Labels == nil ||
-		crd.Labels[ProviderLabel] != provider.Name {
+		crd.Labels[OriginNamespaceLabel] != provider.Status.NamespaceName {
 		return ctrl.Result{}, r.updateStatus(ctx, catalogEntry, &catalogv1alpha1.CatalogEntryCondition{
 			Type:    catalogv1alpha1.CatalogEntryReady,
 			Status:  catalogv1alpha1.ConditionFalse,
 			Reason:  "NotAssignedToProvider",
-			Message: fmt.Sprintf("The base CRD not assigned to this Provider or is missing a %s label.", ProviderLabel),
+			Message: fmt.Sprintf("The base CRD not assigned to this Provider or is missing a %s label.", OriginNamespaceLabel),
 		})
 	}
 
 	// lookup ServiceCluster
 	if crd.Labels == nil ||
-		crd.Labels[serviceClusterLabel] == "" {
+		crd.Labels[ServiceClusterLabel] == "" {
 		return ctrl.Result{}, r.updateStatus(ctx, catalogEntry, &catalogv1alpha1.CatalogEntryCondition{
 			Type:    catalogv1alpha1.CatalogEntryReady,
 			Status:  catalogv1alpha1.ConditionFalse,
 			Reason:  "MissingServiceClusterLabel",
-			Message: fmt.Sprintf("The base CRD is missing a %s label.", serviceClusterLabel),
+			Message: fmt.Sprintf("The base CRD is missing a %s label.", ServiceClusterLabel),
 		})
 	}
 
@@ -343,7 +343,7 @@ func getCRDInformation(crd *apiextensionsv1.CustomResourceDefinition) (catalogv1
 	}
 
 	// Service Cluster
-	serviceCluster, present := crd.Labels[serviceClusterLabel]
+	serviceCluster, present := crd.Labels[ServiceClusterLabel]
 	if !present {
 		return catalogv1alpha1.CRDInformation{}, fmt.Errorf("getting ServiceCluster of the BaseCRD error: BaseCRD should have an annotation to indicate the ServiceCluster")
 	}

@@ -37,9 +37,9 @@ import (
 func NewAdminSuite(f *framework.Framework) func(t *testing.T) {
 	return func(t *testing.T) {
 		// Setup
-		masterClient, err := f.MasterClient()
-		require.NoError(t, err, "creating master client")
-		defer masterClient.CleanUp(t)
+		managementClient, err := f.ManagementClient()
+		require.NoError(t, err, "creating management client")
+		defer managementClient.CleanUp(t)
 
 		ctx := context.Background()
 
@@ -85,77 +85,77 @@ func NewAdminSuite(f *framework.Framework) func(t *testing.T) {
 		)
 		// simple single account operations
 		t.Log("creating single provider")
-		require.NoError(t, masterClient.Create(ctx, provider), "creating provider")
-		require.NoError(t, testutil.WaitUntilReady(masterClient, provider))
+		require.NoError(t, managementClient.Create(ctx, provider), "creating provider")
+		require.NoError(t, testutil.WaitUntilReady(managementClient, provider))
 		ns := &corev1.Namespace{}
-		assert.NoError(t, masterClient.Get(ctx, types.NamespacedName{
+		assert.NoError(t, managementClient.Get(ctx, types.NamespacedName{
 			Name: provider.Status.NamespaceName,
 		}, ns))
 
 		t.Log("adding single tenant")
-		require.NoError(t, masterClient.Create(ctx, tenant), "creating tenant")
-		require.NoError(t, testutil.WaitUntilReady(masterClient, tenant))
-		assert.NoError(t, masterClient.Get(ctx, types.NamespacedName{
+		require.NoError(t, managementClient.Create(ctx, tenant), "creating tenant")
+		require.NoError(t, testutil.WaitUntilReady(managementClient, tenant))
+		assert.NoError(t, managementClient.Get(ctx, types.NamespacedName{
 			Name: tenant.Status.NamespaceName,
 		}, ns))
 
-		tenantReferencePresent(t, masterClient, ctx, tenant, provider, true)
-		tenantReferencePresent(t, masterClient, ctx, tenant, tenant, false)
+		tenantReferencePresent(t, managementClient, ctx, tenant, provider, true)
+		tenantReferencePresent(t, managementClient, ctx, tenant, tenant, false)
 
 		t.Log("adding providerTenant")
-		require.NoError(t, masterClient.Create(ctx, providerTenant), "creating providerTenant")
-		require.NoError(t, testutil.WaitUntilReady(masterClient, providerTenant))
-		assert.NoError(t, masterClient.Get(ctx, types.NamespacedName{
+		require.NoError(t, managementClient.Create(ctx, providerTenant), "creating providerTenant")
+		require.NoError(t, testutil.WaitUntilReady(managementClient, providerTenant))
+		assert.NoError(t, managementClient.Get(ctx, types.NamespacedName{
 			Name: providerTenant.Status.NamespaceName,
 		}, ns))
 
-		tenantReferencePresent(t, masterClient, ctx, tenant, provider, true)
-		tenantReferencePresent(t, masterClient, ctx, tenant, providerTenant, true)
-		tenantReferencePresent(t, masterClient, ctx, tenant, tenant, false)
+		tenantReferencePresent(t, managementClient, ctx, tenant, provider, true)
+		tenantReferencePresent(t, managementClient, ctx, tenant, providerTenant, true)
+		tenantReferencePresent(t, managementClient, ctx, tenant, tenant, false)
 
-		tenantReferencePresent(t, masterClient, ctx, provider, provider, false)
-		tenantReferencePresent(t, masterClient, ctx, provider, providerTenant, false)
-		tenantReferencePresent(t, masterClient, ctx, provider, tenant, false)
+		tenantReferencePresent(t, managementClient, ctx, provider, provider, false)
+		tenantReferencePresent(t, managementClient, ctx, provider, providerTenant, false)
+		tenantReferencePresent(t, managementClient, ctx, provider, tenant, false)
 
-		tenantReferencePresent(t, masterClient, ctx, providerTenant, provider, true)
-		tenantReferencePresent(t, masterClient, ctx, providerTenant, providerTenant, true)
-		tenantReferencePresent(t, masterClient, ctx, providerTenant, tenant, false)
+		tenantReferencePresent(t, managementClient, ctx, providerTenant, provider, true)
+		tenantReferencePresent(t, managementClient, ctx, providerTenant, providerTenant, true)
+		tenantReferencePresent(t, managementClient, ctx, providerTenant, tenant, false)
 
 		t.Log("deleting tenant")
-		require.NoError(t, testutil.DeleteAndWaitUntilNotFound(masterClient, tenant))
-		assert.True(t, errors.IsNotFound(masterClient.Get(ctx, types.NamespacedName{
+		require.NoError(t, testutil.DeleteAndWaitUntilNotFound(managementClient, tenant))
+		assert.True(t, errors.IsNotFound(managementClient.Get(ctx, types.NamespacedName{
 			Name: tenant.Status.NamespaceName,
 		}, ns)), "namespace should also be deleted.")
 
-		tenantReferencePresent(t, masterClient, ctx, tenant, provider, false)
-		tenantReferencePresent(t, masterClient, ctx, tenant, providerTenant, false)
-		tenantReferencePresent(t, masterClient, ctx, tenant, tenant, false)
+		tenantReferencePresent(t, managementClient, ctx, tenant, provider, false)
+		tenantReferencePresent(t, managementClient, ctx, tenant, providerTenant, false)
+		tenantReferencePresent(t, managementClient, ctx, tenant, tenant, false)
 
-		tenantReferencePresent(t, masterClient, ctx, provider, provider, false)
-		tenantReferencePresent(t, masterClient, ctx, provider, providerTenant, false)
-		tenantReferencePresent(t, masterClient, ctx, provider, tenant, false)
+		tenantReferencePresent(t, managementClient, ctx, provider, provider, false)
+		tenantReferencePresent(t, managementClient, ctx, provider, providerTenant, false)
+		tenantReferencePresent(t, managementClient, ctx, provider, tenant, false)
 
-		tenantReferencePresent(t, masterClient, ctx, providerTenant, provider, true)
-		tenantReferencePresent(t, masterClient, ctx, providerTenant, providerTenant, true)
-		tenantReferencePresent(t, masterClient, ctx, providerTenant, tenant, false)
+		tenantReferencePresent(t, managementClient, ctx, providerTenant, provider, true)
+		tenantReferencePresent(t, managementClient, ctx, providerTenant, providerTenant, true)
+		tenantReferencePresent(t, managementClient, ctx, providerTenant, tenant, false)
 
 		t.Log("deleting provider")
-		require.NoError(t, testutil.DeleteAndWaitUntilNotFound(masterClient, provider))
-		assert.True(t, errors.IsNotFound(masterClient.Get(ctx, types.NamespacedName{
+		require.NoError(t, testutil.DeleteAndWaitUntilNotFound(managementClient, provider))
+		assert.True(t, errors.IsNotFound(managementClient.Get(ctx, types.NamespacedName{
 			Name: provider.Status.NamespaceName,
 		}, ns)), "namespace should also be deleted.")
 
 		t.Log("deleting providerTenant")
-		require.NoError(t, testutil.DeleteAndWaitUntilNotFound(masterClient, providerTenant))
-		assert.True(t, errors.IsNotFound(masterClient.Get(ctx, types.NamespacedName{
+		require.NoError(t, testutil.DeleteAndWaitUntilNotFound(managementClient, providerTenant))
+		assert.True(t, errors.IsNotFound(managementClient.Get(ctx, types.NamespacedName{
 			Name: providerTenant.Status.NamespaceName,
 		}, ns)), "namespace should also be deleted.")
 	}
 }
 
-func tenantReferencePresent(t *testing.T, masterClient client.Client, ctx context.Context, tenant *catalogv1alpha1.Account, provider *catalogv1alpha1.Account, expected bool) {
+func tenantReferencePresent(t *testing.T, managementClient client.Client, ctx context.Context, tenant *catalogv1alpha1.Account, provider *catalogv1alpha1.Account, expected bool) {
 	trefs := &catalogv1alpha1.TenantReferenceList{}
-	require.NoError(t, masterClient.List(ctx, trefs, client.InNamespace(provider.Status.NamespaceName)))
+	require.NoError(t, managementClient.List(ctx, trefs, client.InNamespace(provider.Status.NamespaceName)))
 	var found bool
 	for _, tref := range trefs.Items {
 		if tref.Name == tenant.Name {

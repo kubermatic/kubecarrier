@@ -38,8 +38,8 @@ func NewCommand(log logr.Logger) *cobra.Command {
 	)
 
 	cmd.PersistentFlags().StringVar(&cfg.TestID, "test-id", "", "unique e2e test id")
-	cmd.PersistentFlags().StringVar(&cfg.MasterExternalKubeconfigPath, "master-external-kubeconfig", "", "master cluster external (reachable outside cluster/docker) kubeconfig file")
-	cmd.PersistentFlags().StringVar(&cfg.MasterInternalKubeconfigPath, "master-internal-kubeconfig", "", "master cluster internal (reachable within cluster/docker) kubeconfig file")
+	cmd.PersistentFlags().StringVar(&cfg.ManagementExternalKubeconfigPath, "management-external-kubeconfig", "", "management cluster external (reachable outside cluster/docker) kubeconfig file")
+	cmd.PersistentFlags().StringVar(&cfg.ManagementInternalKubeconfigPath, "management-internal-kubeconfig", "", "management cluster internal (reachable within cluster/docker) kubeconfig file")
 	cmd.PersistentFlags().StringVar(&cfg.ServiceExternalKubeconfigPath, "service-external-kubeconfig", "", "service cluster external (reachable outside cluster/docker) kubeconfig file")
 	cmd.PersistentFlags().StringVar(&cfg.ServiceInternalKubeconfigPath, "service-internal-kubeconfig", "", "service cluster internal (reachable within cluster/docker) kubeconfig file")
 	return cmd

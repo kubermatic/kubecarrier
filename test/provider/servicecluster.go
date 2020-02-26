@@ -41,9 +41,9 @@ func NewServiceClusterSuite(
 	provider *catalogv1alpha1.Account,
 ) func(t *testing.T) {
 	return func(t *testing.T) {
-		masterClient, err := f.MasterClient()
-		require.NoError(t, err, "creating master client")
-		defer masterClient.CleanUp(t)
+		managementClient, err := f.ManagementClient()
+		require.NoError(t, err, "creating management client")
+		defer managementClient.CleanUp(t)
 
 		serviceClient, err := f.ServiceClient()
 		require.NoError(t, err, "creating service client")
@@ -125,19 +125,19 @@ func NewServiceClusterSuite(
 				ServiceCluster: corev1alpha1.ObjectReference{
 					Name: serviceCluster.Name,
 				},
-				MasterClusterNamespace: corev1alpha1.ObjectReference{
+				ManagementClusterNamespace: corev1alpha1.ObjectReference{
 					Name: serviceNamespace.Name,
 				},
 			},
 		}
 
 		ctx := context.Background()
-		require.NoError(t, masterClient.Create(ctx, serviceClusterSecret))
-		require.NoError(t, masterClient.Create(ctx, serviceCluster))
-		require.NoError(t, masterClient.Create(ctx, serviceNamespace))
-		require.NoError(t, masterClient.Create(ctx, serviceClusterAssignment))
-		require.NoError(t, testutil.WaitUntilReady(masterClient, serviceCluster))
-		require.NoError(t, testutil.WaitUntilReady(masterClient, serviceClusterAssignment))
+		require.NoError(t, managementClient.Create(ctx, serviceClusterSecret))
+		require.NoError(t, managementClient.Create(ctx, serviceCluster))
+		require.NoError(t, managementClient.Create(ctx, serviceNamespace))
+		require.NoError(t, managementClient.Create(ctx, serviceClusterAssignment))
+		require.NoError(t, testutil.WaitUntilReady(managementClient, serviceCluster))
+		require.NoError(t, testutil.WaitUntilReady(managementClient, serviceClusterAssignment))
 		require.NoError(t, serviceClient.Create(ctx, crd))
 
 		// Test CustomResourceDiscoverySet
@@ -153,9 +153,9 @@ func NewServiceClusterSuite(
 				},
 			},
 		}
-		require.NoError(t, masterClient.Create(ctx, crDiscoveries))
-		require.NoError(t, testutil.WaitUntilReady(masterClient, crDiscoveries))
-		err = masterClient.Delete(ctx, provider)
+		require.NoError(t, managementClient.Create(ctx, crDiscoveries))
+		require.NoError(t, testutil.WaitUntilReady(managementClient, crDiscoveries))
+		err = managementClient.Delete(ctx, provider)
 		if assert.Error(t, err, "dirty provider %s deletion should error out", provider.Name) {
 			assert.Equal(t,
 				`admission webhook "vaccount.kubecarrier.io" denied the request: deletion blocking objects found:
@@ -168,17 +168,17 @@ ServiceClusterAssignment.kubecarrier.io/v1alpha1: servicecluster-svc-test.eu-wes
 		}
 
 		// We have created/registered new CRD's, so we need a new client
-		masterClient, err = f.MasterClient()
-		require.NoError(t, err, "creating master client")
-		defer masterClient.CleanUp(t)
+		managementClient, err = f.ManagementClient()
+		require.NoError(t, err, "creating management client")
+		defer managementClient.CleanUp(t)
 
 		serviceClient, err = f.ServiceClient()
 		require.NoError(t, err, "creating service client")
 		defer serviceClient.CleanUp(t)
 
-		// master cluster -> service cluster
+		// management cluster -> service cluster
 		//
-		masterClusterObj := &unstructured.Unstructured{
+		managementClusterObj := &unstructured.Unstructured{
 			Object: map[string]interface{}{
 				"apiVersion": fmt.Sprintf("%s.%s/v1alpha1", serviceCluster.Name, provider.Name),
 				"kind":       "RedisInternal",
@@ -191,7 +191,7 @@ ServiceClusterAssignment.kubecarrier.io/v1alpha1: servicecluster-svc-test.eu-wes
 				},
 			},
 		}
-		require.NoError(t, masterClient.Create(ctx, masterClusterObj))
+		require.NoError(t, managementClient.Create(ctx, managementClusterObj))
 
 		// a object on the service cluster should have been created
 		serviceClusterObj := &unstructured.Unstructured{
@@ -199,7 +199,7 @@ ServiceClusterAssignment.kubecarrier.io/v1alpha1: servicecluster-svc-test.eu-wes
 				"apiVersion": "test.kubecarrier.io/v1alpha1",
 				"kind":       "Redis",
 				"metadata": map[string]interface{}{
-					"name":      masterClusterObj.GetName(),
+					"name":      managementClusterObj.GetName(),
 					"namespace": serviceClusterAssignment.Status.ServiceClusterNamespace.Name,
 				},
 			},
@@ -207,7 +207,7 @@ ServiceClusterAssignment.kubecarrier.io/v1alpha1: servicecluster-svc-test.eu-wes
 		require.NoError(
 			t, testutil.WaitUntilFound(serviceClient, serviceClusterObj))
 
-		// service cluster -> master cluster
+		// service cluster -> management cluster
 		//
 		serviceClusterObj2 := &unstructured.Unstructured{
 			Object: map[string]interface{}{
@@ -224,11 +224,11 @@ ServiceClusterAssignment.kubecarrier.io/v1alpha1: servicecluster-svc-test.eu-wes
 		}
 		require.NoError(t, serviceClient.Create(ctx, serviceClusterObj2))
 		// we need to unregister this object,
-		// as the master cluster takes control and will just recreate it.
+		// as the management cluster takes control and will just recreate it.
 		serviceClient.UnregisterForCleanup(serviceClusterObj2)
 
-		// a object on the master cluster should have been created
-		masterClusterObj2 := &unstructured.Unstructured{
+		// a object on the management cluster should have been created
+		managementClusterObj2 := &unstructured.Unstructured{
 			Object: map[string]interface{}{
 				"apiVersion": fmt.Sprintf("%s.%s/v1alpha1", serviceCluster.Name, provider.Name),
 				"kind":       "RedisInternal",
@@ -238,8 +238,8 @@ ServiceClusterAssignment.kubecarrier.io/v1alpha1: servicecluster-svc-test.eu-wes
 				},
 			},
 		}
-		masterClient.RegisterForCleanup(masterClusterObj2)
+		managementClient.RegisterForCleanup(managementClusterObj2)
 		require.NoError(
-			t, testutil.WaitUntilFound(masterClient, masterClusterObj2))
+			t, testutil.WaitUntilFound(managementClient, managementClusterObj2))
 	}
 }

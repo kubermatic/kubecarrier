@@ -93,7 +93,7 @@ func (r *DerivedCustomResourceReconciler) Reconcile(req ctrl.Request) (ctrl.Resu
 	}, baseCRD); err != nil {
 		if errors.IsNotFound(err) {
 			return result, r.updateStatus(ctx, dcr, catalogv1alpha1.DerivedCustomResourceCondition{
-				Type:    catalogv1alpha1.DerivedCustomResourceReady,
+				Type:    catalogv1alpha1.DerivedCustomResourceEstablished,
 				Status:  catalogv1alpha1.ConditionFalse,
 				Reason:  "NotFound",
 				Message: "The referenced CRD was not found.",
@@ -104,7 +104,7 @@ func (r *DerivedCustomResourceReconciler) Reconcile(req ctrl.Request) (ctrl.Resu
 	}
 	if baseCRD.Spec.Scope != apiextensionsv1.NamespaceScoped {
 		return result, r.updateStatus(ctx, dcr, catalogv1alpha1.DerivedCustomResourceCondition{
-			Type:    catalogv1alpha1.DerivedCustomResourceReady,
+			Type:    catalogv1alpha1.DerivedCustomResourceEstablished,
 			Status:  catalogv1alpha1.ConditionFalse,
 			Reason:  "NotNamespaced",
 			Message: "The referenced CRD needs to Namespace scoped.",
@@ -116,7 +116,7 @@ func (r *DerivedCustomResourceReconciler) Reconcile(req ctrl.Request) (ctrl.Resu
 	if ref, ok := baseCRD.Annotations[dcrAnnotation]; ok && ref != req.NamespacedName.String() {
 		// referenced by another instance
 		return result, r.updateStatus(ctx, dcr, catalogv1alpha1.DerivedCustomResourceCondition{
-			Type:    catalogv1alpha1.DerivedCustomResourceReady,
+			Type:    catalogv1alpha1.DerivedCustomResourceEstablished,
 			Status:  catalogv1alpha1.ConditionFalse,
 			Reason:  "AlreadyInUse",
 			Message: fmt.Sprintf("The referenced CRD is already referenced by %q.", ref),
@@ -137,26 +137,26 @@ func (r *DerivedCustomResourceReconciler) Reconcile(req ctrl.Request) (ctrl.Resu
 
 	// check if Provider is allowed to use the CRD
 	if baseCRD.Labels == nil ||
-		baseCRD.Labels[ProviderLabel] != provider.Name {
+		baseCRD.Labels[OriginNamespaceLabel] != provider.Status.NamespaceName {
 		return result, r.updateStatus(ctx, dcr, catalogv1alpha1.DerivedCustomResourceCondition{
-			Type:    catalogv1alpha1.DerivedCustomResourceReady,
+			Type:    catalogv1alpha1.DerivedCustomResourceEstablished,
 			Status:  catalogv1alpha1.ConditionFalse,
 			Reason:  "NotAssignedToProvider",
-			Message: fmt.Sprintf("The referenced CRD not assigned to this Provider or is missing a %s label.", ProviderLabel),
+			Message: fmt.Sprintf("The referenced CRD not assigned to this Provider or is missing a %s label.", OriginNamespaceLabel),
 		})
 	}
 
 	// lookup ServiceCluster
 	if baseCRD.Labels == nil ||
-		baseCRD.Labels[serviceClusterLabel] == "" {
+		baseCRD.Labels[ServiceClusterLabel] == "" {
 		return result, r.updateStatus(ctx, dcr, catalogv1alpha1.DerivedCustomResourceCondition{
-			Type:    catalogv1alpha1.DerivedCustomResourceReady,
+			Type:    catalogv1alpha1.DerivedCustomResourceEstablished,
 			Status:  catalogv1alpha1.ConditionFalse,
 			Reason:  "MissingServiceClusterLabel",
-			Message: fmt.Sprintf("The referenced CRD is missing a %s label.", serviceClusterLabel),
+			Message: fmt.Sprintf("The referenced CRD is missing a %s label.", ServiceClusterLabel),
 		})
 	}
-	serviceClusterName := baseCRD.Labels[serviceClusterLabel]
+	serviceClusterName := baseCRD.Labels[ServiceClusterLabel]
 
 	// kindOverride
 	names := *baseCRD.Spec.Names.DeepCopy()
@@ -174,8 +174,8 @@ func (r *DerivedCustomResourceReconciler) Reconcile(req ctrl.Request) (ctrl.Resu
 		ObjectMeta: metav1.ObjectMeta{
 			Name: names.Plural + "." + group,
 			Labels: map[string]string{
-				serviceClusterLabel: serviceClusterName,
-				ProviderLabel:       provider.Name,
+				ServiceClusterLabel:  serviceClusterName,
+				OriginNamespaceLabel: provider.Status.NamespaceName,
 			},
 		},
 		Spec: *baseCRD.Spec.DeepCopy(),

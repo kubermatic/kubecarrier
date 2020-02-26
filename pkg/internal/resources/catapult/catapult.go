@@ -38,8 +38,8 @@ type Config struct {
 	// Namespace that the Catapult instance should be deployed into.
 	Namespace string
 
-	MasterClusterKind, MasterClusterVersion,
-	MasterClusterGroup, MasterClusterPlural string
+	ManagementClusterKind, ManagementClusterVersion,
+	ManagementClusterGroup, ManagementClusterPlural string
 	ServiceClusterKind, ServiceClusterVersion,
 	ServiceClusterGroup, ServiceClusterPlural string
 	ServiceClusterName, ServiceClusterSecret string
@@ -88,16 +88,16 @@ func Manifests(c Config) ([]unstructured.Unstructured, error) {
 							"name": "manager",
 							"env": []map[string]interface{}{
 								{
-									"name":  "CATAPULT_MASTER_CLUSTER_KIND",
-									"value": c.MasterClusterKind,
+									"name":  "CATAPULT_MANAGEMENT_CLUSTER_KIND",
+									"value": c.ManagementClusterKind,
 								},
 								{
-									"name":  "CATAPULT_MASTER_CLUSTER_VERSION",
-									"value": c.MasterClusterVersion,
+									"name":  "CATAPULT_MANAGEMENT_CLUSTER_VERSION",
+									"value": c.ManagementClusterVersion,
 								},
 								{
-									"name":  "CATAPULT_MASTER_CLUSTER_GROUP",
-									"value": c.MasterClusterGroup,
+									"name":  "CATAPULT_MANAGEMENT_CLUSTER_GROUP",
+									"value": c.ManagementClusterGroup,
 								},
 								{
 									"name":  "CATAPULT_SERVICE_CLUSTER_KIND",
@@ -160,14 +160,14 @@ func Manifests(c Config) ([]unstructured.Unstructured, error) {
 		},
 		Rules: []rbacv1.PolicyRule{
 			{
-				APIGroups: []string{c.MasterClusterGroup},
-				Resources: []string{c.MasterClusterPlural},
+				APIGroups: []string{c.ManagementClusterGroup},
+				Resources: []string{c.ManagementClusterPlural},
 				Verbs: []string{
 					"create", "delete", "get", "list", "patch", "update", "watch"},
 			},
 			{
-				APIGroups: []string{c.MasterClusterGroup},
-				Resources: []string{c.MasterClusterPlural + "/status"},
+				APIGroups: []string{c.ManagementClusterGroup},
+				Resources: []string{c.ManagementClusterPlural + "/status"},
 				Verbs:     []string{"get", "patch", "update"},
 			},
 		},

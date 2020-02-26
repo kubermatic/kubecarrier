@@ -38,9 +38,9 @@ import (
 
 const catapultControllerFinalizer string = "catapult.kubecarrier.io/controller"
 
-// MasterClusterObjReconciler reconciles CRD instances in the master cluster,
+// ManagementClusterObjReconciler reconciles CRD instances in the management cluster,
 // by creating a matching instance in the service cluster and syncing it's status back.
-type MasterClusterObjReconciler struct {
+type ManagementClusterObjReconciler struct {
 	client.Client
 	Log              logr.Logger
 	NamespacedClient client.Client
@@ -51,33 +51,33 @@ type MasterClusterObjReconciler struct {
 	ProviderNamespace, ServiceCluster string
 
 	// Dynamic types we work with
-	MasterClusterGVK, ServiceClusterGVK schema.GroupVersionKind
+	ManagementClusterGVK, ServiceClusterGVK schema.GroupVersionKind
 }
 
 // +kubebuilder:rbac:groups=kubecarrier.io,resources=serviceclusterassignments,verbs=get;list;watch
 // +kubebuilder:rbac:groups=kubecarrier.io,resources=serviceclusterassignments/status,verbs=get
 
-func (r *MasterClusterObjReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
+func (r *ManagementClusterObjReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	var (
 		result ctrl.Result
 		ctx    = context.Background()
 	)
 
-	masterClusterObj := r.newMasterObject()
-	if err := r.Get(ctx, req.NamespacedName, masterClusterObj); err != nil {
+	managementClusterObj := r.newManagementObject()
+	if err := r.Get(ctx, req.NamespacedName, managementClusterObj); err != nil {
 		return result, client.IgnoreNotFound(err)
 	}
 
-	if !masterClusterObj.GetDeletionTimestamp().IsZero() {
-		if err := r.handleDeletion(ctx, masterClusterObj); err != nil {
+	if !managementClusterObj.GetDeletionTimestamp().IsZero() {
+		if err := r.handleDeletion(ctx, managementClusterObj); err != nil {
 			return result, fmt.Errorf("handling deletion: %w", err)
 		}
 		return result, nil
 	}
 
-	if util.AddFinalizer(masterClusterObj, catapultControllerFinalizer) {
-		if err := r.Update(ctx, masterClusterObj); err != nil {
-			return result, fmt.Errorf("updating %s finalizers: %w", r.MasterClusterGVK.Kind, err)
+	if util.AddFinalizer(managementClusterObj, catapultControllerFinalizer) {
+		if err := r.Update(ctx, managementClusterObj); err != nil {
+			return result, fmt.Errorf("updating %s finalizers: %w", r.ManagementClusterGVK.Kind, err)
 		}
 	}
 
@@ -85,7 +85,7 @@ func (r *MasterClusterObjReconciler) Reconcile(req ctrl.Request) (ctrl.Result, e
 	// so we know where to put this object on the ServiceCluster.
 	sca := &corev1alpha1.ServiceClusterAssignment{}
 	if err := r.NamespacedClient.Get(ctx, types.NamespacedName{
-		Name:      masterClusterObj.GetNamespace() + "." + r.ServiceCluster,
+		Name:      managementClusterObj.GetNamespace() + "." + r.ServiceCluster,
 		Namespace: r.ProviderNamespace,
 	}, sca); err != nil {
 		return result, fmt.Errorf("getting ServiceClusterAssignment: %w", err)
@@ -99,7 +99,7 @@ func (r *MasterClusterObjReconciler) Reconcile(req ctrl.Request) (ctrl.Result, e
 	}
 
 	// Build desired service cluster object
-	desiredServiceClusterObj := masterClusterObj.DeepCopy()
+	desiredServiceClusterObj := managementClusterObj.DeepCopy()
 	if err := unstructured.SetNestedField(
 		desiredServiceClusterObj.Object, map[string]interface{}{}, "metadata"); err != nil {
 		return result, fmt.Errorf(
@@ -107,10 +107,10 @@ func (r *MasterClusterObjReconciler) Reconcile(req ctrl.Request) (ctrl.Result, e
 	}
 	delete(desiredServiceClusterObj.Object, "status")
 	desiredServiceClusterObj.SetGroupVersionKind(r.ServiceClusterGVK)
-	desiredServiceClusterObj.SetName(masterClusterObj.GetName())
+	desiredServiceClusterObj.SetName(managementClusterObj.GetName())
 	desiredServiceClusterObj.SetNamespace(sca.Status.ServiceClusterNamespace.Name)
 	owner.SetOwnerReference(
-		masterClusterObj, desiredServiceClusterObj, r.Scheme)
+		managementClusterObj, desiredServiceClusterObj, r.Scheme)
 
 	// Reconcile
 	currentServiceClusterObj := r.newServiceObject()
@@ -135,7 +135,7 @@ func (r *MasterClusterObjReconciler) Reconcile(req ctrl.Request) (ctrl.Result, e
 	// Make sure we take ownership of the service cluster instance,
 	// if the OwnerReference is not yet set.
 	owner.SetOwnerReference(
-		masterClusterObj, currentServiceClusterObj, r.Scheme)
+		managementClusterObj, currentServiceClusterObj, r.Scheme)
 
 	// Update existing service cluster instance
 	// This is a bit complicated, because we want to support arbitrary fields and not only .spec.
@@ -157,60 +157,60 @@ func (r *MasterClusterObjReconciler) Reconcile(req ctrl.Request) (ctrl.Result, e
 			"updating %s: %w", r.ServiceClusterGVK.Kind, err)
 	}
 
-	// Sync Status from service cluster to master cluster
+	// Sync Status from service cluster to management cluster
 	if err := unstructured.SetNestedField(
-		masterClusterObj.Object,
+		managementClusterObj.Object,
 		currentServiceClusterObj.Object["status"], "status"); err != nil {
 		return result, fmt.Errorf(
-			"updating %s .status: %w", r.MasterClusterGVK.Kind, err)
+			"updating %s .status: %w", r.ManagementClusterGVK.Kind, err)
 	}
 	if err = util.UpdateObservedGeneration(
-		currentServiceClusterObj, masterClusterObj); err != nil {
+		currentServiceClusterObj, managementClusterObj); err != nil {
 		return result, fmt.Errorf(
 			"update observedGeneration, by comparing %s to %s: %w",
-			r.ServiceClusterGVK.Kind, r.MasterClusterGVK.Kind, err)
+			r.ServiceClusterGVK.Kind, r.ManagementClusterGVK.Kind, err)
 	}
-	if err = r.Status().Update(ctx, masterClusterObj); err != nil {
+	if err = r.Status().Update(ctx, managementClusterObj); err != nil {
 		return result, fmt.Errorf(
-			"updating %s status: %w", r.MasterClusterGVK.Kind, err)
+			"updating %s status: %w", r.ManagementClusterGVK.Kind, err)
 	}
 
 	return result, nil
 }
 
-func (r *MasterClusterObjReconciler) SetupWithManager(mgr ctrl.Manager) error {
+func (r *ManagementClusterObjReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	serviceClusterSource := &source.Kind{Type: r.newServiceObject()}
 	if err := serviceClusterSource.InjectCache(r.ServiceClusterCache); err != nil {
 		return fmt.Errorf("injecting cache: %w", err)
 	}
 
 	return ctrl.NewControllerManagedBy(mgr).
-		For(r.newMasterObject()).
+		For(r.newManagementObject()).
 		Watches(
 			source.Func(serviceClusterSource.Start),
-			owner.EnqueueRequestForOwner(r.newMasterObject(), mgr.GetScheme()),
+			owner.EnqueueRequestForOwner(r.newManagementObject(), mgr.GetScheme()),
 		).
 		Complete(r)
 }
 
-func (r *MasterClusterObjReconciler) newServiceObject() *unstructured.Unstructured {
+func (r *ManagementClusterObjReconciler) newServiceObject() *unstructured.Unstructured {
 	obj := &unstructured.Unstructured{}
 	obj.SetGroupVersionKind(r.ServiceClusterGVK)
 	return obj
 }
 
-func (r *MasterClusterObjReconciler) newMasterObject() *unstructured.Unstructured {
+func (r *ManagementClusterObjReconciler) newManagementObject() *unstructured.Unstructured {
 	obj := &unstructured.Unstructured{}
-	obj.SetGroupVersionKind(r.MasterClusterGVK)
+	obj.SetGroupVersionKind(r.ManagementClusterGVK)
 	return obj
 }
 
-func (r *MasterClusterObjReconciler) handleDeletion(
-	ctx context.Context, masterClusterObj *unstructured.Unstructured,
+func (r *ManagementClusterObjReconciler) handleDeletion(
+	ctx context.Context, managementClusterObj *unstructured.Unstructured,
 ) error {
 	sca := &corev1alpha1.ServiceClusterAssignment{}
 	err := r.NamespacedClient.Get(ctx, types.NamespacedName{
-		Name:      masterClusterObj.GetNamespace() + "." + r.ServiceCluster,
+		Name:      managementClusterObj.GetNamespace() + "." + r.ServiceCluster,
 		Namespace: r.ProviderNamespace,
 	}, sca)
 	if err != nil && !errors.IsNotFound(err) {
@@ -223,7 +223,7 @@ func (r *MasterClusterObjReconciler) handleDeletion(
 		serviceClusterObj := &unstructured.Unstructured{}
 		serviceClusterObj.SetGroupVersionKind(r.ServiceClusterGVK)
 		err := r.ServiceClusterClient.Get(ctx, types.NamespacedName{
-			Name:      masterClusterObj.GetName(),
+			Name:      managementClusterObj.GetName(),
 			Namespace: sca.Status.ServiceClusterNamespace.Name,
 		}, serviceClusterObj)
 		if err != nil && !errors.IsNotFound(err) {
@@ -243,9 +243,9 @@ func (r *MasterClusterObjReconciler) handleDeletion(
 		}
 	}
 
-	if util.RemoveFinalizer(masterClusterObj, catapultControllerFinalizer) {
-		if err := r.Update(ctx, masterClusterObj); err != nil {
-			return fmt.Errorf("updating %s finalizers: %w", r.MasterClusterGVK.Kind, err)
+	if util.RemoveFinalizer(managementClusterObj, catapultControllerFinalizer) {
+		if err := r.Update(ctx, managementClusterObj); err != nil {
+			return fmt.Errorf("updating %s finalizers: %w", r.ManagementClusterGVK.Kind, err)
 		}
 	}
 	return nil

@@ -37,12 +37,28 @@ import (
 )
 
 func Test_DerivedCustomResourceReconciler(t *testing.T) {
+	provider := &catalogv1alpha1.Account{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "dcr",
+		},
+		Spec: catalogv1alpha1.AccountSpec{
+			Roles: []catalogv1alpha1.AccountRole{
+				catalogv1alpha1.ProviderRole,
+			},
+		},
+		Status: catalogv1alpha1.AccountStatus{
+			NamespaceName: "dcr",
+		},
+	}
+
+	providerNS := &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: provider.Name}}
+	owner.SetOwnerReference(provider, providerNS, testScheme)
 	baseCRD := &apiextensionsv1.CustomResourceDefinition{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "catapults.test.kubecarrier.io",
 			Labels: map[string]string{
-				"kubecarrier.io/service-cluster": "eu-west-1",
-				"kubecarrier.io/provider":        "dcr",
+				"kubecarrier.io/service-cluster":  "eu-west-1",
+				"kubecarrier.io/origin-namespace": provider.Status.NamespaceName,
 			},
 		},
 		Spec: apiextensionsv1.CustomResourceDefinitionSpec{
@@ -81,23 +97,6 @@ func Test_DerivedCustomResourceReconciler(t *testing.T) {
 		},
 	}
 	baseCRD.Status.AcceptedNames = baseCRD.Spec.Names
-
-	provider := &catalogv1alpha1.Account{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: "dcr",
-		},
-		Spec: catalogv1alpha1.AccountSpec{
-			Roles: []catalogv1alpha1.AccountRole{
-				catalogv1alpha1.ProviderRole,
-			},
-		},
-		Status: catalogv1alpha1.AccountStatus{
-			NamespaceName: "dcr",
-		},
-	}
-
-	providerNS := &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: provider.Name}}
-	owner.SetOwnerReference(provider, providerNS, testScheme)
 
 	derivedCR := &catalogv1alpha1.DerivedCustomResource{
 		ObjectMeta: metav1.ObjectMeta{
