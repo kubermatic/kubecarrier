@@ -36,7 +36,8 @@ import (
 func NewAdminSuite(f *testutil.Framework) func(t *testing.T) {
 	return func(t *testing.T) {
 		// Setup
-		ctx, _ := context.WithTimeout(context.Background(), 30*time.Second)
+		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+		defer cancel()
 		managementClient, err := f.ManagementClient()
 		require.NoError(t, err, "creating management client")
 		defer managementClient.CleanUp(ctx, t)
