@@ -196,7 +196,7 @@ func (rc *RecordingClient) UnregisterForCleanup(obj runtime.Object) {
 	delete(rc.objects, key)
 }
 
-func (rc *RecordingClient) CleanUp(t *testing.T) {
+func (rc *RecordingClient) CleanUp(ctx context.Context, t *testing.T) {
 	if _, noCleanup := os.LookupEnv("NO_CLEANUP"); noCleanup {
 		// skip cleanup
 		return
@@ -215,7 +215,7 @@ func (rc *RecordingClient) CleanUp(t *testing.T) {
 			continue
 		}
 
-		err := DeleteAndWaitUntilNotFound(rc.Client, obj)
+		err := DeleteAndWaitUntilNotFound(ctx, rc, obj)
 		if err != nil {
 			err = fmt.Errorf("cleanup %s: %w", key, err)
 		}

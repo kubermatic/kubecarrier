@@ -23,7 +23,6 @@ import (
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/rest"
@@ -70,30 +69,21 @@ func (cw *ClientWatcher) WaitUntil(ctx context.Context, obj Object, cond ...func
 	if err != nil {
 		return err
 	}
-	restMapping, err := cw.restMapper.RESTMapping(objGVK.GroupKind(), objGVK.Version)
+	lw, err := cw.listWatch(obj)
 	if err != nil {
-		return err
+		return fmt.Errorf("getting listWatch: %w", err)
 	}
-	objNN := types.NamespacedName{
-		Namespace: obj.GetNamespace(),
-		Name:      obj.GetName(),
-	}
-	resourceInterface := cw.dynamicClient.Resource(restMapping.Resource).Namespace(objNN.Namespace)
-	if _, err := clientwatch.ListWatchUntil(ctx, &cache.ListWatch{
-		ListFunc: func(options metav1.ListOptions) (object runtime.Object, err error) {
-			return resourceInterface.List(options)
-		},
-		WatchFunc: resourceInterface.Watch,
-	}, func(event watch.Event) (b bool, err error) {
+
+	if _, err := clientwatch.ListWatchUntil(ctx, lw, func(event watch.Event) (b bool, err error) {
 		objTmp, err := cw.scheme.New(objGVK)
 		if err != nil {
 			return false, err
 		}
-		obj := objTmp.(Object)
-		if err := cw.scheme.Convert(event.Object, obj, nil); err != nil {
+		currObj := objTmp.(Object)
+		if err := cw.scheme.Convert(event.Object, currObj, nil); err != nil {
 			return false, err
 		}
-		if obj.GetNamespace() != objNN.Namespace || obj.GetName() != objNN.Name {
+		if ObjectNN(currObj) != ObjectNN(obj) {
 			// not the right Object
 			return false, nil
 		}
@@ -106,9 +96,73 @@ func (cw *ClientWatcher) WaitUntil(ctx context.Context, obj Object, cond ...func
 				return false, nil
 			}
 		}
+		if err := cw.Get(ctx, ObjectNN(obj), obj); err != nil {
+			return false, err
+		}
 		return true, nil
 	}); err != nil {
 		return err
 	}
 	return nil
+}
+
+// WaitUntilNotFound waits until the object is not found or the context deadline is exceeded
+func (cw *ClientWatcher) WaitUntilNotFound(ctx context.Context, obj Object) error {
+	// things get a bit tricky with not found watches
+	//  clientwatch.UntilWithSync seems useful since it has cache pre-conditions which I can check whether
+	// the objects existed in initial list operation. But there are few other issues with it:
+	// * it doesn't call condition function with DELETED event types for some reason (nor does it get it from watch interface to my current debugging knowledge)
+	// * it doesn't properly update the cache store since the event objects are types to *unstructured.Unstructured instead of GVK schema type
+	lw, err := cw.listWatch(obj)
+	if err != nil {
+		return fmt.Errorf("getting listWatch: %w", err)
+	}
+	list, err := lw.List(metav1.ListOptions{})
+	if err != nil {
+		return err
+	}
+	initialItems, err := meta.ExtractList(list)
+	if err != nil {
+		return err
+	}
+
+	found := false
+	for _, it := range initialItems {
+		if ObjectNN(it.(Object)) == ObjectNN(obj) {
+			found = true
+		}
+	}
+	if !found {
+		return nil
+	}
+	metaObj, err := meta.ListAccessor(list)
+	if err != nil {
+		return err
+	}
+	currResourceVersion := metaObj.GetResourceVersion()
+	_, err = clientwatch.Until(ctx, currResourceVersion, lw, func(event watch.Event) (b bool, err error) {
+		if ObjectNN(obj) != ObjectNN(event.Object.(Object)) {
+			return false, nil
+		}
+		return event.Type == watch.Deleted, nil
+	})
+	return err
+}
+
+func (cw *ClientWatcher) listWatch(obj Object) (*cache.ListWatch, error) {
+	objGVK, err := apiutil.GVKForObject(obj, cw.scheme)
+	if err != nil {
+		return nil, err
+	}
+	restMapping, err := cw.restMapper.RESTMapping(objGVK.GroupKind(), objGVK.Version)
+	if err != nil {
+		return nil, err
+	}
+	resourceInterface := cw.dynamicClient.Resource(restMapping.Resource).Namespace(obj.GetNamespace())
+	return &cache.ListWatch{
+		ListFunc: func(options metav1.ListOptions) (object runtime.Object, err error) {
+			return resourceInterface.List(options)
+		},
+		WatchFunc: resourceInterface.Watch,
+	}, nil
 }

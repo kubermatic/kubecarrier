@@ -23,11 +23,10 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
-	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/util/jsonpath"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/kubermatic/kubecarrier/pkg/internal/util"
 )
@@ -62,22 +61,7 @@ func LogObject(t *testing.T, obj interface{}) {
 }
 
 func WaitUntilNotFound(ctx context.Context, c *RecordingClient, obj runtime.Object) error {
-	o := obj.(util.Object)
-	err := c.Get(ctx, types.NamespacedName{
-		Name:      o.GetName(),
-		Namespace: o.GetNamespace(),
-	}, o)
-	// TODO: WIP: Check for case when the objects got immediately deleted before the watch even gets a hold of it
-	switch {
-	case err == nil:
-		return c.WaitUntil(ctx, obj.(util.Object), func(obj runtime.Object, eventType watch.EventType) (b bool, err error) {
-			return eventType == watch.Deleted, nil
-		})
-	case errors.IsNotFound(err):
-		return nil
-	default:
-		return err
-	}
+	return c.WaitUntilNotFound(ctx, obj.(util.Object))
 }
 
 func WaitUntilFound(ctx context.Context, c *RecordingClient, obj runtime.Object) error {
@@ -106,10 +90,7 @@ func WaitUntilReady(ctx context.Context, c *RecordingClient, obj runtime.Object)
 }
 
 func DeleteAndWaitUntilNotFound(ctx context.Context, c *RecordingClient, obj runtime.Object) error {
-	if err := c.Delete(context.Background(), obj); err != nil {
-		if errors.IsNotFound(err) {
-			return nil
-		}
+	if err := c.Delete(ctx, obj); client.IgnoreNotFound(err) != nil {
 		return err
 	}
 	return WaitUntilNotFound(ctx, c, obj)

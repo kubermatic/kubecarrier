@@ -36,15 +36,14 @@ import (
 func NewAdminSuite(f *testutil.Framework) func(t *testing.T) {
 	return func(t *testing.T) {
 		// Setup
+		ctx, _ := context.WithTimeout(context.Background(), 30*time.Second)
 		managementClient, err := f.ManagementClient()
 		require.NoError(t, err, "creating management client")
-		defer managementClient.CleanUp(t)
+		defer managementClient.CleanUp(ctx, t)
 
 		serviceClient, err := f.ServiceClient()
 		require.NoError(t, err, "creating service client")
-		defer serviceClient.CleanUp(t)
-
-		ctx, _ := context.WithTimeout(context.Background(), 260*time.Second)
+		defer serviceClient.CleanUp(ctx, t)
 
 		// Create a Tenant
 		tenant := &catalogv1alpha1.Tenant{
@@ -52,6 +51,8 @@ func NewAdminSuite(f *testutil.Framework) func(t *testing.T) {
 				Name: "test-tenant1",
 			},
 		}
+
+		t.Log("creating test tenant")
 		require.NoError(t, managementClient.Create(ctx, tenant), "creating tenant error")
 		require.NoError(t, testutil.WaitUntilReady(ctx, managementClient, tenant))
 
@@ -62,6 +63,7 @@ func NewAdminSuite(f *testutil.Framework) func(t *testing.T) {
 		}, tenantNamespace))
 
 		// Create a Provider
+		t.Log("creating test provider")
 		provider := &catalogv1alpha1.Provider{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: "test-provider1",
@@ -73,7 +75,6 @@ func NewAdminSuite(f *testutil.Framework) func(t *testing.T) {
 				},
 			},
 		}
-
 		require.NoError(t, managementClient.Create(ctx, provider), "creating provider error")
 		require.NoError(t, testutil.WaitUntilReady(ctx, managementClient, provider))
 
@@ -89,11 +90,11 @@ func NewAdminSuite(f *testutil.Framework) func(t *testing.T) {
 				Namespace: providerNamespaceName,
 			},
 		}
+		t.Log("checking tenant reference")
 		require.NoError(t, testutil.WaitUntilFound(ctx, managementClient, tenantReference))
 
-		// Delete Tenant
+		t.Log("deleting tenant")
 		require.NoError(t, testutil.DeleteAndWaitUntilNotFound(ctx, managementClient, tenant))
-
 		assert.True(t, errors.IsNotFound(managementClient.Get(ctx, types.NamespacedName{
 			Name: tenantNamespaceName,
 		}, tenantNamespace)), "namespace should also be deleted.")
@@ -103,7 +104,7 @@ func NewAdminSuite(f *testutil.Framework) func(t *testing.T) {
 			Namespace: tenantNamespaceName,
 		}, tenantReference)), "TenantReference should also be deleted.")
 
-		// Delete Provider
+		t.Log("deleting provider")
 		require.NoError(t, testutil.DeleteAndWaitUntilNotFound(ctx, managementClient, provider))
 		assert.True(t, errors.IsNotFound(managementClient.Get(ctx, types.NamespacedName{
 			Name: providerNamespaceName,
