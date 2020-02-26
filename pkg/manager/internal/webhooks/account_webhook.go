@@ -138,7 +138,9 @@ func (r *AccountWebhookHandler) validateMetadataAndRoles(account *catalogv1alpha
 }
 
 // +kubebuilder:rbac:groups=kubecarrier.io,resources=serviceclusterassignments,verbs=get;list;watch
-
+// +kubebuilder:rbac:groups=catalog.kubecarrier.io,resources=derivedcustomresources,verbs=get;list;watch
+// +kubebuilder:rbac:groups=kubecarrier.io,resources=customresourcediscoveries,verbs=get;list;watch
+// +kubebuilder:rbac:groups=kubecarrier.io,resources=customresourcediscoverysets,verbs=get;list;watch
 func (r *AccountWebhookHandler) validateDelete(ctx context.Context, obj *catalogv1alpha1.Account) error {
 	// if no namespace was created for the object, we are safe to delete it
 	// there's unlikely race condition here if the namespace was created, but not propagated to the account and

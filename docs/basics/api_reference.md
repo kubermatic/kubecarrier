@@ -1,9 +1,5 @@
 
 ## Table of Contents
-* [Offering.catalog.kubecarrier.io/v1alpha1](#offering.catalog.kubecarrier.io/v1alpha1)
-* [OfferingData.catalog.kubecarrier.io/v1alpha1](#offeringdata.catalog.kubecarrier.io/v1alpha1)
-* [OfferingList.catalog.kubecarrier.io/v1alpha1](#offeringlist.catalog.kubecarrier.io/v1alpha1)
-* [OfferingMetadata.catalog.kubecarrier.io/v1alpha1](#offeringmetadata.catalog.kubecarrier.io/v1alpha1)
 * [ServiceClusterReference.catalog.kubecarrier.io/v1alpha1](#serviceclusterreference.catalog.kubecarrier.io/v1alpha1)
 * [ServiceClusterReferenceList.catalog.kubecarrier.io/v1alpha1](#serviceclusterreferencelist.catalog.kubecarrier.io/v1alpha1)
 * [ServiceClusterReferenceSpec.catalog.kubecarrier.io/v1alpha1](#serviceclusterreferencespec.catalog.kubecarrier.io/v1alpha1)
@@ -12,16 +8,6 @@
 * [TenantReferenceSpec.catalog.kubecarrier.io/v1alpha1](#tenantreferencespec.catalog.kubecarrier.io/v1alpha1)
 * [CRDInformation.catalog.kubecarrier.io/v1alpha1](#crdinformation.catalog.kubecarrier.io/v1alpha1)
 * [CRDVersion.catalog.kubecarrier.io/v1alpha1](#crdversion.catalog.kubecarrier.io/v1alpha1)
-* [Account.catalog.kubecarrier.io/v1alpha1](#account.catalog.kubecarrier.io/v1alpha1)
-* [AccountCondition.catalog.kubecarrier.io/v1alpha1](#accountcondition.catalog.kubecarrier.io/v1alpha1)
-* [AccountList.catalog.kubecarrier.io/v1alpha1](#accountlist.catalog.kubecarrier.io/v1alpha1)
-* [AccountMetadata.catalog.kubecarrier.io/v1alpha1](#accountmetadata.catalog.kubecarrier.io/v1alpha1)
-* [AccountSpec.catalog.kubecarrier.io/v1alpha1](#accountspec.catalog.kubecarrier.io/v1alpha1)
-* [AccountStatus.catalog.kubecarrier.io/v1alpha1](#accountstatus.catalog.kubecarrier.io/v1alpha1)
-* [ProviderReference.catalog.kubecarrier.io/v1alpha1](#providerreference.catalog.kubecarrier.io/v1alpha1)
-* [ProviderReferenceList.catalog.kubecarrier.io/v1alpha1](#providerreferencelist.catalog.kubecarrier.io/v1alpha1)
-* [ProviderReferenceSpec.catalog.kubecarrier.io/v1alpha1](#providerreferencespec.catalog.kubecarrier.io/v1alpha1)
-* [ObjectReference.catalog.kubecarrier.io/v1alpha1](#objectreference.catalog.kubecarrier.io/v1alpha1)
 * [Catalog.catalog.kubecarrier.io/v1alpha1](#catalog.catalog.kubecarrier.io/v1alpha1)
 * [CatalogCondition.catalog.kubecarrier.io/v1alpha1](#catalogcondition.catalog.kubecarrier.io/v1alpha1)
 * [CatalogList.catalog.kubecarrier.io/v1alpha1](#cataloglist.catalog.kubecarrier.io/v1alpha1)
@@ -42,11 +28,20 @@
 * [DerivedCustomResourceStatus.catalog.kubecarrier.io/v1alpha1](#derivedcustomresourcestatus.catalog.kubecarrier.io/v1alpha1)
 * [FieldPath.catalog.kubecarrier.io/v1alpha1](#fieldpath.catalog.kubecarrier.io/v1alpha1)
 * [VersionExposeConfig.catalog.kubecarrier.io/v1alpha1](#versionexposeconfig.catalog.kubecarrier.io/v1alpha1)
-* [Catapult.operator.kubecarrier.io/v1alpha1](#catapult.operator.kubecarrier.io/v1alpha1)
-* [CatapultCondition.operator.kubecarrier.io/v1alpha1](#catapultcondition.operator.kubecarrier.io/v1alpha1)
-* [CatapultList.operator.kubecarrier.io/v1alpha1](#catapultlist.operator.kubecarrier.io/v1alpha1)
-* [CatapultSpec.operator.kubecarrier.io/v1alpha1](#catapultspec.operator.kubecarrier.io/v1alpha1)
-* [CatapultStatus.operator.kubecarrier.io/v1alpha1](#catapultstatus.operator.kubecarrier.io/v1alpha1)
+* [Account.catalog.kubecarrier.io/v1alpha1](#account.catalog.kubecarrier.io/v1alpha1)
+* [AccountCondition.catalog.kubecarrier.io/v1alpha1](#accountcondition.catalog.kubecarrier.io/v1alpha1)
+* [AccountList.catalog.kubecarrier.io/v1alpha1](#accountlist.catalog.kubecarrier.io/v1alpha1)
+* [AccountMetadata.catalog.kubecarrier.io/v1alpha1](#accountmetadata.catalog.kubecarrier.io/v1alpha1)
+* [AccountSpec.catalog.kubecarrier.io/v1alpha1](#accountspec.catalog.kubecarrier.io/v1alpha1)
+* [AccountStatus.catalog.kubecarrier.io/v1alpha1](#accountstatus.catalog.kubecarrier.io/v1alpha1)
+* [Offering.catalog.kubecarrier.io/v1alpha1](#offering.catalog.kubecarrier.io/v1alpha1)
+* [OfferingData.catalog.kubecarrier.io/v1alpha1](#offeringdata.catalog.kubecarrier.io/v1alpha1)
+* [OfferingList.catalog.kubecarrier.io/v1alpha1](#offeringlist.catalog.kubecarrier.io/v1alpha1)
+* [OfferingMetadata.catalog.kubecarrier.io/v1alpha1](#offeringmetadata.catalog.kubecarrier.io/v1alpha1)
+* [ProviderReference.catalog.kubecarrier.io/v1alpha1](#providerreference.catalog.kubecarrier.io/v1alpha1)
+* [ProviderReferenceList.catalog.kubecarrier.io/v1alpha1](#providerreferencelist.catalog.kubecarrier.io/v1alpha1)
+* [ProviderReferenceSpec.catalog.kubecarrier.io/v1alpha1](#providerreferencespec.catalog.kubecarrier.io/v1alpha1)
+* [ObjectReference.catalog.kubecarrier.io/v1alpha1](#objectreference.catalog.kubecarrier.io/v1alpha1)
 * [Elevator.operator.kubecarrier.io/v1alpha1](#elevator.operator.kubecarrier.io/v1alpha1)
 * [ElevatorCondition.operator.kubecarrier.io/v1alpha1](#elevatorcondition.operator.kubecarrier.io/v1alpha1)
 * [ElevatorList.operator.kubecarrier.io/v1alpha1](#elevatorlist.operator.kubecarrier.io/v1alpha1)
@@ -64,11 +59,11 @@
 * [FerryList.operator.kubecarrier.io/v1alpha1](#ferrylist.operator.kubecarrier.io/v1alpha1)
 * [FerrySpec.operator.kubecarrier.io/v1alpha1](#ferryspec.operator.kubecarrier.io/v1alpha1)
 * [FerryStatus.operator.kubecarrier.io/v1alpha1](#ferrystatus.operator.kubecarrier.io/v1alpha1)
-* [CustomResourceDiscovery.kubecarrier.io/v1alpha1](#customresourcediscovery.kubecarrier.io/v1alpha1)
-* [CustomResourceDiscoveryCondition.kubecarrier.io/v1alpha1](#customresourcediscoverycondition.kubecarrier.io/v1alpha1)
-* [CustomResourceDiscoveryList.kubecarrier.io/v1alpha1](#customresourcediscoverylist.kubecarrier.io/v1alpha1)
-* [CustomResourceDiscoverySpec.kubecarrier.io/v1alpha1](#customresourcediscoveryspec.kubecarrier.io/v1alpha1)
-* [CustomResourceDiscoveryStatus.kubecarrier.io/v1alpha1](#customresourcediscoverystatus.kubecarrier.io/v1alpha1)
+* [Catapult.operator.kubecarrier.io/v1alpha1](#catapult.operator.kubecarrier.io/v1alpha1)
+* [CatapultCondition.operator.kubecarrier.io/v1alpha1](#catapultcondition.operator.kubecarrier.io/v1alpha1)
+* [CatapultList.operator.kubecarrier.io/v1alpha1](#catapultlist.operator.kubecarrier.io/v1alpha1)
+* [CatapultSpec.operator.kubecarrier.io/v1alpha1](#catapultspec.operator.kubecarrier.io/v1alpha1)
+* [CatapultStatus.operator.kubecarrier.io/v1alpha1](#catapultstatus.operator.kubecarrier.io/v1alpha1)
 * [CustomResourceDiscoverySet.kubecarrier.io/v1alpha1](#customresourcediscoveryset.kubecarrier.io/v1alpha1)
 * [CustomResourceDiscoverySetCondition.kubecarrier.io/v1alpha1](#customresourcediscoverysetcondition.kubecarrier.io/v1alpha1)
 * [CustomResourceDiscoverySetList.kubecarrier.io/v1alpha1](#customresourcediscoverysetlist.kubecarrier.io/v1alpha1)
@@ -81,56 +76,16 @@
 * [ServiceClusterMetadata.kubecarrier.io/v1alpha1](#serviceclustermetadata.kubecarrier.io/v1alpha1)
 * [ServiceClusterSpec.kubecarrier.io/v1alpha1](#serviceclusterspec.kubecarrier.io/v1alpha1)
 * [ServiceClusterStatus.kubecarrier.io/v1alpha1](#serviceclusterstatus.kubecarrier.io/v1alpha1)
+* [CustomResourceDiscovery.kubecarrier.io/v1alpha1](#customresourcediscovery.kubecarrier.io/v1alpha1)
+* [CustomResourceDiscoveryCondition.kubecarrier.io/v1alpha1](#customresourcediscoverycondition.kubecarrier.io/v1alpha1)
+* [CustomResourceDiscoveryList.kubecarrier.io/v1alpha1](#customresourcediscoverylist.kubecarrier.io/v1alpha1)
+* [CustomResourceDiscoverySpec.kubecarrier.io/v1alpha1](#customresourcediscoveryspec.kubecarrier.io/v1alpha1)
+* [CustomResourceDiscoveryStatus.kubecarrier.io/v1alpha1](#customresourcediscoverystatus.kubecarrier.io/v1alpha1)
 * [ServiceClusterAssignment.kubecarrier.io/v1alpha1](#serviceclusterassignment.kubecarrier.io/v1alpha1)
 * [ServiceClusterAssignmentCondition.kubecarrier.io/v1alpha1](#serviceclusterassignmentcondition.kubecarrier.io/v1alpha1)
 * [ServiceClusterAssignmentList.kubecarrier.io/v1alpha1](#serviceclusterassignmentlist.kubecarrier.io/v1alpha1)
 * [ServiceClusterAssignmentSpec.kubecarrier.io/v1alpha1](#serviceclusterassignmentspec.kubecarrier.io/v1alpha1)
 * [ServiceClusterAssignmentStatus.kubecarrier.io/v1alpha1](#serviceclusterassignmentstatus.kubecarrier.io/v1alpha1)
-
-## Offering.catalog.kubecarrier.io/v1alpha1
-
-Offering is used for Tenants to discover services that have been made available to them.
-
-| Field | Description | Scheme | Required |
-| ----- | ----------- | ------ | -------- |
-| metadata |  | [metav1.ObjectMeta](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.14/#objectmeta-v1-meta) | false |
-| offering |  | catalog.kubecarrier.io/v1alpha1.OfferingData | false |
-
-[Back to TOC](#table-of-contents)
-
-## OfferingData.catalog.kubecarrier.io/v1alpha1
-
-OfferingData defines the data (metadata, provider, crds, etc.) of Offering.
-
-| Field | Description | Scheme | Required |
-| ----- | ----------- | ------ | -------- |
-| metadata |  | catalog.kubecarrier.io/v1alpha1.OfferingMetadata | false |
-| provider | Provider references a ProviderReference of this Offering. | catalog.kubecarrier.io/v1alpha1.ObjectReference | true |
-| crd | CRD holds the information about the underlying CRD that is offered by this offering. | catalog.kubecarrier.io/v1alpha1.CRDInformation | false |
-
-[Back to TOC](#table-of-contents)
-
-## OfferingList.catalog.kubecarrier.io/v1alpha1
-
-OfferingList contains a list of Offering.
-
-| Field | Description | Scheme | Required |
-| ----- | ----------- | ------ | -------- |
-| metadata |  | [metav1.ListMeta](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.14/#listmeta-v1-meta) | false |
-| items |  | []catalog.kubecarrier.io/v1alpha1.Offering | true |
-
-[Back to TOC](#table-of-contents)
-
-## OfferingMetadata.catalog.kubecarrier.io/v1alpha1
-
-OfferingMetadata contains the metadata (display name, description, etc) of the Offering.
-
-| Field | Description | Scheme | Required |
-| ----- | ----------- | ------ | -------- |
-| displayName | DisplayName shows the human-readable name of this Offering. | string | false |
-| description | Description shows the human-readable description of this Offering. | string | false |
-
-[Back to TOC](#table-of-contents)
 
 ## ServiceClusterReference.catalog.kubecarrier.io/v1alpha1
 
@@ -218,120 +173,6 @@ CRDVersion holds CRD version specific details.
 | ----- | ----------- | ------ | -------- |
 | name | Name of this version, for example: v1, v1alpha1, v1beta1 | string | true |
 | schema | Schema of this CRD version. | *apiextensionsv1.CustomResourceValidation | false |
-
-[Back to TOC](#table-of-contents)
-
-## Account.catalog.kubecarrier.io/v1alpha1
-
-Account is the service provider representation in the KubeCarrier control-plane.
-
-| Field | Description | Scheme | Required |
-| ----- | ----------- | ------ | -------- |
-| metadata |  | [metav1.ObjectMeta](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.14/#objectmeta-v1-meta) | false |
-| spec |  | catalog.kubecarrier.io/v1alpha1.AccountSpec | false |
-| status |  | catalog.kubecarrier.io/v1alpha1.AccountStatus | false |
-
-[Back to TOC](#table-of-contents)
-
-## AccountCondition.catalog.kubecarrier.io/v1alpha1
-
-AccountCondition contains details for the current condition of this Account.
-
-| Field | Description | Scheme | Required |
-| ----- | ----------- | ------ | -------- |
-| type | Type is the type of the Account condition, currently ('Ready'). | catalog.kubecarrier.io/v1alpha1.AccountConditionType | true |
-| status | Status is the status of the condition, one of ('True', 'False', 'Unknown'). | catalog.kubecarrier.io/v1alpha1.ConditionStatus | true |
-| lastTransitionTime | LastTransitionTime is the last time the condition transits from one status to another. | metav1.Time | true |
-| reason | Reason is the (brief) reason for the condition's last transition. | string | true |
-| message | Message is the human readable message indicating details about last transition. | string | true |
-
-[Back to TOC](#table-of-contents)
-
-## AccountList.catalog.kubecarrier.io/v1alpha1
-
-AccountList contains a list of Account.
-
-| Field | Description | Scheme | Required |
-| ----- | ----------- | ------ | -------- |
-| metadata |  | [metav1.ListMeta](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.14/#listmeta-v1-meta) | false |
-| items |  | []catalog.kubecarrier.io/v1alpha1.Account | true |
-
-[Back to TOC](#table-of-contents)
-
-## AccountMetadata.catalog.kubecarrier.io/v1alpha1
-
-AccountMetadata contains the metadata (display name, description, etc) of the Account.
-
-| Field | Description | Scheme | Required |
-| ----- | ----------- | ------ | -------- |
-| displayName | DisplayName shows the human-readable name of this Account. | string | false |
-| description | Description shows the human-readable description of this Account. | string | false |
-
-[Back to TOC](#table-of-contents)
-
-## AccountSpec.catalog.kubecarrier.io/v1alpha1
-
-AccountSpec defines the desired state of Account.
-
-| Field | Description | Scheme | Required |
-| ----- | ----------- | ------ | -------- |
-| metadata | Metadata\tcontains additional human readable account details | catalog.kubecarrier.io/v1alpha1.AccountMetadata | false |
-| roles | Roles this account uses | []catalog.kubecarrier.io/v1alpha1.AccountRole | true |
-
-[Back to TOC](#table-of-contents)
-
-## AccountStatus.catalog.kubecarrier.io/v1alpha1
-
-AccountStatus defines the observed state of Account.
-
-| Field | Description | Scheme | Required |
-| ----- | ----------- | ------ | -------- |
-| namespaceName | NamespaceName is the name of the namespace that the Account manages. | string | false |
-| observedGeneration | ObservedGeneration is the most recent generation observed for this Account by the controller. | catalog.kubecarrier.io/v1alpha1.int64 | false |
-| conditions | Conditions represents the latest available observations of a Account's current state. | []catalog.kubecarrier.io/v1alpha1.AccountCondition | false |
-| phase | DEPRECATED. Phase represents the current lifecycle state of this object. Consider this field DEPRECATED, it will be removed as soon as there is a mechanism to map conditions to strings when printing the property. This is only for display purpose, for everything else use conditions. | catalog.kubecarrier.io/v1alpha1.AccountPhaseType | false |
-
-[Back to TOC](#table-of-contents)
-
-## ProviderReference.catalog.kubecarrier.io/v1alpha1
-
-ProviderReference exposes information of the Provider(displayName, description). This object lives in the tenant namespace for each provider the tenant is allowed utilizing (e.g. there's catalog selecting this tenant as its user)
-
-| Field | Description | Scheme | Required |
-| ----- | ----------- | ------ | -------- |
-| metadata |  | [metav1.ObjectMeta](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.14/#objectmeta-v1-meta) | false |
-| spec |  | catalog.kubecarrier.io/v1alpha1.ProviderReferenceSpec | false |
-
-[Back to TOC](#table-of-contents)
-
-## ProviderReferenceList.catalog.kubecarrier.io/v1alpha1
-
-ProviderReferenceList contains a list of ProviderReference
-
-| Field | Description | Scheme | Required |
-| ----- | ----------- | ------ | -------- |
-| metadata |  | [metav1.ListMeta](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.14/#listmeta-v1-meta) | false |
-| items |  | []catalog.kubecarrier.io/v1alpha1.ProviderReference | true |
-
-[Back to TOC](#table-of-contents)
-
-## ProviderReferenceSpec.catalog.kubecarrier.io/v1alpha1
-
-ProviderReferenceSpec defines the desired state of ProviderReference
-
-| Field | Description | Scheme | Required |
-| ----- | ----------- | ------ | -------- |
-| metadata | Metadata contains the metadata (display name, description, etc) of the Provider. | catalog.kubecarrier.io/v1alpha1.AccountMetadata | false |
-
-[Back to TOC](#table-of-contents)
-
-## ObjectReference.catalog.kubecarrier.io/v1alpha1
-
-ObjectReference describes the link to another object in the same namespace.
-
-| Field | Description | Scheme | Required |
-| ----- | ----------- | ------ | -------- |
-| name |  | string | true |
 
 [Back to TOC](#table-of-contents)
 
@@ -578,64 +419,162 @@ VersionExposeConfig specifies which fields to expose in the derived CRD.
 
 [Back to TOC](#table-of-contents)
 
-## Catapult.operator.kubecarrier.io/v1alpha1
+## Account.catalog.kubecarrier.io/v1alpha1
 
-Catapult manages the deployment of the Catapult controller manager.
+Account is the generic Kubecarrier actor representation in the KubeCarrier control-plane. It has its own namespace and uses various roles, provider and tenant role being the most important.
 
 | Field | Description | Scheme | Required |
 | ----- | ----------- | ------ | -------- |
 | metadata |  | [metav1.ObjectMeta](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.14/#objectmeta-v1-meta) | false |
-| spec |  | operator.kubecarrier.io/v1alpha1.CatapultSpec | false |
-| status |  | operator.kubecarrier.io/v1alpha1.CatapultStatus | false |
+| spec |  | catalog.kubecarrier.io/v1alpha1.AccountSpec | false |
+| status |  | catalog.kubecarrier.io/v1alpha1.AccountStatus | false |
 
 [Back to TOC](#table-of-contents)
 
-## CatapultCondition.operator.kubecarrier.io/v1alpha1
+## AccountCondition.catalog.kubecarrier.io/v1alpha1
 
-CatapultCondition contains details for the current condition of this Catapult.
+AccountCondition contains details for the current condition of this Account.
 
 | Field | Description | Scheme | Required |
 | ----- | ----------- | ------ | -------- |
-| type | Type is the type of the Catapult condition, currently ('Ready'). | operator.kubecarrier.io/v1alpha1.CatapultConditionType | true |
-| status | Status is the status of the condition, one of ('True', 'False', 'Unknown'). | operator.kubecarrier.io/v1alpha1.ConditionStatus | true |
+| type | Type is the type of the Account condition, currently ('Ready'). | catalog.kubecarrier.io/v1alpha1.AccountConditionType | true |
+| status | Status is the status of the condition, one of ('True', 'False', 'Unknown'). | catalog.kubecarrier.io/v1alpha1.ConditionStatus | true |
 | lastTransitionTime | LastTransitionTime is the last time the condition transits from one status to another. | metav1.Time | true |
 | reason | Reason is the (brief) reason for the condition's last transition. | string | true |
 | message | Message is the human readable message indicating details about last transition. | string | true |
 
 [Back to TOC](#table-of-contents)
 
-## CatapultList.operator.kubecarrier.io/v1alpha1
+## AccountList.catalog.kubecarrier.io/v1alpha1
 
-CatapultList contains a list of Catapult
+AccountList contains a list of Account.
 
 | Field | Description | Scheme | Required |
 | ----- | ----------- | ------ | -------- |
 | metadata |  | [metav1.ListMeta](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.14/#listmeta-v1-meta) | false |
-| items |  | []operator.kubecarrier.io/v1alpha1.Catapult | true |
+| items |  | []catalog.kubecarrier.io/v1alpha1.Account | true |
 
 [Back to TOC](#table-of-contents)
 
-## CatapultSpec.operator.kubecarrier.io/v1alpha1
+## AccountMetadata.catalog.kubecarrier.io/v1alpha1
 
-CatapultSpec defines the desired state of Catapult
+AccountMetadata contains the metadata (display name, description, etc) of the Account.
 
 | Field | Description | Scheme | Required |
 | ----- | ----------- | ------ | -------- |
-| masterClusterCRD | References the CRD in the master cluster. | operator.kubecarrier.io/v1alpha1.CRDReference | true |
-| serviceClusterCRD | References the CRD in the service cluster. | operator.kubecarrier.io/v1alpha1.CRDReference | true |
-| serviceCluster | References the ServiceCluster object that this object belongs to. | operator.kubecarrier.io/v1alpha1.ObjectReference | true |
+| displayName | DisplayName shows the human-readable name of this Account. | string | false |
+| description | Description shows the human-readable description of this Account. | string | false |
 
 [Back to TOC](#table-of-contents)
 
-## CatapultStatus.operator.kubecarrier.io/v1alpha1
+## AccountSpec.catalog.kubecarrier.io/v1alpha1
 
-CatapultStatus defines the observed state of Catapult
+AccountSpec defines the desired state of Account.
 
 | Field | Description | Scheme | Required |
 | ----- | ----------- | ------ | -------- |
-| observedGeneration | ObservedGeneration is the most recent generation observed for this Catapult by the controller. | operator.kubecarrier.io/v1alpha1.int64 | false |
-| conditions | Conditions represents the latest available observations of a Catapult's current state. | []operator.kubecarrier.io/v1alpha1.CatapultCondition | false |
-| phase | DEPRECATED. Phase represents the current lifecycle state of this object. Consider this field DEPRECATED, it will be removed as soon as there is a mechanism to map conditions to strings when printing the property. This is only for display purpose, for everything else use conditions. | operator.kubecarrier.io/v1alpha1.CatapultPhaseType | false |
+| metadata | Metadata\tcontains additional human readable account details | catalog.kubecarrier.io/v1alpha1.AccountMetadata | false |
+| roles | Roles this account uses | []catalog.kubecarrier.io/v1alpha1.AccountRole | true |
+
+[Back to TOC](#table-of-contents)
+
+## AccountStatus.catalog.kubecarrier.io/v1alpha1
+
+AccountStatus defines the observed state of Account.
+
+| Field | Description | Scheme | Required |
+| ----- | ----------- | ------ | -------- |
+| namespaceName | NamespaceName is the name of the namespace that the Account manages. | string | false |
+| observedGeneration | ObservedGeneration is the most recent generation observed for this Account by the controller. | catalog.kubecarrier.io/v1alpha1.int64 | false |
+| conditions | Conditions represents the latest available observations of a Account's current state. | []catalog.kubecarrier.io/v1alpha1.AccountCondition | false |
+| phase | DEPRECATED. Phase represents the current lifecycle state of this object. Consider this field DEPRECATED, it will be removed as soon as there is a mechanism to map conditions to strings when printing the property. This is only for display purpose, for everything else use conditions. | catalog.kubecarrier.io/v1alpha1.AccountPhaseType | false |
+
+[Back to TOC](#table-of-contents)
+
+## Offering.catalog.kubecarrier.io/v1alpha1
+
+Offering is used for Tenants to discover services that have been made available to them.
+
+| Field | Description | Scheme | Required |
+| ----- | ----------- | ------ | -------- |
+| metadata |  | [metav1.ObjectMeta](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.14/#objectmeta-v1-meta) | false |
+| offering |  | catalog.kubecarrier.io/v1alpha1.OfferingData | false |
+
+[Back to TOC](#table-of-contents)
+
+## OfferingData.catalog.kubecarrier.io/v1alpha1
+
+OfferingData defines the data (metadata, provider, crds, etc.) of Offering.
+
+| Field | Description | Scheme | Required |
+| ----- | ----------- | ------ | -------- |
+| metadata |  | catalog.kubecarrier.io/v1alpha1.OfferingMetadata | false |
+| provider | Provider references a ProviderReference of this Offering. | catalog.kubecarrier.io/v1alpha1.ObjectReference | true |
+| crd | CRD holds the information about the underlying CRD that is offered by this offering. | catalog.kubecarrier.io/v1alpha1.CRDInformation | false |
+
+[Back to TOC](#table-of-contents)
+
+## OfferingList.catalog.kubecarrier.io/v1alpha1
+
+OfferingList contains a list of Offering.
+
+| Field | Description | Scheme | Required |
+| ----- | ----------- | ------ | -------- |
+| metadata |  | [metav1.ListMeta](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.14/#listmeta-v1-meta) | false |
+| items |  | []catalog.kubecarrier.io/v1alpha1.Offering | true |
+
+[Back to TOC](#table-of-contents)
+
+## OfferingMetadata.catalog.kubecarrier.io/v1alpha1
+
+OfferingMetadata contains the metadata (display name, description, etc) of the Offering.
+
+| Field | Description | Scheme | Required |
+| ----- | ----------- | ------ | -------- |
+| displayName | DisplayName shows the human-readable name of this Offering. | string | false |
+| description | Description shows the human-readable description of this Offering. | string | false |
+
+[Back to TOC](#table-of-contents)
+
+## ProviderReference.catalog.kubecarrier.io/v1alpha1
+
+ProviderReference exposes information of the Provider(displayName, description). This object lives in the tenant namespace for each provider the tenant is allowed utilizing (e.g. there's catalog selecting this tenant as its user)
+
+| Field | Description | Scheme | Required |
+| ----- | ----------- | ------ | -------- |
+| metadata |  | [metav1.ObjectMeta](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.14/#objectmeta-v1-meta) | false |
+| spec |  | catalog.kubecarrier.io/v1alpha1.ProviderReferenceSpec | false |
+
+[Back to TOC](#table-of-contents)
+
+## ProviderReferenceList.catalog.kubecarrier.io/v1alpha1
+
+ProviderReferenceList contains a list of ProviderReference
+
+| Field | Description | Scheme | Required |
+| ----- | ----------- | ------ | -------- |
+| metadata |  | [metav1.ListMeta](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.14/#listmeta-v1-meta) | false |
+| items |  | []catalog.kubecarrier.io/v1alpha1.ProviderReference | true |
+
+[Back to TOC](#table-of-contents)
+
+## ProviderReferenceSpec.catalog.kubecarrier.io/v1alpha1
+
+ProviderReferenceSpec defines the desired state of ProviderReference
+
+| Field | Description | Scheme | Required |
+| ----- | ----------- | ------ | -------- |
+| metadata | Metadata contains the metadata (display name, description, etc) of the Provider. | catalog.kubecarrier.io/v1alpha1.AccountMetadata | false |
+
+[Back to TOC](#table-of-contents)
+
+## ObjectReference.catalog.kubecarrier.io/v1alpha1
+
+ObjectReference describes the link to another object in the same namespace.
+
+| Field | Description | Scheme | Required |
+| ----- | ----------- | ------ | -------- |
+| name |  | string | true |
 
 [Back to TOC](#table-of-contents)
 
@@ -840,65 +779,64 @@ FerryStatus defines the observed state of Ferry
 
 [Back to TOC](#table-of-contents)
 
-## CustomResourceDiscovery.kubecarrier.io/v1alpha1
+## Catapult.operator.kubecarrier.io/v1alpha1
 
-CustomResourceDiscovery is used inside KubeCarrier to fetch a CustomResourceDefinition from another cluster and to offload cross cluster access to another component.
+Catapult manages the deployment of the Catapult controller manager.
 
 | Field | Description | Scheme | Required |
 | ----- | ----------- | ------ | -------- |
 | metadata |  | [metav1.ObjectMeta](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.14/#objectmeta-v1-meta) | false |
-| spec |  | kubecarrier.io/v1alpha1.CustomResourceDiscoverySpec | false |
-| status |  | kubecarrier.io/v1alpha1.CustomResourceDiscoveryStatus | false |
+| spec |  | operator.kubecarrier.io/v1alpha1.CatapultSpec | false |
+| status |  | operator.kubecarrier.io/v1alpha1.CatapultStatus | false |
 
 [Back to TOC](#table-of-contents)
 
-## CustomResourceDiscoveryCondition.kubecarrier.io/v1alpha1
+## CatapultCondition.operator.kubecarrier.io/v1alpha1
 
-CustomResourceDiscoveryCondition contains details for the current condition of this CustomResourceDiscovery.
+CatapultCondition contains details for the current condition of this Catapult.
 
 | Field | Description | Scheme | Required |
 | ----- | ----------- | ------ | -------- |
-| lastTransitionTime | LastTransitionTime is the last time the condition transit from one status to another. | metav1.Time | true |
-| message | Message is the human readable message indicating details about last transition. | string | true |
+| type | Type is the type of the Catapult condition, currently ('Ready'). | operator.kubecarrier.io/v1alpha1.CatapultConditionType | true |
+| status | Status is the status of the condition, one of ('True', 'False', 'Unknown'). | operator.kubecarrier.io/v1alpha1.ConditionStatus | true |
+| lastTransitionTime | LastTransitionTime is the last time the condition transits from one status to another. | metav1.Time | true |
 | reason | Reason is the (brief) reason for the condition's last transition. | string | true |
-| status | Status of the condition, one of ('True', 'False', 'Unknown'). | kubecarrier.io/v1alpha1.ConditionStatus | true |
-| type | Type of the condition, currently ('Ready'). | kubecarrier.io/v1alpha1.CustomResourceDiscoveryConditionType | true |
+| message | Message is the human readable message indicating details about last transition. | string | true |
 
 [Back to TOC](#table-of-contents)
 
-## CustomResourceDiscoveryList.kubecarrier.io/v1alpha1
+## CatapultList.operator.kubecarrier.io/v1alpha1
 
-CustomResourceDiscoveryList contains a list of crdreference
+CatapultList contains a list of Catapult
 
 | Field | Description | Scheme | Required |
 | ----- | ----------- | ------ | -------- |
 | metadata |  | [metav1.ListMeta](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.14/#listmeta-v1-meta) | false |
-| items |  | []kubecarrier.io/v1alpha1.CustomResourceDiscovery | true |
+| items |  | []operator.kubecarrier.io/v1alpha1.Catapult | true |
 
 [Back to TOC](#table-of-contents)
 
-## CustomResourceDiscoverySpec.kubecarrier.io/v1alpha1
+## CatapultSpec.operator.kubecarrier.io/v1alpha1
 
-CustomResourceDiscoverySpec defines the desired state of crdreference
+CatapultSpec defines the desired state of Catapult
 
 | Field | Description | Scheme | Required |
 | ----- | ----------- | ------ | -------- |
-| crd | CRD references a CustomResourceDefinition within the ServiceCluster. | kubecarrier.io/v1alpha1.ObjectReference | true |
-| serviceCluster | ServiceCluster references a ServiceCluster to search the CustomResourceDefinition on. | kubecarrier.io/v1alpha1.ObjectReference | true |
-| kindOverride | KindOverride overrides resulting internal CRDs kind | string | false |
+| masterClusterCRD | References the CRD in the master cluster. | operator.kubecarrier.io/v1alpha1.CRDReference | true |
+| serviceClusterCRD | References the CRD in the service cluster. | operator.kubecarrier.io/v1alpha1.CRDReference | true |
+| serviceCluster | References the ServiceCluster object that this object belongs to. | operator.kubecarrier.io/v1alpha1.ObjectReference | true |
 
 [Back to TOC](#table-of-contents)
 
-## CustomResourceDiscoveryStatus.kubecarrier.io/v1alpha1
+## CatapultStatus.operator.kubecarrier.io/v1alpha1
 
-CustomResourceDiscoveryStatus defines the observed state of crdreference
+CatapultStatus defines the observed state of Catapult
 
 | Field | Description | Scheme | Required |
 | ----- | ----------- | ------ | -------- |
-| crd | CRD defines the original CustomResourceDefinition specification from the service cluster | *apiextensionsv1.CustomResourceDefinition | false |
-| phase | DEPRECATED. Phase represents the current lifecycle state of this object consider this field DEPRECATED, it will be removed as soon as there is a mechanism to map conditions to a string when printing the property is only present for display purposes, for everything else use conditions | kubecarrier.io/v1alpha1.CustomResourceDiscoveryPhaseType | false |
-| conditions | Conditions is a list of all conditions this CustomResourceDiscovery is in. | []kubecarrier.io/v1alpha1.CustomResourceDiscoveryCondition | false |
-| observedGeneration | The most recent generation observed by the controller. | kubecarrier.io/v1alpha1.int64 | false |
+| observedGeneration | ObservedGeneration is the most recent generation observed for this Catapult by the controller. | operator.kubecarrier.io/v1alpha1.int64 | false |
+| conditions | Conditions represents the latest available observations of a Catapult's current state. | []operator.kubecarrier.io/v1alpha1.CatapultCondition | false |
+| phase | DEPRECATED. Phase represents the current lifecycle state of this object. Consider this field DEPRECATED, it will be removed as soon as there is a mechanism to map conditions to strings when printing the property. This is only for display purpose, for everything else use conditions. | operator.kubecarrier.io/v1alpha1.CatapultPhaseType | false |
 
 [Back to TOC](#table-of-contents)
 
@@ -1043,6 +981,68 @@ ServiceClusterStatus defines the observed state of ServiceCluster
 | conditions | Conditions is a list of all conditions this ServiceCluster is in. | []kubecarrier.io/v1alpha1.ServiceClusterCondition | false |
 | observedGeneration | The most recent generation observed by the controller. | kubecarrier.io/v1alpha1.int64 | false |
 | kubernetesVersion | KubernetesVersion of the service cluster API Server | *version.Info | false |
+
+[Back to TOC](#table-of-contents)
+
+## CustomResourceDiscovery.kubecarrier.io/v1alpha1
+
+CustomResourceDiscovery is used inside KubeCarrier to fetch a CustomResourceDefinition from another cluster and to offload cross cluster access to another component.
+
+| Field | Description | Scheme | Required |
+| ----- | ----------- | ------ | -------- |
+| metadata |  | [metav1.ObjectMeta](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.14/#objectmeta-v1-meta) | false |
+| spec |  | kubecarrier.io/v1alpha1.CustomResourceDiscoverySpec | false |
+| status |  | kubecarrier.io/v1alpha1.CustomResourceDiscoveryStatus | false |
+
+[Back to TOC](#table-of-contents)
+
+## CustomResourceDiscoveryCondition.kubecarrier.io/v1alpha1
+
+CustomResourceDiscoveryCondition contains details for the current condition of this CustomResourceDiscovery.
+
+| Field | Description | Scheme | Required |
+| ----- | ----------- | ------ | -------- |
+| lastTransitionTime | LastTransitionTime is the last time the condition transit from one status to another. | metav1.Time | true |
+| message | Message is the human readable message indicating details about last transition. | string | true |
+| reason | Reason is the (brief) reason for the condition's last transition. | string | true |
+| status | Status of the condition, one of ('True', 'False', 'Unknown'). | kubecarrier.io/v1alpha1.ConditionStatus | true |
+| type | Type of the condition, currently ('Ready'). | kubecarrier.io/v1alpha1.CustomResourceDiscoveryConditionType | true |
+
+[Back to TOC](#table-of-contents)
+
+## CustomResourceDiscoveryList.kubecarrier.io/v1alpha1
+
+CustomResourceDiscoveryList contains a list of crdreference
+
+| Field | Description | Scheme | Required |
+| ----- | ----------- | ------ | -------- |
+| metadata |  | [metav1.ListMeta](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.14/#listmeta-v1-meta) | false |
+| items |  | []kubecarrier.io/v1alpha1.CustomResourceDiscovery | true |
+
+[Back to TOC](#table-of-contents)
+
+## CustomResourceDiscoverySpec.kubecarrier.io/v1alpha1
+
+CustomResourceDiscoverySpec defines the desired state of crdreference
+
+| Field | Description | Scheme | Required |
+| ----- | ----------- | ------ | -------- |
+| crd | CRD references a CustomResourceDefinition within the ServiceCluster. | kubecarrier.io/v1alpha1.ObjectReference | true |
+| serviceCluster | ServiceCluster references a ServiceCluster to search the CustomResourceDefinition on. | kubecarrier.io/v1alpha1.ObjectReference | true |
+| kindOverride | KindOverride overrides resulting internal CRDs kind | string | false |
+
+[Back to TOC](#table-of-contents)
+
+## CustomResourceDiscoveryStatus.kubecarrier.io/v1alpha1
+
+CustomResourceDiscoveryStatus defines the observed state of crdreference
+
+| Field | Description | Scheme | Required |
+| ----- | ----------- | ------ | -------- |
+| crd | CRD defines the original CustomResourceDefinition specification from the service cluster | *apiextensionsv1.CustomResourceDefinition | false |
+| phase | DEPRECATED. Phase represents the current lifecycle state of this object consider this field DEPRECATED, it will be removed as soon as there is a mechanism to map conditions to a string when printing the property is only present for display purposes, for everything else use conditions | kubecarrier.io/v1alpha1.CustomResourceDiscoveryPhaseType | false |
+| conditions | Conditions is a list of all conditions this CustomResourceDiscovery is in. | []kubecarrier.io/v1alpha1.CustomResourceDiscoveryCondition | false |
+| observedGeneration | The most recent generation observed by the controller. | kubecarrier.io/v1alpha1.int64 | false |
 
 [Back to TOC](#table-of-contents)
 

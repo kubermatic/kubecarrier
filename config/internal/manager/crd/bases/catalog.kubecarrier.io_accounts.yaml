@@ -36,8 +36,9 @@ spec:
     name: v1alpha1
     schema:
       openAPIV3Schema:
-        description: Account is the service provider representation in the KubeCarrier
-          control-plane.
+        description: Account is the generic Kubecarrier actor representation in the
+          KubeCarrier control-plane. It has its own namespace and uses various roles,
+          provider and tenant role being the most important.
         properties:
           apiVersion:
             description: 'APIVersion defines the versioned schema of this representation
