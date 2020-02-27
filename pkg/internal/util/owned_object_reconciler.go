@@ -19,11 +19,11 @@ package util
 import (
 	"context"
 	"fmt"
-	"reflect"
 	"strings"
 
 	"github.com/go-logr/logr"
 	"k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -85,7 +85,7 @@ func ListObjects(ctx context.Context, cl client.Client, scheme *runtime.Scheme, 
 		if err != nil {
 			return nil, fmt.Errorf("cannot make a list out of a types: %v", gvk)
 		}
-		if _, isList := ListObjType.(metav1.ListInterface); !isList {
+		if !meta.IsListType(ListObjType) {
 			return nil, fmt.Errorf("cannot make a list out of a types: %v", gvk)
 		}
 
@@ -93,12 +93,11 @@ func ListObjects(ctx context.Context, cl client.Client, scheme *runtime.Scheme, 
 			return nil, fmt.Errorf("listing %s.%s: %w", strings.ToLower(gvk.Kind), gvk.Group, err)
 		}
 
-		// for some reason there's no function in the list object for getting all the items...
-		// but they all have .Items struct field
-		items := reflect.ValueOf(ListObjType).Elem().FieldByName("Items")
-		for i := 0; i < items.Len(); i++ {
-			objs = append(objs, items.Index(i).Addr().Interface().(runtime.Object))
+		lstObjs, err := meta.ExtractList(ListObjType)
+		if err != nil {
+			return nil, fmt.Errorf("extracting list: %w", err)
 		}
+		objs = append(objs, lstObjs...)
 	}
 	return objs, nil
 }
