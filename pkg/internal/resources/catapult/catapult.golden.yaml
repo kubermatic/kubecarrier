@@ -185,6 +185,10 @@
           - name: CERT_DIR
             value: /tmp/k8s-webhook-server/serving-certs
           image: quay.io/kubecarrier/catapult:was not build properly
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: readiness-port
           name: manager
           ports:
           - containerPort: 9443

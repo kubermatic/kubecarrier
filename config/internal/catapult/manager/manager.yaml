@@ -43,4 +43,8 @@ spec:
           httpGet:
             path: /readyz
             port: readiness-port
+        livenessProbe:
+          httpGet:
+            path: /healthz
+            port: readiness-port
       terminationGracePeriodSeconds: 10

@@ -294,6 +294,10 @@ func run(flags *flags, log logr.Logger) error {
 		return fmt.Errorf("adding readyz checker: %w", err)
 	}
 
+	if err := mgr.AddHealthzCheck("ping", healthz.Ping); err != nil {
+		return fmt.Errorf("adding healthz checker: %w", err)
+	}
+
 	// Register webhooks as handlers
 	wbh := mgr.GetWebhookServer()
 
