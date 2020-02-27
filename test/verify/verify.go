@@ -19,6 +19,7 @@ package verify
 import (
 	"context"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -40,11 +41,15 @@ func NewVerifySuite(f *testutil.Framework) func(t *testing.T) {
 		serviceClient, err := f.ServiceClient()
 		require.NoError(t, err)
 
+		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		// making linter happy
+		_ = cancel
+
 		t.Run("", func(t *testing.T) {
 			// parallel-group
 			t.Run("validate management cluster connection", func(t *testing.T) {
 				cm := &corev1.ConfigMap{}
-				require.NoError(t, managementClient.Get(context.Background(), types.NamespacedName{
+				require.NoError(t, managementClient.Get(ctx, types.NamespacedName{
 					Name:      "cluster-info",
 					Namespace: "kube-public",
 				}, cm), "cannot fetch cluster-info")
@@ -52,7 +57,7 @@ func NewVerifySuite(f *testutil.Framework) func(t *testing.T) {
 
 			t.Run("validate service connection", func(t *testing.T) {
 				cm := &corev1.ConfigMap{}
-				require.NoError(t, serviceClient.Get(context.Background(), types.NamespacedName{
+				require.NoError(t, serviceClient.Get(ctx, types.NamespacedName{
 					Name:      "cluster-info",
 					Namespace: "kube-public",
 				}, cm), "cannot fetch cluster-info")
@@ -69,6 +74,5 @@ func NewVerifySuite(f *testutil.Framework) func(t *testing.T) {
 				assert.Equal(t, "system:serviceaccount:default:kubecarrier", cfg.Impersonate.UserName, "internal service cluster kubeconfig has wrong impersonation")
 			})
 		})
-
 	}
 }
