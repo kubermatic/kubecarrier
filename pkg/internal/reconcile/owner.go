@@ -36,14 +36,14 @@ import (
 // updateFunc is called to update the current existing object (actual) to the desired state.
 type updateFunc func(actual, desired runtime.Object) error
 
-// ReconcileExclusivelyOwnedObjects ensures that desired objects are up to date and
+// ExclusivelyOwnedObjects ensures that desired objects are up to date and
 // other objects of the same type and owned by the same owner are removed.
 // It works as following. We have an object, the Owner, owning multiple objects in the kubernetes cluster. And we want
 // to ensure that after this Reconciliation of owned objects finishes the only owned objects existing are those that
 // are wanted. Also this would only operate on the kubernetes objects kinds defined in the TypeFilter.
 // See the tests for example usage.
 
-func ReconcileExclusivelyOwnedObjects(
+func ExclusivelyOwnedObjects(
 	ctx context.Context, cl client.Client, log logr.Logger,
 	scheme *runtime.Scheme,
 	ownerObj runtime.Object, desired []runtime.Object,

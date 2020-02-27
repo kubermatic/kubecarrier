@@ -114,7 +114,7 @@ func TestOwnedObjectReconciler_Reconcile(t *testing.T) {
 				owner.SetOwnerReference(ownerObj, obj, testScheme)
 				require.NoError(t, cl.Create(ctx, obj))
 			}
-			changed, err := ReconcileExclusivelyOwnedObjects(
+			changed, err := ExclusivelyOwnedObjects(
 				ctx, cl, testutil.NewLogger(t), testScheme,
 				ownerObj, testCase.wantedState, testCase.muateFn,
 				&corev1.ConfigMap{},
