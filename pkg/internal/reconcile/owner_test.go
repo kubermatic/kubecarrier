@@ -65,7 +65,7 @@ func TestOwnedObjectReconciler_Reconcile(t *testing.T) {
 
 	for name, testCase := range map[string]struct {
 		existingState []runtime.Object
-		wantedState   []util.Object
+		wantedState   []runtime.Object
 		finalState    []*corev1.ConfigMap
 		muateFn       func(obj, wantedObj runtime.Object) error
 		change        bool
@@ -75,25 +75,25 @@ func TestOwnedObjectReconciler_Reconcile(t *testing.T) {
 			change:        true,
 		},
 		"creating": {
-			wantedState: []util.Object{cmA.DeepCopy(), cmB.DeepCopy()},
+			wantedState: []runtime.Object{cmA.DeepCopy(), cmB.DeepCopy()},
 			finalState:  []*corev1.ConfigMap{cmA.DeepCopy(), cmB.DeepCopy()},
 			change:      true,
 		},
 		"delete & create": {
 			existingState: []runtime.Object{cmA.DeepCopy()},
-			wantedState:   []util.Object{cmB.DeepCopy()},
+			wantedState:   []runtime.Object{cmB.DeepCopy()},
 			finalState:    []*corev1.ConfigMap{cmB.DeepCopy()},
 			change:        true,
 		},
 		"nothing-changes": {
 			existingState: []runtime.Object{cmA.DeepCopy()},
-			wantedState:   []util.Object{cmA.DeepCopy()},
+			wantedState:   []runtime.Object{cmA.DeepCopy()},
 			finalState:    []*corev1.ConfigMap{cmA.DeepCopy()},
 			change:        false,
 		},
 		"mutation": {
 			existingState: []runtime.Object{cmA.DeepCopy()},
-			wantedState:   []util.Object{cmA.DeepCopy()},
+			wantedState:   []runtime.Object{cmA.DeepCopy()},
 			finalState:    []*corev1.ConfigMap{cmAPrime.DeepCopy()},
 			muateFn: func(obj, wantedObj runtime.Object) error {
 				objCM := obj.(*corev1.ConfigMap)
@@ -111,18 +111,14 @@ func TestOwnedObjectReconciler_Reconcile(t *testing.T) {
 			cl := fakeclient.NewFakeClientWithScheme(testScheme, ownerObj)
 			ctx := context.Background()
 			for _, obj := range testCase.existingState {
-				owner.SetOwnerReference(ownerObj, obj.(util.Object), testScheme)
+				owner.SetOwnerReference(ownerObj, obj, testScheme)
 				require.NoError(t, cl.Create(ctx, obj))
 			}
-
-			changed, err := (&OwnedObjectReconciler{
-				Scheme:      testScheme,
-				Log:         testutil.NewLogger(t),
-				Owner:       ownerObj,
-				TypeFilter:  []runtime.Object{&corev1.ConfigMap{}},
-				WantedState: testCase.wantedState,
-				MutateFn:    testCase.muateFn,
-			}).ReconcileOwnedObjects(ctx, cl)
+			changed, err := ReconcileExclusivelyOwnedObjects(
+				ctx, cl, testutil.NewLogger(t), testScheme,
+				ownerObj, testCase.wantedState, testCase.muateFn,
+				&corev1.ConfigMap{},
+			)
 			assert.NoError(t, err)
 			assert.Equal(t, testCase.change, changed)
 

@@ -19,6 +19,7 @@ package owner
 import (
 	"fmt"
 
+	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
@@ -49,8 +50,13 @@ type object interface {
 }
 
 // SetOwnerReference sets a the owner as owner of object.
-func SetOwnerReference(owner, object object, scheme *runtime.Scheme) (changed bool) {
-	labels := object.GetLabels()
+func SetOwnerReference(owner, object runtime.Object, scheme *runtime.Scheme) (changed bool) {
+	objectAccessor, err := meta.Accessor(object)
+	if err != nil {
+		panic(fmt.Errorf("cannot get accessor for %T :%w", object, err))
+	}
+
+	labels := objectAccessor.GetLabels()
 	if labels == nil {
 		labels = map[string]string{}
 	}
@@ -62,7 +68,7 @@ func SetOwnerReference(owner, object object, scheme *runtime.Scheme) (changed bo
 		}
 		labels[k] = v
 	}
-	object.SetLabels(labels)
+	objectAccessor.SetLabels(labels)
 	return
 }
 
@@ -140,7 +146,7 @@ func EnqueueRequestForOwner(ownerType object, scheme *runtime.Scheme) handler.Ev
 }
 
 // OwnedBy returns a list filter to fetch owned objects.
-func OwnedBy(owner object, scheme *runtime.Scheme) generalizedListOption {
+func OwnedBy(owner runtime.Object, scheme *runtime.Scheme) generalizedListOption {
 	return client.MatchingLabels(labelsForOwner(owner, scheme))
 }
 
@@ -154,7 +160,7 @@ func IsOwned(object metav1.Object) (owned bool) {
 	return l[OwnerNameLabel] != "" && l[OwnerNamespaceLabel] != "" && l[OwnerTypeLabel] != ""
 }
 
-func labelsForOwner(obj object, scheme *runtime.Scheme) map[string]string {
+func labelsForOwner(obj runtime.Object, scheme *runtime.Scheme) map[string]string {
 	gvk, err := apiutil.GVKForObject(obj, scheme)
 	if err != nil {
 		// if this panic occurs many, many other stuff has gone wrong as well
@@ -168,9 +174,14 @@ func labelsForOwner(obj object, scheme *runtime.Scheme) map[string]string {
 		panic(fmt.Sprintf("cannot deduce GVK for owner (type %T)", obj))
 	}
 
+	metaAccessor, err := meta.Accessor(obj)
+	if err != nil {
+		panic(err)
+	}
+
 	return map[string]string{
-		OwnerNameLabel:      obj.GetName(),
-		OwnerNamespaceLabel: obj.GetNamespace(),
+		OwnerNameLabel:      metaAccessor.GetName(),
+		OwnerNamespaceLabel: metaAccessor.GetNamespace(),
 		OwnerTypeLabel:      gvk.GroupKind().String(),
 	}
 }

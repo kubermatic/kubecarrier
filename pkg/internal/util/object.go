@@ -40,13 +40,8 @@ type ObjectReference struct {
 	Kind string `json:"kind"`
 }
 
-type Object interface {
-	runtime.Object
-	metav1.Object
-}
-
 // ToOwnerReference converts the given object into an ownerReference.
-func ToObjectReference(owner Object, scheme *runtime.Scheme) ObjectReference {
+func ToObjectReference(owner runtime.Object, scheme *runtime.Scheme) ObjectReference {
 	gvk, err := apiutil.GVKForObject(owner, scheme)
 	if err != nil {
 		// if this panic occurs many, many other stuff has gone wrong as well
@@ -59,10 +54,14 @@ func ToObjectReference(owner Object, scheme *runtime.Scheme) ObjectReference {
 		// change cluster state to cause it.
 		panic(fmt.Sprintf("cannot deduce GVK for owner (type %T)", owner))
 	}
+	accessor, err := meta.Accessor(owner)
+	if err != nil {
+		panic(fmt.Errorf("cannot get meta accessor for %T %w", owner, err))
+	}
 
 	return ObjectReference{
-		Name:      owner.GetName(),
-		Namespace: owner.GetNamespace(),
+		Name:      accessor.GetName(),
+		Namespace: accessor.GetNamespace(),
 		Kind:      gvk.Kind,
 		Group:     gvk.Group,
 	}

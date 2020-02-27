@@ -28,12 +28,11 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
-	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 	"sigs.k8s.io/controller-runtime/pkg/source"
 
 	catalogv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/catalog/v1alpha1"
 	"github.com/kubermatic/kubecarrier/pkg/internal/owner"
-	reconcile2 "github.com/kubermatic/kubecarrier/pkg/internal/reconcile"
+	"github.com/kubermatic/kubecarrier/pkg/internal/reconcile"
 	"github.com/kubermatic/kubecarrier/pkg/internal/util"
 )
 
@@ -97,7 +96,7 @@ func (r *AccountReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		Watches(&source.Kind{Type: &corev1.Namespace{}}, enqueuer).
 		Watches(&source.Kind{Type: &catalogv1alpha1.TenantReference{}}, enqueuer).
 		Watches(&source.Kind{Type: &catalogv1alpha1.Account{}}, &handler.EnqueueRequestsFromMapFunc{
-			ToRequests: handler.ToRequestsFunc(func(mapObject handler.MapObject) (out []reconcile.Request) {
+			ToRequests: handler.ToRequestsFunc(func(mapObject handler.MapObject) (out []ctrl.Request) {
 				provider := mapObject.Object.(*catalogv1alpha1.Account)
 				if !provider.HasRole(catalogv1alpha1.ProviderRole) {
 					return
@@ -110,7 +109,7 @@ func (r *AccountReconciler) SetupWithManager(mgr ctrl.Manager) error {
 				}
 				for _, t := range tenants.Items {
 					if t.HasRole(catalogv1alpha1.TenantRole) {
-						out = append(out, reconcile.Request{
+						out = append(out, ctrl.Request{
 							NamespacedName: types.NamespacedName{
 								Name:      t.Name,
 								Namespace: t.Namespace,
@@ -142,16 +141,12 @@ func (r *AccountReconciler) handleDeletion(ctx context.Context, log logr.Logger,
 		}
 	}
 
-	changed, err := (&reconcile2.OwnedObjectReconciler{
-		Scheme:      r.Scheme,
-		Log:         log,
-		Owner:       account,
-		WantedState: nil,
-		TypeFilter: []runtime.Object{
-			&corev1.Namespace{},
-			&catalogv1alpha1.TenantReference{},
-		},
-	}).ReconcileOwnedObjects(ctx, r.Client)
+	changed, err := reconcile.ReconcileExclusivelyOwnedObjects(
+		ctx, r.Client, log, r.Scheme,
+		account, nil, nil,
+		&corev1.Namespace{},
+		&catalogv1alpha1.TenantReference{},
+	)
 	if err != nil {
 		return fmt.Errorf("cannot reconcile objects: %w", err)
 	}
@@ -167,15 +162,12 @@ func (r *AccountReconciler) handleDeletion(ctx context.Context, log logr.Logger,
 func (r *AccountReconciler) reconcileNamespace(ctx context.Context, log logr.Logger, account *catalogv1alpha1.Account) error {
 	ns := &corev1.Namespace{}
 	ns.Name = account.Name
-	if _, err := (&reconcile2.OwnedObjectReconciler{
-		Scheme: r.Scheme,
-		Log:    log,
-		Owner:  account,
-		TypeFilter: []runtime.Object{
-			&corev1.Namespace{},
-		},
-		WantedState: []util.Object{ns},
-	}).ReconcileOwnedObjects(ctx, r.Client); err != nil {
+
+	if _, err := reconcile.ReconcileExclusivelyOwnedObjects(
+		ctx, r.Client, log, r.Scheme,
+		account, []runtime.Object{ns}, nil,
+		&corev1.Namespace{},
+	); err != nil {
 		return fmt.Errorf("cannot reconcile namespace: %w", err)
 	}
 
@@ -207,7 +199,7 @@ func (r *AccountReconciler) reconcileTenantReferences(ctx context.Context, log l
 		return fmt.Errorf("listing Accounts: %w", err)
 	}
 
-	wantedRefs := make([]util.Object, 0)
+	wantedRefs := make([]runtime.Object, 0)
 	if account.HasRole(catalogv1alpha1.TenantRole) {
 		for _, providerAccount := range accountList.Items {
 			if !providerAccount.HasRole(catalogv1alpha1.ProviderRole) {
@@ -227,15 +219,11 @@ func (r *AccountReconciler) reconcileTenantReferences(ctx context.Context, log l
 		}
 	}
 
-	_, err := (&reconcile2.OwnedObjectReconciler{
-		Scheme:      r.Scheme,
-		Log:         log,
-		Owner:       account,
-		WantedState: wantedRefs,
-		TypeFilter: []runtime.Object{
-			&catalogv1alpha1.TenantReference{},
-		},
-	}).ReconcileOwnedObjects(ctx, r.Client)
+	_, err := reconcile.ReconcileExclusivelyOwnedObjects(
+		ctx, r.Client, log, r.Scheme,
+		account, wantedRefs, nil,
+		&catalogv1alpha1.TenantReference{},
+	)
 	if err != nil {
 		return fmt.Errorf("cannot reconcile objects: %w", err)
 	}

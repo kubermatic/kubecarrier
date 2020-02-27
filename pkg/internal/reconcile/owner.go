@@ -24,7 +24,6 @@ import (
 
 	"github.com/go-logr/logr"
 	"k8s.io/apimachinery/pkg/api/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	controllerruntime "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -33,96 +32,6 @@ import (
 	"github.com/kubermatic/kubecarrier/pkg/internal/owner"
 	"github.com/kubermatic/kubecarrier/pkg/internal/util"
 )
-
-// OwnedObjectReconciler struct defines needed configuration for (singly) owned owner reconciliation
-//
-type OwnedObjectReconciler struct {
-	Scheme *runtime.Scheme
-	Log    logr.Logger
-	Owner  util.Object
-	// TypeFilter on which this operation should operate. E.g. if you only want operating on Configmaps
-	// Set Typefiler: []runtime.Object{&corev1.ConfigMap{}}
-	// All other types will be ignored when fetching currently existing objects
-	TypeFilter []runtime.Object
-
-	WantedState []util.Object
-	// MutateFn is called whenever wanted object's namespaceName already exist in the current cluster
-	// if nil, it does nothing. If not nil, the current object state is passed as a obj parameter, and
-	// wanted objects state as a second. The function should modify the current obj state, the first
-	// parameter to apply any necessary modifications. It could return an error signaling mutation isn't
-	// feasible and erroring out this operation
-	MutateFn func(obj, wantedObj runtime.Object) error
-}
-
-// ReconcileOwnedObjects
-func (r *OwnedObjectReconciler) ReconcileOwnedObjects(ctx context.Context, cl client.Client) (changed bool, err error) {
-	existing, err := util.ListObjects(ctx, cl, r.Scheme, r.TypeFilter, owner.OwnedBy(r.Owner, r.Scheme))
-	if err != nil {
-		return false, fmt.Errorf("ListObjects: %w", err)
-	}
-	return r.ensureCreatedObject(ctx, cl, existing)
-}
-
-func (r *OwnedObjectReconciler) ensureCreatedObject(ctx context.Context, cl client.Client, existing []runtime.Object) (changed bool, err error) {
-	wantedMap := make(map[util.ObjectReference]runtime.Object)
-	for _, it := range r.WantedState {
-		wantedMap[util.ToObjectReference(it, r.Scheme)] = it
-	}
-
-	for _, obj := range existing {
-		key := util.ToObjectReference(obj.(util.Object), r.Scheme)
-		if _, shouldExists := wantedMap[key]; !shouldExists {
-			err := cl.Delete(ctx, obj)
-			switch {
-			case err == nil:
-				changed = true
-				if r.Log != nil {
-					r.Log.V(6).Info("object deleted", "group", key.Group, "kind", key.Kind, "name", key.Name, "namespace", key.Namespace)
-				}
-			case errors.IsNotFound(err):
-				break
-			default:
-				return changed, fmt.Errorf("deleting %v: %w", obj, err)
-			}
-		}
-	}
-
-	for _, obj := range r.WantedState {
-		owner.SetOwnerReference(r.Owner, obj, r.Scheme)
-
-		// ctrl.CreateOrUpdate shall override obj with the current k8s value, thus we're performing a
-		// deep copy to preserve wanted object data
-		wantedObj := obj.DeepCopyObject()
-		op, err := controllerruntime.CreateOrUpdate(ctx, cl, obj, func() error {
-			owner.SetOwnerReference(r.Owner, obj.(util.Object), r.Scheme)
-			if err != nil {
-				return fmt.Errorf("inserting owner ref %v: %w", obj, err)
-			}
-			if r.MutateFn != nil {
-				return r.MutateFn(obj, wantedObj)
-			}
-			return nil
-		})
-		if op != controllerutil.OperationResultNone {
-			changed = true
-		}
-
-		if err != nil {
-			return changed, fmt.Errorf("create or deleting %v: %w", obj, err)
-		}
-
-		key := util.ToObjectReference(obj, r.Scheme)
-		if r.Log != nil {
-			r.Log.V(6).Info("object "+string(op), "group", key.Group, "kind", key.Kind, "name", key.Name, "namespace", key.Namespace)
-		}
-	}
-	return changed, nil
-}
-
-type object interface {
-	runtime.Object
-	metav1.Object
-}
 
 // updateFunc is called to update the current existing object (actual) to the desired state.
 type updateFunc func(actual, desired runtime.Object) error
@@ -137,16 +46,66 @@ type updateFunc func(actual, desired runtime.Object) error
 func ReconcileExclusivelyOwnedObjects(
 	ctx context.Context, cl client.Client, log logr.Logger,
 	scheme *runtime.Scheme,
-	owner object, desired []util.Object,
+	ownerObj runtime.Object, desired []runtime.Object,
 	updateFn updateFunc,
 	objectTypes ...runtime.Object,
 ) (changed bool, err error) {
-	return (&OwnedObjectReconciler{
-		Scheme:      scheme,
-		Log:         log,
-		Owner:       owner,
-		TypeFilter:  objectTypes,
-		WantedState: desired,
-		MutateFn:    updateFn,
-	}).ReconcileOwnedObjects(ctx, cl)
+	existing, err := util.ListObjects(ctx, cl, scheme, objectTypes, owner.OwnedBy(ownerObj, scheme))
+	if err != nil {
+		return false, fmt.Errorf("ListObjects: %w", err)
+	}
+
+	wantedMap := make(map[util.ObjectReference]runtime.Object)
+	for _, it := range desired {
+		wantedMap[util.ToObjectReference(it, scheme)] = it
+	}
+
+	for _, obj := range existing {
+		key := util.ToObjectReference(obj, scheme)
+		if _, shouldExists := wantedMap[key]; !shouldExists {
+			err := cl.Delete(ctx, obj)
+			switch {
+			case err == nil:
+				changed = true
+				if log != nil {
+					log.V(6).Info("object deleted", "group", key.Group, "kind", key.Kind, "name", key.Name, "namespace", key.Namespace)
+				}
+			case errors.IsNotFound(err):
+				break
+			default:
+				return changed, fmt.Errorf("deleting %v: %w", obj, err)
+			}
+		}
+	}
+
+	for _, obj := range desired {
+		owner.SetOwnerReference(ownerObj, obj, scheme)
+
+		// ctrl.CreateOrUpdate shall override obj with the current k8s value, thus we're performing a
+		// deep copy to preserve wanted object data
+		wantedObj := obj.DeepCopyObject()
+		op, err := controllerruntime.CreateOrUpdate(ctx, cl, obj, func() error {
+			owner.SetOwnerReference(ownerObj, obj, scheme)
+			if err != nil {
+				return fmt.Errorf("inserting owner ref %v: %w", obj, err)
+			}
+			if updateFn != nil {
+				return updateFn(obj, wantedObj)
+			}
+			return nil
+		})
+		if op != controllerutil.OperationResultNone {
+			changed = true
+		}
+
+		if err != nil {
+			return changed, fmt.Errorf("create or deleting %v: %w", obj, err)
+		}
+
+		key := util.ToObjectReference(obj, scheme)
+		if log != nil {
+			log.V(6).Info("object "+string(op), "group", key.Group, "kind", key.Kind, "name", key.Name, "namespace", key.Namespace)
+		}
+	}
+	return changed, nil
 }

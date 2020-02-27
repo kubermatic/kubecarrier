@@ -94,12 +94,12 @@ func TestListObjects(t *testing.T) {
 
 			wants := make(map[ObjectReference]struct{})
 			for _, obj := range testCase.wantsObj {
-				wants[ToObjectReference(obj.(Object), testScheme)] = struct{}{}
+				wants[ToObjectReference(obj, testScheme)] = struct{}{}
 			}
 
 			got := make(map[ObjectReference]struct{})
 			for _, obj := range objs {
-				got[ToObjectReference(obj.(Object), testScheme)] = struct{}{}
+				got[ToObjectReference(obj, testScheme)] = struct{}{}
 			}
 			assert.Equal(t, wants, got)
 		})
