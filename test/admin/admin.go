@@ -89,14 +89,14 @@ func NewAdminSuite(f *framework.Framework) func(t *testing.T) {
 		require.NoError(t, testutil.WaitUntilReady(managementClient, provider))
 		ns := &corev1.Namespace{}
 		assert.NoError(t, managementClient.Get(ctx, types.NamespacedName{
-			Name: provider.Status.NamespaceName,
+			Name: provider.Status.Namespace.Name,
 		}, ns))
 
 		t.Log("adding single tenant")
 		require.NoError(t, managementClient.Create(ctx, tenant), "creating tenant")
 		require.NoError(t, testutil.WaitUntilReady(managementClient, tenant))
 		assert.NoError(t, managementClient.Get(ctx, types.NamespacedName{
-			Name: tenant.Status.NamespaceName,
+			Name: tenant.Status.Namespace.Name,
 		}, ns))
 
 		tenantReferencePresent(t, managementClient, ctx, tenant, provider, true)
@@ -106,7 +106,7 @@ func NewAdminSuite(f *framework.Framework) func(t *testing.T) {
 		require.NoError(t, managementClient.Create(ctx, providerTenant), "creating providerTenant")
 		require.NoError(t, testutil.WaitUntilReady(managementClient, providerTenant))
 		assert.NoError(t, managementClient.Get(ctx, types.NamespacedName{
-			Name: providerTenant.Status.NamespaceName,
+			Name: providerTenant.Status.Namespace.Name,
 		}, ns))
 
 		tenantReferencePresent(t, managementClient, ctx, tenant, provider, true)
@@ -124,7 +124,7 @@ func NewAdminSuite(f *framework.Framework) func(t *testing.T) {
 		t.Log("deleting tenant")
 		require.NoError(t, testutil.DeleteAndWaitUntilNotFound(managementClient, tenant))
 		assert.True(t, errors.IsNotFound(managementClient.Get(ctx, types.NamespacedName{
-			Name: tenant.Status.NamespaceName,
+			Name: tenant.Status.Namespace.Name,
 		}, ns)), "namespace should also be deleted.")
 
 		tenantReferencePresent(t, managementClient, ctx, tenant, provider, false)
@@ -142,20 +142,20 @@ func NewAdminSuite(f *framework.Framework) func(t *testing.T) {
 		t.Log("deleting provider")
 		require.NoError(t, testutil.DeleteAndWaitUntilNotFound(managementClient, provider))
 		assert.True(t, errors.IsNotFound(managementClient.Get(ctx, types.NamespacedName{
-			Name: provider.Status.NamespaceName,
+			Name: provider.Status.Namespace.Name,
 		}, ns)), "namespace should also be deleted.")
 
 		t.Log("deleting providerTenant")
 		require.NoError(t, testutil.DeleteAndWaitUntilNotFound(managementClient, providerTenant))
 		assert.True(t, errors.IsNotFound(managementClient.Get(ctx, types.NamespacedName{
-			Name: providerTenant.Status.NamespaceName,
+			Name: providerTenant.Status.Namespace.Name,
 		}, ns)), "namespace should also be deleted.")
 	}
 }
 
 func tenantReferencePresent(t *testing.T, managementClient client.Client, ctx context.Context, tenant *catalogv1alpha1.Account, provider *catalogv1alpha1.Account, expected bool) {
 	trefs := &catalogv1alpha1.TenantReferenceList{}
-	require.NoError(t, managementClient.List(ctx, trefs, client.InNamespace(provider.Status.NamespaceName)))
+	require.NoError(t, managementClient.List(ctx, trefs, client.InNamespace(provider.Status.Namespace.Name)))
 	var found bool
 	for _, tref := range trefs.Items {
 		if tref.Name == tenant.Name {

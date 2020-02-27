@@ -17,10 +17,14 @@ limitations under the License.
 package util
 
 import (
+	"context"
 	"fmt"
+	"strings"
 
+	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/apiutil"
 )
 
@@ -62,4 +66,39 @@ func ToObjectReference(owner Object, scheme *runtime.Scheme) ObjectReference {
 		Kind:      gvk.Kind,
 		Group:     gvk.Group,
 	}
+}
+
+// ListObjects lists all object of given types adhering to additional ListOptions
+func ListObjects(ctx context.Context, cl client.Client, scheme *runtime.Scheme, listTypes []runtime.Object, options ...client.ListOption) ([]runtime.Object, error) {
+	objs := make([]runtime.Object, 0)
+	for _, objType := range listTypes {
+		gvk, err := apiutil.GVKForObject(objType, scheme)
+		if err != nil {
+			return nil, fmt.Errorf("cannot get GVK for %T: %w", objType, err)
+		}
+		if _, isList := objType.(metav1.ListInterface); isList {
+			return nil, fmt.Errorf("should not pass ListInterface as listTypes, got %v", gvk)
+		}
+
+		ListGVK := gvk
+		ListGVK.Kind = gvk.Kind + "List"
+		ListObjType, err := scheme.New(ListGVK)
+		if err != nil {
+			return nil, fmt.Errorf("cannot make a list out of a types: %v", gvk)
+		}
+		if !meta.IsListType(ListObjType) {
+			return nil, fmt.Errorf("cannot make a list out of a types: %v", gvk)
+		}
+
+		if err := cl.List(ctx, ListObjType, options...); err != nil {
+			return nil, fmt.Errorf("listing %s.%s: %w", strings.ToLower(gvk.Kind), gvk.Group, err)
+		}
+
+		lstObjs, err := meta.ExtractList(ListObjType)
+		if err != nil {
+			return nil, fmt.Errorf("extracting list: %w", err)
+		}
+		objs = append(objs, lstObjs...)
+	}
+	return objs, nil
 }

@@ -325,7 +325,7 @@ func (r *CatalogReconciler) buildDesiredOfferings(
 		desiredOfferings = append(desiredOfferings, catalogv1alpha1.Offering{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      catalogEntry.Name,
-				Namespace: tenant.Status.NamespaceName,
+				Namespace: tenant.Status.Namespace.Name,
 			},
 			Offering: catalogv1alpha1.OfferingData{
 				Metadata: catalogv1alpha1.OfferingMetadata{
@@ -349,7 +349,7 @@ func (r *CatalogReconciler) buildDesiredProviderReference(
 	return catalogv1alpha1.ProviderReference{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      provider.Name,
-			Namespace: tenant.Status.NamespaceName,
+			Namespace: tenant.Status.Namespace.Name,
 		},
 		Spec: catalogv1alpha1.ProviderReferenceSpec{
 			Metadata: provider.Spec.Metadata,
@@ -373,14 +373,14 @@ func (r *CatalogReconciler) buildDesiredServiceClusterReferencesAndAssignments(
 		serviceCluster := &corev1alpha1.ServiceCluster{}
 		if err := r.Get(ctx, types.NamespacedName{
 			Name:      serviceClusterName,
-			Namespace: provider.Status.NamespaceName,
+			Namespace: provider.Status.Namespace.Name,
 		}, serviceCluster); err != nil {
 			return nil, nil, fmt.Errorf("getting ServiceCluster: %w", err)
 		}
 		desiredServiceClusterReferences = append(desiredServiceClusterReferences, catalogv1alpha1.ServiceClusterReference{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      serviceClusterName + "." + provider.Name,
-				Namespace: tenant.Status.NamespaceName,
+				Namespace: tenant.Status.Namespace.Name,
 			},
 			Spec: catalogv1alpha1.ServiceClusterReferenceSpec{
 				Metadata: serviceCluster.Spec.Metadata,
@@ -392,15 +392,15 @@ func (r *CatalogReconciler) buildDesiredServiceClusterReferencesAndAssignments(
 
 		desiredServiceClusterAssignments = append(desiredServiceClusterAssignments, corev1alpha1.ServiceClusterAssignment{
 			ObjectMeta: metav1.ObjectMeta{
-				Name:      tenant.Status.NamespaceName + "." + serviceClusterName,
-				Namespace: provider.Status.NamespaceName,
+				Name:      tenant.Status.Namespace.Name + "." + serviceClusterName,
+				Namespace: provider.Status.Namespace.Name,
 			},
 			Spec: corev1alpha1.ServiceClusterAssignmentSpec{
 				ServiceCluster: corev1alpha1.ObjectReference{
 					Name: serviceClusterName,
 				},
 				ManagementClusterNamespace: corev1alpha1.ObjectReference{
-					Name: tenant.Status.NamespaceName,
+					Name: tenant.Status.Namespace.Name,
 				},
 			},
 		})

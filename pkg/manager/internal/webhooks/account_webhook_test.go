@@ -181,7 +181,7 @@ func TestAccountValidatingDelete(t *testing.T) {
 			},
 		},
 		Status: catalogv1alpha1.AccountStatus{
-			NamespaceName: "default",
+			Namespace: catalogv1alpha1.ObjectReference{Name: "default"},
 		},
 	}
 	for _, test := range []struct {

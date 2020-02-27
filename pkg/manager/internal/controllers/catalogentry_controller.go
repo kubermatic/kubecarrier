@@ -149,12 +149,12 @@ func (r *CatalogEntryReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error
 		})
 	}
 
-	if originNamespace, present := crd.Labels[OriginNamespaceLabel]; originNamespace != provider.Status.NamespaceName {
+	if originNamespace, present := crd.Labels[OriginNamespaceLabel]; originNamespace != provider.Status.Namespace.Name {
 		var message string
 		if !present {
 			message = fmt.Sprintf("The base CRD  is missing a %s label", OriginNamespaceLabel)
 		} else {
-			message = fmt.Sprintf("the base CRD is not assigned to this Provider. Expected %s, got %s", provider.Status.NamespaceName, originNamespace)
+			message = fmt.Sprintf("the base CRD is not assigned to this Provider. Expected %s, got %s", provider.Status.Namespace.Name, originNamespace)
 		}
 		return ctrl.Result{}, r.updateStatus(ctx, catalogEntry, &catalogv1alpha1.CatalogEntryCondition{
 			Type:    catalogv1alpha1.CatalogEntryReady,

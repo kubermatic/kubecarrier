@@ -40,7 +40,7 @@ func TestCatalogEntryReconciler(t *testing.T) {
 			Name: "example.provider",
 		},
 		Status: catalogv1alpha1.AccountStatus{
-			NamespaceName: "example.provider",
+			Namespace: catalogv1alpha1.ObjectReference{Name: "example.provider"},
 		},
 	}
 	providerNS := &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: "example.provider"}}

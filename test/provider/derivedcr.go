@@ -53,7 +53,7 @@ func NewDerivedCRSuite(
 				Name: "catapults.test.kubecarrier.io",
 				Labels: map[string]string{
 					"kubecarrier.io/service-cluster":  "eu-west-1",
-					"kubecarrier.io/origin-namespace": provider.Status.NamespaceName,
+					"kubecarrier.io/origin-namespace": provider.Status.Namespace.Name,
 				},
 			},
 			Spec: apiextensionsv1.CustomResourceDefinitionSpec{
@@ -110,7 +110,7 @@ func NewDerivedCRSuite(
 		catalogEntry := &catalogv1alpha1.CatalogEntry{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "test",
-				Namespace: provider.Status.NamespaceName,
+				Namespace: provider.Status.Namespace.Name,
 			},
 			Spec: catalogv1alpha1.CatalogEntrySpec{
 				Metadata: catalogv1alpha1.CatalogEntryMetadata{

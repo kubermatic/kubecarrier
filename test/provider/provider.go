@@ -136,7 +136,7 @@ func NewCatalogSuite(
 			t, wait.Poll(time.Second, 10*time.Second, func() (done bool, err error) {
 				if err := managementClient.Get(ctx, types.NamespacedName{
 					Name:      tenant.Name,
-					Namespace: provider.Status.NamespaceName,
+					Namespace: provider.Status.Namespace.Name,
 				}, tenantReference); err != nil {
 					if errors.IsNotFound(err) {
 						return false, nil
@@ -151,7 +151,7 @@ func NewCatalogSuite(
 			ObjectMeta: metav1.ObjectMeta{
 				Name: "couchdbs.eu-west-1.example.cloud",
 				Labels: map[string]string{
-					"kubecarrier.io/origin-namespace": provider.Status.NamespaceName,
+					"kubecarrier.io/origin-namespace": provider.Status.Namespace.Name,
 					"kubecarrier.io/service-cluster":  "eu-west-1",
 				},
 			},
@@ -202,7 +202,7 @@ func NewCatalogSuite(
 		catalogEntry := &catalogv1alpha1.CatalogEntry{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "couchdbs",
-				Namespace: provider.Status.NamespaceName,
+				Namespace: provider.Status.Namespace.Name,
 				Labels: map[string]string{
 					"kubecarrier.io/test": "label",
 				},
@@ -225,7 +225,7 @@ func NewCatalogSuite(
 		serviceCluster := &corev1alpha1.ServiceCluster{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "eu-west-1",
-				Namespace: provider.Status.NamespaceName,
+				Namespace: provider.Status.Namespace.Name,
 			},
 			Spec: corev1alpha1.ServiceClusterSpec{
 				Metadata: corev1alpha1.ServiceClusterMetadata{
@@ -242,7 +242,7 @@ func NewCatalogSuite(
 		catalog := &catalogv1alpha1.Catalog{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "test-catalog",
-				Namespace: provider.Status.NamespaceName,
+				Namespace: provider.Status.Namespace.Name,
 			},
 			Spec: catalogv1alpha1.CatalogSpec{
 				CatalogEntrySelector: &metav1.LabelSelector{
@@ -275,7 +275,7 @@ func NewCatalogSuite(
 		assert.NoError(t, wait.Poll(time.Second, 10*time.Second, func() (done bool, err error) {
 			if err := managementClient.Get(ctx, types.NamespacedName{
 				Name:      catalogEntry.Name,
-				Namespace: tenant.Status.NamespaceName,
+				Namespace: tenant.Status.Namespace.Name,
 			}, offeringFound); err != nil {
 				if errors.IsNotFound(err) {
 					return false, nil
@@ -289,7 +289,7 @@ func NewCatalogSuite(
 		providerReferenceFound := &catalogv1alpha1.ProviderReference{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      provider.Name,
-				Namespace: tenant.Status.NamespaceName,
+				Namespace: tenant.Status.Namespace.Name,
 			},
 		}
 		require.NoError(t, testutil.WaitUntilFound(managementClient, providerReferenceFound), "getting the ProviderReference error")
@@ -300,7 +300,7 @@ func NewCatalogSuite(
 		serviceClusterReferenceFound := &catalogv1alpha1.ServiceClusterReference{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      fmt.Sprintf("%s.%s", serviceCluster.Name, provider.Name),
-				Namespace: tenant.Status.NamespaceName,
+				Namespace: tenant.Status.Namespace.Name,
 			},
 		}
 		require.NoError(t, testutil.WaitUntilFound(managementClient, serviceClusterReferenceFound), "getting the ServiceClusterReference error")
@@ -310,13 +310,13 @@ func NewCatalogSuite(
 		// Check the ServiceClusterAssignment object is created.
 		serviceClusterAssignmentFound := &corev1alpha1.ServiceClusterAssignment{
 			ObjectMeta: metav1.ObjectMeta{
-				Name:      fmt.Sprintf("%s.%s", tenant.Status.NamespaceName, serviceCluster.Name),
-				Namespace: provider.Status.NamespaceName,
+				Name:      fmt.Sprintf("%s.%s", tenant.Status.Namespace.Name, serviceCluster.Name),
+				Namespace: provider.Status.Namespace.Name,
 			},
 		}
 		require.NoError(t, testutil.WaitUntilFound(managementClient, serviceClusterAssignmentFound), "getting the ServiceClusterAssignment error")
 		assert.Equal(t, serviceClusterAssignmentFound.Spec.ServiceCluster.Name, serviceCluster.Name)
-		assert.Equal(t, serviceClusterAssignmentFound.Spec.ManagementClusterNamespace.Name, tenant.Status.NamespaceName)
+		assert.Equal(t, serviceClusterAssignmentFound.Spec.ManagementClusterNamespace.Name, tenant.Status.Namespace.Name)
 
 		// Check if the status will be updated when tenant is removed.
 		t.Run("Catalog status updates when adding and removing Tenant", func(t *testing.T) {

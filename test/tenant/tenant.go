@@ -57,7 +57,7 @@ func NewTenantSuite(f *framework.Framework) func(t *testing.T) {
 			ObjectMeta: metav1.ObjectMeta{
 				Name: "couchdbs.eu-east-1.example.cloud",
 				Labels: map[string]string{
-					"kubecarrier.io/origin-namespace": provider.Status.NamespaceName,
+					"kubecarrier.io/origin-namespace": provider.Status.Namespace.Name,
 					"kubecarrier.io/service-cluster":  "eu-east-1",
 				},
 			},
@@ -87,7 +87,7 @@ func NewTenantSuite(f *framework.Framework) func(t *testing.T) {
 		catalogEntry := &catalogv1alpha1.CatalogEntry{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "couchdbs",
-				Namespace: provider.Status.NamespaceName,
+				Namespace: provider.Status.Namespace.Name,
 			},
 			Spec: catalogv1alpha1.CatalogEntrySpec{
 				Metadata: catalogv1alpha1.CatalogEntryMetadata{

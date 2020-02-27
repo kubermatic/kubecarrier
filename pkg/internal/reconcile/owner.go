@@ -14,42 +14,38 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package util
+// Package reconcile implements reconcile functions for common Kubernetes types.
+
+package reconcile
 
 import (
 	"context"
 	"fmt"
-	"strings"
 
 	"github.com/go-logr/logr"
 	"k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	ctrl "sigs.k8s.io/controller-runtime"
+	controllerruntime "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/client/apiutil"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
 	"github.com/kubermatic/kubecarrier/pkg/internal/owner"
+	"github.com/kubermatic/kubecarrier/pkg/internal/util"
 )
 
 // OwnedObjectReconciler struct defines needed configuration for (singly) owned owner reconciliation
 //
-// It works as following. We have an object, the Owner, owning multiple objects in the kubernetes cluster. And we want
-// to ensure that after this Reconciliation of owned objects finishes the only owned objects existing are those that
-// are wanted. Also this would only operate on the kubernetes objects kinds defined in the TypeFilter.
-// See the tests for example usage.
 type OwnedObjectReconciler struct {
 	Scheme *runtime.Scheme
 	Log    logr.Logger
-	Owner  Object
+	Owner  util.Object
 	// TypeFilter on which this operation should operate. E.g. if you only want operating on Configmaps
 	// Set Typefiler: []runtime.Object{&corev1.ConfigMap{}}
 	// All other types will be ignored when fetching currently existing objects
 	TypeFilter []runtime.Object
 
-	WantedState []Object
+	WantedState []util.Object
 	// MutateFn is called whenever wanted object's namespaceName already exist in the current cluster
 	// if nil, it does nothing. If not nil, the current object state is passed as a obj parameter, and
 	// wanted objects state as a second. The function should modify the current obj state, the first
@@ -60,56 +56,21 @@ type OwnedObjectReconciler struct {
 
 // ReconcileOwnedObjects
 func (r *OwnedObjectReconciler) ReconcileOwnedObjects(ctx context.Context, cl client.Client) (changed bool, err error) {
-	existing, err := ListObjects(ctx, cl, r.Scheme, r.TypeFilter, owner.OwnedBy(r.Owner, r.Scheme))
+	existing, err := util.ListObjects(ctx, cl, r.Scheme, r.TypeFilter, owner.OwnedBy(r.Owner, r.Scheme))
 	if err != nil {
 		return false, fmt.Errorf("ListObjects: %w", err)
 	}
 	return r.ensureCreatedObject(ctx, cl, existing)
 }
 
-// ListObjects lists all object of given types adhering to additional ListOptions
-func ListObjects(ctx context.Context, cl client.Client, scheme *runtime.Scheme, listTypes []runtime.Object, options ...client.ListOption) ([]runtime.Object, error) {
-	objs := make([]runtime.Object, 0)
-	for _, objType := range listTypes {
-		gvk, err := apiutil.GVKForObject(objType, scheme)
-		if err != nil {
-			return nil, fmt.Errorf("cannot get GVK for %T: %w", objType, err)
-		}
-		if _, isList := objType.(metav1.ListInterface); isList {
-			return nil, fmt.Errorf("should not pass ListInterface as listTypes, got %v", gvk)
-		}
-
-		ListGVK := gvk
-		ListGVK.Kind = gvk.Kind + "List"
-		ListObjType, err := scheme.New(ListGVK)
-		if err != nil {
-			return nil, fmt.Errorf("cannot make a list out of a types: %v", gvk)
-		}
-		if !meta.IsListType(ListObjType) {
-			return nil, fmt.Errorf("cannot make a list out of a types: %v", gvk)
-		}
-
-		if err := cl.List(ctx, ListObjType, options...); err != nil {
-			return nil, fmt.Errorf("listing %s.%s: %w", strings.ToLower(gvk.Kind), gvk.Group, err)
-		}
-
-		lstObjs, err := meta.ExtractList(ListObjType)
-		if err != nil {
-			return nil, fmt.Errorf("extracting list: %w", err)
-		}
-		objs = append(objs, lstObjs...)
-	}
-	return objs, nil
-}
-
 func (r *OwnedObjectReconciler) ensureCreatedObject(ctx context.Context, cl client.Client, existing []runtime.Object) (changed bool, err error) {
-	wantedMap := make(map[ObjectReference]runtime.Object)
+	wantedMap := make(map[util.ObjectReference]runtime.Object)
 	for _, it := range r.WantedState {
-		wantedMap[ToObjectReference(it, r.Scheme)] = it
+		wantedMap[util.ToObjectReference(it, r.Scheme)] = it
 	}
 
 	for _, obj := range existing {
-		key := ToObjectReference(obj.(Object), r.Scheme)
+		key := util.ToObjectReference(obj.(util.Object), r.Scheme)
 		if _, shouldExists := wantedMap[key]; !shouldExists {
 			err := cl.Delete(ctx, obj)
 			switch {
@@ -132,8 +93,8 @@ func (r *OwnedObjectReconciler) ensureCreatedObject(ctx context.Context, cl clie
 		// ctrl.CreateOrUpdate shall override obj with the current k8s value, thus we're performing a
 		// deep copy to preserve wanted object data
 		wantedObj := obj.DeepCopyObject()
-		op, err := ctrl.CreateOrUpdate(ctx, cl, obj, func() error {
-			owner.SetOwnerReference(r.Owner, obj.(Object), r.Scheme)
+		op, err := controllerruntime.CreateOrUpdate(ctx, cl, obj, func() error {
+			owner.SetOwnerReference(r.Owner, obj.(util.Object), r.Scheme)
 			if err != nil {
 				return fmt.Errorf("inserting owner ref %v: %w", obj, err)
 			}
@@ -150,10 +111,42 @@ func (r *OwnedObjectReconciler) ensureCreatedObject(ctx context.Context, cl clie
 			return changed, fmt.Errorf("create or deleting %v: %w", obj, err)
 		}
 
-		key := ToObjectReference(obj, r.Scheme)
+		key := util.ToObjectReference(obj, r.Scheme)
 		if r.Log != nil {
 			r.Log.V(6).Info("object "+string(op), "group", key.Group, "kind", key.Kind, "name", key.Name, "namespace", key.Namespace)
 		}
 	}
 	return changed, nil
+}
+
+type object interface {
+	runtime.Object
+	metav1.Object
+}
+
+// updateFunc is called to update the current existing object (actual) to the desired state.
+type updateFunc func(actual, desired runtime.Object) error
+
+// ReconcileExclusivelyOwnedObjects ensures that desired objects are up to date and
+// other objects of the same type and owned by the same owner are removed.
+// It works as following. We have an object, the Owner, owning multiple objects in the kubernetes cluster. And we want
+// to ensure that after this Reconciliation of owned objects finishes the only owned objects existing are those that
+// are wanted. Also this would only operate on the kubernetes objects kinds defined in the TypeFilter.
+// See the tests for example usage.
+
+func ReconcileExclusivelyOwnedObjects(
+	ctx context.Context, cl client.Client, log logr.Logger,
+	scheme *runtime.Scheme,
+	owner object, desired []util.Object,
+	updateFn updateFunc,
+	objectTypes ...runtime.Object,
+) (changed bool, err error) {
+	return (&OwnedObjectReconciler{
+		Scheme:      scheme,
+		Log:         log,
+		Owner:       owner,
+		TypeFilter:  objectTypes,
+		WantedState: desired,
+		MutateFn:    updateFn,
+	}).ReconcileOwnedObjects(ctx, cl)
 }

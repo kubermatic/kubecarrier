@@ -57,7 +57,7 @@ func TestCustomResourceDiscoveryReconciler(t *testing.T) {
 			},
 		},
 		Status: catalogv1alpha1.AccountStatus{
-			NamespaceName: ns.Name,
+			Namespace: catalogv1alpha1.ObjectReference{Name: ns.Name},
 		},
 	}
 	owner.SetOwnerReference(provider, ns, testScheme)

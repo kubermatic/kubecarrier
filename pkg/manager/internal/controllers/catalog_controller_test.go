@@ -49,7 +49,7 @@ func TestCatalogReconciler(t *testing.T) {
 		},
 	}
 
-	provider.Status.NamespaceName = provider.Name
+	provider.Status.Namespace.Name = provider.Name
 
 	providerNamespace := &corev1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{
@@ -74,7 +74,7 @@ func TestCatalogReconciler(t *testing.T) {
 		Reason:  "SetupComplete",
 		Message: "Tenant setup is complete.",
 	})
-	tenant.Status.NamespaceName = tenant.Name
+	tenant.Status.Namespace.Name = tenant.Name
 
 	tenantReference := &catalogv1alpha1.TenantReference{
 		ObjectMeta: metav1.ObjectMeta{

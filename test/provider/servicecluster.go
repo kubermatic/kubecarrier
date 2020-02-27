@@ -56,7 +56,7 @@ func NewServiceClusterSuite(
 		serviceClusterSecret := &corev1.Secret{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "eu-west-1",
-				Namespace: provider.Status.NamespaceName,
+				Namespace: provider.Status.Namespace.Name,
 			},
 			Data: map[string][]byte{
 				"kubeconfig": serviceKubeconfig,
@@ -66,7 +66,7 @@ func NewServiceClusterSuite(
 		serviceCluster := &corev1alpha1.ServiceCluster{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "eu-west-1",
-				Namespace: provider.Status.NamespaceName,
+				Namespace: provider.Status.Namespace.Name,
 			},
 			Spec: corev1alpha1.ServiceClusterSpec{
 				Metadata: corev1alpha1.ServiceClusterMetadata{
@@ -119,7 +119,7 @@ func NewServiceClusterSuite(
 		serviceClusterAssignment := &corev1alpha1.ServiceClusterAssignment{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      serviceNamespace.Name + "." + serviceCluster.Name,
-				Namespace: provider.Status.NamespaceName,
+				Namespace: provider.Status.Namespace.Name,
 			},
 			Spec: corev1alpha1.ServiceClusterAssignmentSpec{
 				ServiceCluster: corev1alpha1.ObjectReference{
@@ -144,7 +144,7 @@ func NewServiceClusterSuite(
 		crDiscoveries := &corev1alpha1.CustomResourceDiscoverySet{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "redis",
-				Namespace: provider.Status.NamespaceName,
+				Namespace: provider.Status.Namespace.Name,
 			},
 			Spec: corev1alpha1.CustomResourceDiscoverySetSpec{
 				KindOverride: "RedisInternal",

@@ -33,6 +33,7 @@ import (
 
 	catalogv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/catalog/v1alpha1"
 	"github.com/kubermatic/kubecarrier/pkg/internal/owner"
+	reconcile2 "github.com/kubermatic/kubecarrier/pkg/internal/reconcile"
 	"github.com/kubermatic/kubecarrier/pkg/internal/util"
 )
 
@@ -141,7 +142,7 @@ func (r *AccountReconciler) handleDeletion(ctx context.Context, log logr.Logger,
 		}
 	}
 
-	changed, err := (&util.OwnedObjectReconciler{
+	changed, err := (&reconcile2.OwnedObjectReconciler{
 		Scheme:      r.Scheme,
 		Log:         log,
 		Owner:       account,
@@ -166,7 +167,7 @@ func (r *AccountReconciler) handleDeletion(ctx context.Context, log logr.Logger,
 func (r *AccountReconciler) reconcileNamespace(ctx context.Context, log logr.Logger, account *catalogv1alpha1.Account) error {
 	ns := &corev1.Namespace{}
 	ns.Name = account.Name
-	if _, err := (&util.OwnedObjectReconciler{
+	if _, err := (&reconcile2.OwnedObjectReconciler{
 		Scheme: r.Scheme,
 		Log:    log,
 		Owner:  account,
@@ -178,8 +179,8 @@ func (r *AccountReconciler) reconcileNamespace(ctx context.Context, log logr.Log
 		return fmt.Errorf("cannot reconcile namespace: %w", err)
 	}
 
-	if account.Status.NamespaceName == "" {
-		account.Status.NamespaceName = ns.Name
+	if account.Status.Namespace.Name == "" {
+		account.Status.Namespace.Name = ns.Name
 		if err := r.Status().Update(ctx, account); err != nil {
 			return fmt.Errorf("updating NamespaceName: %w", err)
 		}
@@ -218,7 +219,7 @@ func (r *AccountReconciler) reconcileTenantReferences(ctx context.Context, log l
 			tenantReference := &catalogv1alpha1.TenantReference{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      account.Name,
-					Namespace: providerAccount.Status.NamespaceName,
+					Namespace: providerAccount.Status.Namespace.Name,
 				},
 			}
 			owner.SetOwnerReference(account, tenantReference, r.Scheme)
@@ -226,7 +227,7 @@ func (r *AccountReconciler) reconcileTenantReferences(ctx context.Context, log l
 		}
 	}
 
-	_, err := (&util.OwnedObjectReconciler{
+	_, err := (&reconcile2.OwnedObjectReconciler{
 		Scheme:      r.Scheme,
 		Log:         log,
 		Owner:       account,
