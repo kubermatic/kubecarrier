@@ -17,11 +17,11 @@ limitations under the License.
 package installation
 
 import (
-	"bytes"
 	"context"
 	"fmt"
 	"os/exec"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -29,7 +29,6 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
-	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 
@@ -44,39 +43,22 @@ const (
 
 func NewInstallationSuite(f *testutil.Framework) func(t *testing.T) {
 	return func(t *testing.T) {
-		ctx := context.Background()
-		kubeCarrier := &operatorv1alpha1.KubeCarrier{}
+		ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
+		defer cancel()
 
-		if !t.Run("anchor setup", testAnchorSetup(ctx, f, kubeCarrier)) {
-			t.FailNow()
-		}
-		if !t.Run("kubeCarrier teardown", testAnchorTeardown(ctx, f, kubeCarrier)) {
-			t.FailNow()
-		}
+		c := exec.CommandContext(ctx, "anchor", "setup", "--kubeconfig", f.Config().ManagementExternalKubeconfigPath)
+		out, err := c.CombinedOutput()
+		t.Log(string(out))
+		require.NoError(t, err)
 
-		var out bytes.Buffer
-		c := exec.Command("anchor", "setup", "--kubeconfig", f.Config().ManagementExternalKubeconfigPath)
-		c.Stdout = &out
-		c.Stderr = &out
-		require.NoError(t, c.Run(), "\"anchor setup\" returned an error: %s", out.String())
-	}
-}
-
-func testAnchorSetup(ctx context.Context, f *testutil.Framework, kubeCarrier *operatorv1alpha1.KubeCarrier) func(t *testing.T) {
-	return func(t *testing.T) {
-		var out bytes.Buffer
-		c := exec.Command("anchor", "setup", "--kubeconfig", f.Config().ManagementExternalKubeconfigPath)
-		c.Stdout = &out
-		c.Stderr = &out
-		require.NoError(t, c.Run(), "\"anchor setup\" returned an error: %s", out.String())
-
-		// Create another client due to some issues about the restmapper.
-		// The issue is that if you use the client that created before, and here try to create the kubeCarrier,
-		// it will complain about: `no matches for kind "KubeCarrier" in version "operator.kubecarrier.io/v1alpha1"`,
-		// but actually, the scheme is already added to the runtime scheme.
-		// And in the following, reinitializing the client solves the issue.
 		managementClient, err := f.ManagementClient()
 		require.NoError(t, err, "creating management client")
+
+		kubeCarrier := &operatorv1alpha1.KubeCarrier{ObjectMeta: metav1.ObjectMeta{
+			Name:      "kubecarrier",
+			Namespace: kubecarrierSystem,
+		}}
+		require.NoError(t, testutil.WaitUntilReady(ctx, managementClient, kubeCarrier))
 
 		operatorDeployment := &appsv1.Deployment{}
 		assert.NoError(t, managementClient.Get(ctx, types.NamespacedName{
@@ -140,62 +122,5 @@ func testAnchorSetup(ctx context.Context, f *testutil.Framework, kubeCarrier *op
 		assert.NoError(t, managementClient.Get(ctx, types.NamespacedName{
 			Name: "providers.catalog.kubecarrier.io",
 		}, crd), "get the CRD that owned by KubeCarrier object")
-	}
-}
-
-func testAnchorTeardown(ctx context.Context, f *testutil.Framework, kubeCarrier *operatorv1alpha1.KubeCarrier) func(t *testing.T) {
-	return func(t *testing.T) {
-		managementClient, err := f.ManagementClient()
-		require.NoError(t, err, "creating management client")
-
-		// Delete the KubeCarrier object.
-		require.NoError(t, managementClient.Delete(ctx, kubeCarrier), "deleting the KubeCarrier object")
-
-		// Deployment
-		assert.NoError(t, testutil.WaitUntilNotFound(ctx, managementClient, &appsv1.Deployment{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      fmt.Sprintf("%s-controller-manager", prefix),
-				Namespace: kubecarrierSystem,
-			},
-		}))
-
-		// Webhook Service
-		service := &corev1.Service{}
-		assert.True(t, errors.IsNotFound(managementClient.Get(ctx, types.NamespacedName{
-			Name:      fmt.Sprintf("%s-webhook-service", prefix),
-			Namespace: kubecarrierSystem,
-		}, service)), "get the Webhook Service that is owned by the KubeCarrier object")
-
-		// ClusterRoleBinding
-		clusterRoleBinding := &rbacv1.ClusterRoleBinding{}
-		assert.True(t, errors.IsNotFound(managementClient.Get(ctx, types.NamespacedName{
-			Name: fmt.Sprintf("%s-manager-rolebinding", prefix),
-		}, clusterRoleBinding)), "get the ClusterRoleBinding that owned by KubeCarrier object")
-
-		// ClusterRole
-		clusterRole := &rbacv1.ClusterRole{}
-		assert.True(t, errors.IsNotFound(managementClient.Get(ctx, types.NamespacedName{
-			Name: fmt.Sprintf("%s-manager-role", prefix),
-		}, clusterRole)), "get the ClusterRole that owned by KubeCarrier object")
-
-		// RoleBinding
-		roleBinding := &rbacv1.RoleBinding{}
-		assert.True(t, errors.IsNotFound(managementClient.Get(ctx, types.NamespacedName{
-			Name:      fmt.Sprintf("%s-leader-election-rolebinding", prefix),
-			Namespace: kubecarrierSystem,
-		}, roleBinding)), "get the RoleBinding that owned by KubeCarrier object")
-
-		// Role
-		role := &rbacv1.Role{}
-		assert.True(t, errors.IsNotFound(managementClient.Get(ctx, types.NamespacedName{
-			Name:      fmt.Sprintf("%s-leader-election-role", prefix),
-			Namespace: kubecarrierSystem,
-		}, role)), "get the Role that owned by KubeCarrier object")
-
-		// CRD
-		crd := &apiextensionsv1.CustomResourceDefinition{}
-		assert.True(t, errors.IsNotFound(managementClient.Get(ctx, types.NamespacedName{
-			Name: "providers.catalog.kubecarrier.io",
-		}, crd)), "get the CRD that owned by KubeCarrier object")
 	}
 }

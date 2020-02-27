@@ -69,9 +69,9 @@ func (cw *ClientWatcher) WaitUntil(ctx context.Context, obj Object, cond ...func
 	if err != nil {
 		return err
 	}
-	lw, err := cw.listWatch(obj)
+	lw, err := cw.objListWatch(obj)
 	if err != nil {
-		return fmt.Errorf("getting listWatch: %w", err)
+		return fmt.Errorf("getting objListWatch: %w", err)
 	}
 
 	if _, err := clientwatch.ListWatchUntil(ctx, lw, func(event watch.Event) (b bool, err error) {
@@ -101,21 +101,25 @@ func (cw *ClientWatcher) WaitUntil(ctx context.Context, obj Object, cond ...func
 		}
 		return true, nil
 	}); err != nil {
-		return err
+		return fmt.Errorf("%s.%s: %s/%s: %w", objGVK.Kind, objGVK.Group, obj.GetNamespace(), obj.GetName(), err)
 	}
 	return nil
 }
 
 // WaitUntilNotFound waits until the object is not found or the context deadline is exceeded
 func (cw *ClientWatcher) WaitUntilNotFound(ctx context.Context, obj Object) error {
+	objGVK, err := apiutil.GVKForObject(obj, cw.scheme)
+	if err != nil {
+		return err
+	}
 	// things get a bit tricky with not found watches
 	//  clientwatch.UntilWithSync seems useful since it has cache pre-conditions which I can check whether
 	// the objects existed in initial list operation. But there are few other issues with it:
 	// * it doesn't call condition function with DELETED event types for some reason (nor does it get it from watch interface to my current debugging knowledge)
 	// * it doesn't properly update the cache store since the event objects are types to *unstructured.Unstructured instead of GVK schema type
-	lw, err := cw.listWatch(obj)
+	lw, err := cw.objListWatch(obj)
 	if err != nil {
-		return fmt.Errorf("getting listWatch: %w", err)
+		return fmt.Errorf("getting objListWatch: %w", err)
 	}
 	list, err := lw.List(metav1.ListOptions{})
 	if err != nil {
@@ -146,10 +150,13 @@ func (cw *ClientWatcher) WaitUntilNotFound(ctx context.Context, obj Object) erro
 		}
 		return event.Type == watch.Deleted, nil
 	})
-	return err
+	if err != nil {
+		return fmt.Errorf("%s.%s: %s/%s: %w", objGVK.Kind, objGVK.Group, obj.GetNamespace(), obj.GetName(), err)
+	}
+	return nil
 }
 
-func (cw *ClientWatcher) listWatch(obj Object) (*cache.ListWatch, error) {
+func (cw *ClientWatcher) objListWatch(obj Object) (*cache.ListWatch, error) {
 	objGVK, err := apiutil.GVKForObject(obj, cw.scheme)
 	if err != nil {
 		return nil, err
@@ -161,8 +168,12 @@ func (cw *ClientWatcher) listWatch(obj Object) (*cache.ListWatch, error) {
 	resourceInterface := cw.dynamicClient.Resource(restMapping.Resource).Namespace(obj.GetNamespace())
 	return &cache.ListWatch{
 		ListFunc: func(options metav1.ListOptions) (object runtime.Object, err error) {
+			options.FieldSelector = "metadata.name=" + obj.GetName()
 			return resourceInterface.List(options)
 		},
-		WatchFunc: resourceInterface.Watch,
+		WatchFunc: func(options metav1.ListOptions) (w watch.Interface, err error) {
+			options.FieldSelector = "metadata.name=" + obj.GetName()
+			return resourceInterface.Watch(options)
+		},
 	}, nil
 }
