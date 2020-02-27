@@ -36,10 +36,10 @@ import (
 
 // OwnedObjectReconciler struct defines needed configuration for (singly) owned owner reconciliation
 //
-// It works as following. We have an objects, the Owner, owning multiple objects in the kubernetes. And we want
-// ensuring that after this Reconciliation of owned objects finishes the only owned objects existing are those that
-// are wanted. Also this would only operate on the kubernetes objects kinds defined in the TypeFilter. See the
-// tests for example usage
+// It works as following. We have an object, the Owner, owning multiple objects in the kubernetes cluster. And we want
+// to ensure that after this Reconciliation of owned objects finishes the only owned objects existing are those that
+// are wanted. Also this would only operate on the kubernetes objects kinds defined in the TypeFilter.
+// See the tests for example usage.
 type OwnedObjectReconciler struct {
 	Scheme *runtime.Scheme
 	Log    logr.Logger
