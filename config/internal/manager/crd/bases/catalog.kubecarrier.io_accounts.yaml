@@ -123,10 +123,15 @@ spec:
                   - type
                   type: object
                 type: array
-              namespaceName:
+              namespace:
                 description: NamespaceName is the name of the namespace that the Account
                   manages.
-                type: string
+                properties:
+                  name:
+                    type: string
+                required:
+                - name
+                type: object
               observedGeneration:
                 description: ObservedGeneration is the most recent generation observed
                   for this Account by the controller.

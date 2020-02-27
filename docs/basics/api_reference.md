@@ -152,7 +152,7 @@ AccountStatus defines the observed state of Account.
 
 | Field | Description | Scheme | Required |
 | ----- | ----------- | ------ | -------- |
-| namespaceName | NamespaceName is the name of the namespace that the Account manages. | string | false |
+| namespace | NamespaceName is the name of the namespace that the Account manages. | catalog.kubecarrier.io/v1alpha1.ObjectReference | false |
 | observedGeneration | ObservedGeneration is the most recent generation observed for this Account by the controller. | catalog.kubecarrier.io/v1alpha1.int64 | false |
 | conditions | Conditions represents the latest available observations of a Account's current state. | []catalog.kubecarrier.io/v1alpha1.AccountCondition | false |
 | phase | DEPRECATED. Phase represents the current lifecycle state of this object. Consider this field DEPRECATED, it will be removed as soon as there is a mechanism to map conditions to strings when printing the property. This is only for display purpose, for everything else use conditions. | catalog.kubecarrier.io/v1alpha1.AccountPhaseType | false |
