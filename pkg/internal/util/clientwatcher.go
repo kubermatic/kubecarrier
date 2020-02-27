@@ -65,6 +65,10 @@ type ClientWatcher struct {
 
 // WaitUntil waits until the Object's condition function is true, or the context deadline is reached
 func (cw *ClientWatcher) WaitUntil(ctx context.Context, obj Object, cond ...func(obj runtime.Object, eventType watch.EventType) (bool, error)) error {
+	objNN, err := client.ObjectKeyFromObject(obj)
+	if err != nil {
+		return fmt.Errorf("getting object key: %w", err)
+	}
 	objGVK, err := apiutil.GVKForObject(obj, cw.scheme)
 	if err != nil {
 		return err
@@ -83,10 +87,6 @@ func (cw *ClientWatcher) WaitUntil(ctx context.Context, obj Object, cond ...func
 		if err := cw.scheme.Convert(event.Object, currObj, nil); err != nil {
 			return false, err
 		}
-		if ObjectNN(currObj) != ObjectNN(obj) {
-			// not the right Object
-			return false, nil
-		}
 		for _, f := range cond {
 			ok, err := f(objTmp, event.Type)
 			if err != nil {
@@ -96,7 +96,7 @@ func (cw *ClientWatcher) WaitUntil(ctx context.Context, obj Object, cond ...func
 				return false, nil
 			}
 		}
-		if err := cw.Get(ctx, ObjectNN(obj), obj); err != nil {
+		if err := cw.Get(ctx, objNN, obj); err != nil {
 			return false, err
 		}
 		return true, nil
@@ -129,25 +129,16 @@ func (cw *ClientWatcher) WaitUntilNotFound(ctx context.Context, obj Object) erro
 	if err != nil {
 		return err
 	}
-
-	found := false
-	for _, it := range initialItems {
-		if ObjectNN(it.(Object)) == ObjectNN(obj) {
-			found = true
-		}
-	}
-	if !found {
+	if len(initialItems) == 0 {
 		return nil
 	}
+
 	metaObj, err := meta.ListAccessor(list)
 	if err != nil {
 		return err
 	}
 	currResourceVersion := metaObj.GetResourceVersion()
 	_, err = clientwatch.Until(ctx, currResourceVersion, lw, func(event watch.Event) (b bool, err error) {
-		if ObjectNN(obj) != ObjectNN(event.Object.(Object)) {
-			return false, nil
-		}
 		return event.Type == watch.Deleted, nil
 	})
 	if err != nil {

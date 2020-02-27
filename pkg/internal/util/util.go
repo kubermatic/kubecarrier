@@ -19,18 +19,10 @@ package util
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/types"
 )
 
 // Object generic k8s Object with metav1 and runtime Object interfaces implemented
 type Object interface {
 	runtime.Object
 	metav1.Object
-}
-
-func ObjectNN(obj metav1.Object) types.NamespacedName {
-	return types.NamespacedName{
-		Namespace: obj.GetNamespace(),
-		Name:      obj.GetName(),
-	}
 }
