@@ -40,9 +40,9 @@ type updateFunc func(actual, desired runtime.Object) error
 // other objects of the same type and owned by the same owner are removed.
 // It works as following. We have an object, the Owner, owning multiple objects in the kubernetes cluster. And we want
 // to ensure that after this Reconciliation of owned objects finishes the only owned objects existing are those that
-// are wanted. Also this would only operate on the kubernetes objects kinds defined in the TypeFilter.
-// See the tests for example usage.
-
+// are wanted. Also this would only operate on the kubernetes objects kinds defined in the objectTypes.
+// In case object already exists in the kubernetes cluster the updateFn function is called allowing the user fixing
+// between found and wanted object. In case the function is nil it's ignored.
 func ExclusivelyOwnedObjects(
 	ctx context.Context, cl client.Client, log logr.Logger,
 	scheme *runtime.Scheme,
