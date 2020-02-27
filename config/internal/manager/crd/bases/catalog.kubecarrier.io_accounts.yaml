@@ -24,7 +24,7 @@ spec:
     - jsonPath: .status.namespaceName
       name: Account Namespace
       type: string
-    - jsonPath: .spec.displayName
+    - jsonPath: .spec.metadata.displayName
       name: Display Name
       type: string
     - jsonPath: .status.phase
