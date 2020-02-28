@@ -150,7 +150,7 @@ func TestCatalogEntrySetReconciler(t *testing.T) {
 			Status: corev1alpha1.ConditionTrue,
 		},
 	}
-	customResourceDiscoverySet.Status.CRDs = []corev1alpha1.ObjectReference{
+	customResourceDiscoverySet.Status.ManagementClusterCRDs = []corev1alpha1.ObjectReference{
 		{
 			Name: internalCRDName,
 		},

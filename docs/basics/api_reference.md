@@ -850,7 +850,7 @@ CustomResourceDiscoverySetCondition contains details for the current condition o
 
 | Field | Description | Scheme | Required |
 | ----- | ----------- | ------ | -------- |
-| crds | CRDs contains the CRDs information that created by the CustomResourceDiscovery objects of this CustomResourceDiscoverySet. | []kubecarrier.io/v1alpha1.ObjectReference | false |
+| managementClusterCRDs | ManagementClusterCRDs contains the CRDs information that created by the CustomResourceDiscovery objects of this CustomResourceDiscoverySet. | []kubecarrier.io/v1alpha1.ObjectReference | false |
 | phase | DEPRECATED. Phase represents the current lifecycle state of this object consider this field DEPRECATED, it will be removed as soon as there is a mechanism to map conditions to a string when printing the property is only present for display purposes, for everything else use conditions | kubecarrier.io/v1alpha1.CustomResourceDiscoverySetPhaseType | false |
 | conditions | Conditions is a list of all conditions this CustomResourceDiscovery is in. | []kubecarrier.io/v1alpha1.CustomResourceDiscoverySetCondition | false |
 | observedGeneration | The most recent generation observed by the controller. | kubecarrier.io/v1alpha1.int64 | false |

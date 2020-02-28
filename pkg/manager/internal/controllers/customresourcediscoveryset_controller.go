@@ -129,7 +129,7 @@ func (r *CustomResourceDiscoverySetReconciler) Reconcile(req ctrl.Request) (ctrl
 	}
 
 	// Report status
-	crDiscoverySet.Status.CRDs = readyCRDReferences
+	crDiscoverySet.Status.ManagementClusterCRDs = readyCRDReferences
 	crDiscoverySet.Status.ObservedGeneration = crDiscoverySet.Generation
 	if len(unreadyCRDiscoveryNames) > 0 {
 		// Unready

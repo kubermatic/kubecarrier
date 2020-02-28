@@ -99,7 +99,7 @@ func (r *CatalogEntrySetReconciler) Reconcile(req ctrl.Request) (ctrl.Result, er
 	// Reconcile CatalogEntry objects
 	var unreadyCatalogEntryNames []string
 	existingCatalogEntryNames := map[string]struct{}{}
-	for _, crd := range currentCustomResourceDiscoverySet.Status.CRDs {
+	for _, crd := range currentCustomResourceDiscoverySet.Status.ManagementClusterCRDs {
 		currentCatalogEntry, err := r.reconcileCatalogEntry(ctx, &crd, catalogEntrySet)
 		if err != nil {
 			return ctrl.Result{}, fmt.Errorf(

@@ -30,8 +30,8 @@ type CustomResourceDiscoverySetSpec struct {
 }
 
 type CustomResourceDiscoverySetStatus struct {
-	// CRDs contains the CRDs information that created by the CustomResourceDiscovery objects of this CustomResourceDiscoverySet.
-	CRDs []ObjectReference `json:"crds,omitempty"`
+	// ManagementClusterCRDs contains the CRDs information that created by the CustomResourceDiscovery objects of this CustomResourceDiscoverySet.
+	ManagementClusterCRDs []ObjectReference `json:"managementClusterCRDs,omitempty"`
 	// DEPRECATED.
 	// Phase represents the current lifecycle state of this object
 	// consider this field DEPRECATED, it will be removed as soon as there
