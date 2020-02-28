@@ -32,7 +32,6 @@ import (
 
 	catalogv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/catalog/v1alpha1"
 	"github.com/kubermatic/kubecarrier/pkg/internal/owner"
-	"github.com/kubermatic/kubecarrier/pkg/internal/reconcile"
 	"github.com/kubermatic/kubecarrier/pkg/internal/util"
 )
 
@@ -141,7 +140,7 @@ func (r *AccountReconciler) handleDeletion(ctx context.Context, log logr.Logger,
 		}
 	}
 
-	changed, err := reconcile.ExclusivelyOwnedObjects(
+	changed, err := owner.ReconcileOwnedObjects(
 		ctx, r.Client, log, r.Scheme,
 		account, nil, nil,
 		&corev1.Namespace{},
@@ -163,7 +162,7 @@ func (r *AccountReconciler) reconcileNamespace(ctx context.Context, log logr.Log
 	ns := &corev1.Namespace{}
 	ns.Name = account.Name
 
-	if _, err := reconcile.ExclusivelyOwnedObjects(
+	if _, err := owner.ReconcileOwnedObjects(
 		ctx, r.Client, log, r.Scheme,
 		account, []runtime.Object{ns}, nil,
 		&corev1.Namespace{},
@@ -219,7 +218,7 @@ func (r *AccountReconciler) reconcileTenantReferences(ctx context.Context, log l
 		}
 	}
 
-	_, err := reconcile.ExclusivelyOwnedObjects(
+	_, err := owner.ReconcileOwnedObjects(
 		ctx, r.Client, log, r.Scheme,
 		account, wantedRefs, nil,
 		&catalogv1alpha1.TenantReference{},

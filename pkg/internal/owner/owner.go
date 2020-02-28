@@ -43,12 +43,6 @@ type generalizedListOption interface {
 	client.DeleteAllOfOption
 }
 
-// object generic k8s object with metav1 and runtime Object interfaces implemented
-type object interface {
-	runtime.Object
-	metav1.Object
-}
-
 // SetOwnerReference sets a the owner as owner of object.
 func SetOwnerReference(owner, object runtime.Object, scheme *runtime.Scheme) (changed bool) {
 	objectAccessor, err := meta.Accessor(object)
@@ -73,8 +67,13 @@ func SetOwnerReference(owner, object runtime.Object, scheme *runtime.Scheme) (ch
 }
 
 // RemoveOwnerReference removes an owner from the given object.
-func RemoveOwnerReference(owner, object object) (changed bool) {
-	labels := object.GetLabels()
+func RemoveOwnerReference(owner, object runtime.Object) (changed bool) {
+	objectAccessor, err := meta.Accessor(object)
+	if err != nil {
+		panic(fmt.Errorf("cannot get accessor for %T :%w", object, err))
+	}
+
+	labels := objectAccessor.GetLabels()
 	if labels == nil {
 		return
 	}
@@ -85,11 +84,11 @@ func RemoveOwnerReference(owner, object object) (changed bool) {
 	delete(labels, OwnerNameLabel)
 	delete(labels, OwnerNamespaceLabel)
 	delete(labels, OwnerTypeLabel)
-	object.SetLabels(labels)
+	objectAccessor.SetLabels(labels)
 	return
 }
 
-func requestHandlerForOwner(ownerType object, scheme *runtime.Scheme) handler.ToRequestsFunc {
+func requestHandlerForOwner(ownerType runtime.Object, scheme *runtime.Scheme) handler.ToRequestsFunc {
 	gvk, err := apiutil.GVKForObject(ownerType, scheme)
 	if err != nil {
 		// if this panic occurs many, many other stuff has gone wrong as well
@@ -139,7 +138,7 @@ func requestHandlerForOwner(ownerType object, scheme *runtime.Scheme) handler.To
 }
 
 // EnqueueRequestForOwner enqueues a request for the owner of an object
-func EnqueueRequestForOwner(ownerType object, scheme *runtime.Scheme) handler.EventHandler {
+func EnqueueRequestForOwner(ownerType runtime.Object, scheme *runtime.Scheme) handler.EventHandler {
 	return &handler.EnqueueRequestsFromMapFunc{
 		ToRequests: requestHandlerForOwner(ownerType, scheme),
 	}

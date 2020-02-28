@@ -16,7 +16,7 @@ limitations under the License.
 
 // Package reconcile implements reconcile functions for common Kubernetes types.
 
-package reconcile
+package owner
 
 import (
 	"context"
@@ -29,28 +29,27 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
-	"github.com/kubermatic/kubecarrier/pkg/internal/owner"
 	"github.com/kubermatic/kubecarrier/pkg/internal/util"
 )
 
 // updateFunc is called to update the current existing object (actual) to the desired state.
 type updateFunc func(actual, desired runtime.Object) error
 
-// ExclusivelyOwnedObjects ensures that desired objects are up to date and
+// ReconcileOwnedObjects ensures that desired objects are up to date and
 // other objects of the same type and owned by the same owner are removed.
 // It works as following. We have an object, the Owner, owning multiple objects in the kubernetes cluster. And we want
 // to ensure that after this Reconciliation of owned objects finishes the only owned objects existing are those that
 // are wanted. Also this would only operate on the kubernetes objects kinds defined in the objectTypes.
 // In case object already exists in the kubernetes cluster the updateFn function is called allowing the user fixing
 // between found and wanted object. In case the function is nil it's ignored.
-func ExclusivelyOwnedObjects(
+func ReconcileOwnedObjects(
 	ctx context.Context, cl client.Client, log logr.Logger,
 	scheme *runtime.Scheme,
 	ownerObj runtime.Object, desired []runtime.Object,
 	updateFn updateFunc,
 	objectTypes ...runtime.Object,
 ) (changed bool, err error) {
-	existing, err := util.ListObjects(ctx, cl, scheme, objectTypes, owner.OwnedBy(ownerObj, scheme))
+	existing, err := util.ListObjects(ctx, cl, scheme, objectTypes, OwnedBy(ownerObj, scheme))
 	if err != nil {
 		return false, fmt.Errorf("ListObjects: %w", err)
 	}
@@ -79,13 +78,13 @@ func ExclusivelyOwnedObjects(
 	}
 
 	for _, obj := range desired {
-		owner.SetOwnerReference(ownerObj, obj, scheme)
+		SetOwnerReference(ownerObj, obj, scheme)
 
 		// ctrl.CreateOrUpdate shall override obj with the current k8s value, thus we're performing a
 		// deep copy to preserve wanted object data
 		wantedObj := obj.DeepCopyObject()
 		op, err := controllerruntime.CreateOrUpdate(ctx, cl, obj, func() error {
-			owner.SetOwnerReference(ownerObj, obj, scheme)
+			SetOwnerReference(ownerObj, obj, scheme)
 			if err != nil {
 				return fmt.Errorf("inserting owner ref %v: %w", obj, err)
 			}

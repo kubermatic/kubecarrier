@@ -20,15 +20,31 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	corev1 "k8s.io/api/core/v1"
+	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
+	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
+
+	catalogv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/catalog/v1alpha1"
+	corev1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/core/v1alpha1"
+	operatorv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/operator/v1alpha1"
 )
 
 var testScheme = runtime.NewScheme()
+
+func init() {
+	// setup scheme for all tests
+	utilruntime.Must(corev1.AddToScheme(testScheme))
+	utilruntime.Must(catalogv1alpha1.AddToScheme(testScheme))
+	utilruntime.Must(operatorv1alpha1.AddToScheme(testScheme))
+	utilruntime.Must(apiextensionsv1.AddToScheme(testScheme))
+	utilruntime.Must(corev1alpha1.AddToScheme(testScheme))
+}
 
 func TestSetOwnerReference(t *testing.T) {
 	owner := &unstructured.Unstructured{}

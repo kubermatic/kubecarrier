@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package reconcile
+package owner
 
 import (
 	"context"
@@ -28,7 +28,6 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	fakeclient "sigs.k8s.io/controller-runtime/pkg/client/fake"
 
-	"github.com/kubermatic/kubecarrier/pkg/internal/owner"
 	"github.com/kubermatic/kubecarrier/pkg/internal/util"
 	"github.com/kubermatic/kubecarrier/pkg/testutil"
 )
@@ -111,10 +110,10 @@ func TestOwnedObjectReconciler_Reconcile(t *testing.T) {
 			cl := fakeclient.NewFakeClientWithScheme(testScheme, ownerObj)
 			ctx := context.Background()
 			for _, obj := range testCase.existingState {
-				owner.SetOwnerReference(ownerObj, obj, testScheme)
+				SetOwnerReference(ownerObj, obj, testScheme)
 				require.NoError(t, cl.Create(ctx, obj))
 			}
-			changed, err := ExclusivelyOwnedObjects(
+			changed, err := ReconcileOwnedObjects(
 				ctx, cl, testutil.NewLogger(t), testScheme,
 				ownerObj, testCase.wantedState, testCase.muateFn,
 				&corev1.ConfigMap{},

@@ -23,7 +23,6 @@ import (
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/rest"
@@ -65,7 +64,7 @@ type ClientWatcher struct {
 }
 
 // WaitUntil waits until the object's condition function is true, or the context deadline is reached
-func (cw *ClientWatcher) WaitUntil(ctx context.Context, obj object, cond ...func(obj runtime.Object) (bool, error)) error {
+func (cw *ClientWatcher) WaitUntil(ctx context.Context, obj runtime.Object, cond ...func(obj runtime.Object) (bool, error)) error {
 	objGVK, err := apiutil.GVKForObject(obj, cw.scheme)
 	if err != nil {
 		return err
@@ -74,10 +73,11 @@ func (cw *ClientWatcher) WaitUntil(ctx context.Context, obj object, cond ...func
 	if err != nil {
 		return err
 	}
-	objNN := types.NamespacedName{
-		Namespace: obj.GetNamespace(),
-		Name:      obj.GetName(),
+	objNN, err := client.ObjectKeyFromObject(obj)
+	if err != nil {
+		return err
 	}
+
 	resourceInterface := cw.dynamicClient.Resource(restMapping.Resource).Namespace(objNN.Namespace)
 	if _, err := clientwatch.ListWatchUntil(ctx, &cache.ListWatch{
 		ListFunc: func(options metav1.ListOptions) (object runtime.Object, err error) {

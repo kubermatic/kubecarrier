@@ -41,22 +41,22 @@ type ObjectReference struct {
 }
 
 // ToOwnerReference converts the given object into an ownerReference.
-func ToObjectReference(owner runtime.Object, scheme *runtime.Scheme) ObjectReference {
-	gvk, err := apiutil.GVKForObject(owner, scheme)
+func ToObjectReference(object runtime.Object, scheme *runtime.Scheme) ObjectReference {
+	gvk, err := apiutil.GVKForObject(object, scheme)
 	if err != nil {
 		// if this panic occurs many, many other stuff has gone wrong as well
-		// by owner type's safety ensures this is somewhat well formed k8s object
+		// by object type's safety ensures this is somewhat well formed k8s object
 		// When using client-go API, it needs to be able to deduce GVK in the same manner
 		// thus get/create/update/patch/delete shall error out long before this is called
 		// This massively simplifies the function interface and allows OwnedBy to be a
 		// one-liner instead of 3 line check which never errors
 		// this is error is completely under our control, users of kubecarrier cannot
 		// change cluster state to cause it.
-		panic(fmt.Sprintf("cannot deduce GVK for owner (type %T)", owner))
+		panic(fmt.Sprintf("cannot deduce GVK for object (type %T)", object))
 	}
-	accessor, err := meta.Accessor(owner)
+	accessor, err := meta.Accessor(object)
 	if err != nil {
-		panic(fmt.Errorf("cannot get meta accessor for %T %w", owner, err))
+		panic(fmt.Errorf("cannot get meta accessor for %T %w", object, err))
 	}
 
 	return ObjectReference{
