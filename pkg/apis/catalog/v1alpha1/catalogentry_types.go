@@ -26,8 +26,8 @@ type CatalogEntrySpec struct {
 	Metadata CatalogEntryMetadata `json:"metadata,omitempty"`
 	// BaseCRD is the underlying BaseCRD objects that this CatalogEntry refers to.
 	BaseCRD ObjectReference `json:"baseCRD,omitempty"`
-	// DerivedConfig contains the configuration to generate DerivedCustomResource from the BaseCRD of this CatalogEntry.
-	DerivedConfig *DerivedConfig `json:"derivedConfig,omitempty"`
+	// Derived contains the configuration to generate DerivedCustomResource from the BaseCRD of this CatalogEntry.
+	Derived *DerivedConfig `json:"derived,omitempty"`
 }
 
 type DerivedConfig struct {

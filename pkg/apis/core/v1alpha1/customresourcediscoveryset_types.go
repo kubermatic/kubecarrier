@@ -47,9 +47,14 @@ type CustomResourceDiscoverySetPhaseType string
 
 // Values of CustomResourceDiscoverySetPhaseType
 const (
-	CustomResourceDiscoverySetPhaseReady    CustomResourceDiscoverySetPhaseType = "Ready"
-	CustomResourceDiscoverySetPhaseNotReady CustomResourceDiscoverySetPhaseType = "NotReady"
-	CustomResourceDiscoverySetPhaseUnknown  CustomResourceDiscoverySetPhaseType = "Unknown"
+	CustomResourceDiscoverySetPhaseReady       CustomResourceDiscoverySetPhaseType = "Ready"
+	CustomResourceDiscoverySetPhaseNotReady    CustomResourceDiscoverySetPhaseType = "NotReady"
+	CustomResourceDiscoverySetPhaseUnknown     CustomResourceDiscoverySetPhaseType = "Unknown"
+	CustomResourceDiscoverySetPhaseTerminating CustomResourceDiscoverySetPhaseType = "Terminating"
+)
+
+const (
+	CustomResourceDiscoverySetTerminatingReason = "Deleting"
 )
 
 // updatePhase updates the phase property based on the current conditions
@@ -63,7 +68,11 @@ func (s *CustomResourceDiscoverySetStatus) updatePhase() {
 		case ConditionTrue:
 			s.Phase = CustomResourceDiscoverySetPhaseReady
 		case ConditionFalse:
-			s.Phase = CustomResourceDiscoverySetPhaseNotReady
+			if condition.Reason == CustomResourceDiscoverySetTerminatingReason {
+				s.Phase = CustomResourceDiscoverySetPhaseTerminating
+			} else {
+				s.Phase = CustomResourceDiscoverySetPhaseNotReady
+			}
 		default:
 			s.Phase = CustomResourceDiscoverySetPhaseUnknown
 		}
@@ -141,6 +150,21 @@ type CustomResourceDiscoverySet struct {
 
 	Spec   CustomResourceDiscoverySetSpec   `json:"spec,omitempty"`
 	Status CustomResourceDiscoverySetStatus `json:"status,omitempty"`
+}
+
+// IsReady returns if the CustomResourceDiscoverySet is ready.
+func (s *CustomResourceDiscoverySet) IsReady() bool {
+	if s.Generation != s.Status.ObservedGeneration {
+		return false
+	}
+
+	for _, condition := range s.Status.Conditions {
+		if condition.Type == CustomResourceDiscoverySetReady &&
+			condition.Status == ConditionTrue {
+			return true
+		}
+	}
+	return false
 }
 
 // +kubebuilder:object:root=true

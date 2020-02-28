@@ -18,6 +18,7 @@ package provider
 
 import (
 	"context"
+	"fmt"
 	"testing"
 	"time"
 
@@ -120,7 +121,7 @@ func NewDerivedCRSuite(
 				BaseCRD: catalogv1alpha1.ObjectReference{
 					Name: baseCRD.Name,
 				},
-				DerivedConfig: &catalogv1alpha1.DerivedConfig{
+				Derived: &catalogv1alpha1.DerivedConfig{
 					KindOverride: "TestResource",
 					Expose: []catalogv1alpha1.VersionExposeConfig{
 						{
@@ -142,7 +143,7 @@ func NewDerivedCRSuite(
 			t, managementClient.Create(ctx, catalogEntry), "creating CatalogEntry")
 
 		// Wait for the CatalogEntry to be ready, it takes more time since it requires the
-		// DerivedCustomResource Object and Elevator get ready
+		// DerivedCustomResource object and Elevator get ready
 		require.NoError(t, testutil.WaitUntilReady(managementClient, catalogEntry, testutil.WithTimeout(300*time.Second)))
 
 		// Check the DerivedCustomResource Object
@@ -161,9 +162,9 @@ func NewDerivedCRSuite(
 		err = managementClient.Delete(ctx, provider)
 		if assert.Error(t, err, "dirty provider %s deletion should error out", provider.Name) {
 			assert.Equal(t,
-				`admission webhook "vprovider.kubecarrier.io" denied the request: deletion blocking objects found:
-DerivedCustomResource.catalog.kubecarrier.io/v1alpha1: test
-`,
+				fmt.Sprintf(`admission webhook "vprovider.kubecarrier.io" denied the request: deletion blocking objects found:
+DerivedCustomResource.catalog.kubecarrier.io/v1alpha1: %s
+`, dcr.Name),
 				err.Error(),
 				"deleting dirty provider %s", provider.Name)
 		}

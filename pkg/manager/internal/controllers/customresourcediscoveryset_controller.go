@@ -28,16 +28,19 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 	"sigs.k8s.io/controller-runtime/pkg/source"
 
 	corev1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/core/v1alpha1"
+	"github.com/kubermatic/kubecarrier/pkg/internal/owner"
 	"github.com/kubermatic/kubecarrier/pkg/internal/util"
 )
 
-const crDiscoveriesLabel = "crdiscoveries.kubecarrier.io/controlled-by"
+const (
+	crDiscoveriesLabel                = "crdiscoveries.kubecarrier.io/controlled-by"
+	crDiscoverySetControllerFinalizer = "crdiscoveryset.kubecarrier.io/controller"
+)
 
 // CustomResourceDiscoverySetReconciler reconciles a CustomResourceDiscovery object
 type CustomResourceDiscoverySetReconciler struct {
@@ -62,13 +65,15 @@ func (r *CustomResourceDiscoverySetReconciler) Reconcile(req ctrl.Request) (ctrl
 		return result, client.IgnoreNotFound(err)
 	}
 
-	if util.AddFinalizer(crDiscoverySet, metav1.FinalizerDeleteDependents) {
+	if util.AddFinalizer(crDiscoverySet, crDiscoverySetControllerFinalizer) {
 		if err := r.Client.Update(ctx, crDiscoverySet); err != nil {
 			return ctrl.Result{}, fmt.Errorf("updating CustomResourceDiscoverySet finalizers: %w", err)
 		}
 	}
 	if !crDiscoverySet.DeletionTimestamp.IsZero() {
-		// nothing to do, let kube controller-manager foregroundDeletion wait until every created object is deleted
+		if err := r.handleDeletion(ctx, r.Log, crDiscoverySet); err != nil {
+			return result, fmt.Errorf("handling deletion: %w", err)
+		}
 		return ctrl.Result{}, nil
 	}
 
@@ -169,14 +174,10 @@ func (r *CustomResourceDiscoverySetReconciler) reconcileCRDiscovery(
 			KindOverride: crDiscoverySet.Spec.KindOverride,
 		},
 	}
-	err := controllerutil.SetControllerReference(
-		crDiscoverySet, desiredCRDiscovery, r.Scheme)
-	if err != nil {
-		return nil, fmt.Errorf("set controller reference: %w", err)
-	}
+	owner.SetOwnerReference(crDiscoverySet, desiredCRDiscovery, r.Scheme)
 
 	currentCRDiscovery := &corev1alpha1.CustomResourceDiscovery{}
-	err = r.Get(ctx, types.NamespacedName{
+	err := r.Get(ctx, types.NamespacedName{
 		Name:      desiredCRDiscovery.Name,
 		Namespace: desiredCRDiscovery.Namespace,
 	}, currentCRDiscovery)
@@ -198,6 +199,41 @@ func (r *CustomResourceDiscoverySetReconciler) reconcileCRDiscovery(
 		return nil, fmt.Errorf("updating CustomResourceDiscovery: %w", err)
 	}
 	return currentCRDiscovery, nil
+}
+
+func (r *CustomResourceDiscoverySetReconciler) handleDeletion(ctx context.Context, log logr.Logger, crDiscoverySet *corev1alpha1.CustomResourceDiscoverySet) error {
+	cond, ok := crDiscoverySet.Status.GetCondition(corev1alpha1.CustomResourceDiscoverySetReady)
+	if !ok || cond.Status != corev1alpha1.ConditionFalse || cond.Reason != corev1alpha1.TerminatingReason {
+		crDiscoverySet.Status.SetCondition(corev1alpha1.CustomResourceDiscoverySetCondition{
+			Message: "CustomResourceDiscoverySet is being terminated",
+			Reason:  corev1alpha1.TerminatingReason,
+			Status:  corev1alpha1.ConditionFalse,
+			Type:    corev1alpha1.CustomResourceDiscoverySetReady,
+		})
+		if err := r.Status().Update(ctx, crDiscoverySet); err != nil {
+			return fmt.Errorf("update CustomResourceDiscoverySet state: %w", err)
+		}
+	}
+
+	customResourceDiscoveries := &corev1alpha1.CustomResourceDiscoveryList{}
+	if err := r.List(ctx, customResourceDiscoveries, owner.OwnedBy(crDiscoverySet, r.Scheme)); err != nil {
+		return fmt.Errorf("cannot list CustomResourceDiscoveries: %w", err)
+	}
+	if len(customResourceDiscoveries.Items) > 0 {
+		for _, crd := range customResourceDiscoveries.Items {
+			if err := r.Delete(ctx, &crd); err != nil {
+				return fmt.Errorf("cannot delete: %w", err)
+			}
+		}
+		return nil
+	}
+
+	if util.RemoveFinalizer(crDiscoverySet, crDiscoverySetControllerFinalizer) {
+		if err := r.Update(ctx, crDiscoverySet); err != nil {
+			return fmt.Errorf("updating CustomResourceDiscovery finalizers: %w", err)
+		}
+	}
+	return nil
 }
 
 func (r *CustomResourceDiscoverySetReconciler) SetupWithManager(mgr ctrl.Manager) error {

@@ -59,9 +59,9 @@
                   required:
                   - name
                   type: object
-                derivedConfig:
-                  description: DerivedConfig contains the configuration to generate
-                    DerivedCustomResource from the BaseCRD of this CatalogEntry.
+                derived:
+                  description: Derived contains the configuration to generate DerivedCustomResource
+                    from the BaseCRD of this CatalogEntry.
                   properties:
                     expose:
                       description: controls which fields will be present in the derived
@@ -200,6 +200,245 @@
                 observedGeneration:
                   description: ObservedGeneration is the most recent generation observed
                     for this CatalogEntry by the controller.
+                  format: int64
+                  type: integer
+                phase:
+                  description: DEPRECATED. Phase represents the current lifecycle
+                    state of this object. Consider this field DEPRECATED, it will
+                    be removed as soon as there is a mechanism to map conditions to
+                    strings when printing the property. This is only for display purpose,
+                    for everything else use conditions.
+                  type: string
+              type: object
+          type: object
+      served: true
+      storage: true
+      subresources:
+        status: {}
+  status:
+    acceptedNames:
+      kind: ""
+      plural: ""
+    conditions: []
+    storedVersions: []
+- apiVersion: apiextensions.k8s.io/v1
+  kind: CustomResourceDefinition
+  metadata:
+    annotations:
+      controller-gen.kubebuilder.io/version: v0.2.4
+    creationTimestamp: null
+    labels:
+      kubecarrier.io/role: manager
+    name: catalogentrysets.catalog.kubecarrier.io
+  spec:
+    group: catalog.kubecarrier.io
+    names:
+      categories:
+      - kubecarrier-provider
+      kind: CatalogEntrySet
+      listKind: CatalogEntrySetList
+      plural: catalogentrysets
+      shortNames:
+      - ces
+      singular: catalogentryset
+    scope: Namespaced
+    versions:
+    - additionalPrinterColumns:
+      - jsonPath: .status.phase
+        name: Status
+        type: string
+      - jsonPath: .metadata.creationTimestamp
+        name: Age
+        type: date
+      name: v1alpha1
+      schema:
+        openAPIV3Schema:
+          description: CatalogEntrySet provides fully automation for provider to create
+            both CustomResourceDiscovery and CatalogEntry for the same CRD in multiple
+            service clusters.
+          properties:
+            apiVersion:
+              description: 'APIVersion defines the versioned schema of this representation
+                of an object. Servers should convert recognized schemas to the latest
+                internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+              type: string
+            kind:
+              description: 'Kind is a string value representing the REST resource
+                this object represents. Servers may infer this from the endpoint the
+                client submits requests to. Cannot be updated. In CamelCase. More
+                info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+              type: string
+            metadata:
+              type: object
+            spec:
+              description: CatalogEntrySetSpec defines the desired state of CatalogEntrySet
+              properties:
+                derived:
+                  description: Derived contains the configuration to generate DerivedCustomResources
+                    from the BaseCRDs that are selected by this CatalogEntrySet.
+                  properties:
+                    expose:
+                      description: controls which fields will be present in the derived
+                        CRD.
+                      items:
+                        description: VersionExposeConfig specifies which fields to
+                          expose in the derived CRD.
+                        properties:
+                          fields:
+                            description: specifies the fields that should be present
+                              in the derived CRD.
+                            items:
+                              description: FieldPath is specifying how to address
+                                a certain field.
+                              properties:
+                                jsonPath:
+                                  description: JSONPath e.g. .spec.somefield.somesubfield
+                                  type: string
+                              required:
+                              - jsonPath
+                              type: object
+                            type: array
+                          versions:
+                            description: specifies the versions of the referenced
+                              CRD, that this expose config applies to. The same version
+                              may not be specified in multiple VersionExposeConfigs.
+                            items:
+                              type: string
+                            type: array
+                        required:
+                        - fields
+                        - versions
+                        type: object
+                      type: array
+                    kindOverride:
+                      description: overrides the kind of the derived CRD.
+                      type: string
+                  required:
+                  - expose
+                  type: object
+                discoverySet:
+                  description: DiscoverySet contains the configuration to create CustomResourceDiscoverySet.
+                  properties:
+                    crd:
+                      description: CRD references a CustomResourceDefinition within
+                        the ServiceCluster.
+                      properties:
+                        name:
+                          type: string
+                      required:
+                      - name
+                      type: object
+                    kindOverride:
+                      description: KindOverride overrides resulting internal CRDs
+                        kind
+                      type: string
+                    serviceClusterSelector:
+                      description: ServiceClusterSelector references a set of ServiceClusters
+                        to search the CustomResourceDefinition on.
+                      properties:
+                        matchExpressions:
+                          description: matchExpressions is a list of label selector
+                            requirements. The requirements are ANDed.
+                          items:
+                            description: A label selector requirement is a selector
+                              that contains values, a key, and an operator that relates
+                              the key and values.
+                            properties:
+                              key:
+                                description: key is the label key that the selector
+                                  applies to.
+                                type: string
+                              operator:
+                                description: operator represents a key's relationship
+                                  to a set of values. Valid operators are In, NotIn,
+                                  Exists and DoesNotExist.
+                                type: string
+                              values:
+                                description: values is an array of string values.
+                                  If the operator is In or NotIn, the values array
+                                  must be non-empty. If the operator is Exists or
+                                  DoesNotExist, the values array must be empty. This
+                                  array is replaced during a strategic merge patch.
+                                items:
+                                  type: string
+                                type: array
+                            required:
+                            - key
+                            - operator
+                            type: object
+                          type: array
+                        matchLabels:
+                          additionalProperties:
+                            type: string
+                          description: matchLabels is a map of {key,value} pairs.
+                            A single {key,value} in the matchLabels map is equivalent
+                            to an element of matchExpressions, whose key field is
+                            "key", the operator is "In", and the values array contains
+                            only "value". The requirements are ANDed.
+                          type: object
+                      type: object
+                  required:
+                  - crd
+                  - serviceClusterSelector
+                  type: object
+                metadata:
+                  description: Metadata contains the metadata (display name, description,
+                    etc) of the CatalogEntrySet.
+                  properties:
+                    description:
+                      description: Description shows the human-readable description
+                        of this CatalogEntrySet.
+                      type: string
+                    displayName:
+                      description: DisplayName shows the human-readable name of this
+                        CatalogEntrySet.
+                      type: string
+                  type: object
+              required:
+              - discoverySet
+              type: object
+            status:
+              description: CatalogEntrySetStatus defines the observed state of CatalogEntrySet.
+              properties:
+                conditions:
+                  description: Conditions represents the latest available observations
+                    of a CatalogEntrySet's current state.
+                  items:
+                    description: CatalogEntrySetCondition contains details for the
+                      current condition of this CatalogEntrySet.
+                    properties:
+                      lastTransitionTime:
+                        description: LastTransitionTime is the last time the condition
+                          transits from one status to another.
+                        format: date-time
+                        type: string
+                      message:
+                        description: Message is the human readable message indicating
+                          details about last transition.
+                        type: string
+                      reason:
+                        description: Reason is the (brief) reason for the condition's
+                          last transition.
+                        type: string
+                      status:
+                        description: Status is the status of the condition, one of
+                          ('True', 'False', 'Unknown').
+                        type: string
+                      type:
+                        description: Type is the type of the CatalogEntrySet condition,
+                          currently ('Ready').
+                        type: string
+                    required:
+                    - lastTransitionTime
+                    - message
+                    - reason
+                    - status
+                    - type
+                    type: object
+                  type: array
+                observedGeneration:
+                  description: ObservedGeneration is the most recent generation observed
+                    for this CatalogEntrySet by the controller.
                   format: int64
                   type: integer
                 phase:
@@ -1936,6 +2175,8 @@
     resources:
     - catalogentries
     verbs:
+    - create
+    - delete
     - get
     - list
     - update
@@ -1944,6 +2185,23 @@
     - catalog.kubecarrier.io
     resources:
     - catalogentries/status
+    verbs:
+    - get
+    - patch
+    - update
+  - apiGroups:
+    - catalog.kubecarrier.io
+    resources:
+    - catalogentrysets
+    verbs:
+    - get
+    - list
+    - update
+    - watch
+  - apiGroups:
+    - catalog.kubecarrier.io
+    resources:
+    - catalogentrysets/status
     verbs:
     - get
     - patch
@@ -2085,6 +2343,8 @@
     resources:
     - customresourcediscoverysets
     verbs:
+    - create
+    - delete
     - get
     - list
     - update

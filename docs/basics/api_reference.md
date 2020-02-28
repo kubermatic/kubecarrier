@@ -12,6 +12,13 @@
 * [CatalogEntrySpec.catalog.kubecarrier.io/v1alpha1](#catalogentryspec.catalog.kubecarrier.io/v1alpha1)
 * [CatalogEntryStatus.catalog.kubecarrier.io/v1alpha1](#catalogentrystatus.catalog.kubecarrier.io/v1alpha1)
 * [DerivedConfig.catalog.kubecarrier.io/v1alpha1](#derivedconfig.catalog.kubecarrier.io/v1alpha1)
+* [CatalogEntrySet.catalog.kubecarrier.io/v1alpha1](#catalogentryset.catalog.kubecarrier.io/v1alpha1)
+* [CatalogEntrySetCondition.catalog.kubecarrier.io/v1alpha1](#catalogentrysetcondition.catalog.kubecarrier.io/v1alpha1)
+* [CatalogEntrySetList.catalog.kubecarrier.io/v1alpha1](#catalogentrysetlist.catalog.kubecarrier.io/v1alpha1)
+* [CatalogEntrySetMetadata.catalog.kubecarrier.io/v1alpha1](#catalogentrysetmetadata.catalog.kubecarrier.io/v1alpha1)
+* [CatalogEntrySetSpec.catalog.kubecarrier.io/v1alpha1](#catalogentrysetspec.catalog.kubecarrier.io/v1alpha1)
+* [CatalogEntrySetStatus.catalog.kubecarrier.io/v1alpha1](#catalogentrysetstatus.catalog.kubecarrier.io/v1alpha1)
+* [CustomResourceDiscoverySetConfig.catalog.kubecarrier.io/v1alpha1](#customresourcediscoverysetconfig.catalog.kubecarrier.io/v1alpha1)
 * [CRDInformation.catalog.kubecarrier.io/v1alpha1](#crdinformation.catalog.kubecarrier.io/v1alpha1)
 * [CRDVersion.catalog.kubecarrier.io/v1alpha1](#crdversion.catalog.kubecarrier.io/v1alpha1)
 * [DerivedCustomResource.catalog.kubecarrier.io/v1alpha1](#derivedcustomresource.catalog.kubecarrier.io/v1alpha1)
@@ -210,7 +217,7 @@ CatalogEntrySpec defines the desired state of CatalogEntry
 | ----- | ----------- | ------ | -------- |
 | metadata | Metadata contains the metadata (display name, description, etc) of the CatalogEntry. | catalog.kubecarrier.io/v1alpha1.CatalogEntryMetadata | false |
 | baseCRD | BaseCRD is the underlying BaseCRD objects that this CatalogEntry refers to. | catalog.kubecarrier.io/v1alpha1.ObjectReference | false |
-| derivedConfig | DerivedConfig contains the configuration to generate DerivedCustomResource from the BaseCRD of this CatalogEntry. | *catalog.kubecarrier.io/v1alpha1.DerivedConfig | false |
+| derived | Derived contains the configuration to generate DerivedCustomResource from the BaseCRD of this CatalogEntry. | *catalog.kubecarrier.io/v1alpha1.DerivedConfig | false |
 
 [Back to TOC](#table-of-contents)
 
@@ -235,6 +242,90 @@ CatalogEntryStatus defines the observed state of CatalogEntry.
 | ----- | ----------- | ------ | -------- |
 | kindOverride | overrides the kind of the derived CRD. | string | false |
 | expose | controls which fields will be present in the derived CRD. | []catalog.kubecarrier.io/v1alpha1.VersionExposeConfig | true |
+
+[Back to TOC](#table-of-contents)
+
+## CatalogEntrySet.catalog.kubecarrier.io/v1alpha1
+
+CatalogEntrySet provides fully automation for provider to create both CustomResourceDiscovery and CatalogEntry for the same CRD in multiple service clusters.
+
+| Field | Description | Scheme | Required |
+| ----- | ----------- | ------ | -------- |
+| metadata |  | [metav1.ObjectMeta](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.14/#objectmeta-v1-meta) | false |
+| spec |  | catalog.kubecarrier.io/v1alpha1.CatalogEntrySetSpec | false |
+| status |  | catalog.kubecarrier.io/v1alpha1.CatalogEntrySetStatus | false |
+
+[Back to TOC](#table-of-contents)
+
+## CatalogEntrySetCondition.catalog.kubecarrier.io/v1alpha1
+
+CatalogEntrySetCondition contains details for the current condition of this CatalogEntrySet.
+
+| Field | Description | Scheme | Required |
+| ----- | ----------- | ------ | -------- |
+| type | Type is the type of the CatalogEntrySet condition, currently ('Ready'). | catalog.kubecarrier.io/v1alpha1.CatalogEntrySetConditionType | true |
+| status | Status is the status of the condition, one of ('True', 'False', 'Unknown'). | catalog.kubecarrier.io/v1alpha1.ConditionStatus | true |
+| lastTransitionTime | LastTransitionTime is the last time the condition transits from one status to another. | metav1.Time | true |
+| reason | Reason is the (brief) reason for the condition's last transition. | string | true |
+| message | Message is the human readable message indicating details about last transition. | string | true |
+
+[Back to TOC](#table-of-contents)
+
+## CatalogEntrySetList.catalog.kubecarrier.io/v1alpha1
+
+CatalogEntrySetList contains a list of CatalogEntrySet
+
+| Field | Description | Scheme | Required |
+| ----- | ----------- | ------ | -------- |
+| metadata |  | [metav1.ListMeta](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.14/#listmeta-v1-meta) | false |
+| items |  | []catalog.kubecarrier.io/v1alpha1.CatalogEntrySet | true |
+
+[Back to TOC](#table-of-contents)
+
+## CatalogEntrySetMetadata.catalog.kubecarrier.io/v1alpha1
+
+CatalogEntrySetMetadata contains the metadata (display name, description, etc) of the CatalogEntrySet.
+
+| Field | Description | Scheme | Required |
+| ----- | ----------- | ------ | -------- |
+| displayName | DisplayName shows the human-readable name of this CatalogEntrySet. | string | false |
+| description | Description shows the human-readable description of this CatalogEntrySet. | string | false |
+
+[Back to TOC](#table-of-contents)
+
+## CatalogEntrySetSpec.catalog.kubecarrier.io/v1alpha1
+
+CatalogEntrySetSpec defines the desired state of CatalogEntrySet
+
+| Field | Description | Scheme | Required |
+| ----- | ----------- | ------ | -------- |
+| metadata | Metadata contains the metadata (display name, description, etc) of the CatalogEntrySet. | catalog.kubecarrier.io/v1alpha1.CatalogEntrySetMetadata | false |
+| derived | Derived contains the configuration to generate DerivedCustomResources from the BaseCRDs that are selected by this CatalogEntrySet. | *catalog.kubecarrier.io/v1alpha1.DerivedConfig | false |
+| discoverySet | DiscoverySet contains the configuration to create CustomResourceDiscoverySet. | catalog.kubecarrier.io/v1alpha1.CustomResourceDiscoverySetConfig | true |
+
+[Back to TOC](#table-of-contents)
+
+## CatalogEntrySetStatus.catalog.kubecarrier.io/v1alpha1
+
+CatalogEntrySetStatus defines the observed state of CatalogEntrySet.
+
+| Field | Description | Scheme | Required |
+| ----- | ----------- | ------ | -------- |
+| observedGeneration | ObservedGeneration is the most recent generation observed for this CatalogEntrySet by the controller. | catalog.kubecarrier.io/v1alpha1.int64 | false |
+| conditions | Conditions represents the latest available observations of a CatalogEntrySet's current state. | []catalog.kubecarrier.io/v1alpha1.CatalogEntrySetCondition | false |
+| phase | DEPRECATED. Phase represents the current lifecycle state of this object. Consider this field DEPRECATED, it will be removed as soon as there is a mechanism to map conditions to strings when printing the property. This is only for display purpose, for everything else use conditions. | catalog.kubecarrier.io/v1alpha1.CatalogEntrySetPhaseType | false |
+
+[Back to TOC](#table-of-contents)
+
+## CustomResourceDiscoverySetConfig.catalog.kubecarrier.io/v1alpha1
+
+
+
+| Field | Description | Scheme | Required |
+| ----- | ----------- | ------ | -------- |
+| crd | CRD references a CustomResourceDefinition within the ServiceCluster. | catalog.kubecarrier.io/v1alpha1.ObjectReference | true |
+| serviceClusterSelector | ServiceClusterSelector references a set of ServiceClusters to search the CustomResourceDefinition on. | [metav1.LabelSelector](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.14/#labelselector-v1-meta) | true |
+| kindOverride | KindOverride overrides resulting internal CRDs kind | string | false |
 
 [Back to TOC](#table-of-contents)
 

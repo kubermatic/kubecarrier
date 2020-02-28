@@ -37,58 +37,7 @@ func TestCatalogEntryValidatingCreate(t *testing.T) {
 		expectedError bool
 	}{
 		{
-			name: "metadata missing",
-			object: &catalogv1alpha1.CatalogEntry{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "test-catalogEntry",
-					Namespace: "test-provider-namespace",
-				},
-				Spec: catalogv1alpha1.CatalogEntrySpec{
-					BaseCRD: catalogv1alpha1.ObjectReference{
-						Name: "test-crd",
-					},
-				},
-			},
-			expectedError: true,
-		},
-		{
-			name: "description missing",
-			object: &catalogv1alpha1.CatalogEntry{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "test-catalogEntry",
-					Namespace: "test-provider-namespace",
-				},
-				Spec: catalogv1alpha1.CatalogEntrySpec{
-					Metadata: catalogv1alpha1.CatalogEntryMetadata{
-						DisplayName: "test CatalogEntry",
-					},
-					BaseCRD: catalogv1alpha1.ObjectReference{
-						Name: "test-crd",
-					},
-				},
-			},
-			expectedError: true,
-		},
-		{
-			name: "displayName missing",
-			object: &catalogv1alpha1.CatalogEntry{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "test-catalogEntry",
-					Namespace: "test-provider-namespace",
-				},
-				Spec: catalogv1alpha1.CatalogEntrySpec{
-					Metadata: catalogv1alpha1.CatalogEntryMetadata{
-						Description: "test CatalogEntry",
-					},
-					BaseCRD: catalogv1alpha1.ObjectReference{
-						Name: "test-crd",
-					},
-				},
-			},
-			expectedError: true,
-		},
-		{
-			name: "referencedCRD missing",
+			name: "BaseCRD missing",
 			object: &catalogv1alpha1.CatalogEntry{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "test-catalogEntry",
@@ -158,7 +107,7 @@ func TestCatalogEntryValidatingUpdate(t *testing.T) {
 		expectedError bool
 	}{
 		{
-			name: "referenced crd immutable",
+			name: "BaseCRD immutable",
 			object: &catalogv1alpha1.CatalogEntry{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "test-catalogEntry",
