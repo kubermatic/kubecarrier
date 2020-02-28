@@ -140,17 +140,14 @@ func (r *AccountReconciler) handleDeletion(ctx context.Context, log logr.Logger,
 		}
 	}
 
-	changed, err := owner.ReconcileOwnedObjects(
-		ctx, r.Client, log, r.Scheme,
-		account, nil, nil,
+	cleanedUp, err := util.DeleteObjects(ctx, r.Client, r.Scheme, []runtime.Object{
 		&corev1.Namespace{},
 		&catalogv1alpha1.TenantReference{},
-	)
+	}, owner.OwnedBy(account, r.Scheme))
 	if err != nil {
-		return fmt.Errorf("cannot reconcile objects: %w", err)
+		return fmt.Errorf("DeleteObjects: %w", err)
 	}
-
-	if !changed && util.RemoveFinalizer(account, accountControllerFinalizer) {
+	if cleanedUp && util.RemoveFinalizer(account, accountControllerFinalizer) {
 		if err := r.Update(ctx, account); err != nil {
 			return fmt.Errorf("updating Account Status: %w", err)
 		}
@@ -162,11 +159,7 @@ func (r *AccountReconciler) reconcileNamespace(ctx context.Context, log logr.Log
 	ns := &corev1.Namespace{}
 	ns.Name = account.Name
 
-	if _, err := owner.ReconcileOwnedObjects(
-		ctx, r.Client, log, r.Scheme,
-		account, []runtime.Object{ns}, nil,
-		&corev1.Namespace{},
-	); err != nil {
+	if _, err := owner.ReconcileOwnedObjects(ctx, r.Client, log, r.Scheme, account, []runtime.Object{ns}, &corev1.Namespace{}, nil); err != nil {
 		return fmt.Errorf("cannot reconcile namespace: %w", err)
 	}
 
@@ -218,11 +211,7 @@ func (r *AccountReconciler) reconcileTenantReferences(ctx context.Context, log l
 		}
 	}
 
-	_, err := owner.ReconcileOwnedObjects(
-		ctx, r.Client, log, r.Scheme,
-		account, wantedRefs, nil,
-		&catalogv1alpha1.TenantReference{},
-	)
+	_, err := owner.ReconcileOwnedObjects(ctx, r.Client, log, r.Scheme, account, wantedRefs, &catalogv1alpha1.TenantReference{}, nil)
 	if err != nil {
 		return fmt.Errorf("cannot reconcile objects: %w", err)
 	}

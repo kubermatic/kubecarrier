@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"strings"
 
+	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -100,4 +101,25 @@ func ListObjects(ctx context.Context, cl client.Client, scheme *runtime.Scheme, 
 		objs = append(objs, lstObjs...)
 	}
 	return objs, nil
+}
+
+// Delete deletes all object of given types adhering to additional ListOptions
+func DeleteObjects(ctx context.Context, cl client.Client, scheme *runtime.Scheme, listTypes []runtime.Object, options ...client.ListOption) (cleanedUp bool, err error) {
+	objs, err := ListObjects(ctx, cl, scheme, listTypes, options...)
+	if err != nil {
+		return false, fmt.Errorf("ListObjects: %w", err)
+	}
+
+	cleanedUp = true
+	for _, obj := range objs {
+		err := cl.Delete(ctx, obj)
+		switch {
+		case err == nil:
+			cleanedUp = false
+		case errors.IsNotFound(err):
+		default:
+			return false, fmt.Errorf("deleting ")
+		}
+	}
+	return cleanedUp, nil
 }

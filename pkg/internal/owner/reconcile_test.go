@@ -113,11 +113,7 @@ func TestOwnedObjectReconciler_Reconcile(t *testing.T) {
 				SetOwnerReference(ownerObj, obj, testScheme)
 				require.NoError(t, cl.Create(ctx, obj))
 			}
-			changed, err := ReconcileOwnedObjects(
-				ctx, cl, testutil.NewLogger(t), testScheme,
-				ownerObj, testCase.wantedState, testCase.muateFn,
-				&corev1.ConfigMap{},
-			)
+			changed, err := ReconcileOwnedObjects(ctx, cl, testutil.NewLogger(t), testScheme, ownerObj, testCase.wantedState, &corev1.ConfigMap{}, testCase.muateFn)
 			assert.NoError(t, err)
 			assert.Equal(t, testCase.change, changed)
 

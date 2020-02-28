@@ -39,17 +39,11 @@ type updateFunc func(actual, desired runtime.Object) error
 // other objects of the same type and owned by the same owner are removed.
 // It works as following. We have an object, the Owner, owning multiple objects in the kubernetes cluster. And we want
 // to ensure that after this Reconciliation of owned objects finishes the only owned objects existing are those that
-// are wanted. Also this would only operate on the kubernetes objects kinds defined in the objectTypes.
+// are wanted. Also this would only operate on the kubernetes objects objectType GroupKind.
 // In case object already exists in the kubernetes cluster the updateFn function is called allowing the user fixing
 // between found and wanted object. In case the function is nil it's ignored.
-func ReconcileOwnedObjects(
-	ctx context.Context, cl client.Client, log logr.Logger,
-	scheme *runtime.Scheme,
-	ownerObj runtime.Object, desired []runtime.Object,
-	updateFn updateFunc,
-	objectTypes ...runtime.Object,
-) (changed bool, err error) {
-	existing, err := util.ListObjects(ctx, cl, scheme, objectTypes, OwnedBy(ownerObj, scheme))
+func ReconcileOwnedObjects(ctx context.Context, cl client.Client, log logr.Logger, scheme *runtime.Scheme, ownerObj runtime.Object, desired []runtime.Object, objectType runtime.Object, updateFn updateFunc) (changed bool, err error) {
+	existing, err := util.ListObjects(ctx, cl, scheme, []runtime.Object{objectType}, OwnedBy(ownerObj, scheme))
 	if err != nil {
 		return false, fmt.Errorf("ListObjects: %w", err)
 	}
