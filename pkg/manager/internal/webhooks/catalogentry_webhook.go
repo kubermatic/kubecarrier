@@ -75,13 +75,20 @@ func (r *CatalogEntryWebhookHandler) validateCreate(catalogEntry *catalogv1alpha
 	if catalogEntry.Spec.BaseCRD.Name == "" {
 		return fmt.Errorf("the Referenced CRD of CatalogEntry is not specifed")
 	}
-	return nil
+	return r.validateMetadata(catalogEntry)
 }
 
 func (r *CatalogEntryWebhookHandler) validateUpdate(oldObj, newObj *catalogv1alpha1.CatalogEntry) error {
 	r.Log.Info("validate update", "name", newObj.Name)
 	if newObj.Spec.BaseCRD.Name != oldObj.Spec.BaseCRD.Name {
 		return fmt.Errorf("the Referenced CRD of CatalogEntry is immutable")
+	}
+	return r.validateMetadata(newObj)
+}
+
+func (r *CatalogEntryWebhookHandler) validateMetadata(catalogEntry *catalogv1alpha1.CatalogEntry) error {
+	if catalogEntry.Spec.Metadata.Description == "" || catalogEntry.Spec.Metadata.DisplayName == "" {
+		return fmt.Errorf("the description or the display name of the CatalogEntry: %s cannot be empty", catalogEntry.Name)
 	}
 	return nil
 }

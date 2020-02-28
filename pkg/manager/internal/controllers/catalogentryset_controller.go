@@ -233,6 +233,10 @@ func (r *CatalogEntrySetReconciler) reconcileCatalogEntry(
 			},
 		},
 		Spec: catalogv1alpha1.CatalogEntrySpec{
+			Metadata: catalogv1alpha1.CatalogEntryMetadata{
+				DisplayName: catalogEntrySet.Spec.Metadata.DisplayName,
+				Description: catalogEntrySet.Spec.Metadata.Description,
+			},
 			BaseCRD: catalogv1alpha1.ObjectReference{
 				Name: crd.Name,
 			},
