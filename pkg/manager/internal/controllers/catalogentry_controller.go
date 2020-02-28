@@ -161,8 +161,8 @@ func (r *CatalogEntryReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error
 		})
 	}
 
-	if catalogEntry.Spec.Derived == nil {
-		// If the Derived is not specified, we just put the info of the BaseCRD as CatalogEntry.Status.CRD
+	if catalogEntry.Spec.Derive == nil {
+		// If the Derive is not specified, we just put the info of the BaseCRD as CatalogEntry.Status.CRD
 		crdInfo, err := getCRDInformation(crd)
 		if err != nil {
 			return ctrl.Result{}, fmt.Errorf("getting CRDInformation: %w", err)
@@ -254,8 +254,8 @@ func (r *CatalogEntryReconciler) reconcileDerivedCustomResource(ctx context.Cont
 		},
 		Spec: catalogv1alpha1.DerivedCustomResourceSpec{
 			BaseCRD:      catalogEntry.Spec.BaseCRD,
-			KindOverride: catalogEntry.Spec.Derived.KindOverride,
-			Expose:       catalogEntry.Spec.Derived.Expose,
+			KindOverride: catalogEntry.Spec.Derive.KindOverride,
+			Expose:       catalogEntry.Spec.Derive.Expose,
 		},
 	}
 

@@ -236,7 +236,7 @@ func (r *CatalogEntrySetReconciler) reconcileCatalogEntry(
 			BaseCRD: catalogv1alpha1.ObjectReference{
 				Name: crd.Name,
 			},
-			Derived: catalogEntrySet.Spec.Derived,
+			Derive: catalogEntrySet.Spec.Derive,
 		},
 	}
 	err = controllerutil.SetControllerReference(catalogEntrySet, desiredCatalogEntry, r.Scheme)

@@ -99,7 +99,7 @@ func TestCatalogEntryReconciler(t *testing.T) {
 			BaseCRD: catalogv1alpha1.ObjectReference{
 				Name: baseCRD.Name,
 			},
-			Derived: &catalogv1alpha1.DerivedConfig{
+			Derive: &catalogv1alpha1.DerivedConfig{
 				KindOverride: "TestResource",
 				Expose: []catalogv1alpha1.VersionExposeConfig{
 					{

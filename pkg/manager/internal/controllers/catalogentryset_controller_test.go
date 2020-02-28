@@ -88,7 +88,7 @@ func TestCatalogEntrySetReconciler(t *testing.T) {
 				DisplayName: "Test CatalogEntrySet",
 				Description: "Test CatalogEntrySet",
 			},
-			Derived: &catalogv1alpha1.DerivedConfig{
+			Derive: &catalogv1alpha1.DerivedConfig{
 				KindOverride: "CatapultTenant",
 				Expose: []catalogv1alpha1.VersionExposeConfig{
 					{

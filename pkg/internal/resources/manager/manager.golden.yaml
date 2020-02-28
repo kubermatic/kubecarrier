@@ -59,8 +59,8 @@
                   required:
                   - name
                   type: object
-                derived:
-                  description: Derived contains the configuration to generate DerivedCustomResource
+                derive:
+                  description: Derive contains the configuration to generate DerivedCustomResource
                     from the BaseCRD of this CatalogEntry.
                   properties:
                     expose:
@@ -273,8 +273,8 @@
             spec:
               description: CatalogEntrySetSpec defines the desired state of CatalogEntrySet
               properties:
-                derived:
-                  description: Derived contains the configuration to generate DerivedCustomResources
+                derive:
+                  description: Derive contains the configuration to generate DerivedCustomResources
                     from the BaseCRDs that are selected by this CatalogEntrySet.
                   properties:
                     expose:

@@ -296,8 +296,8 @@ func (in *CatalogEntrySetMetadata) DeepCopy() *CatalogEntrySetMetadata {
 func (in *CatalogEntrySetSpec) DeepCopyInto(out *CatalogEntrySetSpec) {
 	*out = *in
 	out.Metadata = in.Metadata
-	if in.Derived != nil {
-		in, out := &in.Derived, &out.Derived
+	if in.Derive != nil {
+		in, out := &in.Derive, &out.Derive
 		*out = new(DerivedConfig)
 		(*in).DeepCopyInto(*out)
 	}
@@ -341,8 +341,8 @@ func (in *CatalogEntrySpec) DeepCopyInto(out *CatalogEntrySpec) {
 	*out = *in
 	out.Metadata = in.Metadata
 	out.BaseCRD = in.BaseCRD
-	if in.Derived != nil {
-		in, out := &in.Derived, &out.Derived
+	if in.Derive != nil {
+		in, out := &in.Derive, &out.Derive
 		*out = new(DerivedConfig)
 		(*in).DeepCopyInto(*out)
 	}

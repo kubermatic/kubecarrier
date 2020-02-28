@@ -217,7 +217,7 @@ CatalogEntrySpec defines the desired state of CatalogEntry
 | ----- | ----------- | ------ | -------- |
 | metadata | Metadata contains the metadata (display name, description, etc) of the CatalogEntry. | catalog.kubecarrier.io/v1alpha1.CatalogEntryMetadata | false |
 | baseCRD | BaseCRD is the underlying BaseCRD objects that this CatalogEntry refers to. | catalog.kubecarrier.io/v1alpha1.ObjectReference | false |
-| derived | Derived contains the configuration to generate DerivedCustomResource from the BaseCRD of this CatalogEntry. | *catalog.kubecarrier.io/v1alpha1.DerivedConfig | false |
+| derive | Derive contains the configuration to generate DerivedCustomResource from the BaseCRD of this CatalogEntry. | *catalog.kubecarrier.io/v1alpha1.DerivedConfig | false |
 
 [Back to TOC](#table-of-contents)
 
@@ -300,7 +300,7 @@ CatalogEntrySetSpec defines the desired state of CatalogEntrySet
 | Field | Description | Scheme | Required |
 | ----- | ----------- | ------ | -------- |
 | metadata | Metadata contains the metadata (display name, description, etc) of the CatalogEntrySet. | catalog.kubecarrier.io/v1alpha1.CatalogEntrySetMetadata | false |
-| derived | Derived contains the configuration to generate DerivedCustomResources from the BaseCRDs that are selected by this CatalogEntrySet. | *catalog.kubecarrier.io/v1alpha1.DerivedConfig | false |
+| derive | Derive contains the configuration to generate DerivedCustomResources from the BaseCRDs that are selected by this CatalogEntrySet. | *catalog.kubecarrier.io/v1alpha1.DerivedConfig | false |
 | discoverySet | DiscoverySet contains the configuration to create CustomResourceDiscoverySet. | catalog.kubecarrier.io/v1alpha1.CustomResourceDiscoverySetConfig | true |
 
 [Back to TOC](#table-of-contents)

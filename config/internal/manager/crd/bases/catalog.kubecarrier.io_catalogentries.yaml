@@ -56,8 +56,8 @@ spec:
                   required:
                     - name
                   type: object
-                derived:
-                  description: Derived contains the configuration to generate DerivedCustomResource
+                derive:
+                  description: Derive contains the configuration to generate DerivedCustomResource
                     from the BaseCRD of this CatalogEntry.
                   properties:
                     expose:

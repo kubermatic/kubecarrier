@@ -24,8 +24,8 @@ import (
 type CatalogEntrySetSpec struct {
 	// Metadata contains the metadata (display name, description, etc) of the CatalogEntrySet.
 	Metadata CatalogEntrySetMetadata `json:"metadata,omitempty"`
-	// Derived contains the configuration to generate DerivedCustomResources from the BaseCRDs that are selected by this CatalogEntrySet.
-	Derived *DerivedConfig `json:"derived,omitempty"`
+	// Derive contains the configuration to generate DerivedCustomResources from the BaseCRDs that are selected by this CatalogEntrySet.
+	Derive *DerivedConfig `json:"derive,omitempty"`
 	// DiscoverySet contains the configuration to create CustomResourceDiscoverySet.
 	DiscoverySet CustomResourceDiscoverySetConfig `json:"discoverySet"`
 }
