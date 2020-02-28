@@ -145,6 +145,19 @@ spec:
                   - type
                   type: object
                 type: array
+              crds:
+                description: CRDs contains the CRDs information that created by the
+                  CustomResourceDiscovery objects of this CustomResourceDiscoverySet.
+                items:
+                  description: ObjectReference describes the link to another object
+                    in the same namespace
+                  properties:
+                    name:
+                      type: string
+                  required:
+                  - name
+                  type: object
+                type: array
               observedGeneration:
                 description: The most recent generation observed by the controller.
                 format: int64

@@ -31,7 +31,7 @@ spec:
     schema:
       openAPIV3Schema:
         description: CatalogEntrySet provides fully automation for provider to create
-          both CustomResourceDiscovery and CatalogEntry for the same CRD in multiple
+          both CustomResourceDiscoverySet and CatalogEntry for the same CRD in multiple
           service clusters.
         properties:
           apiVersion:

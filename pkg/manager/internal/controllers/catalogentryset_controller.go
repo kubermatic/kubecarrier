@@ -23,7 +23,6 @@ import (
 	"strings"
 
 	"github.com/go-logr/logr"
-	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -34,7 +33,6 @@ import (
 
 	catalogv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/catalog/v1alpha1"
 	corev1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/core/v1alpha1"
-	"github.com/kubermatic/kubecarrier/pkg/internal/owner"
 	"github.com/kubermatic/kubecarrier/pkg/internal/util"
 )
 
@@ -52,7 +50,6 @@ type CatalogEntrySetReconciler struct {
 // +kubebuilder:rbac:groups=catalog.kubecarrier.io,resources=catalogentries,verbs=get;list;watch;update;create;delete
 // +kubebuilder:rbac:groups=catalog.kubecarrier.io,resources=catalogentries/status,verbs=get
 // +kubebuilder:rbac:groups=kubecarrier.io,resources=customresourcediscoverysets,verbs=get;watch;update;create;delete
-// +kubebuilder:rbac:groups=kubecarrier.io,resources=customresourcediscoveries,verbs=list
 
 func (r *CatalogEntrySetReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	ctx := context.Background()
@@ -100,20 +97,13 @@ func (r *CatalogEntrySetReconciler) Reconcile(req ctrl.Request) (ctrl.Result, er
 	}
 
 	// Reconcile CatalogEntry objects
-	customResourceDiscoveryList := &corev1alpha1.CustomResourceDiscoveryList{}
-	if err := r.List(ctx,
-		customResourceDiscoveryList,
-		owner.OwnedBy(currentCustomResourceDiscoverySet, r.Scheme),
-	); err != nil {
-		return ctrl.Result{}, fmt.Errorf("listing CustomResourceDiscovery: %w", err)
-	}
 	var unreadyCatalogEntryNames []string
 	existingCatalogEntryNames := map[string]struct{}{}
-	for _, customResourceDiscovery := range customResourceDiscoveryList.Items {
-		currentCatalogEntry, err := r.reconcileCatalogEntry(ctx, &customResourceDiscovery, catalogEntrySet)
+	for _, crd := range currentCustomResourceDiscoverySet.Status.CRDs {
+		currentCatalogEntry, err := r.reconcileCatalogEntry(ctx, &crd, catalogEntrySet)
 		if err != nil {
 			return ctrl.Result{}, fmt.Errorf(
-				"reconciling CatalogEntry for CRD %s: %w", customResourceDiscovery.Status.CRD.Name, err)
+				"reconciling CatalogEntry for CRD %s: %w", crd.Name, err)
 		}
 		existingCatalogEntryNames[currentCatalogEntry.Name] = struct{}{}
 
@@ -217,16 +207,12 @@ func (r *CatalogEntrySetReconciler) reconcileCustomResourceDiscoverySet(
 }
 
 func (r *CatalogEntrySetReconciler) reconcileCatalogEntry(
-	ctx context.Context, customResourceDiscovery *corev1alpha1.CustomResourceDiscovery,
+	ctx context.Context, crdReference *corev1alpha1.ObjectReference,
 	catalogEntrySet *catalogv1alpha1.CatalogEntrySet,
 ) (*catalogv1alpha1.CatalogEntry, error) {
-	crd, err := r.getCRDByCustomResourceDiscovery(ctx, customResourceDiscovery)
-	if err != nil {
-		return nil, fmt.Errorf("getting CRD that owned by CustomResourceDiscovery: %w", err)
-	}
 	desiredCatalogEntry := &catalogv1alpha1.CatalogEntry{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      crd.Name,
+			Name:      crdReference.Name,
 			Namespace: catalogEntrySet.Namespace,
 			Labels: map[string]string{
 				catalogEntriesLabel: catalogEntrySet.Name,
@@ -238,12 +224,12 @@ func (r *CatalogEntrySetReconciler) reconcileCatalogEntry(
 				Description: catalogEntrySet.Spec.Metadata.Description,
 			},
 			BaseCRD: catalogv1alpha1.ObjectReference{
-				Name: crd.Name,
+				Name: crdReference.Name,
 			},
 			Derive: catalogEntrySet.Spec.Derive,
 		},
 	}
-	err = controllerutil.SetControllerReference(catalogEntrySet, desiredCatalogEntry, r.Scheme)
+	err := controllerutil.SetControllerReference(catalogEntrySet, desiredCatalogEntry, r.Scheme)
 	if err != nil {
 		return nil, fmt.Errorf("set controller reference: %w", err)
 	}
@@ -324,25 +310,4 @@ func (r *CatalogEntrySetReconciler) updateStatus(
 		return fmt.Errorf("updating CatalogEntrySet status: %w", err)
 	}
 	return nil
-}
-
-func (r *CatalogEntrySetReconciler) getCRDByCustomResourceDiscovery(ctx context.Context, customResourceDiscovery *corev1alpha1.CustomResourceDiscovery) (*apiextensionsv1.CustomResourceDefinition, error) {
-	crdList := &apiextensionsv1.CustomResourceDefinitionList{}
-	if err := r.List(ctx,
-		crdList,
-		owner.OwnedBy(customResourceDiscovery, r.Scheme),
-	); err != nil {
-		return nil, err
-	}
-	switch len(crdList.Items) {
-	case 0:
-		// not found
-		return nil, fmt.Errorf("crd that owned by CustomResourceDiscovery object %s not found", customResourceDiscovery.Name)
-	case 1:
-		// found!
-		return &crdList.Items[0], nil
-	default:
-		// found too many
-		return nil, fmt.Errorf("multiple crds that owned by CustomResourceDiscovery object %s found", customResourceDiscovery.Name)
-	}
 }

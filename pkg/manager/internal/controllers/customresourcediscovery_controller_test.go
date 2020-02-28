@@ -131,6 +131,7 @@ func TestCustomResourceDiscoveryReconciler(t *testing.T) {
 	if assert.True(t, ok) {
 		assert.Equal(t, corev1alpha1.ConditionTrue, establishedCondition.Status)
 		assert.Equal(t, "Established", establishedCondition.Reason)
+		assert.Equal(t, internalCRD.Name, crDiscovery.Status.ManagementClusterCRD.Name)
 	}
 
 	catapult := &operatorv1alpha1.Catapult{}

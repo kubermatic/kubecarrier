@@ -247,7 +247,7 @@ CatalogEntryStatus defines the observed state of CatalogEntry.
 
 ## CatalogEntrySet.catalog.kubecarrier.io/v1alpha1
 
-CatalogEntrySet provides fully automation for provider to create both CustomResourceDiscovery and CatalogEntry for the same CRD in multiple service clusters.
+CatalogEntrySet provides fully automation for provider to create both CustomResourceDiscoverySet and CatalogEntry for the same CRD in multiple service clusters.
 
 | Field | Description | Scheme | Required |
 | ----- | ----------- | ------ | -------- |
@@ -788,6 +788,7 @@ CustomResourceDiscoveryStatus defines the observed state of crdreference
 | Field | Description | Scheme | Required |
 | ----- | ----------- | ------ | -------- |
 | crd | CRD defines the original CustomResourceDefinition specification from the service cluster | *apiextensionsv1.CustomResourceDefinition | false |
+| managementClusterCRD | ManagementClusterCRD references the CustomResourceDefinition that created by this CustomResourceDiscovery. | kubecarrier.io/v1alpha1.ObjectReference | false |
 | phase | DEPRECATED. Phase represents the current lifecycle state of this object consider this field DEPRECATED, it will be removed as soon as there is a mechanism to map conditions to a string when printing the property is only present for display purposes, for everything else use conditions | kubecarrier.io/v1alpha1.CustomResourceDiscoveryPhaseType | false |
 | conditions | Conditions is a list of all conditions this CustomResourceDiscovery is in. | []kubecarrier.io/v1alpha1.CustomResourceDiscoveryCondition | false |
 | observedGeneration | The most recent generation observed by the controller. | kubecarrier.io/v1alpha1.int64 | false |
@@ -849,6 +850,7 @@ CustomResourceDiscoverySetCondition contains details for the current condition o
 
 | Field | Description | Scheme | Required |
 | ----- | ----------- | ------ | -------- |
+| crds | CRDs contains the CRDs information that created by the CustomResourceDiscovery objects of this CustomResourceDiscoverySet. | []kubecarrier.io/v1alpha1.ObjectReference | false |
 | phase | DEPRECATED. Phase represents the current lifecycle state of this object consider this field DEPRECATED, it will be removed as soon as there is a mechanism to map conditions to a string when printing the property is only present for display purposes, for everything else use conditions | kubecarrier.io/v1alpha1.CustomResourceDiscoverySetPhaseType | false |
 | conditions | Conditions is a list of all conditions this CustomResourceDiscovery is in. | []kubecarrier.io/v1alpha1.CustomResourceDiscoverySetCondition | false |
 | observedGeneration | The most recent generation observed by the controller. | kubecarrier.io/v1alpha1.int64 | false |

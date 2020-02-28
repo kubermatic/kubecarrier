@@ -254,7 +254,7 @@
       schema:
         openAPIV3Schema:
           description: CatalogEntrySet provides fully automation for provider to create
-            both CustomResourceDiscovery and CatalogEntry for the same CRD in multiple
+            both CustomResourceDiscoverySet and CatalogEntry for the same CRD in multiple
             service clusters.
           properties:
             apiVersion:
@@ -1624,6 +1624,15 @@
                     from the service cluster
                   type: object
                   x-kubernetes-preserve-unknown-fields: true
+                managementClusterCRD:
+                  description: ManagementClusterCRD references the CustomResourceDefinition
+                    that created by this CustomResourceDiscovery.
+                  properties:
+                    name:
+                      type: string
+                  required:
+                  - name
+                  type: object
                 observedGeneration:
                   description: The most recent generation observed by the controller.
                   format: int64
@@ -1793,6 +1802,19 @@
                     - reason
                     - status
                     - type
+                    type: object
+                  type: array
+                crds:
+                  description: CRDs contains the CRDs information that created by
+                    the CustomResourceDiscovery objects of this CustomResourceDiscoverySet.
+                  items:
+                    description: ObjectReference describes the link to another object
+                      in the same namespace
+                    properties:
+                      name:
+                        type: string
+                    required:
+                    - name
                     type: object
                   type: array
                 observedGeneration:

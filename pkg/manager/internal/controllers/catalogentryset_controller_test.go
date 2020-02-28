@@ -130,7 +130,7 @@ func TestCatalogEntrySetReconciler(t *testing.T) {
 		}
 	}
 
-	reconcileLoop() // should create two CatalogEntry objects
+	reconcileLoop()
 	customResourceDiscoverySet := &corev1alpha1.CustomResourceDiscoverySet{}
 	require.NoError(t, r.Get(ctx, types.NamespacedName{
 		Name:      catalogEntrySet.Name,
@@ -143,72 +143,16 @@ func TestCatalogEntrySetReconciler(t *testing.T) {
 		assert.Equal(t, "CustomResourceDiscoverySetUnready", ready.Reason)
 	}
 
-	customResourceDiscovery := &corev1alpha1.CustomResourceDiscovery{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "catapultinternals.eu-west-1",
-			Namespace: "hans",
-			Labels: map[string]string{
-				crDiscoveriesLabel:               customResourceDiscoverySet.Name,
-				"owner.kubecarrier.io/name":      "catapult",
-				"owner.kubecarrier.io/namespace": "hans",
-				"owner.kubecarrier.io/type":      "CustomResourceDiscoverySet.kubecarrier.io",
-			},
-		},
-	}
-	require.NoError(t, r.Create(ctx, customResourceDiscovery))
-
-	ownedCRD := &apiextensionsv1.CustomResourceDefinition{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: "catapultinternals.eu-west-1.example-provider",
-			Labels: map[string]string{
-				"kubecarrier.io/service-cluster": "eu-west-1",
-				"kubecarrier.io/provider":        "example.provider",
-				"owner.kubecarrier.io/name":      "catapultinternals.eu-west-1",
-				"owner.kubecarrier.io/namespace": "hans",
-				"owner.kubecarrier.io/type":      "CustomResourceDiscovery.kubecarrier.io",
-			},
-		},
-		Spec: apiextensionsv1.CustomResourceDefinitionSpec{
-			Group: "eu-west-1.example-provider",
-			Names: apiextensionsv1.CustomResourceDefinitionNames{
-				Kind:     "CatapultInternal",
-				ListKind: "CatapultInternalList",
-				Plural:   "catapultinternals",
-				Singular: "catapultinternal",
-			},
-			Scope: apiextensionsv1.NamespaceScoped,
-			Versions: []apiextensionsv1.CustomResourceDefinitionVersion{
-				{
-					Name:    "v1alpha1",
-					Served:  true,
-					Storage: true,
-					Schema: &apiextensionsv1.CustomResourceValidation{
-						OpenAPIV3Schema: &apiextensionsv1.JSONSchemaProps{
-							Properties: map[string]apiextensionsv1.JSONSchemaProps{
-								"apiVersion": {Type: "string"},
-								"kind":       {Type: "string"},
-								"metadata":   {Type: "object"},
-								"spec": {
-									Type: "object",
-									Properties: map[string]apiextensionsv1.JSONSchemaProps{
-										"prop1": {Type: "string"},
-										"prop2": {Type: "string"},
-									},
-								},
-							},
-							Type: "object",
-						},
-					},
-				},
-			},
-		},
-	}
-	require.NoError(t, r.Create(ctx, ownedCRD))
-
+	internalCRDName := "catapultinternals.eu-west-1.example-provider"
 	customResourceDiscoverySet.Status.Conditions = []corev1alpha1.CustomResourceDiscoverySetCondition{
 		{
 			Type:   corev1alpha1.CustomResourceDiscoverySetReady,
 			Status: corev1alpha1.ConditionTrue,
+		},
+	}
+	customResourceDiscoverySet.Status.CRDs = []corev1alpha1.ObjectReference{
+		{
+			Name: internalCRDName,
 		},
 	}
 	require.NoError(t, r.Status().Update(ctx, customResourceDiscoverySet))
@@ -217,7 +161,7 @@ func TestCatalogEntrySetReconciler(t *testing.T) {
 
 	catalogEntry := &catalogv1alpha1.CatalogEntry{}
 	require.NoError(t, r.Get(ctx, types.NamespacedName{
-		Name:      ownedCRD.Name,
+		Name:      internalCRDName,
 		Namespace: catalogEntrySet.Namespace,
 	}, catalogEntry))
 

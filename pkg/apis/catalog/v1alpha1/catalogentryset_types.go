@@ -172,7 +172,7 @@ func (s *CatalogEntrySetStatus) SetCondition(condition CatalogEntrySetCondition)
 	s.Conditions = append(s.Conditions, condition)
 }
 
-// CatalogEntrySet provides fully automation for provider to create both CustomResourceDiscovery and CatalogEntry for the same CRD in multiple service clusters.
+// CatalogEntrySet provides fully automation for provider to create both CustomResourceDiscoverySet and CatalogEntry for the same CRD in multiple service clusters.
 // +kubebuilder:object:root=true
 // +kubebuilder:subresource:status
 // +kubebuilder:printcolumn:name="Status",type="string",JSONPath=".status.phase"

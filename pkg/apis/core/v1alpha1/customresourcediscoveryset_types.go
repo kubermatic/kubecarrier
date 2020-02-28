@@ -30,6 +30,8 @@ type CustomResourceDiscoverySetSpec struct {
 }
 
 type CustomResourceDiscoverySetStatus struct {
+	// CRDs contains the CRDs information that created by the CustomResourceDiscovery objects of this CustomResourceDiscoverySet.
+	CRDs []ObjectReference `json:"crds,omitempty"`
 	// DEPRECATED.
 	// Phase represents the current lifecycle state of this object
 	// consider this field DEPRECATED, it will be removed as soon as there
@@ -47,14 +49,9 @@ type CustomResourceDiscoverySetPhaseType string
 
 // Values of CustomResourceDiscoverySetPhaseType
 const (
-	CustomResourceDiscoverySetPhaseReady       CustomResourceDiscoverySetPhaseType = "Ready"
-	CustomResourceDiscoverySetPhaseNotReady    CustomResourceDiscoverySetPhaseType = "NotReady"
-	CustomResourceDiscoverySetPhaseUnknown     CustomResourceDiscoverySetPhaseType = "Unknown"
-	CustomResourceDiscoverySetPhaseTerminating CustomResourceDiscoverySetPhaseType = "Terminating"
-)
-
-const (
-	CustomResourceDiscoverySetTerminatingReason = "Deleting"
+	CustomResourceDiscoverySetPhaseReady    CustomResourceDiscoverySetPhaseType = "Ready"
+	CustomResourceDiscoverySetPhaseNotReady CustomResourceDiscoverySetPhaseType = "NotReady"
+	CustomResourceDiscoverySetPhaseUnknown  CustomResourceDiscoverySetPhaseType = "Unknown"
 )
 
 // updatePhase updates the phase property based on the current conditions
@@ -68,11 +65,7 @@ func (s *CustomResourceDiscoverySetStatus) updatePhase() {
 		case ConditionTrue:
 			s.Phase = CustomResourceDiscoverySetPhaseReady
 		case ConditionFalse:
-			if condition.Reason == CustomResourceDiscoverySetTerminatingReason {
-				s.Phase = CustomResourceDiscoverySetPhaseTerminating
-			} else {
-				s.Phase = CustomResourceDiscoverySetPhaseNotReady
-			}
+			s.Phase = CustomResourceDiscoverySetPhaseNotReady
 		default:
 			s.Phase = CustomResourceDiscoverySetPhaseUnknown
 		}
