@@ -18,7 +18,6 @@ package controllers
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/go-logr/logr"
 	certv1alpha2 "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
@@ -35,14 +34,68 @@ import (
 
 	operatorv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/operator/v1alpha1"
 	"github.com/kubermatic/kubecarrier/pkg/internal/owner"
-	"github.com/kubermatic/kubecarrier/pkg/internal/reconcile"
 	"github.com/kubermatic/kubecarrier/pkg/internal/resources/manager"
-	"github.com/kubermatic/kubecarrier/pkg/internal/util"
 )
 
 const (
 	kubeCarrierControllerFinalizer = "kubecarrier.kubecarrier.io/controller"
 )
+
+type kubeCarrierController struct {
+	Obj *operatorv1alpha1.KubeCarrier
+}
+
+func (c *kubeCarrierController) GetReadyConditionStatus() operatorv1alpha1.ConditionStatus {
+	readyCondition, _ := c.Obj.Status.GetCondition(operatorv1alpha1.KubeCarrierReady)
+	return readyCondition.Status
+}
+
+func (c *kubeCarrierController) SetReadyCondition() {
+	c.Obj.Status.ObservedGeneration = c.Obj.Generation
+	c.Obj.Status.SetCondition(operatorv1alpha1.KubeCarrierCondition{
+		Type:    operatorv1alpha1.KubeCarrierReady,
+		Status:  operatorv1alpha1.ConditionTrue,
+		Reason:  "DeploymentReady",
+		Message: "the deployment of the KubeCarrier controller manager is ready",
+	})
+}
+
+func (c *kubeCarrierController) SetUnReadyCondition() {
+	c.Obj.Status.ObservedGeneration = c.Obj.Generation
+	c.Obj.Status.SetCondition(operatorv1alpha1.KubeCarrierCondition{
+		Type:    operatorv1alpha1.KubeCarrierReady,
+		Status:  operatorv1alpha1.ConditionFalse,
+		Reason:  "DeploymentUnready",
+		Message: "the deployment of the KubeCarrier controller manager is not ready",
+	})
+}
+
+func (c *kubeCarrierController) SetTerminatingCondition(ctx context.Context) bool {
+	readyCondition, _ := c.Obj.Status.GetCondition(operatorv1alpha1.KubeCarrierReady)
+	if readyCondition.Status != operatorv1alpha1.ConditionFalse ||
+		readyCondition.Status == operatorv1alpha1.ConditionFalse && readyCondition.Reason != operatorv1alpha1.KubeCarrierTerminatingReason {
+		c.Obj.Status.ObservedGeneration = c.Obj.Generation
+		c.Obj.Status.SetCondition(operatorv1alpha1.KubeCarrierCondition{
+			Type:    operatorv1alpha1.KubeCarrierReady,
+			Status:  operatorv1alpha1.ConditionFalse,
+			Reason:  operatorv1alpha1.KubeCarrierTerminatingReason,
+			Message: "KubeCarrier is being terminated",
+		})
+		return true
+	}
+	return false
+}
+
+func (c *kubeCarrierController) GetObj() object {
+	return c.Obj
+}
+
+func (c *kubeCarrierController) GetManifests(ctx context.Context) ([]unstructured.Unstructured, error) {
+	return manager.Manifests(
+		manager.Config{
+			Namespace: c.Obj.Namespace,
+		})
+}
 
 // KubeCarrierReconciler reconciles a KubeCarrier object
 type KubeCarrierReconciler struct {
@@ -75,49 +128,18 @@ func (r *KubeCarrierReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error)
 	ctx := context.Background()
 	log := r.Log.WithValues("kubecarrier", req.NamespacedName)
 
-	// 1. Fetch the KubeCarrier object.
 	kubeCarrier := &operatorv1alpha1.KubeCarrier{}
-	if err := r.Get(ctx, req.NamespacedName, kubeCarrier); err != nil {
-		// If the KubeCarrier object is already gone, we just ignore the NotFound error.
-		return ctrl.Result{}, client.IgnoreNotFound(err)
+
+	br := BaseReconciler{
+		Client:    r.Client,
+		Log:       log,
+		Scheme:    r.Scheme,
+		Finalizer: "kubecarrier.kubecarrier.io/controller",
+		Name:      "KubeCarrier",
 	}
 
-	// 2. Handle the deletion of the KubeCarrier object (Remove the objects that the KubeCarrier owns, and remove the finalizer).
-	if !kubeCarrier.DeletionTimestamp.IsZero() {
-		if err := r.handleDeletion(ctx, kubeCarrier); err != nil {
-			return ctrl.Result{}, fmt.Errorf("handle deletion: %w", err)
-		}
-		return ctrl.Result{}, nil
-	}
-
-	// Add finalizer
-	if util.AddFinalizer(kubeCarrier, kubeCarrierControllerFinalizer) {
-		if err := r.Update(ctx, kubeCarrier); err != nil {
-			return ctrl.Result{}, fmt.Errorf("updating KubeCarrier finalizers: %w", err)
-		}
-	}
-
-	// 3. Reconcile the objects that owned by KubeCarrier object.
-	// Build the manifests of the KubeCarrier controller manager.
-	objects, err := manager.Manifests(
-		manager.Config{
-			Namespace: kubeCarrier.Namespace,
-		})
-	if err != nil {
-		return ctrl.Result{}, fmt.Errorf("creating manager manifests: %w", err)
-	}
-
-	deploymentIsReady, err := r.reconcileOwnedObjects(ctx, log, kubeCarrier, objects)
-	if err != nil {
-		return ctrl.Result{}, err
-	}
-
-	// 4. Update the status of the KubeCarrier object.
-	if err := r.updateKubeCarrierStatus(ctx, kubeCarrier, deploymentIsReady); err != nil {
-		return ctrl.Result{}, err
-	}
-
-	return ctrl.Result{}, nil
+	ctr := &kubeCarrierController{Obj: kubeCarrier}
+	return br.Reconcile(ctx, req, ctr)
 }
 
 func (r *KubeCarrierReconciler) SetupWithManager(mgr ctrl.Manager) error {
@@ -137,126 +159,4 @@ func (r *KubeCarrierReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		Watches(&source.Kind{Type: &adminv1beta1.MutatingWebhookConfiguration{}}, enqueuer).
 		Watches(&source.Kind{Type: &adminv1beta1.ValidatingWebhookConfiguration{}}, enqueuer).
 		Complete(r)
-}
-
-// handleDeletion handles the deletion of the KubeCarrier object. Currently, it does:
-// 1. Update the KubeCarrier status to Terminating.
-// 2. Delete the objects that the KubeCarrier object owns.
-// 3. Remove the finalizer from the KubeCarrier object.
-func (r *KubeCarrierReconciler) handleDeletion(ctx context.Context, kubeCarrier *operatorv1alpha1.KubeCarrier) error {
-
-	// 1. Update the KubeCarrier Status to Terminating.
-	readyCondition, _ := kubeCarrier.Status.GetCondition(operatorv1alpha1.KubeCarrierReady)
-	if readyCondition.Status != operatorv1alpha1.ConditionFalse ||
-		readyCondition.Status == operatorv1alpha1.ConditionFalse && readyCondition.Reason != operatorv1alpha1.KubeCarrierTerminatingReason {
-		kubeCarrier.Status.ObservedGeneration = kubeCarrier.Generation
-		kubeCarrier.Status.SetCondition(operatorv1alpha1.KubeCarrierCondition{
-			Type:    operatorv1alpha1.KubeCarrierReady,
-			Status:  operatorv1alpha1.ConditionFalse,
-			Reason:  operatorv1alpha1.KubeCarrierTerminatingReason,
-			Message: "KubeCarrier is being terminated",
-		})
-		if err := r.Status().Update(ctx, kubeCarrier); err != nil {
-			return fmt.Errorf("updating KubeCarrier status: %w", err)
-		}
-	}
-
-	// 2. Delete Objects.
-	ownedByFilter := owner.OwnedBy(kubeCarrier, r.Scheme)
-
-	clusterRoleBindingsCleaned, err := cleanupClusterRoleBindings(ctx, r.Client, ownedByFilter)
-	if err != nil {
-		return fmt.Errorf("cleaning ClusterRoleBinding: %w", err)
-	}
-
-	clusterRolesCleaned, err := cleanupClusterRoles(ctx, r.Client, ownedByFilter)
-	if err != nil {
-		return fmt.Errorf("cleaning ClusterRoles: %w", err)
-	}
-
-	customResourceDefinitionsCleaned, err := cleanupCustomResourceDefinitions(ctx, r.Client, ownedByFilter)
-	if err != nil {
-		return fmt.Errorf("cleaning CustomResourceDefinitions: %w", err)
-	}
-
-	mutatingWebhookConfigurationsCleaned, err := cleanupMutatingWebhookConfigurations(ctx, r.Client, ownedByFilter)
-	if err != nil {
-		return fmt.Errorf("cleaning MutatingWebhookConfigurations: %w", err)
-	}
-
-	validatingWebhookConfigurationsCleaned, err := cleanupValidatingWebhookConfigurations(ctx, r.Client, ownedByFilter)
-	if err != nil {
-		return fmt.Errorf("cleaning ValidatingWebhookConfigurations: %w", err)
-	}
-
-	// Make sure all the owned objects are deleted.
-	if !clusterRoleBindingsCleaned ||
-		!clusterRolesCleaned ||
-		!customResourceDefinitionsCleaned ||
-		!mutatingWebhookConfigurationsCleaned ||
-		!validatingWebhookConfigurationsCleaned {
-		return nil
-	}
-
-	// 3. Remove the Finalizer.
-	if util.RemoveFinalizer(kubeCarrier, kubeCarrierControllerFinalizer) {
-		if err := r.Update(ctx, kubeCarrier); err != nil {
-			return fmt.Errorf("updating KubeCarrier finalizers: %w", err)
-		}
-	}
-	return nil
-}
-
-// reconcileOwnedObjects adds the OwnerReference to the objects that owned by this KubeCarrier object, and reconciles them.
-func (r *KubeCarrierReconciler) reconcileOwnedObjects(ctx context.Context, log logr.Logger, kubeCarrier *operatorv1alpha1.KubeCarrier, objects []unstructured.Unstructured) (bool, error) {
-	var deploymentIsReady bool
-	for _, object := range objects {
-		if err := addOwnerReference(kubeCarrier, &object, r.Scheme); err != nil {
-			return false, err
-		}
-		curObj, err := reconcile.Unstructured(ctx, log, r.Client, &object)
-		if err != nil {
-			return false, fmt.Errorf("reconcile kind: %s, err: %w", object.GroupVersionKind().Kind, err)
-		}
-
-		switch obj := curObj.(type) {
-		case *appsv1.Deployment:
-			deploymentIsReady = util.DeploymentIsAvailable(obj)
-		}
-	}
-	return deploymentIsReady, nil
-}
-
-// updateKubeCarrierStatus updates the Status of the KubeCarrier object if needed.
-func (r *KubeCarrierReconciler) updateKubeCarrierStatus(ctx context.Context, kubeCarrier *operatorv1alpha1.KubeCarrier, deploymentIsReady bool) error {
-	var updateStatus bool
-	readyCondition, _ := kubeCarrier.Status.GetCondition(operatorv1alpha1.KubeCarrierReady)
-	if !deploymentIsReady && readyCondition.Status != operatorv1alpha1.ConditionFalse {
-		updateStatus = true
-		kubeCarrier.Status.ObservedGeneration = kubeCarrier.Generation
-		kubeCarrier.Status.SetCondition(operatorv1alpha1.KubeCarrierCondition{
-			Type:    operatorv1alpha1.KubeCarrierReady,
-			Status:  operatorv1alpha1.ConditionFalse,
-			Reason:  "DeploymentUnready",
-			Message: "the deployment of the KubeCarrier controller manager is not ready",
-		})
-	}
-
-	if deploymentIsReady && readyCondition.Status != operatorv1alpha1.ConditionTrue {
-		updateStatus = true
-		kubeCarrier.Status.ObservedGeneration = kubeCarrier.Generation
-		kubeCarrier.Status.SetCondition(operatorv1alpha1.KubeCarrierCondition{
-			Type:    operatorv1alpha1.KubeCarrierReady,
-			Status:  operatorv1alpha1.ConditionTrue,
-			Reason:  "DeploymentReady",
-			Message: "the deployment of the KubeCarrier controller manager is ready",
-		})
-	}
-
-	if updateStatus {
-		if err := r.Status().Update(ctx, kubeCarrier); err != nil {
-			return fmt.Errorf("updating KubeCarrier status: %w", err)
-		}
-	}
-	return nil
 }

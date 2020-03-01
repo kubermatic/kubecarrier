@@ -18,29 +18,79 @@ package controllers
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/go-logr/logr"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
-	"k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/source"
 
 	operatorv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/operator/v1alpha1"
-	"github.com/kubermatic/kubecarrier/pkg/internal/reconcile"
 	resourceferry "github.com/kubermatic/kubecarrier/pkg/internal/resources/ferry"
-	"github.com/kubermatic/kubecarrier/pkg/internal/util"
 )
 
-const (
-	ferryControllerFinalizer string = "ferry.kubecarrier.io/controller"
-)
+type ferryController struct {
+	Obj *operatorv1alpha1.Ferry
+}
+
+func (c *ferryController) GetReadyConditionStatus() operatorv1alpha1.ConditionStatus {
+	readyCondition, _ := c.Obj.Status.GetCondition(operatorv1alpha1.FerryReady)
+	return readyCondition.Status
+}
+
+func (c *ferryController) SetReadyCondition() {
+	c.Obj.Status.ObservedGeneration = c.Obj.Generation
+	c.Obj.Status.SetCondition(operatorv1alpha1.FerryCondition{
+		Type:    operatorv1alpha1.FerryReady,
+		Status:  operatorv1alpha1.ConditionTrue,
+		Reason:  "ComponentsReady",
+		Message: "all components report ready",
+	})
+}
+
+func (c *ferryController) SetUnReadyCondition() {
+	c.Obj.Status.ObservedGeneration = c.Obj.Generation
+	c.Obj.Status.SetCondition(operatorv1alpha1.FerryCondition{
+		Type:    operatorv1alpha1.FerryReady,
+		Status:  operatorv1alpha1.ConditionFalse,
+		Reason:  "ComponentsUnready",
+		Message: "Ferry deployment isn't ready",
+	})
+}
+
+func (c *ferryController) SetTerminatingCondition(ctx context.Context) bool {
+	readyCondition, _ := c.Obj.Status.GetCondition(operatorv1alpha1.FerryReady)
+	if readyCondition.Status != operatorv1alpha1.ConditionFalse ||
+		readyCondition.Status == operatorv1alpha1.ConditionFalse && readyCondition.Reason != operatorv1alpha1.FerryTerminatingReason {
+		c.Obj.Status.ObservedGeneration = c.Obj.Generation
+		c.Obj.Status.SetCondition(operatorv1alpha1.FerryCondition{
+			Type:    operatorv1alpha1.FerryReady,
+			Status:  operatorv1alpha1.ConditionFalse,
+			Reason:  operatorv1alpha1.FerryTerminatingReason,
+			Message: "Ferry is being deleted",
+		})
+		return true
+	}
+	return false
+}
+
+func (c *ferryController) GetObj() object {
+	return c.Obj
+}
+
+func (c *ferryController) GetManifests(ctx context.Context) ([]unstructured.Unstructured, error) {
+	return resourceferry.Manifests(
+		resourceferry.Config{
+			ProviderNamespace:    c.Obj.Namespace,
+			Name:                 c.Obj.Name,
+			KubeconfigSecretName: c.Obj.Spec.KubeconfigSecret.Name,
+		})
+}
 
 // FerryReconciler reconciles a Ferry object
 type FerryReconciler struct {
@@ -66,111 +116,22 @@ func (r *FerryReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	ctx := context.Background()
 	log := r.Log.WithValues("ferry", req.NamespacedName)
 
+	br := BaseReconciler{
+		Client:    r.Client,
+		Log:       log,
+		Scheme:    r.Scheme,
+		Finalizer: "ferry.kubecarrier.io/controller",
+		Name:      "Ferry",
+	}
+
 	ferry := &operatorv1alpha1.Ferry{}
-	if err := r.Get(ctx, req.NamespacedName, ferry); err != nil {
-		return ctrl.Result{}, client.IgnoreNotFound(err)
-	}
-	ferry.Status.ObservedGeneration = ferry.Generation
+	ctr := &ferryController{Obj: ferry}
 
-	// handle Deletion
-	if !ferry.DeletionTimestamp.IsZero() {
-		if err := r.handleDeletion(ctx, log, ferry); err != nil {
-			return ctrl.Result{}, fmt.Errorf("handling deletion: %v", err)
-		}
-		return ctrl.Result{}, nil
+	// 1. Fetch the object.
+	if err := br.FetchObject(ctx, req, ctr); err != nil {
+		return ctrl.Result{}, err
 	}
-
-	// Add Finalizer
-	if util.AddFinalizer(ferry, ferryControllerFinalizer) {
-		if err := r.Update(ctx, ferry); err != nil {
-			return ctrl.Result{}, fmt.Errorf("updating Ferry finalizers: %v", err)
-		}
-	}
-
-	// Reconcile the objects that owned by Ferry object.
-	var deploymentReady bool
-
-	// Build the manifests of the Ferry controller manager.
-	objects, err := resourceferry.Manifests(ferryConfigurationForObject(ferry))
-	if err != nil {
-		return ctrl.Result{}, fmt.Errorf("ferry manifests: %w", err)
-	}
-	for _, object := range objects {
-		if err := controllerutil.SetControllerReference(ferry, &object, r.Scheme); err != nil {
-			return ctrl.Result{}, fmt.Errorf("setting controller reference: %w", err)
-		}
-		currObj, err := reconcile.Unstructured(ctx, log, r.Client, &object)
-		if err != nil {
-			return ctrl.Result{}, fmt.Errorf("reconcile type: %w", err)
-		}
-		switch obj := currObj.(type) {
-		case *appsv1.Deployment:
-			deploymentReady = util.DeploymentIsAvailable(obj)
-		}
-	}
-
-	// Update the ferry status
-	if deploymentReady {
-		ferry.Status.SetCondition(operatorv1alpha1.FerryCondition{
-			Type:    operatorv1alpha1.FerryReady,
-			Status:  operatorv1alpha1.ConditionTrue,
-			Reason:  "ComponentsReady",
-			Message: "all components report ready",
-		})
-	} else {
-		ferry.Status.SetCondition(operatorv1alpha1.FerryCondition{
-			Type:    operatorv1alpha1.FerryReady,
-			Status:  operatorv1alpha1.ConditionFalse,
-			Reason:  "ComponentsUnready",
-			Message: "Ferry deployment isn't ready",
-		})
-	}
-
-	if err = r.Status().Update(ctx, ferry); err != nil {
-		return ctrl.Result{}, fmt.Errorf("updating Ferry Status: %w", err)
-	}
-	return ctrl.Result{}, nil
-}
-
-func (r *FerryReconciler) handleDeletion(ctx context.Context, log logr.Logger, ferry *operatorv1alpha1.Ferry) error {
-	if cond, _ := ferry.Status.GetCondition(operatorv1alpha1.FerryReady); cond.Reason != operatorv1alpha1.FerryTerminatingReason {
-		ferry.Status.SetCondition(operatorv1alpha1.FerryCondition{
-			Message: "Ferry is being deleted",
-			Reason:  operatorv1alpha1.FerryTerminatingReason,
-			Status:  operatorv1alpha1.ConditionFalse,
-			Type:    operatorv1alpha1.FerryReady,
-		})
-		if err := r.Status().Update(ctx, ferry); err != nil {
-			return fmt.Errorf("updating Ferry: %v", err)
-		}
-	}
-
-	// Delete Objects.
-	allCleared := true
-	objects, err := resourceferry.Manifests(ferryConfigurationForObject(ferry))
-	if err != nil {
-		return fmt.Errorf("deletion: manifests: %w", err)
-	}
-	for _, obj := range objects {
-		err := r.Client.Delete(ctx, &obj)
-		if errors.IsNotFound(err) {
-			continue
-		}
-		allCleared = false
-		if err != nil {
-			return fmt.Errorf("deleting %s: %w", obj, err)
-		}
-	}
-
-	if allCleared {
-		// Remove Finalizer
-		if util.RemoveFinalizer(ferry, ferryControllerFinalizer) {
-			if err := r.Update(ctx, ferry); err != nil {
-				return fmt.Errorf("updating Ferry: %v", err)
-			}
-		}
-	}
-	return nil
+	return br.Reconcile(ctx, req, ctr)
 }
 
 var ferryControllerObjects = []runtime.Object{
@@ -190,12 +151,4 @@ func (r *FerryReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	}
 
 	return cm.Complete(r)
-}
-
-func ferryConfigurationForObject(ferry *operatorv1alpha1.Ferry) resourceferry.Config {
-	return resourceferry.Config{
-		ProviderNamespace:    ferry.Namespace,
-		Name:                 ferry.Name,
-		KubeconfigSecretName: ferry.Spec.KubeconfigSecret.Name,
-	}
 }

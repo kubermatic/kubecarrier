@@ -18,7 +18,6 @@ package controllers
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/go-logr/logr"
 	appsv1 "k8s.io/api/apps/v1"
@@ -32,14 +31,77 @@ import (
 
 	operatorv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/operator/v1alpha1"
 	"github.com/kubermatic/kubecarrier/pkg/internal/owner"
-	"github.com/kubermatic/kubecarrier/pkg/internal/reconcile"
 	resourceselevator "github.com/kubermatic/kubecarrier/pkg/internal/resources/elevator"
-	"github.com/kubermatic/kubecarrier/pkg/internal/util"
 )
 
-const (
-	elevatorControllerFinalizer = "elevator.kubecarrier.io/controller"
-)
+type elevatorController struct {
+	Obj *operatorv1alpha1.Elevator
+}
+
+func (c *elevatorController) GetReadyConditionStatus() operatorv1alpha1.ConditionStatus {
+	readyCondition, _ := c.Obj.Status.GetCondition(operatorv1alpha1.ElevatorReady)
+	return readyCondition.Status
+}
+
+func (c *elevatorController) SetReadyCondition() {
+	c.Obj.Status.ObservedGeneration = c.Obj.Generation
+	c.Obj.Status.SetCondition(operatorv1alpha1.ElevatorCondition{
+		Type:    operatorv1alpha1.ElevatorReady,
+		Status:  operatorv1alpha1.ConditionTrue,
+		Reason:  "DeploymentReady",
+		Message: "the deployment of the Elevator controller manager is ready",
+	})
+}
+
+func (c *elevatorController) SetUnReadyCondition() {
+	c.Obj.Status.ObservedGeneration = c.Obj.Generation
+	c.Obj.Status.SetCondition(operatorv1alpha1.ElevatorCondition{
+		Type:    operatorv1alpha1.ElevatorReady,
+		Status:  operatorv1alpha1.ConditionFalse,
+		Reason:  "DeploymentUnready",
+		Message: "the deployment of the Elevator controller manager is not ready",
+	})
+}
+
+func (c *elevatorController) SetTerminatingCondition(ctx context.Context) bool {
+	readyCondition, _ := c.Obj.Status.GetCondition(operatorv1alpha1.ElevatorReady)
+	if readyCondition.Status != operatorv1alpha1.ConditionFalse ||
+		readyCondition.Status == operatorv1alpha1.ConditionFalse && readyCondition.Reason != operatorv1alpha1.ElevatorTerminatingReason {
+		c.Obj.Status.ObservedGeneration = c.Obj.Generation
+		c.Obj.Status.SetCondition(operatorv1alpha1.ElevatorCondition{
+			Type:    operatorv1alpha1.ElevatorReady,
+			Status:  operatorv1alpha1.ConditionFalse,
+			Reason:  operatorv1alpha1.ElevatorTerminatingReason,
+			Message: "Elevator is being terminated",
+		})
+		return true
+	}
+	return false
+}
+
+func (c *elevatorController) GetObj() object {
+	return c.Obj
+}
+
+func (c *elevatorController) GetManifests(ctx context.Context) ([]unstructured.Unstructured, error) {
+	return resourceselevator.Manifests(
+		resourceselevator.Config{
+			Name:      c.Obj.Name,
+			Namespace: c.Obj.Namespace,
+
+			ProviderKind:    c.Obj.Spec.ProviderCRD.Kind,
+			ProviderVersion: c.Obj.Spec.ProviderCRD.Version,
+			ProviderGroup:   c.Obj.Spec.ProviderCRD.Group,
+			ProviderPlural:  c.Obj.Spec.ProviderCRD.Plural,
+
+			TenantKind:    c.Obj.Spec.TenantCRD.Kind,
+			TenantVersion: c.Obj.Spec.TenantCRD.Version,
+			TenantGroup:   c.Obj.Spec.TenantCRD.Group,
+			TenantPlural:  c.Obj.Spec.TenantCRD.Plural,
+
+			DerivedCRName: c.Obj.Spec.DerivedCR.Name,
+		})
+}
 
 // ElevatorReconciler reconciles an Elevator object
 type ElevatorReconciler struct {
@@ -66,63 +128,17 @@ type ElevatorReconciler struct {
 func (r *ElevatorReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	ctx := context.Background()
 	log := r.Log.WithValues("elevator", req.NamespacedName)
+	br := BaseReconciler{
+		Client:    r.Client,
+		Log:       log,
+		Scheme:    r.Scheme,
+		Finalizer: "elevator.kubecarrier.io/controller",
+		Name:      "Elevator",
+	}
 
-	// 1. Fetch the Elevator object.
 	elevator := &operatorv1alpha1.Elevator{}
-	if err := r.Get(ctx, req.NamespacedName, elevator); err != nil {
-		// If the Elevator object is already gone, we just ignore the NotFound error.
-		return ctrl.Result{}, client.IgnoreNotFound(err)
-	}
-
-	// 2. Handle the deletion of the Elevator object (Remove the objects that the Elevator owns, and remove the finalizer).
-	if !elevator.DeletionTimestamp.IsZero() {
-		if err := r.handleDeletion(ctx, elevator); err != nil {
-			return ctrl.Result{}, fmt.Errorf("handle deletion: %w", err)
-		}
-		return ctrl.Result{}, nil
-	}
-
-	// Add finalizer
-	if util.AddFinalizer(elevator, elevatorControllerFinalizer) {
-		if err := r.Update(ctx, elevator); err != nil {
-			return ctrl.Result{}, fmt.Errorf("updating Elevator finalizers: %w", err)
-		}
-	}
-
-	// 3. Reconcile the objects that owned by Elevator object.
-	// Build the manifests of the Elevator controller manager.
-	objects, err := resourceselevator.Manifests(
-		resourceselevator.Config{
-			Name:      elevator.Name,
-			Namespace: elevator.Namespace,
-
-			ProviderKind:    elevator.Spec.ProviderCRD.Kind,
-			ProviderVersion: elevator.Spec.ProviderCRD.Version,
-			ProviderGroup:   elevator.Spec.ProviderCRD.Group,
-			ProviderPlural:  elevator.Spec.ProviderCRD.Plural,
-
-			TenantKind:    elevator.Spec.TenantCRD.Kind,
-			TenantVersion: elevator.Spec.TenantCRD.Version,
-			TenantGroup:   elevator.Spec.TenantCRD.Group,
-			TenantPlural:  elevator.Spec.TenantCRD.Plural,
-
-			DerivedCRName: elevator.Spec.DerivedCR.Name,
-		})
-	if err != nil {
-		return ctrl.Result{}, fmt.Errorf("creating elevator manifests: %w", err)
-	}
-
-	deploymentIsReady, err := r.reconcileOwnedObjects(ctx, log, elevator, objects)
-	if err != nil {
-		return ctrl.Result{}, err
-	}
-
-	// 4. Update the status of the Elevator object.
-	if err := r.updateElevatorStatus(ctx, elevator, deploymentIsReady); err != nil {
-		return ctrl.Result{}, err
-	}
-
-	return ctrl.Result{}, nil
+	ctr := &elevatorController{Obj: elevator}
+	return br.Reconcile(ctx, req, ctr)
 }
 
 func (r *ElevatorReconciler) SetupWithManager(mgr ctrl.Manager) error {
@@ -138,112 +154,4 @@ func (r *ElevatorReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		Watches(&source.Kind{Type: &rbacv1.ClusterRole{}}, enqueuer).
 		Watches(&source.Kind{Type: &rbacv1.ClusterRoleBinding{}}, enqueuer).
 		Complete(r)
-}
-
-// handleDeletion handles the deletion of the Elevator object. Currently, it does:
-// 1. Update the Elevator status to Terminating.
-// 2. Delete the objects that the Elevator object owns.
-// 3. Remove the finalizer from the Elevator object.
-func (r *ElevatorReconciler) handleDeletion(ctx context.Context, elevator *operatorv1alpha1.Elevator) error {
-
-	// 1. Update the Elevator Status to Terminating.
-	readyCondition, _ := elevator.Status.GetCondition(operatorv1alpha1.ElevatorReady)
-	if readyCondition.Status != operatorv1alpha1.ConditionFalse ||
-		readyCondition.Status == operatorv1alpha1.ConditionFalse && readyCondition.Reason != operatorv1alpha1.ElevatorTerminatingReason {
-		elevator.Status.ObservedGeneration = elevator.Generation
-		elevator.Status.SetCondition(operatorv1alpha1.ElevatorCondition{
-			Type:    operatorv1alpha1.ElevatorReady,
-			Status:  operatorv1alpha1.ConditionFalse,
-			Reason:  operatorv1alpha1.ElevatorTerminatingReason,
-			Message: "Elevator is being terminated",
-		})
-		if err := r.Status().Update(ctx, elevator); err != nil {
-			return fmt.Errorf("updating Elevator status: %w", err)
-		}
-	}
-
-	// 2. Delete Objects.
-	ownedByFilter := owner.OwnedBy(elevator, r.Scheme)
-
-	clusterRoleBindingsCleaned, err := cleanupClusterRoleBindings(ctx, r.Client, ownedByFilter)
-	if err != nil {
-		return fmt.Errorf("cleaning ClusterRoleBinding: %w", err)
-	}
-
-	clusterRolesCleaned, err := cleanupClusterRoles(ctx, r.Client, ownedByFilter)
-	if err != nil {
-		return fmt.Errorf("cleaning ClusterRoles: %w", err)
-	}
-
-	customResourceDefinitionsCleaned, err := cleanupCustomResourceDefinitions(ctx, r.Client, ownedByFilter)
-	if err != nil {
-		return fmt.Errorf("cleaning CustomResourceDefinitions: %w", err)
-	}
-
-	// Make sure all the ClusterRoleBindings, ClusterRoles and CustomResourceDefinitions are deleted.
-	if !clusterRoleBindingsCleaned || !clusterRolesCleaned || !customResourceDefinitionsCleaned {
-		return nil
-	}
-
-	// 3. Remove the Finalizer.
-	if util.RemoveFinalizer(elevator, elevatorControllerFinalizer) {
-		if err := r.Update(ctx, elevator); err != nil {
-			return fmt.Errorf("updating Elevator finalizers: %w", err)
-		}
-	}
-	return nil
-}
-
-// reconcileOwnedObjects adds the OwnerReference to the objects that owned by this Elevator object, and reconciles them.
-func (r *ElevatorReconciler) reconcileOwnedObjects(ctx context.Context, log logr.Logger, elevator *operatorv1alpha1.Elevator, objects []unstructured.Unstructured) (bool, error) {
-	var deploymentIsReady bool
-	for _, object := range objects {
-		if err := addOwnerReference(elevator, &object, r.Scheme); err != nil {
-			return false, err
-		}
-		curObj, err := reconcile.Unstructured(ctx, log, r.Client, &object)
-		if err != nil {
-			return false, fmt.Errorf("reconcile kind: %s, err: %w", object.GroupVersionKind().Kind, err)
-		}
-
-		switch obj := curObj.(type) {
-		case *appsv1.Deployment:
-			deploymentIsReady = util.DeploymentIsAvailable(obj)
-		}
-	}
-	return deploymentIsReady, nil
-}
-
-// updateElevatorStatus updates the Status of the Elevator object if needed.
-func (r *ElevatorReconciler) updateElevatorStatus(ctx context.Context, elevator *operatorv1alpha1.Elevator, deploymentIsReady bool) error {
-	var updateStatus bool
-	readyCondition, _ := elevator.Status.GetCondition(operatorv1alpha1.ElevatorReady)
-	if !deploymentIsReady && readyCondition.Status != operatorv1alpha1.ConditionFalse {
-		updateStatus = true
-		elevator.Status.ObservedGeneration = elevator.Generation
-		elevator.Status.SetCondition(operatorv1alpha1.ElevatorCondition{
-			Type:    operatorv1alpha1.ElevatorReady,
-			Status:  operatorv1alpha1.ConditionFalse,
-			Reason:  "DeploymentUnready",
-			Message: "the deployment of the Elevator controller manager is not ready",
-		})
-	}
-
-	if deploymentIsReady && readyCondition.Status != operatorv1alpha1.ConditionTrue {
-		updateStatus = true
-		elevator.Status.ObservedGeneration = elevator.Generation
-		elevator.Status.SetCondition(operatorv1alpha1.ElevatorCondition{
-			Type:    operatorv1alpha1.ElevatorReady,
-			Status:  operatorv1alpha1.ConditionTrue,
-			Reason:  "DeploymentReady",
-			Message: "the deployment of the Elevator controller manager is ready",
-		})
-	}
-
-	if updateStatus {
-		if err := r.Status().Update(ctx, elevator); err != nil {
-			return fmt.Errorf("updating Elevator status: %w", err)
-		}
-	}
-	return nil
 }
