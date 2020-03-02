@@ -18,6 +18,7 @@ package provider
 
 import (
 	"context"
+	"fmt"
 	"io/ioutil"
 	"testing"
 
@@ -37,7 +38,7 @@ import (
 // ServiceClusterSuite registers a ServiceCluster and tests apis interacting with it.
 func NewServiceClusterSuite(
 	f *framework.Framework,
-	provider *catalogv1alpha1.Provider,
+	provider *catalogv1alpha1.Account,
 ) func(t *testing.T) {
 	return func(t *testing.T) {
 		managementClient, err := f.ManagementClient()
@@ -55,7 +56,7 @@ func NewServiceClusterSuite(
 		serviceClusterSecret := &corev1.Secret{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "eu-west-1",
-				Namespace: provider.Status.NamespaceName,
+				Namespace: provider.Status.Namespace.Name,
 			},
 			Data: map[string][]byte{
 				"kubeconfig": serviceKubeconfig,
@@ -65,7 +66,7 @@ func NewServiceClusterSuite(
 		serviceCluster := &corev1alpha1.ServiceCluster{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "eu-west-1",
-				Namespace: provider.Status.NamespaceName,
+				Namespace: provider.Status.Namespace.Name,
 			},
 			Spec: corev1alpha1.ServiceClusterSpec{
 				Metadata: corev1alpha1.ServiceClusterMetadata{
@@ -118,7 +119,7 @@ func NewServiceClusterSuite(
 		serviceClusterAssignment := &corev1alpha1.ServiceClusterAssignment{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      serviceNamespace.Name + "." + serviceCluster.Name,
-				Namespace: provider.Status.NamespaceName,
+				Namespace: provider.Status.Namespace.Name,
 			},
 			Spec: corev1alpha1.ServiceClusterAssignmentSpec{
 				ServiceCluster: corev1alpha1.ObjectReference{
@@ -143,7 +144,7 @@ func NewServiceClusterSuite(
 		crDiscoveries := &corev1alpha1.CustomResourceDiscoverySet{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "redis",
-				Namespace: provider.Status.NamespaceName,
+				Namespace: provider.Status.Namespace.Name,
 			},
 			Spec: corev1alpha1.CustomResourceDiscoverySetSpec{
 				KindOverride: "RedisInternal",
@@ -157,9 +158,10 @@ func NewServiceClusterSuite(
 		err = managementClient.Delete(ctx, provider)
 		if assert.Error(t, err, "dirty provider %s deletion should error out", provider.Name) {
 			assert.Equal(t,
-				`admission webhook "vprovider.kubecarrier.io" denied the request: deletion blocking objects found:
+				`admission webhook "vaccount.kubecarrier.io" denied the request: deletion blocking objects found:
 CustomResourceDiscovery.kubecarrier.io/v1alpha1: redis.eu-west-1
 CustomResourceDiscoverySet.kubecarrier.io/v1alpha1: redis
+ServiceClusterAssignment.kubecarrier.io/v1alpha1: servicecluster-svc-test.eu-west-1
 `,
 				err.Error(),
 				"deleting dirty provider %s", provider.Name)
@@ -178,7 +180,7 @@ CustomResourceDiscoverySet.kubecarrier.io/v1alpha1: redis
 		//
 		managementClusterObj := &unstructured.Unstructured{
 			Object: map[string]interface{}{
-				"apiVersion": "eu-west-1.test-servicecluster/v1alpha1",
+				"apiVersion": fmt.Sprintf("%s.%s/v1alpha1", serviceCluster.Name, provider.Name),
 				"kind":       "RedisInternal",
 				"metadata": map[string]interface{}{
 					"name":      "test-instance-1",
@@ -228,7 +230,7 @@ CustomResourceDiscoverySet.kubecarrier.io/v1alpha1: redis
 		// a object on the management cluster should have been created
 		managementClusterObj2 := &unstructured.Unstructured{
 			Object: map[string]interface{}{
-				"apiVersion": "eu-west-1.test-servicecluster/v1alpha1",
+				"apiVersion": fmt.Sprintf("%s.%s/v1alpha1", serviceCluster.Name, provider.Name),
 				"kind":       "RedisInternal",
 				"metadata": map[string]interface{}{
 					"name":      serviceClusterObj2.GetName(),
