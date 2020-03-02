@@ -146,6 +146,7 @@ func main() {
 				"--test.v",
 				"--test.run=" + test,
 				"--test-id=1",
+				"--clean-up-strategy=always",
 			},
 		})
 

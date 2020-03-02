@@ -29,6 +29,9 @@ func NewScenarioSuite(f *testutil.Framework) func(t *testing.T) {
 			"simple":      newSimpleScenario,
 			"accountRefs": newAccountRefs,
 		} {
+			name := name
+			testFn := testFn
+
 			t.Run(name, func(t *testing.T) {
 				t.Parallel()
 				testFn(f)(t)

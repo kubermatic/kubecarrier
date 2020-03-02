@@ -19,6 +19,7 @@ package scanarios
 import (
 	"context"
 	"io/ioutil"
+	"strings"
 	"testing"
 	"time"
 
@@ -26,7 +27,6 @@ import (
 	"github.com/stretchr/testify/require"
 	corev1 "k8s.io/api/core/v1"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
-	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 
@@ -48,11 +48,12 @@ func newSimpleScenario(f *testutil.Framework) func(t *testing.T) {
 		serviceClient, err := f.ServiceClient(logger)
 		require.NoError(t, err, "creating service client")
 		t.Cleanup(serviceClient.CleanUpFunc(ctx, t, f.Config().CleanUpStrategy))
+		testName := strings.Replace(strings.ToLower(t.Name()), "/", "-", -1)
 
 		// Create a Tenant
 		tenant := &catalogv1alpha1.Account{
 			ObjectMeta: metav1.ObjectMeta{
-				GenerateName: "simple-tenant-",
+				Name: testName + "-tenant",
 			},
 			Spec: catalogv1alpha1.AccountSpec{
 				Metadata: catalogv1alpha1.AccountMetadata{
@@ -76,7 +77,7 @@ func newSimpleScenario(f *testutil.Framework) func(t *testing.T) {
 		// Create a Provider
 		provider := &catalogv1alpha1.Account{
 			ObjectMeta: metav1.ObjectMeta{
-				GenerateName: "simple-provider-",
+				Name: testName + "-provider",
 			},
 			Spec: catalogv1alpha1.AccountSpec{
 				Metadata: catalogv1alpha1.AccountMetadata{
@@ -205,25 +206,7 @@ func newSimpleScenario(f *testutil.Framework) func(t *testing.T) {
 				KindOverride: "",
 			},
 		}
-		require.NoError(t, serviceClient.Create(ctx, crDiscovery))
+		require.NoError(t, managementClient.Create(ctx, crDiscovery))
 		require.NoError(t, testutil.WaitUntilReady(ctx, managementClient, crDiscovery))
-		// now check that CRD is created in the management cluster
-
-		t.Log("deleting tenant")
-		require.NoError(t, testutil.DeleteAndWaitUntilNotFound(ctx, managementClient, tenant))
-		assert.True(t, errors.IsNotFound(managementClient.Get(ctx, types.NamespacedName{
-			Name: tenantNamespaceName,
-		}, tenantNamespace)), "namespace should also be deleted.")
-
-		assert.True(t, errors.IsNotFound(managementClient.Get(ctx, types.NamespacedName{
-			Name:      tenant.Name,
-			Namespace: tenantNamespaceName,
-		}, tenantReference)), "TenantReference should also be deleted.")
-
-		t.Log("deleting provider")
-		require.NoError(t, testutil.DeleteAndWaitUntilNotFound(ctx, managementClient, provider))
-		assert.True(t, errors.IsNotFound(managementClient.Get(ctx, types.NamespacedName{
-			Name: providerNamespaceName,
-		}, providerNamespace)), "namespace should also be deleted.")
 	}
 }
