@@ -24,20 +24,20 @@ type ConditionStatus string
 // "ConditionUnknown" means Kubernetes can't decide if a resource is in the
 // condition or not.
 const (
-	// ConditionTrue represents the fact that a given condition is true
+	// ConditionTrue represents the fact that a given condition is true.
 	ConditionTrue ConditionStatus = "True"
 
-	// ConditionFalse represents the fact that a given condition is false
+	// ConditionFalse represents the fact that a given condition is false.
 	ConditionFalse ConditionStatus = "False"
 
-	// ConditionUnknown represents the fact that a given condition is unknown
+	// ConditionUnknown represents the fact that a given condition is unknown.
 	ConditionUnknown ConditionStatus = "Unknown"
 
-	// TerminatingReason represents why the condition is False when the object is being deleted
+	// TerminatingReason represents why the condition is False when the object is being deleted.
 	TerminatingReason = "Deleting"
 )
 
-// ObjectReference describes the link to another object in the same namespace
+// ObjectReference describes the link to another object in the same Namespace.
 type ObjectReference struct {
 	Name string `json:"name"`
 }

@@ -26,9 +26,9 @@ type ProviderReferenceSpec struct {
 	Metadata AccountMetadata `json:"metadata,omitempty"`
 }
 
-// ProviderReference exposes information of the Provider(displayName, description).
-// This object lives in the tenant namespace for each provider the tenant is allowed utilizing (e.g. there's catalog
-// selecting this tenant as its user)
+// ProviderReference exposes information of a service provider.
+//
+// ProviderReference objects are created automatically by KubeCarrier in Account namespaces, that have a service offered to them via a Catalog.
 // +kubebuilder:object:root=true
 // +kubebuilder:printcolumn:name="Display Name",type="string",JSONPath=".spec.metadata.displayName"
 // +kubebuilder:printcolumn:name="Age",type="date",JSONPath=".metadata.creationTimestamp"
@@ -40,7 +40,7 @@ type ProviderReference struct {
 	Spec ProviderReferenceSpec `json:"spec,omitempty"`
 }
 
-// ProviderReferenceList contains a list of ProviderReference
+// ProviderReferenceList contains a list of ProviderReference.
 // +kubebuilder:object:root=true
 type ProviderReferenceList struct {
 	metav1.TypeMeta `json:",inline"`

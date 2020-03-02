@@ -188,6 +188,6 @@ cert-manager:
 	kubectl wait --for=condition=available deployment/cert-manager-webhook -n cert-manager --timeout=120s
 
 docs: bin/docgen
-	@find ./pkg/apis -name '*types.go' | xargs ./bin/docgen > ./docs/basics/api_reference.md
+	@hack/docgen.sh
 
 .PHONEY: docs

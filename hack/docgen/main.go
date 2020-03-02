@@ -21,6 +21,7 @@ package main
 
 import (
 	"bytes"
+	"flag"
 	"fmt"
 	"go/ast"
 	"go/doc"
@@ -55,7 +56,6 @@ func toSectionLink(name string) string {
 }
 
 func printTOC(types []KubeTypes) {
-	fmt.Printf("\n## Table of Contents\n")
 	for _, t := range types {
 		strukt := t[0]
 		fmt.Printf("* [%s](#%s)\n", strukt.Name, toSectionLink(strukt.Name))
@@ -94,13 +94,13 @@ func ParseDocumentationFrom(src string) []KubeTypes {
 	for _, kubType := range pkg.Types {
 		if structType, ok := kubType.Decl.Specs[0].(*ast.TypeSpec).Type.(*ast.StructType); ok {
 			var ks KubeTypes
-			ks = append(ks, Pair{Name: kubType.Name + "." + gv, Doc: fmtRawDoc(kubType.Doc), Type: "", Mandatory: false})
+			ks = append(ks, Pair{Name: kubType.Name + "." + gv, Doc: fmtRawObjectDoc(kubType.Doc), Type: "", Mandatory: false})
 
 			for _, field := range structType.Fields.List {
 				typeString := fieldType(field.Type, gv)
 				fieldMandatory := fieldRequired(field)
 				if n := fieldName(field); n != "-" {
-					fieldDoc := fmtRawDoc(field.Doc.Text())
+					fieldDoc := fmtRawFieldDoc(field.Doc.Text())
 					ks = append(ks, Pair{Name: n, Doc: fieldDoc, Type: typeString, Mandatory: fieldMandatory})
 				}
 			}
@@ -127,7 +127,7 @@ func astFrom(filePath string) *doc.Package {
 	return doc.New(apkg, "", 0)
 }
 
-func fmtRawDoc(rawDoc string) string {
+func fmtRawFieldDoc(rawDoc string) string {
 	var buffer bytes.Buffer
 	delPrevChar := func() {
 		if buffer.Len() > 0 {
@@ -163,6 +163,45 @@ func fmtRawDoc(rawDoc string) string {
 	postDoc = strings.Replace(postDoc, "\"", "\\\"", -1) // Escape "
 	postDoc = strings.Replace(postDoc, "\n", "\\n", -1)
 	postDoc = strings.Replace(postDoc, "\t", "\\t", -1)
+	postDoc = strings.Replace(postDoc, "|", "\\|", -1)
+
+	return postDoc
+}
+
+func fmtRawObjectDoc(rawDoc string) string {
+	var buffer bytes.Buffer
+	delPrevChar := func() {
+		if buffer.Len() > 0 {
+			buffer.Truncate(buffer.Len() - 1) // Delete the last " " or "\n"
+		}
+	}
+
+	// Ignore all lines after ---
+	rawDoc = strings.Split(rawDoc, "---")[0]
+
+	for _, line := range strings.Split(rawDoc, "\n") {
+		line = strings.TrimRight(line, " ")
+		leading := strings.TrimLeft(line, " ")
+		switch {
+		case len(line) == 0: // Keep paragraphs
+			delPrevChar()
+			buffer.WriteString("\n\n")
+		case strings.HasPrefix(leading, "TODO"): // Ignore one line TODOs
+		case strings.HasPrefix(leading, "+"): // Ignore instructions to go2idl
+		default:
+			if strings.HasPrefix(line, " ") || strings.HasPrefix(line, "\t") {
+				delPrevChar()
+				line = "\n" + line + "\n" // Replace it with newline. This is useful when we have a line with: "Example:\n\tJSON-someting..."
+			} else {
+				line += "\n"
+			}
+			buffer.WriteString(line)
+		}
+	}
+
+	postDoc := strings.TrimRight(buffer.String(), "\n")
+	postDoc = strings.Replace(postDoc, "\\\"", "\"", -1) // replace user's \" to "
+	postDoc = strings.Replace(postDoc, "\"", "\\\"", -1) // Escape "
 	postDoc = strings.Replace(postDoc, "|", "\\|", -1)
 
 	return postDoc
@@ -241,7 +280,7 @@ func fieldType(typ ast.Expr, gv string) string {
 	}
 }
 
-func printAPIDocs(paths []string) {
+func printAPIDocs(paths []string, sectionLink string) {
 	for _, path := range paths {
 		types := ParseDocumentationFrom(path)
 		for _, t := range types {
@@ -260,7 +299,7 @@ func printAPIDocs(paths []string) {
 
 	for _, t := range types {
 		strukt := t[0]
-		fmt.Printf("\n## %s\n\n%s\n\n", strukt.Name, strukt.Doc)
+		fmt.Printf("\n### %s\n\n%s\n\n", strukt.Name, strukt.Doc)
 
 		fmt.Println("| Field | Description | Scheme | Required |")
 		fmt.Println("| ----- | ----------- | ------ | -------- |")
@@ -269,16 +308,20 @@ func printAPIDocs(paths []string) {
 			fmt.Println("|", f.Name, "|", f.Doc, "|", f.Type, "|", f.Mandatory, "|")
 		}
 		fmt.Println("")
-		fmt.Println("[Back to TOC](#table-of-contents)")
+		fmt.Printf("[Back to Group](#%s)\n", sectionLink)
 	}
 }
 
 func main() {
-	args := os.Args[1:]
+	sectionLink := flag.String("section-link", "", "Link to get back to the current section")
+	flag.Parse()
+
+	args := flag.Args()
+	// args := os.Args[1:]
 	if args[0] == "--" {
 		args = args[1:]
 	}
 	sort.Strings(args)
 	_, _ = fmt.Fprint(os.Stderr, len(args), args)
-	printAPIDocs(args)
+	printAPIDocs(args, *sectionLink)
 }

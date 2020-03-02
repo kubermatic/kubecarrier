@@ -31,10 +31,9 @@ type ServiceClusterReferenceSpec struct {
 	Provider ObjectReference `json:"provider"`
 }
 
-// ServiceClusterReference exposes information about a Providers Clusters.
+// ServiceClusterReference exposes information about a Providers Cluster.
 //
-// This object lives in the tenant namespace for each provider the tenant is allowed utilizing (e.g. there's catalog
-// selecting this tenant as its user)
+// ServiceClusterReference objects are created automatically by KubeCarrier in Account namespaces, that have a service offered to them via a Catalog.
 // +kubebuilder:object:root=true
 // +kubebuilder:printcolumn:name="Provider",type="string",JSONPath=".spec.provider.name"
 // +kubebuilder:printcolumn:name="Display Name",type="string",JSONPath=".spec.metadata.displayName"
@@ -47,7 +46,7 @@ type ServiceClusterReference struct {
 	Spec ServiceClusterReferenceSpec `json:"spec,omitempty"`
 }
 
-// ServiceClusterReferenceList contains a list of ServiceClusterReference
+// ServiceClusterReferenceList contains a list of ServiceClusterReference.
 // +kubebuilder:object:root=true
 type ServiceClusterReferenceList struct {
 	metav1.TypeMeta `json:",inline"`

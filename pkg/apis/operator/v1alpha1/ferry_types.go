@@ -20,13 +20,13 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// FerrySpec defines the desired state of Ferry
+// FerrySpec defines the desired state of Ferry.
 type FerrySpec struct {
 	// KubeconfigSecret specifies the Kubeconfig to use when connecting to the ServiceCluster.
 	KubeconfigSecret ObjectReference `json:"kubeconfigSecret"`
 }
 
-// FerryStatus defines the observed state of Ferry
+// FerryStatus defines the observed state of Ferry.
 type FerryStatus struct {
 	// DEPRECATED.
 	// Phase represents the current lifecycle state of this object.
@@ -40,10 +40,10 @@ type FerryStatus struct {
 	ObservedGeneration int64 `json:"observedGeneration,omitempty"`
 }
 
-// FerryPhaseType represents all conditions as a single string for printing in kubectl
+// FerryPhaseType represents all conditions as a single string for printing in kubectl.
 type FerryPhaseType string
 
-// Values of FerryPhaseType
+// Values of FerryPhaseType.
 const (
 	FerryPhaseReady       FerryPhaseType = "Ready"
 	FerryPhaseNotReady    FerryPhaseType = "NotReady"
@@ -82,8 +82,8 @@ func (c FerryCondition) True() bool {
 	return c.Status == ConditionTrue
 }
 
-// UpdatePhase updates the phase property based on the current conditions
-// this method should be called everytime the conditions are updated
+// UpdatePhase updates the phase property based on the current conditions.
+// this method should be called everytime the conditions are updated.
 func (s *FerryStatus) updatePhase() {
 	for _, condition := range s.Conditions {
 		if condition.Type != FerryReady {
@@ -107,7 +107,7 @@ func (s *FerryStatus) updatePhase() {
 	s.Phase = FerryPhaseUnknown
 }
 
-// SetCondition replaces or adds the given condition
+// SetCondition replaces or adds the given condition.
 func (s *FerryStatus) SetCondition(condition FerryCondition) {
 	defer s.updatePhase()
 	if condition.LastTransitionTime.IsZero() {
@@ -129,7 +129,7 @@ func (s *FerryStatus) SetCondition(condition FerryCondition) {
 	s.Conditions = append(s.Conditions, condition)
 }
 
-// GetCondition returns the Condition of the given type, if it exists
+// GetCondition returns the Condition of the given type, if it exists.
 func (s *FerryStatus) GetCondition(t FerryConditionType) (condition FerryCondition, exists bool) {
 	for _, cond := range s.Conditions {
 		if cond.Type == t {
@@ -141,18 +141,18 @@ func (s *FerryStatus) GetCondition(t FerryConditionType) (condition FerryConditi
 	return
 }
 
-// Ferry represents single kubernetes cluster belonging to the provider
+// Ferry manages the deployment of the Ferry controller manager.
 //
-// Ferry lives in the provider namespace. For each ferry the kubecarrier operator spins up
-// the ferry controller deployment, necessary roles, service accounts, and role bindings
+// Ferry lives in the Provider Namespace. For each ferry the KubeCarrier operator spins up
+// the ferry controller deployment, necessary roles, service accounts, and role bindings.
 //
 // The reason for ferry controller deployment are multiples:
-// * security --> kubecarrier operator has greater privileges then ferry controller
+// * security --> KubeCarrier operator has greater privileges then ferry controller
 // * resource isolation --> each ferry controller pod operates only on a single service cluster,
 // 		thus resource allocation and monitoring is separate per ferry. This allows finer grade
 // 		resource tuning and monitoring
 // * flexibility --> If needed different ferries could have different deployments depending on
-// 		their specific need (e.g. kubecarrier image version for gradual rolling upgrade, different resource allocation, etc),
+// 		their specific need (e.g. KubeCarrier image version for gradual rolling upgrade, different resource allocation, etc),
 // +kubebuilder:object:root=true
 // +kubebuilder:subresource:status
 // +kubebuilder:printcolumn:name="Status",type="string",JSONPath=".status.phase"
@@ -180,9 +180,8 @@ func (s *Ferry) IsReady() bool {
 	return false
 }
 
+// FerryList contains a list of Ferry.
 // +kubebuilder:object:root=true
-
-// FerryList contains a list of Ferry
 type FerryList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
