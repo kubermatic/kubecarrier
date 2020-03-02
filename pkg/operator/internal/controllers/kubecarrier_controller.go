@@ -37,10 +37,6 @@ import (
 	"github.com/kubermatic/kubecarrier/pkg/internal/resources/manager"
 )
 
-const (
-	kubeCarrierControllerFinalizer = "kubecarrier.kubecarrier.io/controller"
-)
-
 type kubeCarrierController struct {
 	Obj *operatorv1alpha1.KubeCarrier
 }
