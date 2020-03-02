@@ -85,7 +85,7 @@ func NewServiceClusterSuite(
 				Name: "redis.test.kubecarrier.io",
 				Labels: map[string]string{
 					"kubecarrier.io/service-cluster":  serviceCluster.Name,
-					"kubecarrier.io/origin-namespace": provider.Status.NamespaceName,
+					"kubecarrier.io/origin-namespace": provider.Status.Namespace.Name,
 				},
 			},
 			Spec: apiextensionsv1.CustomResourceDefinitionSpec{
