@@ -23,7 +23,7 @@ import (
 // ProviderReferenceSpec defines the desired state of ProviderReference
 type ProviderReferenceSpec struct {
 	// Metadata contains the metadata (display name, description, etc) of the Provider.
-	Metadata ProviderMetadata `json:"metadata,omitempty"`
+	Metadata AccountMetadata `json:"metadata,omitempty"`
 }
 
 // ProviderReference exposes information of the Provider(displayName, description).

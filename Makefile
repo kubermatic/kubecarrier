@@ -34,6 +34,9 @@ LD_FLAGS=-X $(MODULE)/pkg/internal/version.Version=$(VERSION) -X $(MODULE)/pkg/i
 KIND_CLUSTER?=kubecarrier
 COMPONENTS = operator manager ferry catapult elevator
 
+# every makefile operation should have explicit kubeconfig
+undefine KUBECONFIG
+
 # https://github.com/kubernetes-sigs/kind/releases/tag/v0.7.0
 # There are different node image types for newer kind v0.7.0+ version
 KIND_NODE_IMAGE?=kindest/node:v1.17.0@sha256:9512edae126da271b66b990b6fff768fbb7cd786c7d39e86bdf55906352fdf62
@@ -92,8 +95,7 @@ MANAGEMENT_KIND_CLUSTER?=kubecarrier-${TEST_ID}
 SVC_KIND_CLUSTER?=kubecarrier-svc-${TEST_ID}
 
 e2e-setup: install require-docker
-	@unset KUBECONFIG
-	@bash -c "kind create cluster --name=${MANAGEMENT_KIND_CLUSTER} --image=${KIND_NODE_IMAGE} & kind create cluster --name=${SVC_KIND_CLUSTER} --image=${KIND_NODE_IMAGE} & wait < <(jobs -p)"
+	@bash -c "kind create cluster --kubeconfig=${HOME}/.kube/kind-config-${MANAGEMENT_KIND_CLUSTER} --name=${MANAGEMENT_KIND_CLUSTER} --image=${KIND_NODE_IMAGE} & kind create cluster --kubeconfig=${HOME}/.kube/kind-config-${SVC_KIND_CLUSTER} --name=${SVC_KIND_CLUSTER} --image=${KIND_NODE_IMAGE} & wait < <(jobs -p)"
 	@kind get kubeconfig --internal --name=${MANAGEMENT_KIND_CLUSTER} > "${HOME}/.kube/internal-kind-config-${MANAGEMENT_KIND_CLUSTER}"
 	@kind get kubeconfig --name=${MANAGEMENT_KIND_CLUSTER} > "${HOME}/.kube/kind-config-${MANAGEMENT_KIND_CLUSTER}"
 	@echo "Deploy cert-manger in management cluster"
@@ -121,8 +123,8 @@ e2e-test: e2e-setup
 .PHONY: e2e-test
 
 e2e-test-clean:
-	@kind delete cluster --name=${MANAGEMENT_KIND_CLUSTER} || true
-	@kind delete cluster --name=${SVC_KIND_CLUSTER} || true
+	@kind delete cluster --name=${MANAGEMENT_KIND_CLUSTER} "--kubeconfig=${HOME}/.kube/kind-config-${MANAGEMENT_KIND_CLUSTER}" || true
+	@kind delete cluster --name=${SVC_KIND_CLUSTER} "--kubeconfig=${HOME}/.kube/kind-config-${SVC_KIND_CLUSTER}" || true
 .PHONY: e2e-test-clean
 
 lint:

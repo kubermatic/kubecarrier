@@ -56,11 +56,13 @@ spec:
                 properties:
                   description:
                     description: Description shows the human-readable description
-                      of this Provider.
+                      of this Account.
+                    minLength: 1
                     type: string
                   displayName:
                     description: DisplayName shows the human-readable name of this
-                      Provider.
+                      Account.
+                    minLength: 1
                     type: string
                 type: object
             type: object

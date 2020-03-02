@@ -32,6 +32,7 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/cli-runtime/pkg/genericclioptions"
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/client-go/tools/clientcmd/api"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -45,7 +46,7 @@ func newSUTSubcommand(log logr.Logger, component string) *cobra.Command {
 		ldFlags      string
 		deploymentNN string
 		workdir      string
-		loader       = clientcmd.NewDefaultClientConfigLoadingRules()
+		configFlags  = genericclioptions.NewConfigFlags(false)
 		taskName     string
 		projectRoot  string
 	)
@@ -56,11 +57,7 @@ func newSUTSubcommand(log logr.Logger, component string) *cobra.Command {
 		Short: "",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			// k8s client setup
-			log.Info("loading kubeconfig", "filename", loader.GetDefaultFilename())
-			clientConfig := clientcmd.NewNonInteractiveDeferredLoadingClientConfig(
-				loader,
-				&clientcmd.ConfigOverrides{},
-			)
+			clientConfig := configFlags.ToRawKubeConfigLoader()
 			cfg, err := clientConfig.ClientConfig()
 			if err != nil {
 				return fmt.Errorf("config: %w", err)
@@ -151,9 +148,9 @@ func newSUTSubcommand(log logr.Logger, component string) *cobra.Command {
 	cmd.Flags().StringVar(&projectRoot, "project-root", ".", "project root where IDE tasks should be generated")
 	cmd.Flags().StringVar(&ldFlags, "ld-flags", "", "ld-flags to pass to go compiler upon running this")
 	cmd.Flags().StringVar(&deploymentNN, "deployment-nn", "", "deployment-nn signal the deployement namespace name which should be selected. If none (default) a fzf based picker shall be shown")
-	cmd.Flags().StringVar(&loader.ExplicitPath, "kubeconfig", "", "kubeconfig location")
 	cmd.Flags().StringVar(&workdir, "workdir", "", "sut working for logs, rootfs mountpoints, etc. default to new temp dir")
 	cmd.Flags().StringArrayVar(&extraArgs, "extra-flags", nil, "extra flags to pass to the running task")
+	configFlags.AddFlags(cmd.Flags())
 	return cmd
 }
 

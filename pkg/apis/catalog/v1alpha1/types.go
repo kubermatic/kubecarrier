@@ -17,6 +17,7 @@ limitations under the License.
 package v1alpha1
 
 // ConditionStatus represents a condition's status.
+// +kubebuilder:validation:True;False;Unknown
 type ConditionStatus string
 
 // These are valid condition statuses. "ConditionTrue" means a resource is in

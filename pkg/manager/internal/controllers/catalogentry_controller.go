@@ -134,25 +134,38 @@ func (r *CatalogEntryReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error
 	}
 
 	// lookup Provider
-	provider, err := catalogv1alpha1.GetProviderByProviderNamespace(ctx, r.Client, catalogEntry.Namespace)
+	provider, err := catalogv1alpha1.GetAccountByAccountNamespace(ctx, r.Client, catalogEntry.Namespace)
 	if err != nil {
 		return ctrl.Result{}, fmt.Errorf("getting the Provider by Provider Namespace: %w", err)
 	}
 
 	// check if Provider is allowed to use the CRD
-	if crd.Labels == nil ||
-		crd.Labels[OriginNamespaceLabel] != provider.Status.NamespaceName {
+	if crd.Labels == nil {
 		return ctrl.Result{}, r.updateStatus(ctx, catalogEntry, &catalogv1alpha1.CatalogEntryCondition{
 			Type:    catalogv1alpha1.CatalogEntryReady,
 			Status:  catalogv1alpha1.ConditionFalse,
 			Reason:  "NotAssignedToProvider",
-			Message: fmt.Sprintf("The base CRD not assigned to this Provider or is missing a %s label.", OriginNamespaceLabel),
+			Message: fmt.Sprintf("The base CRD is missing a %s label.", OriginNamespaceLabel),
+		})
+	}
+
+	if originNamespace, present := crd.Labels[OriginNamespaceLabel]; originNamespace != provider.Status.Namespace.Name {
+		var message string
+		if !present {
+			message = fmt.Sprintf("The base CRD  is missing a %s label", OriginNamespaceLabel)
+		} else {
+			message = fmt.Sprintf("the base CRD is not assigned to this Provider. Expected %s, got %s", provider.Status.Namespace.Name, originNamespace)
+		}
+		return ctrl.Result{}, r.updateStatus(ctx, catalogEntry, &catalogv1alpha1.CatalogEntryCondition{
+			Type:    catalogv1alpha1.CatalogEntryReady,
+			Status:  catalogv1alpha1.ConditionFalse,
+			Reason:  "NotAssignedToProvider",
+			Message: message,
 		})
 	}
 
 	// lookup ServiceCluster
-	if crd.Labels == nil ||
-		crd.Labels[ServiceClusterLabel] == "" {
+	if _, present := crd.Labels[ServiceClusterLabel]; !present {
 		return ctrl.Result{}, r.updateStatus(ctx, catalogEntry, &catalogv1alpha1.CatalogEntryCondition{
 			Type:    catalogv1alpha1.CatalogEntryReady,
 			Status:  catalogv1alpha1.ConditionFalse,

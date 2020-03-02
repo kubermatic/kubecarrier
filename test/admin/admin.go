@@ -47,9 +47,18 @@ func NewAdminSuite(f *testutil.Framework) func(t *testing.T) {
 		defer serviceClient.CleanUp(ctx, t)
 
 		// Create a Tenant
-		tenant := &catalogv1alpha1.Tenant{
+		tenant := &catalogv1alpha1.Account{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: "test-tenant1",
+			},
+			Spec: catalogv1alpha1.AccountSpec{
+				Metadata: catalogv1alpha1.AccountMetadata{
+					DisplayName: "tenant display name",
+					Description: "tenant desc",
+				},
+				Roles: []catalogv1alpha1.AccountRole{
+					catalogv1alpha1.ProviderRole,
+				},
 			},
 		}
 
@@ -57,7 +66,7 @@ func NewAdminSuite(f *testutil.Framework) func(t *testing.T) {
 		require.NoError(t, managementClient.Create(ctx, tenant), "creating tenant error")
 		require.NoError(t, testutil.WaitUntilReady(ctx, managementClient, tenant))
 
-		tenantNamespaceName := tenant.Status.NamespaceName
+		tenantNamespaceName := tenant.Status.Namespace.Name
 		tenantNamespace := &corev1.Namespace{}
 		assert.NoError(t, managementClient.Get(ctx, types.NamespacedName{
 			Name: tenantNamespaceName,
@@ -65,21 +74,24 @@ func NewAdminSuite(f *testutil.Framework) func(t *testing.T) {
 
 		// Create a Provider
 		t.Log("creating test provider")
-		provider := &catalogv1alpha1.Provider{
+		provider := &catalogv1alpha1.Account{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: "test-provider1",
 			},
-			Spec: catalogv1alpha1.ProviderSpec{
-				Metadata: catalogv1alpha1.ProviderMetadata{
+			Spec: catalogv1alpha1.AccountSpec{
+				Metadata: catalogv1alpha1.AccountMetadata{
 					DisplayName: "provider",
 					Description: "provider test description",
+				},
+				Roles: []catalogv1alpha1.AccountRole{
+					catalogv1alpha1.ProviderRole,
 				},
 			},
 		}
 		require.NoError(t, managementClient.Create(ctx, provider), "creating provider error")
 		require.NoError(t, testutil.WaitUntilReady(ctx, managementClient, provider))
 
-		providerNamespaceName := provider.Status.NamespaceName
+		providerNamespaceName := provider.Status.Namespace.Name
 		providerNamespace := &corev1.Namespace{}
 		assert.NoError(t, managementClient.Get(ctx, types.NamespacedName{
 			Name: providerNamespaceName,

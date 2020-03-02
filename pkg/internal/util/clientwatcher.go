@@ -77,7 +77,6 @@ func (cw *ClientWatcher) WaitUntil(ctx context.Context, obj Object, cond ...func
 	if err != nil {
 		return fmt.Errorf("getting objListWatch: %w", err)
 	}
-
 	if _, err := clientwatch.ListWatchUntil(ctx, lw, func(event watch.Event) (b bool, err error) {
 		objTmp, err := cw.scheme.New(objGVK)
 		if err != nil {

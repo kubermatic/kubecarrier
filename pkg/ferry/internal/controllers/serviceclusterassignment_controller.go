@@ -19,10 +19,12 @@ package controllers
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/go-logr/logr"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/cache"
@@ -75,7 +77,7 @@ func (r *ServiceClusterAssignmentReconciler) Reconcile(req ctrl.Request) (ctrl.R
 		}
 	}
 
-	ns, err := util.EnsureUniqueNamespace(
+	ns, err := ensureUniqueNamespace(
 		ctx, r.ServiceClient,
 		serviceClusterAssignment,
 		serviceClusterAssignment.Spec.ManagementClusterNamespace.Name,
@@ -173,4 +175,37 @@ func (r *ServiceClusterAssignmentReconciler) SetupWithManager(mgr ctrl.Manager) 
 			return false
 		})).
 		Complete(r)
+}
+
+// ensureUniqueNamespace generates unique namespace for obj if one already doesn't exists
+//
+// It's required that OwnerReverseFieldIndex exists for corev1.Namespace
+func ensureUniqueNamespace(ctx context.Context, c client.Client, ownerObj runtime.Object, prefix string, scheme *runtime.Scheme) (*corev1.Namespace, error) {
+	namespaceList := &corev1.NamespaceList{}
+	if err := c.List(ctx, namespaceList, owner.OwnedBy(ownerObj, scheme)); err != nil {
+		return nil, fmt.Errorf("listing Namespaces: %w", err)
+	}
+
+	switch len(namespaceList.Items) {
+	case 0:
+		// Create Namespace
+		namespace := &corev1.Namespace{
+			ObjectMeta: metav1.ObjectMeta{
+				GenerateName: prefix + "-",
+			},
+		}
+		owner.SetOwnerReference(ownerObj, namespace, scheme)
+		if err := c.Create(ctx, namespace); err != nil {
+			return nil, fmt.Errorf("creating Namespace: %w", err)
+		}
+		return namespace, nil
+	case 1:
+		return namespaceList.Items[0].DeepCopy(), nil
+	default:
+		nss := make([]string, len(namespaceList.Items))
+		for i, ns := range namespaceList.Items {
+			nss[i] = ns.Name
+		}
+		return nil, fmt.Errorf("multiple owned namespaces found: %s", strings.Join(nss, ","))
+	}
 }

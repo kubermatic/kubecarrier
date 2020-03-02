@@ -19,8 +19,6 @@ package setup
 import (
 	"context"
 	"fmt"
-	"os"
-	"strings"
 	"time"
 
 	"github.com/gernest/wow"
@@ -34,12 +32,13 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
+	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/apimachinery/pkg/watch"
+	"k8s.io/cli-runtime/pkg/genericclioptions"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/client/config"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
 	"github.com/kubermatic/kubecarrier/pkg/anchor/internal/spinner"
@@ -48,11 +47,6 @@ import (
 	"github.com/kubermatic/kubecarrier/pkg/internal/resources/operator"
 	"github.com/kubermatic/kubecarrier/pkg/internal/util"
 )
-
-type flags struct {
-	// Kubeconfig is the absolute path of the kubeconfig of the kubernetes cluster which you want to deploy kubecarrier.
-	Kubeconfig string
-}
 
 var (
 	scheme = runtime.NewScheme()
@@ -63,13 +57,13 @@ const (
 )
 
 func init() {
-	_ = clientgoscheme.AddToScheme(scheme)
-	_ = apiextensionsv1.AddToScheme(scheme)
-	_ = operatorv1alpha1.AddToScheme(scheme)
+	utilruntime.Must(clientgoscheme.AddToScheme(scheme))
+	utilruntime.Must(apiextensionsv1.AddToScheme(scheme))
+	utilruntime.Must(operatorv1alpha1.AddToScheme(scheme))
 }
 
 func NewCommand(log logr.Logger) *cobra.Command {
-	flags := &flags{}
+	flags := genericclioptions.NewConfigFlags(false)
 	cmd := &cobra.Command{
 		Args:  cobra.NoArgs,
 		Use:   "setup",
@@ -80,15 +74,18 @@ Here are some examples:
 $ anchor setup --kubeconfig=<kubeconfig path>
 `,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return runE(flags, log, cmd)
+			cfg, err := flags.ToRESTConfig()
+			if err != nil {
+				return err
+			}
+			return runE(cfg, log, cmd)
 		},
 	}
-
-	cmd.Flags().StringVar(&flags.Kubeconfig, "kubeconfig", os.Getenv("KUBECONFIG"), "The absolute path of the kubeconfig of kubernetes cluster that set up with. if you don't specify the flag, it will read from the KUBECONFIG environment variable.")
+	flags.AddFlags(cmd.Flags())
 	return cmd
 }
 
-func runE(flags *flags, log logr.Logger, cmd *cobra.Command) error {
+func runE(conf *rest.Config, log logr.Logger, cmd *cobra.Command) error {
 	stopCh := ctrl.SetupSignalHandler()
 	ctx, cancelContext := context.WithTimeout(context.Background(), 60*time.Second)
 	go func() {
@@ -98,27 +95,7 @@ func runE(flags *flags, log logr.Logger, cmd *cobra.Command) error {
 
 	s := wow.New(cmd.OutOrStdout(), spin.Get(spin.Dots), "")
 	startTime := time.Now()
-
-	// Check the kubeconfig
-	if err := spinner.AttachSpinnerTo(s, startTime, "Check kubeconfig", func() error {
-		if err := checkKubeconfig(flags.Kubeconfig); err != nil {
-			return err
-		}
-
-		// Set the kubeconfig environment variable so the client in the following can work with the cluster.
-		if err := os.Setenv("KUBECONFIG", flags.Kubeconfig); err != nil {
-			return nil
-		}
-		return nil
-	}); err != nil {
-		return err
-	}
-
 	// Get a client from the configuration of the kubernetes cluster.
-	conf, err := config.GetConfig()
-	if err != nil {
-		return fmt.Errorf("getting Kubernetes cluster config: %w", err)
-	}
 	c, err := util.NewClientWatcher(conf, scheme)
 	if err != nil {
 		return fmt.Errorf("creating Kubernetes client: %w", err)
@@ -158,23 +135,6 @@ func createNamespace(ctx context.Context, c client.Client, ns *corev1.Namespace)
 		}
 		return nil
 	}
-}
-
-func checkKubeconfig(kubeconfig string) error {
-	kubeconfigPath := strings.TrimSpace(kubeconfig)
-	if kubeconfigPath == "" {
-		return fmt.Errorf("either $KUBECONFIG or --kubeconfig flag needs to be set")
-	}
-
-	kubeconfigStat, err := os.Stat(kubeconfigPath)
-	if err != nil {
-		return fmt.Errorf("checking the kubeconfig path: %w", err)
-	}
-	// Check the kubeconfig path points to a file
-	if !kubeconfigStat.Mode().IsRegular() {
-		return fmt.Errorf("kubeconfig path %s does not point to a file", kubeconfigPath)
-	}
-	return nil
 }
 
 func reconcileOperator(ctx context.Context, log logr.Logger, c *util.ClientWatcher, kubecarrierNamespace *corev1.Namespace) func() error {
