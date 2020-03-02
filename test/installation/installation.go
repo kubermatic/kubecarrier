@@ -120,7 +120,7 @@ func NewInstallationSuite(f *testutil.Framework) func(t *testing.T) {
 		// CRD
 		crd := &apiextensionsv1.CustomResourceDefinition{}
 		assert.NoError(t, managementClient.Get(ctx, types.NamespacedName{
-			Name: "providers.catalog.kubecarrier.io",
+			Name: "accounts.catalog.kubecarrier.io",
 		}, crd), "get the CRD that owned by KubeCarrier object")
 	}
 }
