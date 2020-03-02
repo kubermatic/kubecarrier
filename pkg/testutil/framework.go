@@ -196,30 +196,33 @@ func (rc *RecordingClient) UnregisterForCleanup(obj runtime.Object) {
 	delete(rc.objects, key)
 }
 
-func (rc *RecordingClient) CleanUp(ctx context.Context, t *testing.T) {
-	if _, noCleanup := os.LookupEnv("NO_CLEANUP"); noCleanup {
-		// skip cleanup
-		return
-	}
+func (rc *RecordingClient) CleanUpFunc(ctx context.Context, t *testing.T) func() {
+	return func() {
 
-	if t.Failed() {
-		// skip cleanup if test has failed
-		return
-	}
-
-	// cleanup in reverse order of creation
-	for i := len(rc.order) - 1; i >= 0; i-- {
-		key := rc.order[i]
-		obj, ok := rc.objects[key]
-		if !ok {
-			continue
+		if _, noCleanup := os.LookupEnv("NO_CLEANUP"); noCleanup {
+			// skip cleanup
+			return
 		}
 
-		err := DeleteAndWaitUntilNotFound(ctx, rc, obj)
-		if err != nil {
-			err = fmt.Errorf("cleanup %s: %w", key, err)
+		if t.Failed() {
+			// skip cleanup if test has failed
+			return
 		}
-		require.NoError(t, err)
+
+		// cleanup in reverse order of creation
+		for i := len(rc.order) - 1; i >= 0; i-- {
+			key := rc.order[i]
+			obj, ok := rc.objects[key]
+			if !ok {
+				continue
+			}
+
+			err := DeleteAndWaitUntilNotFound(ctx, rc, obj)
+			if err != nil {
+				err = fmt.Errorf("cleanup %s: %w", key, err)
+			}
+			require.NoError(t, err)
+		}
 	}
 }
 

@@ -42,37 +42,32 @@ func NewVerifySuite(f *testutil.Framework) func(t *testing.T) {
 		require.NoError(t, err)
 
 		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-		// making linter happy
-		_ = cancel
+		t.Cleanup(cancel)
+		t.Run("validate management cluster connection", func(t *testing.T) {
+			cm := &corev1.ConfigMap{}
+			require.NoError(t, managementClient.Get(ctx, types.NamespacedName{
+				Name:      "cluster-info",
+				Namespace: "kube-public",
+			}, cm), "cannot fetch cluster-info")
+		})
 
-		t.Run("", func(t *testing.T) {
-			// parallel-group
-			t.Run("validate management cluster connection", func(t *testing.T) {
-				cm := &corev1.ConfigMap{}
-				require.NoError(t, managementClient.Get(ctx, types.NamespacedName{
-					Name:      "cluster-info",
-					Namespace: "kube-public",
-				}, cm), "cannot fetch cluster-info")
-			})
-
-			t.Run("validate service connection", func(t *testing.T) {
-				cm := &corev1.ConfigMap{}
-				require.NoError(t, serviceClient.Get(ctx, types.NamespacedName{
-					Name:      "cluster-info",
-					Namespace: "kube-public",
-				}, cm), "cannot fetch cluster-info")
-			})
-			t.Run("internal service cluster config validation", func(t *testing.T) {
-				loader := clientcmd.NewDefaultClientConfigLoadingRules()
-				loader.ExplicitPath = f.Config().ServiceInternalKubeconfigPath
-				clientConfig := clientcmd.NewNonInteractiveDeferredLoadingClientConfig(
-					loader,
-					&clientcmd.ConfigOverrides{},
-				)
-				cfg, err := clientConfig.ClientConfig()
-				require.NoError(t, err)
-				assert.Equal(t, "system:serviceaccount:default:kubecarrier", cfg.Impersonate.UserName, "internal service cluster kubeconfig has wrong impersonation")
-			})
+		t.Run("validate service connection", func(t *testing.T) {
+			cm := &corev1.ConfigMap{}
+			require.NoError(t, serviceClient.Get(ctx, types.NamespacedName{
+				Name:      "cluster-info",
+				Namespace: "kube-public",
+			}, cm), "cannot fetch cluster-info")
+		})
+		t.Run("internal service cluster config validation", func(t *testing.T) {
+			loader := clientcmd.NewDefaultClientConfigLoadingRules()
+			loader.ExplicitPath = f.Config().ServiceInternalKubeconfigPath
+			clientConfig := clientcmd.NewNonInteractiveDeferredLoadingClientConfig(
+				loader,
+				&clientcmd.ConfigOverrides{},
+			)
+			cfg, err := clientConfig.ClientConfig()
+			require.NoError(t, err)
+			assert.Equal(t, "system:serviceaccount:default:kubecarrier", cfg.Impersonate.UserName, "internal service cluster kubeconfig has wrong impersonation")
 		})
 	}
 }

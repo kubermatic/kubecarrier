@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package admin
+package scanarios
 
 import (
 	"context"
@@ -32,28 +32,23 @@ import (
 	"github.com/kubermatic/kubecarrier/pkg/testutil"
 )
 
-// AdminSuite tests administrator operations - notably the management of Tenants and Providers.
-func NewAdminSuite(f *testutil.Framework) func(t *testing.T) {
+func newSimpleScenario(f *testutil.Framework) func(t *testing.T) {
 	return func(t *testing.T) {
 		// Setup
 		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 		t.Cleanup(cancel)
 		managementClient, err := f.ManagementClient()
 		require.NoError(t, err, "creating management client")
-		t.Cleanup(func() {
-			managementClient.CleanUp(ctx, t)
-		})
+		t.Cleanup(managementClient.CleanUpFunc(ctx, t))
 
 		serviceClient, err := f.ServiceClient()
 		require.NoError(t, err, "creating service client")
-		t.Cleanup(func() {
-			serviceClient.CleanUp(ctx, t)
-		})
+		t.Cleanup(serviceClient.CleanUpFunc(ctx, t))
 
 		// Create a Tenant
 		tenant := &catalogv1alpha1.Account{
 			ObjectMeta: metav1.ObjectMeta{
-				Name: "test-tenant1",
+				GenerateName: "simple-tenant-",
 			},
 			Spec: catalogv1alpha1.AccountSpec{
 				Metadata: catalogv1alpha1.AccountMetadata{
@@ -65,10 +60,9 @@ func NewAdminSuite(f *testutil.Framework) func(t *testing.T) {
 				},
 			},
 		}
-
-		t.Log("creating test tenant")
 		require.NoError(t, managementClient.Create(ctx, tenant), "creating tenant error")
 		require.NoError(t, testutil.WaitUntilReady(ctx, managementClient, tenant))
+		t.Logf("creted test tenant %s", tenant.Name)
 
 		tenantNamespaceName := tenant.Status.Namespace.Name
 		tenantNamespace := &corev1.Namespace{}
@@ -80,7 +74,7 @@ func NewAdminSuite(f *testutil.Framework) func(t *testing.T) {
 		t.Log("creating test provider")
 		provider := &catalogv1alpha1.Account{
 			ObjectMeta: metav1.ObjectMeta{
-				Name: "test-provider1",
+				GenerateName: "simple-provider-",
 			},
 			Spec: catalogv1alpha1.AccountSpec{
 				Metadata: catalogv1alpha1.AccountMetadata{
@@ -94,6 +88,7 @@ func NewAdminSuite(f *testutil.Framework) func(t *testing.T) {
 		}
 		require.NoError(t, managementClient.Create(ctx, provider), "creating provider error")
 		require.NoError(t, testutil.WaitUntilReady(ctx, managementClient, provider))
+		t.Logf("creted test provider %s", provider.Name)
 
 		providerNamespaceName := provider.Status.Namespace.Name
 		providerNamespace := &corev1.Namespace{}

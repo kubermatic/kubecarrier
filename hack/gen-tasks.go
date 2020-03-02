@@ -130,12 +130,10 @@ func main() {
 
 	for _, test := range []string{
 		"",
-		"AdminSuite",
-		"FerrySuite",
 		"InstallationSuite",
-		"ProviderSuite",
-		"TenantSuite",
 		"VerifySuite",
+		"Scenarios",
+		"Scenarios/simple",
 	} {
 		tasks = append(tasks, ide.Task{
 			Name:    "e2e:" + test,

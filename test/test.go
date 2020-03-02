@@ -21,8 +21,8 @@ import (
 	"testing"
 
 	"github.com/kubermatic/kubecarrier/pkg/testutil"
-	"github.com/kubermatic/kubecarrier/test/admin"
 	"github.com/kubermatic/kubecarrier/test/installation"
+	"github.com/kubermatic/kubecarrier/test/scanarios"
 	"github.com/kubermatic/kubecarrier/test/verify"
 )
 
@@ -44,8 +44,8 @@ func AllTests(config testutil.FrameworkConfig) ([]testing.InternalTest, error) {
 		},
 
 		testing.InternalTest{
-			Name: "AdminSuite",
-			F:    admin.NewAdminSuite(f),
+			Name: "Scenarios",
+			F:    scanarios.NewScenarioSuite(f),
 		},
 	)
 
