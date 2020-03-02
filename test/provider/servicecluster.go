@@ -18,6 +18,7 @@ package provider
 
 import (
 	"context"
+	"fmt"
 	"io/ioutil"
 	"testing"
 
@@ -27,6 +28,7 @@ import (
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/types"
 
 	catalogv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/catalog/v1alpha1"
 	corev1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/core/v1alpha1"
@@ -37,7 +39,7 @@ import (
 // ServiceClusterSuite registers a ServiceCluster and tests apis interacting with it.
 func NewServiceClusterSuite(
 	f *framework.Framework,
-	provider *catalogv1alpha1.Provider,
+	provider *catalogv1alpha1.Account,
 ) func(t *testing.T) {
 	return func(t *testing.T) {
 		managementClient, err := f.ManagementClient()
@@ -55,7 +57,7 @@ func NewServiceClusterSuite(
 		serviceClusterSecret := &corev1.Secret{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "eu-west-1",
-				Namespace: provider.Status.NamespaceName,
+				Namespace: provider.Status.Namespace.Name,
 			},
 			Data: map[string][]byte{
 				"kubeconfig": serviceKubeconfig,
@@ -65,7 +67,7 @@ func NewServiceClusterSuite(
 		serviceCluster := &corev1alpha1.ServiceCluster{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "eu-west-1",
-				Namespace: provider.Status.NamespaceName,
+				Namespace: provider.Status.Namespace.Name,
 			},
 			Spec: corev1alpha1.ServiceClusterSpec{
 				Metadata: corev1alpha1.ServiceClusterMetadata{
@@ -81,6 +83,10 @@ func NewServiceClusterSuite(
 		crd := &apiextensionsv1.CustomResourceDefinition{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: "redis.test.kubecarrier.io",
+				Labels: map[string]string{
+					"kubecarrier.io/service-cluster":  serviceCluster.Name,
+					"kubecarrier.io/origin-namespace": provider.Status.Namespace.Name,
+				},
 			},
 			Spec: apiextensionsv1.CustomResourceDefinitionSpec{
 				Group: "test.kubecarrier.io",
@@ -118,7 +124,7 @@ func NewServiceClusterSuite(
 		serviceClusterAssignment := &corev1alpha1.ServiceClusterAssignment{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      serviceNamespace.Name + "." + serviceCluster.Name,
-				Namespace: provider.Status.NamespaceName,
+				Namespace: provider.Status.Namespace.Name,
 			},
 			Spec: corev1alpha1.ServiceClusterAssignmentSpec{
 				ServiceCluster: corev1alpha1.ObjectReference{
@@ -139,28 +145,51 @@ func NewServiceClusterSuite(
 		require.NoError(t, testutil.WaitUntilReady(managementClient, serviceClusterAssignment))
 		require.NoError(t, serviceClient.Create(ctx, crd))
 
-		// Test CustomResourceDiscoverySet
-		crDiscoveries := &corev1alpha1.CustomResourceDiscoverySet{
+		// Test CatalogEntrySet
+		catalogEntrySet := &catalogv1alpha1.CatalogEntrySet{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "redis",
-				Namespace: provider.Status.NamespaceName,
+				Namespace: provider.Status.Namespace.Name,
 			},
-			Spec: corev1alpha1.CustomResourceDiscoverySetSpec{
-				KindOverride: "RedisInternal",
-				CRD: corev1alpha1.ObjectReference{
-					Name: crd.Name,
+			Spec: catalogv1alpha1.CatalogEntrySetSpec{
+				Metadata: catalogv1alpha1.CatalogEntrySetMetadata{
+					DisplayName: "Test CatalogEntrySet",
+					Description: "Test CatalogEntrySet",
 				},
-				WebhookStrategy: corev1alpha1.WebhookStrategyTypeServiceCluster,
+				DiscoverySet: catalogv1alpha1.CustomResourceDiscoverySetConfig{
+					CRD: catalogv1alpha1.ObjectReference{
+						Name: crd.Name,
+					},
+					ServiceClusterSelector: metav1.LabelSelector{},
+					KindOverride:           "RedisInternal",
+					WebhookStrategy:        corev1alpha1.WebhookStrategyTypeServiceCluster,
+				},
 			},
 		}
-		require.NoError(t, managementClient.Create(ctx, crDiscoveries))
-		require.NoError(t, testutil.WaitUntilReady(managementClient, crDiscoveries))
+		require.NoError(t, managementClient.Create(ctx, catalogEntrySet))
+		require.NoError(t, testutil.WaitUntilReady(managementClient, catalogEntrySet))
+
+		// Check the CustomResourceDiscoverySet
+		crDiscoverySet := &corev1alpha1.CustomResourceDiscoverySet{}
+		require.NoError(t, managementClient.Get(ctx, types.NamespacedName{
+			Name:      catalogEntrySet.Name,
+			Namespace: catalogEntrySet.Namespace,
+		}, crDiscoverySet), "getting CustomResourceDiscoverySet")
+
+		// Check the CatalogEntry Object
+		catalogEntry := &catalogv1alpha1.CatalogEntry{}
+		require.NoError(t, managementClient.Get(ctx, types.NamespacedName{
+			Name:      "redisinternals.eu-west-1.test-servicecluster",
+			Namespace: catalogEntrySet.Namespace,
+		}, catalogEntry), "getting CatalogEntry")
+
 		err = managementClient.Delete(ctx, provider)
 		if assert.Error(t, err, "dirty provider %s deletion should error out", provider.Name) {
 			assert.Equal(t,
-				`admission webhook "vprovider.kubecarrier.io" denied the request: deletion blocking objects found:
+				`admission webhook "vaccount.kubecarrier.io" denied the request: deletion blocking objects found:
 CustomResourceDiscovery.kubecarrier.io/v1alpha1: redis.eu-west-1
 CustomResourceDiscoverySet.kubecarrier.io/v1alpha1: redis
+ServiceClusterAssignment.kubecarrier.io/v1alpha1: servicecluster-svc-test.eu-west-1
 `,
 				err.Error(),
 				"deleting dirty provider %s", provider.Name)
@@ -179,7 +208,7 @@ CustomResourceDiscoverySet.kubecarrier.io/v1alpha1: redis
 		//
 		managementClusterObj := &unstructured.Unstructured{
 			Object: map[string]interface{}{
-				"apiVersion": "eu-west-1.test-servicecluster/v1alpha1",
+				"apiVersion": fmt.Sprintf("%s.%s/v1alpha1", serviceCluster.Name, provider.Name),
 				"kind":       "RedisInternal",
 				"metadata": map[string]interface{}{
 					"name":      "test-instance-1",
@@ -229,7 +258,7 @@ CustomResourceDiscoverySet.kubecarrier.io/v1alpha1: redis
 		// a object on the management cluster should have been created
 		managementClusterObj2 := &unstructured.Unstructured{
 			Object: map[string]interface{}{
-				"apiVersion": "eu-west-1.test-servicecluster/v1alpha1",
+				"apiVersion": fmt.Sprintf("%s.%s/v1alpha1", serviceCluster.Name, provider.Name),
 				"kind":       "RedisInternal",
 				"metadata": map[string]interface{}{
 					"name":      serviceClusterObj2.GetName(),

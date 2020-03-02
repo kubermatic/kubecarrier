@@ -87,6 +87,7 @@ func (r *CustomResourceDiscoverySetReconciler) Reconcile(req ctrl.Request) (ctrl
 
 	// Reconcile CRDiscoveries
 	var unreadyCRDiscoveryNames []string
+	var readyCRDReferences []corev1alpha1.ObjectReference
 	existingCRDiscoveryNames := map[string]struct{}{}
 	for _, serviceCluster := range serviceClusterList.Items {
 		currentCRDiscovery, err := r.reconcileCRDiscovery(ctx, &serviceCluster, crDiscoverySet)
@@ -99,6 +100,11 @@ func (r *CustomResourceDiscoverySetReconciler) Reconcile(req ctrl.Request) (ctrl
 		ready, _ := currentCRDiscovery.Status.GetCondition(corev1alpha1.CustomResourceDiscoveryReady)
 		if ready.Status != corev1alpha1.ConditionTrue {
 			unreadyCRDiscoveryNames = append(unreadyCRDiscoveryNames, currentCRDiscovery.Name)
+		} else {
+			readyCRDReferences = append(readyCRDReferences,
+				corev1alpha1.ObjectReference{
+					Name: currentCRDiscovery.Status.ManagementClusterCRD.Name,
+				})
 		}
 	}
 
@@ -123,6 +129,7 @@ func (r *CustomResourceDiscoverySetReconciler) Reconcile(req ctrl.Request) (ctrl
 	}
 
 	// Report status
+	crDiscoverySet.Status.ManagementClusterCRDs = readyCRDReferences
 	crDiscoverySet.Status.ObservedGeneration = crDiscoverySet.Generation
 	if len(unreadyCRDiscoveryNames) > 0 {
 		// Unready

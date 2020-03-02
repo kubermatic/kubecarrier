@@ -52,6 +52,8 @@ type CustomResourceDiscoveryStatus struct {
 	// CRD defines the original CustomResourceDefinition specification from the service cluster
 	// +kubebuilder:pruning:PreserveUnknownFields
 	CRD *apiextensionsv1.CustomResourceDefinition `json:"crd,omitempty"`
+	// ManagementClusterCRD references the CustomResourceDefinition that created by this CustomResourceDiscovery.
+	ManagementClusterCRD ObjectReference `json:"managementClusterCRD,omitempty"`
 	// DEPRECATED.
 	// Phase represents the current lifecycle state of this object
 	// consider this field DEPRECATED, it will be removed as soon as there

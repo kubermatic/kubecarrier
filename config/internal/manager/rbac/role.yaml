@@ -33,7 +33,7 @@ rules:
 - apiGroups:
   - catalog.kubecarrier.io
   resources:
-  - catalogentries
+  - accounts
   verbs:
   - get
   - list
@@ -42,7 +42,43 @@ rules:
 - apiGroups:
   - catalog.kubecarrier.io
   resources:
+  - accounts/status
+  verbs:
+  - get
+  - patch
+  - update
+- apiGroups:
+  - catalog.kubecarrier.io
+  resources:
+  - catalogentries
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - update
+  - watch
+- apiGroups:
+  - catalog.kubecarrier.io
+  resources:
   - catalogentries/status
+  verbs:
+  - get
+  - patch
+  - update
+- apiGroups:
+  - catalog.kubecarrier.io
+  resources:
+  - catalogentrysets
+  verbs:
+  - get
+  - list
+  - update
+  - watch
+- apiGroups:
+  - catalog.kubecarrier.io
+  resources:
+  - catalogentrysets/status
   verbs:
   - get
   - patch
@@ -107,23 +143,6 @@ rules:
 - apiGroups:
   - catalog.kubecarrier.io
   resources:
-  - providers
-  verbs:
-  - get
-  - list
-  - update
-  - watch
-- apiGroups:
-  - catalog.kubecarrier.io
-  resources:
-  - providers/status
-  verbs:
-  - get
-  - patch
-  - update
-- apiGroups:
-  - catalog.kubecarrier.io
-  resources:
   - serviceclusterreferences
   verbs:
   - create
@@ -143,23 +162,6 @@ rules:
   - list
   - update
   - watch
-- apiGroups:
-  - catalog.kubecarrier.io
-  resources:
-  - tenants
-  verbs:
-  - get
-  - list
-  - update
-  - watch
-- apiGroups:
-  - catalog.kubecarrier.io
-  resources:
-  - tenants/status
-  verbs:
-  - get
-  - patch
-  - update
 - apiGroups:
   - kubecarrier.io
   resources:
@@ -184,6 +186,8 @@ rules:
   resources:
   - customresourcediscoverysets
   verbs:
+  - create
+  - delete
   - get
   - list
   - update

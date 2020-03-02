@@ -11,6 +11,25 @@ webhooks:
     service:
       name: webhook-service
       namespace: system
+      path: /validate-catalog-kubecarrier-io-v1alpha1-account
+  failurePolicy: Fail
+  name: vaccount.kubecarrier.io
+  rules:
+  - apiGroups:
+    - catalog.kubecarrier.io
+    apiVersions:
+    - v1alpha1
+    operations:
+    - CREATE
+    - UPDATE
+    - DELETE
+    resources:
+    - accounts
+- clientConfig:
+    caBundle: Cg==
+    service:
+      name: webhook-service
+      namespace: system
       path: /validate-catalog-kubecarrier-io-v1alpha1-catalogentry
   failurePolicy: Fail
   name: vcatalogentry.kubecarrier.io
@@ -83,25 +102,6 @@ webhooks:
     service:
       name: webhook-service
       namespace: system
-      path: /validate-catalog-kubecarrier-io-v1alpha1-provider
-  failurePolicy: Fail
-  name: vprovider.kubecarrier.io
-  rules:
-  - apiGroups:
-    - catalog.kubecarrier.io
-    apiVersions:
-    - v1alpha1
-    operations:
-    - CREATE
-    - UPDATE
-    - DELETE
-    resources:
-    - providers
-- clientConfig:
-    caBundle: Cg==
-    service:
-      name: webhook-service
-      namespace: system
       path: /validate-catalog-kubecarrier-io-v1alpha1-providerreference
   failurePolicy: Fail
   name: vproviderreference.kubecarrier.io
@@ -168,23 +168,6 @@ webhooks:
     - UPDATE
     resources:
     - serviceclusterreferences
-- clientConfig:
-    caBundle: Cg==
-    service:
-      name: webhook-service
-      namespace: system
-      path: /validate-catalog-kubecarrier-io-v1alpha1-tenant
-  failurePolicy: Fail
-  name: vtenant.kubecarrier.io
-  rules:
-  - apiGroups:
-    - catalog.kubecarrier.io
-    apiVersions:
-    - v1alpha1
-    operations:
-    - CREATE
-    resources:
-    - tenants
 - clientConfig:
     caBundle: Cg==
     service:
