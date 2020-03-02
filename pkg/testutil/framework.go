@@ -48,6 +48,7 @@ type FrameworkConfig struct {
 	ManagementInternalKubeconfigPath string
 	ServiceExternalKubeconfigPath    string
 	ServiceInternalKubeconfigPath    string
+	CleanUpStrategy                  CleanUpStrategy
 }
 
 func (c *FrameworkConfig) ManagementClusterName() string {
@@ -85,6 +86,10 @@ type Framework struct {
 }
 
 func New(c FrameworkConfig) (f *Framework, err error) {
+	if c.CleanUpStrategy != CleanupAlways && c.CleanUpStrategy != CleanupOnSuccess && c.CleanUpStrategy != CleanupNever {
+		return nil, fmt.Errorf("unknown clean up strategy: %v", c.CleanUpStrategy)
+	}
+
 	f = &Framework{config: c}
 
 	// Management Setup
@@ -148,6 +153,14 @@ func (f *Framework) Config() FrameworkConfig {
 	return f.config
 }
 
+type CleanUpStrategy string
+
+const (
+	CleanupAlways    CleanUpStrategy = "always"
+	CleanupOnSuccess CleanUpStrategy = "on-success"
+	CleanupNever     CleanUpStrategy = "never"
+)
+
 type RecordingClient struct {
 	*util.ClientWatcher
 	scheme  *runtime.Scheme
@@ -197,17 +210,20 @@ func (rc *RecordingClient) UnregisterForCleanup(obj runtime.Object) {
 	delete(rc.objects, key)
 }
 
-func (rc *RecordingClient) CleanUpFunc(ctx context.Context, t *testing.T) func() {
+func (rc *RecordingClient) CleanUpFunc(ctx context.Context, t *testing.T, strategy CleanUpStrategy) func() {
 	return func() {
-
-		if _, noCleanup := os.LookupEnv("NO_CLEANUP"); noCleanup {
-			// skip cleanup
+		switch strategy {
+		case CleanupNever:
 			return
-		}
-
-		if t.Failed() {
-			// skip cleanup if test has failed
-			return
+		case CleanupOnSuccess:
+			if t.Failed() {
+				return
+			}
+		case CleanupAlways:
+			break
+		default:
+			t.Logf("unknown cleanup strategy: %v", strategy)
+			t.FailNow()
 		}
 
 		// cleanup in reverse order of creation

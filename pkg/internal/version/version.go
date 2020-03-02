@@ -23,6 +23,7 @@ import (
 	"time"
 )
 
+// https://github.com/golang/go/issues/37369
 const (
 	empty = "was not build properly"
 )

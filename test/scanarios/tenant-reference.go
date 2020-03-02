@@ -18,6 +18,7 @@ package scanarios
 
 import (
 	"context"
+	"strings"
 	"testing"
 	"time"
 
@@ -27,7 +28,6 @@ import (
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	catalogv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/catalog/v1alpha1"
 	"github.com/kubermatic/kubecarrier/pkg/testutil"
@@ -41,7 +41,9 @@ func newAccountRefs(f *testutil.Framework) func(t *testing.T) {
 		t.Cleanup(cancel)
 		managementClient, err := f.ManagementClient(logger)
 		require.NoError(t, err, "creating management client")
-		t.Cleanup(managementClient.CleanUpFunc(ctx, t))
+		t.Cleanup(managementClient.CleanUpFunc(ctx, t, f.Config().CleanUpStrategy))
+
+		testName := strings.Replace(strings.ToLower(t.Name()), "/", "-", -1)
 
 		var (
 			mdata = catalogv1alpha1.AccountMetadata{
@@ -50,7 +52,7 @@ func newAccountRefs(f *testutil.Framework) func(t *testing.T) {
 			}
 			provider = &catalogv1alpha1.Account{
 				ObjectMeta: metav1.ObjectMeta{
-					GenerateName: "refs-provider-",
+					Name: testName + "-provider",
 				},
 				Spec: catalogv1alpha1.AccountSpec{
 					Metadata: mdata,
@@ -61,7 +63,7 @@ func newAccountRefs(f *testutil.Framework) func(t *testing.T) {
 			}
 			tenant = &catalogv1alpha1.Account{
 				ObjectMeta: metav1.ObjectMeta{
-					GenerateName: "refs-tenant-",
+					Name: testName + "-tenant",
 				},
 				Spec: catalogv1alpha1.AccountSpec{
 					Metadata: mdata,
@@ -72,7 +74,7 @@ func newAccountRefs(f *testutil.Framework) func(t *testing.T) {
 			}
 			providerTenant = &catalogv1alpha1.Account{
 				ObjectMeta: metav1.ObjectMeta{
-					GenerateName: "refs-tenantprovider-",
+					Name: testName + "-providertenant",
 				},
 				Spec: catalogv1alpha1.AccountSpec{
 					Metadata: mdata,
@@ -153,14 +155,17 @@ func newAccountRefs(f *testutil.Framework) func(t *testing.T) {
 	}
 }
 
-func tenantReferencePresent(t *testing.T, managementClient client.Client, ctx context.Context, tenant *catalogv1alpha1.Account, provider *catalogv1alpha1.Account, expected bool) {
-	trefs := &catalogv1alpha1.TenantReferenceList{}
-	require.NoError(t, managementClient.List(ctx, trefs, client.InNamespace(provider.Status.Namespace.Name)))
-	var found bool
-	for _, tref := range trefs.Items {
-		if tref.Name == tenant.Name {
-			found = true
-		}
+func tenantReferencePresent(t *testing.T, cl *testutil.RecordingClient, ctx context.Context, tenant *catalogv1alpha1.Account, provider *catalogv1alpha1.Account, expected bool) {
+	tref := &catalogv1alpha1.TenantReference{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      tenant.Name,
+			Namespace: provider.Status.Namespace.Name,
+		},
 	}
-	assert.Equalf(t, expected, found, "tenantReference %s presence in provider %s", tenant.Name, provider.Name)
+
+	if expected {
+		assert.NoError(t, testutil.WaitUntilFound(ctx, cl, tref), "tenantReference %s not found in provider %s", tenant.Name, provider.Name)
+	} else {
+		assert.NoError(t, testutil.WaitUntilNotFound(ctx, cl, tref), "tenantReference %s found in provider %s", tenant.Name, provider.Name)
+	}
 }
