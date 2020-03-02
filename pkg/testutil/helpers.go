@@ -27,8 +27,6 @@ import (
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/util/jsonpath"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-
-	"github.com/kubermatic/kubecarrier/pkg/internal/util"
 )
 
 func ConditionStatusEqual(obj runtime.Object, ConditionType, ConditionStatus interface{}) error {
@@ -61,17 +59,17 @@ func LogObject(t *testing.T, obj interface{}) {
 }
 
 func WaitUntilNotFound(ctx context.Context, c *RecordingClient, obj runtime.Object) error {
-	return c.WaitUntilNotFound(ctx, obj.(util.Object))
+	return c.WaitUntilNotFound(ctx, obj)
 }
 
 func WaitUntilFound(ctx context.Context, c *RecordingClient, obj runtime.Object) error {
-	return c.WaitUntil(ctx, obj.(util.Object), func(obj runtime.Object, eventType watch.EventType) (b bool, err error) {
+	return c.WaitUntil(ctx, obj, func(obj runtime.Object, eventType watch.EventType) (b bool, err error) {
 		return eventType != watch.Deleted, nil
 	})
 }
 
 func WaitUntilCondition(ctx context.Context, c *RecordingClient, obj runtime.Object, ConditionType, conditionStatus interface{}) error {
-	err := c.WaitUntil(ctx, obj.(util.Object), func(obj runtime.Object, eventType watch.EventType) (b bool, err error) {
+	err := c.WaitUntil(ctx, obj, func(obj runtime.Object, eventType watch.EventType) (b bool, err error) {
 		return ConditionStatusEqual(obj, ConditionType, conditionStatus) == nil, nil
 	})
 

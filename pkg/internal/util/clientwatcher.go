@@ -64,7 +64,7 @@ type ClientWatcher struct {
 }
 
 // WaitUntil waits until the Object's condition function is true, or the context deadline is reached
-func (cw *ClientWatcher) WaitUntil(ctx context.Context, obj Object, cond ...func(obj runtime.Object, eventType watch.EventType) (bool, error)) error {
+func (cw *ClientWatcher) WaitUntil(ctx context.Context, obj runtime.Object, cond ...func(obj runtime.Object, eventType watch.EventType) (bool, error)) error {
 	objNN, err := client.ObjectKeyFromObject(obj)
 	if err != nil {
 		return fmt.Errorf("getting object key: %w", err)
@@ -82,8 +82,7 @@ func (cw *ClientWatcher) WaitUntil(ctx context.Context, obj Object, cond ...func
 		if err != nil {
 			return false, err
 		}
-		currObj := objTmp.(Object)
-		if err := cw.scheme.Convert(event.Object, currObj, nil); err != nil {
+		if err := cw.scheme.Convert(event.Object, objTmp, nil); err != nil {
 			return false, err
 		}
 		for _, f := range cond {
@@ -100,13 +99,17 @@ func (cw *ClientWatcher) WaitUntil(ctx context.Context, obj Object, cond ...func
 		}
 		return true, nil
 	}); err != nil {
-		return fmt.Errorf("%s.%s: %s/%s: %w", objGVK.Kind, objGVK.Group, obj.GetNamespace(), obj.GetName(), err)
+		return fmt.Errorf("%s.%s: %s: %w", objGVK.Kind, objGVK.Group, objNN.String(), err)
 	}
 	return nil
 }
 
 // WaitUntilNotFound waits until the object is not found or the context deadline is exceeded
-func (cw *ClientWatcher) WaitUntilNotFound(ctx context.Context, obj Object) error {
+func (cw *ClientWatcher) WaitUntilNotFound(ctx context.Context, obj runtime.Object) error {
+	objNN, err := client.ObjectKeyFromObject(obj)
+	if err != nil {
+		return fmt.Errorf("getting object key: %w", err)
+	}
 	objGVK, err := apiutil.GVKForObject(obj, cw.scheme)
 	if err != nil {
 		return err
@@ -141,28 +144,32 @@ func (cw *ClientWatcher) WaitUntilNotFound(ctx context.Context, obj Object) erro
 		return event.Type == watch.Deleted, nil
 	})
 	if err != nil {
-		return fmt.Errorf("%s.%s: %s/%s: %w", objGVK.Kind, objGVK.Group, obj.GetNamespace(), obj.GetName(), err)
+		return fmt.Errorf("%s.%s: %s: %w", objGVK.Kind, objGVK.Group, objNN.String(), err)
 	}
 	return nil
 }
 
-func (cw *ClientWatcher) objListWatch(obj Object) (*cache.ListWatch, error) {
+func (cw *ClientWatcher) objListWatch(obj runtime.Object) (*cache.ListWatch, error) {
 	objGVK, err := apiutil.GVKForObject(obj, cw.scheme)
 	if err != nil {
 		return nil, err
+	}
+	objNN, err := client.ObjectKeyFromObject(obj)
+	if err != nil {
+		return nil, fmt.Errorf("getting object key: %w", err)
 	}
 	restMapping, err := cw.restMapper.RESTMapping(objGVK.GroupKind(), objGVK.Version)
 	if err != nil {
 		return nil, err
 	}
-	resourceInterface := cw.dynamicClient.Resource(restMapping.Resource).Namespace(obj.GetNamespace())
+	resourceInterface := cw.dynamicClient.Resource(restMapping.Resource).Namespace(objNN.Namespace)
 	return &cache.ListWatch{
 		ListFunc: func(options metav1.ListOptions) (object runtime.Object, err error) {
-			options.FieldSelector = "metadata.name=" + obj.GetName()
+			options.FieldSelector = "metadata.name=" + objNN.Name
 			return resourceInterface.List(options)
 		},
 		WatchFunc: func(options metav1.ListOptions) (w watch.Interface, err error) {
-			options.FieldSelector = "metadata.name=" + obj.GetName()
+			options.FieldSelector = "metadata.name=" + objNN.Name
 			return resourceInterface.Watch(options)
 		},
 	}, nil
