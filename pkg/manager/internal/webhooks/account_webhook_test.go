@@ -21,7 +21,9 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	fakeclient "sigs.k8s.io/controller-runtime/pkg/client/fake"
 
@@ -30,27 +32,24 @@ import (
 	"github.com/kubermatic/kubecarrier/pkg/testutil"
 )
 
-func TestProviderValidatingCreate(t *testing.T) {
-	providerWebhookHandler := ProviderWebhookHandler{
-		Log: testutil.NewLogger(t),
-	}
+func TestAccountValidatingCreate(t *testing.T) {
 
 	tests := []struct {
-		name          string
-		object        *catalogv1alpha1.Provider
-		expectedError bool
+		name            string
+		object          *catalogv1alpha1.Account
+		existingObjects []runtime.Object
+		expectedError   bool
 	}{
 		{
-			name: "invalid provider name",
-			object: &catalogv1alpha1.Provider{
+			name: "invalid account name",
+			object: &catalogv1alpha1.Account{
 				ObjectMeta: metav1.ObjectMeta{
-					Name:      "test.provider",
-					Namespace: "test-provider-namespace",
+					Name: "test.account",
 				},
-				Spec: catalogv1alpha1.ProviderSpec{
-					Metadata: catalogv1alpha1.ProviderMetadata{
-						Description: "test Provider",
-						DisplayName: "test Provider",
+				Spec: catalogv1alpha1.AccountSpec{
+					Metadata: catalogv1alpha1.AccountMetadata{
+						Description: "test Account",
+						DisplayName: "test Account",
 					},
 				},
 			},
@@ -58,24 +57,22 @@ func TestProviderValidatingCreate(t *testing.T) {
 		},
 		{
 			name: "metadata missing",
-			object: &catalogv1alpha1.Provider{
+			object: &catalogv1alpha1.Account{
 				ObjectMeta: metav1.ObjectMeta{
-					Name:      "test-provider",
-					Namespace: "test-provider-namespace",
+					Name: "test-account",
 				},
 			},
 			expectedError: true,
 		},
 		{
 			name: "description missing",
-			object: &catalogv1alpha1.Provider{
+			object: &catalogv1alpha1.Account{
 				ObjectMeta: metav1.ObjectMeta{
-					Name:      "test-provider",
-					Namespace: "test-provider-namespace",
+					Name: "test-account",
 				},
-				Spec: catalogv1alpha1.ProviderSpec{
-					Metadata: catalogv1alpha1.ProviderMetadata{
-						DisplayName: "test Provider",
+				Spec: catalogv1alpha1.AccountSpec{
+					Metadata: catalogv1alpha1.AccountMetadata{
+						DisplayName: "test Account",
 					},
 				},
 			},
@@ -83,30 +80,71 @@ func TestProviderValidatingCreate(t *testing.T) {
 		},
 		{
 			name: "displayName missing",
-			object: &catalogv1alpha1.Provider{
+			object: &catalogv1alpha1.Account{
 				ObjectMeta: metav1.ObjectMeta{
-					Name:      "test-provider",
-					Namespace: "test-provider-namespace",
+					Name: "test-account",
 				},
-				Spec: catalogv1alpha1.ProviderSpec{
-					Metadata: catalogv1alpha1.ProviderMetadata{
-						Description: "test Provider",
+				Spec: catalogv1alpha1.AccountSpec{
+					Metadata: catalogv1alpha1.AccountMetadata{
+						Description: "test Account",
 					},
 				},
 			},
 			expectedError: true,
 		},
 		{
-			name: "can pass validate create",
-			object: &catalogv1alpha1.Provider{
+			name: "duplicate roles",
+			object: &catalogv1alpha1.Account{
 				ObjectMeta: metav1.ObjectMeta{
-					Name:      "test-provider",
-					Namespace: "test-provider-namespace",
+					Name: "test-account",
 				},
-				Spec: catalogv1alpha1.ProviderSpec{
-					Metadata: catalogv1alpha1.ProviderMetadata{
-						Description: "test Provider",
-						DisplayName: "test Provider",
+				Spec: catalogv1alpha1.AccountSpec{
+					Metadata: catalogv1alpha1.AccountMetadata{
+						Description: "test Account",
+						DisplayName: "test Account",
+					},
+					Roles: []catalogv1alpha1.AccountRole{
+						catalogv1alpha1.ProviderRole,
+						catalogv1alpha1.ProviderRole,
+					},
+				},
+			},
+			expectedError: true,
+		},
+		{
+			name: "namespace already exists",
+			object: &catalogv1alpha1.Account{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "test-account",
+				},
+				Spec: catalogv1alpha1.AccountSpec{
+					Metadata: catalogv1alpha1.AccountMetadata{
+						Description: "test Account",
+						DisplayName: "test Account",
+					},
+					Roles: []catalogv1alpha1.AccountRole{
+						catalogv1alpha1.ProviderRole,
+					},
+				},
+			},
+			existingObjects: []runtime.Object{
+				&corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: "test-account"}},
+			},
+			expectedError: true,
+		},
+		{
+			name: "can pass validate create",
+			object: &catalogv1alpha1.Account{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "test-account",
+				},
+				Spec: catalogv1alpha1.AccountSpec{
+					Metadata: catalogv1alpha1.AccountMetadata{
+						Description: "test Account",
+						DisplayName: "test Account",
+					},
+					Roles: []catalogv1alpha1.AccountRole{
+						catalogv1alpha1.ProviderRole,
 					},
 				},
 			},
@@ -116,26 +154,34 @@ func TestProviderValidatingCreate(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			assert.Equal(t, test.expectedError, providerWebhookHandler.validateCreate(test.object) != nil)
+			accountWebhookHandler := AccountWebhookHandler{
+				Log:    testutil.NewLogger(t),
+				Client: fakeclient.NewFakeClientWithScheme(testScheme, test.existingObjects...),
+			}
+			if test.expectedError {
+				assert.Error(t, accountWebhookHandler.validateCreate(context.Background(), test.object))
+			} else {
+				assert.NoError(t, accountWebhookHandler.validateCreate(context.Background(), test.object))
+			}
 		})
 	}
 }
 
-func TestProviderValidatingDelete(t *testing.T) {
+func TestAccountValidatingDelete(t *testing.T) {
 	ctx := context.Background()
-	provider := &catalogv1alpha1.Provider{
+	account := &catalogv1alpha1.Account{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      "test-provider",
-			Namespace: "test-provider-namespace",
+			Name:      "test-account",
+			Namespace: "test-account-namespace",
 		},
-		Spec: catalogv1alpha1.ProviderSpec{
-			Metadata: catalogv1alpha1.ProviderMetadata{
-				Description: "test Provider",
-				DisplayName: "test Provider",
+		Spec: catalogv1alpha1.AccountSpec{
+			Metadata: catalogv1alpha1.AccountMetadata{
+				Description: "test Account",
+				DisplayName: "test Account",
 			},
 		},
-		Status: catalogv1alpha1.ProviderStatus{
-			NamespaceName: "default",
+		Status: catalogv1alpha1.AccountStatus{
+			Namespace: catalogv1alpha1.ObjectReference{Name: "default"},
 		},
 	}
 	for _, test := range []struct {
@@ -194,18 +240,18 @@ func TestProviderValidatingDelete(t *testing.T) {
 			expectedError: true,
 		},
 	} {
-		providerWebhookHandler := ProviderWebhookHandler{
+		accountWebhookHandler := AccountWebhookHandler{
 			Log:    testutil.NewLogger(t),
 			Client: test.client,
 			Scheme: testScheme,
 		}
 		t.Run(test.name, func(t *testing.T) {
 			if test.expectedError {
-				err := providerWebhookHandler.validateDelete(ctx, provider)
+				err := accountWebhookHandler.validateDelete(ctx, account)
 				assert.Error(t, err)
 				t.Log(err)
 			} else {
-				assert.NoError(t, providerWebhookHandler.validateDelete(ctx, provider))
+				assert.NoError(t, accountWebhookHandler.validateDelete(ctx, account))
 			}
 		})
 	}

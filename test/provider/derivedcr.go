@@ -37,7 +37,7 @@ import (
 
 func NewDerivedCRSuite(
 	f *framework.Framework,
-	provider *catalogv1alpha1.Provider,
+	provider *catalogv1alpha1.Account,
 ) func(t *testing.T) {
 	return func(t *testing.T) {
 		// Setup
@@ -53,7 +53,7 @@ func NewDerivedCRSuite(
 				Name: "catapults.test.kubecarrier.io",
 				Labels: map[string]string{
 					"kubecarrier.io/service-cluster":  "eu-west-1",
-					"kubecarrier.io/origin-namespace": provider.Status.NamespaceName,
+					"kubecarrier.io/origin-namespace": provider.Status.Namespace.Name,
 				},
 			},
 			Spec: apiextensionsv1.CustomResourceDefinitionSpec{
@@ -110,7 +110,7 @@ func NewDerivedCRSuite(
 		catalogEntry := &catalogv1alpha1.CatalogEntry{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "test",
-				Namespace: provider.Status.NamespaceName,
+				Namespace: provider.Status.Namespace.Name,
 			},
 			Spec: catalogv1alpha1.CatalogEntrySpec{
 				Metadata: catalogv1alpha1.CatalogEntryMetadata{
@@ -161,7 +161,7 @@ func NewDerivedCRSuite(
 		err = managementClient.Delete(ctx, provider)
 		if assert.Error(t, err, "dirty provider %s deletion should error out", provider.Name) {
 			assert.Equal(t,
-				`admission webhook "vprovider.kubecarrier.io" denied the request: deletion blocking objects found:
+				`admission webhook "vaccount.kubecarrier.io" denied the request: deletion blocking objects found:
 DerivedCustomResource.catalog.kubecarrier.io/v1alpha1: test
 `,
 				err.Error(),

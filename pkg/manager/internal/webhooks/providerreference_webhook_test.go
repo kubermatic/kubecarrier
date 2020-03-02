@@ -44,7 +44,7 @@ func TestProviderReferenceValidatingCreate(t *testing.T) {
 					Namespace: "test-providerReference-namespace",
 				},
 				Spec: catalogv1alpha1.ProviderReferenceSpec{
-					Metadata: catalogv1alpha1.ProviderMetadata{
+					Metadata: catalogv1alpha1.AccountMetadata{
 						Description: "test ProviderReference",
 						DisplayName: "test ProviderReference",
 					},
@@ -70,7 +70,7 @@ func TestProviderReferenceValidatingCreate(t *testing.T) {
 					Namespace: "test-providerReference-namespace",
 				},
 				Spec: catalogv1alpha1.ProviderReferenceSpec{
-					Metadata: catalogv1alpha1.ProviderMetadata{
+					Metadata: catalogv1alpha1.AccountMetadata{
 						DisplayName: "test ProviderReference",
 					},
 				},
@@ -85,7 +85,7 @@ func TestProviderReferenceValidatingCreate(t *testing.T) {
 					Namespace: "test-providerReference-namespace",
 				},
 				Spec: catalogv1alpha1.ProviderReferenceSpec{
-					Metadata: catalogv1alpha1.ProviderMetadata{
+					Metadata: catalogv1alpha1.AccountMetadata{
 						Description: "test ProviderReference",
 					},
 				},
@@ -100,7 +100,7 @@ func TestProviderReferenceValidatingCreate(t *testing.T) {
 					Namespace: "test-providerReference-namespace",
 				},
 				Spec: catalogv1alpha1.ProviderReferenceSpec{
-					Metadata: catalogv1alpha1.ProviderMetadata{
+					Metadata: catalogv1alpha1.AccountMetadata{
 						Description: "test ProviderReference",
 						DisplayName: "test ProviderReference",
 					},
