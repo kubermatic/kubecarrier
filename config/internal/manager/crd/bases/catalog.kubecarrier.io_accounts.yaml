@@ -6,21 +6,27 @@ metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.2.4
   creationTimestamp: null
-  name: tenants.catalog.kubecarrier.io
+  name: accounts.catalog.kubecarrier.io
 spec:
   group: catalog.kubecarrier.io
   names:
     categories:
     - kubecarrier-admin
-    kind: Tenant
-    listKind: TenantList
-    plural: tenants
+    kind: Account
+    listKind: AccountList
+    plural: accounts
     shortNames:
-    - tn
-    singular: tenant
+    - acc
+    singular: account
   scope: Cluster
   versions:
   - additionalPrinterColumns:
+    - jsonPath: .status.namespaceName
+      name: Account Namespace
+      type: string
+    - jsonPath: .spec.metadata.displayName
+      name: Display Name
+      type: string
     - jsonPath: .status.phase
       name: Status
       type: string
@@ -30,8 +36,9 @@ spec:
     name: v1alpha1
     schema:
       openAPIV3Schema:
-        description: Tenant sets up permissions and references to allow a end-user
-          group to interact with providers' services.
+        description: Account is the generic Kubecarrier actor representation in the
+          KubeCarrier control-plane. It has its own namespace and uses various roles,
+          provider and tenant role being the most important.
         properties:
           apiVersion:
             description: 'APIVersion defines the versioned schema of this representation
@@ -46,17 +53,46 @@ spec:
           metadata:
             type: object
           spec:
-            description: TenantSpec defines the desired state of Tenant.
+            description: AccountSpec defines the desired state of Account.
+            properties:
+              metadata:
+                description: "Metadata\tcontains additional human readable account
+                  details"
+                properties:
+                  description:
+                    description: Description shows the human-readable description
+                      of this Account.
+                    minLength: 1
+                    type: string
+                  displayName:
+                    description: DisplayName shows the human-readable name of this
+                      Account.
+                    minLength: 1
+                    type: string
+                type: object
+              roles:
+                description: Roles this account uses
+                items:
+                  description: AccountRole type represent possible, currency implemented
+                    account roles
+                  enum:
+                  - Provider
+                  - Tenant
+                  type: string
+                minItems: 1
+                type: array
+            required:
+            - roles
             type: object
           status:
-            description: TenantStatus defines the observed state of Tenant.
+            description: AccountStatus defines the observed state of Account.
             properties:
               conditions:
                 description: Conditions represents the latest available observations
-                  of a Tenant's current state.
+                  of a Account's current state.
                 items:
-                  description: TenantCondition contains details for the current condition
-                    of this Tenant.
+                  description: AccountCondition contains details for the current condition
+                    of this Account.
                   properties:
                     lastTransitionTime:
                       description: LastTransitionTime is the last time the condition
@@ -76,7 +112,7 @@ spec:
                         'False', 'Unknown').
                       type: string
                     type:
-                      description: Type is the type of the Tenant condition, currently
+                      description: Type is the type of the Account condition, currently
                         ('Ready').
                       type: string
                   required:
@@ -87,13 +123,18 @@ spec:
                   - type
                   type: object
                 type: array
-              namespaceName:
-                description: NamespaceName is the name of the namespace that the Tenant
+              namespace:
+                description: NamespaceName is the name of the namespace that the Account
                   manages.
-                type: string
+                properties:
+                  name:
+                    type: string
+                required:
+                - name
+                type: object
               observedGeneration:
                 description: ObservedGeneration is the most recent generation observed
-                  for this Tenant by the controller.
+                  for this Account by the controller.
                 format: int64
                 type: integer
               phase:

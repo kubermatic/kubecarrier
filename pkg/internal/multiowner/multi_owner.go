@@ -26,27 +26,16 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/client/apiutil"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
+
+	"github.com/kubermatic/kubecarrier/pkg/internal/util"
 )
 
 const (
 	// OwnerAnnotation is the annotation key that references the owner of this object.
 	OwnerAnnotation = "kubecarrier.io/owner"
 )
-
-// ownerReference references an owning/controlling object across Namespaces.
-type ownerReference struct {
-	// Name of the referent.
-	Name string `json:"name"`
-	// Namespace that the referent object lives in.
-	Namespace string `json:"namespace"`
-	// The API Group of the referent.
-	Group string `json:"group"`
-	// The Kind of the referent.
-	Kind string `json:"kind"`
-}
 
 type generalizedListOption interface {
 	client.ListOption
@@ -61,7 +50,7 @@ type object interface {
 
 // InsertOwnerReference adds an OwnerReference to the given object.
 func InsertOwnerReference(owner, object object, scheme *runtime.Scheme) (changed bool, err error) {
-	ownerReference := toOwnerReference(owner, scheme)
+	ownerReference := util.ToObjectReference(owner, scheme)
 
 	refs, err := getRefs(object)
 	if err != nil {
@@ -84,14 +73,14 @@ func InsertOwnerReference(owner, object object, scheme *runtime.Scheme) (changed
 
 // DeleteOwnerReference removes an owner from the given object.
 func DeleteOwnerReference(owner, object object, scheme *runtime.Scheme) (changed bool, err error) {
-	reference := toOwnerReference(owner, scheme)
+	reference := util.ToObjectReference(owner, scheme)
 
 	refs, err := getRefs(object)
 	if err != nil {
 		return false, err
 	}
 
-	var newRefs []ownerReference
+	var newRefs []util.ObjectReference
 	for _, ref := range refs {
 		if ref != reference {
 			newRefs = append(newRefs, ref)
@@ -123,9 +112,9 @@ func IsOwned(object metav1.Object) (owned bool, err error) {
 
 // EnqueueRequestForOwner enqueues requests for all owners of an object.
 //
-// It implements the same behavior as handler.EnqueueRequestForOwner, but for our custom ownerReference.
+// It implements the same behavior as handler.EnqueueRequestForOwner, but for our custom objectReference.
 func EnqueueRequestForOwner(ownerType object, scheme *runtime.Scheme) handler.EventHandler {
-	ownerTypeRef := toOwnerReference(ownerType, scheme)
+	ownerTypeRef := util.ToObjectReference(ownerType, scheme)
 	ownerKind, ownerGroup := ownerTypeRef.Kind, ownerTypeRef.Group
 
 	h := func(obj handler.MapObject) []reconcile.Request {
@@ -185,7 +174,7 @@ func AddOwnerReverseFieldIndex(indexer client.FieldIndexer, log logr.Logger, obj
 			}
 
 			for _, r := range refs {
-				values = append(values, r.fieldIndexValue())
+				values = append(values, fieldIndexValue(r))
 			}
 			return
 		})
@@ -196,13 +185,13 @@ func AddOwnerReverseFieldIndex(indexer client.FieldIndexer, log logr.Logger, obj
 // See also: AddOwnerReverseFieldIndex
 func OwnedBy(owner object, sc *runtime.Scheme) generalizedListOption {
 	return client.MatchingFields{
-		OwnerAnnotation: toOwnerReference(owner, sc).fieldIndexValue(),
+		OwnerAnnotation: fieldIndexValue(util.ToObjectReference(owner, sc)),
 	}
 }
 
-// fieldIndexValue converts the ownerReference into a simple value for a client.FieldIndexer.
+// fieldIndexValue converts the objectReference into a simple value for a client.FieldIndexer.
 // to be used as key for indexing structure.
-func (n ownerReference) fieldIndexValue() string {
+func fieldIndexValue(n util.ObjectReference) string {
 	b, err := json.Marshal(n)
 	if err != nil {
 		// this should never ever happen
@@ -211,30 +200,7 @@ func (n ownerReference) fieldIndexValue() string {
 	return string(b)
 }
 
-// toOwnerReference converts the given object into an ownerReference.
-func toOwnerReference(owner object, scheme *runtime.Scheme) ownerReference {
-	gvk, err := apiutil.GVKForObject(owner, scheme)
-	if err != nil {
-		// if this panic occurs many, many other stuff has gone wrong as well
-		// by owner type's safety ensures this is somewhat well formed k8s object
-		// When using client-go API, it needs to be able to deduce GVK in the same manner
-		// thus get/create/update/patch/delete shall error out long before this is called
-		// This massively simplifies the function interface and allows OwnedBy to be a
-		// one-liner instead of 3 line check which never errors
-		// this is error is completely under our control, users of kubecarrier cannot
-		// change cluster state to cause it.
-		panic(fmt.Sprintf("cannot deduce GVK for owner (type %T)", owner))
-	}
-
-	return ownerReference{
-		Name:      owner.GetName(),
-		Namespace: owner.GetNamespace(),
-		Kind:      gvk.Kind,
-		Group:     gvk.Group,
-	}
-}
-
-func getRefs(object metav1.Object) (refs []ownerReference, err error) {
+func getRefs(object metav1.Object) (refs []util.ObjectReference, err error) {
 	annotations := object.GetAnnotations()
 	if annotations == nil {
 		return nil, nil
@@ -247,7 +213,7 @@ func getRefs(object metav1.Object) (refs []ownerReference, err error) {
 	return
 }
 
-func setRefs(object metav1.Object, refs []ownerReference) error {
+func setRefs(object metav1.Object, refs []util.ObjectReference) error {
 	annotations := object.GetAnnotations()
 	if annotations == nil {
 		annotations = make(map[string]string)

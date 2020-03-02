@@ -18,45 +18,15 @@ package v1alpha1
 
 import (
 	"context"
-	"fmt"
 
-	"k8s.io/apimachinery/pkg/runtime"
-	ctrl "sigs.k8s.io/controller-runtime"
+	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-const (
-	ProviderNamespaceFieldIndex = "provider.kubecarrier.io/namespace"
-)
-
-// RegisterProviderNamespaceFieldIndex adds a field index for Provider.Status.NamespaceName
-func RegisterProviderNamespaceFieldIndex(mgr ctrl.Manager) error {
-	return mgr.GetFieldIndexer().IndexField(
-		&Provider{}, ProviderNamespaceFieldIndex,
-		client.IndexerFunc(func(obj runtime.Object) []string {
-			provider := obj.(*Provider)
-			return []string{provider.Status.NamespaceName}
-		}))
-}
-
-func GetProviderByProviderNamespace(ctx context.Context, c client.Client, providerNamespace string) (*Provider, error) {
-	providerList := &ProviderList{}
-	if err := c.List(ctx, providerList,
-		client.MatchingFields{
-			ProviderNamespaceFieldIndex: providerNamespace,
-		},
-	); err != nil {
-		return nil, err
-	}
-	switch len(providerList.Items) {
-	case 0:
-		// not found
-		return nil, fmt.Errorf("providers.catalog.kubecarrier.io with index %q not found", ProviderNamespaceFieldIndex)
-	case 1:
-		// found!
-		return &providerList.Items[0], nil
-	default:
-		// found too many
-		return nil, fmt.Errorf("multiple providers.catalog.kubecarrier.io with index %q found", ProviderNamespaceFieldIndex)
-	}
+func GetAccountByAccountNamespace(ctx context.Context, c client.Client, accountNamespace string) (*Account, error) {
+	account := &Account{}
+	err := c.Get(ctx, types.NamespacedName{
+		Name: accountNamespace,
+	}, account)
+	return account, err
 }

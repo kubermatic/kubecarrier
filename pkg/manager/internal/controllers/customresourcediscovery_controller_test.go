@@ -22,6 +22,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	corev1 "k8s.io/api/core/v1"
 
 	"github.com/stretchr/testify/require"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
@@ -30,8 +31,10 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	fakeclient "sigs.k8s.io/controller-runtime/pkg/client/fake"
 
+	catalogv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/catalog/v1alpha1"
 	corev1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/core/v1alpha1"
 	operatorv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/operator/v1alpha1"
+	"github.com/kubermatic/kubecarrier/pkg/internal/owner"
 	"github.com/kubermatic/kubecarrier/pkg/testutil"
 )
 
@@ -39,10 +42,30 @@ func TestCustomResourceDiscoveryReconciler(t *testing.T) {
 	const (
 		serviceClusterName = "eu-west-1"
 	)
+	ns := &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: "extreme-cloud"}}
+	provider := &catalogv1alpha1.Account{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "extreme-cloud",
+		},
+		Spec: catalogv1alpha1.AccountSpec{
+			Metadata: catalogv1alpha1.AccountMetadata{
+				DisplayName: "prov",
+				Description: "Beginner really long indie n00b",
+			},
+			Roles: []catalogv1alpha1.AccountRole{
+				catalogv1alpha1.ProviderRole,
+			},
+		},
+		Status: catalogv1alpha1.AccountStatus{
+			Namespace: catalogv1alpha1.ObjectReference{Name: ns.Name},
+		},
+	}
+	owner.SetOwnerReference(provider, ns, testScheme)
+
 	crDiscovery := &corev1alpha1.CustomResourceDiscovery{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "redis.cloud",
-			Namespace: "extreme-cloud",
+			Namespace: ns.Name,
 		},
 		Spec: corev1alpha1.CustomResourceDiscoverySpec{
 			CRD:            corev1alpha1.ObjectReference{Name: "redis.cloud"},
@@ -74,7 +97,7 @@ func TestCustomResourceDiscoveryReconciler(t *testing.T) {
 	}
 	r := &CustomResourceDiscoveryReconciler{
 		Log:    testutil.NewLogger(t),
-		Client: fakeclient.NewFakeClientWithScheme(testScheme, crDiscovery),
+		Client: fakeclient.NewFakeClientWithScheme(testScheme, crDiscovery, ns, provider),
 		Scheme: testScheme,
 	}
 	ctx := context.Background()

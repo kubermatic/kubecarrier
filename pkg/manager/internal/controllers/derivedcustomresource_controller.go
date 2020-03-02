@@ -130,14 +130,14 @@ func (r *DerivedCustomResourceReconciler) Reconcile(req ctrl.Request) (ctrl.Resu
 	}
 
 	// lookup Provider
-	provider, err := catalogv1alpha1.GetProviderByProviderNamespace(ctx, r.Client, dcr.Namespace)
+	provider, err := catalogv1alpha1.GetAccountByAccountNamespace(ctx, r.Client, dcr.Namespace)
 	if err != nil {
 		return result, fmt.Errorf("getting the Provider by Provider Namespace: %w", err)
 	}
 
 	// check if Provider is allowed to use the CRD
 	if baseCRD.Labels == nil ||
-		baseCRD.Labels[OriginNamespaceLabel] != provider.Status.NamespaceName {
+		baseCRD.Labels[OriginNamespaceLabel] != provider.Status.Namespace.Name {
 		return result, r.updateStatus(ctx, dcr, catalogv1alpha1.DerivedCustomResourceCondition{
 			Type:    catalogv1alpha1.DerivedCustomResourceEstablished,
 			Status:  catalogv1alpha1.ConditionFalse,
@@ -175,7 +175,7 @@ func (r *DerivedCustomResourceReconciler) Reconcile(req ctrl.Request) (ctrl.Resu
 			Name: names.Plural + "." + group,
 			Labels: map[string]string{
 				ServiceClusterLabel:  serviceClusterName,
-				OriginNamespaceLabel: provider.Status.NamespaceName,
+				OriginNamespaceLabel: provider.Status.Namespace.Name,
 			},
 		},
 		Spec: *baseCRD.Spec.DeepCopy(),
