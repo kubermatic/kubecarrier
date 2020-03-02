@@ -96,7 +96,7 @@ func runE(conf *rest.Config, log logr.Logger, cmd *cobra.Command) error {
 	s := wow.New(cmd.OutOrStdout(), spin.Get(spin.Dots), "")
 	startTime := time.Now()
 	// Get a client from the configuration of the kubernetes cluster.
-	c, err := util.NewClientWatcher(conf, scheme)
+	c, err := util.NewClientWatcher(conf, scheme, log)
 	if err != nil {
 		return fmt.Errorf("creating Kubernetes client: %w", err)
 	}
@@ -186,7 +186,7 @@ func deployKubeCarrier(ctx context.Context, kubeCarrierNamespace *corev1.Namespa
 				Namespace: kubeCarrierNamespace.Name,
 			},
 		}
-		w, err := util.NewClientWatcher(conf, scheme)
+		w, err := util.NewClientWatcher(conf, scheme, ctrl.Log)
 		if err != nil {
 			return err
 		}

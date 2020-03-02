@@ -20,6 +20,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/go-logr/logr"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -32,7 +33,33 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client/apiutil"
 )
 
-func NewClientWatcher(conf *rest.Config, scheme *runtime.Scheme) (*ClientWatcher, error) {
+type ClientWatcher struct {
+	dynamicClient dynamic.Interface
+	restMapper    meta.RESTMapper
+	scheme        *runtime.Scheme
+	log           logr.Logger
+	client.Client
+}
+
+var _ client.Client = (*ClientWatcher)(nil)
+
+func (cw *ClientWatcher) Create(ctx context.Context, obj runtime.Object, opts ...client.CreateOption) error {
+	cw.log.Info(fmt.Sprintf("creating %s", cw.mustLogLine(obj)))
+	err := cw.Client.Create(ctx, obj, opts...)
+	if err != nil {
+		cw.log.Error(err, fmt.Sprintf("%s cannot create", cw.mustLogLine(obj)))
+	} else {
+		cw.log.Info(fmt.Sprintf("created %s", cw.mustLogLine(obj)))
+	}
+	return err
+}
+
+func (cw *ClientWatcher) Delete(ctx context.Context, obj runtime.Object, opts ...client.DeleteOption) error {
+	cw.log.Info(fmt.Sprintf("deleting %s", cw.mustLogLine(obj)))
+	return cw.Client.Delete(ctx, obj, opts...)
+}
+
+func NewClientWatcher(conf *rest.Config, scheme *runtime.Scheme, log logr.Logger) (*ClientWatcher, error) {
 	mapper, err := apiutil.NewDynamicRESTMapper(conf, apiutil.WithLazyDiscovery)
 	if err != nil {
 		return nil, fmt.Errorf("rest mapper: %w", err)
@@ -53,14 +80,8 @@ func NewClientWatcher(conf *rest.Config, scheme *runtime.Scheme) (*ClientWatcher
 		restMapper:    mapper,
 		scheme:        scheme,
 		Client:        k8sClient,
+		log:           log,
 	}, nil
-}
-
-type ClientWatcher struct {
-	dynamicClient dynamic.Interface
-	restMapper    meta.RESTMapper
-	scheme        *runtime.Scheme
-	client.Client
 }
 
 // WaitUntil waits until the Object's condition function is true, or the context deadline is reached
@@ -99,21 +120,13 @@ func (cw *ClientWatcher) WaitUntil(ctx context.Context, obj runtime.Object, cond
 		}
 		return true, nil
 	}); err != nil {
-		return fmt.Errorf("%s.%s: %s: %w", objGVK.Kind, objGVK.Group, objNN.String(), err)
+		return fmt.Errorf("%s: %w", cw.mustLogLine(obj), err)
 	}
 	return nil
 }
 
 // WaitUntilNotFound waits until the object is not found or the context deadline is exceeded
 func (cw *ClientWatcher) WaitUntilNotFound(ctx context.Context, obj runtime.Object) error {
-	objNN, err := client.ObjectKeyFromObject(obj)
-	if err != nil {
-		return fmt.Errorf("getting object key: %w", err)
-	}
-	objGVK, err := apiutil.GVKForObject(obj, cw.scheme)
-	if err != nil {
-		return err
-	}
 	// things get a bit tricky with not found watches
 	//  clientwatch.UntilWithSync seems useful since it has cache pre-conditions which I can check whether
 	// the objects existed in initial list operation. But there are few other issues with it:
@@ -144,7 +157,7 @@ func (cw *ClientWatcher) WaitUntilNotFound(ctx context.Context, obj runtime.Obje
 		return event.Type == watch.Deleted, nil
 	})
 	if err != nil {
-		return fmt.Errorf("%s.%s: %s: %w", objGVK.Kind, objGVK.Group, objNN.String(), err)
+		return fmt.Errorf("%s: %w", cw.mustLogLine(obj), err)
 	}
 	return nil
 }
@@ -173,4 +186,16 @@ func (cw *ClientWatcher) objListWatch(obj runtime.Object) (*cache.ListWatch, err
 			return resourceInterface.Watch(options)
 		},
 	}, nil
+}
+
+func (cw *ClientWatcher) mustLogLine(obj runtime.Object) string {
+	objGVK, err := apiutil.GVKForObject(obj, cw.scheme)
+	if err != nil {
+		panic(err)
+	}
+	objNN, err := client.ObjectKeyFromObject(obj)
+	if err != nil {
+		panic(err)
+	}
+	return fmt.Sprintf("%s.%s: %s", objGVK.Kind, objGVK.Group, objNN.String())
 }

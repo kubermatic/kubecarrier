@@ -35,13 +35,14 @@ import (
 func newSimpleScenario(f *testutil.Framework) func(t *testing.T) {
 	return func(t *testing.T) {
 		// Setup
+		logger := testutil.NewLogger(t)
 		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 		t.Cleanup(cancel)
-		managementClient, err := f.ManagementClient()
+		managementClient, err := f.ManagementClient(logger)
 		require.NoError(t, err, "creating management client")
 		t.Cleanup(managementClient.CleanUpFunc(ctx, t))
 
-		serviceClient, err := f.ServiceClient()
+		serviceClient, err := f.ServiceClient(logger)
 		require.NoError(t, err, "creating service client")
 		t.Cleanup(serviceClient.CleanUpFunc(ctx, t))
 
@@ -56,13 +57,12 @@ func newSimpleScenario(f *testutil.Framework) func(t *testing.T) {
 					Description: "tenant desc",
 				},
 				Roles: []catalogv1alpha1.AccountRole{
-					catalogv1alpha1.ProviderRole,
+					catalogv1alpha1.TenantRole,
 				},
 			},
 		}
 		require.NoError(t, managementClient.Create(ctx, tenant), "creating tenant error")
 		require.NoError(t, testutil.WaitUntilReady(ctx, managementClient, tenant))
-		t.Logf("creted test tenant %s", tenant.Name)
 
 		tenantNamespaceName := tenant.Status.Namespace.Name
 		tenantNamespace := &corev1.Namespace{}
@@ -71,7 +71,6 @@ func newSimpleScenario(f *testutil.Framework) func(t *testing.T) {
 		}, tenantNamespace))
 
 		// Create a Provider
-		t.Log("creating test provider")
 		provider := &catalogv1alpha1.Account{
 			ObjectMeta: metav1.ObjectMeta{
 				GenerateName: "simple-provider-",
@@ -88,7 +87,6 @@ func newSimpleScenario(f *testutil.Framework) func(t *testing.T) {
 		}
 		require.NoError(t, managementClient.Create(ctx, provider), "creating provider error")
 		require.NoError(t, testutil.WaitUntilReady(ctx, managementClient, provider))
-		t.Logf("creted test provider %s", provider.Name)
 
 		providerNamespaceName := provider.Status.Namespace.Name
 		providerNamespace := &corev1.Namespace{}

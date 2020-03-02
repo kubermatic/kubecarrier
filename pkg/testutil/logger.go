@@ -53,7 +53,7 @@ func (l *Logger) Info(msg string, kvs ...interface{}) {
 	if err != nil {
 		panic(err)
 	}
-	l.t.Log(fmt.Sprintf("%-15s %-20s %s", strings.Join(l.names, "."), msg, string(j)))
+	l.t.Logf("%-15s %-20s %s", strings.Join(l.names, "."), msg, string(j))
 }
 
 // Error implements logr.Logger.Error

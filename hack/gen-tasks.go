@@ -134,6 +134,7 @@ func main() {
 		"VerifySuite",
 		"Scenarios",
 		"Scenarios/simple",
+		"Scenarios/accountRefs",
 	} {
 		tasks = append(tasks, ide.Task{
 			Name:    "e2e:" + test,

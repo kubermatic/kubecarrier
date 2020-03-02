@@ -26,7 +26,8 @@ import (
 func NewScenarioSuite(f *testutil.Framework) func(t *testing.T) {
 	return func(t *testing.T) {
 		for name, testFn := range map[string]func(f *testutil.Framework) func(t *testing.T){
-			"simple": newSimpleScenario,
+			"simple":      newSimpleScenario,
+			"accountRefs": newAccountRefs,
 		} {
 			t.Run(name, func(t *testing.T) {
 				t.Parallel()

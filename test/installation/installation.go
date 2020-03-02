@@ -51,7 +51,7 @@ func NewInstallationSuite(f *testutil.Framework) func(t *testing.T) {
 		t.Log(string(out))
 		require.NoError(t, err)
 
-		managementClient, err := f.ManagementClient()
+		managementClient, err := f.ManagementClient(testutil.NewLogger(t))
 		require.NoError(t, err, "creating management client")
 
 		kubeCarrier := &operatorv1alpha1.KubeCarrier{ObjectMeta: metav1.ObjectMeta{

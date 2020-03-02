@@ -23,6 +23,7 @@ import (
 	"sync"
 	"testing"
 
+	"github.com/go-logr/logr"
 	"github.com/stretchr/testify/require"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -125,18 +126,18 @@ func New(c FrameworkConfig) (f *Framework, err error) {
 	return
 }
 
-func (f *Framework) ManagementClient() (*RecordingClient, error) {
+func (f *Framework) ManagementClient(log logr.Logger) (*RecordingClient, error) {
 	cfg := f.managementConfig
-	c, err := util.NewClientWatcher(cfg, f.ManagementScheme)
+	c, err := util.NewClientWatcher(cfg, f.ManagementScheme, log)
 	if err != nil {
 		return nil, err
 	}
 	return recordingClient(c, f.ManagementScheme), nil
 }
 
-func (f *Framework) ServiceClient() (*RecordingClient, error) {
+func (f *Framework) ServiceClient(log logr.Logger) (*RecordingClient, error) {
 	cfg := f.serviceConfig
-	c, err := util.NewClientWatcher(cfg, f.ServiceScheme)
+	c, err := util.NewClientWatcher(cfg, f.ServiceScheme, log)
 	if err != nil {
 		return nil, err
 	}
