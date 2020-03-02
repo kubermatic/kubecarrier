@@ -162,7 +162,7 @@ func NewDerivedCRSuite(
 		err = managementClient.Delete(ctx, provider)
 		if assert.Error(t, err, "dirty provider %s deletion should error out", provider.Name) {
 			assert.Equal(t,
-				fmt.Sprintf(`admission webhook "vprovider.kubecarrier.io" denied the request: deletion blocking objects found:
+				fmt.Sprintf(`admission webhook "vaccount.kubecarrier.io" denied the request: deletion blocking objects found:
 DerivedCustomResource.catalog.kubecarrier.io/v1alpha1: %s
 `, dcr.Name),
 				err.Error(),
