@@ -30,6 +30,8 @@ type CustomResourceDiscoverySetSpec struct {
 }
 
 type CustomResourceDiscoverySetStatus struct {
+	// ManagementClusterCRDs contains the CRDs information that created by the CustomResourceDiscovery objects of this CustomResourceDiscoverySet.
+	ManagementClusterCRDs []ObjectReference `json:"managementClusterCRDs,omitempty"`
 	// DEPRECATED.
 	// Phase represents the current lifecycle state of this object
 	// consider this field DEPRECATED, it will be removed as soon as there
@@ -141,6 +143,21 @@ type CustomResourceDiscoverySet struct {
 
 	Spec   CustomResourceDiscoverySetSpec   `json:"spec,omitempty"`
 	Status CustomResourceDiscoverySetStatus `json:"status,omitempty"`
+}
+
+// IsReady returns if the CustomResourceDiscoverySet is ready.
+func (s *CustomResourceDiscoverySet) IsReady() bool {
+	if s.Generation != s.Status.ObservedGeneration {
+		return false
+	}
+
+	for _, condition := range s.Status.Conditions {
+		if condition.Type == CustomResourceDiscoverySetReady &&
+			condition.Status == ConditionTrue {
+			return true
+		}
+	}
+	return false
 }
 
 // +kubebuilder:object:root=true

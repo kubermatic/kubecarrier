@@ -20,13 +20,12 @@ import (
 	"context"
 	"testing"
 
-	"k8s.io/apimachinery/pkg/types"
-	ctrl "sigs.k8s.io/controller-runtime"
-	fakeclient "sigs.k8s.io/controller-runtime/pkg/client/fake"
-
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
+	ctrl "sigs.k8s.io/controller-runtime"
+	fakeclient "sigs.k8s.io/controller-runtime/pkg/client/fake"
 
 	corev1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/core/v1alpha1"
 	"github.com/kubermatic/kubecarrier/pkg/testutil"

@@ -156,6 +156,14 @@ func run(flags *flags, log logr.Logger) error {
 		return fmt.Errorf("creating CatalogEntry controller: %w", err)
 	}
 
+	if err = (&controllers.CatalogEntrySetReconciler{
+		Client: mgr.GetClient(),
+		Log:    log.WithName("controllers").WithName("CatalogEntrySet"),
+		Scheme: mgr.GetScheme(),
+	}).SetupWithManager(mgr); err != nil {
+		return fmt.Errorf("creating CatalogEntrySet controller: %w", err)
+	}
+
 	if err = (&controllers.CatalogReconciler{
 		Client: mgr.GetClient(),
 		Log:    log.WithName("controllers").WithName("Catalog"),

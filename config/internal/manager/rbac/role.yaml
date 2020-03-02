@@ -52,6 +52,8 @@ rules:
   resources:
   - catalogentries
   verbs:
+  - create
+  - delete
   - get
   - list
   - update
@@ -60,6 +62,23 @@ rules:
   - catalog.kubecarrier.io
   resources:
   - catalogentries/status
+  verbs:
+  - get
+  - patch
+  - update
+- apiGroups:
+  - catalog.kubecarrier.io
+  resources:
+  - catalogentrysets
+  verbs:
+  - get
+  - list
+  - update
+  - watch
+- apiGroups:
+  - catalog.kubecarrier.io
+  resources:
+  - catalogentrysets/status
   verbs:
   - get
   - patch
@@ -167,6 +186,8 @@ rules:
   resources:
   - customresourcediscoverysets
   verbs:
+  - create
+  - delete
   - get
   - list
   - update
