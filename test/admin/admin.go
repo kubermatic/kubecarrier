@@ -37,14 +37,18 @@ func NewAdminSuite(f *testutil.Framework) func(t *testing.T) {
 	return func(t *testing.T) {
 		// Setup
 		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-		defer cancel()
+		t.Cleanup(cancel)
 		managementClient, err := f.ManagementClient()
 		require.NoError(t, err, "creating management client")
-		defer managementClient.CleanUp(ctx, t)
+		t.Cleanup(func() {
+			managementClient.CleanUp(ctx, t)
+		})
 
 		serviceClient, err := f.ServiceClient()
 		require.NoError(t, err, "creating service client")
-		defer serviceClient.CleanUp(ctx, t)
+		t.Cleanup(func() {
+			serviceClient.CleanUp(ctx, t)
+		})
 
 		// Create a Tenant
 		tenant := &catalogv1alpha1.Account{
