@@ -99,15 +99,21 @@ func (cw *ClientWatcher) WaitUntil(ctx context.Context, obj runtime.Object, cond
 		return fmt.Errorf("getting objListWatch: %w", err)
 	}
 	if _, err := clientwatch.ListWatchUntil(ctx, lw, func(event watch.Event) (b bool, err error) {
-		objTmp, err := cw.scheme.New(objGVK)
-		if err != nil {
-			return false, err
-		}
-		if err := cw.scheme.Convert(event.Object, objTmp, nil); err != nil {
-			return false, err
+		typedEventObject, err := cw.scheme.New(objGVK)
+		if err == nil {
+			if err := cw.scheme.Convert(event.Object, typedEventObject, nil); err != nil {
+				return false, err
+			}
+		} else {
+			if runtime.IsNotRegisteredError(err) {
+				// the object is unregistered in the scheme, keep it as *unstructured.Unstructured
+				typedEventObject = event.Object
+			} else {
+				return false, err
+			}
 		}
 		for _, f := range cond {
-			ok, err := f(objTmp, event.Type)
+			ok, err := f(typedEventObject, event.Type)
 			if err != nil {
 				return false, err
 			}

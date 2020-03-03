@@ -21,7 +21,6 @@ import (
 	"fmt"
 	"strings"
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -43,8 +42,9 @@ func newDerivedCR(
 		logger := testutil.NewLogger(t)
 		managementClient, err := f.ManagementClient(logger)
 		require.NoError(t, err, "creating management client")
-		ctx, cancel := context.WithTimeout(context.Background(), 120*time.Second)
-		t.Cleanup(cancel)
+		//ctx, cancel := context.WithTimeout(context.Background(), 120*time.Second)
+		// t.Cleanup(cancel)
+		ctx := context.Background()
 		t.Cleanup(managementClient.CleanUpFunc(ctx, t, f.Config().CleanUpStrategy))
 
 		testName := strings.Replace(strings.ToLower(t.Name()), "/", "-", -1)
@@ -218,7 +218,7 @@ type: object
 		// Check Tenant -> Provider
 		tenantObj := &unstructured.Unstructured{
 			Object: map[string]interface{}{
-				"apiVersion": "eu-west-1.test-derivedcr/v1alpha1",
+				"apiVersion": fmt.Sprintf("eu-west-1.%s/v1alpha1", provider.Status.Namespace.Name),
 				"kind":       "TestResource",
 				"metadata": map[string]interface{}{
 					"name":      "test-instance-1",
