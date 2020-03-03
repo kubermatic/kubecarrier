@@ -15,6 +15,7 @@ spec:
       labels:
         control-plane: controller-manager
     spec:
+      serviceAccountName: sa
       containers:
       - image: quay.io/kubecarrier/manager:latest
         name: manager
