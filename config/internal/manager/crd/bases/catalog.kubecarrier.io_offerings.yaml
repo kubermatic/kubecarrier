@@ -28,8 +28,10 @@ spec:
       name: v1alpha1
       schema:
         openAPIV3Schema:
-          description: Offering is used for Tenants to discover services that have
-            been made available to them.
+          description: "Offering is used for Tenants to discover services that have\
+            \ been made available to them. \n Offering objects are created automatically\
+            \ by KubeCarrier in Account namespaces, that have a service offered to\
+            \ them via a Catalog."
           properties:
             apiVersion:
               description: 'APIVersion defines the versioned schema of this representation

@@ -30,8 +30,11 @@ spec:
     name: v1alpha1
     schema:
       openAPIV3Schema:
-        description: CustomResourceDiscoverySet manages multiple CustomResourceDiscovery
-          objects for a set of service clusters.
+        description: "CustomResourceDiscoverySet manages multiple CustomResourceDiscovery
+          objects for a set of ServiceClusters. \n **Example** ```yaml apiVersion:
+          kubecarrier.io/v1alpha1 kind: CustomResourceDiscoverySet metadata:   name:
+          couchdb spec:   crd:     name: couchdbs.couchdb.io   serviceClusterSelector:
+          {} ```"
         properties:
           apiVersion:
             description: 'APIVersion defines the versioned schema of this representation
@@ -46,6 +49,8 @@ spec:
           metadata:
             type: object
           spec:
+            description: CustomResourceDiscoverySetSpec describes the desired state
+              of a CustomResourceDiscoverySet.
             properties:
               crd:
                 description: CRD references a CustomResourceDefinition within the
@@ -57,7 +62,7 @@ spec:
                 - name
                 type: object
               kindOverride:
-                description: KindOverride overrides resulting internal CRDs kind
+                description: KindOverride overrides the kind of the discovered CRD.
                 type: string
               serviceClusterSelector:
                 description: ServiceClusterSelector references a set of ServiceClusters
@@ -109,6 +114,8 @@ spec:
             - serviceClusterSelector
             type: object
           status:
+            description: CustomResourceDiscoverySetStatus represents the observed
+              state of a CustomResourceDiscoverySet.
             properties:
               conditions:
                 description: Conditions is a list of all conditions this CustomResourceDiscovery
@@ -150,7 +157,7 @@ spec:
                   created by the CustomResourceDiscovery objects of this CustomResourceDiscoverySet.
                 items:
                   description: ObjectReference describes the link to another object
-                    in the same namespace
+                    in the same Namespace.
                   properties:
                     name:
                       type: string

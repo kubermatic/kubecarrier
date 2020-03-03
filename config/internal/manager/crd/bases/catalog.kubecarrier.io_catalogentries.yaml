@@ -28,8 +28,20 @@ spec:
       name: v1alpha1
       schema:
         openAPIV3Schema:
-          description: CatalogEntry reference to the CRD that the provider wants to
-            provide as service to the tenant.
+          description: "CatalogEntry controls how to offer a CRD to other Tenants.\
+            \ \n A CatalogEntry references a single CRD, adds metadata to it and allows\
+            \ to limit field access for Tenants. \n **Simple Example** ```yaml apiVersion:\
+            \ catalog.kubecarrier.io/v1alpha1 kind: CatalogEntry metadata:   name:\
+            \ couchdbs.eu-west-1 spec:   metadata:     displayName: CouchDB     description:\
+            \ The compfy database   baseCRD:     name: couchdbs.eu-west-1.loodse ```\
+            \ \n **Example with limited fields** ```yaml apiVersion: catalog.kubecarrier.io/v1alpha1\
+            \ kind: CatalogEntry metadata:   name: couchdbs.eu-west-1 spec:   metadata:\
+            \     displayName: CouchDB     description: The compfy database   baseCRD:\
+            \     name: couchdbs.eu-west-1.loodse   derive:     kindOverride: CouchDBPublic\
+            \     expose:     - versions:       - v1alpha1       fields:       - jsonPath:\
+            \ .spec.username       - jsonPath: .spec.password       - jsonPath: .status.phase\
+            \       - jsonPath: .status.fauxtonAddress       - jsonPath: .status.address\
+            \       - jsonPath: .status.observedGeneration ```"
           properties:
             apiVersion:
               description: 'APIVersion defines the versioned schema of this representation
@@ -45,7 +57,7 @@ spec:
             metadata:
               type: object
             spec:
-              description: CatalogEntrySpec defines the desired state of CatalogEntry
+              description: CatalogEntrySpec describes the desired state of CatalogEntry.
               properties:
                 baseCRD:
                   description: BaseCRD is the underlying BaseCRD objects that this
@@ -100,8 +112,8 @@ spec:
                     - expose
                   type: object
                 metadata:
-                  description: Metadata contains the metadata (display name, description,
-                    etc) of the CatalogEntry.
+                  description: Metadata contains the metadata of the CatalogEntry
+                    for the Service Catalog.
                   properties:
                     description:
                       description: Description shows the human-readable description
@@ -114,7 +126,7 @@ spec:
                   type: object
               type: object
             status:
-              description: CatalogEntryStatus defines the observed state of CatalogEntry.
+              description: CatalogEntryStatus represents the observed state of CatalogEntry.
               properties:
                 conditions:
                   description: Conditions represents the latest available observations

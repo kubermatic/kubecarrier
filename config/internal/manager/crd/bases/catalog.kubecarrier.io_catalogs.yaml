@@ -30,8 +30,11 @@ spec:
     name: v1alpha1
     schema:
       openAPIV3Schema:
-        description: Catalog publishes a selection of CatalogEntries to a selection
-          of Tenants.
+        description: "Catalog publishes a selection of CatalogEntries to a selection
+          of Tenants. \n KubeCarrier will automatically create ServiceClusterAssignment
+          objects for each Tenant selected by the Catalog. \n **Example** ```yaml
+          apiVersion: catalog.kubecarrier.io/v1alpha1 kind: Catalog metadata:   name:
+          default spec:   tenantReferenceSelector: {}   catalogEntrySelector: {} ```"
         properties:
           apiVersion:
             description: 'APIVersion defines the versioned schema of this representation
@@ -46,7 +49,7 @@ spec:
           metadata:
             type: object
           spec:
-            description: CatalogSpec defines the desired contents of a Catalog.
+            description: CatalogSpec describes the desired contents of a Catalog.
             properties:
               catalogEntrySelector:
                 description: CatalogEntrySelector selects CatalogEntry objects that
@@ -140,7 +143,7 @@ spec:
                 type: object
             type: object
           status:
-            description: CatalogStatus defines the observed state of Catalog.
+            description: CatalogStatus represents the observed state of Catalog.
             properties:
               conditions:
                 description: Conditions represents the latest available observations

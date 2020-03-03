@@ -136,17 +136,17 @@
       name: v1alpha1
       schema:
         openAPIV3Schema:
-          description: "Ferry represents single kubernetes cluster belonging to the
-            provider \n Ferry lives in the provider namespace. For each ferry the
-            kubecarrier operator spins up the ferry controller deployment, necessary
-            roles, service accounts, and role bindings \n The reason for ferry controller
-            deployment are multiples: * security --> kubecarrier operator has greater
-            privileges then ferry controller * resource isolation --> each ferry controller
-            pod operates only on a single service cluster, \t\tthus resource allocation
+          description: "Ferry manages the deployment of the Ferry controller manager.
+            \n Ferry lives in the Provider Namespace. For each ferry the KubeCarrier
+            operator spins up the ferry controller deployment, necessary roles, service
+            accounts, and role bindings. \n The reason for ferry controller deployment
+            are multiples: * security --> KubeCarrier operator has greater privileges
+            then ferry controller * resource isolation --> each ferry controller pod
+            operates only on a single service cluster, \t\tthus resource allocation
             and monitoring is separate per ferry. This allows finer grade \t\tresource
             tuning and monitoring * flexibility --> If needed different ferries could
             have different deployments depending on \t\ttheir specific need (e.g.
-            kubecarrier image version for gradual rolling upgrade, different resource
+            KubeCarrier image version for gradual rolling upgrade, different resource
             allocation, etc),"
           properties:
             apiVersion:
@@ -163,7 +163,7 @@
             metadata:
               type: object
             spec:
-              description: FerrySpec defines the desired state of Ferry
+              description: FerrySpec defines the desired state of Ferry.
               properties:
                 kubeconfigSecret:
                   description: KubeconfigSecret specifies the Kubeconfig to use when
@@ -178,7 +178,7 @@
               - kubeconfigSecret
               type: object
             status:
-              description: FerryStatus defines the observed state of Ferry
+              description: FerryStatus defines the observed state of Ferry.
               properties:
                 conditions:
                   description: Conditions is a list of all conditions this Ferry is
@@ -266,8 +266,10 @@
       name: v1alpha1
       schema:
         openAPIV3Schema:
-          description: Catapult manages the deployment of the Catapult controller
-            manager.
+          description: "Catapult manages the deployment of the Catapult controller
+            manager. \n A Catapult instance is started for each CustomResourceDiscovery
+            instance and responsible for reconciling CRD instances across Kubernetes
+            Clusters."
           properties:
             apiVersion:
               description: 'APIVersion defines the versioned schema of this representation
@@ -283,10 +285,10 @@
             metadata:
               type: object
             spec:
-              description: CatapultSpec defines the desired state of Catapult
+              description: CatapultSpec defines the desired state of Catapult.
               properties:
                 managementClusterCRD:
-                  description: References the CRD in the management cluster.
+                  description: References the CRD in the Management Cluster.
                   properties:
                     group:
                       type: string
@@ -312,7 +314,7 @@
                   - name
                   type: object
                 serviceClusterCRD:
-                  description: References the CRD in the service cluster.
+                  description: References the CRD in the ServiceCluster.
                   properties:
                     group:
                       type: string
@@ -334,7 +336,7 @@
               - serviceClusterCRD
               type: object
             status:
-              description: CatapultStatus defines the observed state of Catapult
+              description: CatapultStatus defines the observed state of Catapult.
               properties:
                 conditions:
                   description: Conditions represents the latest available observations
@@ -424,11 +426,9 @@
       name: v1alpha1
       schema:
         openAPIV3Schema:
-          description: Elevator manages the deployment of the Elevator controller
-            manager. For each `DerivedCustomResource` a Elevator instance is launched
-            to propagate the derived CRD instance into the provider namespace. This
-            component works hand-in-hand with the Catapult instance for the respective
-            type.
+          description: "Elevator manages the deployment of the Elevator controller
+            manager. \n For each `DerivedCustomResource` a Elevator instance is launched
+            to propagate the derived CRD instance into the Namespace of it's provider."
           properties:
             apiVersion:
               description: 'APIVersion defines the versioned schema of this representation
@@ -444,7 +444,7 @@
             metadata:
               type: object
             spec:
-              description: ElevatorSpec defines the desired state of Elevator
+              description: ElevatorSpec defines the desired state of Elevator.
               properties:
                 derivedCR:
                   description: References the DerivedCustomResource controlling the
@@ -497,7 +497,7 @@
               - tenantCRD
               type: object
             status:
-              description: ElevatorStatus defines the observed state of Elevator
+              description: ElevatorStatus defines the observed state of Elevator.
               properties:
                 conditions:
                   description: Conditions represents the latest available observations

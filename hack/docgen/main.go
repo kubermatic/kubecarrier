@@ -308,7 +308,7 @@ func printAPIDocs(paths []string, sectionLink string) {
 			fmt.Println("|", f.Name, "|", f.Doc, "|", f.Type, "|", f.Mandatory, "|")
 		}
 		fmt.Println("")
-		fmt.Printf("[Back to Group](#%s)\n", sectionLink)
+		fmt.Printf("[Back to Group](%s)\n", sectionLink)
 	}
 }
 
