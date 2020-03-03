@@ -204,7 +204,7 @@ type: object
 		// Create a Tenant obj
 		someNamespace := &corev1.Namespace{
 			ObjectMeta: metav1.ObjectMeta{
-				Name: "derived-crd-test-namespace",
+				Name: testName + "derived-crd-test-namespace",
 			},
 		}
 		require.NoError(
