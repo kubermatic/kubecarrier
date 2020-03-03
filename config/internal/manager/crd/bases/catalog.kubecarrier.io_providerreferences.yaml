@@ -30,10 +30,9 @@ spec:
     name: v1alpha1
     schema:
       openAPIV3Schema:
-        description: ProviderReference exposes information of the Provider(displayName,
-          description). This object lives in the tenant namespace for each provider
-          the tenant is allowed utilizing (e.g. there's catalog selecting this tenant
-          as its user)
+        description: "ProviderReference exposes information of a service provider.
+          \n ProviderReference objects are created automatically by KubeCarrier in
+          Account namespaces, that have a service offered to them via a Catalog."
         properties:
           apiVersion:
             description: 'APIVersion defines the versioned schema of this representation
@@ -55,13 +54,12 @@ spec:
                   etc) of the Provider.
                 properties:
                   description:
-                    description: Description shows the human-readable description
-                      of this Account.
+                    description: Description is the human-readable description of
+                      this Account.
                     minLength: 1
                     type: string
                   displayName:
-                    description: DisplayName shows the human-readable name of this
-                      Account.
+                    description: DisplayName is the human-readable name of this Account.
                     minLength: 1
                     type: string
                 type: object

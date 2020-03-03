@@ -30,9 +30,13 @@ spec:
     name: v1alpha1
     schema:
       openAPIV3Schema:
-        description: CatalogEntrySet provides fully automation for provider to create
-          both CustomResourceDiscoverySet and CatalogEntry for the same CRD in multiple
-          service clusters.
+        description: "CatalogEntrySet manages a CustomResourceDiscoverySet and creates
+          CatalogEntries for each CRD discovered from the selected ServiceClusters.
+          \n **Example** See CatalogEntry documentation for more configuration details.
+          ```yaml apiVersion: catalog.kubecarrier.io/v1alpha1 kind: CatalogEntrySet
+          metadata:   name: couchdbs spec:   metadata:     displayName: CouchDB     description:
+          The compfy database   discoverySet:     crd:       name: couchdbs.couchdb.io
+          \    serviceClusterSelector: {} ```"
         properties:
           apiVersion:
             description: 'APIVersion defines the versioned schema of this representation
@@ -47,7 +51,7 @@ spec:
           metadata:
             type: object
           spec:
-            description: CatalogEntrySetSpec defines the desired state of CatalogEntrySet
+            description: CatalogEntrySetSpec defines the desired state of CatalogEntrySet.
             properties:
               derive:
                 description: Derive contains the configuration to generate DerivedCustomResources
@@ -93,7 +97,7 @@ spec:
                 - expose
                 type: object
               discoverySet:
-                description: DiscoverySet contains the configuration to create CustomResourceDiscoverySet.
+                description: DiscoverySet contains the configuration to create a CustomResourceDiscoverySet.
                 properties:
                   crd:
                     description: CRD references a CustomResourceDefinition within
@@ -170,8 +174,8 @@ spec:
                 - serviceClusterSelector
                 type: object
               metadata:
-                description: Metadata contains the metadata (display name, description,
-                  etc) of the CatalogEntrySet.
+                description: Metadata contains the metadata of each CatalogEntry for
+                  the Service Catalog.
                 properties:
                   description:
                     description: Description shows the human-readable description

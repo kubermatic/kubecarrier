@@ -26,7 +26,9 @@ spec:
     name: v1alpha1
     schema:
       openAPIV3Schema:
-        description: Catapult manages the deployment of the Catapult controller manager.
+        description: "Catapult manages the deployment of the Catapult controller manager.
+          \n A Catapult instance is started for each CustomResourceDiscovery instance
+          and responsible for reconciling CRD instances across Kubernetes Clusters."
         properties:
           apiVersion:
             description: 'APIVersion defines the versioned schema of this representation
@@ -41,10 +43,10 @@ spec:
           metadata:
             type: object
           spec:
-            description: CatapultSpec defines the desired state of Catapult
+            description: CatapultSpec defines the desired state of Catapult.
             properties:
               managementClusterCRD:
-                description: References the CRD in the management cluster.
+                description: References the CRD in the Management Cluster.
                 properties:
                   group:
                     type: string
@@ -70,7 +72,7 @@ spec:
                 - name
                 type: object
               serviceClusterCRD:
-                description: References the CRD in the service cluster.
+                description: References the CRD in the ServiceCluster.
                 properties:
                   group:
                     type: string
@@ -105,7 +107,7 @@ spec:
             - serviceClusterCRD
             type: object
           status:
-            description: CatapultStatus defines the observed state of Catapult
+            description: CatapultStatus defines the observed state of Catapult.
             properties:
               conditions:
                 description: Conditions represents the latest available observations

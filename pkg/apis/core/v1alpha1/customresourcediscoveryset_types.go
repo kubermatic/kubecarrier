@@ -20,12 +20,13 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+// CustomResourceDiscoverySetSpec describes the desired state of a CustomResourceDiscoverySet.
 type CustomResourceDiscoverySetSpec struct {
 	// CRD references a CustomResourceDefinition within the ServiceCluster.
 	CRD ObjectReference `json:"crd"`
 	// ServiceClusterSelector references a set of ServiceClusters to search the CustomResourceDefinition on.
 	ServiceClusterSelector metav1.LabelSelector `json:"serviceClusterSelector"`
-	// KindOverride overrides resulting internal CRDs kind
+	// KindOverride overrides the kind of the discovered CRD.
 	KindOverride string `json:"kindOverride,omitempty"`
 	// WebhookStrategy configs the webhooks of the CRDs which are registered in the management cluster by this CustomResourceDiscoverySet.
 	// There are two possible values for this configuration {None (by default), ServiceCluster}
@@ -35,6 +36,7 @@ type CustomResourceDiscoverySetSpec struct {
 	WebhookStrategy WebhookStrategyType `json:"webhookStrategy,omitempty"`
 }
 
+// CustomResourceDiscoverySetStatus represents the observed state of a CustomResourceDiscoverySet.
 type CustomResourceDiscoverySetStatus struct {
 	// ManagementClusterCRDs contains the CRDs information that created by the CustomResourceDiscovery objects of this CustomResourceDiscoverySet.
 	ManagementClusterCRDs []ObjectReference `json:"managementClusterCRDs,omitempty"`
@@ -50,18 +52,18 @@ type CustomResourceDiscoverySetStatus struct {
 	ObservedGeneration int64 `json:"observedGeneration,omitempty"`
 }
 
-// CustomResourceDiscoverySetPhaseType represents all conditions as a single string for printing in kubectl
+// CustomResourceDiscoverySetPhaseType represents all conditions as a single string for printing in kubectl.
 type CustomResourceDiscoverySetPhaseType string
 
-// Values of CustomResourceDiscoverySetPhaseType
+// Values of CustomResourceDiscoverySetPhaseType.
 const (
 	CustomResourceDiscoverySetPhaseReady    CustomResourceDiscoverySetPhaseType = "Ready"
 	CustomResourceDiscoverySetPhaseNotReady CustomResourceDiscoverySetPhaseType = "NotReady"
 	CustomResourceDiscoverySetPhaseUnknown  CustomResourceDiscoverySetPhaseType = "Unknown"
 )
 
-// updatePhase updates the phase property based on the current conditions
-// this method should be called everytime the conditions are updated
+// updatePhase updates the phase property based on the current conditions.
+// this method should be called everytime the conditions are updated.
 func (s *CustomResourceDiscoverySetStatus) updatePhase() {
 	for _, condition := range s.Conditions {
 		if condition.Type != CustomResourceDiscoverySetReady {
@@ -81,7 +83,7 @@ func (s *CustomResourceDiscoverySetStatus) updatePhase() {
 	s.Phase = CustomResourceDiscoverySetPhaseUnknown
 }
 
-// SetCondition replaces or adds the given condition
+// SetCondition replaces or adds the given condition.
 func (s *CustomResourceDiscoverySetStatus) SetCondition(condition CustomResourceDiscoverySetCondition) {
 	defer s.updatePhase()
 	if condition.LastTransitionTime.IsZero() {
@@ -103,7 +105,7 @@ func (s *CustomResourceDiscoverySetStatus) SetCondition(condition CustomResource
 	s.Conditions = append(s.Conditions, condition)
 }
 
-// GetCondition returns the Condition of the given type, if it exists
+// GetCondition returns the Condition of the given type, if it exists.
 func (s *CustomResourceDiscoverySetStatus) GetCondition(t CustomResourceDiscoverySetConditionType) (condition CustomResourceDiscoverySetCondition, exists bool) {
 	for _, cond := range s.Conditions {
 		if cond.Type == t {
@@ -137,7 +139,19 @@ type CustomResourceDiscoverySetCondition struct {
 	Type CustomResourceDiscoverySetConditionType `json:"type"`
 }
 
-// CustomResourceDiscoverySet manages multiple CustomResourceDiscovery objects for a set of service clusters.
+// CustomResourceDiscoverySet manages multiple CustomResourceDiscovery objects for a set of ServiceClusters.
+//
+// **Example**
+// ```yaml
+// apiVersion: kubecarrier.io/v1alpha1
+// kind: CustomResourceDiscoverySet
+// metadata:
+//   name: couchdb
+// spec:
+//   crd:
+//     name: couchdbs.couchdb.io
+//   serviceClusterSelector: {}
+// ```
 // +kubebuilder:object:root=true
 // +kubebuilder:subresource:status
 // +kubebuilder:printcolumn:name="CustomResourceDefinition",type="string",JSONPath=".spec.crd.name"
@@ -166,6 +180,7 @@ func (s *CustomResourceDiscoverySet) IsReady() bool {
 	return false
 }
 
+// CustomResourceDiscoverySetList is a list of CustomResourceDiscoverySet.
 // +kubebuilder:object:root=true
 type CustomResourceDiscoverySetList struct {
 	metav1.TypeMeta `json:",inline"`

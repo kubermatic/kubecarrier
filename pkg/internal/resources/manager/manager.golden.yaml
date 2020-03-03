@@ -37,9 +37,14 @@
       name: v1alpha1
       schema:
         openAPIV3Schema:
-          description: Account is the generic Kubecarrier actor representation in
-            the KubeCarrier control-plane. It has its own namespace and uses various
-            roles, provider and tenant role being the most important.
+          description: "Account represents an actor in KubeCarrier. Depending on it's
+            roles, it can provide services, consume offered services or both. \n KubeCarrier
+            creates a new Namespace for each Account. The Account Metadata is exposed
+            to users that are offered services from this Account. \n **Example** ```yaml
+            apiVersion: catalog.kubecarrier.io/v1alpha1 kind: Account metadata:   name:
+            team-a spec:   metadata:     displayName: The A Team     description:
+            In 1972, a crack commando unit was sent to prison by a military court...
+            \  roles:   - Provider   - Tenant ```"
           properties:
             apiVersion:
               description: 'APIVersion defines the versioned schema of this representation
@@ -55,28 +60,27 @@
             metadata:
               type: object
             spec:
-              description: AccountSpec defines the desired state of Account.
+              description: AccountSpec describes the desired state of Account.
               properties:
                 metadata:
                   description: "Metadata\tcontains additional human readable account
-                    details"
+                    details."
                   properties:
                     description:
-                      description: Description shows the human-readable description
-                        of this Account.
+                      description: Description is the human-readable description of
+                        this Account.
                       minLength: 1
                       type: string
                     displayName:
-                      description: DisplayName shows the human-readable name of this
+                      description: DisplayName is the human-readable name of this
                         Account.
                       minLength: 1
                       type: string
                   type: object
                 roles:
-                  description: Roles this account uses
+                  description: Roles this account uses.
                   items:
-                    description: AccountRole type represent possible, currency implemented
-                      account roles
+                    description: AccountRole type represents available Account roles.
                     enum:
                     - Provider
                     - Tenant
@@ -87,7 +91,7 @@
               - roles
               type: object
             status:
-              description: AccountStatus defines the observed state of Account.
+              description: AccountStatus represents the observed state of Account.
               properties:
                 conditions:
                   description: Conditions represents the latest available observations
@@ -126,7 +130,7 @@
                     type: object
                   type: array
                 namespace:
-                  description: NamespaceName is the name of the namespace that the
+                  description: NamespaceName is the name of the Namespace that the
                     Account manages.
                   properties:
                     name:
@@ -191,8 +195,20 @@
       name: v1alpha1
       schema:
         openAPIV3Schema:
-          description: CatalogEntry reference to the CRD that the provider wants to
-            provide as service to the tenant.
+          description: "CatalogEntry controls how to offer a CRD to other Tenants.
+            \n A CatalogEntry references a single CRD, adds metadata to it and allows
+            to limit field access for Tenants. \n **Simple Example** ```yaml apiVersion:
+            catalog.kubecarrier.io/v1alpha1 kind: CatalogEntry metadata:   name: couchdbs.eu-west-1
+            spec:   metadata:     displayName: CouchDB     description: The compfy
+            database   baseCRD:     name: couchdbs.eu-west-1.loodse ``` \n **Example
+            with limited fields** ```yaml apiVersion: catalog.kubecarrier.io/v1alpha1
+            kind: CatalogEntry metadata:   name: couchdbs.eu-west-1 spec:   metadata:
+            \    displayName: CouchDB     description: The compfy database   baseCRD:
+            \    name: couchdbs.eu-west-1.loodse   derive:     kindOverride: CouchDBPublic
+            \    expose:     - versions:       - v1alpha1       fields:       - jsonPath:
+            .spec.username       - jsonPath: .spec.password       - jsonPath: .status.phase
+            \      - jsonPath: .status.fauxtonAddress       - jsonPath: .status.address
+            \      - jsonPath: .status.observedGeneration ```"
           properties:
             apiVersion:
               description: 'APIVersion defines the versioned schema of this representation
@@ -208,7 +224,7 @@
             metadata:
               type: object
             spec:
-              description: CatalogEntrySpec defines the desired state of CatalogEntry
+              description: CatalogEntrySpec describes the desired state of CatalogEntry.
               properties:
                 baseCRD:
                   description: BaseCRD is the underlying BaseCRD objects that this
@@ -263,8 +279,8 @@
                   - expose
                   type: object
                 metadata:
-                  description: Metadata contains the metadata (display name, description,
-                    etc) of the CatalogEntry.
+                  description: Metadata contains the metadata of the CatalogEntry
+                    for the Service Catalog.
                   properties:
                     description:
                       description: Description shows the human-readable description
@@ -277,7 +293,7 @@
                   type: object
               type: object
             status:
-              description: CatalogEntryStatus defines the observed state of CatalogEntry.
+              description: CatalogEntryStatus represents the observed state of CatalogEntry.
               properties:
                 conditions:
                   description: Conditions represents the latest available observations
@@ -413,9 +429,13 @@
       name: v1alpha1
       schema:
         openAPIV3Schema:
-          description: CatalogEntrySet provides fully automation for provider to create
-            both CustomResourceDiscoverySet and CatalogEntry for the same CRD in multiple
-            service clusters.
+          description: "CatalogEntrySet manages a CustomResourceDiscoverySet and creates
+            CatalogEntries for each CRD discovered from the selected ServiceClusters.
+            \n **Example** See CatalogEntry documentation for more configuration details.
+            ```yaml apiVersion: catalog.kubecarrier.io/v1alpha1 kind: CatalogEntrySet
+            metadata:   name: couchdbs spec:   metadata:     displayName: CouchDB
+            \    description: The compfy database   discoverySet:     crd:       name:
+            couchdbs.couchdb.io     serviceClusterSelector: {} ```"
           properties:
             apiVersion:
               description: 'APIVersion defines the versioned schema of this representation
@@ -431,7 +451,7 @@
             metadata:
               type: object
             spec:
-              description: CatalogEntrySetSpec defines the desired state of CatalogEntrySet
+              description: CatalogEntrySetSpec defines the desired state of CatalogEntrySet.
               properties:
                 derive:
                   description: Derive contains the configuration to generate DerivedCustomResources
@@ -477,7 +497,8 @@
                   - expose
                   type: object
                 discoverySet:
-                  description: DiscoverySet contains the configuration to create CustomResourceDiscoverySet.
+                  description: DiscoverySet contains the configuration to create a
+                    CustomResourceDiscoverySet.
                   properties:
                     crd:
                       description: CRD references a CustomResourceDefinition within
@@ -555,8 +576,8 @@
                   - serviceClusterSelector
                   type: object
                 metadata:
-                  description: Metadata contains the metadata (display name, description,
-                    etc) of the CatalogEntrySet.
+                  description: Metadata contains the metadata of each CatalogEntry
+                    for the Service Catalog.
                   properties:
                     description:
                       description: Description shows the human-readable description
@@ -665,8 +686,12 @@
       name: v1alpha1
       schema:
         openAPIV3Schema:
-          description: Catalog publishes a selection of CatalogEntries to a selection
-            of Tenants.
+          description: "Catalog publishes a selection of CatalogEntries to a selection
+            of Tenants. \n KubeCarrier will automatically create ServiceClusterAssignment
+            objects for each Tenant selected by the Catalog. \n **Example** ```yaml
+            apiVersion: catalog.kubecarrier.io/v1alpha1 kind: Catalog metadata:   name:
+            default spec:   tenantReferenceSelector: {}   catalogEntrySelector: {}
+            ```"
           properties:
             apiVersion:
               description: 'APIVersion defines the versioned schema of this representation
@@ -682,7 +707,7 @@
             metadata:
               type: object
             spec:
-              description: CatalogSpec defines the desired contents of a Catalog.
+              description: CatalogSpec describes the desired contents of a Catalog.
               properties:
                 catalogEntrySelector:
                   description: CatalogEntrySelector selects CatalogEntry objects that
@@ -776,7 +801,7 @@
                   type: object
               type: object
             status:
-              description: CatalogStatus defines the observed state of Catalog.
+              description: CatalogStatus represents the observed state of Catalog.
               properties:
                 conditions:
                   description: Conditions represents the latest available observations
@@ -1087,8 +1112,10 @@
       name: v1alpha1
       schema:
         openAPIV3Schema:
-          description: Offering is used for Tenants to discover services that have
-            been made available to them.
+          description: "Offering is used for Tenants to discover services that have
+            been made available to them. \n Offering objects are created automatically
+            by KubeCarrier in Account namespaces, that have a service offered to them
+            via a Catalog."
           properties:
             apiVersion:
               description: 'APIVersion defines the versioned schema of this representation
@@ -1216,10 +1243,9 @@
       name: v1alpha1
       schema:
         openAPIV3Schema:
-          description: ProviderReference exposes information of the Provider(displayName,
-            description). This object lives in the tenant namespace for each provider
-            the tenant is allowed utilizing (e.g. there's catalog selecting this tenant
-            as its user)
+          description: "ProviderReference exposes information of a service provider.
+            \n ProviderReference objects are created automatically by KubeCarrier
+            in Account namespaces, that have a service offered to them via a Catalog."
           properties:
             apiVersion:
               description: 'APIVersion defines the versioned schema of this representation
@@ -1242,12 +1268,12 @@
                     etc) of the Provider.
                   properties:
                     description:
-                      description: Description shows the human-readable description
-                        of this Account.
+                      description: Description is the human-readable description of
+                        this Account.
                       minLength: 1
                       type: string
                     displayName:
-                      description: DisplayName shows the human-readable name of this
+                      description: DisplayName is the human-readable name of this
                         Account.
                       minLength: 1
                       type: string
@@ -1300,9 +1326,9 @@
       schema:
         openAPIV3Schema:
           description: "ServiceClusterReference exposes information about a Providers
-            Clusters. \n This object lives in the tenant namespace for each provider
-            the tenant is allowed utilizing (e.g. there's catalog selecting this tenant
-            as its user)"
+            Cluster. \n ServiceClusterReference objects are created automatically
+            by KubeCarrier in Account namespaces, that have a service offered to them
+            via a Catalog."
           properties:
             apiVersion:
               description: 'APIVersion defines the versioned schema of this representation
@@ -1326,11 +1352,11 @@
                     etc) of the ServiceCluster.
                   properties:
                     description:
-                      description: Description shows the human-readable description
-                        of this ServiceCluster.
+                      description: Description is the human-readable description of
+                        this ServiceCluster.
                       type: string
                     displayName:
-                      description: DisplayName shows the human-readable name of this
+                      description: DisplayName is the human-readable name of this
                         ServiceCluster.
                       type: string
                   type: object
@@ -1386,10 +1412,10 @@
       name: v1alpha1
       schema:
         openAPIV3Schema:
-          description: TenantReference is a read-only object exposing the Tenant information.
-            TenantReference lives in the provider's namespace. The provider is allowed
-            modifying TenantReference's labels, marking them at will. This allows
-            the tenant granular tenant selection for the offered services catalogs.
+          description: "TenantReference exposes information about available Tenants
+            on the platform and allows a Provider to set custom labels on them. \n
+            TenantReference objects will be created for all Accounts with the role
+            \"Tenant\" in all Account Namespaces with the role \"Provider\"."
           properties:
             apiVersion:
               description: 'APIVersion defines the versioned schema of this representation
@@ -1443,7 +1469,7 @@
         name: CustomResourceDefinition
         type: string
       - jsonPath: .spec.serviceCluster.name
-        name: Service Cluster
+        name: ServiceCluster
         type: string
       - jsonPath: .status.phase
         name: Status
@@ -1451,9 +1477,18 @@
       name: v1alpha1
       schema:
         openAPIV3Schema:
-          description: CustomResourceDiscovery is used inside KubeCarrier to fetch
-            a CustomResourceDefinition from another cluster and to offload cross cluster
-            access to another component.
+          description: "CustomResourceDiscovery tells KubeCarrier to discover a CustomResource
+            from a ServiceCluster, register it in the Management Cluster and start
+            a new process to reconcile instances of this CRD. \n New instances of
+            the CRD will be reconciled by creating a matching instance in the ServiceCluster.
+            Each Namespace in the Managment Cluster needs a ServiceClusterAssignment
+            object, mapping it to a Namespace in the ServiceCluster. \n A CustomResourceDiscovery
+            instance will be ready, if the CustomResource was found in the ServiceCluster
+            and a clone of it is established in the Management Cluster. Deleting the
+            instance will also remove the CRD and all instances of it. \n **Example**
+            ```yaml apiVersion: kubecarrier.io/v1alpha1 kind: CustomResourceDiscovery
+            metadata:   name: couchdb.eu-west-1 spec:   crd:     name: couchdbs.couchdb.io
+            \  serviceCluster:     name: eu-west-1 ```"
           properties:
             apiVersion:
               description: 'APIVersion defines the versioned schema of this representation
@@ -1469,8 +1504,8 @@
             metadata:
               type: object
             spec:
-              description: CustomResourceDiscoverySpec defines the desired state of
-                crdreference
+              description: CustomResourceDiscoverySpec describes the desired state
+                of a CustomResourceDiscovery.
               properties:
                 crd:
                   description: CRD references a CustomResourceDefinition within the
@@ -1482,7 +1517,7 @@
                   - name
                   type: object
                 kindOverride:
-                  description: KindOverride overrides resulting internal CRDs kind
+                  description: KindOverride overrides the kind of the discovered CRD.
                   type: string
                 serviceCluster:
                   description: ServiceCluster references a ServiceCluster to search
@@ -1511,15 +1546,15 @@
               - serviceCluster
               type: object
             status:
-              description: CustomResourceDiscoveryStatus defines the observed state
-                of crdreference
+              description: CustomResourceDiscoveryStatus represents the observed state
+                of a CustomResourceDiscovery.
               properties:
                 conditions:
                   description: Conditions is a list of all conditions this CustomResourceDiscovery
                     is in.
                   items:
                     description: CustomResourceDiscoveryCondition contains details
-                      for the current condition of this CustomResourceDiscovery.
+                      of the current state of this CustomResourceDiscovery.
                     properties:
                       lastTransitionTime:
                         description: LastTransitionTime is the last time the condition
@@ -1551,12 +1586,12 @@
                   type: array
                 crd:
                   description: CRD defines the original CustomResourceDefinition specification
-                    from the service cluster
+                    from the service cluster.
                   type: object
                   x-kubernetes-preserve-unknown-fields: true
                 managementClusterCRD:
                   description: ManagementClusterCRD references the CustomResourceDefinition
-                    that created by this CustomResourceDiscovery.
+                    that is created by a CustomResourceDiscovery.
                   properties:
                     name:
                       type: string
@@ -1618,8 +1653,11 @@
       name: v1alpha1
       schema:
         openAPIV3Schema:
-          description: CustomResourceDiscoverySet manages multiple CustomResourceDiscovery
-            objects for a set of service clusters.
+          description: "CustomResourceDiscoverySet manages multiple CustomResourceDiscovery
+            objects for a set of ServiceClusters. \n **Example** ```yaml apiVersion:
+            kubecarrier.io/v1alpha1 kind: CustomResourceDiscoverySet metadata:   name:
+            couchdb spec:   crd:     name: couchdbs.couchdb.io   serviceClusterSelector:
+            {} ```"
           properties:
             apiVersion:
               description: 'APIVersion defines the versioned schema of this representation
@@ -1635,6 +1673,8 @@
             metadata:
               type: object
             spec:
+              description: CustomResourceDiscoverySetSpec describes the desired state
+                of a CustomResourceDiscoverySet.
               properties:
                 crd:
                   description: CRD references a CustomResourceDefinition within the
@@ -1646,7 +1686,7 @@
                   - name
                   type: object
                 kindOverride:
-                  description: KindOverride overrides resulting internal CRDs kind
+                  description: KindOverride overrides the kind of the discovered CRD.
                   type: string
                 serviceClusterSelector:
                   description: ServiceClusterSelector references a set of ServiceClusters
@@ -1711,6 +1751,8 @@
               - serviceClusterSelector
               type: object
             status:
+              description: CustomResourceDiscoverySetStatus represents the observed
+                state of a CustomResourceDiscoverySet.
               properties:
                 conditions:
                   description: Conditions is a list of all conditions this CustomResourceDiscovery
@@ -1752,7 +1794,7 @@
                     that created by the CustomResourceDiscovery objects of this CustomResourceDiscoverySet.
                   items:
                     description: ObjectReference describes the link to another object
-                      in the same namespace
+                      in the same Namespace.
                     properties:
                       name:
                         type: string
@@ -1814,8 +1856,12 @@
       name: v1alpha1
       schema:
         openAPIV3Schema:
-          description: ServiceClusterAssignment represents the assignment of a Tenant
-            to a ServiceCluster.
+          description: "ServiceClusterAssignment is assigning a Namespace in the Management
+            cluster with a Namespace on the ServiceCluster. \n The Namespace in the
+            ServiceCluster will be created automatically and is reported in the instance
+            status. \n **Example** ```yaml apiVersion: kubecarrier.io/v1alpha1 kind:
+            ServiceClusterAssignment metadata:   name: example1.eu-west-1 spec:   serviceCluster:
+            \    name: eu-west-1   managementNamespace:     name: example1 ```"
           properties:
             apiVersion:
               description: 'APIVersion defines the versioned schema of this representation
@@ -1831,8 +1877,8 @@
             metadata:
               type: object
             spec:
-              description: ServiceClusterAssignmentSpec defines the desired state
-                of ServiceClusterAssignment
+              description: ServiceClusterAssignmentSpec describes the desired state
+                of ServiceClusterAssignment.
               properties:
                 managementNamespace:
                   description: References the source namespace in the management cluster.
@@ -1855,8 +1901,8 @@
               - serviceCluster
               type: object
             status:
-              description: ServiceClusterAssignmentStatus defines the observed state
-                of ServiceClusterAssignment
+              description: ServiceClusterAssignmentStatus represents the observed
+                state of ServiceClusterAssignment.
               properties:
                 conditions:
                   description: Conditions is a list of all conditions this ServiceClusterAssignment
@@ -1961,7 +2007,10 @@
       name: v1alpha1
       schema:
         openAPIV3Schema:
-          description: ServiceCluster is a providers Kubernetes Cluster.
+          description: "ServiceCluster represents a Kubernets Cluster registered into
+            KubeCarrier. \n **Example** ```yaml apiVersion: kubecarrier.io/v1alpha1
+            kind: ServiceCluster metadata:   name: eu-west-1 spec:   metadata:     displayName:
+            EU West 1   kubeconfigSecret:     name: eu-west-1-kubeconfig ```"
           properties:
             apiVersion:
               description: 'APIVersion defines the versioned schema of this representation
@@ -1977,7 +2026,7 @@
             metadata:
               type: object
             spec:
-              description: ServiceClusterSpec defines the desired state of ServiceCluster
+              description: ServiceClusterSpec describes the desired state of a ServiceCluster.
               properties:
                 kubeconfigSecret:
                   description: KubeconfigSecret specifies the Kubeconfig to use when
@@ -1989,15 +2038,14 @@
                   - name
                   type: object
                 metadata:
-                  description: ServiceClusterMetadata contains the metadata (display
-                    name, description, etc) of the ServiceCluster.
+                  description: Metadata for display in the Service Catalog.
                   properties:
                     description:
-                      description: Description shows the human-readable description
-                        of this ServiceCluster.
+                      description: Description is the human-readable description of
+                        this ServiceCluster.
                       type: string
                     displayName:
-                      description: DisplayName shows the human-readable name of this
+                      description: DisplayName is the human-readable name of this
                         ServiceCluster.
                       type: string
                   type: object
@@ -2005,7 +2053,8 @@
               - kubeconfigSecret
               type: object
             status:
-              description: ServiceClusterStatus defines the observed state of ServiceCluster
+              description: ServiceClusterStatus represents the observed state of a
+                ServiceCluster.
               properties:
                 conditions:
                   description: Conditions is a list of all conditions this ServiceCluster
