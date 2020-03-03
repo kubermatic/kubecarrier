@@ -28,6 +28,7 @@ import (
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/types"
 
 	catalogv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/catalog/v1alpha1"
 	corev1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/core/v1alpha1"
@@ -82,6 +83,10 @@ func NewServiceClusterSuite(
 		crd := &apiextensionsv1.CustomResourceDefinition{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: "redis.test.kubecarrier.io",
+				Labels: map[string]string{
+					"kubecarrier.io/service-cluster":  serviceCluster.Name,
+					"kubecarrier.io/origin-namespace": provider.Status.Namespace.Name,
+				},
 			},
 			Spec: apiextensionsv1.CustomResourceDefinitionSpec{
 				Group: "test.kubecarrier.io",
@@ -140,21 +145,43 @@ func NewServiceClusterSuite(
 		require.NoError(t, testutil.WaitUntilReady(managementClient, serviceClusterAssignment))
 		require.NoError(t, serviceClient.Create(ctx, crd))
 
-		// Test CustomResourceDiscoverySet
-		crDiscoveries := &corev1alpha1.CustomResourceDiscoverySet{
+		// Test CatalogEntrySet
+		catalogEntrySet := &catalogv1alpha1.CatalogEntrySet{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "redis",
 				Namespace: provider.Status.Namespace.Name,
 			},
-			Spec: corev1alpha1.CustomResourceDiscoverySetSpec{
-				KindOverride: "RedisInternal",
-				CRD: corev1alpha1.ObjectReference{
-					Name: crd.Name,
+			Spec: catalogv1alpha1.CatalogEntrySetSpec{
+				Metadata: catalogv1alpha1.CatalogEntrySetMetadata{
+					DisplayName: "Test CatalogEntrySet",
+					Description: "Test CatalogEntrySet",
+				},
+				DiscoverySet: catalogv1alpha1.CustomResourceDiscoverySetConfig{
+					CRD: catalogv1alpha1.ObjectReference{
+						Name: crd.Name,
+					},
+					ServiceClusterSelector: metav1.LabelSelector{},
+					KindOverride:           "RedisInternal",
 				},
 			},
 		}
-		require.NoError(t, managementClient.Create(ctx, crDiscoveries))
-		require.NoError(t, testutil.WaitUntilReady(managementClient, crDiscoveries))
+		require.NoError(t, managementClient.Create(ctx, catalogEntrySet))
+		require.NoError(t, testutil.WaitUntilReady(managementClient, catalogEntrySet))
+
+		// Check the CustomResourceDiscoverySet
+		crDiscoverySet := &corev1alpha1.CustomResourceDiscoverySet{}
+		require.NoError(t, managementClient.Get(ctx, types.NamespacedName{
+			Name:      catalogEntrySet.Name,
+			Namespace: catalogEntrySet.Namespace,
+		}, crDiscoverySet), "getting CustomResourceDiscoverySet")
+
+		// Check the CatalogEntry Object
+		catalogEntry := &catalogv1alpha1.CatalogEntry{}
+		require.NoError(t, managementClient.Get(ctx, types.NamespacedName{
+			Name:      "redisinternals.eu-west-1.test-servicecluster",
+			Namespace: catalogEntrySet.Namespace,
+		}, catalogEntry), "getting CatalogEntry")
+
 		err = managementClient.Delete(ctx, provider)
 		if assert.Error(t, err, "dirty provider %s deletion should error out", provider.Name) {
 			assert.Equal(t,

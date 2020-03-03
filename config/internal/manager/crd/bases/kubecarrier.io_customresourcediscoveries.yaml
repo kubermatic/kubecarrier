@@ -119,6 +119,15 @@ spec:
                     from the service cluster
                   type: object
                   x-kubernetes-preserve-unknown-fields: true
+                managementClusterCRD:
+                  description: ManagementClusterCRD references the CustomResourceDefinition
+                    that created by this CustomResourceDiscovery.
+                  properties:
+                    name:
+                      type: string
+                  required:
+                    - name
+                  type: object
                 observedGeneration:
                   description: The most recent generation observed by the controller.
                   format: int64

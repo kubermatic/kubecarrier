@@ -102,6 +102,9 @@ func (r *CustomResourceDiscoveryReconciler) Reconcile(req ctrl.Request) (ctrl.Re
 		return result, nil
 	}
 
+	crDiscovery.Status.ManagementClusterCRD = corev1alpha1.ObjectReference{
+		Name: currentCRD.Name,
+	}
 	if err = r.updateStatus(ctx, crDiscovery, corev1alpha1.CustomResourceDiscoveryCondition{
 		Type:    corev1alpha1.CustomResourceDiscoveryEstablished,
 		Status:  corev1alpha1.ConditionTrue,

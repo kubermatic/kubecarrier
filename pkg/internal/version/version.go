@@ -23,9 +23,13 @@ import (
 	"time"
 )
 
+// https://github.com/golang/go/issues/37369
+const (
+	empty = "was not build properly"
+)
+
 // Values are provided by compile time -ldflags.
 var (
-	empty     = "was not build properly"
 	Version   = empty
 	Branch    = empty
 	Commit    = empty
