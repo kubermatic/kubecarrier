@@ -22,6 +22,7 @@ import (
 
 	"github.com/kubermatic/kubecarrier/pkg/testutil"
 	"github.com/kubermatic/kubecarrier/test/installation"
+	"github.com/kubermatic/kubecarrier/test/integration"
 	"github.com/kubermatic/kubecarrier/test/scanarios"
 	"github.com/kubermatic/kubecarrier/test/verify"
 )
@@ -42,10 +43,13 @@ func AllTests(config testutil.FrameworkConfig) ([]testing.InternalTest, error) {
 			Name: "InstallationSuite",
 			F:    installation.NewInstallationSuite(f),
 		},
-
+		testing.InternalTest{
+			Name: "Integration",
+			F:    integration.NewIntegrationSuite(f),
+		},
 		testing.InternalTest{
 			Name: "Scenarios",
-			F:    scanarios.NewScenarioSuite(f),
+			F:    scanarios.NewSuite(f),
 		},
 	)
 

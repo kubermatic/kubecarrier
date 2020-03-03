@@ -132,9 +132,13 @@ func main() {
 		"",
 		"InstallationSuite",
 		"VerifySuite",
+		"Integration",
+		"Integration/derivedCR",
+		"Integration/serviceCluster",
+		"Integration/catalog",
+		"Integration/tenant-references",
 		"Scenarios",
 		"Scenarios/simple",
-		"Scenarios/accountRefs",
 	} {
 		tasks = append(tasks, ide.Task{
 			Name:    "e2e:" + test,

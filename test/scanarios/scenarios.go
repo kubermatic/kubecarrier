@@ -22,12 +22,11 @@ import (
 	"github.com/kubermatic/kubecarrier/pkg/testutil"
 )
 
-// AdminSuite tests administrator operations - notably the management of Tenants and Providers.
-func NewScenarioSuite(f *testutil.Framework) func(t *testing.T) {
+func NewSuite(f *testutil.Framework) func(t *testing.T) {
 	return func(t *testing.T) {
+		t.Parallel()
 		for name, testFn := range map[string]func(f *testutil.Framework) func(t *testing.T){
-			"simple":      newSimpleScenario,
-			"accountRefs": newAccountRefs,
+			"simple": newSimpleScenario,
 		} {
 			name := name
 			testFn := testFn

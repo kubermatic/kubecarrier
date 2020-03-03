@@ -41,7 +41,6 @@ func NewVerifySuite(f *testutil.Framework) func(t *testing.T) {
 
 		serviceClient, err := f.ServiceClient(logger)
 		require.NoError(t, err)
-		logger.Info("aaaa")
 
 		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 		t.Cleanup(cancel)

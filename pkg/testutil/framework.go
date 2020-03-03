@@ -149,6 +149,40 @@ func (f *Framework) ServiceClient(log logr.Logger) (*RecordingClient, error) {
 	return recordingClient(c, f.ServiceScheme), nil
 }
 
+func (f *Framework) NewProviderAccount(name string) *catalogv1alpha1.Account {
+	return &catalogv1alpha1.Account{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: name + "-provider",
+		},
+		Spec: catalogv1alpha1.AccountSpec{
+			Metadata: catalogv1alpha1.AccountMetadata{
+				DisplayName: name + " provider",
+				Description: name + " provider desc",
+			},
+			Roles: []catalogv1alpha1.AccountRole{
+				catalogv1alpha1.ProviderRole,
+			},
+		},
+	}
+}
+
+func (f *Framework) NewTenantAccount(name string) *catalogv1alpha1.Account {
+	return &catalogv1alpha1.Account{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: name + "-tenant",
+		},
+		Spec: catalogv1alpha1.AccountSpec{
+			Metadata: catalogv1alpha1.AccountMetadata{
+				DisplayName: name + " tenant",
+				Description: name + " tenant desc",
+			},
+			Roles: []catalogv1alpha1.AccountRole{
+				catalogv1alpha1.TenantRole,
+			},
+		},
+	}
+}
+
 func (f *Framework) Config() FrameworkConfig {
 	return f.config
 }

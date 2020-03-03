@@ -141,15 +141,15 @@ func newSimpleScenario(f *testutil.Framework) func(t *testing.T) {
 		t.Log("creating CRD on the service cluster")
 		baseCRD := &apiextensionsv1.CustomResourceDefinition{
 			ObjectMeta: metav1.ObjectMeta{
-				Name: "redis.test.kubecarrier.io",
+				Name: "dbs.test.kubecarrier.io",
 			},
 			Spec: apiextensionsv1.CustomResourceDefinitionSpec{
 				Group: "test.kubecarrier.io",
 				Names: apiextensionsv1.CustomResourceDefinitionNames{
-					Kind:     "Redis",
-					ListKind: "RedisList",
-					Plural:   "redis",
-					Singular: "redis",
+					Kind:     "Db",
+					ListKind: "DbList",
+					Plural:   "dbs",
+					Singular: "db",
 				},
 				Scope: apiextensionsv1.NamespaceScoped,
 				Versions: []apiextensionsv1.CustomResourceDefinitionVersion{
@@ -190,7 +190,7 @@ func newSimpleScenario(f *testutil.Framework) func(t *testing.T) {
 			},
 		}
 		require.NoError(t, serviceClient.Create(ctx, baseCRD))
-		t.Log("creating Custrom Resouce Discovery")
+		t.Log("creating Custom Resource Discovery")
 		crDiscovery := &corev1alpha1.CustomResourceDiscovery{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "redis",
