@@ -55,8 +55,8 @@ func main() {
 	fmt.Printf("service-cluster-name=%s [use flag or env %s to configure]\n", *serviceClusterName, ServiceClusterENV)
 	var tasks = []ide.Task{
 		{
-			Name:    "Anchor version",
-			Program: "cmd/anchor",
+			Name:    "Kubecarrier version",
+			Program: "cmd/kubectl-kubecarrier",
 			LDFlags: *ldFlags,
 			Args:    []string{"version"},
 			Env: map[string]string{
@@ -139,7 +139,7 @@ func main() {
 	} {
 		tasks = append(tasks, ide.Task{
 			Name:    "e2e:" + test,
-			Program: "cmd/anchor",
+			Program: "cmd/kubectl-kubecarrier",
 			LDFlags: *ldFlags,
 			Args: []string{
 				"e2e-test",

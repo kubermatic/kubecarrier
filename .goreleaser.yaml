@@ -1,0 +1,43 @@
+project_name: kubecarrier
+before:
+release:
+  github:
+    owner: kubermatic
+    name: kubecarrier
+  prerelease: true
+builds:
+  - id: kubecarrier
+    binary: kubecarrier
+    goos:
+      - linux
+      - windows
+      - darwin
+    goarch:
+      - amd64
+      - "386"
+    env:
+      - CGO_ENABLED=0
+      - GO111MODULE=on
+    main: cmd/kubectl-kubecarrier/main.go
+    ldflags: >
+      -s -w
+      -X github.com/kubermatic/kubecarrier/pkg/internal/version.Version={{.Version}}
+      -X github.com/kubermatic/kubecarrier/pkg/internal/version.Branch={{.Tag}}
+      -X github.com/kubermatic/kubecarrier/pkg/internal/version.Commit={{.ShortCommit}}
+      -X github.com/kubermatic/kubecarrier/pkg/internal/version.BuildDate={{.Timestamp}}
+    hooks:
+      post:
+        touch dist/version_{{.Version}}
+
+archives:
+  - id: kubecarrier
+    builds:
+      - kubecarrier
+    name_template: "{{ .ProjectName }}_{{ .Os }}_{{ .Arch }}"
+    format: tar.gz
+    format_overrides:
+    - goos: windows
+      format: zip
+checksum:
+  name_template: "{{ .ProjectName }}_checksums.txt"
+  algorithm: sha256
