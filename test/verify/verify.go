@@ -35,11 +35,10 @@ import (
 func NewVerifySuite(f *testutil.Framework) func(t *testing.T) {
 	return func(t *testing.T) {
 		// Setup
-		logger := testutil.NewLogger(t)
-		managementClient, err := f.ManagementClient(logger)
+		managementClient, err := f.ManagementClient(t)
 		require.NoError(t, err)
 
-		serviceClient, err := f.ServiceClient(logger)
+		serviceClient, err := f.ServiceClient(t)
 		require.NoError(t, err)
 
 		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)

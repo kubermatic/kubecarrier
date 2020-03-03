@@ -22,6 +22,7 @@ import (
 	"io/ioutil"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -41,16 +42,14 @@ func newServiceClusterSuite(
 	f *testutil.Framework,
 ) func(t *testing.T) {
 	return func(t *testing.T) {
-		logger := testutil.NewLogger(t)
-		//ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-		//t.Cleanup(cancel)
-		ctx := context.Background()
-		managementClient, err := f.ManagementClient(logger)
+		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+		t.Cleanup(cancel)
+		managementClient, err := f.ManagementClient(t)
 		require.NoError(t, err, "creating management client")
-		t.Cleanup(managementClient.CleanUpFunc(ctx, t, f.Config().CleanUpStrategy))
-		serviceClient, err := f.ServiceClient(logger)
+		t.Cleanup(managementClient.CleanUpFunc(ctx))
+		serviceClient, err := f.ServiceClient(t)
 		require.NoError(t, err, "creating service client")
-		t.Cleanup(serviceClient.CleanUpFunc(ctx, t, f.Config().CleanUpStrategy))
+		t.Cleanup(serviceClient.CleanUpFunc(ctx))
 		testName := strings.Replace(strings.ToLower(t.Name()), "/", "-", -1)
 
 		provider := f.NewProviderAccount(testName)
@@ -206,12 +205,12 @@ ServiceClusterAssignment.kubecarrier.io/v1alpha1: %s.eu-west-1
 		}
 
 		// We have created/registered new CRD's, so we need a new client
-		managementClient, err = f.ManagementClient(logger)
+		managementClient, err = f.ManagementClient(t)
 		require.NoError(t, err, "creating management client")
-		t.Cleanup(managementClient.CleanUpFunc(ctx, t, f.Config().CleanUpStrategy))
-		serviceClient, err = f.ServiceClient(logger)
+		t.Cleanup(managementClient.CleanUpFunc(ctx))
+		serviceClient, err = f.ServiceClient(t)
 		require.NoError(t, err, "creating service client")
-		t.Cleanup(serviceClient.CleanUpFunc(ctx, t, f.Config().CleanUpStrategy))
+		t.Cleanup(serviceClient.CleanUpFunc(ctx))
 
 		// management cluster -> service cluster
 		//

@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -39,13 +40,11 @@ func newDerivedCR(
 	f *testutil.Framework,
 ) func(t *testing.T) {
 	return func(t *testing.T) {
-		logger := testutil.NewLogger(t)
-		managementClient, err := f.ManagementClient(logger)
+		managementClient, err := f.ManagementClient(t)
 		require.NoError(t, err, "creating management client")
-		//ctx, cancel := context.WithTimeout(context.Background(), 120*time.Second)
-		// t.Cleanup(cancel)
-		ctx := context.Background()
-		t.Cleanup(managementClient.CleanUpFunc(ctx, t, f.Config().CleanUpStrategy))
+		ctx, cancel := context.WithTimeout(context.Background(), 120*time.Second)
+		t.Cleanup(cancel)
+		t.Cleanup(managementClient.CleanUpFunc(ctx))
 
 		testName := strings.Replace(strings.ToLower(t.Name()), "/", "-", -1)
 		provider := f.NewProviderAccount(testName)
@@ -211,9 +210,9 @@ type: object
 			t, managementClient.Create(ctx, someNamespace), "creating a Namespace")
 
 		// to be able to work with the new CRD, we have to re-create the client
-		managementClient, err = f.ManagementClient(logger)
+		managementClient, err = f.ManagementClient(t)
 		require.NoError(t, err, "recreating management client")
-		t.Cleanup(managementClient.CleanUpFunc(ctx, t, f.Config().CleanUpStrategy))
+		t.Cleanup(managementClient.CleanUpFunc(ctx))
 
 		// Check Tenant -> Provider
 		tenantObj := &unstructured.Unstructured{

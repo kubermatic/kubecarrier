@@ -23,7 +23,6 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/go-logr/logr"
 	"github.com/stretchr/testify/require"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -131,22 +130,22 @@ func New(c FrameworkConfig) (f *Framework, err error) {
 	return
 }
 
-func (f *Framework) ManagementClient(log logr.Logger) (*RecordingClient, error) {
+func (f *Framework) ManagementClient(t *testing.T) (*RecordingClient, error) {
 	cfg := f.managementConfig
-	c, err := util.NewClientWatcher(cfg, f.ManagementScheme, log)
+	c, err := util.NewClientWatcher(cfg, f.ManagementScheme, NewLogger(t))
 	if err != nil {
 		return nil, err
 	}
-	return recordingClient(c, f.ManagementScheme), nil
+	return recordingClient(c, f.ManagementScheme, t, f.config.CleanUpStrategy), nil
 }
 
-func (f *Framework) ServiceClient(log logr.Logger) (*RecordingClient, error) {
+func (f *Framework) ServiceClient(t *testing.T) (*RecordingClient, error) {
 	cfg := f.serviceConfig
-	c, err := util.NewClientWatcher(cfg, f.ServiceScheme, log)
+	c, err := util.NewClientWatcher(cfg, f.ServiceScheme, NewLogger(t))
 	if err != nil {
 		return nil, err
 	}
-	return recordingClient(c, f.ServiceScheme), nil
+	return recordingClient(c, f.ServiceScheme, t, f.config.CleanUpStrategy), nil
 }
 
 func (f *Framework) NewProviderAccount(name string) *catalogv1alpha1.Account {
@@ -196,18 +195,22 @@ const (
 )
 
 type RecordingClient struct {
+	t *testing.T
 	*util.ClientWatcher
-	scheme  *runtime.Scheme
-	objects map[string]runtime.Object
-	order   []string
-	mux     sync.Mutex
+	scheme          *runtime.Scheme
+	objects         map[string]runtime.Object
+	order           []string
+	cleanUpStrategy CleanUpStrategy
+	mux             sync.Mutex
 }
 
-func recordingClient(cw *util.ClientWatcher, scheme *runtime.Scheme) *RecordingClient {
+func recordingClient(cw *util.ClientWatcher, scheme *runtime.Scheme, t *testing.T, strategy CleanUpStrategy) *RecordingClient {
 	return &RecordingClient{
-		ClientWatcher: cw,
-		scheme:        scheme,
-		objects:       map[string]runtime.Object{},
+		ClientWatcher:   cw,
+		scheme:          scheme,
+		objects:         map[string]runtime.Object{},
+		t:               t,
+		cleanUpStrategy: strategy,
 	}
 }
 
@@ -244,20 +247,21 @@ func (rc *RecordingClient) UnregisterForCleanup(obj runtime.Object) {
 	delete(rc.objects, key)
 }
 
-func (rc *RecordingClient) CleanUpFunc(ctx context.Context, t *testing.T, strategy CleanUpStrategy) func() {
+func (rc *RecordingClient) CleanUpFunc(ctx context.Context) func() {
 	return func() {
-		switch strategy {
+		rc.t.Helper()
+		switch rc.cleanUpStrategy {
 		case CleanupNever:
 			return
 		case CleanupOnSuccess:
-			if t.Failed() {
+			if rc.t.Failed() {
 				return
 			}
 		case CleanupAlways:
 			break
 		default:
-			t.Logf("unknown cleanup strategy: %v", strategy)
-			t.FailNow()
+			rc.t.Logf("unknown cleanup strategy: %v", rc.cleanUpStrategy)
+			rc.t.FailNow()
 		}
 
 		// cleanup in reverse order of creation
@@ -272,17 +276,21 @@ func (rc *RecordingClient) CleanUpFunc(ctx context.Context, t *testing.T, strate
 			if err != nil {
 				err = fmt.Errorf("cleanup %s: %w", key, err)
 			}
-			require.NoError(t, err)
+			require.NoError(rc.t, err)
 		}
 	}
 }
 
 func (rc *RecordingClient) Create(ctx context.Context, obj runtime.Object, opts ...client.CreateOption) error {
+	rc.t.Helper()
+	rc.t.Logf("creating %s", util.MustLogLine(obj, rc.scheme))
 	rc.RegisterForCleanup(obj)
 	return rc.ClientWatcher.Create(ctx, obj, opts...)
 }
 
 func (rc *RecordingClient) Delete(ctx context.Context, obj runtime.Object, opts ...client.DeleteOption) error {
+	rc.t.Helper()
+	rc.t.Logf("deleting %s", util.MustLogLine(obj, rc.scheme))
 	rc.UnregisterForCleanup(obj)
 	return rc.ClientWatcher.Delete(ctx, obj, opts...)
 }

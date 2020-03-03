@@ -43,22 +43,6 @@ type ClientWatcher struct {
 
 var _ client.Client = (*ClientWatcher)(nil)
 
-func (cw *ClientWatcher) Create(ctx context.Context, obj runtime.Object, opts ...client.CreateOption) error {
-	cw.log.Info(fmt.Sprintf("creating %s", cw.mustLogLine(obj)))
-	err := cw.Client.Create(ctx, obj, opts...)
-	if err != nil {
-		cw.log.Error(err, fmt.Sprintf("%s cannot create", cw.mustLogLine(obj)))
-	} else {
-		cw.log.Info(fmt.Sprintf("created %s", cw.mustLogLine(obj)))
-	}
-	return err
-}
-
-func (cw *ClientWatcher) Delete(ctx context.Context, obj runtime.Object, opts ...client.DeleteOption) error {
-	cw.log.Info(fmt.Sprintf("deleting %s", cw.mustLogLine(obj)))
-	return cw.Client.Delete(ctx, obj, opts...)
-}
-
 func NewClientWatcher(conf *rest.Config, scheme *runtime.Scheme, log logr.Logger) (*ClientWatcher, error) {
 	mapper, err := apiutil.NewDynamicRESTMapper(conf, apiutil.WithLazyDiscovery)
 	if err != nil {
@@ -126,7 +110,7 @@ func (cw *ClientWatcher) WaitUntil(ctx context.Context, obj runtime.Object, cond
 		}
 		return true, nil
 	}); err != nil {
-		return fmt.Errorf("%s: %w", cw.mustLogLine(obj), err)
+		return fmt.Errorf("%s: %w", MustLogLine(obj, cw.scheme), err)
 	}
 	return nil
 }
@@ -163,7 +147,7 @@ func (cw *ClientWatcher) WaitUntilNotFound(ctx context.Context, obj runtime.Obje
 		return event.Type == watch.Deleted, nil
 	})
 	if err != nil {
-		return fmt.Errorf("%s: %w", cw.mustLogLine(obj), err)
+		return fmt.Errorf("%s: %w", MustLogLine(obj, cw.scheme), err)
 	}
 	return nil
 }
@@ -192,16 +176,4 @@ func (cw *ClientWatcher) objListWatch(obj runtime.Object) (*cache.ListWatch, err
 			return resourceInterface.Watch(options)
 		},
 	}, nil
-}
-
-func (cw *ClientWatcher) mustLogLine(obj runtime.Object) string {
-	objGVK, err := apiutil.GVKForObject(obj, cw.scheme)
-	if err != nil {
-		panic(err)
-	}
-	objNN, err := client.ObjectKeyFromObject(obj)
-	if err != nil {
-		panic(err)
-	}
-	return fmt.Sprintf("%s.%s: %s", objGVK.Kind, objGVK.Group, objNN.String())
 }

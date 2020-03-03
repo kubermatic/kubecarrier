@@ -36,12 +36,11 @@ import (
 func newAccountRefs(f *testutil.Framework) func(t *testing.T) {
 	return func(t *testing.T) {
 		t.Log("testing how account handles tenant references")
-		logger := testutil.NewLogger(t)
 		ctx, cancel := context.WithTimeout(context.Background(), 45*time.Second)
 		t.Cleanup(cancel)
-		managementClient, err := f.ManagementClient(logger)
+		managementClient, err := f.ManagementClient(t)
 		require.NoError(t, err, "creating management client")
-		t.Cleanup(managementClient.CleanUpFunc(ctx, t, f.Config().CleanUpStrategy))
+		t.Cleanup(managementClient.CleanUpFunc(ctx))
 
 		testName := strings.Replace(strings.ToLower(t.Name()), "/", "-", -1)
 

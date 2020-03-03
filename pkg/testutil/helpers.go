@@ -53,22 +53,26 @@ func ConditionStatusEqual(obj runtime.Object, ConditionType, ConditionStatus int
 }
 
 func LogObject(t *testing.T, obj interface{}) {
+	t.Helper()
 	b, err := json.MarshalIndent(obj, "", "\t")
 	require.NoError(t, err)
 	t.Log("\n", string(b))
 }
 
 func WaitUntilNotFound(ctx context.Context, c *RecordingClient, obj runtime.Object) error {
+	c.t.Helper()
 	return c.WaitUntilNotFound(ctx, obj)
 }
 
 func WaitUntilFound(ctx context.Context, c *RecordingClient, obj runtime.Object) error {
+	c.t.Helper()
 	return c.WaitUntil(ctx, obj, func(obj runtime.Object, eventType watch.EventType) (b bool, err error) {
 		return eventType != watch.Deleted, nil
 	})
 }
 
 func WaitUntilCondition(ctx context.Context, c *RecordingClient, obj runtime.Object, ConditionType, conditionStatus interface{}) error {
+	c.t.Helper()
 	err := c.WaitUntil(ctx, obj, func(obj runtime.Object, eventType watch.EventType) (b bool, err error) {
 		return ConditionStatusEqual(obj, ConditionType, conditionStatus) == nil, nil
 	})
@@ -84,10 +88,12 @@ func WaitUntilCondition(ctx context.Context, c *RecordingClient, obj runtime.Obj
 }
 
 func WaitUntilReady(ctx context.Context, c *RecordingClient, obj runtime.Object) error {
+	c.t.Helper()
 	return WaitUntilCondition(ctx, c, obj, "Ready", "True")
 }
 
 func DeleteAndWaitUntilNotFound(ctx context.Context, c *RecordingClient, obj runtime.Object) error {
+	c.t.Helper()
 	if err := c.Delete(ctx, obj); client.IgnoreNotFound(err) != nil {
 		return err
 	}
