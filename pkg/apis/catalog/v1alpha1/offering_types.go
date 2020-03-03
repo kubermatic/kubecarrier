@@ -38,6 +38,8 @@ type OfferingMetadata struct {
 }
 
 // Offering is used for Tenants to discover services that have been made available to them.
+//
+// Offering objects are created automatically by KubeCarrier in Account namespaces, that have a service offered to them via a Catalog.
 // +kubebuilder:object:root=true
 // +kubebuilder:printcolumn:name="Display Name",type="string",JSONPath=".offering.metadata.displayName"
 // +kubebuilder:printcolumn:name="Age",type="date",JSONPath=".metadata.creationTimestamp"

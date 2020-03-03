@@ -27,10 +27,10 @@ spec:
     name: v1alpha1
     schema:
       openAPIV3Schema:
-        description: TenantReference is a read-only object exposing the Tenant information.
-          TenantReference lives in the provider's namespace. The provider is allowed
-          modifying TenantReference's labels, marking them at will. This allows the
-          tenant granular tenant selection for the offered services catalogs.
+        description: "TenantReference exposes information about available Tenants
+          on the platform and allows a Provider to set custom labels on them. \n TenantReference
+          objects will be created for all Accounts with the role \"Tenant\" in all
+          Account Namespaces with the role \"Provider\"."
         properties:
           apiVersion:
             description: 'APIVersion defines the versioned schema of this representation

@@ -21,7 +21,7 @@ spec:
           name: CustomResourceDefinition
           type: string
         - jsonPath: .spec.serviceCluster.name
-          name: Service Cluster
+          name: ServiceCluster
           type: string
         - jsonPath: .status.phase
           name: Status
@@ -29,9 +29,18 @@ spec:
       name: v1alpha1
       schema:
         openAPIV3Schema:
-          description: CustomResourceDiscovery is used inside KubeCarrier to fetch
-            a CustomResourceDefinition from another cluster and to offload cross cluster
-            access to another component.
+          description: "CustomResourceDiscovery tells KubeCarrier to discover a CustomResource\
+            \ from a ServiceCluster, register it in the Management Cluster and start\
+            \ a new process to reconcile instances of this CRD. \n New instances of\
+            \ the CRD will be reconciled by creating a matching instance in the ServiceCluster.\
+            \ Each Namespace in the Managment Cluster needs a ServiceClusterAssignment\
+            \ object, mapping it to a Namespace in the ServiceCluster. \n A CustomResourceDiscovery\
+            \ instance will be ready, if the CustomResource was found in the ServiceCluster\
+            \ and a clone of it is established in the Management Cluster. Deleting\
+            \ the instance will also remove the CRD and all instances of it. \n **Example**\
+            \ ```yaml apiVersion: kubecarrier.io/v1alpha1 kind: CustomResourceDiscovery\
+            \ metadata:   name: couchdb.eu-west-1 spec:   crd:     name: couchdbs.couchdb.io\
+            \   serviceCluster:     name: eu-west-1 ```"
           properties:
             apiVersion:
               description: 'APIVersion defines the versioned schema of this representation
@@ -47,8 +56,8 @@ spec:
             metadata:
               type: object
             spec:
-              description: CustomResourceDiscoverySpec defines the desired state of
-                crdreference
+              description: CustomResourceDiscoverySpec describes the desired state
+                of a CustomResourceDiscovery.
               properties:
                 crd:
                   description: CRD references a CustomResourceDefinition within the
@@ -60,7 +69,7 @@ spec:
                     - name
                   type: object
                 kindOverride:
-                  description: KindOverride overrides resulting internal CRDs kind
+                  description: KindOverride overrides the kind of the discovered CRD.
                   type: string
                 serviceCluster:
                   description: ServiceCluster references a ServiceCluster to search
@@ -76,15 +85,15 @@ spec:
                 - serviceCluster
               type: object
             status:
-              description: CustomResourceDiscoveryStatus defines the observed state
-                of crdreference
+              description: CustomResourceDiscoveryStatus represents the observed state
+                of a CustomResourceDiscovery.
               properties:
                 conditions:
                   description: Conditions is a list of all conditions this CustomResourceDiscovery
                     is in.
                   items:
                     description: CustomResourceDiscoveryCondition contains details
-                      for the current condition of this CustomResourceDiscovery.
+                      of the current state of this CustomResourceDiscovery.
                     properties:
                       lastTransitionTime:
                         description: LastTransitionTime is the last time the condition
@@ -116,12 +125,12 @@ spec:
                   type: array
                 crd:
                   description: CRD defines the original CustomResourceDefinition specification
-                    from the service cluster
+                    from the service cluster.
                   type: object
                   x-kubernetes-preserve-unknown-fields: true
                 managementClusterCRD:
                   description: ManagementClusterCRD references the CustomResourceDefinition
-                    that created by this CustomResourceDiscovery.
+                    that is created by a CustomResourceDiscovery.
                   properties:
                     name:
                       type: string

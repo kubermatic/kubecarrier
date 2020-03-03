@@ -23,9 +23,9 @@ import (
 // TenantReferenceSpec defines the desired state of TenantReference
 type TenantReferenceSpec struct{}
 
-// TenantReference is a read-only object exposing the Tenant information.
-// TenantReference lives in the provider's namespace. The provider is allowed modifying TenantReference's labels,
-// marking them at will. This allows the tenant granular tenant selection for the offered services catalogs.
+// TenantReference exposes information about available Tenants on the platform and allows a Provider to set custom labels on them.
+//
+// TenantReference objects will be created for all Accounts with the role "Tenant" in all Account Namespaces with the role "Provider".
 // +kubebuilder:object:root=true
 // +kubebuilder:printcolumn:name="Age",type="date",JSONPath=".metadata.creationTimestamp"
 // +kubebuilder:resource:categories=kubecarrier-provider,shortName=tr
@@ -36,7 +36,7 @@ type TenantReference struct {
 	Spec TenantReferenceSpec `json:"spec,omitempty"`
 }
 
-// TenantReferenceList contains a list of TenantReference
+// TenantReferenceList contains a list of TenantReference.
 // +kubebuilder:object:root=true
 type TenantReferenceList struct {
 	metav1.TypeMeta `json:",inline"`
