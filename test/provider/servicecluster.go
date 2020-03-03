@@ -162,6 +162,7 @@ func NewServiceClusterSuite(
 					},
 					ServiceClusterSelector: metav1.LabelSelector{},
 					KindOverride:           "RedisInternal",
+					WebhookStrategy:        corev1alpha1.WebhookStrategyTypeServiceCluster,
 				},
 			},
 		}

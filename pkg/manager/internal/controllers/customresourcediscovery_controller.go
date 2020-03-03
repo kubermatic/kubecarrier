@@ -231,6 +231,7 @@ func (r *CustomResourceDiscoveryReconciler) reconcileCatapult(
 			ServiceCluster: operatorv1alpha1.ObjectReference{
 				Name: crDiscovery.Spec.ServiceCluster.Name,
 			},
+			WebhookStrategy: crDiscovery.Spec.WebhookStrategy,
 		},
 	}
 	if err := controllerutil.SetControllerReference(
