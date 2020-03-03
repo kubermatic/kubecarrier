@@ -279,10 +279,10 @@ func (rc *RecordingClient) CleanUpFunc(ctx context.Context, t *testing.T, strate
 
 func (rc *RecordingClient) Create(ctx context.Context, obj runtime.Object, opts ...client.CreateOption) error {
 	rc.RegisterForCleanup(obj)
-	return rc.Client.Create(ctx, obj, opts...)
+	return rc.ClientWatcher.Create(ctx, obj, opts...)
 }
 
 func (rc *RecordingClient) Delete(ctx context.Context, obj runtime.Object, opts ...client.DeleteOption) error {
 	rc.UnregisterForCleanup(obj)
-	return rc.Client.Delete(ctx, obj, opts...)
+	return rc.ClientWatcher.Delete(ctx, obj, opts...)
 }
