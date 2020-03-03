@@ -18,6 +18,8 @@ package v1alpha1
 
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	corev1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/core/v1alpha1"
 )
 
 // CatalogEntrySetSpec defines the desired state of CatalogEntrySet.
@@ -37,6 +39,12 @@ type CustomResourceDiscoverySetConfig struct {
 	ServiceClusterSelector metav1.LabelSelector `json:"serviceClusterSelector"`
 	// KindOverride overrides resulting internal CRDs kind
 	KindOverride string `json:"kindOverride,omitempty"`
+	// WebhookStrategy configs the webhook of the CRD which is registered in the management cluster by CustomResourceDiscovery object.
+	// There are two possible values for this configuration {None (by default), ServiceCluster}
+	// None (by default): Webhook will only check if there is an available ServiceClusterAssignment in the current Namespace.
+	// ServiceCluster: Webhook will call webhooks of the CRD in the ServiceCluster with dry-run flag.
+	// +kubebuilder:default:=None
+	WebhookStrategy corev1alpha1.WebhookStrategyType `json:"webhookStrategy,omitempty"`
 }
 
 // CatalogEntrySetMetadata contains the metadata (display name, description, etc) of the CatalogEntrySet.

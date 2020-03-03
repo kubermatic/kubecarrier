@@ -80,6 +80,19 @@ spec:
                   required:
                     - name
                   type: object
+                webhookStrategy:
+                  default: None
+                  description: 'WebhookStrategy configs the webhook of the CRD which
+                    is registered in the management cluster by this CustomResourceDiscovery.
+                    There are two possible values for this configuration {None (by
+                    default), ServiceCluster} None (by default): Webhook will only
+                    check if there is an available ServiceClusterAssignment in the
+                    current Namespace. ServiceCluster: Webhook will call webhooks
+                    of the CRD in the ServiceCluster with dry-run flag.'
+                  enum:
+                    - None
+                    - ServiceCluster
+                  type: string
               required:
                 - crd
                 - serviceCluster

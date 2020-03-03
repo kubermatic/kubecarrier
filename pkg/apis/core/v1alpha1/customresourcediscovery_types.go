@@ -29,7 +29,23 @@ type CustomResourceDiscoverySpec struct {
 	ServiceCluster ObjectReference `json:"serviceCluster"`
 	// KindOverride overrides the kind of the discovered CRD.
 	KindOverride string `json:"kindOverride,omitempty"`
+	// WebhookStrategy configs the webhook of the CRD which is registered in the management cluster by this CustomResourceDiscovery.
+	// There are two possible values for this configuration {None (by default), ServiceCluster}
+	// None (by default): Webhook will only check if there is an available ServiceClusterAssignment in the current Namespace.
+	// ServiceCluster: Webhook will call webhooks of the CRD in the ServiceCluster with dry-run flag.
+	// +kubebuilder:default:=None
+	WebhookStrategy WebhookStrategyType `json:"webhookStrategy,omitempty"`
 }
+
+// WebhookStrategyType represents all types of the webhook strategies of the CustomResourceDiscovery.
+// +kubebuilder:validation:Enum=None;ServiceCluster
+type WebhookStrategyType string
+
+// Values of the WebhookStrategyType.
+const (
+	WebhookStrategyTypeNone           WebhookStrategyType = "None"
+	WebhookStrategyTypeServiceCluster WebhookStrategyType = "ServiceCluster"
+)
 
 // CustomResourceDiscoveryStatus represents the observed state of a CustomResourceDiscovery.
 type CustomResourceDiscoveryStatus struct {

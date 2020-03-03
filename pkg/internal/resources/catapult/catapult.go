@@ -20,14 +20,17 @@ import (
 	"fmt"
 	"strings"
 
+	adminv1beta1 "k8s.io/api/admissionregistration/v1beta1"
 	rbacv1 "k8s.io/api/rbac/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"sigs.k8s.io/kustomize/v3/pkg/image"
 	"sigs.k8s.io/kustomize/v3/pkg/types"
 	"sigs.k8s.io/yaml"
 
 	"github.com/kubermatic/kubecarrier/pkg/internal/kustomize"
+	utilwebhook "github.com/kubermatic/kubecarrier/pkg/internal/util/webhook"
 	"github.com/kubermatic/kubecarrier/pkg/internal/version"
 )
 
@@ -43,6 +46,8 @@ type Config struct {
 	ServiceClusterKind, ServiceClusterVersion,
 	ServiceClusterGroup, ServiceClusterPlural string
 	ServiceClusterName, ServiceClusterSecret string
+
+	WebhookStrategy string
 }
 
 var k = kustomize.NewDefaultKustomize()
@@ -67,6 +72,12 @@ func Manifests(c Config) ([]unstructured.Unstructured, error) {
 	}); err != nil {
 		return nil, fmt.Errorf("cannot mkdir: %w", err)
 	}
+
+	mutatingWebhookPath := utilwebhook.GenerateMutateWebhookPathFromGVK(schema.GroupVersionKind{
+		Group:   c.ManagementClusterGroup,
+		Version: c.ManagementClusterVersion,
+		Kind:    c.ManagementClusterKind,
+	})
 
 	// Patch environment
 	// Note:
@@ -118,6 +129,14 @@ func Manifests(c Config) ([]unstructured.Unstructured, error) {
 								{
 									"name":  "CATAPULT_SERVICE_CLUSTER_KUBECONFIG",
 									"value": "/config/kubeconfig",
+								},
+								{
+									"name":  "CATAPULT_MUTATING_WEBHOOK_PATH",
+									"value": mutatingWebhookPath,
+								},
+								{
+									"name":  "CATAPULT_WEBHOOK_STRATEGY",
+									"value": c.WebhookStrategy,
 								},
 							},
 							"volumeMounts": []map[string]interface{}{
@@ -178,6 +197,51 @@ func Manifests(c Config) ([]unstructured.Unstructured, error) {
 	}
 	if err := kc.WriteFile("/rbac/cluster_role.yaml", roleBytes); err != nil {
 		return nil, fmt.Errorf("writing /rbac/cluster_role.yaml: %w", err)
+	}
+
+	failurePolicyFail := adminv1beta1.Fail
+	mutatingWebhookConfiguration := adminv1beta1.MutatingWebhookConfiguration{
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: "admissionregistration.k8s.io/v1beta1",
+			Kind:       "MutatingWebhookConfiguration",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "mutating-webhook-configuration",
+		},
+		Webhooks: []adminv1beta1.MutatingWebhook{
+			{
+				Name: fmt.Sprintf("m%s.kubecarrier.io", strings.ToLower(c.ManagementClusterKind)),
+				ClientConfig: adminv1beta1.WebhookClientConfig{
+					CABundle: []byte("Cg=="),
+					Service: &adminv1beta1.ServiceReference{
+						Namespace: "system",
+						Name:      "webhook-service",
+						Path:      &mutatingWebhookPath,
+					},
+				},
+				FailurePolicy: &failurePolicyFail,
+				Rules: []adminv1beta1.RuleWithOperations{
+					{
+						Operations: []adminv1beta1.OperationType{
+							adminv1beta1.Create,
+							adminv1beta1.Update,
+						},
+						Rule: adminv1beta1.Rule{
+							APIGroups:   []string{c.ManagementClusterGroup},
+							APIVersions: []string{c.ManagementClusterVersion},
+							Resources:   []string{c.ManagementClusterPlural},
+						},
+					},
+				},
+			},
+		},
+	}
+	mutatingWebhookConfigurationBytes, err := yaml.Marshal(mutatingWebhookConfiguration)
+	if err != nil {
+		return nil, fmt.Errorf("marshalling MutatingWebhookConfiguration: %w", err)
+	}
+	if err := kc.WriteFile("/webhook/manifests.yaml", mutatingWebhookConfigurationBytes); err != nil {
+		return nil, fmt.Errorf("writing /webhook/manifests.yaml: %w", err)
 	}
 
 	// execute kustomize
