@@ -297,7 +297,7 @@ func NewCatalogSuite(
 				}
 				return true, err
 			}
-			return offeringFound.Offering.CRD.Name == catalogEntry.Status.TenantCRD.Name && offeringFound.Offering.Provider.Name == provider.Name, nil
+			return offeringFound.Spec.CRD.Name == catalogEntry.Status.TenantCRD.Name && offeringFound.Spec.Provider.Name == provider.Name, nil
 		}), "getting the Offering error")
 
 		// Check the Provider object is created.

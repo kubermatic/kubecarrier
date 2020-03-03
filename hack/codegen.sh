@@ -84,7 +84,7 @@ cat config/internal/manager/crd/bases/catalog.kubecarrier.io_catalogentries.yaml
 mv config/internal/manager/crd/bases/catalog.kubecarrier.io_catalogentries.yaml.tmp config/internal/manager/crd/bases/catalog.kubecarrier.io_catalogentries.yaml
 cat config/internal/manager/crd/bases/catalog.kubecarrier.io_catalogentries.yaml | yq -Y 'del(.spec.versions[].schema.openAPIV3Schema.properties.status.properties.providerCRD.properties.versions.items.properties.schema.properties)' > config/internal/manager/crd/bases/catalog.kubecarrier.io_catalogentries.yaml.tmp
 mv config/internal/manager/crd/bases/catalog.kubecarrier.io_catalogentries.yaml.tmp config/internal/manager/crd/bases/catalog.kubecarrier.io_catalogentries.yaml
-cat config/internal/manager/crd/bases/catalog.kubecarrier.io_offerings.yaml | yq -Y 'del(.spec.versions[].schema.openAPIV3Schema.properties.offering.properties.crd.properties.versions.items.properties.schema.properties)' > config/internal/manager/crd/bases/catalog.kubecarrier.io_offerings.yaml.tmp
+cat config/internal/manager/crd/bases/catalog.kubecarrier.io_offerings.yaml | yq -Y 'del(.spec.versions[].schema.openAPIV3Schema.properties.spec.properties.crd.properties.versions.items.properties.schema.properties)' > config/internal/manager/crd/bases/catalog.kubecarrier.io_offerings.yaml.tmp
 mv config/internal/manager/crd/bases/catalog.kubecarrier.io_offerings.yaml.tmp config/internal/manager/crd/bases/catalog.kubecarrier.io_offerings.yaml
 statik-gen manager config/internal/manager
 

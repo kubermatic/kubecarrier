@@ -1,0 +1,127 @@
+apiVersion: apiextensions.k8s.io/v1beta1
+kind: CustomResourceDefinition
+metadata:
+  name: couchdbs.couchdb.io
+spec:
+  additionalPrinterColumns:
+  - JSONPath: .spec.username
+    name: Username
+    type: string
+  - JSONPath: .spec.password
+    name: Password
+    type: string
+  - JSONPath: .spec.version
+    name: Version
+    type: string
+  - JSONPath: .metadata.creationTimestamp
+    name: Age
+    type: date
+  group: couchdb.io
+  names:
+    kind: CouchDB
+    listKind: CouchDBList
+    plural: couchdbs
+    singular: couchdb
+  scope: Namespaced
+  subresources:
+    status: {}
+  validation:
+    openAPIV3Schema:
+      description: CouchDB is the Schema for the couchdbs API
+      properties:
+        apiVersion:
+          description: 'APIVersion defines the versioned schema of this representation
+            of an object. Servers should convert recognized schemas to the latest
+            internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#resources'
+          type: string
+        kind:
+          description: 'Kind is a string value representing the REST resource this
+            object represents. Servers may infer this from the endpoint the client
+            submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#types-kinds'
+          type: string
+        metadata:
+          type: object
+        spec:
+          description: CouchDBSpec defines the desired state of CouchDB
+          properties:
+            password:
+              type: string
+            username:
+              type: string
+            version:
+              description: Version of CouchDB to deploy
+              type: string
+            waitForInit:
+              description: WaitForInit waits for backup restoration before starting.
+              type: boolean
+          required:
+          - password
+          - username
+          type: object
+        status:
+          description: CouchDBStatus defines the observed state of CouchDB
+          properties:
+            address:
+              description: Address of the CouchDB instance.
+              type: string
+            conditions:
+              description: Conditions is a list of all conditions this CouchDB is
+                in.
+              items:
+                description: CouchDBCondition contains details for the current condition
+                  of this CouchDB.
+                properties:
+                  lastTransitionTime:
+                    description: LastTransitionTime is the last time the condition
+                      transit from one status to another.
+                    format: date-time
+                    type: string
+                  message:
+                    description: Message is the human readable message indicating
+                      details about last transition.
+                    type: string
+                  reason:
+                    description: Reason is the (brief) reason for the condition's
+                      last transition.
+                    type: string
+                  status:
+                    description: Status of the condition, one of ('True', 'False',
+                      'Unknown').
+                    type: string
+                  type:
+                    description: Type of the condition, currently ('Ready').
+                    type: string
+                required:
+                - lastTransitionTime
+                - message
+                - reason
+                - status
+                - type
+                type: object
+              type: array
+            fauxtonAddress:
+              description: Address of the CouchDB admin interface.
+              type: string
+            observedGeneration:
+              description: The most recent generation observed by the controller.
+              format: int64
+              type: integer
+            phase:
+              description: Phase represents the current lifecycle state of this object
+                consider this field DEPRECATED, it will be removed as soon as there
+                is a mechanism to map conditions to a string when printing the property
+                is only present for display purposes, for everything else use conditions
+              type: string
+          type: object
+      type: object
+  version: v1alpha1
+  versions:
+  - name: v1alpha1
+    served: true
+    storage: true
+status:
+  acceptedNames:
+    kind: ""
+    plural: ""
+  conditions: []
+  storedVersions: []

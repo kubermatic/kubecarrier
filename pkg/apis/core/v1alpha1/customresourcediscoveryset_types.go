@@ -39,7 +39,7 @@ type CustomResourceDiscoverySetSpec struct {
 // CustomResourceDiscoverySetStatus represents the observed state of a CustomResourceDiscoverySet.
 type CustomResourceDiscoverySetStatus struct {
 	// ManagementClusterCRDs contains the CRDs information that created by the CustomResourceDiscovery objects of this CustomResourceDiscoverySet.
-	ManagementClusterCRDs []ObjectReference `json:"managementClusterCRDs,omitempty"`
+	ManagementClusterCRDs []CustomResourceDiscoverySetCRDReference `json:"managementClusterCRDs,omitempty"`
 	// DEPRECATED.
 	// Phase represents the current lifecycle state of this object
 	// consider this field DEPRECATED, it will be removed as soon as there
@@ -54,6 +54,12 @@ type CustomResourceDiscoverySetStatus struct {
 
 // CustomResourceDiscoverySetPhaseType represents all conditions as a single string for printing in kubectl.
 type CustomResourceDiscoverySetPhaseType string
+
+// CustomResourceDiscoverySetCRDReference references a discovered CustomResourceDefinition.
+type CustomResourceDiscoverySetCRDReference struct {
+	CRD            ObjectReference `json:"crd"`
+	ServiceCluster ObjectReference `json:"serviceCluster"`
+}
 
 // Values of CustomResourceDiscoverySetPhaseType.
 const (

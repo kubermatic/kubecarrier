@@ -18,6 +18,7 @@ package webhooks
 
 import (
 	"context"
+	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -38,7 +39,7 @@ func TestAccountValidatingCreate(t *testing.T) {
 		name            string
 		object          *catalogv1alpha1.Account
 		existingObjects []runtime.Object
-		expectedError   bool
+		expectedError   error
 	}{
 		{
 			name: "invalid account name",
@@ -53,7 +54,16 @@ func TestAccountValidatingCreate(t *testing.T) {
 					},
 				},
 			},
-			expectedError: true,
+			expectedError: fmt.Errorf("account name: test.account is not a valid DNS 1123 Label, A DNS-1123 label must consist of lower case alphanumeric characters or '-', and must start and end with an alphanumeric character. (e.g. 'my-name',  or '123-abc', regex used for validation is '[a-z0-9]([-a-z0-9]*[a-z0-9])?'"),
+		},
+		{
+			name: "missing roles",
+			object: &catalogv1alpha1.Account{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "test-account",
+				},
+			},
+			expectedError: fmt.Errorf("no roles assigned"),
 		},
 		{
 			name: "metadata missing",
@@ -61,22 +71,30 @@ func TestAccountValidatingCreate(t *testing.T) {
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "test-account",
 				},
+				Spec: catalogv1alpha1.AccountSpec{
+					Roles: []catalogv1alpha1.AccountRole{
+						catalogv1alpha1.ProviderRole,
+					},
+				},
 			},
-			expectedError: true,
+			expectedError: fmt.Errorf("the description or the display name of an Account with Provider role cannot be empty"),
 		},
 		{
-			name: "description missing",
+			name: "metadata description missing",
 			object: &catalogv1alpha1.Account{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "test-account",
 				},
 				Spec: catalogv1alpha1.AccountSpec{
+					Roles: []catalogv1alpha1.AccountRole{
+						catalogv1alpha1.ProviderRole,
+					},
 					Metadata: catalogv1alpha1.AccountMetadata{
 						DisplayName: "test Account",
 					},
 				},
 			},
-			expectedError: true,
+			expectedError: fmt.Errorf("the description or the display name of an Account with Provider role cannot be empty"),
 		},
 		{
 			name: "displayName missing",
@@ -85,12 +103,15 @@ func TestAccountValidatingCreate(t *testing.T) {
 					Name: "test-account",
 				},
 				Spec: catalogv1alpha1.AccountSpec{
+					Roles: []catalogv1alpha1.AccountRole{
+						catalogv1alpha1.ProviderRole,
+					},
 					Metadata: catalogv1alpha1.AccountMetadata{
 						Description: "test Account",
 					},
 				},
 			},
-			expectedError: true,
+			expectedError: fmt.Errorf("the description or the display name of an Account with Provider role cannot be empty"),
 		},
 		{
 			name: "duplicate roles",
@@ -109,7 +130,7 @@ func TestAccountValidatingCreate(t *testing.T) {
 					},
 				},
 			},
-			expectedError: true,
+			expectedError: fmt.Errorf("role Provider is duplicated"),
 		},
 		{
 			name: "namespace already exists",
@@ -130,7 +151,7 @@ func TestAccountValidatingCreate(t *testing.T) {
 			existingObjects: []runtime.Object{
 				&corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: "test-account"}},
 			},
-			expectedError: true,
+			expectedError: fmt.Errorf("namespace test-account already exists"),
 		},
 		{
 			name: "can pass validate create",
@@ -148,7 +169,6 @@ func TestAccountValidatingCreate(t *testing.T) {
 					},
 				},
 			},
-			expectedError: false,
 		},
 	}
 
@@ -158,10 +178,14 @@ func TestAccountValidatingCreate(t *testing.T) {
 				Log:    testutil.NewLogger(t),
 				Client: fakeclient.NewFakeClientWithScheme(testScheme, test.existingObjects...),
 			}
-			if test.expectedError {
-				assert.Error(t, accountWebhookHandler.validateCreate(context.Background(), test.object))
-			} else {
+			if test.expectedError == nil {
 				assert.NoError(t, accountWebhookHandler.validateCreate(context.Background(), test.object))
+				return
+			}
+
+			err := accountWebhookHandler.validateCreate(context.Background(), test.object)
+			if assert.Error(t, err) {
+				assert.EqualError(t, err, test.expectedError.Error())
 			}
 		})
 	}
@@ -187,7 +211,7 @@ func TestAccountValidatingDelete(t *testing.T) {
 	for _, test := range []struct {
 		name          string
 		client        client.Client
-		expectedError bool
+		expectedError error
 	}{
 		{
 			name:   "simple clean namespace",
@@ -201,7 +225,7 @@ func TestAccountValidatingDelete(t *testing.T) {
 					Namespace: "default",
 				},
 			}),
-			expectedError: true,
+			expectedError: fmt.Errorf("deletion blocking objects found:\nDerivedCustomResource.catalog.kubecarrier.io/v1alpha1: dummy\n"),
 		},
 		{
 			name: "extra CustomResourceDiscovery",
@@ -211,7 +235,7 @@ func TestAccountValidatingDelete(t *testing.T) {
 					Namespace: "default",
 				},
 			}),
-			expectedError: true,
+			expectedError: fmt.Errorf("deletion blocking objects found:\nCustomResourceDiscovery.kubecarrier.io/v1alpha1: dummy\n"),
 		},
 		{
 			name: "extra CustomResourceDiscoverySet",
@@ -221,7 +245,7 @@ func TestAccountValidatingDelete(t *testing.T) {
 					Namespace: "default",
 				},
 			}),
-			expectedError: true,
+			expectedError: fmt.Errorf("deletion blocking objects found:\nCustomResourceDiscoverySet.kubecarrier.io/v1alpha1: dummy\n"),
 		},
 		{
 			name: "extra CustomResourceDiscoverySet",
@@ -237,7 +261,7 @@ func TestAccountValidatingDelete(t *testing.T) {
 						Namespace: "default",
 					},
 				}),
-			expectedError: true,
+			expectedError: fmt.Errorf("deletion blocking objects found:\nCustomResourceDiscovery.kubecarrier.io/v1alpha1: dummy\nCustomResourceDiscoverySet.kubecarrier.io/v1alpha1: dummy\n"),
 		},
 	} {
 		accountWebhookHandler := AccountWebhookHandler{
@@ -246,12 +270,14 @@ func TestAccountValidatingDelete(t *testing.T) {
 			Scheme: testScheme,
 		}
 		t.Run(test.name, func(t *testing.T) {
-			if test.expectedError {
-				err := accountWebhookHandler.validateDelete(ctx, account)
-				assert.Error(t, err)
-				t.Log(err)
-			} else {
+			if test.expectedError == nil {
 				assert.NoError(t, accountWebhookHandler.validateDelete(ctx, account))
+				return
+			}
+
+			err := accountWebhookHandler.validateDelete(ctx, account)
+			if assert.Error(t, err) {
+				assert.EqualError(t, err, test.expectedError.Error())
 			}
 		})
 	}

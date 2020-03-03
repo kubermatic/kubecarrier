@@ -169,13 +169,30 @@ spec:
                 description: ManagementClusterCRDs contains the CRDs information that
                   created by the CustomResourceDiscovery objects of this CustomResourceDiscoverySet.
                 items:
-                  description: ObjectReference describes the link to another object
-                    in the same Namespace.
+                  description: CustomResourceDiscoverySetCRDReference references a
+                    discovered CustomResourceDefinition.
                   properties:
-                    name:
-                      type: string
+                    crd:
+                      description: ObjectReference describes the link to another object
+                        in the same Namespace.
+                      properties:
+                        name:
+                          type: string
+                      required:
+                      - name
+                      type: object
+                    serviceCluster:
+                      description: ObjectReference describes the link to another object
+                        in the same Namespace.
+                      properties:
+                        name:
+                          type: string
+                      required:
+                      - name
+                      type: object
                   required:
-                  - name
+                  - crd
+                  - serviceCluster
                   type: object
                 type: array
               observedGeneration:

@@ -114,7 +114,7 @@ func run(flags *flags, log logr.Logger) error {
 	if err := multiowner.AddOwnerReverseFieldIndex(
 		mgr.GetFieldIndexer(), fieldIndexerLog.WithName("Provider"), &catalogv1alpha1.Provider{},
 	); err != nil {
-		return fmt.Errorf("registering Provider owner field indexer: %w", err)
+		return fmt.Errorf("registering Provider owner field index: %w", err)
 	}
 	if err := multiowner.AddOwnerReverseFieldIndex(
 		mgr.GetFieldIndexer(), fieldIndexerLog.WithName("ServiceClusterReference"), &catalogv1alpha1.ServiceClusterReference{},
