@@ -17,6 +17,7 @@ limitations under the License.
 package v1alpha1
 
 import (
+	rbacv1 "k8s.io/api/rbac/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -28,6 +29,9 @@ type AccountSpec struct {
 	// Roles this account uses.
 	// +kubebuilder:validation:MinItems=1
 	Roles []AccountRole `json:"roles"`
+	// Subjects contains a list of references to the group identities role binding applies to.
+	// +kubebuilder:validation:MinItems=1
+	Subjects []rbacv1.Subject `json:"subjects,omitempty"`
 }
 
 // AccountMetadata contains the metadata of the Account.
