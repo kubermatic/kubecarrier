@@ -1,9 +1,28 @@
+/*
+Copyright 2019 The KubeCarrier Authors.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
 package main
 
 import (
 	"context"
 	"fmt"
+	"io/ioutil"
+	"log"
 	"math/rand"
+	"net/http"
 	"time"
 
 	"github.com/spf13/cobra"
@@ -34,12 +53,56 @@ func init() {
 	utilruntime.Must(corev1alpha1.AddToScheme(scheme))
 }
 
+type LogRoundTripper struct {
+	Rt http.RoundTripper
+}
+
+// RoundTrip performs a round-trip HTTP request and logs relevant information
+// about it.
+func (lrt *LogRoundTripper) RoundTrip(request *http.Request) (*http.Response, error) {
+	defer func() {
+		if request.Body != nil {
+			request.Body.Close()
+		}
+	}()
+
+	var err error
+
+	log.Printf("[DEBUG] Request URL: %s %s", request.Method, request.URL)
+
+	if request.Body != nil {
+		body, err := request.GetBody()
+		if err != nil {
+			return nil, err
+		}
+		if bodyBB, err := ioutil.ReadAll(body); err != nil {
+			return nil, err
+		} else {
+			log.Printf("[DEBUG] Request body\n%s", string(bodyBB))
+		}
+		if err := body.Close(); err != nil {
+			return nil, err
+		}
+	}
+
+	response, err := lrt.Rt.RoundTrip(request)
+	if response == nil {
+		return nil, err
+	}
+
+	log.Printf("[DEBUG] Response Code: %d", response.StatusCode)
+	return response, err
+}
+
 func main() {
 	flags := genericclioptions.NewConfigFlags(false)
 	cmd := &cobra.Command{
 		Use: "ssa-poc",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cfg, err := flags.ToRESTConfig()
+			cfg.Wrap(func(rt http.RoundTripper) http.RoundTripper {
+				return &LogRoundTripper{rt}
+			})
 			if err != nil {
 				return err
 			}
@@ -65,10 +128,10 @@ func main() {
 
 			for _, cond := range []corev1alpha1.CustomResourceDiscoveryConditionType{
 				corev1alpha1.CustomResourceDiscoveryControllerReady,
-				corev1alpha1.CustomResourceDiscoveryDiscovered,
-				corev1alpha1.CustomResourceDiscoveryEstablished,
+				//corev1alpha1.CustomResourceDiscoveryDiscovered,
+				//corev1alpha1.CustomResourceDiscoveryEstablished,
 			} {
-				go settingTheStatus(ctx, c, crdiscovery.DeepCopy(), cond)
+				go settingTheSSAStatus(ctx, c, crdiscovery.DeepCopy(), cond)
 			}
 
 			<-ctx.Done()
@@ -116,9 +179,25 @@ func settingTheSSAStatus(ctx context.Context, cl client.Client, obj *corev1alpha
 			Status:  corev1alpha1.ConditionTrue,
 			Type:    conditionType,
 		})
-		client.UpdateOption()
-		cl.Status().Patch()
-		if err := cl.Status().Update(ctx, obj); err != nil {
+		/*
+			if err := cl.Status().Update(ctx, u, client.FieldOwner(fmt.Sprint(conditionType))); err != nil {
+				if errors.IsConflict(err) {
+					fmt.Printf("%v conflict!\n", conditionType)
+					if err := cl.Get(ctx, types.NamespacedName{
+						Namespace: obj.Namespace,
+						Name:      obj.Name,
+					}, obj); err != nil {
+						panic(err)
+					}
+					continue
+				}
+				fmt.Printf("%v error happened %s\n", conditionType, err.Error())
+			} else {
+				fmt.Printf("%v setting to number %d\n", conditionType, i)
+			}
+		*/
+
+		if err := cl.Status().Patch(ctx, obj, client.Apply, client.FieldOwner(fmt.Sprint(conditionType)), client.ForceOwnership); err != nil {
 			if errors.IsConflict(err) {
 				fmt.Printf("%v conflict!\n", conditionType)
 				if err := cl.Get(ctx, types.NamespacedName{
@@ -130,7 +209,9 @@ func settingTheSSAStatus(ctx context.Context, cl client.Client, obj *corev1alpha
 				continue
 			}
 			fmt.Printf("%v error happened %s\n", conditionType, err.Error())
+		} else {
+			fmt.Printf("%v setting to number %d\n", conditionType, i)
 		}
-		fmt.Printf("%v setting to number %d\n", conditionType, i)
+
 	}
 }
