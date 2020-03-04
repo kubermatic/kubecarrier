@@ -193,7 +193,7 @@ func (s *AccountStatus) SetCondition(condition AccountCondition) {
 // ```
 // +kubebuilder:object:root=true
 // +kubebuilder:subresource:status
-// +kubebuilder:printcolumn:name="Account Namespace",type="string",JSONPath=".status.namespaceName"
+// +kubebuilder:printcolumn:name="Account Namespace",type="string",JSONPath=".status.namespace.name"
 // +kubebuilder:printcolumn:name="Display Name",type="string",JSONPath=".spec.metadata.displayName"
 // +kubebuilder:printcolumn:name="Status",type="string",JSONPath=".status.phase"
 // +kubebuilder:printcolumn:name="Age",type="date",JSONPath=".metadata.creationTimestamp"

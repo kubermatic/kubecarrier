@@ -52,6 +52,8 @@ type AccountReconciler struct {
 // +kubebuilder:rbac:groups=catalog.kubecarrier.io,resources=accounts/status,verbs=get;update;patch
 // +kubebuilder:rbac:groups="",resources=namespaces,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=catalog.kubecarrier.io,resources=tenantreferences,verbs=get;list;watch;create;update;delete
+// +kubebuilder:rbac:groups=rbac.authorization.k8s.io,resources=roles,verbs=get;list;watch;create;update;patch;delete;escalate;bind
+// +kubebuilder:rbac:groups=rbac.authorization.k8s.io,resources=rolebindings,verbs=get;list;watch;create;update;patch;delete
 
 // Reconcile function reconciles the Account object which specified by the request. Currently, it does the following:
 // 1. Fetch the Account object.

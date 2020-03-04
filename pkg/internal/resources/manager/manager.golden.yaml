@@ -22,7 +22,7 @@
     scope: Cluster
     versions:
     - additionalPrinterColumns:
-      - jsonPath: .status.namespaceName
+      - jsonPath: .status.namespace.name
         name: Account Namespace
         type: string
       - jsonPath: .spec.metadata.displayName
@@ -2476,6 +2476,32 @@
     - get
     - patch
     - update
+  - apiGroups:
+    - rbac.authorization.k8s.io
+    resources:
+    - rolebindings
+    verbs:
+    - create
+    - delete
+    - get
+    - list
+    - patch
+    - update
+    - watch
+  - apiGroups:
+    - rbac.authorization.k8s.io
+    resources:
+    - roles
+    verbs:
+    - bind
+    - create
+    - delete
+    - escalate
+    - get
+    - list
+    - patch
+    - update
+    - watch
 - apiVersion: v1
   kind: ServiceAccount
   metadata:

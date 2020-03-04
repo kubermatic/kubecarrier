@@ -21,7 +21,7 @@ spec:
   scope: Cluster
   versions:
   - additionalPrinterColumns:
-    - jsonPath: .status.namespaceName
+    - jsonPath: .status.namespace.name
       name: Account Namespace
       type: string
     - jsonPath: .spec.metadata.displayName

@@ -22,6 +22,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	rbacv1 "k8s.io/api/rbac/v1"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -47,6 +48,13 @@ func NewTenantSuite(f *framework.Framework) func(t *testing.T) {
 				},
 				Roles: []catalogv1alpha1.AccountRole{
 					catalogv1alpha1.ProviderRole,
+				},
+				Subjects: []rbacv1.Subject{
+					{
+						Kind:     rbacv1.GroupKind,
+						APIGroup: "rbac.authorization.k8s.io",
+						Name:     "admin",
+					},
 				},
 			},
 		}

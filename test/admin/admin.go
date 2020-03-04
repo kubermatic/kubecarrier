@@ -23,6 +23,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	corev1 "k8s.io/api/core/v1"
+	rbacv1 "k8s.io/api/rbac/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
@@ -57,6 +58,13 @@ func NewAdminSuite(f *framework.Framework) func(t *testing.T) {
 					Roles: []catalogv1alpha1.AccountRole{
 						catalogv1alpha1.ProviderRole,
 					},
+					Subjects: []rbacv1.Subject{
+						{
+							Kind:     rbacv1.GroupKind,
+							APIGroup: "rbac.authorization.k8s.io",
+							Name:     "admin",
+						},
+					},
 				},
 			}
 			tenant = &catalogv1alpha1.Account{
@@ -67,6 +75,13 @@ func NewAdminSuite(f *framework.Framework) func(t *testing.T) {
 					Metadata: mdata,
 					Roles: []catalogv1alpha1.AccountRole{
 						catalogv1alpha1.TenantRole,
+					},
+					Subjects: []rbacv1.Subject{
+						{
+							Kind:     rbacv1.GroupKind,
+							APIGroup: "rbac.authorization.k8s.io",
+							Name:     "admin",
+						},
 					},
 				},
 			}
@@ -80,6 +95,13 @@ func NewAdminSuite(f *framework.Framework) func(t *testing.T) {
 						catalogv1alpha1.TenantRole,
 						catalogv1alpha1.ProviderRole,
 					},
+					Subjects: []rbacv1.Subject{
+						{
+							Kind:     rbacv1.GroupKind,
+							APIGroup: "rbac.authorization.k8s.io",
+							Name:     "admin",
+						},
+					},
 				},
 			}
 		)
@@ -91,6 +113,8 @@ func NewAdminSuite(f *framework.Framework) func(t *testing.T) {
 		assert.NoError(t, managementClient.Get(ctx, types.NamespacedName{
 			Name: provider.Status.Namespace.Name,
 		}, ns))
+		rolePresent(t, managementClient, ctx, provider, true)
+		roleBindingPresent(t, managementClient, ctx, provider, true)
 
 		t.Log("adding single tenant")
 		require.NoError(t, managementClient.Create(ctx, tenant), "creating tenant")
@@ -98,6 +122,8 @@ func NewAdminSuite(f *framework.Framework) func(t *testing.T) {
 		assert.NoError(t, managementClient.Get(ctx, types.NamespacedName{
 			Name: tenant.Status.Namespace.Name,
 		}, ns))
+		rolePresent(t, managementClient, ctx, tenant, true)
+		roleBindingPresent(t, managementClient, ctx, tenant, true)
 
 		tenantReferencePresent(t, managementClient, ctx, tenant, provider, true)
 		tenantReferencePresent(t, managementClient, ctx, tenant, tenant, false)
@@ -108,6 +134,8 @@ func NewAdminSuite(f *framework.Framework) func(t *testing.T) {
 		assert.NoError(t, managementClient.Get(ctx, types.NamespacedName{
 			Name: providerTenant.Status.Namespace.Name,
 		}, ns))
+		rolePresent(t, managementClient, ctx, providerTenant, true)
+		roleBindingPresent(t, managementClient, ctx, providerTenant, true)
 
 		tenantReferencePresent(t, managementClient, ctx, tenant, provider, true)
 		tenantReferencePresent(t, managementClient, ctx, tenant, providerTenant, true)
@@ -126,6 +154,8 @@ func NewAdminSuite(f *framework.Framework) func(t *testing.T) {
 		assert.True(t, errors.IsNotFound(managementClient.Get(ctx, types.NamespacedName{
 			Name: tenant.Status.Namespace.Name,
 		}, ns)), "namespace should also be deleted.")
+		rolePresent(t, managementClient, ctx, tenant, false)
+		roleBindingPresent(t, managementClient, ctx, tenant, false)
 
 		tenantReferencePresent(t, managementClient, ctx, tenant, provider, false)
 		tenantReferencePresent(t, managementClient, ctx, tenant, providerTenant, false)
@@ -144,12 +174,16 @@ func NewAdminSuite(f *framework.Framework) func(t *testing.T) {
 		assert.True(t, errors.IsNotFound(managementClient.Get(ctx, types.NamespacedName{
 			Name: provider.Status.Namespace.Name,
 		}, ns)), "namespace should also be deleted.")
+		rolePresent(t, managementClient, ctx, provider, false)
+		roleBindingPresent(t, managementClient, ctx, provider, false)
 
 		t.Log("deleting providerTenant")
 		require.NoError(t, testutil.DeleteAndWaitUntilNotFound(managementClient, providerTenant))
 		assert.True(t, errors.IsNotFound(managementClient.Get(ctx, types.NamespacedName{
 			Name: providerTenant.Status.Namespace.Name,
 		}, ns)), "namespace should also be deleted.")
+		rolePresent(t, managementClient, ctx, providerTenant, false)
+		roleBindingPresent(t, managementClient, ctx, providerTenant, false)
 	}
 }
 
@@ -163,4 +197,28 @@ func tenantReferencePresent(t *testing.T, managementClient client.Client, ctx co
 		}
 	}
 	assert.Equalf(t, expected, found, "tenantReference %s presence in provider %s", tenant.Name, provider.Name)
+}
+
+func rolePresent(t *testing.T, managementClient client.Client, ctx context.Context, account *catalogv1alpha1.Account, expected bool) {
+	var found bool
+	role := &rbacv1.Role{}
+	if err := managementClient.Get(ctx, types.NamespacedName{
+		Name:      "kubecarrier-account-role",
+		Namespace: account.Status.Namespace.Name,
+	}, role); err == nil {
+		found = true
+	}
+	assert.Equalf(t, expected, found, "account Role presence in account %s", account.Name)
+}
+
+func roleBindingPresent(t *testing.T, managementClient client.Client, ctx context.Context, account *catalogv1alpha1.Account, expected bool) {
+	var found bool
+	roleBinding := &rbacv1.RoleBinding{}
+	if err := managementClient.Get(ctx, types.NamespacedName{
+		Name:      "kubecarrier-account-rolebinding",
+		Namespace: account.Status.Namespace.Name,
+	}, roleBinding); err == nil {
+		found = true
+	}
+	assert.Equalf(t, expected, found, "account RoleBinding presence in account %s", account.Name)
 }
