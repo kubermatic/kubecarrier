@@ -61,6 +61,8 @@ type CustomResourceDiscoveryStatus struct {
 	// is only present for display purposes, for everything else use conditions
 	Phase CustomResourceDiscoveryPhaseType `json:"phase,omitempty"`
 	// Conditions is a list of all conditions this CustomResourceDiscovery is in.
+	// +listType=map
+	// +listMapKey=type
 	Conditions []CustomResourceDiscoveryCondition `json:"conditions,omitempty"`
 	// The most recent generation observed by the controller.
 	ObservedGeneration int64 `json:"observedGeneration,omitempty"`
