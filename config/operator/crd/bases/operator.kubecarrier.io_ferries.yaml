@@ -26,16 +26,16 @@ spec:
     name: v1alpha1
     schema:
       openAPIV3Schema:
-        description: "Ferry represents single kubernetes cluster belonging to the
-          provider \n Ferry lives in the provider namespace. For each ferry the kubecarrier
+        description: "Ferry manages the deployment of the Ferry controller manager.
+          \n Ferry lives in the Provider Namespace. For each ferry the KubeCarrier
           operator spins up the ferry controller deployment, necessary roles, service
-          accounts, and role bindings \n The reason for ferry controller deployment
-          are multiples: * security --> kubecarrier operator has greater privileges
+          accounts, and role bindings. \n The reason for ferry controller deployment
+          are multiples: * security --> KubeCarrier operator has greater privileges
           then ferry controller * resource isolation --> each ferry controller pod
           operates only on a single service cluster, \t\tthus resource allocation
           and monitoring is separate per ferry. This allows finer grade \t\tresource
           tuning and monitoring * flexibility --> If needed different ferries could
-          have different deployments depending on \t\ttheir specific need (e.g. kubecarrier
+          have different deployments depending on \t\ttheir specific need (e.g. KubeCarrier
           image version for gradual rolling upgrade, different resource allocation,
           etc),"
         properties:
@@ -52,7 +52,7 @@ spec:
           metadata:
             type: object
           spec:
-            description: FerrySpec defines the desired state of Ferry
+            description: FerrySpec defines the desired state of Ferry.
             properties:
               kubeconfigSecret:
                 description: KubeconfigSecret specifies the Kubeconfig to use when
@@ -67,7 +67,7 @@ spec:
             - kubeconfigSecret
             type: object
           status:
-            description: FerryStatus defines the observed state of Ferry
+            description: FerryStatus defines the observed state of Ferry.
             properties:
               conditions:
                 description: Conditions is a list of all conditions this Ferry is

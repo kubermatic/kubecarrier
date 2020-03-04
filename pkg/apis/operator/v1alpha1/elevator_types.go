@@ -20,7 +20,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// ElevatorSpec defines the desired state of Elevator
+// ElevatorSpec defines the desired state of Elevator.
 type ElevatorSpec struct {
 	// References the provider or internal CRD, that should be created in the provider namespace.
 	ProviderCRD CRDReference `json:"providerCRD"`
@@ -30,7 +30,7 @@ type ElevatorSpec struct {
 	DerivedCR ObjectReference `json:"derivedCR"`
 }
 
-// ElevatorStatus defines the observed state of Elevator
+// ElevatorStatus defines the observed state of Elevator.
 type ElevatorStatus struct {
 	// ObservedGeneration is the most recent generation observed for this Elevator by the controller.
 	ObservedGeneration int64 `json:"observedGeneration,omitempty"`
@@ -59,7 +59,7 @@ const (
 	ElevatorTerminatingReason = "Deleting"
 )
 
-// updatePhase updates the phase property based on the current conditions
+// updatePhase updates the phase property based on the current conditions.
 // this method should be called every time the conditions are updated.
 func (s *ElevatorStatus) updatePhase() {
 
@@ -153,8 +153,8 @@ func (s *ElevatorStatus) SetCondition(condition ElevatorCondition) {
 }
 
 // Elevator manages the deployment of the Elevator controller manager.
-// For each `DerivedCustomResource` a Elevator instance is launched to propagate the derived CRD instance into the provider namespace.
-// This component works hand-in-hand with the Catapult instance for the respective type.
+//
+// For each `DerivedCustomResource` a Elevator instance is launched to propagate the derived CRD instance into the Namespace of it's provider.
 // +kubebuilder:object:root=true
 // +kubebuilder:subresource:status
 // +kubebuilder:printcolumn:name="Status",type="string",JSONPath=".status.phase"
@@ -227,9 +227,8 @@ func (s *Elevator) SetTerminatingCondition() bool {
 	return false
 }
 
+// ElevatorList contains a list of Elevator.
 // +kubebuilder:object:root=true
-
-// ElevatorList contains a list of Elevator
 type ElevatorList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`

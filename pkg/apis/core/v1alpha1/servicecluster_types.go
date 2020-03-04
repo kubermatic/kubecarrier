@@ -21,22 +21,23 @@ import (
 	"k8s.io/apimachinery/pkg/version"
 )
 
-// ServiceClusterSpec defines the desired state of ServiceCluster
+// ServiceClusterSpec describes the desired state of a ServiceCluster.
 type ServiceClusterSpec struct {
+	// Metadata for display in the Service Catalog.
 	Metadata ServiceClusterMetadata `json:"metadata,omitempty"`
 	// KubeconfigSecret specifies the Kubeconfig to use when connecting to the ServiceCluster.
 	KubeconfigSecret ObjectReference `json:"kubeconfigSecret"`
 }
 
-// ServiceClusterMetadata contains the metadata (display name, description, etc) of the ServiceCluster.
+// ServiceClusterMetadata describes metadata of the ServiceCluster for the Service Catalog.
 type ServiceClusterMetadata struct {
-	// DisplayName shows the human-readable name of this ServiceCluster.
+	// DisplayName is the human-readable name of this ServiceCluster.
 	DisplayName string `json:"displayName,omitempty"`
-	// Description shows the human-readable description of this ServiceCluster.
+	// Description is the human-readable description of this ServiceCluster.
 	Description string `json:"description,omitempty"`
 }
 
-// ServiceClusterStatus defines the observed state of ServiceCluster
+// ServiceClusterStatus represents the observed state of a ServiceCluster.
 type ServiceClusterStatus struct {
 	// DEPRECATED.
 	// Phase represents the current lifecycle state of this object
@@ -177,7 +178,20 @@ func (s *ServiceClusterStatus) GetCondition(t ServiceClusterConditionType) (cond
 	return
 }
 
-// ServiceCluster is a providers Kubernetes Cluster.
+// ServiceCluster represents a Kubernets Cluster registered into KubeCarrier.
+//
+// **Example**
+// ```yaml
+// apiVersion: kubecarrier.io/v1alpha1
+// kind: ServiceCluster
+// metadata:
+//   name: eu-west-1
+// spec:
+//   metadata:
+//     displayName: EU West 1
+//   kubeconfigSecret:
+//     name: eu-west-1-kubeconfig
+// ```
 // +kubebuilder:object:root=true
 // +kubebuilder:subresource:status
 // +kubebuilder:printcolumn:name="Status",type="string",JSONPath=".status.phase"
@@ -192,7 +206,7 @@ type ServiceCluster struct {
 	Status ServiceClusterStatus `json:"status,omitempty"`
 }
 
-// ServiceClusterList contains a list of ServiceCluster
+// ServiceClusterList contains a list of ServiceCluster.
 // +kubebuilder:object:root=true
 type ServiceClusterList struct {
 	metav1.TypeMeta `json:",inline"`

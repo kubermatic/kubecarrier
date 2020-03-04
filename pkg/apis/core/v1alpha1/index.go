@@ -28,7 +28,7 @@ const (
 	ServiceClusterAssignmentNamespaceFieldIndex = "sca.kubecarrier.io/namespace"
 )
 
-// RegisterServiceClusterAssignmentNamespaceFieldIndex adds a field index for ServiceClusterAssignment.Status.ServiceClusterNamespace.Name
+// RegisterServiceClusterAssignmentNamespaceFieldIndex adds a field index for ServiceClusterAssignment.Status.ServiceClusterNamespace.Name.
 func RegisterServiceClusterAssignmentNamespaceFieldIndex(indexer client.FieldIndexer) error {
 	return indexer.IndexField(
 		&ServiceClusterAssignment{}, ServiceClusterAssignmentNamespaceFieldIndex,

@@ -20,27 +20,27 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// AccountSpec defines the desired state of Account.
+// AccountSpec describes the desired state of Account.
 type AccountSpec struct {
-	// Metadata	contains additional human readable account details
+	// Metadata	contains additional human readable account details.
 	Metadata AccountMetadata `json:"metadata,omitempty"`
 
-	// Roles this account uses
+	// Roles this account uses.
 	// +kubebuilder:validation:MinItems=1
 	Roles []AccountRole `json:"roles"`
 }
 
-// AccountMetadata contains the metadata (display name, description, etc) of the Account.
+// AccountMetadata contains the metadata of the Account.
 type AccountMetadata struct {
-	// DisplayName shows the human-readable name of this Account.
+	// DisplayName is the human-readable name of this Account.
 	// +kubebuilder:validation:MinLength=1
 	DisplayName string `json:"displayName,omitempty"`
-	// Description shows the human-readable description of this Account.
+	// Description is the human-readable description of this Account.
 	// +kubebuilder:validation:MinLength=1
 	Description string `json:"description,omitempty"`
 }
 
-// AccountRole type represent possible, currency implemented account roles
+// AccountRole type represents available Account roles.
 // +kubebuilder:validation:Enum=Provider;Tenant
 type AccountRole string
 
@@ -49,9 +49,9 @@ const (
 	TenantRole   AccountRole = "Tenant"
 )
 
-// AccountStatus defines the observed state of Account.
+// AccountStatus represents the observed state of Account.
 type AccountStatus struct {
-	// NamespaceName is the name of the namespace that the Account manages.
+	// NamespaceName is the name of the Namespace that the Account manages.
 	Namespace ObjectReference `json:"namespace,omitempty"`
 	// ObservedGeneration is the most recent generation observed for this Account by the controller.
 	ObservedGeneration int64 `json:"observedGeneration,omitempty"`
@@ -81,7 +81,7 @@ const (
 	AccountTerminatingReason = "Deleting"
 )
 
-// updatePhase updates the phase property based on the current conditions
+// updatePhase updates the phase property based on the current conditions.
 // this method should be called every time the conditions are updated.
 func (s *AccountStatus) updatePhase() {
 	for _, condition := range s.Conditions {
@@ -169,8 +169,24 @@ func (s *AccountStatus) SetCondition(condition AccountCondition) {
 	s.Conditions = append(s.Conditions, condition)
 }
 
-// Account is the generic Kubecarrier actor representation in the KubeCarrier control-plane. It has its own namespace and
-// uses various roles, provider and tenant role being the most important.
+// Account represents an actor in KubeCarrier. Depending on it's roles, it can provide services, consume offered services or both.
+//
+// KubeCarrier creates a new Namespace for each Account. The Account Metadata is exposed to users that are offered services from this Account.
+//
+// **Example**
+// ```yaml
+// apiVersion: catalog.kubecarrier.io/v1alpha1
+// kind: Account
+// metadata:
+//   name: team-a
+// spec:
+//   metadata:
+//     displayName: The A Team
+//     description: In 1972, a crack commando unit was sent to prison by a military court...
+//   roles:
+//   - Provider
+//   - Tenant
+// ```
 // +kubebuilder:object:root=true
 // +kubebuilder:subresource:status
 // +kubebuilder:printcolumn:name="Account Namespace",type="string",JSONPath=".status.namespaceName"
