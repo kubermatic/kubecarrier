@@ -41,6 +41,8 @@ type ServiceClusterReconciler struct {
 
 // +kubebuilder:rbac:groups=kubecarrier.io,resources=serviceclusters,verbs=get;list;watch;update
 // +kubebuilder:rbac:groups=kubecarrier.io,resources=serviceclusters/status,verbs=get;update;patch
+// +kubebuilder:rbac:groups=operator.kubecarrier.io,resources=ferries,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=operator.kubecarrier.io,resources=ferries/status,verbs=get;update;patch
 
 func (r *ServiceClusterReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 
