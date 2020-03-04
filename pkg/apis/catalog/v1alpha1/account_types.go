@@ -29,7 +29,7 @@ type AccountSpec struct {
 	// Roles this account uses.
 	// +kubebuilder:validation:MinItems=1
 	Roles []AccountRole `json:"roles"`
-	// Subjects contains a list of references to the group identities role binding applies to.
+	// Subjects holds references to the objects that manged RBAC roles should apply to.
 	// +kubebuilder:validation:MinItems=1
 	Subjects []rbacv1.Subject `json:"subjects,omitempty"`
 }
