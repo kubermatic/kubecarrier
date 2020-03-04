@@ -28,19 +28,21 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	operatorv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/operator/v1alpha1"
 	"github.com/kubermatic/kubecarrier/pkg/internal/reconcile"
 	"github.com/kubermatic/kubecarrier/pkg/internal/util"
 )
 
+type Component interface {
+	object
+	SetTerminatingCondition() bool
+	SetUnReadyCondition() bool
+	SetReadyCondition() bool
+}
+
 type Controller interface {
 	// GetObj - return origin controller object
-	GetObj() object
+	GetObj() Component
 	GetManifests(context.Context) ([]unstructured.Unstructured, error)
-	GetReadyConditionStatus() operatorv1alpha1.ConditionStatus
-	SetTerminatingCondition(context.Context) bool
-	SetUnReadyCondition()
-	SetReadyCondition()
 }
 
 type BaseReconciler struct {
@@ -52,30 +54,29 @@ type BaseReconciler struct {
 }
 
 // FetchObject - fetch the object
-func (r *BaseReconciler) FetchObject(ctx context.Context, req ctrl.Request, ctr Controller) error {
-	if err := r.Client.Get(ctx, req.NamespacedName, ctr.GetObj()); err != nil {
-		// If the object is already gone, we just ignore the NotFound error.
-		return client.IgnoreNotFound(err)
-	}
-	return nil
+func (r *BaseReconciler) FetchObject(ctx context.Context, req ctrl.Request, obj Component) error {
+	return r.Client.Get(ctx, req.NamespacedName, obj)
 }
 
 // Reconcile - base reconcile logic
 func (r *BaseReconciler) Reconcile(ctx context.Context, req ctrl.Request, ctr Controller) (ctrl.Result, error) {
+	var deploymentIsReady bool
+	obj := ctr.GetObj()
 
-	if err := r.FetchObject(ctx, req, ctr); err != nil {
-		return ctrl.Result{}, err
+	if err := r.FetchObject(ctx, req, obj); err != nil {
+		// If the object is already gone, we just ignore the NotFound error.
+		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
 
-	if !ctr.GetObj().GetDeletionTimestamp().IsZero() {
+	if !obj.GetDeletionTimestamp().IsZero() {
 		if err := r.HandleDeletion(ctx, ctr); err != nil {
 			return ctrl.Result{}, fmt.Errorf("handle deletion: %w", err)
 		}
 		return ctrl.Result{}, nil
 	}
 
-	if util.AddFinalizer(ctr.GetObj(), r.Finalizer) {
-		if err := r.Client.Update(ctx, ctr.GetObj()); err != nil {
+	if util.AddFinalizer(obj, r.Finalizer) {
+		if err := r.Client.Update(ctx, obj); err != nil {
 			return ctrl.Result{}, fmt.Errorf("updating %s finalizers: %w", r.Name, err)
 		}
 	}
@@ -85,12 +86,12 @@ func (r *BaseReconciler) Reconcile(ctx context.Context, req ctrl.Request, ctr Co
 		return ctrl.Result{}, fmt.Errorf("creating %s manifests: %w", r.Name, err)
 	}
 
-	deploymentIsReady, err := r.ReconcileOwnedObjects(ctx, ctr.GetObj(), objects)
+	deploymentIsReady, err = r.ReconcileOwnedObjects(ctx, obj, objects)
 	if err != nil {
 		return ctrl.Result{}, err
 	}
 
-	if err := r.UpdateStatus(ctx, ctr, deploymentIsReady); err != nil {
+	if err := r.UpdateStatus(ctx, obj, deploymentIsReady); err != nil {
 		return ctrl.Result{}, err
 	}
 
@@ -100,9 +101,10 @@ func (r *BaseReconciler) Reconcile(ctx context.Context, req ctrl.Request, ctr Co
 // HandleDeletion - handle the deletion of the object (Remove the objects that the object owns, and remove the finalizer).
 func (r *BaseReconciler) HandleDeletion(ctx context.Context, ctr Controller) error {
 
+	obj := ctr.GetObj()
 	// Update the object Status to Terminating.
-	if ctr.SetTerminatingCondition(ctx) {
-		if err := r.Client.Status().Update(ctx, ctr.GetObj()); err != nil {
+	if obj.SetTerminatingCondition() {
+		if err := r.Client.Status().Update(ctx, obj); err != nil {
 			return fmt.Errorf("updating %s status: %w", r.Name, err)
 		}
 	}
@@ -125,8 +127,8 @@ func (r *BaseReconciler) HandleDeletion(ctx context.Context, ctr Controller) err
 
 	if allCleared {
 		// Remove Finalizer
-		if util.RemoveFinalizer(ctr.GetObj(), r.Finalizer) {
-			if err := r.Client.Update(ctx, ctr.GetObj()); err != nil {
+		if util.RemoveFinalizer(obj, r.Finalizer) {
+			if err := r.Client.Update(ctx, obj); err != nil {
 				return fmt.Errorf("updating %s finalizers: %w", r.Name, err)
 			}
 		}
@@ -135,22 +137,17 @@ func (r *BaseReconciler) HandleDeletion(ctx context.Context, ctr Controller) err
 }
 
 // UpdateStatus - update the status of the object
-func (r *BaseReconciler) UpdateStatus(ctx context.Context, ctr Controller, deploymentIsReady bool) error {
+func (r *BaseReconciler) UpdateStatus(ctx context.Context, c Component, deploymentIsReady bool) error {
 	var updateStatus bool
-	readyConditionStatus := ctr.GetReadyConditionStatus()
 
-	if !deploymentIsReady && readyConditionStatus != operatorv1alpha1.ConditionFalse {
-		updateStatus = true
-		ctr.SetUnReadyCondition()
-	}
-
-	if deploymentIsReady && readyConditionStatus != operatorv1alpha1.ConditionTrue {
-		updateStatus = true
-		ctr.SetReadyCondition()
+	if deploymentIsReady {
+		updateStatus = c.SetReadyCondition()
+	} else {
+		updateStatus = c.SetUnReadyCondition()
 	}
 
 	if updateStatus {
-		if err := r.Client.Status().Update(ctx, ctr.GetObj()); err != nil {
+		if err := r.Client.Status().Update(ctx, c); err != nil {
 			return fmt.Errorf("updating %s status: %w", r.Name, err)
 		}
 	}
@@ -158,7 +155,7 @@ func (r *BaseReconciler) UpdateStatus(ctx context.Context, ctr Controller, deplo
 }
 
 // ReconcileOwnedObjects - reconcile the objects that owned by obj
-func (r *BaseReconciler) ReconcileOwnedObjects(ctx context.Context, obj object, objects []unstructured.Unstructured) (bool, error) {
+func (r *BaseReconciler) ReconcileOwnedObjects(ctx context.Context, obj Component, objects []unstructured.Unstructured) (bool, error) {
 	var deploymentIsReady bool
 	for _, object := range objects {
 		if err := addOwnerReference(obj, &object, r.Scheme); err != nil {

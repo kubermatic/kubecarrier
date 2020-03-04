@@ -180,6 +180,51 @@ func (s *Ferry) IsReady() bool {
 	return false
 }
 
+func (s *Ferry) SetReadyCondition() bool {
+	readyCondition, _ := s.Status.GetCondition(FerryReady)
+	if readyCondition.Status != ConditionTrue {
+		s.Status.ObservedGeneration = s.Generation
+		s.Status.SetCondition(FerryCondition{
+			Type:    FerryReady,
+			Status:  ConditionTrue,
+			Reason:  "DeploymentReady",
+			Message: "the deployment of the Ferry controller manager is ready",
+		})
+		return true
+	}
+	return false
+}
+func (s *Ferry) SetUnReadyCondition() bool {
+	readyCondition, _ := s.Status.GetCondition(FerryReady)
+	if readyCondition.Status != ConditionFalse {
+		s.Status.ObservedGeneration = s.Generation
+		s.Status.SetCondition(FerryCondition{
+			Type:    FerryReady,
+			Status:  ConditionFalse,
+			Reason:  "DeploymentUnready",
+			Message: "the deployment of the Ferry controller manager is not ready",
+		})
+		return true
+	}
+	return false
+}
+
+func (s *Ferry) SetTerminatingCondition() bool {
+	readyCondition, _ := s.Status.GetCondition(FerryReady)
+	if readyCondition.Status != ConditionFalse ||
+		readyCondition.Status == ConditionFalse && readyCondition.Reason != FerryTerminatingReason {
+		s.Status.ObservedGeneration = s.Generation
+		s.Status.SetCondition(FerryCondition{
+			Type:    FerryReady,
+			Status:  ConditionFalse,
+			Reason:  FerryTerminatingReason,
+			Message: "Ferry is being deleted",
+		})
+		return true
+	}
+	return false
+}
+
 // +kubebuilder:object:root=true
 
 // FerryList contains a list of Ferry

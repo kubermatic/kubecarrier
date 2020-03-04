@@ -180,6 +180,51 @@ func (s *Catapult) IsReady() bool {
 	return false
 }
 
+func (s *Catapult) SetReadyCondition() bool {
+	readyCondition, _ := s.Status.GetCondition(CatapultReady)
+	if readyCondition.Status != ConditionTrue {
+		s.Status.ObservedGeneration = s.Generation
+		s.Status.SetCondition(CatapultCondition{
+			Type:    CatapultReady,
+			Status:  ConditionTrue,
+			Reason:  "DeploymentReady",
+			Message: "the deployment of the Catapult controller manager is ready",
+		})
+		return true
+	}
+	return false
+}
+func (s *Catapult) SetUnReadyCondition() bool {
+	readyCondition, _ := s.Status.GetCondition(CatapultReady)
+	if readyCondition.Status != ConditionFalse {
+		s.Status.ObservedGeneration = s.Generation
+		s.Status.SetCondition(CatapultCondition{
+			Type:    CatapultReady,
+			Status:  ConditionFalse,
+			Reason:  "DeploymentUnready",
+			Message: "the deployment of the Catapult controller manager is not ready",
+		})
+		return true
+	}
+	return false
+}
+
+func (s *Catapult) SetTerminatingCondition() bool {
+	readyCondition, _ := s.Status.GetCondition(CatapultReady)
+	if readyCondition.Status != ConditionFalse ||
+		readyCondition.Status == ConditionFalse && readyCondition.Reason != CatapultTerminatingReason {
+		s.Status.ObservedGeneration = s.Generation
+		s.Status.SetCondition(CatapultCondition{
+			Type:    CatapultReady,
+			Status:  ConditionFalse,
+			Reason:  CatapultTerminatingReason,
+			Message: "Catapult is being deleted",
+		})
+		return true
+	}
+	return false
+}
+
 // +kubebuilder:object:root=true
 
 // CatapultList contains a list of Catapult

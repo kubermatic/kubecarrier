@@ -41,47 +41,7 @@ type catapultController struct {
 	Client client.Client
 }
 
-func (c *catapultController) GetReadyConditionStatus() operatorv1alpha1.ConditionStatus {
-	readyCondition, _ := c.Obj.Status.GetCondition(operatorv1alpha1.CatapultReady)
-	return readyCondition.Status
-}
-
-func (c *catapultController) SetReadyCondition() {
-	c.Obj.Status.ObservedGeneration = c.Obj.Generation
-	c.Obj.Status.SetCondition(operatorv1alpha1.CatapultCondition{
-		Type:    operatorv1alpha1.CatapultReady,
-		Status:  operatorv1alpha1.ConditionTrue,
-		Reason:  "DeploymentReady",
-		Message: "the deployment of the Catapult controller manager is ready",
-	})
-}
-
-func (c *catapultController) SetUnReadyCondition() {
-	c.Obj.Status.ObservedGeneration = c.Obj.Generation
-	c.Obj.Status.SetCondition(operatorv1alpha1.CatapultCondition{
-		Type:    operatorv1alpha1.CatapultReady,
-		Status:  operatorv1alpha1.ConditionFalse,
-		Reason:  "DeploymentUnready",
-		Message: "the deployment of the Catapult controller manager is not ready",
-	})
-}
-
-func (c *catapultController) SetTerminatingCondition(ctx context.Context) bool {
-	readyCondition, _ := c.Obj.Status.GetCondition(operatorv1alpha1.CatapultReady)
-	if readyCondition.Status != operatorv1alpha1.ConditionFalse ||
-		readyCondition.Status == operatorv1alpha1.ConditionFalse && readyCondition.Reason != operatorv1alpha1.CatapultTerminatingReason {
-		c.Obj.Status.ObservedGeneration = c.Obj.Generation
-		c.Obj.Status.SetCondition(operatorv1alpha1.CatapultCondition{
-			Type:    operatorv1alpha1.CatapultReady,
-			Status:  operatorv1alpha1.ConditionFalse,
-			Reason:  operatorv1alpha1.CatapultTerminatingReason,
-			Message: "Catapult is being terminated",
-		})
-		return true
-	}
-	return false
-}
-func (c *catapultController) GetObj() object {
+func (c *catapultController) GetObj() Component {
 	return c.Obj
 }
 

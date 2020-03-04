@@ -41,48 +41,7 @@ type kubeCarrierController struct {
 	Obj *operatorv1alpha1.KubeCarrier
 }
 
-func (c *kubeCarrierController) GetReadyConditionStatus() operatorv1alpha1.ConditionStatus {
-	readyCondition, _ := c.Obj.Status.GetCondition(operatorv1alpha1.KubeCarrierReady)
-	return readyCondition.Status
-}
-
-func (c *kubeCarrierController) SetReadyCondition() {
-	c.Obj.Status.ObservedGeneration = c.Obj.Generation
-	c.Obj.Status.SetCondition(operatorv1alpha1.KubeCarrierCondition{
-		Type:    operatorv1alpha1.KubeCarrierReady,
-		Status:  operatorv1alpha1.ConditionTrue,
-		Reason:  "DeploymentReady",
-		Message: "the deployment of the KubeCarrier controller manager is ready",
-	})
-}
-
-func (c *kubeCarrierController) SetUnReadyCondition() {
-	c.Obj.Status.ObservedGeneration = c.Obj.Generation
-	c.Obj.Status.SetCondition(operatorv1alpha1.KubeCarrierCondition{
-		Type:    operatorv1alpha1.KubeCarrierReady,
-		Status:  operatorv1alpha1.ConditionFalse,
-		Reason:  "DeploymentUnready",
-		Message: "the deployment of the KubeCarrier controller manager is not ready",
-	})
-}
-
-func (c *kubeCarrierController) SetTerminatingCondition(ctx context.Context) bool {
-	readyCondition, _ := c.Obj.Status.GetCondition(operatorv1alpha1.KubeCarrierReady)
-	if readyCondition.Status != operatorv1alpha1.ConditionFalse ||
-		readyCondition.Status == operatorv1alpha1.ConditionFalse && readyCondition.Reason != operatorv1alpha1.KubeCarrierTerminatingReason {
-		c.Obj.Status.ObservedGeneration = c.Obj.Generation
-		c.Obj.Status.SetCondition(operatorv1alpha1.KubeCarrierCondition{
-			Type:    operatorv1alpha1.KubeCarrierReady,
-			Status:  operatorv1alpha1.ConditionFalse,
-			Reason:  operatorv1alpha1.KubeCarrierTerminatingReason,
-			Message: "KubeCarrier is being terminated",
-		})
-		return true
-	}
-	return false
-}
-
-func (c *kubeCarrierController) GetObj() object {
+func (c *kubeCarrierController) GetObj() Component {
 	return c.Obj
 }
 

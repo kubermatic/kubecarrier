@@ -38,48 +38,7 @@ type elevatorController struct {
 	Obj *operatorv1alpha1.Elevator
 }
 
-func (c *elevatorController) GetReadyConditionStatus() operatorv1alpha1.ConditionStatus {
-	readyCondition, _ := c.Obj.Status.GetCondition(operatorv1alpha1.ElevatorReady)
-	return readyCondition.Status
-}
-
-func (c *elevatorController) SetReadyCondition() {
-	c.Obj.Status.ObservedGeneration = c.Obj.Generation
-	c.Obj.Status.SetCondition(operatorv1alpha1.ElevatorCondition{
-		Type:    operatorv1alpha1.ElevatorReady,
-		Status:  operatorv1alpha1.ConditionTrue,
-		Reason:  "DeploymentReady",
-		Message: "the deployment of the Elevator controller manager is ready",
-	})
-}
-
-func (c *elevatorController) SetUnReadyCondition() {
-	c.Obj.Status.ObservedGeneration = c.Obj.Generation
-	c.Obj.Status.SetCondition(operatorv1alpha1.ElevatorCondition{
-		Type:    operatorv1alpha1.ElevatorReady,
-		Status:  operatorv1alpha1.ConditionFalse,
-		Reason:  "DeploymentUnready",
-		Message: "the deployment of the Elevator controller manager is not ready",
-	})
-}
-
-func (c *elevatorController) SetTerminatingCondition(ctx context.Context) bool {
-	readyCondition, _ := c.Obj.Status.GetCondition(operatorv1alpha1.ElevatorReady)
-	if readyCondition.Status != operatorv1alpha1.ConditionFalse ||
-		readyCondition.Status == operatorv1alpha1.ConditionFalse && readyCondition.Reason != operatorv1alpha1.ElevatorTerminatingReason {
-		c.Obj.Status.ObservedGeneration = c.Obj.Generation
-		c.Obj.Status.SetCondition(operatorv1alpha1.ElevatorCondition{
-			Type:    operatorv1alpha1.ElevatorReady,
-			Status:  operatorv1alpha1.ConditionFalse,
-			Reason:  operatorv1alpha1.ElevatorTerminatingReason,
-			Message: "Elevator is being terminated",
-		})
-		return true
-	}
-	return false
-}
-
-func (c *elevatorController) GetObj() object {
+func (c *elevatorController) GetObj() Component {
 	return c.Obj
 }
 

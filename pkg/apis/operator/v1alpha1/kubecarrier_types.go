@@ -174,6 +174,51 @@ func (s *KubeCarrier) IsReady() bool {
 	return false
 }
 
+func (s *KubeCarrier) SetReadyCondition() bool {
+	readyCondition, _ := s.Status.GetCondition(KubeCarrierReady)
+	if readyCondition.Status != ConditionTrue {
+		s.Status.ObservedGeneration = s.Generation
+		s.Status.SetCondition(KubeCarrierCondition{
+			Type:    KubeCarrierReady,
+			Status:  ConditionTrue,
+			Reason:  "DeploymentReady",
+			Message: "the deployment of the KubeCarrier controller manager is ready",
+		})
+		return true
+	}
+	return false
+}
+func (s *KubeCarrier) SetUnReadyCondition() bool {
+	readyCondition, _ := s.Status.GetCondition(KubeCarrierReady)
+	if readyCondition.Status != ConditionFalse {
+		s.Status.ObservedGeneration = s.Generation
+		s.Status.SetCondition(KubeCarrierCondition{
+			Type:    KubeCarrierReady,
+			Status:  ConditionFalse,
+			Reason:  "DeploymentUnready",
+			Message: "the deployment of the KubeCarrier controller manager is not ready",
+		})
+		return true
+	}
+	return false
+}
+
+func (s *KubeCarrier) SetTerminatingCondition() bool {
+	readyCondition, _ := s.Status.GetCondition(KubeCarrierReady)
+	if readyCondition.Status != ConditionFalse ||
+		readyCondition.Status == ConditionFalse && readyCondition.Reason != KubeCarrierTerminatingReason {
+		s.Status.ObservedGeneration = s.Generation
+		s.Status.SetCondition(KubeCarrierCondition{
+			Type:    KubeCarrierReady,
+			Status:  ConditionFalse,
+			Reason:  KubeCarrierTerminatingReason,
+			Message: "KubeCarrier is being deleted",
+		})
+		return true
+	}
+	return false
+}
+
 // +kubebuilder:object:root=true
 
 // KubeCarrierList contains a list of KubeCarrier

@@ -38,48 +38,7 @@ type ferryController struct {
 	Obj *operatorv1alpha1.Ferry
 }
 
-func (c *ferryController) GetReadyConditionStatus() operatorv1alpha1.ConditionStatus {
-	readyCondition, _ := c.Obj.Status.GetCondition(operatorv1alpha1.FerryReady)
-	return readyCondition.Status
-}
-
-func (c *ferryController) SetReadyCondition() {
-	c.Obj.Status.ObservedGeneration = c.Obj.Generation
-	c.Obj.Status.SetCondition(operatorv1alpha1.FerryCondition{
-		Type:    operatorv1alpha1.FerryReady,
-		Status:  operatorv1alpha1.ConditionTrue,
-		Reason:  "ComponentsReady",
-		Message: "all components report ready",
-	})
-}
-
-func (c *ferryController) SetUnReadyCondition() {
-	c.Obj.Status.ObservedGeneration = c.Obj.Generation
-	c.Obj.Status.SetCondition(operatorv1alpha1.FerryCondition{
-		Type:    operatorv1alpha1.FerryReady,
-		Status:  operatorv1alpha1.ConditionFalse,
-		Reason:  "ComponentsUnready",
-		Message: "Ferry deployment isn't ready",
-	})
-}
-
-func (c *ferryController) SetTerminatingCondition(ctx context.Context) bool {
-	readyCondition, _ := c.Obj.Status.GetCondition(operatorv1alpha1.FerryReady)
-	if readyCondition.Status != operatorv1alpha1.ConditionFalse ||
-		readyCondition.Status == operatorv1alpha1.ConditionFalse && readyCondition.Reason != operatorv1alpha1.FerryTerminatingReason {
-		c.Obj.Status.ObservedGeneration = c.Obj.Generation
-		c.Obj.Status.SetCondition(operatorv1alpha1.FerryCondition{
-			Type:    operatorv1alpha1.FerryReady,
-			Status:  operatorv1alpha1.ConditionFalse,
-			Reason:  operatorv1alpha1.FerryTerminatingReason,
-			Message: "Ferry is being deleted",
-		})
-		return true
-	}
-	return false
-}
-
-func (c *ferryController) GetObj() object {
+func (c *ferryController) GetObj() Component {
 	return c.Obj
 }
 
@@ -127,10 +86,6 @@ func (r *FerryReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	ferry := &operatorv1alpha1.Ferry{}
 	ctr := &ferryController{Obj: ferry}
 
-	// 1. Fetch the object.
-	if err := br.FetchObject(ctx, req, ctr); err != nil {
-		return ctrl.Result{}, err
-	}
 	return br.Reconcile(ctx, req, ctr)
 }
 
