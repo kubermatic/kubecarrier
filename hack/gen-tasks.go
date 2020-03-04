@@ -135,6 +135,7 @@ func main() {
 		"InstallationSuite",
 		"ProviderSuite",
 		"TenantSuite",
+
 		"VerifySuite",
 	} {
 		tasks = append(tasks, ide.Task{
