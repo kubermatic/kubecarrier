@@ -2416,6 +2416,73 @@
     - get
     - patch
     - update
+  - apiGroups:
+    - operator.kubecarrier.io
+    resources:
+    - catapults
+    verbs:
+    - create
+    - delete
+    - get
+    - list
+    - patch
+    - update
+    - watch
+  - apiGroups:
+    - operator.kubecarrier.io
+    resources:
+    - catapults/status
+    verbs:
+    - get
+    - patch
+    - update
+  - apiGroups:
+    - operator.kubecarrier.io
+    resources:
+    - elevators
+    verbs:
+    - create
+    - delete
+    - get
+    - list
+    - patch
+    - update
+    - watch
+  - apiGroups:
+    - operator.kubecarrier.io
+    resources:
+    - elevators/status
+    verbs:
+    - get
+    - patch
+    - update
+  - apiGroups:
+    - operator.kubecarrier.io
+    resources:
+    - ferries
+    verbs:
+    - create
+    - delete
+    - get
+    - list
+    - patch
+    - update
+    - watch
+  - apiGroups:
+    - operator.kubecarrier.io
+    resources:
+    - ferries/status
+    verbs:
+    - get
+    - patch
+    - update
+- apiVersion: v1
+  kind: ServiceAccount
+  metadata:
+    labels:
+      kubecarrier.io/role: manager
+    name: kubecarrier-manager-sa
+    namespace: test3000
 - apiVersion: rbac.authorization.k8s.io/v1
   kind: ClusterRoleBinding
   metadata:
@@ -2428,7 +2495,7 @@
     name: kubecarrier-manager-manager-role
   subjects:
   - kind: ServiceAccount
-    name: default
+    name: kubecarrier-manager-sa
     namespace: test3000
 - apiVersion: rbac.authorization.k8s.io/v1
   kind: Role
@@ -2477,7 +2544,7 @@
     name: kubecarrier-manager-leader-election-role
   subjects:
   - kind: ServiceAccount
-    name: default
+    name: kubecarrier-manager-sa
     namespace: test3000
 - apiVersion: apps/v1
   kind: Deployment
@@ -2533,6 +2600,7 @@
           - mountPath: /tmp/k8s-webhook-server/serving-certs
             name: cert
             readOnly: true
+        serviceAccountName: kubecarrier-manager-sa
         terminationGracePeriodSeconds: 10
         volumes:
         - name: cert

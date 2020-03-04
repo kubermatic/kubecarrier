@@ -107,8 +107,6 @@ rules:
   resources:
   - catapults
   verbs:
-  - create
-  - delete
   - get
   - list
   - patch
@@ -127,8 +125,6 @@ rules:
   resources:
   - elevators
   verbs:
-  - create
-  - delete
   - get
   - list
   - patch
@@ -147,8 +143,6 @@ rules:
   resources:
   - ferries
   verbs:
-  - create
-  - delete
   - get
   - list
   - patch
@@ -167,8 +161,6 @@ rules:
   resources:
   - kubecarriers
   verbs:
-  - create
-  - delete
   - get
   - list
   - patch
