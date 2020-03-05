@@ -86,8 +86,8 @@ func run(flags *flags, log logr.Logger) error {
 		mgr.GetClient(),
 		mgr.GetScheme(),
 		log.WithName("controllers").WithName("KubeCarrier"),
-		"kubecarrier.kubecarrier.io/controller",
-		"KubeCarrier").SetupWithManager(mgr); err != nil {
+		"KubeCarrier",
+		"kubecarrier.kubecarrier.io/controller").SetupWithManager(mgr); err != nil {
 		return fmt.Errorf("creating KubeCarrier controller: %w", err)
 	}
 	if err := controllers.NewBaseReconciler(
@@ -95,17 +95,18 @@ func run(flags *flags, log logr.Logger) error {
 		mgr.GetClient(),
 		mgr.GetScheme(),
 		log.WithName("controllers").WithName("Ferry"),
-		"",
-		"Ferry").SetupWithManager(mgr); err != nil {
+		"Ferry",
+		"").SetupWithManager(mgr); err != nil {
 		return fmt.Errorf("creating Ferry controller: %w", err)
 	}
 	if err := controllers.NewBaseReconciler(
-		&controllers.CatapultController{Obj: &operatorv1alpha1.Catapult{}},
+		&controllers.CatapultController{Obj: &operatorv1alpha1.Catapult{}, Client: mgr.GetClient()},
 		mgr.GetClient(),
 		mgr.GetScheme(),
 		log.WithName("controllers").WithName("Catapult"),
+		"Catapult",
 		"catapult.kubecarrier.io/controller",
-		"Catapult").SetupWithManager(mgr); err != nil {
+	).SetupWithManager(mgr); err != nil {
 		return fmt.Errorf("creating Catapult controller: %w", err)
 	}
 	if err := controllers.NewBaseReconciler(
@@ -113,8 +114,8 @@ func run(flags *flags, log logr.Logger) error {
 		mgr.GetClient(),
 		mgr.GetScheme(),
 		log.WithName("controllers").WithName("Elevator"),
-		"elevator.kubecarrier.io/controller",
-		"Elevator").SetupWithManager(mgr); err != nil {
+		"Elevator",
+		"elevator.kubecarrier.io/controller").SetupWithManager(mgr); err != nil {
 		return fmt.Errorf("creating Elevator controller: %w", err)
 	}
 
