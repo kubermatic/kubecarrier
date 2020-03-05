@@ -85,12 +85,8 @@ func (r *AccountReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 		return ctrl.Result{}, fmt.Errorf("reconciling namespace: %w", err)
 	}
 
-	role, err := r.reconcileRole(ctx, log, account)
-	if err != nil {
-		return ctrl.Result{}, fmt.Errorf("reconciling provider role: %w", err)
-	}
-	if err := r.reconcileRoleBinding(ctx, log, account, role); err != nil {
-		return ctrl.Result{}, fmt.Errorf("reconciling provider rolebinding: %w", err)
+	if err := r.reconcileRolesAndRoleBindings(ctx, log, account); err != nil {
+		return ctrl.Result{}, fmt.Errorf("reconciling account roles and rolebindings: %w", err)
 	}
 
 	if readyCondition, _ := account.Status.GetCondition(catalogv1alpha1.AccountReady); readyCondition.Status != catalogv1alpha1.ConditionTrue {
@@ -236,25 +232,99 @@ func (r *AccountReconciler) reconcileTenantReferences(ctx context.Context, log l
 	return err
 }
 
-func (r *AccountReconciler) reconcileRole(ctx context.Context, log logr.Logger, account *catalogv1alpha1.Account) (rbacv1.Role, error) {
-	desiredRole := &rbacv1.Role{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "kubecarrier-account-role",
-			Namespace: account.Status.Namespace.Name,
-		},
-		Rules: []rbacv1.PolicyRule{
-			{
-				APIGroups: []string{"kubecarrier.io", "catalog.kubecarrier.io"},
-				Resources: []string{rbacv1.ResourceAll},
-				Verbs: []string{
-					"get", "list", "watch", "create", "update", "patch", "delete"},
+func (r *AccountReconciler) reconcileRolesAndRoleBindings(ctx context.Context, log logr.Logger, account *catalogv1alpha1.Account) error {
+	var desiredRoles []runtime.Object
+	var desiredRoleBindings []runtime.Object
+	if account.HasRole(catalogv1alpha1.ProviderRole) {
+		desiredProviderRole := &rbacv1.Role{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "kubecarrier-provider-role",
+				Namespace: account.Status.Namespace.Name,
 			},
-		},
+			Rules: []rbacv1.PolicyRule{
+				{
+					APIGroups: []string{""},
+					Resources: []string{"secrets"},
+					Verbs:     []string{rbacv1.VerbAll},
+				},
+				{
+					APIGroups: []string{"kubecarrier.io"},
+					Resources: []string{rbacv1.ResourceAll},
+					Verbs:     []string{rbacv1.VerbAll},
+				},
+				{
+					APIGroups: []string{"catalog.kubecarrier.io"},
+					Resources: []string{
+						"catalogs",
+						"catalogentries",
+						"catalogentrysets",
+						"derivedcustomresources",
+					},
+					Verbs: []string{rbacv1.VerbAll},
+				},
+				{
+					APIGroups: []string{"catalog.kubecarrier.io"},
+					Resources: []string{
+						"tenantreferences",
+					},
+					Verbs: []string{"get", "list", "watch", "update", "patch"},
+				},
+			},
+		}
+		desiredRoles = append(desiredRoles, desiredProviderRole)
+
+		desiredProviderRoleBinding := &rbacv1.RoleBinding{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "kubecarrier-provider-rolebinding",
+				Namespace: account.Status.Namespace.Name,
+			},
+			Subjects: account.Spec.Subjects,
+			RoleRef: rbacv1.RoleRef{
+				APIGroup: "rbac.authorization.k8s.io",
+				Kind:     "Role",
+				Name:     desiredProviderRole.Name,
+			},
+		}
+		desiredRoleBindings = append(desiredRoleBindings, desiredProviderRoleBinding)
+	}
+	if account.HasRole(catalogv1alpha1.TenantRole) {
+		desiredTenantRole := &rbacv1.Role{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "kubecarrier-tenant-role",
+				Namespace: account.Status.Namespace.Name,
+			},
+			Rules: []rbacv1.PolicyRule{
+				{
+					APIGroups: []string{"catalog.kubecarrier.io"},
+					Resources: []string{
+						"providerreferences",
+						"serviceclusterreferences",
+						"offerings",
+					},
+					Verbs: []string{"get", "list", "watch"},
+				},
+			},
+		}
+		desiredRoles = append(desiredRoles, desiredTenantRole)
+
+		desiredTenantRoleBinding := &rbacv1.RoleBinding{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "kubecarrier-tenant-rolebinding",
+				Namespace: account.Status.Namespace.Name,
+			},
+			Subjects: account.Spec.Subjects,
+			RoleRef: rbacv1.RoleRef{
+				APIGroup: "rbac.authorization.k8s.io",
+				Kind:     "Role",
+				Name:     desiredTenantRole.Name,
+			},
+		}
+		desiredRoleBindings = append(desiredRoleBindings, desiredTenantRoleBinding)
 	}
 
 	if _, err := owner.ReconcileOwnedObjects(ctx, r.Client, log, r.Scheme,
 		account,
-		[]runtime.Object{desiredRole}, &rbacv1.Role{},
+		desiredRoles, &rbacv1.Role{},
 		func(actual, desired runtime.Object) error {
 			actualRule := actual.(*rbacv1.Role)
 			desiredRole := desired.(*rbacv1.Role)
@@ -263,27 +333,12 @@ func (r *AccountReconciler) reconcileRole(ctx context.Context, log logr.Logger, 
 			}
 			return nil
 		}); err != nil {
-		return rbacv1.Role{}, fmt.Errorf("cannot reconcile Role: %w", err)
+		return fmt.Errorf("cannot reconcile Role: %w", err)
 	}
-	return *desiredRole, nil
-}
 
-func (r *AccountReconciler) reconcileRoleBinding(ctx context.Context, log logr.Logger, account *catalogv1alpha1.Account, role rbacv1.Role) error {
-	desiredRoleBinding := &rbacv1.RoleBinding{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "kubecarrier-account-rolebinding",
-			Namespace: account.Status.Namespace.Name,
-		},
-		Subjects: account.Spec.Subjects,
-		RoleRef: rbacv1.RoleRef{
-			APIGroup: "rbac.authorization.k8s.io",
-			Kind:     "Role",
-			Name:     role.Name,
-		},
-	}
 	if _, err := owner.ReconcileOwnedObjects(ctx, r.Client, log, r.Scheme,
 		account,
-		[]runtime.Object{desiredRoleBinding}, &rbacv1.RoleBinding{},
+		desiredRoleBindings, &rbacv1.RoleBinding{},
 		func(actual, desired runtime.Object) error {
 			actualRuleBinding := actual.(*rbacv1.RoleBinding)
 			desiredRoleBinding := desired.(*rbacv1.RoleBinding)
