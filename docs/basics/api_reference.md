@@ -489,6 +489,7 @@ AccountSpec describes the desired state of Account.
 | ----- | ----------- | ------ | -------- |
 | metadata | Metadata\tcontains additional human readable account details. | catalog.kubecarrier.io/v1alpha1.AccountMetadata | false |
 | roles | Roles this account uses. | []catalog.kubecarrier.io/v1alpha1.AccountRole | true |
+| subjects | Subjects contains a list of references to the group identities role binding applies to. | []rbacv1.Subject | false |
 
 [Back to Group](#catalog)
 
