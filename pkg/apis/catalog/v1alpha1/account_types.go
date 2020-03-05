@@ -17,6 +17,7 @@ limitations under the License.
 package v1alpha1
 
 import (
+	rbacv1 "k8s.io/api/rbac/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -28,6 +29,9 @@ type AccountSpec struct {
 	// Roles this account uses.
 	// +kubebuilder:validation:MinItems=1
 	Roles []AccountRole `json:"roles"`
+	// Subjects holds references to the objects that manged RBAC roles should apply to.
+	// +kubebuilder:validation:MinItems=1
+	Subjects []rbacv1.Subject `json:"subjects,omitempty"`
 }
 
 // AccountMetadata contains the metadata of the Account.
@@ -189,7 +193,7 @@ func (s *AccountStatus) SetCondition(condition AccountCondition) {
 // ```
 // +kubebuilder:object:root=true
 // +kubebuilder:subresource:status
-// +kubebuilder:printcolumn:name="Account Namespace",type="string",JSONPath=".status.namespaceName"
+// +kubebuilder:printcolumn:name="Account Namespace",type="string",JSONPath=".status.namespace.name"
 // +kubebuilder:printcolumn:name="Display Name",type="string",JSONPath=".spec.metadata.displayName"
 // +kubebuilder:printcolumn:name="Status",type="string",JSONPath=".status.phase"
 // +kubebuilder:printcolumn:name="Age",type="date",JSONPath=".metadata.creationTimestamp"
