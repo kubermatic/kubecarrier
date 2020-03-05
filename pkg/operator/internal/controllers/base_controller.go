@@ -22,12 +22,13 @@ import (
 
 	"github.com/go-logr/logr"
 	appsv1 "k8s.io/api/apps/v1"
-	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
+	"github.com/kubermatic/kubecarrier/pkg/internal/owner"
 	"github.com/kubermatic/kubecarrier/pkg/internal/reconcile"
 	"github.com/kubermatic/kubecarrier/pkg/internal/util"
 )
@@ -39,29 +40,53 @@ type Component interface {
 	SetReadyCondition() bool
 }
 
-type Controller interface {
+type ControllerStrategy interface {
 	// GetObj - return origin controller object
 	GetObj() Component
 	GetManifests(context.Context) ([]unstructured.Unstructured, error)
+	GetOwnObjects() []runtime.Object
+	SetupWithManager(builder *builder.Builder, scheme *runtime.Scheme) *builder.Builder
 }
 
 type BaseReconciler struct {
-	Client    client.Client
-	Scheme    *runtime.Scheme
-	Log       logr.Logger
-	Name      string
-	Finalizer string
+	Controller ControllerStrategy
+	Client     client.Client
+	Scheme     *runtime.Scheme
+	Log        logr.Logger
+	Name       string
+	Finalizer  string
+}
+
+func NewBaseReconciler(ctr ControllerStrategy, c client.Client, scheme *runtime.Scheme, log logr.Logger, name, finalizer string) *BaseReconciler {
+	return &BaseReconciler{
+		Controller: ctr,
+		Client:     c,
+		Scheme:     scheme,
+		Log:        log,
+		Name:       name,
+		Finalizer:  finalizer,
+	}
 }
 
 // FetchObject - fetch the object
-func (r *BaseReconciler) FetchObject(ctx context.Context, req ctrl.Request, obj Component) error {
+func (r *BaseReconciler) FetchObject(ctx context.Context, req ctrl.Request, obj runtime.Object) error {
 	return r.Client.Get(ctx, req.NamespacedName, obj)
 }
 
-// Reconcile - base reconcile logic
-func (r *BaseReconciler) Reconcile(ctx context.Context, req ctrl.Request, ctr Controller) (ctrl.Result, error) {
+func (r *BaseReconciler) SetupWithManager(mgr ctrl.Manager) error {
+	builder := ctrl.NewControllerManagedBy(mgr)
+	return r.Controller.SetupWithManager(builder, r.Scheme).Complete(r)
+}
+
+// Reconcile function reconciles the object which specified by the request. Currently, it does the following:
+// 1. Fetch the Catapult object.
+// 2. Handle the deletion of the object (Remove the objects that the it owns, and remove the finalizer).
+// 3. Reconcile the objects that owned by object.
+// 4. Update the status of the object.
+func (r *BaseReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
+	ctx := context.Background()
 	var deploymentIsReady bool
-	obj := ctr.GetObj()
+	obj := r.Controller.GetObj()
 
 	if err := r.FetchObject(ctx, req, obj); err != nil {
 		// If the object is already gone, we just ignore the NotFound error.
@@ -69,19 +94,21 @@ func (r *BaseReconciler) Reconcile(ctx context.Context, req ctrl.Request, ctr Co
 	}
 
 	if !obj.GetDeletionTimestamp().IsZero() {
-		if err := r.HandleDeletion(ctx, ctr); err != nil {
+		if err := r.HandleDeletion(ctx, obj, r.Controller.GetOwnObjects()); err != nil {
 			return ctrl.Result{}, fmt.Errorf("handle deletion: %w", err)
 		}
 		return ctrl.Result{}, nil
 	}
 
-	if util.AddFinalizer(obj, r.Finalizer) {
-		if err := r.Client.Update(ctx, obj); err != nil {
-			return ctrl.Result{}, fmt.Errorf("updating %s finalizers: %w", r.Name, err)
+	if len(r.Finalizer) > 0 {
+		if util.AddFinalizer(obj, r.Finalizer) {
+			if err := r.Client.Update(ctx, obj); err != nil {
+				return ctrl.Result{}, fmt.Errorf("updating %s finalizers: %w", r.Name, err)
+			}
 		}
 	}
 
-	objects, err := ctr.GetManifests(ctx)
+	objects, err := r.Controller.GetManifests(ctx)
 	if err != nil {
 		return ctrl.Result{}, fmt.Errorf("creating %s manifests: %w", r.Name, err)
 	}
@@ -99,38 +126,21 @@ func (r *BaseReconciler) Reconcile(ctx context.Context, req ctrl.Request, ctr Co
 }
 
 // HandleDeletion - handle the deletion of the object (Remove the objects that the object owns, and remove the finalizer).
-func (r *BaseReconciler) HandleDeletion(ctx context.Context, ctr Controller) error {
-
-	obj := ctr.GetObj()
+func (r *BaseReconciler) HandleDeletion(ctx context.Context, c Component, ownObjects []runtime.Object) error {
 	// Update the object Status to Terminating.
-	if obj.SetTerminatingCondition() {
-		if err := r.Client.Status().Update(ctx, obj); err != nil {
+	if c.SetTerminatingCondition() {
+		if err := r.Client.Status().Update(ctx, c); err != nil {
 			return fmt.Errorf("updating %s status: %w", r.Name, err)
 		}
 	}
-	// Delete Objects.
-	allCleared := true
-	objects, err := ctr.GetManifests(ctx)
-	if err != nil {
-		return fmt.Errorf("deletion: manifests: %w", err)
-	}
-	for _, obj := range objects {
-		err := r.Client.Delete(ctx, &obj)
-		if errors.IsNotFound(err) {
-			continue
-		}
-		allCleared = false
-		if err != nil {
-			return fmt.Errorf("deleting %s: %w", obj, err)
-		}
-	}
 
-	if allCleared {
-		// Remove Finalizer
-		if util.RemoveFinalizer(obj, r.Finalizer) {
-			if err := r.Client.Update(ctx, obj); err != nil {
-				return fmt.Errorf("updating %s finalizers: %w", r.Name, err)
-			}
+	cleanedUp, err := util.DeleteObjects(ctx, r.Client, r.Scheme, ownObjects, owner.OwnedBy(c, r.Scheme))
+	if err != nil {
+		return fmt.Errorf("DeleteObjects: %w", err)
+	}
+	if cleanedUp && len(r.Finalizer) > 0 && util.RemoveFinalizer(c, r.Finalizer) {
+		if err := r.Client.Update(ctx, c); err != nil {
+			return fmt.Errorf("updating %s Status: %w", r.Name, err)
 		}
 	}
 	return nil
@@ -155,7 +165,7 @@ func (r *BaseReconciler) UpdateStatus(ctx context.Context, c Component, deployme
 }
 
 // ReconcileOwnedObjects - reconcile the objects that owned by obj
-func (r *BaseReconciler) ReconcileOwnedObjects(ctx context.Context, obj Component, objects []unstructured.Unstructured) (bool, error) {
+func (r *BaseReconciler) ReconcileOwnedObjects(ctx context.Context, obj object, objects []unstructured.Unstructured) (bool, error) {
 	var deploymentIsReady bool
 	for _, object := range objects {
 		if err := addOwnerReference(obj, &object, r.Scheme); err != nil {

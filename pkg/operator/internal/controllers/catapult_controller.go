@@ -20,16 +20,16 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/go-logr/logr"
 	certv1alpha2 "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
 	adminv1beta1 "k8s.io/api/admissionregistration/v1beta1"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
+	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
-	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/source"
 
@@ -38,16 +38,55 @@ import (
 	resourcescatapult "github.com/kubermatic/kubecarrier/pkg/internal/resources/catapult"
 )
 
-type catapultController struct {
+// +kubebuilder:rbac:groups=operator.kubecarrier.io,resources=catapults,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=operator.kubecarrier.io,resources=catapults/status,verbs=get;update;patch
+// +kubebuilder:rbac:groups=rbac.authorization.k8s.io,resources=clusterrolebindings,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=rbac.authorization.k8s.io,resources=clusterroles,verbs=get;list;watch;create;update;patch;delete;escalate;bind
+// +kubebuilder:rbac:groups=rbac.authorization.k8s.io,resources=roles,verbs=get;list;watch;create;update;patch;delete;escalate;bind
+// +kubebuilder:rbac:groups=rbac.authorization.k8s.io,resources=rolebindings,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=apps,resources=deployments,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups="",resources=services,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups="",resources=serviceaccounts,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=admissionregistration.k8s.io,resources=mutatingwebhookconfigurations,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=admissionregistration.k8s.io,resources=validatingwebhookconfigurations,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=cert-manager.io,resources=issuers,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=cert-manager.io,resources=certificates,verbs=get;list;watch;create;update;patch;delete
+
+type CatapultController struct {
 	Obj    *operatorv1alpha1.Catapult
 	Client client.Client
 }
 
-func (c *catapultController) GetObj() Component {
+func (c *CatapultController) GetObj() Component {
 	return c.Obj
 }
 
-func (c *catapultController) GetManifests(ctx context.Context) ([]unstructured.Unstructured, error) {
+func (c *CatapultController) GetOwnObjects() []runtime.Object {
+	return []runtime.Object{
+		&rbacv1.ClusterRole{},
+		&rbacv1.ClusterRoleBinding{},
+		&apiextensionsv1.CustomResourceDefinition{},
+		&adminv1beta1.MutatingWebhookConfiguration{},
+		&adminv1beta1.ValidatingWebhookConfiguration{},
+	}
+}
+
+func (c *CatapultController) SetupWithManager(builder *builder.Builder, scheme *runtime.Scheme) *builder.Builder {
+	enqueuer := owner.EnqueueRequestForOwner(&operatorv1alpha1.Catapult{}, scheme)
+	return builder.For(&operatorv1alpha1.Catapult{}).
+		Owns(&appsv1.Deployment{}).
+		Owns(&corev1.Service{}).
+		Owns(&rbacv1.Role{}).
+		Owns(&rbacv1.RoleBinding{}).
+		Owns(&certv1alpha2.Issuer{}).
+		Owns(&certv1alpha2.Certificate{}).
+		Watches(&source.Kind{Type: &rbacv1.ClusterRole{}}, enqueuer).
+		Watches(&source.Kind{Type: &rbacv1.ClusterRoleBinding{}}, enqueuer).
+		Watches(&source.Kind{Type: &adminv1beta1.MutatingWebhookConfiguration{}}, enqueuer).
+		Watches(&source.Kind{Type: &adminv1beta1.ValidatingWebhookConfiguration{}}, enqueuer)
+}
+
+func (c *CatapultController) GetManifests(ctx context.Context) ([]unstructured.Unstructured, error) {
 
 	// Lookup Ferry to get name of secret.
 	ferry := &operatorv1alpha1.Ferry{}
@@ -76,66 +115,4 @@ func (c *catapultController) GetManifests(ctx context.Context) ([]unstructured.U
 			ServiceClusterSecret: ferry.Spec.KubeconfigSecret.Name,
 			WebhookStrategy:      string(c.Obj.Spec.WebhookStrategy),
 		})
-}
-
-// CatapultReconciler reconciles a Catapult object
-type CatapultReconciler struct {
-	client.Client
-	Log    logr.Logger
-	Scheme *runtime.Scheme
-}
-
-// +kubebuilder:rbac:groups=operator.kubecarrier.io,resources=catapults,verbs=get;list;watch;create;update;patch;delete
-// +kubebuilder:rbac:groups=operator.kubecarrier.io,resources=catapults/status,verbs=get;update;patch
-// +kubebuilder:rbac:groups=rbac.authorization.k8s.io,resources=clusterrolebindings,verbs=get;list;watch;create;update;patch;delete
-// +kubebuilder:rbac:groups=rbac.authorization.k8s.io,resources=clusterroles,verbs=get;list;watch;create;update;patch;delete;escalate;bind
-// +kubebuilder:rbac:groups=rbac.authorization.k8s.io,resources=roles,verbs=get;list;watch;create;update;patch;delete;escalate;bind
-// +kubebuilder:rbac:groups=rbac.authorization.k8s.io,resources=rolebindings,verbs=get;list;watch;create;update;patch;delete
-// +kubebuilder:rbac:groups=apps,resources=deployments,verbs=get;list;watch;create;update;patch;delete
-// +kubebuilder:rbac:groups="",resources=services,verbs=get;list;watch;create;update;patch;delete
-// +kubebuilder:rbac:groups="",resources=serviceaccounts,verbs=get;list;watch;create;update;patch;delete
-// +kubebuilder:rbac:groups=admissionregistration.k8s.io,resources=mutatingwebhookconfigurations,verbs=get;list;watch;create;update;patch;delete
-// +kubebuilder:rbac:groups=admissionregistration.k8s.io,resources=validatingwebhookconfigurations,verbs=get;list;watch;create;update;patch;delete
-// +kubebuilder:rbac:groups=cert-manager.io,resources=issuers,verbs=get;list;watch;create;update;patch;delete
-// +kubebuilder:rbac:groups=cert-manager.io,resources=certificates,verbs=get;list;watch;create;update;patch;delete
-
-// Reconcile function reconciles the Catapult object which specified by the request. Currently, it does the following:
-// 1. Fetch the Catapult object.
-// 2. Handle the deletion of the Catapult object (Remove the objects that the Catapult owns, and remove the finalizer).
-// 3. Reconcile the objects that owned by Catapult object.
-// 4. Update the status of the Catapult object.
-func (r *CatapultReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
-	ctx := context.Background()
-	log := r.Log.WithValues("catapult", req.NamespacedName)
-
-	br := BaseReconciler{
-		Client:    r.Client,
-		Log:       log,
-		Scheme:    r.Scheme,
-		Finalizer: "catapult.kubecarrier.io/controller",
-		Name:      "Catapult",
-	}
-
-	catapult := &operatorv1alpha1.Catapult{}
-	ctr := &catapultController{Obj: catapult, Client: r.Client}
-	return br.Reconcile(ctx, req, ctr)
-
-}
-
-func (r *CatapultReconciler) SetupWithManager(mgr ctrl.Manager) error {
-	enqueuer := owner.EnqueueRequestForOwner(&operatorv1alpha1.Catapult{}, r.Scheme)
-
-	return ctrl.NewControllerManagedBy(mgr).
-		For(&operatorv1alpha1.Catapult{}).
-		Owns(&appsv1.Deployment{}).
-		Owns(&corev1.Service{}).
-		Owns(&rbacv1.Role{}).
-		Owns(&rbacv1.RoleBinding{}).
-		Owns(&certv1alpha2.Issuer{}).
-		Owns(&certv1alpha2.Certificate{}).
-		Watches(&source.Kind{Type: &rbacv1.ClusterRole{}}, enqueuer).
-		Watches(&source.Kind{Type: &rbacv1.ClusterRoleBinding{}}, enqueuer).
-		Watches(&source.Kind{Type: &adminv1beta1.MutatingWebhookConfiguration{}}, enqueuer).
-		Watches(&source.Kind{Type: &adminv1beta1.ValidatingWebhookConfiguration{}}, enqueuer).
-		Complete(r)
 }

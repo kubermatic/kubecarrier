@@ -19,7 +19,6 @@ package controllers
 import (
 	"context"
 
-	"github.com/go-logr/logr"
 	certv1alpha2 "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
 	adminv1beta1 "k8s.io/api/admissionregistration/v1beta1"
 	appsv1 "k8s.io/api/apps/v1"
@@ -28,36 +27,13 @@ import (
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
-	ctrl "sigs.k8s.io/controller-runtime"
-	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/source"
 
 	operatorv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/operator/v1alpha1"
 	"github.com/kubermatic/kubecarrier/pkg/internal/owner"
 	"github.com/kubermatic/kubecarrier/pkg/internal/resources/manager"
 )
-
-type kubeCarrierController struct {
-	Obj *operatorv1alpha1.KubeCarrier
-}
-
-func (c *kubeCarrierController) GetObj() Component {
-	return c.Obj
-}
-
-func (c *kubeCarrierController) GetManifests(ctx context.Context) ([]unstructured.Unstructured, error) {
-	return manager.Manifests(
-		manager.Config{
-			Namespace: c.Obj.Namespace,
-		})
-}
-
-// KubeCarrierReconciler reconciles a KubeCarrier object
-type KubeCarrierReconciler struct {
-	client.Client
-	Log    logr.Logger
-	Scheme *runtime.Scheme
-}
 
 // +kubebuilder:rbac:groups=operator.kubecarrier.io,resources=kubecarriers,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=operator.kubecarrier.io,resources=kubecarriers/status,verbs=get;update;patch
@@ -74,34 +50,34 @@ type KubeCarrierReconciler struct {
 // +kubebuilder:rbac:groups=cert-manager.io,resources=issuers,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=cert-manager.io,resources=certificates,verbs=get;list;watch;create;update;patch;delete
 
-// Reconcile function reconciles the KubeCarrier object which specified by the request. Currently, it does the following:
-// 1. Fetch the KubeCarrier object.
-// 2. Handle the deletion of the KubeCarrier object (Remove the objects that the KubeCarrier owns, and remove the finalizer).
-// 3. Reconcile the objects that owned by KubeCarrier object.
-// 4. Update the status of the KubeCarrier object.
-func (r *KubeCarrierReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
-	ctx := context.Background()
-	log := r.Log.WithValues("kubecarrier", req.NamespacedName)
-
-	kubeCarrier := &operatorv1alpha1.KubeCarrier{}
-
-	br := BaseReconciler{
-		Client:    r.Client,
-		Log:       log,
-		Scheme:    r.Scheme,
-		Finalizer: "kubecarrier.kubecarrier.io/controller",
-		Name:      "KubeCarrier",
-	}
-
-	ctr := &kubeCarrierController{Obj: kubeCarrier}
-	return br.Reconcile(ctx, req, ctr)
+type KubeCarrierController struct {
+	Obj *operatorv1alpha1.KubeCarrier
 }
 
-func (r *KubeCarrierReconciler) SetupWithManager(mgr ctrl.Manager) error {
-	enqueuer := owner.EnqueueRequestForOwner(&operatorv1alpha1.KubeCarrier{}, r.Scheme)
+func (c *KubeCarrierController) GetObj() Component {
+	return c.Obj
+}
 
-	return ctrl.NewControllerManagedBy(mgr).
-		For(&operatorv1alpha1.KubeCarrier{}).
+func (c *KubeCarrierController) GetOwnObjects() []runtime.Object {
+	return []runtime.Object{
+		&rbacv1.ClusterRole{},
+		&rbacv1.ClusterRoleBinding{},
+		&apiextensionsv1.CustomResourceDefinition{},
+		&adminv1beta1.MutatingWebhookConfiguration{},
+		&adminv1beta1.ValidatingWebhookConfiguration{},
+	}
+}
+
+func (c *KubeCarrierController) GetManifests(ctx context.Context) ([]unstructured.Unstructured, error) {
+	return manager.Manifests(
+		manager.Config{
+			Namespace: c.Obj.Namespace,
+		})
+}
+
+func (c *KubeCarrierController) SetupWithManager(builder *builder.Builder, scheme *runtime.Scheme) *builder.Builder {
+	enqueuer := owner.EnqueueRequestForOwner(&operatorv1alpha1.KubeCarrier{}, scheme)
+	return builder.For(&operatorv1alpha1.KubeCarrier{}).
 		Owns(&appsv1.Deployment{}).
 		Owns(&corev1.Service{}).
 		Owns(&rbacv1.Role{}).
@@ -112,6 +88,5 @@ func (r *KubeCarrierReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		Watches(&source.Kind{Type: &rbacv1.ClusterRoleBinding{}}, enqueuer).
 		Watches(&source.Kind{Type: &apiextensionsv1.CustomResourceDefinition{}}, enqueuer).
 		Watches(&source.Kind{Type: &adminv1beta1.MutatingWebhookConfiguration{}}, enqueuer).
-		Watches(&source.Kind{Type: &adminv1beta1.ValidatingWebhookConfiguration{}}, enqueuer).
-		Complete(r)
+		Watches(&source.Kind{Type: &adminv1beta1.ValidatingWebhookConfiguration{}}, enqueuer)
 }

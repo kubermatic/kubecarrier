@@ -19,14 +19,13 @@ package controllers
 import (
 	"context"
 
-	"github.com/go-logr/logr"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
+	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
-	ctrl "sigs.k8s.io/controller-runtime"
-	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/source"
 
 	operatorv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/operator/v1alpha1"
@@ -34,15 +33,44 @@ import (
 	resourceselevator "github.com/kubermatic/kubecarrier/pkg/internal/resources/elevator"
 )
 
-type elevatorController struct {
+// +kubebuilder:rbac:groups=operator.kubecarrier.io,resources=elevators,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=operator.kubecarrier.io,resources=elevators/status,verbs=get;update;patch
+// +kubebuilder:rbac:groups=rbac.authorization.k8s.io,resources=clusterrolebindings,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=rbac.authorization.k8s.io,resources=clusterroles,verbs=get;list;watch;create;update;patch;delete;escalate;bind
+// +kubebuilder:rbac:groups=rbac.authorization.k8s.io,resources=roles,verbs=get;list;watch;create;update;patch;delete;escalate;bind
+// +kubebuilder:rbac:groups=rbac.authorization.k8s.io,resources=rolebindings,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=apps,resources=deployments,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups="",resources=services,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups="",resources=serviceaccounts,verbs=get;list;watch;create;update;patch;delete
+
+type ElevatorController struct {
 	Obj *operatorv1alpha1.Elevator
 }
 
-func (c *elevatorController) GetObj() Component {
+func (c *ElevatorController) GetObj() Component {
 	return c.Obj
 }
 
-func (c *elevatorController) GetManifests(ctx context.Context) ([]unstructured.Unstructured, error) {
+func (c *ElevatorController) GetOwnObjects() []runtime.Object {
+	return []runtime.Object{
+		&rbacv1.ClusterRole{},
+		&rbacv1.ClusterRoleBinding{},
+		&apiextensionsv1.CustomResourceDefinition{},
+	}
+}
+func (c *ElevatorController) SetupWithManager(builder *builder.Builder, scheme *runtime.Scheme) *builder.Builder {
+	enqueuer := owner.EnqueueRequestForOwner(&operatorv1alpha1.Elevator{}, scheme)
+	return builder.For(&operatorv1alpha1.Elevator{}).
+		Owns(&appsv1.Deployment{}).
+		Owns(&corev1.Service{}).
+		Owns(&rbacv1.Role{}).
+		Owns(&rbacv1.RoleBinding{}).
+		Watches(&source.Kind{Type: &corev1.ServiceAccount{}}, enqueuer).
+		Watches(&source.Kind{Type: &rbacv1.ClusterRole{}}, enqueuer).
+		Watches(&source.Kind{Type: &rbacv1.ClusterRoleBinding{}}, enqueuer)
+}
+
+func (c *ElevatorController) GetManifests(ctx context.Context) ([]unstructured.Unstructured, error) {
 	return resourceselevator.Manifests(
 		resourceselevator.Config{
 			Name:      c.Obj.Name,
@@ -60,57 +88,4 @@ func (c *elevatorController) GetManifests(ctx context.Context) ([]unstructured.U
 
 			DerivedCRName: c.Obj.Spec.DerivedCR.Name,
 		})
-}
-
-// ElevatorReconciler reconciles an Elevator object
-type ElevatorReconciler struct {
-	client.Client
-	Log    logr.Logger
-	Scheme *runtime.Scheme
-}
-
-// +kubebuilder:rbac:groups=operator.kubecarrier.io,resources=elevators,verbs=get;list;watch;create;update;patch;delete
-// +kubebuilder:rbac:groups=operator.kubecarrier.io,resources=elevators/status,verbs=get;update;patch
-// +kubebuilder:rbac:groups=rbac.authorization.k8s.io,resources=clusterrolebindings,verbs=get;list;watch;create;update;patch;delete
-// +kubebuilder:rbac:groups=rbac.authorization.k8s.io,resources=clusterroles,verbs=get;list;watch;create;update;patch;delete;escalate;bind
-// +kubebuilder:rbac:groups=rbac.authorization.k8s.io,resources=roles,verbs=get;list;watch;create;update;patch;delete;escalate;bind
-// +kubebuilder:rbac:groups=rbac.authorization.k8s.io,resources=rolebindings,verbs=get;list;watch;create;update;patch;delete
-// +kubebuilder:rbac:groups=apps,resources=deployments,verbs=get;list;watch;create;update;patch;delete
-// +kubebuilder:rbac:groups="",resources=services,verbs=get;list;watch;create;update;patch;delete
-// +kubebuilder:rbac:groups="",resources=serviceaccounts,verbs=get;list;watch;create;update;patch;delete
-
-// Reconcile function reconciles the Elevator object which specified by the request. Currently, it does the following:
-// 1. Fetch the Elevator object.
-// 2. Handle the deletion of the Elevator object (Remove the objects that the Elevator owns, and remove the finalizer).
-// 3. Reconcile the objects that owned by Elevator object.
-// 4. Update the status of the Elevator object.
-func (r *ElevatorReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
-	ctx := context.Background()
-	log := r.Log.WithValues("elevator", req.NamespacedName)
-	br := BaseReconciler{
-		Client:    r.Client,
-		Log:       log,
-		Scheme:    r.Scheme,
-		Finalizer: "elevator.kubecarrier.io/controller",
-		Name:      "Elevator",
-	}
-
-	elevator := &operatorv1alpha1.Elevator{}
-	ctr := &elevatorController{Obj: elevator}
-	return br.Reconcile(ctx, req, ctr)
-}
-
-func (r *ElevatorReconciler) SetupWithManager(mgr ctrl.Manager) error {
-	enqueuer := owner.EnqueueRequestForOwner(&operatorv1alpha1.Elevator{}, r.Scheme)
-
-	return ctrl.NewControllerManagedBy(mgr).
-		For(&operatorv1alpha1.Elevator{}).
-		Owns(&appsv1.Deployment{}).
-		Owns(&corev1.Service{}).
-		Owns(&rbacv1.Role{}).
-		Owns(&rbacv1.RoleBinding{}).
-		Watches(&source.Kind{Type: &corev1.ServiceAccount{}}, enqueuer).
-		Watches(&source.Kind{Type: &rbacv1.ClusterRole{}}, enqueuer).
-		Watches(&source.Kind{Type: &rbacv1.ClusterRoleBinding{}}, enqueuer).
-		Complete(r)
 }
