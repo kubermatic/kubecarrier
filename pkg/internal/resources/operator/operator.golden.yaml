@@ -681,8 +681,6 @@
     resources:
     - catapults
     verbs:
-    - create
-    - delete
     - get
     - list
     - patch
@@ -701,8 +699,6 @@
     resources:
     - elevators
     verbs:
-    - create
-    - delete
     - get
     - list
     - patch
@@ -721,8 +717,6 @@
     resources:
     - ferries
     verbs:
-    - create
-    - delete
     - get
     - list
     - patch
@@ -741,8 +735,6 @@
     resources:
     - kubecarriers
     verbs:
-    - create
-    - delete
     - get
     - list
     - patch
@@ -808,6 +800,13 @@
     - patch
     - update
     - watch
+- apiVersion: v1
+  kind: ServiceAccount
+  metadata:
+    labels:
+      kubecarrier.io/role: operator
+    name: kubecarrier-operator-sa
+    namespace: test3000
 - apiVersion: rbac.authorization.k8s.io/v1
   kind: ClusterRoleBinding
   metadata:
@@ -820,7 +819,7 @@
     name: kubecarrier-operator-manager-role
   subjects:
   - kind: ServiceAccount
-    name: default
+    name: kubecarrier-operator-sa
     namespace: test3000
 - apiVersion: rbac.authorization.k8s.io/v1
   kind: Role
@@ -869,7 +868,7 @@
     name: kubecarrier-operator-leader-election-role
   subjects:
   - kind: ServiceAccount
-    name: default
+    name: kubecarrier-operator-sa
     namespace: test3000
 - apiVersion: apps/v1
   kind: Deployment
@@ -901,4 +900,5 @@
             requests:
               cpu: 100m
               memory: 100Mi
+        serviceAccountName: kubecarrier-operator-sa
         terminationGracePeriodSeconds: 10

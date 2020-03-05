@@ -22,7 +22,7 @@
     scope: Cluster
     versions:
     - additionalPrinterColumns:
-      - jsonPath: .status.namespaceName
+      - jsonPath: .status.namespace.name
         name: Account Namespace
         type: string
       - jsonPath: .spec.metadata.displayName
@@ -85,6 +85,40 @@
                     - Provider
                     - Tenant
                     type: string
+                  minItems: 1
+                  type: array
+                subjects:
+                  description: Subjects contains a list of references to the group
+                    identities role binding applies to.
+                  items:
+                    description: Subject contains a reference to the object or user
+                      identities a role binding applies to.  This can either hold
+                      a direct API object reference, or a value for non-objects such
+                      as user and group names.
+                    properties:
+                      apiGroup:
+                        description: APIGroup holds the API group of the referenced
+                          subject. Defaults to "" for ServiceAccount subjects. Defaults
+                          to "rbac.authorization.k8s.io" for User and Group subjects.
+                        type: string
+                      kind:
+                        description: Kind of object being referenced. Values defined
+                          by this API group are "User", "Group", and "ServiceAccount".
+                          If the Authorizer does not recognized the kind value, the
+                          Authorizer should report an error.
+                        type: string
+                      name:
+                        description: Name of the object being referenced.
+                        type: string
+                      namespace:
+                        description: Namespace of the referenced object.  If the object
+                          kind is non-namespace, such as "User" or "Group", and this
+                          value is not empty the Authorizer should report an error.
+                        type: string
+                    required:
+                    - kind
+                    - name
+                    type: object
                   minItems: 1
                   type: array
               required:
@@ -2382,6 +2416,99 @@
     - get
     - patch
     - update
+  - apiGroups:
+    - operator.kubecarrier.io
+    resources:
+    - catapults
+    verbs:
+    - create
+    - delete
+    - get
+    - list
+    - patch
+    - update
+    - watch
+  - apiGroups:
+    - operator.kubecarrier.io
+    resources:
+    - catapults/status
+    verbs:
+    - get
+    - patch
+    - update
+  - apiGroups:
+    - operator.kubecarrier.io
+    resources:
+    - elevators
+    verbs:
+    - create
+    - delete
+    - get
+    - list
+    - patch
+    - update
+    - watch
+  - apiGroups:
+    - operator.kubecarrier.io
+    resources:
+    - elevators/status
+    verbs:
+    - get
+    - patch
+    - update
+  - apiGroups:
+    - operator.kubecarrier.io
+    resources:
+    - ferries
+    verbs:
+    - create
+    - delete
+    - get
+    - list
+    - patch
+    - update
+    - watch
+  - apiGroups:
+    - operator.kubecarrier.io
+    resources:
+    - ferries/status
+    verbs:
+    - get
+    - patch
+    - update
+  - apiGroups:
+    - rbac.authorization.k8s.io
+    resources:
+    - rolebindings
+    verbs:
+    - create
+    - delete
+    - get
+    - list
+    - patch
+    - update
+    - watch
+  - apiGroups:
+    - rbac.authorization.k8s.io
+    resources:
+    - roles
+    verbs:
+    - bind
+    - create
+    - delete
+    - escalate
+    - get
+    - list
+    - patch
+    - update
+    - watch
+- apiVersion: v1
+  kind: ServiceAccount
+  metadata:
+    labels:
+      kubecarrier.io/role: manager
+    name: kubecarrier-manager-sa
+    namespace: test3000
 - apiVersion: rbac.authorization.k8s.io/v1
   kind: ClusterRoleBinding
   metadata:
@@ -2394,7 +2521,7 @@
     name: kubecarrier-manager-manager-role
   subjects:
   - kind: ServiceAccount
-    name: default
+    name: kubecarrier-manager-sa
     namespace: test3000
 - apiVersion: rbac.authorization.k8s.io/v1
   kind: Role
@@ -2443,7 +2570,7 @@
     name: kubecarrier-manager-leader-election-role
   subjects:
   - kind: ServiceAccount
-    name: default
+    name: kubecarrier-manager-sa
     namespace: test3000
 - apiVersion: apps/v1
   kind: Deployment
@@ -2499,6 +2626,7 @@
           - mountPath: /tmp/k8s-webhook-server/serving-certs
             name: cert
             readOnly: true
+        serviceAccountName: kubecarrier-manager-sa
         terminationGracePeriodSeconds: 10
         volumes:
         - name: cert

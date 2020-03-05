@@ -21,8 +21,9 @@ limitations under the License.
 package v1alpha1
 
 import (
+	"k8s.io/api/rbac/v1"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
-	"k8s.io/apimachinery/pkg/apis/meta/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 )
 
@@ -123,6 +124,11 @@ func (in *AccountSpec) DeepCopyInto(out *AccountSpec) {
 	if in.Roles != nil {
 		in, out := &in.Roles, &out.Roles
 		*out = make([]AccountRole, len(*in))
+		copy(*out, *in)
+	}
+	if in.Subjects != nil {
+		in, out := &in.Subjects, &out.Subjects
+		*out = make([]v1.Subject, len(*in))
 		copy(*out, *in)
 	}
 }
@@ -556,12 +562,12 @@ func (in *CatalogSpec) DeepCopyInto(out *CatalogSpec) {
 	*out = *in
 	if in.CatalogEntrySelector != nil {
 		in, out := &in.CatalogEntrySelector, &out.CatalogEntrySelector
-		*out = new(v1.LabelSelector)
+		*out = new(metav1.LabelSelector)
 		(*in).DeepCopyInto(*out)
 	}
 	if in.TenantReferenceSelector != nil {
 		in, out := &in.TenantReferenceSelector, &out.TenantReferenceSelector
-		*out = new(v1.LabelSelector)
+		*out = new(metav1.LabelSelector)
 		(*in).DeepCopyInto(*out)
 	}
 }
