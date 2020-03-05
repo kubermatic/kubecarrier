@@ -23,14 +23,14 @@ GOBIN=$(go env GOBIN)
 fi
 
 if [ -z $(which controller-gen) ]; then
-	go get sigs.k8s.io/controller-tools/cmd/controller-gen@v0.2.4
+	go get sigs.k8s.io/controller-tools/cmd/controller-gen@v0.2.5
   CONTROLLER_GEN=$GOBIN/controller-gen
 else
   CONTROLLER_GEN=$(which controller-gen)
 fi
 
 CONTROLLER_GEN_VERSION=$(${CONTROLLER_GEN} --version)
-CONTROLLER_GEN_WANT_VERSION="Version: v0.2.4"
+CONTROLLER_GEN_WANT_VERSION="Version: v0.2.5"
 
 if [[  ${CONTROLLER_GEN_VERSION} != ${CONTROLLER_GEN_WANT_VERSION} ]]; then
   echo "Wrong controller-gen version. Wants ${CONTROLLER_GEN_WANT_VERSION} found ${CONTROLLER_GEN_VERSION}"
