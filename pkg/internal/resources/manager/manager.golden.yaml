@@ -88,8 +88,8 @@
                   minItems: 1
                   type: array
                 subjects:
-                  description: Subjects contains a list of references to the group
-                    identities role binding applies to.
+                  description: Subjects holds references to the objects that manged
+                    RBAC roles should apply to.
                   items:
                     description: Subject contains a reference to the object or user
                       identities a role binding applies to.  This can either hold
