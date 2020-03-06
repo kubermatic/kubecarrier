@@ -18,6 +18,7 @@ package controllers
 
 import (
 	"context"
+	"fmt"
 
 	certv1alpha2 "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
 	adminv1beta1 "k8s.io/api/admissionregistration/v1beta1"
@@ -51,11 +52,10 @@ import (
 // +kubebuilder:rbac:groups=cert-manager.io,resources=certificates,verbs=get;list;watch;create;update;patch;delete
 
 type KubeCarrierController struct {
-	Obj *operatorv1alpha1.KubeCarrier
 }
 
 func (c *KubeCarrierController) GetObj() Component {
-	return c.Obj
+	return &operatorv1alpha1.KubeCarrier{}
 }
 
 func (c *KubeCarrierController) GetOwnedObjectsTypes() []runtime.Object {
@@ -68,10 +68,14 @@ func (c *KubeCarrierController) GetOwnedObjectsTypes() []runtime.Object {
 	}
 }
 
-func (c *KubeCarrierController) GetManifests(ctx context.Context) ([]unstructured.Unstructured, error) {
+func (c *KubeCarrierController) GetManifests(ctx context.Context, component Component) ([]unstructured.Unstructured, error) {
+	kubeCarrier, ok := component.(*operatorv1alpha1.KubeCarrier)
+	if !ok {
+		return nil, fmt.Errorf("can't assert to KubeCarrier: %v", component)
+	}
 	return manager.Manifests(
 		manager.Config{
-			Namespace: c.Obj.Namespace,
+			Namespace: kubeCarrier.Namespace,
 		})
 }
 

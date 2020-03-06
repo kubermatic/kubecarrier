@@ -18,6 +18,7 @@ package controllers
 
 import (
 	"context"
+	"fmt"
 
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -41,11 +42,10 @@ import (
 // +kubebuilder:rbac:groups=operator.kubecarrier.io,resources=ferries/status,verbs=get;update;patch
 
 type FerryController struct {
-	Obj *operatorv1alpha1.Ferry
 }
 
 func (c *FerryController) GetObj() Component {
-	return c.Obj
+	return &operatorv1alpha1.Ferry{}
 }
 
 func (c *FerryController) GetOwnedObjectsTypes() []runtime.Object {
@@ -68,11 +68,15 @@ func (c *FerryController) SetupWithManager(builder *builder.Builder, scheme *run
 	return builder
 }
 
-func (c *FerryController) GetManifests(ctx context.Context) ([]unstructured.Unstructured, error) {
+func (c *FerryController) GetManifests(ctx context.Context, component Component) ([]unstructured.Unstructured, error) {
+	ferry, ok := component.(*operatorv1alpha1.Ferry)
+	if !ok {
+		return nil, fmt.Errorf("can't assert to Ferry: %v", component)
+	}
 	return resourceferry.Manifests(
 		resourceferry.Config{
-			ProviderNamespace:    c.Obj.Namespace,
-			Name:                 c.Obj.Name,
-			KubeconfigSecretName: c.Obj.Spec.KubeconfigSecret.Name,
+			ProviderNamespace:    ferry.Namespace,
+			Name:                 ferry.Name,
+			KubeconfigSecretName: ferry.Spec.KubeconfigSecret.Name,
 		})
 }

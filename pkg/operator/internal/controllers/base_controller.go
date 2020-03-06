@@ -43,7 +43,7 @@ type Component interface {
 type ControllerStrategy interface {
 	// GetObj - return origin controller object
 	GetObj() Component
-	GetManifests(context.Context) ([]unstructured.Unstructured, error)
+	GetManifests(context.Context, Component) ([]unstructured.Unstructured, error)
 	GetOwnedObjectsTypes() []runtime.Object
 	SetupWithManager(builder *builder.Builder, scheme *runtime.Scheme) *builder.Builder
 }
@@ -102,7 +102,7 @@ func (r *BaseReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 		}
 	}
 
-	objects, err := r.Controller.GetManifests(ctx)
+	objects, err := r.Controller.GetManifests(ctx, obj)
 	if err != nil {
 		return ctrl.Result{}, fmt.Errorf("creating %s manifests: %w", r.Name, err)
 	}
@@ -112,7 +112,7 @@ func (r *BaseReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 		return ctrl.Result{}, err
 	}
 
-	if err := r.ensureStatus(ctx, obj, deploymentIsReady); err != nil {
+	if err := r.updateStatus(ctx, obj, deploymentIsReady); err != nil {
 		return ctrl.Result{}, err
 	}
 
@@ -140,17 +140,17 @@ func (r *BaseReconciler) handleDeletion(ctx context.Context, c Component, ownObj
 	return nil
 }
 
-// UpdateStatus - update the status of the object
-func (r *BaseReconciler) ensureStatus(ctx context.Context, c Component, deploymentIsReady bool) error {
-	var updateStatus bool
+// updateStatus - update the status of the object
+func (r *BaseReconciler) updateStatus(ctx context.Context, c Component, deploymentIsReady bool) error {
+	var statusChanged bool
 
 	if deploymentIsReady {
-		updateStatus = c.SetReadyCondition()
+		statusChanged = c.SetReadyCondition()
 	} else {
-		updateStatus = c.SetUnReadyCondition()
+		statusChanged = c.SetUnReadyCondition()
 	}
 
-	if updateStatus {
+	if statusChanged {
 		if err := r.Client.Status().Update(ctx, c); err != nil {
 			return fmt.Errorf("updating %s status: %w", r.Name, err)
 		}

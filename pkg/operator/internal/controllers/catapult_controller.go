@@ -53,12 +53,11 @@ import (
 // +kubebuilder:rbac:groups=cert-manager.io,resources=certificates,verbs=get;list;watch;create;update;patch;delete
 
 type CatapultController struct {
-	Obj    *operatorv1alpha1.Catapult
 	Client client.Client
 }
 
 func (c *CatapultController) GetObj() Component {
-	return c.Obj
+	return &operatorv1alpha1.Catapult{}
 }
 
 func (c *CatapultController) GetOwnedObjectsTypes() []runtime.Object {
@@ -86,33 +85,38 @@ func (c *CatapultController) SetupWithManager(builder *builder.Builder, scheme *
 		Watches(&source.Kind{Type: &adminv1beta1.ValidatingWebhookConfiguration{}}, enqueuer)
 }
 
-func (c *CatapultController) GetManifests(ctx context.Context) ([]unstructured.Unstructured, error) {
+func (c *CatapultController) GetManifests(ctx context.Context, component Component) ([]unstructured.Unstructured, error) {
+
+	catapult, ok := component.(*operatorv1alpha1.Catapult)
+	if !ok {
+		return nil, fmt.Errorf("can't assert to Catapult: %v", component)
+	}
 
 	// Lookup Ferry to get name of secret.
 	ferry := &operatorv1alpha1.Ferry{}
 	if err := c.Client.Get(ctx, types.NamespacedName{
-		Name:      c.Obj.Spec.ServiceCluster.Name,
-		Namespace: c.Obj.Namespace,
+		Name:      catapult.Spec.ServiceCluster.Name,
+		Namespace: catapult.Namespace,
 	}, ferry); err != nil {
 		return nil, fmt.Errorf("getting Ferry: %w", err)
 	}
 	return resourcescatapult.Manifests(
 		resourcescatapult.Config{
-			Name:      c.Obj.Name,
-			Namespace: c.Obj.Namespace,
+			Name:      catapult.Name,
+			Namespace: catapult.Namespace,
 
-			ManagementClusterKind:    c.Obj.Spec.ManagementClusterCRD.Kind,
-			ManagementClusterVersion: c.Obj.Spec.ManagementClusterCRD.Version,
-			ManagementClusterGroup:   c.Obj.Spec.ManagementClusterCRD.Group,
-			ManagementClusterPlural:  c.Obj.Spec.ManagementClusterCRD.Plural,
+			ManagementClusterKind:    catapult.Spec.ManagementClusterCRD.Kind,
+			ManagementClusterVersion: catapult.Spec.ManagementClusterCRD.Version,
+			ManagementClusterGroup:   catapult.Spec.ManagementClusterCRD.Group,
+			ManagementClusterPlural:  catapult.Spec.ManagementClusterCRD.Plural,
 
-			ServiceClusterKind:    c.Obj.Spec.ServiceClusterCRD.Kind,
-			ServiceClusterVersion: c.Obj.Spec.ServiceClusterCRD.Version,
-			ServiceClusterGroup:   c.Obj.Spec.ServiceClusterCRD.Group,
-			ServiceClusterPlural:  c.Obj.Spec.ServiceClusterCRD.Plural,
+			ServiceClusterKind:    catapult.Spec.ServiceClusterCRD.Kind,
+			ServiceClusterVersion: catapult.Spec.ServiceClusterCRD.Version,
+			ServiceClusterGroup:   catapult.Spec.ServiceClusterCRD.Group,
+			ServiceClusterPlural:  catapult.Spec.ServiceClusterCRD.Plural,
 
-			ServiceClusterName:   c.Obj.Spec.ServiceCluster.Name,
+			ServiceClusterName:   catapult.Spec.ServiceCluster.Name,
 			ServiceClusterSecret: ferry.Spec.KubeconfigSecret.Name,
-			WebhookStrategy:      string(c.Obj.Spec.WebhookStrategy),
+			WebhookStrategy:      string(catapult.Spec.WebhookStrategy),
 		})
 }

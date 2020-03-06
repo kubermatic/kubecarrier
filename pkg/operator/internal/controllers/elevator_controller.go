@@ -18,6 +18,7 @@ package controllers
 
 import (
 	"context"
+	"fmt"
 
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -44,11 +45,10 @@ import (
 // +kubebuilder:rbac:groups="",resources=serviceaccounts,verbs=get;list;watch;create;update;patch;delete
 
 type ElevatorController struct {
-	Obj *operatorv1alpha1.Elevator
 }
 
 func (c *ElevatorController) GetObj() Component {
-	return c.Obj
+	return &operatorv1alpha1.Elevator{}
 }
 
 func (c *ElevatorController) GetOwnedObjectsTypes() []runtime.Object {
@@ -70,22 +70,26 @@ func (c *ElevatorController) SetupWithManager(builder *builder.Builder, scheme *
 		Watches(&source.Kind{Type: &rbacv1.ClusterRoleBinding{}}, enqueuer)
 }
 
-func (c *ElevatorController) GetManifests(ctx context.Context) ([]unstructured.Unstructured, error) {
+func (c *ElevatorController) GetManifests(ctx context.Context, component Component) ([]unstructured.Unstructured, error) {
+	elevator, ok := component.(*operatorv1alpha1.Elevator)
+	if !ok {
+		return nil, fmt.Errorf("can't assert to Elevator: %v", component)
+	}
 	return resourceselevator.Manifests(
 		resourceselevator.Config{
-			Name:      c.Obj.Name,
-			Namespace: c.Obj.Namespace,
+			Name:      elevator.Name,
+			Namespace: elevator.Namespace,
 
-			ProviderKind:    c.Obj.Spec.ProviderCRD.Kind,
-			ProviderVersion: c.Obj.Spec.ProviderCRD.Version,
-			ProviderGroup:   c.Obj.Spec.ProviderCRD.Group,
-			ProviderPlural:  c.Obj.Spec.ProviderCRD.Plural,
+			ProviderKind:    elevator.Spec.ProviderCRD.Kind,
+			ProviderVersion: elevator.Spec.ProviderCRD.Version,
+			ProviderGroup:   elevator.Spec.ProviderCRD.Group,
+			ProviderPlural:  elevator.Spec.ProviderCRD.Plural,
 
-			TenantKind:    c.Obj.Spec.TenantCRD.Kind,
-			TenantVersion: c.Obj.Spec.TenantCRD.Version,
-			TenantGroup:   c.Obj.Spec.TenantCRD.Group,
-			TenantPlural:  c.Obj.Spec.TenantCRD.Plural,
+			TenantKind:    elevator.Spec.TenantCRD.Kind,
+			TenantVersion: elevator.Spec.TenantCRD.Version,
+			TenantGroup:   elevator.Spec.TenantCRD.Group,
+			TenantPlural:  elevator.Spec.TenantCRD.Plural,
 
-			DerivedCRName: c.Obj.Spec.DerivedCR.Name,
+			DerivedCRName: elevator.Spec.DerivedCR.Name,
 		})
 }

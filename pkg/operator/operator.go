@@ -82,7 +82,7 @@ func run(flags *flags, log logr.Logger) error {
 	}
 
 	if err := controllers.NewBaseReconciler(
-		&controllers.KubeCarrierController{Obj: &operatorv1alpha1.KubeCarrier{}},
+		&controllers.KubeCarrierController{},
 		mgr.GetClient(),
 		mgr.GetScheme(),
 		log.WithName("controllers").WithName("KubeCarrier"),
@@ -91,7 +91,7 @@ func run(flags *flags, log logr.Logger) error {
 		return fmt.Errorf("creating KubeCarrier controller: %w", err)
 	}
 	if err := controllers.NewBaseReconciler(
-		&controllers.FerryController{Obj: &operatorv1alpha1.Ferry{}},
+		&controllers.FerryController{},
 		mgr.GetClient(),
 		mgr.GetScheme(),
 		log.WithName("controllers").WithName("Ferry"),
@@ -100,7 +100,7 @@ func run(flags *flags, log logr.Logger) error {
 		return fmt.Errorf("creating Ferry controller: %w", err)
 	}
 	if err := controllers.NewBaseReconciler(
-		&controllers.CatapultController{Obj: &operatorv1alpha1.Catapult{}, Client: mgr.GetClient()},
+		&controllers.CatapultController{Client: mgr.GetClient()},
 		mgr.GetClient(),
 		mgr.GetScheme(),
 		log.WithName("controllers").WithName("Catapult"),
@@ -110,7 +110,7 @@ func run(flags *flags, log logr.Logger) error {
 		return fmt.Errorf("creating Catapult controller: %w", err)
 	}
 	if err := controllers.NewBaseReconciler(
-		&controllers.ElevatorController{Obj: &operatorv1alpha1.Elevator{}},
+		&controllers.ElevatorController{},
 		mgr.GetClient(),
 		mgr.GetScheme(),
 		log.WithName("controllers").WithName("Elevator"),
