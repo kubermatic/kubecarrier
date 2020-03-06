@@ -181,8 +181,7 @@ func (s *Ferry) IsReady() bool {
 }
 
 func (s *Ferry) SetReadyCondition() bool {
-	readyCondition, _ := s.Status.GetCondition(FerryReady)
-	if readyCondition.Status != ConditionTrue {
+	if !s.IsReady() {
 		s.Status.ObservedGeneration = s.Generation
 		s.Status.SetCondition(FerryCondition{
 			Type:    FerryReady,

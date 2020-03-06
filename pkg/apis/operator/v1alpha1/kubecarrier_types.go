@@ -175,8 +175,7 @@ func (s *KubeCarrier) IsReady() bool {
 }
 
 func (s *KubeCarrier) SetReadyCondition() bool {
-	readyCondition, _ := s.Status.GetCondition(KubeCarrierReady)
-	if readyCondition.Status != ConditionTrue {
+	if !s.IsReady() {
 		s.Status.ObservedGeneration = s.Generation
 		s.Status.SetCondition(KubeCarrierCondition{
 			Type:    KubeCarrierReady,

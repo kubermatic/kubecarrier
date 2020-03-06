@@ -183,8 +183,7 @@ func (s *Elevator) IsReady() bool {
 }
 
 func (s *Elevator) SetReadyCondition() bool {
-	readyCondition, _ := s.Status.GetCondition(ElevatorReady)
-	if readyCondition.Status != ConditionTrue {
+	if !s.IsReady() {
 		s.Status.ObservedGeneration = s.Generation
 		s.Status.SetCondition(ElevatorCondition{
 			Type:    ElevatorReady,
