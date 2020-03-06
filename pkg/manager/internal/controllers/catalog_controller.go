@@ -22,6 +22,7 @@ import (
 	"reflect"
 
 	"github.com/go-logr/logr"
+	rbacv1 "k8s.io/api/rbac/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -57,6 +58,9 @@ type CatalogReconciler struct {
 // +kubebuilder:rbac:groups=catalog.kubecarrier.io,resources=providerreferences,verbs=get;list;watch;create;update;delete
 // +kubebuilder:rbac:groups=kubecarrier.io,resources=serviceclusters,verbs=get;list;watch
 // +kubebuilder:rbac:groups=kubecarrier.io,resources=serviceclusterassignments,verbs=get;list;watch;create;update;delete
+// +kubebuilder:rbac:groups=rbac.authorization.k8s.io,resources=roles,verbs=get;list;watch;create;update;patch;delete;escalate;bind
+// +kubebuilder:rbac:groups=rbac.authorization.k8s.io,resources=clusterroles,verbs=get;list;watch;create;update;patch;delete;escalate;bind
+// +kubebuilder:rbac:groups=rbac.authorization.k8s.io,resources=rolebindings,verbs=get;list;watch;create;update;patch;delete
 
 // Reconcile function reconciles the Catalog object which specified by the request. Currently, it does the following:
 // - Fetch the Catalog object.
@@ -135,9 +139,20 @@ func (r *CatalogReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 		desiredOfferings                 []catalogv1alpha1.Offering
 		desiredServiceClusterReferences  []catalogv1alpha1.ServiceClusterReference
 		desiredServiceClusterAssignments []corev1alpha1.ServiceClusterAssignment
+		desiredRoles                     []rbacv1.Role
+		desiredClusterRoles              []rbacv1.ClusterRole
+		desiredRoleBindings              []rbacv1.RoleBinding
 	)
-	for _, tenant := range readyTenants {
+	for _, catalogEntry := range readyCatalogEntries {
+		desiredProviderClusterRole, desiredProviderRoleBindings := r.buildDesiredProviderClusterRoleAndRoleBindings(readyTenants, provider, catalogEntry)
+		desiredTenantRoles, desiredTenantRoleBindings := r.buildDesiredTenantRolesAndRoleBindings(readyTenants, catalogEntry)
+		desiredRoles = append(desiredRoles, desiredTenantRoles...)
+		desiredClusterRoles = append(desiredClusterRoles, desiredProviderClusterRole)
+		desiredRoleBindings = append(desiredRoleBindings, desiredProviderRoleBindings...)
+		desiredRoleBindings = append(desiredRoleBindings, desiredTenantRoleBindings...)
+	}
 
+	for _, tenant := range readyTenants {
 		desiredProviderReferences = append(desiredProviderReferences, r.buildDesiredProviderReference(provider, tenant))
 		desiredOfferings = append(desiredOfferings, r.buildDesiredOfferings(provider, tenant, readyCatalogEntries)...)
 		desiredServiceClusterReferencesForTenant, desiredServiceClusterAssignmentsForTenant, err := r.buildDesiredServiceClusterReferencesAndAssignments(ctx, log, provider, tenant, readyCatalogEntries)
@@ -162,6 +177,18 @@ func (r *CatalogReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 
 	if err := r.reconcileServiceClusterAssignments(ctx, log, catalog, desiredServiceClusterAssignments); err != nil {
 		return ctrl.Result{}, fmt.Errorf("reconcliing ServiceClusterAssignments: %w", err)
+	}
+
+	if err := r.reconcileClusterRoles(ctx, log, catalog, desiredClusterRoles); err != nil {
+		return ctrl.Result{}, fmt.Errorf("reconciling ClusterRoles: %w", err)
+	}
+
+	if err := r.reconcileRoles(ctx, log, catalog, desiredRoles); err != nil {
+		return ctrl.Result{}, fmt.Errorf("reconciling Roles: %w", err)
+	}
+
+	if err := r.reconcileRoleBindings(ctx, log, catalog, desiredRoleBindings); err != nil {
+		return ctrl.Result{}, fmt.Errorf("reconciling RoleBindings: %w", err)
 	}
 
 	// Update Catalog Status.
@@ -206,6 +233,9 @@ func (r *CatalogReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		Watches(&source.Kind{Type: &catalogv1alpha1.ProviderReference{}}, enqueuerForOwner).
 		Watches(&source.Kind{Type: &catalogv1alpha1.ServiceClusterReference{}}, enqueuerForOwner).
 		Watches(&source.Kind{Type: &corev1alpha1.ServiceClusterAssignment{}}, enqueuerForOwner).
+		Watches(&source.Kind{Type: &rbacv1.ClusterRole{}}, enqueuerForOwner).
+		Watches(&source.Kind{Type: &rbacv1.Role{}}, enqueuerForOwner).
+		Watches(&source.Kind{Type: &rbacv1.RoleBinding{}}, enqueuerForOwner).
 		Complete(r)
 }
 
@@ -240,11 +270,26 @@ func (r *CatalogReconciler) handleDeletion(ctx context.Context, log logr.Logger,
 	if err != nil {
 		return fmt.Errorf("cleaning up ServiceClusterReferences: %w", err)
 	}
+	deletedClusterRolesCounter, err := r.cleanupClusterRoles(ctx, log, catalog, nil)
+	if err != nil {
+		return fmt.Errorf("cleaning up ClusterRoles: %w", err)
+	}
+	deletedRolesCounter, err := r.cleanupRoles(ctx, log, catalog, nil)
+	if err != nil {
+		return fmt.Errorf("cleaning up Roles: %w", err)
+	}
+	deletedRoleBindingsCounter, err := r.cleanupRoleBindings(ctx, log, catalog, nil)
+	if err != nil {
+		return fmt.Errorf("cleaning up RoleBindings: %w", err)
+	}
 
 	if deletedOfferingsCounter != 0 ||
 		deletedProviderReferencesCounter != 0 ||
 		deletedServiceClusterReferencesCounter != 0 ||
-		deletedServiceClusterAssignmentsCounter != 0 {
+		deletedServiceClusterAssignmentsCounter != 0 ||
+		deletedClusterRolesCounter != 0 ||
+		deletedRolesCounter != 0 ||
+		deletedRoleBindingsCounter != 0 {
 		// move to the next reconcilation round.
 		return nil
 	}
@@ -335,7 +380,7 @@ func (r *CatalogReconciler) buildDesiredOfferings(
 				Provider: catalogv1alpha1.ObjectReference{
 					Name: provider.Name,
 				},
-				CRD: *catalogEntry.Status.CRD,
+				CRD: *catalogEntry.Status.TenantCRD,
 			},
 		})
 	}
@@ -367,7 +412,7 @@ func (r *CatalogReconciler) buildDesiredServiceClusterReferencesAndAssignments(
 	var desiredServiceClusterAssignments []corev1alpha1.ServiceClusterAssignment
 	serviceClusterNames := map[string]struct{}{}
 	for _, catalogEntry := range catalogEntries {
-		serviceClusterNames[catalogEntry.Status.CRD.ServiceCluster.Name] = struct{}{}
+		serviceClusterNames[catalogEntry.Status.TenantCRD.ServiceCluster.Name] = struct{}{}
 	}
 	for serviceClusterName := range serviceClusterNames {
 		serviceCluster := &corev1alpha1.ServiceCluster{}
@@ -406,6 +451,83 @@ func (r *CatalogReconciler) buildDesiredServiceClusterReferencesAndAssignments(
 		})
 	}
 	return desiredServiceClusterReferences, desiredServiceClusterAssignments, nil
+}
+
+func (r *CatalogReconciler) buildDesiredTenantRolesAndRoleBindings(
+	tenants []*catalogv1alpha1.Account,
+	catalogEntry catalogv1alpha1.CatalogEntry,
+) ([]rbacv1.Role, []rbacv1.RoleBinding) {
+	var desiredRoles []rbacv1.Role
+	var desiredRoleBindings []rbacv1.RoleBinding
+	tenantCRDInfo := catalogEntry.Status.TenantCRD
+	for _, tenant := range tenants {
+		role := rbacv1.Role{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      fmt.Sprintf("kubecarrier-tenant-%s-%s-%s-role", tenant.Name, catalogEntry.Name, tenantCRDInfo.Name),
+				Namespace: tenant.Status.Namespace.Name,
+			},
+			Rules: []rbacv1.PolicyRule{
+				{
+					APIGroups: []string{tenantCRDInfo.APIGroup},
+					Resources: []string{tenantCRDInfo.Plural},
+					Verbs:     []string{rbacv1.VerbAll},
+				},
+			},
+		}
+		desiredRoles = append(desiredRoles, role)
+
+		roleBinding := rbacv1.RoleBinding{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      fmt.Sprintf("kubecarrier-tenant-%s-%s-%s-rolebinding", tenant.Name, catalogEntry.Name, tenantCRDInfo.Name),
+				Namespace: tenant.Status.Namespace.Name,
+			},
+			Subjects: tenant.Spec.Subjects,
+			RoleRef: rbacv1.RoleRef{
+				APIGroup: "rbac.authorization.k8s.io",
+				Kind:     "Role",
+				Name:     role.Name,
+			},
+		}
+		desiredRoleBindings = append(desiredRoleBindings, roleBinding)
+	}
+
+	return desiredRoles, desiredRoleBindings
+}
+
+func (r *CatalogReconciler) buildDesiredProviderClusterRoleAndRoleBindings(
+	tenants []*catalogv1alpha1.Account,
+	provider *catalogv1alpha1.Account,
+	catalogEntry catalogv1alpha1.CatalogEntry,
+) (rbacv1.ClusterRole, []rbacv1.RoleBinding) {
+	var desiredRoleBindings []rbacv1.RoleBinding
+	providerCRDInfo := catalogEntry.Status.ProviderCRD
+	clusterRole := rbacv1.ClusterRole{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: fmt.Sprintf("kubecarrier-provider-%s-%s-%s-role", provider.Name, catalogEntry.Name, providerCRDInfo.Name),
+		},
+		Rules: []rbacv1.PolicyRule{
+			{
+				APIGroups: []string{providerCRDInfo.APIGroup},
+				Resources: []string{providerCRDInfo.Plural},
+				Verbs:     []string{rbacv1.VerbAll},
+			},
+		},
+	}
+	for _, tenant := range tenants {
+		desiredRoleBindings = append(desiredRoleBindings, rbacv1.RoleBinding{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      fmt.Sprintf("kubecarrier-provider-%s-%s-%s-rolebinding", provider.Name, catalogEntry.Name, providerCRDInfo.Name),
+				Namespace: tenant.Status.Namespace.Name,
+			},
+			Subjects: provider.Spec.Subjects,
+			RoleRef: rbacv1.RoleRef{
+				APIGroup: "rbac.authorization.k8s.io",
+				Kind:     "ClusterRole",
+				Name:     clusterRole.Name,
+			},
+		})
+	}
+	return clusterRole, desiredRoleBindings
 }
 
 func (r *CatalogReconciler) reconcileOfferings(
@@ -611,6 +733,143 @@ func (r *CatalogReconciler) reconcileServiceClusterAssignments(
 	return nil
 }
 
+func (r *CatalogReconciler) reconcileClusterRoles(
+	ctx context.Context, log logr.Logger,
+	catalog *catalogv1alpha1.Catalog,
+	desiredClusterRoles []rbacv1.ClusterRole,
+) error {
+	if _, err := r.cleanupClusterRoles(ctx, log, catalog, desiredClusterRoles); err != nil {
+		return fmt.Errorf("cleanup ClusterRole: %w", err)
+	}
+
+	for _, desiredClusterRole := range desiredClusterRoles {
+		if _, err := multiowner.InsertOwnerReference(catalog, &desiredClusterRole, r.Scheme); err != nil {
+			return fmt.Errorf("inserting OwnerReference: %w", err)
+		}
+
+		foundClusterRole := &rbacv1.ClusterRole{}
+		err := r.Get(ctx, types.NamespacedName{
+			Name: desiredClusterRole.Name,
+		}, foundClusterRole)
+		if err != nil && !errors.IsNotFound(err) {
+			return fmt.Errorf("getting ClusterRole: %w", err)
+		}
+		if errors.IsNotFound(err) {
+			// Create the ClusterRole.
+			if err := r.Create(ctx, &desiredClusterRole); err != nil {
+				return fmt.Errorf("creating ClusterRole: %w", err)
+			}
+			foundClusterRole = &desiredClusterRole
+		}
+
+		ownerChanged, err := multiowner.InsertOwnerReference(catalog, foundClusterRole, r.Scheme)
+		if err != nil {
+			return fmt.Errorf("inserting OwnerReference: %w", err)
+		}
+		if !reflect.DeepEqual(desiredClusterRole.Rules, foundClusterRole.Rules) ||
+			!reflect.DeepEqual(desiredClusterRole.AggregationRule, foundClusterRole.AggregationRule) ||
+			ownerChanged {
+			foundClusterRole.Rules = desiredClusterRole.Rules
+			foundClusterRole.AggregationRule = desiredClusterRole.AggregationRule
+			if err := r.Update(ctx, foundClusterRole); err != nil {
+				return fmt.Errorf("updaing ClusterRole: %w", err)
+			}
+		}
+	}
+	return nil
+}
+
+func (r *CatalogReconciler) reconcileRoles(
+	ctx context.Context, log logr.Logger,
+	catalog *catalogv1alpha1.Catalog,
+	desiredRoles []rbacv1.Role,
+) error {
+	if _, err := r.cleanupRoles(ctx, log, catalog, desiredRoles); err != nil {
+		return fmt.Errorf("cleanup Role: %w", err)
+	}
+
+	for _, desiredRole := range desiredRoles {
+		if _, err := multiowner.InsertOwnerReference(catalog, &desiredRole, r.Scheme); err != nil {
+			return fmt.Errorf("inserting OwnerReference: %w", err)
+		}
+
+		foundRole := &rbacv1.Role{}
+		err := r.Get(ctx, types.NamespacedName{
+			Name:      desiredRole.Name,
+			Namespace: desiredRole.Namespace,
+		}, foundRole)
+		if err != nil && !errors.IsNotFound(err) {
+			return fmt.Errorf("getting Role: %w", err)
+		}
+		if errors.IsNotFound(err) {
+			// Create the Role.
+			if err := r.Create(ctx, &desiredRole); err != nil {
+				return fmt.Errorf("creating Role: %w", err)
+			}
+			foundRole = &desiredRole
+		}
+
+		ownerChanged, err := multiowner.InsertOwnerReference(catalog, foundRole, r.Scheme)
+		if err != nil {
+			return fmt.Errorf("inserting OwnerReference: %w", err)
+		}
+		if !reflect.DeepEqual(desiredRole.Rules, foundRole.Rules) || ownerChanged {
+			foundRole.Rules = desiredRole.Rules
+			if err := r.Update(ctx, foundRole); err != nil {
+				return fmt.Errorf("updaing Role: %w", err)
+			}
+		}
+	}
+	return nil
+}
+
+func (r *CatalogReconciler) reconcileRoleBindings(
+	ctx context.Context, log logr.Logger,
+	catalog *catalogv1alpha1.Catalog,
+	desiredRoleBindings []rbacv1.RoleBinding,
+) error {
+	if _, err := r.cleanupRoleBindings(ctx, log, catalog, desiredRoleBindings); err != nil {
+		return fmt.Errorf("cleanup RoleBinding: %w", err)
+	}
+
+	for _, desiredRoleBinding := range desiredRoleBindings {
+		if _, err := multiowner.InsertOwnerReference(catalog, &desiredRoleBinding, r.Scheme); err != nil {
+			return fmt.Errorf("inserting OwnerReference: %w", err)
+		}
+
+		foundRoleBinding := &rbacv1.RoleBinding{}
+		err := r.Get(ctx, types.NamespacedName{
+			Name:      desiredRoleBinding.Name,
+			Namespace: desiredRoleBinding.Namespace,
+		}, foundRoleBinding)
+		if err != nil && !errors.IsNotFound(err) {
+			return fmt.Errorf("getting RoleBinding: %w", err)
+		}
+		if errors.IsNotFound(err) {
+			// Create the RoleBinding.
+			if err := r.Create(ctx, &desiredRoleBinding); err != nil {
+				return fmt.Errorf("creating RoleBinding: %w", err)
+			}
+			foundRoleBinding = &desiredRoleBinding
+		}
+
+		ownerChanged, err := multiowner.InsertOwnerReference(catalog, foundRoleBinding, r.Scheme)
+		if err != nil {
+			return fmt.Errorf("inserting OwnerReference: %w", err)
+		}
+		if !reflect.DeepEqual(desiredRoleBinding.Subjects, foundRoleBinding.Subjects) ||
+			!reflect.DeepEqual(desiredRoleBinding.RoleRef, foundRoleBinding.RoleRef) ||
+			ownerChanged {
+			foundRoleBinding.Subjects = desiredRoleBinding.Subjects
+			foundRoleBinding.RoleRef = desiredRoleBinding.RoleRef
+			if err := r.Update(ctx, foundRoleBinding); err != nil {
+				return fmt.Errorf("updaing RoleBinding: %w", err)
+			}
+		}
+	}
+	return nil
+}
+
 func (r *CatalogReconciler) cleanupOfferings(
 	ctx context.Context, log logr.Logger,
 	catalog *catalogv1alpha1.Catalog,
@@ -676,6 +935,54 @@ func (r *CatalogReconciler) cleanupServiceClusterAssignments(
 		serviceClusterAssignmentsToObjectArray(desiredServiceClusterAssignments))
 }
 
+func (r *CatalogReconciler) cleanupClusterRoles(
+	ctx context.Context, log logr.Logger,
+	catalog *catalogv1alpha1.Catalog,
+	desiredClusterRoles []rbacv1.ClusterRole,
+) (deletedClusterRoleCounter int, err error) {
+	// Fetch existing ClusterRoles.
+	foundClusterRoleList := &rbacv1.ClusterRoleList{}
+	if err := r.List(ctx, foundClusterRoleList, multiowner.OwnedBy(catalog, r.Scheme)); err != nil {
+		return 0, fmt.Errorf("listing ClusterRoles: %w", err)
+	}
+	return r.cleanupOutdatedReferences(ctx, log,
+		catalog,
+		clusterRolesToObjectArray(foundClusterRoleList.Items),
+		clusterRolesToObjectArray(desiredClusterRoles))
+}
+
+func (r *CatalogReconciler) cleanupRoles(
+	ctx context.Context, log logr.Logger,
+	catalog *catalogv1alpha1.Catalog,
+	desiredRoles []rbacv1.Role,
+) (deletedRoleCounter int, err error) {
+	// Fetch existing Roles.
+	foundRoleList := &rbacv1.RoleList{}
+	if err := r.List(ctx, foundRoleList, multiowner.OwnedBy(catalog, r.Scheme)); err != nil {
+		return 0, fmt.Errorf("listing Roles: %w", err)
+	}
+	return r.cleanupOutdatedReferences(ctx, log,
+		catalog,
+		rolesToObjectArray(foundRoleList.Items),
+		rolesToObjectArray(desiredRoles))
+}
+
+func (r *CatalogReconciler) cleanupRoleBindings(
+	ctx context.Context, log logr.Logger,
+	catalog *catalogv1alpha1.Catalog,
+	desiredRoleBindings []rbacv1.RoleBinding,
+) (deletedRoleBindingCounter int, err error) {
+	// Fetch existing RoleBindings.
+	foundRoleBindingList := &rbacv1.RoleBindingList{}
+	if err := r.List(ctx, foundRoleBindingList, multiowner.OwnedBy(catalog, r.Scheme)); err != nil {
+		return 0, fmt.Errorf("listing RoleBindings: %w", err)
+	}
+	return r.cleanupOutdatedReferences(ctx, log,
+		catalog,
+		roleBindingsToObjectArray(foundRoleBindingList.Items),
+		roleBindingsToObjectArray(desiredRoleBindings))
+}
+
 func offeringsToObjectArray(offerings []catalogv1alpha1.Offering) []object {
 	out := make([]object, len(offerings))
 	for i := range offerings {
@@ -704,6 +1011,30 @@ func serviceClusterAssignmentsToObjectArray(serviceClusterAssignments []corev1al
 	out := make([]object, len(serviceClusterAssignments))
 	for i := range serviceClusterAssignments {
 		out[i] = &serviceClusterAssignments[i]
+	}
+	return out
+}
+
+func clusterRolesToObjectArray(clusterRoles []rbacv1.ClusterRole) []object {
+	out := make([]object, len(clusterRoles))
+	for i := range clusterRoles {
+		out[i] = &clusterRoles[i]
+	}
+	return out
+}
+
+func rolesToObjectArray(roles []rbacv1.Role) []object {
+	out := make([]object, len(roles))
+	for i := range roles {
+		out[i] = &roles[i]
+	}
+	return out
+}
+
+func roleBindingsToObjectArray(roleBindings []rbacv1.RoleBinding) []object {
+	out := make([]object, len(roleBindings))
+	for i := range roleBindings {
+		out[i] = &roleBindings[i]
 	}
 	return out
 }

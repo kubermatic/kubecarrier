@@ -22,6 +22,7 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/spf13/cobra"
+	rbacv1 "k8s.io/api/rbac/v1"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
@@ -124,6 +125,21 @@ func run(flags *flags, log logr.Logger) error {
 		mgr.GetFieldIndexer(), fieldIndexerLog.WithName("ServiceClusterAssignment"), &corev1alpha1.ServiceClusterAssignment{},
 	); err != nil {
 		return fmt.Errorf("registering ServiceClusterAssignment owner field index: %w", err)
+	}
+	if err := multiowner.AddOwnerReverseFieldIndex(
+		mgr.GetFieldIndexer(), fieldIndexerLog.WithName("ClusterRole"), &rbacv1.ClusterRole{},
+	); err != nil {
+		return fmt.Errorf("registering ClusterRole owner field index: %w", err)
+	}
+	if err := multiowner.AddOwnerReverseFieldIndex(
+		mgr.GetFieldIndexer(), fieldIndexerLog.WithName("Role"), &rbacv1.Role{},
+	); err != nil {
+		return fmt.Errorf("registering Role owner field index: %w", err)
+	}
+	if err := multiowner.AddOwnerReverseFieldIndex(
+		mgr.GetFieldIndexer(), fieldIndexerLog.WithName("RoleBinding"), &rbacv1.RoleBinding{},
+	); err != nil {
+		return fmt.Errorf("registering RoleBinding owner field index: %w", err)
 	}
 
 	if err = (&controllers.AccountReconciler{

@@ -89,7 +89,7 @@ func (r *AccountReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 		return ctrl.Result{}, fmt.Errorf("reconciling account roles and rolebindings: %w", err)
 	}
 
-	if readyCondition, _ := account.Status.GetCondition(catalogv1alpha1.AccountReady); readyCondition.Status != catalogv1alpha1.ConditionTrue {
+	if !account.IsReady() {
 		// Update Account Status
 		account.Status.ObservedGeneration = account.Generation
 		account.Status.SetCondition(catalogv1alpha1.AccountCondition{
