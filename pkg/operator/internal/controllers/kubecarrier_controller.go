@@ -58,7 +58,7 @@ func (c *KubeCarrierController) GetObj() Component {
 	return c.Obj
 }
 
-func (c *KubeCarrierController) GetOwnObjects() []runtime.Object {
+func (c *KubeCarrierController) GetOwnedObjectsTypes() []runtime.Object {
 	return []runtime.Object{
 		&rbacv1.ClusterRole{},
 		&rbacv1.ClusterRoleBinding{},

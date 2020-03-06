@@ -61,7 +61,7 @@ func (c *CatapultController) GetObj() Component {
 	return c.Obj
 }
 
-func (c *CatapultController) GetOwnObjects() []runtime.Object {
+func (c *CatapultController) GetOwnedObjectsTypes() []runtime.Object {
 	return []runtime.Object{
 		&rbacv1.ClusterRole{},
 		&rbacv1.ClusterRoleBinding{},

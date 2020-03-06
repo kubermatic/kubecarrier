@@ -48,7 +48,7 @@ func (c *FerryController) GetObj() Component {
 	return c.Obj
 }
 
-func (c *FerryController) GetOwnObjects() []runtime.Object {
+func (c *FerryController) GetOwnedObjectsTypes() []runtime.Object {
 	return []runtime.Object{}
 }
 

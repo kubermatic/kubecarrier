@@ -51,7 +51,7 @@ func (c *ElevatorController) GetObj() Component {
 	return c.Obj
 }
 
-func (c *ElevatorController) GetOwnObjects() []runtime.Object {
+func (c *ElevatorController) GetOwnedObjectsTypes() []runtime.Object {
 	return []runtime.Object{
 		&rbacv1.ClusterRole{},
 		&rbacv1.ClusterRoleBinding{},

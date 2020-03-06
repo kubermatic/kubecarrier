@@ -44,7 +44,7 @@ type ControllerStrategy interface {
 	// GetObj - return origin controller object
 	GetObj() Component
 	GetManifests(context.Context) ([]unstructured.Unstructured, error)
-	GetOwnObjects() []runtime.Object
+	GetOwnedObjectsTypes() []runtime.Object
 	SetupWithManager(builder *builder.Builder, scheme *runtime.Scheme) *builder.Builder
 }
 
@@ -68,11 +68,6 @@ func NewBaseReconciler(ctr ControllerStrategy, c client.Client, scheme *runtime.
 	}
 }
 
-// FetchObject - fetch the object
-func (r *BaseReconciler) FetchObject(ctx context.Context, req ctrl.Request, obj runtime.Object) error {
-	return r.Client.Get(ctx, req.NamespacedName, obj)
-}
-
 func (r *BaseReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	builder := ctrl.NewControllerManagedBy(mgr)
 	return r.Controller.SetupWithManager(builder, r.Scheme).Complete(r)
@@ -85,16 +80,15 @@ func (r *BaseReconciler) SetupWithManager(mgr ctrl.Manager) error {
 // 4. Update the status of the object.
 func (r *BaseReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	ctx := context.Background()
-	var deploymentIsReady bool
 	obj := r.Controller.GetObj()
 
-	if err := r.FetchObject(ctx, req, obj); err != nil {
+	if err := r.Client.Get(ctx, req.NamespacedName, obj); err != nil {
 		// If the object is already gone, we just ignore the NotFound error.
 		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
 
 	if !obj.GetDeletionTimestamp().IsZero() {
-		if err := r.HandleDeletion(ctx, obj, r.Controller.GetOwnObjects()); err != nil {
+		if err := r.handleDeletion(ctx, obj, r.Controller.GetOwnedObjectsTypes()); err != nil {
 			return ctrl.Result{}, fmt.Errorf("handle deletion: %w", err)
 		}
 		return ctrl.Result{}, nil
@@ -113,20 +107,20 @@ func (r *BaseReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 		return ctrl.Result{}, fmt.Errorf("creating %s manifests: %w", r.Name, err)
 	}
 
-	deploymentIsReady, err = r.ReconcileOwnedObjects(ctx, obj, objects)
+	deploymentIsReady, err := r.reconcileOwnedObjects(ctx, obj, objects)
 	if err != nil {
 		return ctrl.Result{}, err
 	}
 
-	if err := r.UpdateStatus(ctx, obj, deploymentIsReady); err != nil {
+	if err := r.ensureStatus(ctx, obj, deploymentIsReady); err != nil {
 		return ctrl.Result{}, err
 	}
 
 	return ctrl.Result{}, nil
 }
 
-// HandleDeletion - handle the deletion of the object (Remove the objects that the object owns, and remove the finalizer).
-func (r *BaseReconciler) HandleDeletion(ctx context.Context, c Component, ownObjects []runtime.Object) error {
+// handleDeletion - handle the deletion of the object (Remove the objects that the object owns, and remove the finalizer).
+func (r *BaseReconciler) handleDeletion(ctx context.Context, c Component, ownObjectsTypes []runtime.Object) error {
 	// Update the object Status to Terminating.
 	if c.SetTerminatingCondition() {
 		if err := r.Client.Status().Update(ctx, c); err != nil {
@@ -134,7 +128,7 @@ func (r *BaseReconciler) HandleDeletion(ctx context.Context, c Component, ownObj
 		}
 	}
 
-	cleanedUp, err := util.DeleteObjects(ctx, r.Client, r.Scheme, ownObjects, owner.OwnedBy(c, r.Scheme))
+	cleanedUp, err := util.DeleteObjects(ctx, r.Client, r.Scheme, ownObjectsTypes, owner.OwnedBy(c, r.Scheme))
 	if err != nil {
 		return fmt.Errorf("DeleteObjects: %w", err)
 	}
@@ -147,7 +141,7 @@ func (r *BaseReconciler) HandleDeletion(ctx context.Context, c Component, ownObj
 }
 
 // UpdateStatus - update the status of the object
-func (r *BaseReconciler) UpdateStatus(ctx context.Context, c Component, deploymentIsReady bool) error {
+func (r *BaseReconciler) ensureStatus(ctx context.Context, c Component, deploymentIsReady bool) error {
 	var updateStatus bool
 
 	if deploymentIsReady {
@@ -165,7 +159,7 @@ func (r *BaseReconciler) UpdateStatus(ctx context.Context, c Component, deployme
 }
 
 // ReconcileOwnedObjects - reconcile the objects that owned by obj
-func (r *BaseReconciler) ReconcileOwnedObjects(ctx context.Context, obj object, objects []unstructured.Unstructured) (bool, error) {
+func (r *BaseReconciler) reconcileOwnedObjects(ctx context.Context, obj object, objects []unstructured.Unstructured) (bool, error) {
 	var deploymentIsReady bool
 	for _, object := range objects {
 		if err := addOwnerReference(obj, &object, r.Scheme); err != nil {
