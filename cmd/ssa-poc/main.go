@@ -18,6 +18,7 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -29,12 +30,14 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/api/meta"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
-	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/client/apiutil"
 
 	catalogv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/catalog/v1alpha1"
 	corev1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/core/v1alpha1"
@@ -69,6 +72,7 @@ func (lrt *LogRoundTripper) RoundTrip(request *http.Request) (*http.Response, er
 	var err error
 
 	log.Printf("[DEBUG] Request URL: %s %s", request.Method, request.URL)
+	// _ = request.Header.WriteSubset(os.Stdout, nil)
 
 	if request.Body != nil {
 		body, err := request.GetBody()
@@ -113,25 +117,31 @@ func main() {
 				return err
 			}
 			ctx := context.Background()
-			configMaps := &corev1.ConfigMapList{}
-			if err := c.List(ctx, configMaps); err != nil {
-				return err
-			}
 
 			crdiscovery := &corev1alpha1.CustomResourceDiscovery{}
 			crdiscovery.Namespace = "default"
 			crdiscovery.Name = "test"
 
-			if _, err := ctrl.CreateOrUpdate(ctx, c, crdiscovery, func() error { return nil }); err != nil {
+			err = c.Create(ctx, crdiscovery)
+			if err != nil && !errors.IsAlreadyExists(err) {
 				return err
 			}
 
 			for _, cond := range []corev1alpha1.CustomResourceDiscoveryConditionType{
 				corev1alpha1.CustomResourceDiscoveryControllerReady,
-				//corev1alpha1.CustomResourceDiscoveryDiscovered,
-				//corev1alpha1.CustomResourceDiscoveryEstablished,
+				corev1alpha1.CustomResourceDiscoveryDiscovered,
+				corev1alpha1.CustomResourceDiscoveryEstablished,
 			} {
 				go settingTheSSAStatus(ctx, c, crdiscovery.DeepCopy(), cond)
+			}
+			<-ctx.Done()
+
+			cm := &corev1.ConfigMap{}
+			cm.Name = "aa"
+			cm.Namespace = "default"
+			cm.Data = make(map[string]string)
+			for _, name := range []string{"a", "b", "c"} {
+				go cmSSA(ctx, c, name, cm)
 			}
 
 			<-ctx.Done()
@@ -144,74 +154,105 @@ func main() {
 	}
 }
 
-func settingTheStatus(ctx context.Context, cl client.Client, obj *corev1alpha1.CustomResourceDiscovery, conditionType corev1alpha1.CustomResourceDiscoveryConditionType) {
-	for i := 0; ; i++ {
-		time.Sleep(time.Duration(rand.Int63n(int64(time.Second))))
-		obj.Status.SetCondition(corev1alpha1.CustomResourceDiscoveryCondition{
-			Message: fmt.Sprint(i),
-			Reason:  "NewNumberGenerated",
-			Status:  corev1alpha1.ConditionTrue,
-			Type:    conditionType,
-		})
-		if err := cl.Status().Update(ctx, obj); err != nil {
-			if errors.IsConflict(err) {
-				fmt.Printf("%v conflict!\n", conditionType)
-				if err := cl.Get(ctx, types.NamespacedName{
-					Namespace: obj.Namespace,
-					Name:      obj.Name,
-				}, obj); err != nil {
-					panic(err)
-				}
-				continue
-			}
-			fmt.Printf("%v error happened %s\n", conditionType, err.Error())
-		}
-		fmt.Printf("%v setting to number %d\n", conditionType, i)
-	}
-}
-
 func settingTheSSAStatus(ctx context.Context, cl client.Client, obj *corev1alpha1.CustomResourceDiscovery, conditionType corev1alpha1.CustomResourceDiscoveryConditionType) {
 	for i := 0; ; i++ {
 		time.Sleep(time.Duration(rand.Int63n(int64(time.Second))))
-		obj.Status.SetCondition(corev1alpha1.CustomResourceDiscoveryCondition{
-			Message: fmt.Sprint(i),
-			Reason:  "NewNumberGenerated",
-			Status:  corev1alpha1.ConditionTrue,
-			Type:    conditionType,
-		})
-		/*
-			if err := cl.Status().Update(ctx, u, client.FieldOwner(fmt.Sprint(conditionType))); err != nil {
-				if errors.IsConflict(err) {
-					fmt.Printf("%v conflict!\n", conditionType)
-					if err := cl.Get(ctx, types.NamespacedName{
-						Namespace: obj.Namespace,
-						Name:      obj.Name,
-					}, obj); err != nil {
-						panic(err)
-					}
-					continue
-				}
-				fmt.Printf("%v error happened %s\n", conditionType, err.Error())
-			} else {
-				fmt.Printf("%v setting to number %d\n", conditionType, i)
-			}
-		*/
-
-		if err := cl.Status().Patch(ctx, obj, client.Apply, client.FieldOwner(fmt.Sprint(conditionType)), client.ForceOwnership); err != nil {
+		obj.Status.SetCondition(
+			corev1alpha1.CustomResourceDiscoveryCondition{
+				Message: fmt.Sprint(i),
+				Reason:  "NewNumberGenerated",
+				Status:  corev1alpha1.ConditionTrue,
+				Type:    conditionType,
+			},
+		)
+		if err := cl.Status().Patch(ctx, obj, &ConditionPatch{
+			ConditionType: string(conditionType),
+			Schema:        scheme,
+		}, client.FieldOwner(fmt.Sprint(conditionType)), client.ForceOwnership); err != nil {
 			if errors.IsConflict(err) {
 				fmt.Printf("%v conflict!\n", conditionType)
-				if err := cl.Get(ctx, types.NamespacedName{
-					Namespace: obj.Namespace,
-					Name:      obj.Name,
-				}, obj); err != nil {
-					panic(err)
-				}
-				continue
 			}
 			fmt.Printf("%v error happened %s\n", conditionType, err.Error())
 		} else {
 			fmt.Printf("%v setting to number %d\n", conditionType, i)
 		}
-
 	}
 }
+
+func cmSSA(ctx context.Context, cl client.Client, name string, obj *corev1.ConfigMap) {
+	for i := 0; ; i++ {
+		time.Sleep(time.Duration(rand.Int63n(int64(time.Second))))
+		cm := &corev1.ConfigMap{}
+		//cm.APIVersion = "v1"
+		//cm.Kind = "ConfigMap"
+		cm.UID = obj.UID
+		cm.Name = obj.Name
+		cm.Namespace = obj.Namespace
+		cm.Data = map[string]string{name: fmt.Sprint(i)}
+
+		if err := cl.Status().Patch(ctx, cm, client.Apply, client.FieldOwner(name)); err != nil {
+			if errors.IsConflict(err) {
+				fmt.Printf("%v conflict!\n", name)
+				if err := cl.Get(ctx, types.NamespacedName{
+					Namespace: obj.Namespace,
+					Name:      obj.Name,
+				}, obj); err != nil {
+					panic(err)
+				}
+				continue
+			}
+			fmt.Printf("%v error happened %s\n", name, err.Error())
+		} else {
+			fmt.Printf("%v setting to number %d\n", name, i)
+		}
+	}
+}
+
+type ConditionPatch struct {
+	ConditionType string
+	Schema        *runtime.Scheme
+}
+
+func (c *ConditionPatch) Type() types.PatchType {
+	return types.ApplyPatchType
+}
+
+func (c *ConditionPatch) Data(obj runtime.Object) ([]byte, error) {
+	u := &unstructured.Unstructured{}
+	gvk, err := apiutil.GVKForObject(obj, c.Schema)
+	if err != nil {
+		return nil, err
+	}
+	u.SetGroupVersionKind(gvk)
+	accessor, err := meta.Accessor(obj)
+	if err != nil {
+		return nil, err
+	}
+	u.SetNamespace(accessor.GetNamespace())
+	u.SetName(accessor.GetName())
+	u.SetUID(accessor.GetUID())
+
+	tmpObj := &unstructured.Unstructured{}
+	if err := c.Schema.Convert(obj, tmpObj, nil); err != nil {
+		return nil, err
+	}
+	conditions, found, err := unstructured.NestedSlice(tmpObj.Object, "status", "conditions")
+	if err != nil {
+		return nil, err
+	}
+	if !found {
+		return nil, nil
+	}
+	for _, cond := range conditions {
+		if cond.(map[string]interface{})["type"] == c.ConditionType {
+			u.Object["status"] = map[string]interface{}{
+				"conditions": []interface{}{
+					cond,
+				},
+			}
+		}
+	}
+	return json.Marshal(u)
+}
+
+var _ client.Patch = (*ConditionPatch)(nil)
