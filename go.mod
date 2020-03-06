@@ -2,7 +2,7 @@ module github.com/kubermatic/kubecarrier
 
 go 1.14
 
-replace k8s.io/client-go => k8s.io/client-go v0.17.2
+replace k8s.io/client-go => k8s.io/client-go v0.17.3
 
 require (
 	github.com/Masterminds/goutils v1.1.0 // indirect
@@ -21,7 +21,7 @@ require (
 	go.uber.org/zap v1.10.0
 	golang.org/x/crypto v0.0.0-20191206172530-e9b2fee46413
 	k8s.io/api v0.17.3
-	k8s.io/apiextensions-apiserver v0.17.2
+	k8s.io/apiextensions-apiserver v0.17.3
 	k8s.io/apimachinery v0.17.3
 	k8s.io/cli-runtime v0.17.3
 	k8s.io/client-go v11.0.0+incompatible
