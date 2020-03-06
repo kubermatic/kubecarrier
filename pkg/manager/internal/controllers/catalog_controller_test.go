@@ -178,7 +178,7 @@ func TestCatalogReconciler(t *testing.T) {
 	providerReferenceFound := &catalogv1alpha1.ProviderReference{}
 	serviceClusterReferenceFound := &catalogv1alpha1.ServiceClusterReference{}
 	serviceClusterAssignmentFound := &corev1alpha1.ServiceClusterAssignment{}
-	providerClusterRoleFound := &rbacv1.ClusterRole{}
+	providerRoleFound := &rbacv1.Role{}
 	providerRoleBindingFound := &rbacv1.RoleBinding{}
 	tenantRoleFound := &rbacv1.Role{}
 	tenantRoleBindingFound := &rbacv1.RoleBinding{}
@@ -247,11 +247,12 @@ func TestCatalogReconciler(t *testing.T) {
 		assert.Equal(t, serviceClusterAssignmentFound.Spec.ServiceCluster.Name, serviceCluster.Name, "Wrong ServiceCluster name")
 		assert.Equal(t, serviceClusterAssignmentFound.Spec.ManagementClusterNamespace.Name, tenantNamespace.Name, "Wrong ManagementCluster Namespace name.")
 
-		// Check Provider ClusterRole
+		// Check Provider Role
 		require.NoError(t, client.Get(ctx, types.NamespacedName{
-			Name: fmt.Sprintf("kubecarrier-provider-%s-%s-%s-role", provider.Name, catalogEntry.Name, catalogEntry.Status.ProviderCRD.Name),
-		}, providerClusterRoleFound), "getting ClusterRole error")
-		assert.Contains(t, providerClusterRoleFound.Rules, rbacv1.PolicyRule{
+			Name:      fmt.Sprintf("kubecarrier:provider:%s", catalogEntry.Name),
+			Namespace: tenant.Status.Namespace.Name,
+		}, providerRoleFound), "getting Role error")
+		assert.Contains(t, providerRoleFound.Rules, rbacv1.PolicyRule{
 			Verbs:     []string{rbacv1.VerbAll},
 			APIGroups: []string{catalogEntry.Status.ProviderCRD.APIGroup},
 			Resources: []string{catalogEntry.Status.ProviderCRD.Plural},
@@ -259,14 +260,14 @@ func TestCatalogReconciler(t *testing.T) {
 
 		// Check Provider RoleBinding
 		require.NoError(t, client.Get(ctx, types.NamespacedName{
-			Name:      fmt.Sprintf("kubecarrier-provider-%s-%s-%s-rolebinding", provider.Name, catalogEntry.Name, catalogEntry.Status.ProviderCRD.Name),
+			Name:      fmt.Sprintf("kubecarrier:provider:%s", catalogEntry.Name),
 			Namespace: tenant.Status.Namespace.Name,
 		}, providerRoleBindingFound), "getting RoleBinding error")
 		assert.Equal(t, providerRoleBindingFound.Subjects, provider.Spec.Subjects, "Subjects is different")
 
 		// Check Tenant Role
 		require.NoError(t, client.Get(ctx, types.NamespacedName{
-			Name:      fmt.Sprintf("kubecarrier-tenant-%s-%s-%s-role", tenant.Name, catalogEntry.Name, catalogEntry.Status.TenantCRD.Name),
+			Name:      fmt.Sprintf("kubecarrier:tenant:%s", catalogEntry.Name),
 			Namespace: tenant.Status.Namespace.Name,
 		}, tenantRoleFound), "getting Role error")
 		assert.Contains(t, tenantRoleFound.Rules, rbacv1.PolicyRule{
@@ -277,7 +278,7 @@ func TestCatalogReconciler(t *testing.T) {
 
 		// Check Tenant RoleBinding
 		require.NoError(t, client.Get(ctx, types.NamespacedName{
-			Name:      fmt.Sprintf("kubecarrier-tenant-%s-%s-%s-rolebinding", tenant.Name, catalogEntry.Name, catalogEntry.Status.TenantCRD.Name),
+			Name:      fmt.Sprintf("kubecarrier:tenant:%s", catalogEntry.Name),
 			Namespace: tenant.Status.Namespace.Name,
 		}, tenantRoleBindingFound), "getting RoleBinding error")
 		assert.Equal(t, tenantRoleBindingFound.Subjects, tenant.Spec.Subjects, "Subjects is different")
@@ -344,11 +345,12 @@ func TestCatalogReconciler(t *testing.T) {
 			Namespace: serviceClusterAssignmentFound.Namespace,
 		}, serviceClusterAssignmentCheck)), "ServiceClusterAssignment should be gone")
 
-		// Check Provider ClusterRole
-		providerClusterRoleCheck := &rbacv1.ClusterRole{}
+		// Check Provider Role
+		providerRoleCheck := &rbacv1.Role{}
 		assert.True(t, errors.IsNotFound(client.Get(ctx, types.NamespacedName{
-			Name: providerClusterRoleFound.Name,
-		}, providerClusterRoleCheck)), "provider ClusterRole should be gone")
+			Name:      providerRoleFound.Name,
+			Namespace: providerRoleFound.Namespace,
+		}, providerRoleCheck)), "provider Role should be gone")
 
 		// Check Provider RoleBinding
 		providerRoleBindingCheck := &rbacv1.RoleBinding{}

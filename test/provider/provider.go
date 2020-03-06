@@ -333,14 +333,15 @@ func NewCatalogSuite(
 		assert.Equal(t, serviceClusterAssignmentFound.Spec.ServiceCluster.Name, serviceCluster.Name)
 		assert.Equal(t, serviceClusterAssignmentFound.Spec.ManagementClusterNamespace.Name, tenant.Status.Namespace.Name)
 
-		// Check Provider ClusterRole
-		providerClusterRoleFound := &rbacv1.ClusterRole{
+		// Check Provider Role
+		providerRoleFound := &rbacv1.Role{
 			ObjectMeta: metav1.ObjectMeta{
-				Name: fmt.Sprintf("kubecarrier-provider-%s-%s-%s-role", provider.Name, catalogEntry.Name, catalogEntry.Status.ProviderCRD.Name),
+				Name:      fmt.Sprintf("kubecarrier:provider:%s", catalogEntry.Name),
+				Namespace: tenant.Status.Namespace.Name,
 			},
 		}
-		require.NoError(t, testutil.WaitUntilFound(managementClient, providerClusterRoleFound), "getting Provider ClusterRole error")
-		assert.Contains(t, providerClusterRoleFound.Rules, rbacv1.PolicyRule{
+		require.NoError(t, testutil.WaitUntilFound(managementClient, providerRoleFound), "getting Provider Role error")
+		assert.Contains(t, providerRoleFound.Rules, rbacv1.PolicyRule{
 			Verbs:     []string{rbacv1.VerbAll},
 			APIGroups: []string{catalogEntry.Status.ProviderCRD.APIGroup},
 			Resources: []string{catalogEntry.Status.ProviderCRD.Plural},
@@ -349,7 +350,7 @@ func NewCatalogSuite(
 		// Check Provider RoleBinding
 		providerRoleBindingFound := &rbacv1.RoleBinding{
 			ObjectMeta: metav1.ObjectMeta{
-				Name:      fmt.Sprintf("kubecarrier-provider-%s-%s-%s-rolebinding", provider.Name, catalogEntry.Name, catalogEntry.Status.ProviderCRD.Name),
+				Name:      fmt.Sprintf("kubecarrier:provider:%s", catalogEntry.Name),
 				Namespace: tenant.Status.Namespace.Name,
 			},
 		}
@@ -359,7 +360,7 @@ func NewCatalogSuite(
 		// Check Tenant Role
 		tenantRoleFound := &rbacv1.Role{
 			ObjectMeta: metav1.ObjectMeta{
-				Name:      fmt.Sprintf("kubecarrier-tenant-%s-%s-%s-role", tenant.Name, catalogEntry.Name, catalogEntry.Status.TenantCRD.Name),
+				Name:      fmt.Sprintf("kubecarrier:tenant:%s", catalogEntry.Name),
 				Namespace: tenant.Status.Namespace.Name,
 			},
 		}
@@ -373,7 +374,7 @@ func NewCatalogSuite(
 		// Check Tenant RoleBinding
 		tenantRoleBindingFound := &rbacv1.RoleBinding{
 			ObjectMeta: metav1.ObjectMeta{
-				Name:      fmt.Sprintf("kubecarrier-tenant-%s-%s-%s-rolebinding", tenant.Name, catalogEntry.Name, catalogEntry.Status.TenantCRD.Name),
+				Name:      fmt.Sprintf("kubecarrier:tenant:%s", catalogEntry.Name),
 				Namespace: tenant.Status.Namespace.Name,
 			},
 		}
@@ -478,11 +479,12 @@ func NewCatalogSuite(
 				Namespace: serviceClusterAssignmentFound.Namespace,
 			}, serviceClusterAssignmentCheck)), "serviceClusterAssignment object should also be deleted.")
 
-			// Check Provider ClusterRole
-			providerClusterRoleCheck := &rbacv1.ClusterRole{}
+			// Check Provider Role
+			providerRoleCheck := &rbacv1.Role{}
 			assert.True(t, errors.IsNotFound(managementClient.Get(ctx, types.NamespacedName{
-				Name: providerClusterRoleFound.Name,
-			}, providerClusterRoleCheck)), "provider ClusterRole should be deleted")
+				Name:      providerRoleFound.Name,
+				Namespace: providerRoleFound.Namespace,
+			}, providerRoleCheck)), "provider Role should be deleted")
 
 			// Check Provider RoleBinding
 			providerRoleBindingCheck := &rbacv1.RoleBinding{}

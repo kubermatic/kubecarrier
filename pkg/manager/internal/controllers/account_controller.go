@@ -238,7 +238,7 @@ func (r *AccountReconciler) reconcileRolesAndRoleBindings(ctx context.Context, l
 	if account.HasRole(catalogv1alpha1.ProviderRole) {
 		desiredProviderRole := &rbacv1.Role{
 			ObjectMeta: metav1.ObjectMeta{
-				Name:      "kubecarrier-provider-role",
+				Name:      "kubecarrier:provider",
 				Namespace: account.Status.Namespace.Name,
 			},
 			Rules: []rbacv1.PolicyRule{
@@ -275,7 +275,7 @@ func (r *AccountReconciler) reconcileRolesAndRoleBindings(ctx context.Context, l
 
 		desiredProviderRoleBinding := &rbacv1.RoleBinding{
 			ObjectMeta: metav1.ObjectMeta{
-				Name:      "kubecarrier-provider-rolebinding",
+				Name:      "kubecarrier:provider",
 				Namespace: account.Status.Namespace.Name,
 			},
 			Subjects: account.Spec.Subjects,
@@ -290,7 +290,7 @@ func (r *AccountReconciler) reconcileRolesAndRoleBindings(ctx context.Context, l
 	if account.HasRole(catalogv1alpha1.TenantRole) {
 		desiredTenantRole := &rbacv1.Role{
 			ObjectMeta: metav1.ObjectMeta{
-				Name:      "kubecarrier-tenant-role",
+				Name:      "kubecarrier:tenant",
 				Namespace: account.Status.Namespace.Name,
 			},
 			Rules: []rbacv1.PolicyRule{
@@ -309,7 +309,7 @@ func (r *AccountReconciler) reconcileRolesAndRoleBindings(ctx context.Context, l
 
 		desiredTenantRoleBinding := &rbacv1.RoleBinding{
 			ObjectMeta: metav1.ObjectMeta{
-				Name:      "kubecarrier-tenant-rolebinding",
+				Name:      "kubecarrier:tenant",
 				Namespace: account.Status.Namespace.Name,
 			},
 			Subjects: account.Spec.Subjects,

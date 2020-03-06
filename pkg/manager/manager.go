@@ -127,11 +127,6 @@ func run(flags *flags, log logr.Logger) error {
 		return fmt.Errorf("registering ServiceClusterAssignment owner field index: %w", err)
 	}
 	if err := multiowner.AddOwnerReverseFieldIndex(
-		mgr.GetFieldIndexer(), fieldIndexerLog.WithName("ClusterRole"), &rbacv1.ClusterRole{},
-	); err != nil {
-		return fmt.Errorf("registering ClusterRole owner field index: %w", err)
-	}
-	if err := multiowner.AddOwnerReverseFieldIndex(
 		mgr.GetFieldIndexer(), fieldIndexerLog.WithName("Role"), &rbacv1.Role{},
 	); err != nil {
 		return fmt.Errorf("registering Role owner field index: %w", err)
