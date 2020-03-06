@@ -30,12 +30,12 @@ import (
 )
 
 const (
-	// OwnerNameLabel references the name of the owner of this object.
-	OwnerNameLabel = "owner.kubecarrier.io/name"
-	// OwnerNamespaceLabel references the namespace of the owner of this object.
-	OwnerNamespaceLabel = "owner.kubecarrier.io/namespace"
-	// OwnerTypeLabel references the type of the owner of this object.
-	OwnerTypeLabel = "owner.kubecarrier.io/type"
+	// ownerNameLabel references the name of the owner of this object.
+	ownerNameLabel = "owner.kubecarrier.io/name"
+	// ownerNamespaceLabel references the namespace of the owner of this object.
+	ownerNamespaceLabel = "owner.kubecarrier.io/namespace"
+	// ownerTypeLabel references the type of the owner of this object.
+	ownerTypeLabel = "owner.kubecarrier.io/type"
 )
 
 type generalizedListOption interface {
@@ -78,12 +78,12 @@ func RemoveOwnerReference(owner, object runtime.Object) (changed bool) {
 		return
 	}
 
-	if labels[OwnerNameLabel] != "" || labels[OwnerNamespaceLabel] != "" || labels[OwnerTypeLabel] != "" {
+	if labels[ownerNameLabel] != "" || labels[ownerNamespaceLabel] != "" || labels[ownerTypeLabel] != "" {
 		changed = true
 	}
-	delete(labels, OwnerNameLabel)
-	delete(labels, OwnerNamespaceLabel)
-	delete(labels, OwnerTypeLabel)
+	delete(labels, ownerNameLabel)
+	delete(labels, ownerNamespaceLabel)
+	delete(labels, ownerTypeLabel)
 	objectAccessor.SetLabels(labels)
 	return
 }
@@ -110,15 +110,15 @@ func requestHandlerForOwner(ownerType runtime.Object, scheme *runtime.Scheme) ha
 			return
 		}
 
-		ownerName, ok := labels[OwnerNameLabel]
+		ownerName, ok := labels[ownerNameLabel]
 		if !ok {
 			return
 		}
-		ownerNamespace, ok := labels[OwnerNamespaceLabel]
+		ownerNamespace, ok := labels[ownerNamespaceLabel]
 		if !ok {
 			return
 		}
-		ownerType, ok := labels[OwnerTypeLabel]
+		ownerType, ok := labels[ownerTypeLabel]
 		if !ok {
 			return
 		}
@@ -156,7 +156,7 @@ func IsOwned(object metav1.Object) (owned bool) {
 		return false
 	}
 
-	return l[OwnerNameLabel] != "" && l[OwnerNamespaceLabel] != "" && l[OwnerTypeLabel] != ""
+	return l[ownerNameLabel] != "" && l[ownerNamespaceLabel] != "" && l[ownerTypeLabel] != ""
 }
 
 func labelsForOwner(obj runtime.Object, scheme *runtime.Scheme) map[string]string {
@@ -179,8 +179,8 @@ func labelsForOwner(obj runtime.Object, scheme *runtime.Scheme) map[string]strin
 	}
 
 	return map[string]string{
-		OwnerNameLabel:      metaAccessor.GetName(),
-		OwnerNamespaceLabel: metaAccessor.GetNamespace(),
-		OwnerTypeLabel:      gvk.GroupKind().String(),
+		ownerNameLabel:      metaAccessor.GetName(),
+		ownerNamespaceLabel: metaAccessor.GetNamespace(),
+		ownerTypeLabel:      gvk.GroupKind().String(),
 	}
 }

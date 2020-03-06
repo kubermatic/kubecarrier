@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package owner
+package multiowner
 
 import (
 	"context"
@@ -32,7 +32,7 @@ import (
 	"github.com/kubermatic/kubecarrier/pkg/testutil"
 )
 
-func TestOwnedObjectReconciler_Reconcile(t *testing.T) {
+func TestOwnedObjectReconcile(t *testing.T) {
 	cmA := &corev1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "cma",
@@ -62,34 +62,60 @@ func TestOwnedObjectReconciler_Reconcile(t *testing.T) {
 		},
 	}
 
+	ownerObj1 := &corev1.Secret{ObjectMeta: metav1.ObjectMeta{
+		Name:      "ownerObj1",
+		Namespace: "default",
+	}}
+	ownerObj2 := &corev1.Secret{ObjectMeta: metav1.ObjectMeta{
+		Name:      "ownerObj2",
+		Namespace: "default",
+	}}
+
 	for name, testCase := range map[string]struct {
+		owners        []runtime.Object
 		existingState []runtime.Object
 		wantedState   []runtime.Object
 		finalState    []*corev1.ConfigMap
-		muateFn       func(obj, wantedObj runtime.Object) error
+		updateFn      func(obj, wantedObj runtime.Object) error
 	}{
-		"clearing": {
+		"single owner cleaning": {
+			owners:        []runtime.Object{ownerObj1},
 			existingState: []runtime.Object{cmA.DeepCopy(), cmB.DeepCopy()},
 		},
+		"double owner cleaning": {
+			owners:        []runtime.Object{ownerObj1, ownerObj2},
+			existingState: []runtime.Object{cmA.DeepCopy(), cmB.DeepCopy()},
+			finalState:    []*corev1.ConfigMap{cmA.DeepCopy(), cmB.DeepCopy()},
+		},
 		"creating": {
+			owners:      []runtime.Object{ownerObj1, ownerObj2},
 			wantedState: []runtime.Object{cmA.DeepCopy(), cmB.DeepCopy()},
 			finalState:  []*corev1.ConfigMap{cmA.DeepCopy(), cmB.DeepCopy()},
 		},
-		"delete & create": {
+		"single owner delete & create": {
+			owners:        []runtime.Object{ownerObj1},
 			existingState: []runtime.Object{cmA.DeepCopy()},
 			wantedState:   []runtime.Object{cmB.DeepCopy()},
 			finalState:    []*corev1.ConfigMap{cmB.DeepCopy()},
 		},
+		"double owner delete & create": {
+			owners:        []runtime.Object{ownerObj1, ownerObj2},
+			existingState: []runtime.Object{cmA.DeepCopy()},
+			wantedState:   []runtime.Object{cmB.DeepCopy()},
+			finalState:    []*corev1.ConfigMap{cmA.DeepCopy(), cmB.DeepCopy()},
+		},
 		"nothing-changes": {
+			owners:        []runtime.Object{ownerObj1, ownerObj2},
 			existingState: []runtime.Object{cmA.DeepCopy()},
 			wantedState:   []runtime.Object{cmA.DeepCopy()},
 			finalState:    []*corev1.ConfigMap{cmA.DeepCopy()},
 		},
 		"mutation": {
+			owners:        []runtime.Object{ownerObj1, ownerObj2},
 			existingState: []runtime.Object{cmA.DeepCopy()},
 			wantedState:   []runtime.Object{cmA.DeepCopy()},
 			finalState:    []*corev1.ConfigMap{cmAPrime.DeepCopy()},
-			muateFn: func(obj, wantedObj runtime.Object) error {
+			updateFn: func(obj, wantedObj runtime.Object) error {
 				objCM := obj.(*corev1.ConfigMap)
 				objCM.Data["cm"] = "a prime"
 				return nil
@@ -97,17 +123,17 @@ func TestOwnedObjectReconciler_Reconcile(t *testing.T) {
 		},
 	} {
 		t.Run(name, func(t *testing.T) {
-			ownerObj := &corev1.Secret{ObjectMeta: metav1.ObjectMeta{
-				Name:      "ownerObj",
-				Namespace: "default",
-			}}
-			cl := fakeclient.NewFakeClientWithScheme(testScheme, ownerObj)
+			cl := fakeclient.NewFakeClientWithScheme(testScheme, ownerObj1, ownerObj2)
 			ctx := context.Background()
 			for _, obj := range testCase.existingState {
-				SetOwnerReference(ownerObj, obj, testScheme)
+				for _, owner := range testCase.owners {
+					changed, err := insertOwnerReference(owner, obj, testScheme)
+					require.NoError(t, err)
+					assert.True(t, changed)
+				}
 				require.NoError(t, cl.Create(ctx, obj))
 			}
-			assert.NoError(t, ReconcileOwnedObjects(ctx, testutil.NewLogger(t), cl, testScheme, ownerObj, testCase.wantedState, &corev1.ConfigMap{}, testCase.muateFn))
+			assert.NoError(t, ReconcileOwnedObjects(ctx, testutil.NewLogger(t), cl, testScheme, ownerObj1, testCase.wantedState, &corev1.ConfigMap{}, testCase.updateFn))
 
 			cmLst := &corev1.ConfigMapList{}
 			require.NoError(t, cl.List(ctx, cmLst))

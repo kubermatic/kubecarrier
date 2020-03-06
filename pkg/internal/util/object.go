@@ -21,7 +21,6 @@ import (
 	"fmt"
 	"strings"
 
-	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -69,7 +68,7 @@ func ToObjectReference(object runtime.Object, scheme *runtime.Scheme) ObjectRefe
 }
 
 // ListObjects lists all object of given types adhering to additional ListOptions
-func ListObjects(ctx context.Context, cl client.Client, scheme *runtime.Scheme, listTypes []runtime.Object, options ...client.ListOption) ([]runtime.Object, error) {
+func ListObjects(ctx context.Context, client client.Client, scheme *runtime.Scheme, listTypes []runtime.Object, options ...client.ListOption) ([]runtime.Object, error) {
 	objs := make([]runtime.Object, 0)
 	for _, objType := range listTypes {
 		gvk, err := apiutil.GVKForObject(objType, scheme)
@@ -90,7 +89,7 @@ func ListObjects(ctx context.Context, cl client.Client, scheme *runtime.Scheme, 
 			return nil, fmt.Errorf("cannot make a list out of a types: %v", gvk)
 		}
 
-		if err := cl.List(ctx, ListObjType, options...); err != nil {
+		if err := client.List(ctx, ListObjType, options...); err != nil {
 			return nil, fmt.Errorf("listing %s.%s: %w", strings.ToLower(gvk.Kind), gvk.Group, err)
 		}
 
@@ -101,25 +100,4 @@ func ListObjects(ctx context.Context, cl client.Client, scheme *runtime.Scheme, 
 		objs = append(objs, lstObjs...)
 	}
 	return objs, nil
-}
-
-// Delete deletes all object of given types adhering to additional ListOptions
-func DeleteObjects(ctx context.Context, cl client.Client, scheme *runtime.Scheme, listTypes []runtime.Object, options ...client.ListOption) (cleanedUp bool, err error) {
-	objs, err := ListObjects(ctx, cl, scheme, listTypes, options...)
-	if err != nil {
-		return false, fmt.Errorf("ListObjects: %w", err)
-	}
-
-	cleanedUp = true
-	for _, obj := range objs {
-		err := cl.Delete(ctx, obj)
-		switch {
-		case err == nil:
-			cleanedUp = false
-		case errors.IsNotFound(err):
-		default:
-			return false, fmt.Errorf("deleting ")
-		}
-	}
-	return cleanedUp, nil
 }

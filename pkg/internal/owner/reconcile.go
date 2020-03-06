@@ -27,7 +27,6 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	controllerruntime "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
 	"github.com/kubermatic/kubecarrier/pkg/internal/util"
 )
@@ -42,10 +41,10 @@ type updateFunc func(actual, desired runtime.Object) error
 // are wanted. Also this would only operate on the kubernetes objects objectType GroupKind.
 // In case object already exists in the kubernetes cluster the updateFn function is called allowing the user fixing
 // between found and wanted object. In case the function is nil it's ignored.
-func ReconcileOwnedObjects(ctx context.Context, cl client.Client, log logr.Logger, scheme *runtime.Scheme, ownerObj runtime.Object, desired []runtime.Object, objectType runtime.Object, updateFn updateFunc) (changed bool, err error) {
+func ReconcileOwnedObjects(ctx context.Context, log logr.Logger, cl client.Client, scheme *runtime.Scheme, ownerObj runtime.Object, desired []runtime.Object, objectType runtime.Object, updateFn updateFunc) error {
 	existing, err := util.ListObjects(ctx, cl, scheme, []runtime.Object{objectType}, OwnedBy(ownerObj, scheme))
 	if err != nil {
-		return false, fmt.Errorf("ListObjects: %w", err)
+		return err
 	}
 
 	wantedMap := make(map[util.ObjectReference]runtime.Object)
@@ -56,43 +55,25 @@ func ReconcileOwnedObjects(ctx context.Context, cl client.Client, log logr.Logge
 	for _, obj := range existing {
 		key := util.ToObjectReference(obj, scheme)
 		if _, shouldExists := wantedMap[key]; !shouldExists {
-			err := cl.Delete(ctx, obj)
-			switch {
-			case err == nil:
-				changed = true
-				if log != nil {
-					log.V(6).Info("object deleted", "group", key.Group, "kind", key.Kind, "name", key.Name, "namespace", key.Namespace)
-				}
-			case errors.IsNotFound(err):
-				break
-			default:
-				return changed, fmt.Errorf("deleting %v: %w", obj, err)
+			if err := cl.Delete(ctx, obj); err != nil {
+				return client.IgnoreNotFound(err)
 			}
 		}
 	}
 
 	for _, obj := range desired {
-		SetOwnerReference(ownerObj, obj, scheme)
-
 		// ctrl.CreateOrUpdate shall override obj with the current k8s value, thus we're performing a
 		// deep copy to preserve wanted object data
 		wantedObj := obj.DeepCopyObject()
 		op, err := controllerruntime.CreateOrUpdate(ctx, cl, obj, func() error {
 			SetOwnerReference(ownerObj, obj, scheme)
-			if err != nil {
-				return fmt.Errorf("inserting owner ref %v: %w", obj, err)
-			}
 			if updateFn != nil {
 				return updateFn(obj, wantedObj)
 			}
 			return nil
 		})
-		if op != controllerutil.OperationResultNone {
-			changed = true
-		}
-
 		if err != nil {
-			return changed, fmt.Errorf("create or deleting %v: %w", obj, err)
+			return err
 		}
 
 		key := util.ToObjectReference(obj, scheme)
@@ -100,5 +81,31 @@ func ReconcileOwnedObjects(ctx context.Context, cl client.Client, log logr.Logge
 			log.V(6).Info("object "+string(op), "group", key.Group, "kind", key.Kind, "name", key.Name, "namespace", key.Namespace)
 		}
 	}
-	return changed, nil
+	return nil
+}
+
+// DeleteOwnedObjects deletes all object of given types which are owned by the owner.
+func DeleteOwnedObjects(ctx context.Context,
+	cl client.Client,
+	scheme *runtime.Scheme,
+	owner runtime.Object,
+	listTypes []runtime.Object,
+) (cleanedUp bool, err error) {
+	objs, err := util.ListObjects(ctx, cl, scheme, listTypes, OwnedBy(owner, scheme))
+	if err != nil {
+		return false, fmt.Errorf("ListObjects: %w", err)
+	}
+
+	cleanedUp = true
+	for _, obj := range objs {
+		err := cl.Delete(ctx, obj)
+		switch {
+		case err == nil:
+			cleanedUp = false
+		case errors.IsNotFound(err):
+		default:
+			return false, fmt.Errorf("deleting ")
+		}
+	}
+	return cleanedUp, nil
 }

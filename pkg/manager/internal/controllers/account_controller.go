@@ -165,12 +165,12 @@ func (r *AccountReconciler) handleDeletion(ctx context.Context, log logr.Logger,
 		}
 	}
 
-	cleanedUp, err := util.DeleteObjects(ctx, r.Client, r.Scheme, []runtime.Object{
+	cleanedUp, err := owner.DeleteOwnedObjects(ctx, r.Client, r.Scheme, account, []runtime.Object{
 		&corev1.Namespace{},
 		&catalogv1alpha1.TenantReference{},
 		&rbacv1.Role{},
 		&rbacv1.RoleBinding{},
-	}, owner.OwnedBy(account, r.Scheme))
+	})
 	if err != nil {
 		return fmt.Errorf("DeleteObjects: %w", err)
 	}
@@ -186,7 +186,7 @@ func (r *AccountReconciler) reconcileNamespace(ctx context.Context, log logr.Log
 	ns := &corev1.Namespace{}
 	ns.Name = account.Name
 
-	if _, err := owner.ReconcileOwnedObjects(ctx, r.Client, log, r.Scheme, account, []runtime.Object{ns}, &corev1.Namespace{}, nil); err != nil {
+	if err := owner.ReconcileOwnedObjects(ctx, log, r.Client, r.Scheme, account, []runtime.Object{ns}, &corev1.Namespace{}, nil); err != nil {
 		return fmt.Errorf("cannot reconcile namespace: %w", err)
 	}
 
@@ -225,7 +225,7 @@ func (r *AccountReconciler) reconcileTenantReferences(ctx context.Context, log l
 		}
 	}
 
-	_, err := owner.ReconcileOwnedObjects(ctx, r.Client, log, r.Scheme, account, wantedRefs, &catalogv1alpha1.TenantReference{}, nil)
+	err := owner.ReconcileOwnedObjects(ctx, log, r.Client, r.Scheme, account, wantedRefs, &catalogv1alpha1.TenantReference{}, nil)
 	if err != nil {
 		return fmt.Errorf("cannot reconcile objects: %w", err)
 	}
@@ -322,33 +322,27 @@ func (r *AccountReconciler) reconcileRolesAndRoleBindings(ctx context.Context, l
 		desiredRoleBindings = append(desiredRoleBindings, desiredTenantRoleBinding)
 	}
 
-	if _, err := owner.ReconcileOwnedObjects(ctx, r.Client, log, r.Scheme,
-		account,
-		desiredRoles, &rbacv1.Role{},
-		func(actual, desired runtime.Object) error {
-			actualRule := actual.(*rbacv1.Role)
-			desiredRole := desired.(*rbacv1.Role)
-			if !reflect.DeepEqual(actualRule.Rules, desiredRole.Rules) {
-				actualRule.Rules = desiredRole.Rules
-			}
-			return nil
-		}); err != nil {
+	if err := owner.ReconcileOwnedObjects(ctx, log, r.Client, r.Scheme, account, desiredRoles, &rbacv1.Role{}, func(actual, desired runtime.Object) error {
+		actualRule := actual.(*rbacv1.Role)
+		desiredRole := desired.(*rbacv1.Role)
+		if !reflect.DeepEqual(actualRule.Rules, desiredRole.Rules) {
+			actualRule.Rules = desiredRole.Rules
+		}
+		return nil
+	}); err != nil {
 		return fmt.Errorf("cannot reconcile Role: %w", err)
 	}
 
-	if _, err := owner.ReconcileOwnedObjects(ctx, r.Client, log, r.Scheme,
-		account,
-		desiredRoleBindings, &rbacv1.RoleBinding{},
-		func(actual, desired runtime.Object) error {
-			actualRuleBinding := actual.(*rbacv1.RoleBinding)
-			desiredRoleBinding := desired.(*rbacv1.RoleBinding)
-			if !reflect.DeepEqual(actualRuleBinding.RoleRef, desiredRoleBinding.RoleRef) {
-				actualRuleBinding.RoleRef = desiredRoleBinding.RoleRef
-			} else if !reflect.DeepEqual(actualRuleBinding.Subjects, desiredRoleBinding.Subjects) {
-				actualRuleBinding.Subjects = desiredRoleBinding.Subjects
-			}
-			return nil
-		}); err != nil {
+	if err := owner.ReconcileOwnedObjects(ctx, log, r.Client, r.Scheme, account, desiredRoleBindings, &rbacv1.RoleBinding{}, func(actual, desired runtime.Object) error {
+		actualRuleBinding := actual.(*rbacv1.RoleBinding)
+		desiredRoleBinding := desired.(*rbacv1.RoleBinding)
+		if !reflect.DeepEqual(actualRuleBinding.RoleRef, desiredRoleBinding.RoleRef) {
+			actualRuleBinding.RoleRef = desiredRoleBinding.RoleRef
+		} else if !reflect.DeepEqual(actualRuleBinding.Subjects, desiredRoleBinding.Subjects) {
+			actualRuleBinding.Subjects = desiredRoleBinding.Subjects
+		}
+		return nil
+	}); err != nil {
 		return fmt.Errorf("cannot reconcile RoleBinding: %w", err)
 	}
 	return nil

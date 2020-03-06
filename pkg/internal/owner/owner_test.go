@@ -20,30 +20,21 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	corev1 "k8s.io/api/core/v1"
-	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
+	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
-
-	catalogv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/catalog/v1alpha1"
-	corev1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/core/v1alpha1"
-	operatorv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/operator/v1alpha1"
 )
 
 var testScheme = runtime.NewScheme()
 
 func init() {
 	// setup scheme for all tests
-	utilruntime.Must(corev1.AddToScheme(testScheme))
-	utilruntime.Must(catalogv1alpha1.AddToScheme(testScheme))
-	utilruntime.Must(operatorv1alpha1.AddToScheme(testScheme))
-	utilruntime.Must(apiextensionsv1.AddToScheme(testScheme))
-	utilruntime.Must(corev1alpha1.AddToScheme(testScheme))
+	utilruntime.Must(clientgoscheme.AddToScheme(testScheme))
 }
 
 func TestSetOwnerReference(t *testing.T) {
@@ -61,14 +52,14 @@ func TestSetOwnerReference(t *testing.T) {
 	changed := SetOwnerReference(owner, obj, testScheme)
 	assert.True(t, changed)
 	assert.Equal(t, map[string]string{
-		OwnerNameLabel:      "hans",
-		OwnerNamespaceLabel: "hans-playground",
-		OwnerTypeLabel:      "Test.test.kubecarrier.io",
+		ownerNameLabel:      "hans",
+		ownerNamespaceLabel: "hans-playground",
+		ownerTypeLabel:      "Test.test.kubecarrier.io",
 	}, obj.GetLabels())
 	// this is the kubernetes regex that validates label values
 	assert.Regexp(
 		t, `(([A-Za-z0-9][-A-Za-z0-9_.]*)?[A-Za-z0-9])?`,
-		obj.GetLabels()[OwnerTypeLabel])
+		obj.GetLabels()[ownerTypeLabel])
 }
 
 func Test_requestHandlerForOwner(t *testing.T) {
@@ -83,18 +74,18 @@ func Test_requestHandlerForOwner(t *testing.T) {
 	matchingObj.SetName("test")
 	matchingObj.SetName("test-ns")
 	matchingObj.SetLabels(map[string]string{
-		OwnerNameLabel:      "test12",
-		OwnerNamespaceLabel: "hans3000",
-		OwnerTypeLabel:      "Test.test.kubecarrier.io",
+		ownerNameLabel:      "test12",
+		ownerNamespaceLabel: "hans3000",
+		ownerTypeLabel:      "Test.test.kubecarrier.io",
 	})
 
 	nonMatchingTypeObj := &unstructured.Unstructured{}
 	nonMatchingTypeObj.SetName("test")
 	nonMatchingTypeObj.SetName("test-ns")
 	nonMatchingTypeObj.SetLabels(map[string]string{
-		OwnerNameLabel:      "test12",
-		OwnerNamespaceLabel: "hans3000",
-		OwnerTypeLabel:      "Test.example.io",
+		ownerNameLabel:      "test12",
+		ownerNamespaceLabel: "hans3000",
+		ownerTypeLabel:      "Test.example.io",
 	})
 
 	nonMatchingNoLabelObj := &unstructured.Unstructured{}

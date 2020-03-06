@@ -21,7 +21,7 @@ import (
 	"fmt"
 
 	"github.com/go-logr/logr"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
@@ -33,8 +33,8 @@ import (
 )
 
 const (
-	// OwnerAnnotation is the annotation key that references the owner of this object.
-	OwnerAnnotation = "kubecarrier.io/owner"
+	// ownerAnnotation is the annotation key that references the owner of this object.
+	ownerAnnotation = "kubecarrier.io/owner"
 )
 
 type generalizedListOption interface {
@@ -42,84 +42,15 @@ type generalizedListOption interface {
 	client.DeleteAllOfOption
 }
 
-// object generic k8s object with metav1 and runtime Object interfaces implemented
-type object interface {
-	runtime.Object
-	metav1.Object
-}
-
-// InsertOwnerReference adds an OwnerReference to the given object.
-func InsertOwnerReference(owner, object object, scheme *runtime.Scheme) (changed bool, err error) {
-	ownerReference := util.ToObjectReference(owner, scheme)
-
-	refs, err := getRefs(object)
-	if err != nil {
-		return false, err
-	}
-
-	for _, ref := range refs {
-		if ref == ownerReference {
-			// already inserted, early stop
-			return false, nil
-		}
-	}
-	refs = append(refs, ownerReference)
-	err = setRefs(object, refs)
-	if err != nil {
-		return false, err
-	}
-	return true, nil
-}
-
-// DeleteOwnerReference removes an owner from the given object.
-func DeleteOwnerReference(owner, object object, scheme *runtime.Scheme) (changed bool, err error) {
-	reference := util.ToObjectReference(owner, scheme)
-
-	refs, err := getRefs(object)
-	if err != nil {
-		return false, err
-	}
-
-	var newRefs []util.ObjectReference
-	for _, ref := range refs {
-		if ref != reference {
-			newRefs = append(newRefs, ref)
-		} else {
-			changed = true
-		}
-	}
-
-	// early stopping
-	if !changed {
-		return false, nil
-	}
-
-	err = setRefs(object, newRefs)
-	if err != nil {
-		return false, err
-	}
-	return changed, nil
-}
-
-// IsOwned checks if any owners claim ownership of this object.
-func IsOwned(object metav1.Object) (owned bool, err error) {
-	refs, err := getRefs(object)
-	if err != nil {
-		return false, err
-	}
-	return len(refs) > 0, nil
-}
-
 // EnqueueRequestForOwner enqueues requests for all owners of an object.
 //
 // It implements the same behavior as handler.EnqueueRequestForOwner, but for our custom objectReference.
-func EnqueueRequestForOwner(ownerType object, scheme *runtime.Scheme) handler.EventHandler {
+func EnqueueRequestForOwner(ownerType runtime.Object, scheme *runtime.Scheme) handler.EventHandler {
 	ownerTypeRef := util.ToObjectReference(ownerType, scheme)
 	ownerKind, ownerGroup := ownerTypeRef.Kind, ownerTypeRef.Group
 
 	h := func(obj handler.MapObject) []reconcile.Request {
-		obj.Object.GetObjectKind().GroupVersionKind()
-		refs, err := getRefs(obj.Meta)
+		refs, err := getRefs(obj.Object)
 		if err != nil {
 			utilruntime.HandleError(
 				fmt.Errorf("parsing owner references name=%s namespace=%s gvk=%s: %w",
@@ -155,21 +86,15 @@ func EnqueueRequestForOwner(ownerType object, scheme *runtime.Scheme) handler.Ev
 // Keep in mind this function should be called for each owned object type separately.
 //
 // See also: OwnedBy
-func AddOwnerReverseFieldIndex(indexer client.FieldIndexer, log logr.Logger, object runtime.Object) error {
-	_, ok := object.(metav1.Object)
-	if !ok {
-		return fmt.Errorf("%T is not a metav1.Object", object)
-	}
+func AddOwnerReverseFieldIndex(log logr.Logger, indexer client.FieldIndexer, object runtime.Object) error {
 	return indexer.IndexField(
 		object,
-		OwnerAnnotation,
+		ownerAnnotation,
 		func(object runtime.Object) (values []string) {
-			// this should not panic due to previous casting check
-			obj := object.(metav1.Object)
 
-			refs, err := getRefs(obj)
+			refs, err := getRefs(object)
 			if err != nil {
-				log.Error(err, "cannot list owner references", "name", obj.GetName(), "namespace", obj.GetNamespace())
+				log.Error(err, "cannot list owner references")
 				return
 			}
 
@@ -183,10 +108,72 @@ func AddOwnerReverseFieldIndex(indexer client.FieldIndexer, log logr.Logger, obj
 // OwnedBy returns owner filter for listing objects.
 //
 // See also: AddOwnerReverseFieldIndex
-func OwnedBy(owner object, sc *runtime.Scheme) generalizedListOption {
+func OwnedBy(owner runtime.Object, sc *runtime.Scheme) generalizedListOption {
 	return client.MatchingFields{
-		OwnerAnnotation: fieldIndexValue(util.ToObjectReference(owner, sc)),
+		ownerAnnotation: fieldIndexValue(util.ToObjectReference(owner, sc)),
 	}
+}
+
+// insertOwnerReference adds an OwnerReference to the given object.
+func insertOwnerReference(owner, object runtime.Object, scheme *runtime.Scheme) (changed bool, err error) {
+	ownerReference := util.ToObjectReference(owner, scheme)
+
+	refs, err := getRefs(object)
+	if err != nil {
+		return false, err
+	}
+
+	for _, ref := range refs {
+		if ref == ownerReference {
+			// already inserted, early stop
+			return false, nil
+		}
+	}
+	refs = append(refs, ownerReference)
+	err = setRefs(object, refs)
+	if err != nil {
+		return false, err
+	}
+	return true, nil
+}
+
+// deleteOwnerReference removes an owner from the given object.
+func deleteOwnerReference(owner, object runtime.Object, scheme *runtime.Scheme) (changed bool, err error) {
+	reference := util.ToObjectReference(owner, scheme)
+
+	refs, err := getRefs(object)
+	if err != nil {
+		return false, err
+	}
+
+	var newRefs []util.ObjectReference
+	for _, ref := range refs {
+		if ref != reference {
+			newRefs = append(newRefs, ref)
+		} else {
+			changed = true
+		}
+	}
+
+	// early stopping
+	if !changed {
+		return false, nil
+	}
+
+	err = setRefs(object, newRefs)
+	if err != nil {
+		return false, err
+	}
+	return changed, nil
+}
+
+// isOwned checks if any owners claim ownership of this object.
+func isOwned(object runtime.Object) (owned bool, err error) {
+	refs, err := getRefs(object)
+	if err != nil {
+		return false, err
+	}
+	return len(refs) > 0, nil
 }
 
 // fieldIndexValue converts the objectReference into a simple value for a client.FieldIndexer.
@@ -200,26 +187,34 @@ func fieldIndexValue(n util.ObjectReference) string {
 	return string(b)
 }
 
-func getRefs(object metav1.Object) (refs []util.ObjectReference, err error) {
-	annotations := object.GetAnnotations()
+func getRefs(object runtime.Object) (refs []util.ObjectReference, err error) {
+	objectAccessor, err := meta.Accessor(object)
+	if err != nil {
+		panic(fmt.Errorf("cannot get accessor for %T :%w", object, err))
+	}
+	annotations := objectAccessor.GetAnnotations()
 	if annotations == nil {
 		return nil, nil
 	}
 
-	if data, present := annotations[OwnerAnnotation]; present {
+	if data, present := annotations[ownerAnnotation]; present {
 		err = json.Unmarshal([]byte(data), &refs)
 		return
 	}
 	return
 }
 
-func setRefs(object metav1.Object, refs []util.ObjectReference) error {
-	annotations := object.GetAnnotations()
+func setRefs(object runtime.Object, refs []util.ObjectReference) error {
+	objectAccessor, err := meta.Accessor(object)
+	if err != nil {
+		panic(fmt.Errorf("cannot get accessor for %T :%w", object, err))
+	}
+	annotations := objectAccessor.GetAnnotations()
 	if annotations == nil {
 		annotations = make(map[string]string)
 	}
 	if len(refs) == 0 {
-		delete(annotations, OwnerAnnotation)
+		delete(annotations, ownerAnnotation)
 		return nil
 	}
 
@@ -227,7 +222,7 @@ func setRefs(object metav1.Object, refs []util.ObjectReference) error {
 	if err != nil {
 		return err
 	}
-	annotations[OwnerAnnotation] = string(b)
-	object.SetAnnotations(annotations)
+	annotations[ownerAnnotation] = string(b)
+	objectAccessor.SetAnnotations(annotations)
 	return nil
 }

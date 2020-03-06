@@ -27,12 +27,21 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
+	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 
 	"github.com/kubermatic/kubecarrier/pkg/testutil"
 )
+
+var testScheme = runtime.NewScheme()
+
+func init() {
+	// setup scheme for all tests
+	utilruntime.Must(clientgoscheme.AddToScheme(testScheme))
+}
 
 func TestOwnerReverseFieldIndex(t *testing.T) {
 	t.Parallel()
@@ -52,11 +61,11 @@ func TestOwnerReverseFieldIndex(t *testing.T) {
 	log.Info("Adding indices")
 
 	// make sure there's no errors
-	assert.NoError(t, AddOwnerReverseFieldIndex(mgr.GetFieldIndexer(), log, &corev1.Pod{}), "adding cm reverse index")
-	assert.NoError(t, AddOwnerReverseFieldIndex(mgr.GetFieldIndexer(), log, &corev1.ConfigMap{}), "adding configmap reverse index")
+	assert.NoError(t, AddOwnerReverseFieldIndex(log, mgr.GetFieldIndexer(), &corev1.Pod{}), "adding cm reverse index")
+	assert.NoError(t, AddOwnerReverseFieldIndex(log, mgr.GetFieldIndexer(), &corev1.ConfigMap{}), "adding configmap reverse index")
 
 	// make sure it errors out on duplicate object type
-	assert.Error(t, AddOwnerReverseFieldIndex(mgr.GetFieldIndexer(), log, &corev1.Pod{}), "adding cm reverse index")
+	assert.Error(t, AddOwnerReverseFieldIndex(log, mgr.GetFieldIndexer(), &corev1.Pod{}), "adding cm reverse index")
 
 	cl := mgr.GetClient()
 	configMaps := make([]*corev1.ConfigMap, 5)
@@ -77,10 +86,10 @@ func TestOwnerReverseFieldIndex(t *testing.T) {
 
 	extractErr := func(changed bool, err error) error { return err }
 
-	require.NoError(t, extractErr(InsertOwnerReference(ownerA, configMaps[0], mgr.GetScheme())), "inserting owner reference")
-	require.NoError(t, extractErr(InsertOwnerReference(ownerA, configMaps[1], mgr.GetScheme())), "inserting owner reference")
-	require.NoError(t, extractErr(InsertOwnerReference(ownerB, configMaps[1], mgr.GetScheme())), "inserting owner reference")
-	require.NoError(t, extractErr(InsertOwnerReference(ownerB, configMaps[2], mgr.GetScheme())), "inserting owner reference")
+	require.NoError(t, extractErr(insertOwnerReference(ownerA, configMaps[0], mgr.GetScheme())), "inserting owner reference")
+	require.NoError(t, extractErr(insertOwnerReference(ownerA, configMaps[1], mgr.GetScheme())), "inserting owner reference")
+	require.NoError(t, extractErr(insertOwnerReference(ownerB, configMaps[1], mgr.GetScheme())), "inserting owner reference")
+	require.NoError(t, extractErr(insertOwnerReference(ownerB, configMaps[2], mgr.GetScheme())), "inserting owner reference")
 
 	ctx, stop := context.WithCancel(context.Background())
 	defer stop()
@@ -141,14 +150,14 @@ func TestCRUDOwnerMethods(t *testing.T) {
 	}}
 
 	t.Log("===== Initial state =====")
-	owned, err := IsOwned(obj)
+	owned, err := isOwned(obj)
 	require.NoError(t, err, "owned")
 	assert.False(t, owned)
 
 	for i, own := range []*corev1.Pod{ownerA, ownerB} {
 		t.Logf("===== Adding owner %s =====", own.Name)
 		check := func() {
-			owned, err = IsOwned(obj)
+			owned, err = isOwned(obj)
 			require.NoError(t, err, "owned")
 			assert.True(t, owned, "obj owned status")
 
@@ -156,13 +165,13 @@ func TestCRUDOwnerMethods(t *testing.T) {
 			require.NoError(t, err, "getRefs")
 			assert.Len(t, refs, i+1, "getRefs")
 		}
-		changed, err := InsertOwnerReference(own, obj, sc)
+		changed, err := insertOwnerReference(own, obj, sc)
 		require.NoError(t, err, "insert owner reference")
 		assert.True(t, changed, "obj changed status")
 		check()
 
 		t.Log("======== idempotent repeat =====")
-		changed, err = InsertOwnerReference(own, obj, sc)
+		changed, err = insertOwnerReference(own, obj, sc)
 		require.NoError(t, err, "insert owner reference")
 		assert.False(t, changed)
 		check()
@@ -171,7 +180,7 @@ func TestCRUDOwnerMethods(t *testing.T) {
 	for i, own := range []*corev1.Pod{ownerA, ownerB} {
 		t.Logf("===== Removing owner %s =====", own.Name)
 		check := func() {
-			owned, err = IsOwned(obj)
+			owned, err = isOwned(obj)
 			require.NoError(t, err, "owned")
 			assert.Equal(t, i != 1, owned, "obj owned status")
 
@@ -179,13 +188,13 @@ func TestCRUDOwnerMethods(t *testing.T) {
 			require.NoError(t, err, "getRefs")
 			assert.Len(t, refs, 1-i, "getRefs")
 		}
-		changed, err := DeleteOwnerReference(own, obj, sc)
+		changed, err := deleteOwnerReference(own, obj, sc)
 		require.NoError(t, err, "delete owner reference")
 		assert.True(t, changed, "obj changed status")
 		check()
 
 		t.Log("======== idempotent repeat =====")
-		changed, err = DeleteOwnerReference(own, obj, sc)
+		changed, err = deleteOwnerReference(own, obj, sc)
 		require.NoError(t, err, "delete owner reference")
 		assert.False(t, changed, "obj changed status")
 		check()

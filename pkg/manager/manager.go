@@ -105,24 +105,16 @@ func run(flags *flags, log logr.Logger) error {
 
 	// Register Owner field indexes
 	fieldIndexerLog := ctrl.Log.WithName("fieldindex")
-	if err := multiowner.AddOwnerReverseFieldIndex(
-		mgr.GetFieldIndexer(), fieldIndexerLog.WithName("Offering"), &catalogv1alpha1.Offering{},
-	); err != nil {
+	if err := multiowner.AddOwnerReverseFieldIndex(fieldIndexerLog.WithName("Offering"), mgr.GetFieldIndexer(), &catalogv1alpha1.Offering{}); err != nil {
 		return fmt.Errorf("registering Offering owner field index: %w", err)
 	}
-	if err := multiowner.AddOwnerReverseFieldIndex(
-		mgr.GetFieldIndexer(), fieldIndexerLog.WithName("ProviderReference"), &catalogv1alpha1.ProviderReference{},
-	); err != nil {
+	if err := multiowner.AddOwnerReverseFieldIndex(fieldIndexerLog.WithName("ProviderReference"), mgr.GetFieldIndexer(), &catalogv1alpha1.ProviderReference{}); err != nil {
 		return fmt.Errorf("registering ProviderReference owner field indexer: %w", err)
 	}
-	if err := multiowner.AddOwnerReverseFieldIndex(
-		mgr.GetFieldIndexer(), fieldIndexerLog.WithName("ServiceClusterReference"), &catalogv1alpha1.ServiceClusterReference{},
-	); err != nil {
+	if err := multiowner.AddOwnerReverseFieldIndex(fieldIndexerLog.WithName("ServiceClusterReference"), mgr.GetFieldIndexer(), &catalogv1alpha1.ServiceClusterReference{}); err != nil {
 		return fmt.Errorf("registering ServiceClusterReference owner field index: %w", err)
 	}
-	if err := multiowner.AddOwnerReverseFieldIndex(
-		mgr.GetFieldIndexer(), fieldIndexerLog.WithName("ServiceClusterAssignment"), &corev1alpha1.ServiceClusterAssignment{},
-	); err != nil {
+	if err := multiowner.AddOwnerReverseFieldIndex(fieldIndexerLog.WithName("ServiceClusterAssignment"), mgr.GetFieldIndexer(), &corev1alpha1.ServiceClusterAssignment{}); err != nil {
 		return fmt.Errorf("registering ServiceClusterAssignment owner field index: %w", err)
 	}
 
