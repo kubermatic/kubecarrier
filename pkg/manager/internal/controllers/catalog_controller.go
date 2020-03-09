@@ -54,7 +54,7 @@ type CatalogReconciler struct {
 // +kubebuilder:rbac:groups=catalog.kubecarrier.io,resources=catalogentries,verbs=list;watch
 // +kubebuilder:rbac:groups=catalog.kubecarrier.io,resources=offerings,verbs=get;list;watch;create;update;delete
 // +kubebuilder:rbac:groups=catalog.kubecarrier.io,resources=serviceclusterreferences,verbs=get;list;watch;create;update;delete
-// +kubebuilder:rbac:groups=catalog.kubecarrier.io,resources=providerreferences,verbs=get;list;watch;create;update;delete
+// +kubebuilder:rbac:groups=catalog.kubecarrier.io,resources=providers,verbs=get;list;watch;create;update;delete
 // +kubebuilder:rbac:groups=kubecarrier.io,resources=serviceclusters,verbs=get;list;watch
 // +kubebuilder:rbac:groups=kubecarrier.io,resources=serviceclusterassignments,verbs=get;list;watch;create;update;delete
 // +kubebuilder:rbac:groups=rbac.authorization.k8s.io,resources=roles,verbs=get;list;watch;create;update;patch;delete;escalate;bind
@@ -133,7 +133,7 @@ func (r *CatalogReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	}
 
 	var (
-		desiredProviderReferences        []runtime.Object
+		desiredProviders                 []runtime.Object
 		desiredOfferings                 []runtime.Object
 		desiredServiceClusterReferences  []runtime.Object
 		desiredServiceClusterAssignments []runtime.Object
@@ -150,7 +150,8 @@ func (r *CatalogReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	}
 
 	for _, tenant := range readyTenants {
-		desiredProviderReferences = append(desiredProviderReferences, r.buildDesiredProviderReference(provider, tenant))
+
+		desiredProviders = append(desiredProviders, r.buildDesiredProvider(provider, tenant))
 		desiredOfferings = append(desiredOfferings, r.buildDesiredOfferings(provider, tenant, readyCatalogEntries)...)
 		desiredServiceClusterReferencesForTenant, desiredServiceClusterAssignmentsForTenant, err := r.buildDesiredServiceClusterReferencesAndAssignments(ctx, log, provider, tenant, readyCatalogEntries)
 		if err != nil {
@@ -160,8 +161,8 @@ func (r *CatalogReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 		desiredServiceClusterAssignments = append(desiredServiceClusterAssignments, desiredServiceClusterAssignmentsForTenant...)
 	}
 
-	if err := r.reconcileProviderReferences(ctx, log, catalog, desiredProviderReferences); err != nil {
-		return ctrl.Result{}, fmt.Errorf("reconcliing ProviderReferences: %w", err)
+	if err := r.reconcileProviders(ctx, log, catalog, desiredProviders); err != nil {
+		return ctrl.Result{}, fmt.Errorf("reconcliing Providers: %w", err)
 	}
 
 	if err := r.reconcileOfferings(ctx, log, catalog, desiredOfferings); err != nil {
@@ -223,7 +224,7 @@ func (r *CatalogReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		Watches(&source.Kind{Type: &catalogv1alpha1.CatalogEntry{}}, enqueueAllCatalogsInNamespace).
 		Watches(&source.Kind{Type: &corev1alpha1.ServiceCluster{}}, enqueueAllCatalogsInNamespace).
 		Watches(&source.Kind{Type: &catalogv1alpha1.Offering{}}, enqueuerForOwner).
-		Watches(&source.Kind{Type: &catalogv1alpha1.ProviderReference{}}, enqueuerForOwner).
+		Watches(&source.Kind{Type: &catalogv1alpha1.Provider{}}, enqueuerForOwner).
 		Watches(&source.Kind{Type: &catalogv1alpha1.ServiceClusterReference{}}, enqueuerForOwner).
 		Watches(&source.Kind{Type: &corev1alpha1.ServiceClusterAssignment{}}, enqueuerForOwner).
 		Watches(&source.Kind{Type: &rbacv1.Role{}}, enqueuerForOwner).
@@ -249,7 +250,7 @@ func (r *CatalogReconciler) handleDeletion(ctx context.Context, log logr.Logger,
 	cleanedUp, err := multiowner.DeleteOwnedObjects(ctx, log, r.Client, r.Scheme, catalog, []runtime.Object{
 		&catalogv1alpha1.Offering{},
 		&catalogv1alpha1.ServiceClusterReference{},
-		&catalogv1alpha1.ProviderReference{},
+		&catalogv1alpha1.Provider{},
 		&corev1alpha1.ServiceClusterAssignment{},
 		&rbacv1.Role{},
 		&rbacv1.RoleBinding{},
@@ -350,16 +351,16 @@ func (r *CatalogReconciler) buildDesiredOfferings(
 	return
 }
 
-func (r *CatalogReconciler) buildDesiredProviderReference(
+func (r *CatalogReconciler) buildDesiredProvider(
 	provider *catalogv1alpha1.Account,
 	tenant *catalogv1alpha1.Account,
-) (desiredProviderReference runtime.Object) {
-	desiredProviderReference = &catalogv1alpha1.ProviderReference{
+) (desiredProvider runtime.Object) {
+	desiredProvider = &catalogv1alpha1.Provider{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      provider.Name,
 			Namespace: tenant.Status.Namespace.Name,
 		},
-		Spec: catalogv1alpha1.ProviderReferenceSpec{
+		Spec: catalogv1alpha1.ProviderSpec{
 			Metadata: provider.Spec.Metadata,
 		},
 	}
@@ -511,21 +512,21 @@ func (r *CatalogReconciler) reconcileOfferings(
 		})
 }
 
-func (r *CatalogReconciler) reconcileProviderReferences(
+func (r *CatalogReconciler) reconcileProviders(
 	ctx context.Context, log logr.Logger,
 	catalog *catalogv1alpha1.Catalog,
-	desiredProviderReferences []runtime.Object,
+	desiredProviders []runtime.Object,
 ) error {
 	return multiowner.ReconcileOwnedObjects(
 		ctx, log,
 		r.Client, r.Scheme,
 		catalog,
-		desiredProviderReferences, &catalogv1alpha1.ProviderReference{},
+		desiredProviders, &catalogv1alpha1.Provider{},
 		func(actual, desired runtime.Object) error {
-			actualProviderReference := actual.(*catalogv1alpha1.ProviderReference)
-			desiredProviderReference := desired.(*catalogv1alpha1.ProviderReference)
-			if !reflect.DeepEqual(actualProviderReference.Spec, desiredProviderReference.Spec) {
-				actualProviderReference.Spec = desiredProviderReference.Spec
+			actualProvider := actual.(*catalogv1alpha1.Provider)
+			desiredProvider := desired.(*catalogv1alpha1.Provider)
+			if !reflect.DeepEqual(actualProvider.Spec, desiredProvider.Spec) {
+				actualProvider.Spec = desiredProvider.Spec
 			}
 			return nil
 		})

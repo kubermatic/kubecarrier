@@ -26,27 +26,27 @@ import (
 	"github.com/kubermatic/kubecarrier/pkg/testutil"
 )
 
-func TestProviderReferenceValidatingCreate(t *testing.T) {
-	providerReferenceWebhookHandler := ProviderReferenceWebhookHandler{
+func TestProviderValidatingCreate(t *testing.T) {
+	providerWebhookHandler := ProviderWebhookHandler{
 		Log: testutil.NewLogger(t),
 	}
 
 	tests := []struct {
 		name          string
-		object        *catalogv1alpha1.ProviderReference
+		object        *catalogv1alpha1.Provider
 		expectedError bool
 	}{
 		{
-			name: "invalid ProviderReference name",
-			object: &catalogv1alpha1.ProviderReference{
+			name: "invalid Provider name",
+			object: &catalogv1alpha1.Provider{
 				ObjectMeta: metav1.ObjectMeta{
-					Name:      "test.providerReference",
-					Namespace: "test-providerReference-namespace",
+					Name:      "test.provider",
+					Namespace: "test-provider-namespace",
 				},
-				Spec: catalogv1alpha1.ProviderReferenceSpec{
+				Spec: catalogv1alpha1.ProviderSpec{
 					Metadata: catalogv1alpha1.AccountMetadata{
-						Description: "test ProviderReference",
-						DisplayName: "test ProviderReference",
+						Description: "test Provider",
+						DisplayName: "test Provider",
 					},
 				},
 			},
@@ -54,24 +54,24 @@ func TestProviderReferenceValidatingCreate(t *testing.T) {
 		},
 		{
 			name: "metadata missing",
-			object: &catalogv1alpha1.ProviderReference{
+			object: &catalogv1alpha1.Provider{
 				ObjectMeta: metav1.ObjectMeta{
-					Name:      "test-providerreference",
-					Namespace: "test-providerReference-namespace",
+					Name:      "test-provider",
+					Namespace: "test-provider-namespace",
 				},
 			},
 			expectedError: true,
 		},
 		{
 			name: "description missing",
-			object: &catalogv1alpha1.ProviderReference{
+			object: &catalogv1alpha1.Provider{
 				ObjectMeta: metav1.ObjectMeta{
-					Name:      "test-providerreference",
-					Namespace: "test-providerReference-namespace",
+					Name:      "test-provider",
+					Namespace: "test-provider-namespace",
 				},
-				Spec: catalogv1alpha1.ProviderReferenceSpec{
+				Spec: catalogv1alpha1.ProviderSpec{
 					Metadata: catalogv1alpha1.AccountMetadata{
-						DisplayName: "test ProviderReference",
+						DisplayName: "test Provider",
 					},
 				},
 			},
@@ -79,14 +79,14 @@ func TestProviderReferenceValidatingCreate(t *testing.T) {
 		},
 		{
 			name: "displayName missing",
-			object: &catalogv1alpha1.ProviderReference{
+			object: &catalogv1alpha1.Provider{
 				ObjectMeta: metav1.ObjectMeta{
-					Name:      "test-providerreference",
-					Namespace: "test-providerReference-namespace",
+					Name:      "test-provider",
+					Namespace: "test-provider-namespace",
 				},
-				Spec: catalogv1alpha1.ProviderReferenceSpec{
+				Spec: catalogv1alpha1.ProviderSpec{
 					Metadata: catalogv1alpha1.AccountMetadata{
-						Description: "test ProviderReference",
+						Description: "test Provider",
 					},
 				},
 			},
@@ -94,15 +94,15 @@ func TestProviderReferenceValidatingCreate(t *testing.T) {
 		},
 		{
 			name: "can pass validate create",
-			object: &catalogv1alpha1.ProviderReference{
+			object: &catalogv1alpha1.Provider{
 				ObjectMeta: metav1.ObjectMeta{
-					Name:      "test-providerreference",
-					Namespace: "test-providerReference-namespace",
+					Name:      "test-provider",
+					Namespace: "test-provider-namespace",
 				},
-				Spec: catalogv1alpha1.ProviderReferenceSpec{
+				Spec: catalogv1alpha1.ProviderSpec{
 					Metadata: catalogv1alpha1.AccountMetadata{
-						Description: "test ProviderReference",
-						DisplayName: "test ProviderReference",
+						Description: "test Provider",
+						DisplayName: "test Provider",
 					},
 				},
 			},
@@ -112,7 +112,7 @@ func TestProviderReferenceValidatingCreate(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			assert.Equal(t, test.expectedError, providerReferenceWebhookHandler.validateCreate(test.object) != nil)
+			assert.Equal(t, test.expectedError, providerWebhookHandler.validateCreate(test.object) != nil)
 		})
 	}
 }

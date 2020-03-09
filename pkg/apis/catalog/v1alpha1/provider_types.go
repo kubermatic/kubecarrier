@@ -20,34 +20,34 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// ProviderReferenceSpec defines the desired state of ProviderReference
-type ProviderReferenceSpec struct {
+// ProviderSpec defines the desired state of Provider
+type ProviderSpec struct {
 	// Metadata contains the metadata (display name, description, etc) of the Provider.
 	Metadata AccountMetadata `json:"metadata,omitempty"`
 }
 
-// ProviderReference exposes information of a service provider.
+// Provider exposes information of an Account with the Provider role.
 //
-// ProviderReference objects are created automatically by KubeCarrier in Account namespaces, that have a service offered to them via a Catalog.
+// Provider objects are created automatically by KubeCarrier in Account namespaces, that have a service offered to them via a Catalog.
 // +kubebuilder:object:root=true
 // +kubebuilder:printcolumn:name="Display Name",type="string",JSONPath=".spec.metadata.displayName"
 // +kubebuilder:printcolumn:name="Age",type="date",JSONPath=".metadata.creationTimestamp"
 // +kubebuilder:resource:categories=kubecarrier-tenant,shortName=pr
-type ProviderReference struct {
+type Provider struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec ProviderReferenceSpec `json:"spec,omitempty"`
+	Spec ProviderSpec `json:"spec,omitempty"`
 }
 
-// ProviderReferenceList contains a list of ProviderReference.
+// ProviderList contains a list of Provider.
 // +kubebuilder:object:root=true
-type ProviderReferenceList struct {
+type ProviderList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
-	Items           []ProviderReference `json:"items"`
+	Items           []Provider `json:"items"`
 }
 
 func init() {
-	SchemeBuilder.Register(&ProviderReference{}, &ProviderReferenceList{})
+	SchemeBuilder.Register(&Provider{}, &ProviderList{})
 }
