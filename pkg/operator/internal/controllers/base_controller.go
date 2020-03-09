@@ -22,11 +22,16 @@ import (
 
 	"github.com/go-logr/logr"
 	appsv1 "k8s.io/api/apps/v1"
+	"k8s.io/apimachinery/pkg/api/meta"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	ctrl "sigs.k8s.io/controller-runtime"
-	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/client/apiutil"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
+	"sigs.k8s.io/controller-runtime/pkg/source"
 
 	"github.com/kubermatic/kubecarrier/pkg/internal/owner"
 	"github.com/kubermatic/kubecarrier/pkg/internal/reconcile"
@@ -34,7 +39,8 @@ import (
 )
 
 type Component interface {
-	object
+	runtime.Object
+	metav1.Object
 	SetTerminatingCondition() bool
 	SetUnReadyCondition() bool
 	SetReadyCondition() bool
@@ -45,23 +51,24 @@ type ControllerStrategy interface {
 	GetObj() Component
 	GetManifests(context.Context, Component) ([]unstructured.Unstructured, error)
 	GetOwnedObjectsTypes() []runtime.Object
-	SetupWithManager(builder *builder.Builder, scheme *runtime.Scheme) *builder.Builder
 }
 
 type BaseReconciler struct {
 	Controller ControllerStrategy
 	Client     client.Client
 	Scheme     *runtime.Scheme
+	RESTMapper meta.RESTMapper
 	Log        logr.Logger
 	Name       string
 	Finalizer  string
 }
 
-func NewBaseReconciler(ctr ControllerStrategy, c client.Client, scheme *runtime.Scheme, log logr.Logger, name, finalizer string) *BaseReconciler {
+func NewBaseReconciler(ctr ControllerStrategy, c client.Client, scheme *runtime.Scheme, RESTMapper meta.RESTMapper, log logr.Logger, name, finalizer string) *BaseReconciler {
 	return &BaseReconciler{
 		Controller: ctr,
 		Client:     c,
 		Scheme:     scheme,
+		RESTMapper: RESTMapper,
 		Log:        log,
 		Name:       name,
 		Finalizer:  finalizer,
@@ -69,8 +76,30 @@ func NewBaseReconciler(ctr ControllerStrategy, c client.Client, scheme *runtime.
 }
 
 func (r *BaseReconciler) SetupWithManager(mgr ctrl.Manager) error {
-	builder := ctrl.NewControllerManagedBy(mgr)
-	return r.Controller.SetupWithManager(builder, r.Scheme).Complete(r)
+	controllerBuilder := ctrl.NewControllerManagedBy(mgr)
+	for _, obj := range r.Controller.GetOwnedObjectsTypes() {
+		gvk, err := apiutil.GVKForObject(obj, r.Scheme)
+		if err != nil {
+			return err
+		}
+		restMapping, err := r.RESTMapper.RESTMapping(schema.GroupKind{
+			Group: gvk.Group,
+			Kind:  gvk.Kind,
+		}, gvk.Version)
+		if err != nil {
+			return err
+		}
+
+		switch restMapping.Scope.Name() {
+		case meta.RESTScopeNameNamespace:
+			controllerBuilder = controllerBuilder.Owns(obj)
+		case meta.RESTScopeNameRoot:
+			controllerBuilder = controllerBuilder.Watches(&source.Kind{Type: obj}, owner.EnqueueRequestForOwner(obj, mgr.GetScheme()))
+		default:
+			return fmt.Errorf("unknown REST scope: %s", restMapping.Scope.Name())
+		}
+	}
+	return controllerBuilder.Complete(r)
 }
 
 // Reconcile function reconciles the object which specified by the request. Currently, it does the following:
@@ -159,11 +188,30 @@ func (r *BaseReconciler) updateStatus(ctx context.Context, c Component, deployme
 }
 
 // ReconcileOwnedObjects - reconcile the objects that owned by obj
-func (r *BaseReconciler) reconcileOwnedObjects(ctx context.Context, obj object, objects []unstructured.Unstructured) (bool, error) {
+func (r *BaseReconciler) reconcileOwnedObjects(ctx context.Context, obj Component, objects []unstructured.Unstructured) (bool, error) {
 	var deploymentIsReady bool
 	for _, object := range objects {
-		if err := addOwnerReference(obj, &object, r.Scheme); err != nil {
+		gvk, err := apiutil.GVKForObject(obj, r.Scheme)
+		if err != nil {
 			return false, err
+		}
+		restMapping, err := r.RESTMapper.RESTMapping(schema.GroupKind{
+			Group: gvk.Group,
+			Kind:  gvk.Kind,
+		}, gvk.Version)
+		if err != nil {
+			return false, err
+		}
+
+		switch restMapping.Scope.Name() {
+		case meta.RESTScopeNameNamespace:
+			if err := controllerutil.SetControllerReference(obj, &object, r.Scheme); err != nil {
+				return false, err
+			}
+		case meta.RESTScopeNameRoot:
+			owner.SetOwnerReference(obj, &object, r.Scheme)
+		default:
+			return false, fmt.Errorf("unknown REST scope: %s", restMapping.Scope.Name())
 		}
 		curObj, err := reconcile.Unstructured(ctx, r.Log, r.Client, &object)
 		if err != nil {

@@ -85,6 +85,7 @@ func run(flags *flags, log logr.Logger) error {
 		&controllers.KubeCarrierController{},
 		mgr.GetClient(),
 		mgr.GetScheme(),
+		mgr.GetRESTMapper(),
 		log.WithName("controllers").WithName("KubeCarrier"),
 		"KubeCarrier",
 		"kubecarrier.kubecarrier.io/controller").SetupWithManager(mgr); err != nil {
@@ -94,6 +95,7 @@ func run(flags *flags, log logr.Logger) error {
 		&controllers.FerryController{},
 		mgr.GetClient(),
 		mgr.GetScheme(),
+		mgr.GetRESTMapper(),
 		log.WithName("controllers").WithName("Ferry"),
 		"Ferry",
 		"").SetupWithManager(mgr); err != nil {
@@ -103,6 +105,7 @@ func run(flags *flags, log logr.Logger) error {
 		&controllers.CatapultController{Client: mgr.GetClient()},
 		mgr.GetClient(),
 		mgr.GetScheme(),
+		mgr.GetRESTMapper(),
 		log.WithName("controllers").WithName("Catapult"),
 		"Catapult",
 		"catapult.kubecarrier.io/controller",
@@ -113,6 +116,7 @@ func run(flags *flags, log logr.Logger) error {
 		&controllers.ElevatorController{},
 		mgr.GetClient(),
 		mgr.GetScheme(),
+		mgr.GetRESTMapper(),
 		log.WithName("controllers").WithName("Elevator"),
 		"Elevator",
 		"elevator.kubecarrier.io/controller").SetupWithManager(mgr); err != nil {

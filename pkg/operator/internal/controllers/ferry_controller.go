@@ -30,6 +30,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/source"
 
 	operatorv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/operator/v1alpha1"
+	"github.com/kubermatic/kubecarrier/pkg/internal/owner"
 	resourceferry "github.com/kubermatic/kubecarrier/pkg/internal/resources/ferry"
 )
 
@@ -49,21 +50,26 @@ func (c *FerryController) GetObj() Component {
 }
 
 func (c *FerryController) GetOwnedObjectsTypes() []runtime.Object {
-	return []runtime.Object{}
-}
+	return []runtime.Object{
+		&corev1.Service{},
+		&corev1.ServiceAccount{},
+		&rbacv1.Role{},
+		&rbacv1.RoleBinding{},
+		&appsv1.Deployment{},
+	}
 
-var ferryControllerObjects = []runtime.Object{
-	&corev1.Service{},
-	&corev1.ServiceAccount{},
-	&rbacv1.Role{},
-	&rbacv1.RoleBinding{},
-	&appsv1.Deployment{},
 }
 
 func (c *FerryController) SetupWithManager(builder *builder.Builder, scheme *runtime.Scheme) *builder.Builder {
 	builder = builder.For(&operatorv1alpha1.Ferry{})
-	for _, obj := range ferryControllerObjects {
+	for _, obj := range c.GetOwnedObjectsTypes() {
+		// namespaces scoped
+		// we use metadata.
 		builder = builder.Watches(&source.Kind{Type: obj}, &handler.EnqueueRequestForOwner{OwnerType: &operatorv1alpha1.Ferry{}})
+
+		//cluster scoped
+		// we use owner references
+		builder = builder.Watches(&source.Kind{Type: obj}, owner.EnqueueRequestForOwner(obj, scheme))
 	}
 	return builder
 }
