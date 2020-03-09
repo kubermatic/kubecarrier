@@ -102,9 +102,9 @@ webhooks:
     service:
       name: webhook-service
       namespace: system
-      path: /validate-catalog-kubecarrier-io-v1alpha1-providerreference
+      path: /validate-catalog-kubecarrier-io-v1alpha1-provider
   failurePolicy: Fail
-  name: vproviderreference.kubecarrier.io
+  name: vprovider.kubecarrier.io
   rules:
   - apiGroups:
     - catalog.kubecarrier.io
@@ -114,7 +114,7 @@ webhooks:
     - CREATE
     - UPDATE
     resources:
-    - providerreferences
+    - providers
 - clientConfig:
     caBundle: Cg==
     service:
@@ -173,9 +173,9 @@ webhooks:
     service:
       name: webhook-service
       namespace: system
-      path: /validate-catalog-kubecarrier-io-v1alpha1-tenantreference
+      path: /validate-catalog-kubecarrier-io-v1alpha1-tenant
   failurePolicy: Fail
-  name: vtenantreference.kubecarrier.io
+  name: vtenant.kubecarrier.io
   rules:
   - apiGroups:
     - catalog.kubecarrier.io
@@ -184,4 +184,4 @@ webhooks:
     operations:
     - CREATE
     resources:
-    - tenantreferences
+    - tenants

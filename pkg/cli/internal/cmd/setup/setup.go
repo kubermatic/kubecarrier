@@ -41,8 +41,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
-	"github.com/kubermatic/kubecarrier/pkg/anchor/internal/spinner"
 	operatorv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/operator/v1alpha1"
+	"github.com/kubermatic/kubecarrier/pkg/cli/internal/spinner"
 	"github.com/kubermatic/kubecarrier/pkg/internal/reconcile"
 	"github.com/kubermatic/kubecarrier/pkg/internal/resources/operator"
 	"github.com/kubermatic/kubecarrier/pkg/internal/util"
@@ -67,11 +67,11 @@ func NewCommand(log logr.Logger) *cobra.Command {
 	cmd := &cobra.Command{
 		Args:  cobra.NoArgs,
 		Use:   "setup",
-		Short: "Deploy kubecarrier operator",
-		Long: `Deploy kubecarrier operator in a kubernetes cluster.
+		Short: "Deploy KubeCarrier operator",
+		Long: `Deploy KubeCarrier operator in a kubernetes cluster.
 Here are some examples:
 - You can specify the kubeconfig absolute path of the cluster that you want to deploy everything in it:
-$ anchor setup --kubeconfig=<kubeconfig path>
+$ kubectl kubecarrier setup --kubeconfig=<kubeconfig path>
 `,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cfg, err := flags.ToRESTConfig()
@@ -111,11 +111,11 @@ func runE(conf *rest.Config, log logr.Logger, cmd *cobra.Command) error {
 	}
 
 	if err := spinner.AttachSpinnerTo(s, startTime, "Deploy KubeCarrier Operator", reconcileOperator(ctx, log, c, ns)); err != nil {
-		return fmt.Errorf("deploying kubecarrier operator: %w", err)
+		return fmt.Errorf("deploying KubeCarrier operator: %w", err)
 	}
 
 	if err := spinner.AttachSpinnerTo(s, startTime, "Deploy KubeCarrier", deployKubeCarrier(ctx, ns, conf)); err != nil {
-		return fmt.Errorf("deploying kubecarrier controller manager: %w", err)
+		return fmt.Errorf("deploying KubeCarrier controller manager: %w", err)
 	}
 
 	return nil
@@ -193,7 +193,7 @@ func deployKubeCarrier(ctx context.Context, kubeCarrierNamespace *corev1.Namespa
 		if _, err := ctrl.CreateOrUpdate(ctx, w, kubeCarrier, func() error {
 			return nil
 		}); err != nil {
-			return fmt.Errorf("cannot create or update kubecarrier: %w", err)
+			return fmt.Errorf("cannot create or update KubeCarrier: %w", err)
 		}
 		return w.WaitUntil(ctx, kubeCarrier, func(obj runtime.Object, eventType watch.EventType) (b bool, err error) {
 			return obj.(*operatorv1alpha1.KubeCarrier).IsReady(), nil

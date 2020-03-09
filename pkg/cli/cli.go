@@ -14,23 +14,14 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package bash
+package cli
 
 import (
-	"os"
+	// https://krew.sigs.k8s.io/docs/developer-guide/develop/best-practices/
+	_ "k8s.io/client-go/plugin/pkg/client/auth"
 
-	"github.com/spf13/cobra"
+	"github.com/kubermatic/kubecarrier/pkg/cli/internal/cmd"
 )
 
-// NewCommand returns a new cobra.Command for bash shell completion code generation
-func NewCommand() *cobra.Command {
-	cmd := &cobra.Command{
-		Args:  cobra.NoArgs,
-		Use:   "bash",
-		Short: "Output shell completions for bash",
-		RunE: func(cmd *cobra.Command, args []string) error {
-			return cmd.Parent().Parent().GenBashCompletion(os.Stdout)
-		},
-	}
-	return cmd
-}
+// NewKubecarrierCLI returns the KubeCarrier CLI root command with all subcommands initialized.
+var NewKubecarrierCLI = cmd.NewKubecarrierCLI

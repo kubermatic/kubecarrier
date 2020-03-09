@@ -18,19 +18,27 @@ package v1alpha1
 
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	corev1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/core/v1alpha1"
 )
 
-// CatapultSpec defines the desired state of Catapult
+// CatapultSpec defines the desired state of Catapult.
 type CatapultSpec struct {
-	// References the CRD in the management cluster.
+	// References the CRD in the Management Cluster.
 	ManagementClusterCRD CRDReference `json:"managementClusterCRD"`
-	// References the CRD in the service cluster.
+	// References the CRD in the ServiceCluster.
 	ServiceClusterCRD CRDReference `json:"serviceClusterCRD"`
 	// References the ServiceCluster object that this object belongs to.
 	ServiceCluster ObjectReference `json:"serviceCluster"`
+	// WebhookStrategy configs the webhook of the CRD which is registered in the management cluster by this Catapult.
+	// There are two possible values for this configuration {None (by default), ServiceCluster}
+	// None (by default): Webhook will only check if there is an available ServiceClusterAssignment in the current Namespace.
+	// ServiceCluster: Webhook will call webhooks of the CRD in the ServiceCluster with dry-run flag.
+	// +kubebuilder:default:=None
+	WebhookStrategy corev1alpha1.WebhookStrategyType `json:"webhookStrategy,omitempty"`
 }
 
-// CatapultStatus defines the observed state of Catapult
+// CatapultStatus defines the observed state of Catapult.
 type CatapultStatus struct {
 	// ObservedGeneration is the most recent generation observed for this Catapult by the controller.
 	ObservedGeneration int64 `json:"observedGeneration,omitempty"`
@@ -59,7 +67,7 @@ const (
 	CatapultTerminatingReason = "Deleting"
 )
 
-// updatePhase updates the phase property based on the current conditions
+// updatePhase updates the phase property based on the current conditions.
 // this method should be called every time the conditions are updated.
 func (s *CatapultStatus) updatePhase() {
 
@@ -153,6 +161,8 @@ func (s *CatapultStatus) SetCondition(condition CatapultCondition) {
 }
 
 // Catapult manages the deployment of the Catapult controller manager.
+//
+// A Catapult instance is started for each CustomResourceDiscovery instance and responsible for reconciling CRD instances across Kubernetes Clusters.
 // +kubebuilder:object:root=true
 // +kubebuilder:subresource:status
 // +kubebuilder:printcolumn:name="Status",type="string",JSONPath=".status.phase"
@@ -180,9 +190,8 @@ func (s *Catapult) IsReady() bool {
 	return false
 }
 
+// CatapultList contains a list of Catapult.
 // +kubebuilder:object:root=true
-
-// CatapultList contains a list of Catapult
 type CatapultList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`

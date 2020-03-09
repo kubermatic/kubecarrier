@@ -46,7 +46,7 @@ func NewInstallationSuite(f *testutil.Framework) func(t *testing.T) {
 		ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 		t.Cleanup(cancel)
 
-		c := exec.CommandContext(ctx, "anchor", "setup", "--kubeconfig", f.Config().ManagementExternalKubeconfigPath)
+		c := exec.CommandContext(ctx, "kubectl", "kubecarrier", "setup", "--kubeconfig", f.Config().ManagementExternalKubeconfigPath)
 		out, err := c.CombinedOutput()
 		t.Log(string(out))
 		require.NoError(t, err)

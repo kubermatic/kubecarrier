@@ -51,6 +51,8 @@ type CustomResourceDiscoveryReconciler struct {
 // +kubebuilder:rbac:groups=kubecarrier.io,resources=customresourcediscoveries,verbs=get;list;watch;update
 // +kubebuilder:rbac:groups=kubecarrier.io,resources=customresourcediscoveries/status,verbs=get;update;patch
 // +kubebuilder:rbac:groups=apiextensions.k8s.io,resources=customresourcedefinitions,verbs=get;list;watch;update;create;patch;delete
+// +kubebuilder:rbac:groups=operator.kubecarrier.io,resources=catapults,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=operator.kubecarrier.io,resources=catapults/status,verbs=get;update;patch
 
 func (r *CustomResourceDiscoveryReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	var (
@@ -229,6 +231,7 @@ func (r *CustomResourceDiscoveryReconciler) reconcileCatapult(
 			ServiceCluster: operatorv1alpha1.ObjectReference{
 				Name: crDiscovery.Spec.ServiceCluster.Name,
 			},
+			WebhookStrategy: crDiscovery.Spec.WebhookStrategy,
 		},
 	}
 	if err := controllerutil.SetControllerReference(

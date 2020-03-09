@@ -19,11 +19,15 @@ spec:
       containers:
       - image: quay.io/kubecarrier/catapult:latest
         name: manager
+        args:
+        - "--cert-dir=$(CERT_DIR)"
         env:
         - name: KUBERNETES_NAMESPACE
           valueFrom:
             fieldRef:
               fieldPath: metadata.namespace
+        - name: CERT_DIR
+          value: "/tmp/k8s-webhook-server/serving-certs"
         resources:
           limits:
             cpu: 100m
@@ -31,4 +35,16 @@ spec:
           requests:
             cpu: 100m
             memory: 20Mi
+        ports:
+          - name: readiness-port
+            containerPort: 9440
+            protocol: TCP
+        readinessProbe:
+          httpGet:
+            path: /readyz
+            port: readiness-port
+        livenessProbe:
+          httpGet:
+            path: /healthz
+            port: readiness-port
       terminationGracePeriodSeconds: 10

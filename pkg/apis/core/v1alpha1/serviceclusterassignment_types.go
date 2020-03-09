@@ -20,7 +20,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// ServiceClusterAssignmentSpec defines the desired state of ServiceClusterAssignment
+// ServiceClusterAssignmentSpec describes the desired state of ServiceClusterAssignment.
 type ServiceClusterAssignmentSpec struct {
 	// References the ServiceCluster.
 	ServiceCluster ObjectReference `json:"serviceCluster"`
@@ -28,7 +28,7 @@ type ServiceClusterAssignmentSpec struct {
 	ManagementClusterNamespace ObjectReference `json:"managementNamespace"`
 }
 
-// ServiceClusterAssignmentStatus defines the observed state of ServiceClusterAssignment
+// ServiceClusterAssignmentStatus represents the observed state of ServiceClusterAssignment.
 type ServiceClusterAssignmentStatus struct {
 	// DEPRECATED.
 	// Phase represents the current lifecycle state of this object
@@ -140,7 +140,22 @@ func (s *ServiceClusterAssignmentStatus) GetCondition(conditionType ServiceClust
 	return
 }
 
-// ServiceClusterAssignment represents the assignment of a Tenant to a ServiceCluster.
+// ServiceClusterAssignment is assigning a Namespace in the Management cluster with a Namespace on the ServiceCluster.
+//
+// The Namespace in the ServiceCluster will be created automatically and is reported in the instance status.
+//
+// **Example**
+// ```yaml
+// apiVersion: kubecarrier.io/v1alpha1
+// kind: ServiceClusterAssignment
+// metadata:
+//   name: example1.eu-west-1
+// spec:
+//   serviceCluster:
+//     name: eu-west-1
+//   managementNamespace:
+//     name: example1
+// ```
 // +kubebuilder:object:root=true
 // +kubebuilder:subresource:status
 // +kubebuilder:printcolumn:name="Status",type="string",JSONPath=".status.phase"
@@ -169,7 +184,7 @@ func (s *ServiceClusterAssignment) IsReady() bool {
 	return false
 }
 
-// ServiceClusterAssignmentList contains a list of ServiceClusterAssignment
+// ServiceClusterAssignmentList contains a list of ServiceClusterAssignment.
 // +kubebuilder:object:root=true
 type ServiceClusterAssignmentList struct {
 	metav1.TypeMeta `json:",inline"`

@@ -20,9 +20,9 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// CatalogEntrySpec defines the desired state of CatalogEntry
+// CatalogEntrySpec describes the desired state of CatalogEntry.
 type CatalogEntrySpec struct {
-	// Metadata contains the metadata (display name, description, etc) of the CatalogEntry.
+	// Metadata contains the metadata of the CatalogEntry for the Service Catalog.
 	Metadata CatalogEntryMetadata `json:"metadata,omitempty"`
 	// BaseCRD is the underlying BaseCRD objects that this CatalogEntry refers to.
 	BaseCRD ObjectReference `json:"baseCRD,omitempty"`
@@ -30,6 +30,7 @@ type CatalogEntrySpec struct {
 	Derive *DerivedConfig `json:"derive,omitempty"`
 }
 
+// DerivedConfig can be used to limit fields that should be exposed to a Tenant.
 type DerivedConfig struct {
 	// overrides the kind of the derived CRD.
 	KindOverride string `json:"kindOverride,omitempty"`
@@ -37,7 +38,7 @@ type DerivedConfig struct {
 	Expose []VersionExposeConfig `json:"expose"`
 }
 
-// CatalogEntryMetadata contains the metadata (display name, description, etc) of the CatalogEntry.
+// CatalogEntryMetadata contains metadata of the CatalogEntry.
 type CatalogEntryMetadata struct {
 	// DisplayName shows the human-readable name of this CatalogEntry.
 	DisplayName string `json:"displayName,omitempty"`
@@ -45,10 +46,12 @@ type CatalogEntryMetadata struct {
 	Description string `json:"description,omitempty"`
 }
 
-// CatalogEntryStatus defines the observed state of CatalogEntry.
+// CatalogEntryStatus represents the observed state of CatalogEntry.
 type CatalogEntryStatus struct {
-	// CRD holds the information about the underlying BaseCRD that are offered by this CatalogEntry.
-	CRD *CRDInformation `json:"crd,omitempty"`
+	// TenantCRD holds the information about the Tenant facing CRD that is offered by this CatalogEntry.
+	TenantCRD *CRDInformation `json:"tenantCRD,omitempty"`
+	// ProviderCRD holds the information about the Provider facing CRD that is offered by this CatalogEntry.
+	ProviderCRD *CRDInformation `json:"providerCRD,omitempty"`
 
 	// ObservedGeneration is the most recent generation observed for this CatalogEntry by the controller.
 	ObservedGeneration int64 `json:"observedGeneration,omitempty"`
@@ -77,7 +80,7 @@ const (
 	CatalogEntryTerminatingReason = "Deleting"
 )
 
-// updatePhase updates the phase property based on the current conditions
+// updatePhase updates the phase property based on the current conditions.
 // this method should be called every time the conditions are updated.
 func (s *CatalogEntryStatus) updatePhase() {
 	for _, condition := range s.Conditions {
@@ -169,7 +172,49 @@ func (s *CatalogEntryStatus) SetCondition(condition CatalogEntryCondition) {
 	s.Conditions = append(s.Conditions, condition)
 }
 
-// CatalogEntry reference to the CRD that the provider wants to provide as service to the tenant.
+// CatalogEntry controls how to offer a CRD to other Tenants.
+//
+// A CatalogEntry references a single CRD, adds metadata to it and allows to limit field access for Tenants.
+//
+// **Simple Example**
+// ```yaml
+// apiVersion: catalog.kubecarrier.io/v1alpha1
+// kind: CatalogEntry
+// metadata:
+//   name: couchdbs.eu-west-1
+// spec:
+//   metadata:
+//     displayName: CouchDB
+//     description: The compfy database
+//   baseCRD:
+//     name: couchdbs.eu-west-1.loodse
+// ```
+//
+// **Example with limited fields**
+// ```yaml
+// apiVersion: catalog.kubecarrier.io/v1alpha1
+// kind: CatalogEntry
+// metadata:
+//   name: couchdbs.eu-west-1
+// spec:
+//   metadata:
+//     displayName: CouchDB
+//     description: The compfy database
+//   baseCRD:
+//     name: couchdbs.eu-west-1.loodse
+//   derive:
+//     kindOverride: CouchDBPublic
+//     expose:
+//     - versions:
+//       - v1alpha1
+//       fields:
+//       - jsonPath: .spec.username
+//       - jsonPath: .spec.password
+//       - jsonPath: .status.phase
+//       - jsonPath: .status.fauxtonAddress
+//       - jsonPath: .status.address
+//       - jsonPath: .status.observedGeneration
+// ```
 // +kubebuilder:object:root=true
 // +kubebuilder:subresource:status
 // +kubebuilder:printcolumn:name="Status",type="string",JSONPath=".status.phase"
@@ -198,7 +243,7 @@ func (s *CatalogEntry) IsReady() bool {
 	return false
 }
 
-// CatalogEntryList contains a list of CatalogEntry
+// CatalogEntryList contains a list of CatalogEntry.
 // +kubebuilder:object:root=true
 type CatalogEntryList struct {
 	metav1.TypeMeta `json:",inline"`

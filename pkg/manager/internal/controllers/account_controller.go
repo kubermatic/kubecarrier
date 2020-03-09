@@ -19,9 +19,11 @@ package controllers
 import (
 	"context"
 	"fmt"
+	"reflect"
 
 	"github.com/go-logr/logr"
 	corev1 "k8s.io/api/core/v1"
+	rbacv1 "k8s.io/api/rbac/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
@@ -49,7 +51,9 @@ type AccountReconciler struct {
 // +kubebuilder:rbac:groups=catalog.kubecarrier.io,resources=accounts,verbs=get;list;watch;update;
 // +kubebuilder:rbac:groups=catalog.kubecarrier.io,resources=accounts/status,verbs=get;update;patch
 // +kubebuilder:rbac:groups="",resources=namespaces,verbs=get;list;watch;create;update;patch;delete
-// +kubebuilder:rbac:groups=catalog.kubecarrier.io,resources=tenantreferences,verbs=get;list;watch;create;update;delete
+// +kubebuilder:rbac:groups=catalog.kubecarrier.io,resources=tenants,verbs=get;list;watch;create;update;delete
+// +kubebuilder:rbac:groups=rbac.authorization.k8s.io,resources=roles,verbs=get;list;watch;create;update;patch;delete;escalate;bind
+// +kubebuilder:rbac:groups=rbac.authorization.k8s.io,resources=rolebindings,verbs=get;list;watch;create;update;patch;delete
 
 // Reconcile function reconciles the Account object which specified by the request. Currently, it does the following:
 // 1. Fetch the Account object.
@@ -80,7 +84,26 @@ func (r *AccountReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	if err := r.reconcileNamespace(ctx, log, account); err != nil {
 		return ctrl.Result{}, fmt.Errorf("reconciling namespace: %w", err)
 	}
-	if err := r.reconcileTenantReferences(ctx, log, account); err != nil {
+
+	if err := r.reconcileRolesAndRoleBindings(ctx, log, account); err != nil {
+		return ctrl.Result{}, fmt.Errorf("reconciling account roles and rolebindings: %w", err)
+	}
+
+	if !account.IsReady() {
+		// Update Account Status
+		account.Status.ObservedGeneration = account.Generation
+		account.Status.SetCondition(catalogv1alpha1.AccountCondition{
+			Type:    catalogv1alpha1.AccountReady,
+			Status:  catalogv1alpha1.ConditionTrue,
+			Reason:  "SetupComplete",
+			Message: "Account setup is complete.",
+		})
+		if err := r.Status().Update(ctx, account); err != nil {
+			return ctrl.Result{}, fmt.Errorf("updating Account status: %w", err)
+		}
+	}
+
+	if err := r.reconcileTenants(ctx, log, account); err != nil {
 		return ctrl.Result{}, fmt.Errorf("reconciling tenant references: %w", err)
 	}
 
@@ -93,7 +116,9 @@ func (r *AccountReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&catalogv1alpha1.Account{}).
 		Watches(&source.Kind{Type: &corev1.Namespace{}}, enqueuer).
-		Watches(&source.Kind{Type: &catalogv1alpha1.TenantReference{}}, enqueuer).
+		Watches(&source.Kind{Type: &catalogv1alpha1.Tenant{}}, enqueuer).
+		Watches(&source.Kind{Type: &rbacv1.Role{}}, enqueuer).
+		Watches(&source.Kind{Type: &rbacv1.RoleBinding{}}, enqueuer).
 		Watches(&source.Kind{Type: &catalogv1alpha1.Account{}}, &handler.EnqueueRequestsFromMapFunc{
 			ToRequests: handler.ToRequestsFunc(func(mapObject handler.MapObject) (out []ctrl.Request) {
 				provider := mapObject.Object.(*catalogv1alpha1.Account)
@@ -142,7 +167,9 @@ func (r *AccountReconciler) handleDeletion(ctx context.Context, log logr.Logger,
 
 	cleanedUp, err := util.DeleteObjects(ctx, r.Client, r.Scheme, []runtime.Object{
 		&corev1.Namespace{},
-		&catalogv1alpha1.TenantReference{},
+		&catalogv1alpha1.Tenant{},
+		&rbacv1.Role{},
+		&rbacv1.RoleBinding{},
 	}, owner.OwnedBy(account, r.Scheme))
 	if err != nil {
 		return fmt.Errorf("DeleteObjects: %w", err)
@@ -169,23 +196,10 @@ func (r *AccountReconciler) reconcileNamespace(ctx context.Context, log logr.Log
 			return fmt.Errorf("updating NamespaceName: %w", err)
 		}
 	}
-	if readyCondition, _ := account.Status.GetCondition(catalogv1alpha1.AccountReady); readyCondition.Status != catalogv1alpha1.ConditionTrue {
-		// Update Account Status
-		account.Status.ObservedGeneration = account.Generation
-		account.Status.SetCondition(catalogv1alpha1.AccountCondition{
-			Type:    catalogv1alpha1.AccountReady,
-			Status:  catalogv1alpha1.ConditionTrue,
-			Reason:  "SetupComplete",
-			Message: "Account setup is complete.",
-		})
-		if err := r.Status().Update(ctx, account); err != nil {
-			return fmt.Errorf("updating Account status: %w", err)
-		}
-	}
 	return nil
 }
 
-func (r *AccountReconciler) reconcileTenantReferences(ctx context.Context, log logr.Logger, account *catalogv1alpha1.Account) error {
+func (r *AccountReconciler) reconcileTenants(ctx context.Context, log logr.Logger, account *catalogv1alpha1.Account) error {
 	accountList := &catalogv1alpha1.AccountList{}
 	if err := r.List(ctx, accountList); err != nil {
 		return fmt.Errorf("listing Accounts: %w", err)
@@ -200,20 +214,142 @@ func (r *AccountReconciler) reconcileTenantReferences(ctx context.Context, log l
 			if condition, _ := providerAccount.Status.GetCondition(catalogv1alpha1.AccountReady); condition.Status != catalogv1alpha1.ConditionTrue {
 				continue
 			}
-			tenantReference := &catalogv1alpha1.TenantReference{
+			tenant := &catalogv1alpha1.Tenant{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      account.Name,
 					Namespace: providerAccount.Status.Namespace.Name,
 				},
 			}
-			owner.SetOwnerReference(account, tenantReference, r.Scheme)
-			wantedRefs = append(wantedRefs, tenantReference)
+			owner.SetOwnerReference(account, tenant, r.Scheme)
+			wantedRefs = append(wantedRefs, tenant)
 		}
 	}
 
-	_, err := owner.ReconcileOwnedObjects(ctx, r.Client, log, r.Scheme, account, wantedRefs, &catalogv1alpha1.TenantReference{}, nil)
+	_, err := owner.ReconcileOwnedObjects(ctx, r.Client, log, r.Scheme, account, wantedRefs, &catalogv1alpha1.Tenant{}, nil)
 	if err != nil {
 		return fmt.Errorf("cannot reconcile objects: %w", err)
 	}
 	return err
+}
+
+func (r *AccountReconciler) reconcileRolesAndRoleBindings(ctx context.Context, log logr.Logger, account *catalogv1alpha1.Account) error {
+	var desiredRoles []runtime.Object
+	var desiredRoleBindings []runtime.Object
+	if account.HasRole(catalogv1alpha1.ProviderRole) {
+		desiredProviderRole := &rbacv1.Role{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "kubecarrier:provider",
+				Namespace: account.Status.Namespace.Name,
+			},
+			Rules: []rbacv1.PolicyRule{
+				{
+					APIGroups: []string{""},
+					Resources: []string{"secrets"},
+					Verbs:     []string{rbacv1.VerbAll},
+				},
+				{
+					APIGroups: []string{"kubecarrier.io"},
+					Resources: []string{rbacv1.ResourceAll},
+					Verbs:     []string{rbacv1.VerbAll},
+				},
+				{
+					APIGroups: []string{"catalog.kubecarrier.io"},
+					Resources: []string{
+						"catalogs",
+						"catalogentries",
+						"catalogentrysets",
+						"derivedcustomresources",
+					},
+					Verbs: []string{rbacv1.VerbAll},
+				},
+				{
+					APIGroups: []string{"catalog.kubecarrier.io"},
+					Resources: []string{
+						"tenants",
+					},
+					Verbs: []string{"get", "list", "watch", "update", "patch"},
+				},
+			},
+		}
+		desiredRoles = append(desiredRoles, desiredProviderRole)
+
+		desiredProviderRoleBinding := &rbacv1.RoleBinding{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "kubecarrier:provider",
+				Namespace: account.Status.Namespace.Name,
+			},
+			Subjects: account.Spec.Subjects,
+			RoleRef: rbacv1.RoleRef{
+				APIGroup: "rbac.authorization.k8s.io",
+				Kind:     "Role",
+				Name:     desiredProviderRole.Name,
+			},
+		}
+		desiredRoleBindings = append(desiredRoleBindings, desiredProviderRoleBinding)
+	}
+	if account.HasRole(catalogv1alpha1.TenantRole) {
+		desiredTenantRole := &rbacv1.Role{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "kubecarrier:tenant",
+				Namespace: account.Status.Namespace.Name,
+			},
+			Rules: []rbacv1.PolicyRule{
+				{
+					APIGroups: []string{"catalog.kubecarrier.io"},
+					Resources: []string{
+						"providers",
+						"serviceclusterreferences",
+						"offerings",
+					},
+					Verbs: []string{"get", "list", "watch"},
+				},
+			},
+		}
+		desiredRoles = append(desiredRoles, desiredTenantRole)
+
+		desiredTenantRoleBinding := &rbacv1.RoleBinding{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "kubecarrier:tenant",
+				Namespace: account.Status.Namespace.Name,
+			},
+			Subjects: account.Spec.Subjects,
+			RoleRef: rbacv1.RoleRef{
+				APIGroup: "rbac.authorization.k8s.io",
+				Kind:     "Role",
+				Name:     desiredTenantRole.Name,
+			},
+		}
+		desiredRoleBindings = append(desiredRoleBindings, desiredTenantRoleBinding)
+	}
+
+	if _, err := owner.ReconcileOwnedObjects(ctx, r.Client, log, r.Scheme,
+		account,
+		desiredRoles, &rbacv1.Role{},
+		func(actual, desired runtime.Object) error {
+			actualRule := actual.(*rbacv1.Role)
+			desiredRole := desired.(*rbacv1.Role)
+			if !reflect.DeepEqual(actualRule.Rules, desiredRole.Rules) {
+				actualRule.Rules = desiredRole.Rules
+			}
+			return nil
+		}); err != nil {
+		return fmt.Errorf("cannot reconcile Role: %w", err)
+	}
+
+	if _, err := owner.ReconcileOwnedObjects(ctx, r.Client, log, r.Scheme,
+		account,
+		desiredRoleBindings, &rbacv1.RoleBinding{},
+		func(actual, desired runtime.Object) error {
+			actualRuleBinding := actual.(*rbacv1.RoleBinding)
+			desiredRoleBinding := desired.(*rbacv1.RoleBinding)
+			if !reflect.DeepEqual(actualRuleBinding.RoleRef, desiredRoleBinding.RoleRef) {
+				actualRuleBinding.RoleRef = desiredRoleBinding.RoleRef
+			} else if !reflect.DeepEqual(actualRuleBinding.Subjects, desiredRoleBinding.Subjects) {
+				actualRuleBinding.Subjects = desiredRoleBinding.Subjects
+			}
+			return nil
+		}); err != nil {
+		return fmt.Errorf("cannot reconcile RoleBinding: %w", err)
+	}
+	return nil
 }

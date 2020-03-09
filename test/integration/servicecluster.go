@@ -42,7 +42,7 @@ func newServiceClusterSuite(
 	f *testutil.Framework,
 ) func(t *testing.T) {
 	return func(t *testing.T) {
-		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+		ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 		t.Cleanup(cancel)
 		managementClient, err := f.ManagementClient(t)
 		require.NoError(t, err, "creating management client")
@@ -169,6 +169,7 @@ func newServiceClusterSuite(
 					},
 					ServiceClusterSelector: metav1.LabelSelector{},
 					KindOverride:           "RedisInternal",
+					WebhookStrategy:        corev1alpha1.WebhookStrategyTypeServiceCluster,
 				},
 			},
 		}

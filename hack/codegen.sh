@@ -23,14 +23,14 @@ GOBIN=$(go env GOBIN)
 fi
 
 if [ -z $(which controller-gen) ]; then
-	go get sigs.k8s.io/controller-tools/cmd/controller-gen@v0.2.4
+	go get sigs.k8s.io/controller-tools/cmd/controller-gen@v0.2.5
   CONTROLLER_GEN=$GOBIN/controller-gen
 else
   CONTROLLER_GEN=$(which controller-gen)
 fi
 
 CONTROLLER_GEN_VERSION=$(${CONTROLLER_GEN} --version)
-CONTROLLER_GEN_WANT_VERSION="Version: v0.2.4"
+CONTROLLER_GEN_WANT_VERSION="Version: v0.2.5"
 
 if [[  ${CONTROLLER_GEN_VERSION} != ${CONTROLLER_GEN_WANT_VERSION} ]]; then
   echo "Wrong controller-gen version. Wants ${CONTROLLER_GEN_WANT_VERSION} found ${CONTROLLER_GEN_VERSION}"
@@ -80,7 +80,9 @@ yq -Y  "del(.spec.versions[].schema.openAPIV3Schema.properties.status.properties
 yq -Y  "del(.spec.versions[].schema.openAPIV3Schema.properties.status.properties.crd.required)" "config/internal/manager/crd/bases/kubecarrier.io_customresourcediscoveries.yaml" > $out && mv ${out} "config/internal/manager/crd/bases/kubecarrier.io_customresourcediscoveries.yaml"
 
 # Remove properties to make the CatalogEntry and Offering yaml configuration (which embeds CustomResourceValidation) to pass the schema checks
-cat config/internal/manager/crd/bases/catalog.kubecarrier.io_catalogentries.yaml | yq -Y 'del(.spec.versions[].schema.openAPIV3Schema.properties.status.properties.crd.properties.versions.items.properties.schema.properties)' > config/internal/manager/crd/bases/catalog.kubecarrier.io_catalogentries.yaml.tmp
+cat config/internal/manager/crd/bases/catalog.kubecarrier.io_catalogentries.yaml | yq -Y 'del(.spec.versions[].schema.openAPIV3Schema.properties.status.properties.tenantCRD.properties.versions.items.properties.schema.properties)' > config/internal/manager/crd/bases/catalog.kubecarrier.io_catalogentries.yaml.tmp
+mv config/internal/manager/crd/bases/catalog.kubecarrier.io_catalogentries.yaml.tmp config/internal/manager/crd/bases/catalog.kubecarrier.io_catalogentries.yaml
+cat config/internal/manager/crd/bases/catalog.kubecarrier.io_catalogentries.yaml | yq -Y 'del(.spec.versions[].schema.openAPIV3Schema.properties.status.properties.providerCRD.properties.versions.items.properties.schema.properties)' > config/internal/manager/crd/bases/catalog.kubecarrier.io_catalogentries.yaml.tmp
 mv config/internal/manager/crd/bases/catalog.kubecarrier.io_catalogentries.yaml.tmp config/internal/manager/crd/bases/catalog.kubecarrier.io_catalogentries.yaml
 cat config/internal/manager/crd/bases/catalog.kubecarrier.io_offerings.yaml | yq -Y 'del(.spec.versions[].schema.openAPIV3Schema.properties.offering.properties.crd.properties.versions.items.properties.schema.properties)' > config/internal/manager/crd/bases/catalog.kubecarrier.io_offerings.yaml.tmp
 mv config/internal/manager/crd/bases/catalog.kubecarrier.io_offerings.yaml.tmp config/internal/manager/crd/bases/catalog.kubecarrier.io_offerings.yaml

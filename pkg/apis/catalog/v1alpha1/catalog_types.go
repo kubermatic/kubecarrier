@@ -20,18 +20,18 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// CatalogSpec defines the desired contents of a Catalog.
+// CatalogSpec describes the desired contents of a Catalog.
 type CatalogSpec struct {
 	// CatalogEntrySelector selects CatalogEntry objects that should be part of this catalog.
 	CatalogEntrySelector *metav1.LabelSelector `json:"catalogEntrySelector,omitempty"`
 
-	// TenantReferenceSelector selects TenantReference objects that the catalog should be published to.
-	TenantReferenceSelector *metav1.LabelSelector `json:"tenantReferenceSelector,omitempty"`
+	// TenantSelector selects Tenant objects that the catalog should be published to.
+	TenantSelector *metav1.LabelSelector `json:"tenantSelector,omitempty"`
 }
 
-// CatalogStatus defines the observed state of Catalog.
+// CatalogStatus represents the observed state of Catalog.
 type CatalogStatus struct {
-	// Tenants is the list of the Tenants(TenantReference) that selected by this Catalog.
+	// Tenants is the list of the Tenants(Tenant) that selected by this Catalog.
 	Tenants []ObjectReference `json:"tenants,omitempty"`
 	// Entries is the list of the CatalogEntries that selected by this Catalog.
 	Entries []ObjectReference `json:"entries,omitempty"`
@@ -62,7 +62,7 @@ const (
 	CatalogTerminatingReason = "Deleting"
 )
 
-// updatePhase updates the phase property based on the current conditions
+// updatePhase updates the phase property based on the current conditions.
 // this method should be called every time the conditions are updated.
 func (s *CatalogStatus) updatePhase() {
 	for _, condition := range s.Conditions {
@@ -94,8 +94,7 @@ type CatalogConditionType string
 const (
 	// CatalogReady represents a Catalog condition is in ready state.
 	CatalogReady CatalogConditionType = "Ready"
-	// ServiceClusterAssignmentReady represents a CatalogEntry condition that all ServiceClusterAssignments
-	// which managed by this Catalog are in ready state.
+	// ServiceClusterAssignmentReady represents a CatalogEntry condition that all ServiceClusterAssignments are in a ready state.
 	ServiceClusterAssignmentReady CatalogConditionType = "ServiceClusterAssignmentReady"
 )
 
@@ -158,6 +157,19 @@ func (s *CatalogStatus) SetCondition(condition CatalogCondition) {
 }
 
 // Catalog publishes a selection of CatalogEntries to a selection of Tenants.
+//
+// KubeCarrier will automatically create ServiceClusterAssignment objects for each Tenant selected by the Catalog.
+//
+// **Example**
+// ```yaml
+// apiVersion: catalog.kubecarrier.io/v1alpha1
+// kind: Catalog
+// metadata:
+//   name: default
+// spec:
+//   tenantSelector: {}
+//   catalogEntrySelector: {}
+// ```
 // +kubebuilder:object:root=true
 // +kubebuilder:subresource:status
 // +kubebuilder:printcolumn:name="Status",type="string",JSONPath=".status.phase"
@@ -171,7 +183,7 @@ type Catalog struct {
 	Status CatalogStatus `json:"status,omitempty"`
 }
 
-// CatalogList contains a list of Catalog
+// CatalogList contains a list of Catalog.
 // +kubebuilder:object:root=true
 type CatalogList struct {
 	metav1.TypeMeta `json:",inline"`

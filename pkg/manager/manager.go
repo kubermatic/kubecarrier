@@ -22,8 +22,10 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/spf13/cobra"
+	rbacv1 "k8s.io/api/rbac/v1"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
@@ -52,11 +54,11 @@ var (
 )
 
 func init() {
-	_ = clientgoscheme.AddToScheme(scheme)
-	_ = catalogv1alpha1.AddToScheme(scheme)
-	_ = corev1alpha1.AddToScheme(scheme)
-	_ = apiextensionsv1.AddToScheme(scheme)
-	_ = operatorv1alpha1.AddToScheme(scheme)
+	utilruntime.Must(clientgoscheme.AddToScheme(scheme))
+	utilruntime.Must(apiextensionsv1.AddToScheme(scheme))
+	utilruntime.Must(corev1alpha1.AddToScheme(scheme))
+	utilruntime.Must(catalogv1alpha1.AddToScheme(scheme))
+	utilruntime.Must(operatorv1alpha1.AddToScheme(scheme))
 }
 
 const (
@@ -110,9 +112,9 @@ func run(flags *flags, log logr.Logger) error {
 		return fmt.Errorf("registering Offering owner field index: %w", err)
 	}
 	if err := multiowner.AddOwnerReverseFieldIndex(
-		mgr.GetFieldIndexer(), fieldIndexerLog.WithName("ProviderReference"), &catalogv1alpha1.ProviderReference{},
+		mgr.GetFieldIndexer(), fieldIndexerLog.WithName("Provider"), &catalogv1alpha1.Provider{},
 	); err != nil {
-		return fmt.Errorf("registering ProviderReference owner field indexer: %w", err)
+		return fmt.Errorf("registering Provider owner field indexer: %w", err)
 	}
 	if err := multiowner.AddOwnerReverseFieldIndex(
 		mgr.GetFieldIndexer(), fieldIndexerLog.WithName("ServiceClusterReference"), &catalogv1alpha1.ServiceClusterReference{},
@@ -123,6 +125,16 @@ func run(flags *flags, log logr.Logger) error {
 		mgr.GetFieldIndexer(), fieldIndexerLog.WithName("ServiceClusterAssignment"), &corev1alpha1.ServiceClusterAssignment{},
 	); err != nil {
 		return fmt.Errorf("registering ServiceClusterAssignment owner field index: %w", err)
+	}
+	if err := multiowner.AddOwnerReverseFieldIndex(
+		mgr.GetFieldIndexer(), fieldIndexerLog.WithName("Role"), &rbacv1.Role{},
+	); err != nil {
+		return fmt.Errorf("registering Role owner field index: %w", err)
+	}
+	if err := multiowner.AddOwnerReverseFieldIndex(
+		mgr.GetFieldIndexer(), fieldIndexerLog.WithName("RoleBinding"), &rbacv1.RoleBinding{},
+	); err != nil {
+		return fmt.Errorf("registering RoleBinding owner field index: %w", err)
 	}
 
 	if err = (&controllers.AccountReconciler{
@@ -210,17 +222,17 @@ func run(flags *flags, log logr.Logger) error {
 			Scheme: mgr.GetScheme(),
 			Log:    log.WithName("validating webhooks").WithName("Account"),
 		}})
-	wbh.Register(utilwebhook.GenerateValidateWebhookPath(&catalogv1alpha1.ProviderReference{}, mgr.GetScheme()),
-		&webhook.Admission{Handler: &webhooks.ProviderReferenceWebhookHandler{
-			Log: log.WithName("validating webhooks").WithName("ProviderReference"),
+	wbh.Register(utilwebhook.GenerateValidateWebhookPath(&catalogv1alpha1.Provider{}, mgr.GetScheme()),
+		&webhook.Admission{Handler: &webhooks.ProviderWebhookHandler{
+			Log: log.WithName("validating webhooks").WithName("Provider"),
 		}})
 	wbh.Register(utilwebhook.GenerateValidateWebhookPath(&catalogv1alpha1.ServiceClusterReference{}, mgr.GetScheme()),
 		&webhook.Admission{Handler: &webhooks.ServiceClusterReferenceWebhookHandler{
 			Log: log.WithName("validating webhooks").WithName("ServiceClusterReference"),
 		}})
-	wbh.Register(utilwebhook.GenerateValidateWebhookPath(&catalogv1alpha1.TenantReference{}, mgr.GetScheme()),
-		&webhook.Admission{Handler: &webhooks.TenantReferenceWebhookHandler{
-			Log: log.WithName("validating webhooks").WithName("TenantReference"),
+	wbh.Register(utilwebhook.GenerateValidateWebhookPath(&catalogv1alpha1.Tenant{}, mgr.GetScheme()),
+		&webhook.Admission{Handler: &webhooks.TenantWebhookHandler{
+			Log: log.WithName("validating webhooks").WithName("Tenant"),
 		}})
 	wbh.Register(utilwebhook.GenerateValidateWebhookPath(&corev1alpha1.CustomResourceDiscovery{}, mgr.GetScheme()),
 		&webhook.Admission{Handler: &webhooks.CustomResourceDiscoveryWebhookHandler{

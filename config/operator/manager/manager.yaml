@@ -15,6 +15,7 @@ spec:
       labels:
         control-plane: operator
     spec:
+      serviceAccountName: sa
       containers:
       - image: quay.io/kubecarrier/operator:lastest
         name: manager

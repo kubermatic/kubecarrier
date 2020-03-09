@@ -4,7 +4,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.2.4
+    controller-gen.kubebuilder.io/version: v0.2.5
   creationTimestamp: null
   name: serviceclusters.kubecarrier.io
 spec:
@@ -33,7 +33,10 @@ spec:
     name: v1alpha1
     schema:
       openAPIV3Schema:
-        description: ServiceCluster is a providers Kubernetes Cluster.
+        description: "ServiceCluster represents a Kubernets Cluster registered into
+          KubeCarrier. \n **Example** ```yaml apiVersion: kubecarrier.io/v1alpha1
+          kind: ServiceCluster metadata:   name: eu-west-1 spec:   metadata:     displayName:
+          EU West 1   kubeconfigSecret:     name: eu-west-1-kubeconfig ```"
         properties:
           apiVersion:
             description: 'APIVersion defines the versioned schema of this representation
@@ -48,7 +51,7 @@ spec:
           metadata:
             type: object
           spec:
-            description: ServiceClusterSpec defines the desired state of ServiceCluster
+            description: ServiceClusterSpec describes the desired state of a ServiceCluster.
             properties:
               kubeconfigSecret:
                 description: KubeconfigSecret specifies the Kubeconfig to use when
@@ -60,23 +63,21 @@ spec:
                 - name
                 type: object
               metadata:
-                description: ServiceClusterMetadata contains the metadata (display
-                  name, description, etc) of the ServiceCluster.
+                description: Metadata for display in the Service Catalog.
                 properties:
                   description:
-                    description: Description shows the human-readable description
-                      of this ServiceCluster.
+                    description: Description is the human-readable description of
+                      this ServiceCluster.
                     type: string
                   displayName:
-                    description: DisplayName shows the human-readable name of this
-                      ServiceCluster.
+                    description: DisplayName is the human-readable name of this ServiceCluster.
                     type: string
                 type: object
             required:
             - kubeconfigSecret
             type: object
           status:
-            description: ServiceClusterStatus defines the observed state of ServiceCluster
+            description: ServiceClusterStatus represents the observed state of a ServiceCluster.
             properties:
               conditions:
                 description: Conditions is a list of all conditions this ServiceCluster

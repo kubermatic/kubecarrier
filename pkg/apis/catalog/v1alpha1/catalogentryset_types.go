@@ -18,15 +18,17 @@ package v1alpha1
 
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	corev1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/core/v1alpha1"
 )
 
-// CatalogEntrySetSpec defines the desired state of CatalogEntrySet
+// CatalogEntrySetSpec defines the desired state of CatalogEntrySet.
 type CatalogEntrySetSpec struct {
-	// Metadata contains the metadata (display name, description, etc) of the CatalogEntrySet.
+	// Metadata contains the metadata of each CatalogEntry for the Service Catalog.
 	Metadata CatalogEntrySetMetadata `json:"metadata,omitempty"`
 	// Derive contains the configuration to generate DerivedCustomResources from the BaseCRDs that are selected by this CatalogEntrySet.
 	Derive *DerivedConfig `json:"derive,omitempty"`
-	// DiscoverySet contains the configuration to create CustomResourceDiscoverySet.
+	// DiscoverySet contains the configuration to create a CustomResourceDiscoverySet.
 	DiscoverySet CustomResourceDiscoverySetConfig `json:"discoverySet"`
 }
 
@@ -37,6 +39,12 @@ type CustomResourceDiscoverySetConfig struct {
 	ServiceClusterSelector metav1.LabelSelector `json:"serviceClusterSelector"`
 	// KindOverride overrides resulting internal CRDs kind
 	KindOverride string `json:"kindOverride,omitempty"`
+	// WebhookStrategy configs the webhook of the CRD which is registered in the management cluster by CustomResourceDiscovery object.
+	// There are two possible values for this configuration {None (by default), ServiceCluster}
+	// None (by default): Webhook will only check if there is an available ServiceClusterAssignment in the current Namespace.
+	// ServiceCluster: Webhook will call webhooks of the CRD in the ServiceCluster with dry-run flag.
+	// +kubebuilder:default:=None
+	WebhookStrategy corev1alpha1.WebhookStrategyType `json:"webhookStrategy,omitempty"`
 }
 
 // CatalogEntrySetMetadata contains the metadata (display name, description, etc) of the CatalogEntrySet.
@@ -173,6 +181,25 @@ func (s *CatalogEntrySetStatus) SetCondition(condition CatalogEntrySetCondition)
 }
 
 // CatalogEntrySet provides fully automation for provider to create both CustomResourceDiscoverySet and CatalogEntry for the same CRD in multiple service clusters.
+
+// CatalogEntrySet manages a CustomResourceDiscoverySet and creates CatalogEntries for each CRD discovered from the selected ServiceClusters.
+//
+// **Example**
+// See CatalogEntry documentation for more configuration details.
+// ```yaml
+// apiVersion: catalog.kubecarrier.io/v1alpha1
+// kind: CatalogEntrySet
+// metadata:
+//   name: couchdbs
+// spec:
+//   metadata:
+//     displayName: CouchDB
+//     description: The compfy database
+//   discoverySet:
+//     crd:
+//       name: couchdbs.couchdb.io
+//     serviceClusterSelector: {}
+// ```
 // +kubebuilder:object:root=true
 // +kubebuilder:subresource:status
 // +kubebuilder:printcolumn:name="Status",type="string",JSONPath=".status.phase"
@@ -201,7 +228,7 @@ func (s *CatalogEntrySet) IsReady() bool {
 	return false
 }
 
-// CatalogEntrySetList contains a list of CatalogEntrySet
+// CatalogEntrySetList contains a list of CatalogEntrySet.
 // +kubebuilder:object:root=true
 type CatalogEntrySetList struct {
 	metav1.TypeMeta `json:",inline"`

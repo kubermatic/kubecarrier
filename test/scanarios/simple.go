@@ -97,7 +97,7 @@ func newSimpleScenario(f *testutil.Framework) func(t *testing.T) {
 			Name: providerNamespaceName,
 		}, providerNamespace))
 
-		tenantReference := &catalogv1alpha1.TenantReference{
+		tenantReference := &catalogv1alpha1.Tenant{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      tenant.Name,
 				Namespace: providerNamespaceName,

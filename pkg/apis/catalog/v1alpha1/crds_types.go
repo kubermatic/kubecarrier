@@ -25,6 +25,7 @@ type CRDInformation struct {
 	Name     string       `json:"name"`
 	APIGroup string       `json:"apiGroup"`
 	Kind     string       `json:"kind"`
+	Plural   string       `json:"plural"`
 	Versions []CRDVersion `json:"versions"`
 
 	// ServiceCluster references a ServiceClusterReference of this CRD.

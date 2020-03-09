@@ -21,6 +21,8 @@ import (
 	"fmt"
 
 	"github.com/go-logr/logr"
+	certv1alpha2 "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
+	adminv1beta1 "k8s.io/api/admissionregistration/v1beta1"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
@@ -49,7 +51,7 @@ type CatapultReconciler struct {
 	Scheme *runtime.Scheme
 }
 
-// +kubebuilder:rbac:groups=operator.kubecarrier.io,resources=catapults,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=operator.kubecarrier.io,resources=catapults,verbs=get;list;watch;update;patch
 // +kubebuilder:rbac:groups=operator.kubecarrier.io,resources=catapults/status,verbs=get;update;patch
 // +kubebuilder:rbac:groups=rbac.authorization.k8s.io,resources=clusterrolebindings,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=rbac.authorization.k8s.io,resources=clusterroles,verbs=get;list;watch;create;update;patch;delete;escalate;bind
@@ -58,6 +60,10 @@ type CatapultReconciler struct {
 // +kubebuilder:rbac:groups=apps,resources=deployments,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups="",resources=services,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups="",resources=serviceaccounts,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=admissionregistration.k8s.io,resources=mutatingwebhookconfigurations,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=admissionregistration.k8s.io,resources=validatingwebhookconfigurations,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=cert-manager.io,resources=issuers,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=cert-manager.io,resources=certificates,verbs=get;list;watch;create;update;patch;delete
 
 // Reconcile function reconciles the Catapult object which specified by the request. Currently, it does the following:
 // 1. Fetch the Catapult object.
@@ -118,6 +124,8 @@ func (r *CatapultReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 
 			ServiceClusterName:   catapult.Spec.ServiceCluster.Name,
 			ServiceClusterSecret: ferry.Spec.KubeconfigSecret.Name,
+
+			WebhookStrategy: string(catapult.Spec.WebhookStrategy),
 		})
 	if err != nil {
 		return ctrl.Result{}, fmt.Errorf("creating catapult manifests: %w", err)
@@ -145,8 +153,12 @@ func (r *CatapultReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		Owns(&corev1.Service{}).
 		Owns(&rbacv1.Role{}).
 		Owns(&rbacv1.RoleBinding{}).
+		Owns(&certv1alpha2.Issuer{}).
+		Owns(&certv1alpha2.Certificate{}).
 		Watches(&source.Kind{Type: &rbacv1.ClusterRole{}}, enqueuer).
 		Watches(&source.Kind{Type: &rbacv1.ClusterRoleBinding{}}, enqueuer).
+		Watches(&source.Kind{Type: &adminv1beta1.MutatingWebhookConfiguration{}}, enqueuer).
+		Watches(&source.Kind{Type: &adminv1beta1.ValidatingWebhookConfiguration{}}, enqueuer).
 		Complete(r)
 }
 
@@ -190,8 +202,22 @@ func (r *CatapultReconciler) handleDeletion(ctx context.Context, kubeCarrier *op
 		return fmt.Errorf("cleaning CustomResourceDefinitions: %w", err)
 	}
 
-	// Make sure all the ClusterRoleBindings, ClusterRoles and CustomResourceDefinitions are deleted.
-	if !clusterRoleBindingsCleaned || !clusterRolesCleaned || !customResourceDefinitionsCleaned {
+	mutatingWebhookConfigurationsCleaned, err := cleanupMutatingWebhookConfigurations(ctx, r.Client, ownedByFilter)
+	if err != nil {
+		return fmt.Errorf("cleaning MutatingWebhookConfigurations: %w", err)
+	}
+
+	validatingWebhookConfigurationsCleaned, err := cleanupValidatingWebhookConfigurations(ctx, r.Client, ownedByFilter)
+	if err != nil {
+		return fmt.Errorf("cleaning ValidatingWebhookConfigurations: %w", err)
+	}
+
+	// Make sure all the owned objects are deleted.
+	if !clusterRoleBindingsCleaned ||
+		!clusterRolesCleaned ||
+		!customResourceDefinitionsCleaned ||
+		!mutatingWebhookConfigurationsCleaned ||
+		!validatingWebhookConfigurationsCleaned {
 		return nil
 	}
 

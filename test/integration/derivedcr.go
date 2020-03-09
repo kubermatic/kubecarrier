@@ -156,10 +156,11 @@ func newDerivedCR(
 		}, dcr), "getting derived CRD")
 		// Check reported status
 		if assert.NotNil(t, dcr.Status.DerivedCR, ".status.derivedCR should be set") &&
-			assert.NotNil(t, catalogEntry.Status.CRD, ".status.CRD should be set") {
-			assert.Equal(t, catalogEntry.Status.CRD.Name, dcr.Status.DerivedCR.Name)
-			assert.Equal(t, catalogEntry.Status.CRD.APIGroup, dcr.Status.DerivedCR.Group)
-			assert.Equal(t, catalogEntry.Status.CRD.Kind, dcr.Status.DerivedCR.Kind)
+			assert.NotNil(t, catalogEntry.Status.TenantCRD, ".status.CRD should be set") {
+			assert.Equal(t, catalogEntry.Status.TenantCRD.Name, dcr.Status.DerivedCR.Name)
+			assert.Equal(t, catalogEntry.Status.TenantCRD.APIGroup, dcr.Status.DerivedCR.Group)
+			assert.Equal(t, catalogEntry.Status.TenantCRD.Kind, dcr.Status.DerivedCR.Kind)
+			assert.Equal(t, catalogEntry.Status.TenantCRD.Plural, dcr.Status.DerivedCR.Plural)
 		}
 		err = managementClient.Delete(ctx, provider)
 		if assert.Error(t, err, "dirty provider %s deletion should error out", provider.Name) {

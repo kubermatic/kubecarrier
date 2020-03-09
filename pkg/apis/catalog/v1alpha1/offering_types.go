@@ -23,7 +23,7 @@ import (
 // OfferingData defines the data (metadata, provider, crds, etc.) of Offering.
 type OfferingData struct {
 	Metadata OfferingMetadata `json:"metadata,omitempty"`
-	// Provider references a ProviderReference of this Offering.
+	// Provider references the Provider managing this Offering.
 	Provider ObjectReference `json:"provider"`
 	// CRD holds the information about the underlying CRD that is offered by this offering.
 	CRD CRDInformation `json:"crd,omitempty"`
@@ -38,6 +38,8 @@ type OfferingMetadata struct {
 }
 
 // Offering is used for Tenants to discover services that have been made available to them.
+//
+// Offering objects are created automatically by KubeCarrier in Account namespaces, that have a service offered to them via a Catalog.
 // +kubebuilder:object:root=true
 // +kubebuilder:printcolumn:name="Display Name",type="string",JSONPath=".offering.metadata.displayName"
 // +kubebuilder:printcolumn:name="Age",type="date",JSONPath=".metadata.creationTimestamp"

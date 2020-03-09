@@ -22,6 +22,7 @@ import (
 	"strings"
 
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"sigs.k8s.io/controller-runtime/pkg/client/apiutil"
 )
 
@@ -44,7 +45,7 @@ func GenerateMutateWebhookPath(obj runtime.Object, scheme *runtime.Scheme) strin
 	if err != nil {
 		panic(fmt.Sprintf("cannot get the GVK of obj (type %T)", obj))
 	}
-	return "/mutate-" + strings.Replace(gvk.Group, ".", "-", -1) + "-" + gvk.Version + "-" + strings.ToLower(gvk.Kind)
+	return GenerateMutateWebhookPathFromGVK(gvk)
 }
 
 func GenerateValidateWebhookPath(obj runtime.Object, scheme *runtime.Scheme) string {
@@ -52,5 +53,13 @@ func GenerateValidateWebhookPath(obj runtime.Object, scheme *runtime.Scheme) str
 	if err != nil {
 		panic(fmt.Sprintf("cannot get the GVK of obj (type %T)", obj))
 	}
+	return GenerateValidateWebhookPathFromGVK(gvk)
+}
+
+func GenerateMutateWebhookPathFromGVK(gvk schema.GroupVersionKind) string {
+	return "/mutate-" + strings.Replace(gvk.Group, ".", "-", -1) + "-" + gvk.Version + "-" + strings.ToLower(gvk.Kind)
+}
+
+func GenerateValidateWebhookPathFromGVK(gvk schema.GroupVersionKind) string {
 	return "/validate-" + strings.Replace(gvk.Group, ".", "-", -1) + "-" + gvk.Version + "-" + strings.ToLower(gvk.Kind)
 }
