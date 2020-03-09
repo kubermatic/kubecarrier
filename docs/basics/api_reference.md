@@ -953,7 +953,7 @@ OfferingData defines the data (metadata, provider, crds, etc.) of Offering.
 | Field | Description | Scheme | Required |
 | ----- | ----------- | ------ | -------- |
 | metadata |  | catalog.kubecarrier.io/v1alpha1.OfferingMetadata | false |
-| provider | Provider references Provider who owns  of this Offering. | catalog.kubecarrier.io/v1alpha1.ObjectReference | true |
+| provider | Provider references the Provider managing this Offering. | catalog.kubecarrier.io/v1alpha1.ObjectReference | true |
 | crd | CRD holds the information about the underlying CRD that is offered by this offering. | catalog.kubecarrier.io/v1alpha1.CRDInformation | false |
 
 [Back to Group](#catalog)
@@ -982,7 +982,7 @@ OfferingMetadata contains the metadata (display name, description, etc) of the O
 
 ### Provider.catalog.kubecarrier.io/v1alpha1
 
-Provider exposes information of a service account which has Provider role.
+Provider exposes information of an Account with the Provider role.
 
 Provider objects are created automatically by KubeCarrier in Account namespaces, that have a service offered to them via a Catalog.
 

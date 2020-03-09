@@ -109,7 +109,7 @@ spec:
                       type: string
                   type: object
                 provider:
-                  description: Provider references Provider who owns  of this Offering.
+                  description: Provider references the Provider managing this Offering.
                   properties:
                     name:
                       type: string

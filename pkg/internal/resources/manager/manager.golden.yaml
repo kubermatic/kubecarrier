@@ -1275,7 +1275,7 @@
                       type: string
                   type: object
                 provider:
-                  description: Provider references Provider who owns  of this Offering.
+                  description: Provider references the Provider managing this Offering.
                   properties:
                     name:
                       type: string
@@ -1328,9 +1328,9 @@
       name: v1alpha1
       schema:
         openAPIV3Schema:
-          description: "Provider exposes information of a service account which has
-            Provider role. \n Provider objects are created automatically by KubeCarrier
-            in Account namespaces, that have a service offered to them via a Catalog."
+          description: "Provider exposes information of an Account with the Provider
+            role. \n Provider objects are created automatically by KubeCarrier in
+            Account namespaces, that have a service offered to them via a Catalog."
           properties:
             apiVersion:
               description: 'APIVersion defines the versioned schema of this representation
