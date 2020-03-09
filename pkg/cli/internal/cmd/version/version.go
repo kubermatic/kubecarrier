@@ -30,7 +30,7 @@ type versionFlagpole struct {
 	Full bool
 }
 
-// NewCommand returns the version subcommand for anchor.
+// NewCommand returns the version subcommand for KubeCarrier CLI.
 func NewCommand(log logr.Logger) *cobra.Command {
 	var flags versionFlagpole
 	cmd := &cobra.Command{

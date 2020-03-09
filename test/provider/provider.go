@@ -297,7 +297,7 @@ func NewCatalogSuite(
 				}
 				return true, err
 			}
-			return offeringFound.Offering.CRD.Name == catalogEntry.Status.CRD.Name && offeringFound.Offering.Provider.Name == provider.Name, nil
+			return offeringFound.Offering.CRD.Name == catalogEntry.Status.TenantCRD.Name && offeringFound.Offering.Provider.Name == provider.Name, nil
 		}), "getting the Offering error")
 
 		// Check the ProviderReference object is created.
@@ -332,6 +332,54 @@ func NewCatalogSuite(
 		require.NoError(t, testutil.WaitUntilFound(managementClient, serviceClusterAssignmentFound), "getting the ServiceClusterAssignment error")
 		assert.Equal(t, serviceClusterAssignmentFound.Spec.ServiceCluster.Name, serviceCluster.Name)
 		assert.Equal(t, serviceClusterAssignmentFound.Spec.ManagementClusterNamespace.Name, tenantAccount.Status.Namespace.Name)
+
+		// Check Provider Role
+		providerRoleFound := &rbacv1.Role{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      fmt.Sprintf("kubecarrier:provider:%s", catalogEntry.Name),
+				Namespace: tenant.Status.Namespace.Name,
+			},
+		}
+		require.NoError(t, testutil.WaitUntilFound(managementClient, providerRoleFound), "getting Provider Role error")
+		assert.Contains(t, providerRoleFound.Rules, rbacv1.PolicyRule{
+			Verbs:     []string{rbacv1.VerbAll},
+			APIGroups: []string{catalogEntry.Status.ProviderCRD.APIGroup},
+			Resources: []string{catalogEntry.Status.ProviderCRD.Plural},
+		}, "Missing the PolicyRule")
+
+		// Check Provider RoleBinding
+		providerRoleBindingFound := &rbacv1.RoleBinding{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      fmt.Sprintf("kubecarrier:provider:%s", catalogEntry.Name),
+				Namespace: tenant.Status.Namespace.Name,
+			},
+		}
+		require.NoError(t, testutil.WaitUntilFound(managementClient, providerRoleBindingFound), "getting Provider RoleBinding error")
+		assert.Equal(t, providerRoleBindingFound.Subjects, provider.Spec.Subjects, "Subjects is different")
+
+		// Check Tenant Role
+		tenantRoleFound := &rbacv1.Role{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      fmt.Sprintf("kubecarrier:tenant:%s", catalogEntry.Name),
+				Namespace: tenant.Status.Namespace.Name,
+			},
+		}
+		require.NoError(t, testutil.WaitUntilFound(managementClient, tenantRoleFound), "getting Tenant Role error")
+		assert.Contains(t, tenantRoleFound.Rules, rbacv1.PolicyRule{
+			Verbs:     []string{rbacv1.VerbAll},
+			APIGroups: []string{catalogEntry.Status.TenantCRD.APIGroup},
+			Resources: []string{catalogEntry.Status.TenantCRD.Plural},
+		}, "Missing the PolicyRule")
+
+		// Check Tenant RoleBinding
+		tenantRoleBindingFound := &rbacv1.RoleBinding{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      fmt.Sprintf("kubecarrier:tenant:%s", catalogEntry.Name),
+				Namespace: tenant.Status.Namespace.Name,
+			},
+		}
+		require.NoError(t, testutil.WaitUntilFound(managementClient, tenantRoleBindingFound), "getting Tenant RoleBinding error")
+		assert.Equal(t, tenantRoleBindingFound.Subjects, tenant.Spec.Subjects, "Subjects is different")
 
 		// Check if the status will be updated when tenant is removed.
 		t.Run("Catalog status updates when adding and removing Tenant", func(t *testing.T) {
@@ -430,6 +478,34 @@ func NewCatalogSuite(
 				Name:      serviceClusterAssignmentFound.Name,
 				Namespace: serviceClusterAssignmentFound.Namespace,
 			}, serviceClusterAssignmentCheck)), "serviceClusterAssignment object should also be deleted.")
+
+			// Check Provider Role
+			providerRoleCheck := &rbacv1.Role{}
+			assert.True(t, errors.IsNotFound(managementClient.Get(ctx, types.NamespacedName{
+				Name:      providerRoleFound.Name,
+				Namespace: providerRoleFound.Namespace,
+			}, providerRoleCheck)), "provider Role should be deleted")
+
+			// Check Provider RoleBinding
+			providerRoleBindingCheck := &rbacv1.RoleBinding{}
+			assert.True(t, errors.IsNotFound(managementClient.Get(ctx, types.NamespacedName{
+				Name:      providerRoleBindingFound.Name,
+				Namespace: providerRoleBindingFound.Namespace,
+			}, providerRoleBindingCheck)), "provider RoleBinding should be deleted")
+
+			// Check Tenant Role
+			tenantRoleCheck := &rbacv1.Role{}
+			assert.True(t, errors.IsNotFound(managementClient.Get(ctx, types.NamespacedName{
+				Name:      tenantRoleFound.Name,
+				Namespace: tenantRoleFound.Namespace,
+			}, tenantRoleCheck)), "tenant Role should be deleted")
+
+			// Check Tenant RoleBinding
+			tenantRoleBindingCheck := &rbacv1.RoleBinding{}
+			assert.True(t, errors.IsNotFound(managementClient.Get(ctx, types.NamespacedName{
+				Name:      tenantRoleBindingFound.Name,
+				Namespace: tenantRoleBindingFound.Namespace,
+			}, tenantRoleBindingCheck)), "tenant RoleBinding should be deleted")
 		})
 	}
 }

@@ -4,7 +4,7 @@
 Here is an overview of the KubeCarrier repository organization:
 ```
 ├── cmd
-│   ├── {anchor, manager, operator, ferry, catapult, elevator}
+│   ├── {kubectl-kubecarrier, manager, operator, ferry, catapult, elevator}
 │   │   └── main.go
 ├── config
 │   ├── dockerfiles
@@ -14,7 +14,7 @@ Here is an overview of the KubeCarrier repository organization:
 ├── docs
 ├── hack
 ├── pkg
-│   ├── {anchor, manager, operator, ferry, catapult, elevator}
+│   ├── {cli, manager, operator, ferry, catapult, elevator}
 │   │   └── internal
 │   ├── apis
 │   │   ├── core
@@ -29,7 +29,7 @@ Here is an overview of the KubeCarrier repository organization:
 **config** contains:
 - **dockerfiles**: dockerfiles for building docker images for KubeCarrier components and test image.
 - **operator**: configuration (CRD, Webhook, RBAC, etc) of KubeCarrier operator.
-- **internal**: configuration that used within KubeCarrier's anchor CLI and the KubeCarrier Operator to bootstrap and reconcile KubeCarrier installation, it's not meant for direct use.
+- **internal**: configuration that used within KubeCarrier's CLI and the KubeCarrier Operator to bootstrap and reconcile KubeCarrier installation, it's not meant for direct use.
 
 **docs** contains the documentation of the KubeCarrier project.
 
@@ -41,7 +41,7 @@ Here is an overview of the KubeCarrier repository organization:
     - **catalog**: catalog.kubecarrier.io api group
     - **operator**: operator.kubecarrier.io api group
 - **internal**: internal packages used across components.
-- **component (anchor, manager, operator, ferry, catapult)**: source code for KubeCarrier components.
+- **component (cli, manager, operator, ferry, catapult)**: source code for KubeCarrier components.
     - **internal**: internal packages for every component (controller, etc).
 
 **test** contains KubeCarrier e2e tests.

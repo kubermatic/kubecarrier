@@ -204,7 +204,7 @@ func providerRoleAndRoleBindingPresent(t *testing.T, managementClient client.Cli
 	role := &rbacv1.Role{}
 	roleBinding := &rbacv1.RoleBinding{}
 	if err := managementClient.Get(ctx, types.NamespacedName{
-		Name:      "kubecarrier-provider-role",
+		Name:      "kubecarrier:provider",
 		Namespace: account.Status.Namespace.Name,
 	}, role); err == nil {
 		found = true
@@ -212,7 +212,7 @@ func providerRoleAndRoleBindingPresent(t *testing.T, managementClient client.Cli
 	assert.Equalf(t, expected, found, "provider Role of account %s", account.Name)
 	found = false
 	if err := managementClient.Get(ctx, types.NamespacedName{
-		Name:      "kubecarrier-provider-rolebinding",
+		Name:      "kubecarrier:provider",
 		Namespace: account.Status.Namespace.Name,
 	}, roleBinding); err == nil {
 		found = true
@@ -225,7 +225,7 @@ func tenantRoleAndRoleBindingPresent(t *testing.T, managementClient client.Clien
 	role := &rbacv1.Role{}
 	roleBinding := &rbacv1.RoleBinding{}
 	if err := managementClient.Get(ctx, types.NamespacedName{
-		Name:      "kubecarrier-tenant-role",
+		Name:      "kubecarrier:tenant",
 		Namespace: account.Status.Namespace.Name,
 	}, role); err == nil {
 		found = true
@@ -233,7 +233,7 @@ func tenantRoleAndRoleBindingPresent(t *testing.T, managementClient client.Clien
 	assert.Equalf(t, expected, found, "tenant Role of account %s", account.Name)
 	found = false
 	if err := managementClient.Get(ctx, types.NamespacedName{
-		Name:      "kubecarrier-tenant-rolebinding",
+		Name:      "kubecarrier:tenant",
 		Namespace: account.Status.Namespace.Name,
 	}, roleBinding); err == nil {
 		found = true
