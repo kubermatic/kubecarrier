@@ -33,7 +33,6 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
-	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
@@ -164,8 +163,8 @@ func reconcileOperator(ctx context.Context, log logr.Logger, c *util.ClientWatch
 				Namespace: kubecarrierNamespaceName,
 			},
 		}
-		return c.WaitUntil(ctx, deployment, func(obj runtime.Object, eventType watch.EventType) (b bool, err error) {
-			return util.DeploymentIsAvailable(obj.(*appsv1.Deployment)), nil
+		return c.WaitUntil(ctx, deployment, func() (done bool, err error) {
+			return util.DeploymentIsAvailable(deployment), nil
 		})
 
 	}
@@ -195,8 +194,8 @@ func deployKubeCarrier(ctx context.Context, kubeCarrierNamespace *corev1.Namespa
 		}); err != nil {
 			return fmt.Errorf("cannot create or update KubeCarrier: %w", err)
 		}
-		return w.WaitUntil(ctx, kubeCarrier, func(obj runtime.Object, eventType watch.EventType) (b bool, err error) {
-			return obj.(*operatorv1alpha1.KubeCarrier).IsReady(), nil
+		return w.WaitUntil(ctx, kubeCarrier, func() (done bool, err error) {
+			return kubeCarrier.IsReady(), nil
 		})
 	}
 }

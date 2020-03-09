@@ -24,7 +24,6 @@ import (
 
 	"github.com/stretchr/testify/require"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/util/jsonpath"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
@@ -66,14 +65,14 @@ func WaitUntilNotFound(ctx context.Context, c *RecordingClient, obj runtime.Obje
 
 func WaitUntilFound(ctx context.Context, c *RecordingClient, obj runtime.Object) error {
 	c.t.Helper()
-	return c.WaitUntil(ctx, obj, func(obj runtime.Object, eventType watch.EventType) (b bool, err error) {
-		return eventType != watch.Deleted, nil
+	return c.WaitUntil(ctx, obj, func() (done bool, err error) {
+		return true, nil
 	})
 }
 
 func WaitUntilCondition(ctx context.Context, c *RecordingClient, obj runtime.Object, ConditionType, conditionStatus interface{}) error {
 	c.t.Helper()
-	err := c.WaitUntil(ctx, obj, func(obj runtime.Object, eventType watch.EventType) (b bool, err error) {
+	err := c.WaitUntil(ctx, obj, func() (done bool, err error) {
 		return ConditionStatusEqual(obj, ConditionType, conditionStatus) == nil, nil
 	})
 

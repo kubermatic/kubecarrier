@@ -29,10 +29,7 @@ import (
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
-	"k8s.io/apimachinery/pkg/util/wait"
-	"k8s.io/apimachinery/pkg/watch"
 
 	catalogv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/catalog/v1alpha1"
 	corev1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/core/v1alpha1"
@@ -198,8 +195,7 @@ func newCatalogSuite(
 		require.NoError(t, managementClient.Create(ctx, catalog), "creating Catalog error")
 
 		// Check the status of the Catalog.
-		assert.NoError(t, managementClient.WaitUntil(ctx, catalog, func(obj runtime.Object, eventType watch.EventType) (b bool, err error) {
-			catalog := obj.(*catalogv1alpha1.Catalog)
+		assert.NoError(t, managementClient.WaitUntil(ctx, catalog, func() (b bool, err error) {
 			return len(catalog.Status.Entries) == 1 && len(catalog.Status.Tenants) > 0, nil
 		}))
 
@@ -294,130 +290,113 @@ func newCatalogSuite(
 		assert.Equal(t, tenantRoleBindingFound.Subjects, tenantAccount.Spec.Subjects, "Subjects is different")
 
 		// Check if the status will be updated when tenant is removed.
-		t.Run("Catalog status updates when adding and removing Tenant", func(t *testing.T) {
-			// Remove the tenant
-			require.NoError(t, managementClient.Delete(ctx, tenantAccount), "deleting Tenant")
-			require.NoError(t, testutil.WaitUntilNotFound(ctx, managementClient, tenantAccount))
+		t.Log("===== Catalog status updates when adding and removing Tenant =====")
+		// Remove the tenant
+		require.NoError(t, managementClient.Delete(ctx, tenantAccount), "deleting Tenant")
+		require.NoError(t, testutil.WaitUntilNotFound(ctx, managementClient, tenantAccount))
 
-			catalogCheck := &catalogv1alpha1.Catalog{}
-			assert.NoError(t, wait.Poll(time.Second, 30*time.Second, func() (done bool, err error) {
-				if err := managementClient.Get(ctx, types.NamespacedName{
-					Name:      catalog.Name,
-					Namespace: catalog.Namespace,
-				}, catalogCheck); err != nil {
-					if errors.IsNotFound(err) {
-						return false, nil
-					}
-					return true, err
+		assert.NoError(t, managementClient.WaitUntil(ctx, catalog, func() (b bool, err error) {
+			for _, t := range catalog.Status.Tenants {
+				if t.Name == tenantAccount.Name {
+					return false, nil
 				}
-
-				for _, t := range catalogCheck.Status.Tenants {
-					if t.Name == tenantAccount.Name {
-						return false, nil
-					}
-				}
-
-				return true, nil
-			}), catalogCheck.Status.Tenants)
-
-			// Recreate the tenant
-			tenantAccount = &catalogv1alpha1.Account{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: testName + "-tenant2",
-				},
-				Spec: catalogv1alpha1.AccountSpec{
-					Metadata: catalogv1alpha1.AccountMetadata{
-						DisplayName: "test tenant 2",
-						Description: "A lovely perky tenant from the German capital",
-					},
-					Roles: []catalogv1alpha1.AccountRole{
-						catalogv1alpha1.TenantRole,
-					},
-					Subjects: []rbacv1.Subject{
-						{
-							Kind:     rbacv1.GroupKind,
-							APIGroup: "rbac.authorization.k8s.io",
-							Name:     "admin",
-						},
-					},
-				},
 			}
-			require.NoError(t, managementClient.Create(ctx, tenantAccount), "creating tenant error")
-			require.NoError(t, testutil.WaitUntilReady(ctx, managementClient, tenantAccount))
+			return true, nil
+		}))
 
-			require.NoError(t, wait.Poll(time.Second, 30*time.Second, func() (done bool, err error) {
-				if err := managementClient.Get(ctx, types.NamespacedName{
-					Name:      catalog.Name,
-					Namespace: catalog.Namespace,
-				}, catalogCheck); err != nil {
-					if errors.IsNotFound(err) {
-						return false, nil
-					}
-					return true, err
+		// Recreate the tenant
+		tenantAccount = &catalogv1alpha1.Account{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: testName + "-tenant2",
+			},
+			Spec: catalogv1alpha1.AccountSpec{
+				Metadata: catalogv1alpha1.AccountMetadata{
+					DisplayName: "test tenant 2",
+					Description: "A lovely perky tenant from the German capital",
+				},
+				Roles: []catalogv1alpha1.AccountRole{
+					catalogv1alpha1.TenantRole,
+				},
+				Subjects: []rbacv1.Subject{
+					{
+						Kind:     rbacv1.GroupKind,
+						APIGroup: "rbac.authorization.k8s.io",
+						Name:     "admin",
+					},
+				},
+			},
+		}
+		require.NoError(t, managementClient.Create(ctx, tenantAccount), "creating tenant error")
+		require.NoError(t, testutil.WaitUntilReady(ctx, managementClient, tenantAccount))
+
+		assert.NoError(t, managementClient.WaitUntil(ctx, catalog, func() (done bool, err error) {
+			for _, t := range catalog.Status.Tenants {
+				if t.Name == tenantAccount.Name {
+					return true, nil
 				}
-				return len(catalogCheck.Status.Tenants) == 1 && catalogCheck.Status.Tenants[0].Name == tenantAccount.Name, nil
-			}), "getting the Catalog error")
-		})
+			}
+			return
+		}))
 
-		t.Run("cleanup", func(t *testing.T) {
-			require.NoError(t, managementClient.Delete(ctx, catalog), "deleting Catalog")
-			require.NoError(t, testutil.WaitUntilNotFound(ctx, managementClient, catalog))
+		t.Log("===== cleanup =====")
 
-			// Offering object should also be removed
-			offeringCheck := &catalogv1alpha1.Offering{}
-			assert.True(t, errors.IsNotFound(managementClient.Get(ctx, types.NamespacedName{
-				Name:      offeringFound.Name,
-				Namespace: offeringFound.Namespace,
-			}, offeringCheck)), "offering object should also be deleted.")
+		require.NoError(t, managementClient.Delete(ctx, catalog), "deleting Catalog")
+		require.NoError(t, testutil.WaitUntilNotFound(ctx, managementClient, catalog))
 
-			// Provider object should also be removed
-			providerCheck := &catalogv1alpha1.Provider{}
-			assert.True(t, errors.IsNotFound(managementClient.Get(ctx, types.NamespacedName{
-				Name:      providerFound.Name,
-				Namespace: providerFound.Namespace,
-			}, providerCheck)), "provider object should also be deleted.")
+		// Offering object should also be removed
+		offeringCheck := &catalogv1alpha1.Offering{}
+		assert.True(t, errors.IsNotFound(managementClient.Get(ctx, types.NamespacedName{
+			Name:      offeringFound.Name,
+			Namespace: offeringFound.Namespace,
+		}, offeringCheck)), "offering object should also be deleted.")
 
-			// ServiceClusterReference object should also be removed
-			serviceClusterReferenceCheck := &catalogv1alpha1.ServiceClusterReference{}
-			assert.True(t, errors.IsNotFound(managementClient.Get(ctx, types.NamespacedName{
-				Name:      serviceClusterReferenceFound.Name,
-				Namespace: serviceClusterReferenceFound.Namespace,
-			}, serviceClusterReferenceCheck)), "serviceClusterReference object should also be deleted.")
+		// Provider object should also be removed
+		providerCheck := &catalogv1alpha1.Provider{}
+		assert.True(t, errors.IsNotFound(managementClient.Get(ctx, types.NamespacedName{
+			Name:      providerFound.Name,
+			Namespace: providerFound.Namespace,
+		}, providerCheck)), "provider object should also be deleted.")
 
-			// ServiceClusterAssignment object should also be removed
-			serviceClusterAssignmentCheck := &corev1alpha1.ServiceClusterAssignment{}
-			assert.True(t, errors.IsNotFound(managementClient.Get(ctx, types.NamespacedName{
-				Name:      serviceClusterAssignmentFound.Name,
-				Namespace: serviceClusterAssignmentFound.Namespace,
-			}, serviceClusterAssignmentCheck)), "serviceClusterAssignment object should also be deleted.")
+		// ServiceClusterReference object should also be removed
+		serviceClusterReferenceCheck := &catalogv1alpha1.ServiceClusterReference{}
+		assert.True(t, errors.IsNotFound(managementClient.Get(ctx, types.NamespacedName{
+			Name:      serviceClusterReferenceFound.Name,
+			Namespace: serviceClusterReferenceFound.Namespace,
+		}, serviceClusterReferenceCheck)), "serviceClusterReference object should also be deleted.")
 
-			// Check Provider Role
-			providerRoleCheck := &rbacv1.Role{}
-			assert.True(t, errors.IsNotFound(managementClient.Get(ctx, types.NamespacedName{
-				Name:      providerRoleFound.Name,
-				Namespace: providerRoleFound.Namespace,
-			}, providerRoleCheck)), "provider Role should be deleted")
+		// ServiceClusterAssignment object should also be removed
+		serviceClusterAssignmentCheck := &corev1alpha1.ServiceClusterAssignment{}
+		assert.True(t, errors.IsNotFound(managementClient.Get(ctx, types.NamespacedName{
+			Name:      serviceClusterAssignmentFound.Name,
+			Namespace: serviceClusterAssignmentFound.Namespace,
+		}, serviceClusterAssignmentCheck)), "serviceClusterAssignment object should also be deleted.")
 
-			// Check Provider RoleBinding
-			providerRoleBindingCheck := &rbacv1.RoleBinding{}
-			assert.True(t, errors.IsNotFound(managementClient.Get(ctx, types.NamespacedName{
-				Name:      providerRoleBindingFound.Name,
-				Namespace: providerRoleBindingFound.Namespace,
-			}, providerRoleBindingCheck)), "provider RoleBinding should be deleted")
+		// Check Provider Role
+		providerRoleCheck := &rbacv1.Role{}
+		assert.True(t, errors.IsNotFound(managementClient.Get(ctx, types.NamespacedName{
+			Name:      providerRoleFound.Name,
+			Namespace: providerRoleFound.Namespace,
+		}, providerRoleCheck)), "provider Role should be deleted")
 
-			// Check Tenant Role
-			tenantRoleCheck := &rbacv1.Role{}
-			assert.True(t, errors.IsNotFound(managementClient.Get(ctx, types.NamespacedName{
-				Name:      tenantRoleFound.Name,
-				Namespace: tenantRoleFound.Namespace,
-			}, tenantRoleCheck)), "tenant Role should be deleted")
+		// Check Provider RoleBinding
+		providerRoleBindingCheck := &rbacv1.RoleBinding{}
+		assert.True(t, errors.IsNotFound(managementClient.Get(ctx, types.NamespacedName{
+			Name:      providerRoleBindingFound.Name,
+			Namespace: providerRoleBindingFound.Namespace,
+		}, providerRoleBindingCheck)), "provider RoleBinding should be deleted")
 
-			// Check Tenant RoleBinding
-			tenantRoleBindingCheck := &rbacv1.RoleBinding{}
-			assert.True(t, errors.IsNotFound(managementClient.Get(ctx, types.NamespacedName{
-				Name:      tenantRoleBindingFound.Name,
-				Namespace: tenantRoleBindingFound.Namespace,
-			}, tenantRoleBindingCheck)), "tenant RoleBinding should be deleted")
-		})
+		// Check Tenant Role
+		tenantRoleCheck := &rbacv1.Role{}
+		assert.True(t, errors.IsNotFound(managementClient.Get(ctx, types.NamespacedName{
+			Name:      tenantRoleFound.Name,
+			Namespace: tenantRoleFound.Namespace,
+		}, tenantRoleCheck)), "tenant Role should be deleted")
+
+		// Check Tenant RoleBinding
+		tenantRoleBindingCheck := &rbacv1.RoleBinding{}
+		assert.True(t, errors.IsNotFound(managementClient.Get(ctx, types.NamespacedName{
+			Name:      tenantRoleBindingFound.Name,
+			Namespace: tenantRoleBindingFound.Namespace,
+		}, tenantRoleBindingCheck)), "tenant RoleBinding should be deleted")
 	}
 }

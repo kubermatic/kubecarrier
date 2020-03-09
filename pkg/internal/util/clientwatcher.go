@@ -69,44 +69,37 @@ func NewClientWatcher(conf *rest.Config, scheme *runtime.Scheme, log logr.Logger
 }
 
 // WaitUntil waits until the Object's condition function is true, or the context deadline is reached
-func (cw *ClientWatcher) WaitUntil(ctx context.Context, obj runtime.Object, cond ...func(obj runtime.Object, eventType watch.EventType) (bool, error)) error {
-	objNN, err := client.ObjectKeyFromObject(obj)
-	if err != nil {
-		return fmt.Errorf("getting object key: %w", err)
-	}
-	objGVK, err := apiutil.GVKForObject(obj, cw.scheme)
-	if err != nil {
-		return err
-	}
+//
+// condition function should operate on the passed object in a closure and should not modify the obj
+func (cw *ClientWatcher) WaitUntil(ctx context.Context, obj runtime.Object, cond ...func() (done bool, err error)) error {
 	lw, err := cw.objListWatch(obj)
 	if err != nil {
 		return fmt.Errorf("getting objListWatch: %w", err)
 	}
 	if _, err := clientwatch.ListWatchUntil(ctx, lw, func(event watch.Event) (b bool, err error) {
-		typedEventObject, err := cw.scheme.New(objGVK)
-		if err == nil {
-			if err := cw.scheme.Convert(event.Object, typedEventObject, nil); err != nil {
-				return false, err
-			}
-		} else {
-			if runtime.IsNotRegisteredError(err) {
-				// the object is unregistered in the scheme, keep it as *unstructured.Unstructured
-				typedEventObject = event.Object
-			} else {
-				return false, err
-			}
+		switch event.Type {
+		case watch.Added:
+			fallthrough
+		case watch.Modified:
+		case watch.Deleted:
+			return
+		case watch.Bookmark:
+			return
+		case watch.Error:
+			return false, fmt.Errorf("watch error")
+		}
+
+		if err := cw.scheme.Convert(event.Object, obj, nil); err != nil {
+			return false, err
 		}
 		for _, f := range cond {
-			ok, err := f(typedEventObject, event.Type)
+			ok, err := f()
 			if err != nil {
 				return false, err
 			}
 			if !ok {
 				return false, nil
 			}
-		}
-		if err := cw.Get(ctx, objNN, obj); err != nil {
-			return false, err
 		}
 		return true, nil
 	}); err != nil {
@@ -161,10 +154,17 @@ func (cw *ClientWatcher) objListWatch(obj runtime.Object) (*cache.ListWatch, err
 	if err != nil {
 		return nil, fmt.Errorf("getting object key: %w", err)
 	}
+	if objNN.Name == "" {
+		return nil, fmt.Errorf("name must not be empty")
+	}
 	restMapping, err := cw.restMapper.RESTMapping(objGVK.GroupKind(), objGVK.Version)
 	if err != nil {
 		return nil, err
 	}
+	if restMapping.Scope.Name() == meta.RESTScopeNameNamespace && objNN.Namespace == "" {
+		return nil, fmt.Errorf("namespace must not be empty")
+	}
+
 	resourceInterface := cw.dynamicClient.Resource(restMapping.Resource).Namespace(objNN.Namespace)
 	return &cache.ListWatch{
 		ListFunc: func(options metav1.ListOptions) (object runtime.Object, err error) {
