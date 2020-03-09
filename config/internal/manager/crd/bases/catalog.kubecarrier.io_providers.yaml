@@ -6,18 +6,18 @@ metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.2.5
   creationTimestamp: null
-  name: providerreferences.catalog.kubecarrier.io
+  name: providers.catalog.kubecarrier.io
 spec:
   group: catalog.kubecarrier.io
   names:
     categories:
     - kubecarrier-tenant
-    kind: ProviderReference
-    listKind: ProviderReferenceList
-    plural: providerreferences
+    kind: Provider
+    listKind: ProviderList
+    plural: providers
     shortNames:
     - pr
-    singular: providerreference
+    singular: provider
   scope: Namespaced
   versions:
   - additionalPrinterColumns:
@@ -30,9 +30,9 @@ spec:
     name: v1alpha1
     schema:
       openAPIV3Schema:
-        description: "ProviderReference exposes information of a service provider.
-          \n ProviderReference objects are created automatically by KubeCarrier in
-          Account namespaces, that have a service offered to them via a Catalog."
+        description: "Provider exposes information of a service account which has
+          Provider role. \n Provider objects are created automatically by KubeCarrier
+          in Account namespaces, that have a service offered to them via a Catalog."
         properties:
           apiVersion:
             description: 'APIVersion defines the versioned schema of this representation
@@ -47,7 +47,7 @@ spec:
           metadata:
             type: object
           spec:
-            description: ProviderReferenceSpec defines the desired state of ProviderReference
+            description: ProviderSpec defines the desired state of Provider
             properties:
               metadata:
                 description: Metadata contains the metadata (display name, description,

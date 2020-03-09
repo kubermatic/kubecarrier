@@ -1224,7 +1224,7 @@
                       type: string
                   type: object
                 provider:
-                  description: Provider references a ProviderReference of this Offering.
+                  description: Provider references Provider who owns  of this Offering.
                   properties:
                     name:
                       type: string
@@ -1253,18 +1253,18 @@
     creationTimestamp: null
     labels:
       kubecarrier.io/role: manager
-    name: providerreferences.catalog.kubecarrier.io
+    name: providers.catalog.kubecarrier.io
   spec:
     group: catalog.kubecarrier.io
     names:
       categories:
       - kubecarrier-tenant
-      kind: ProviderReference
-      listKind: ProviderReferenceList
-      plural: providerreferences
+      kind: Provider
+      listKind: ProviderList
+      plural: providers
       shortNames:
       - pr
-      singular: providerreference
+      singular: provider
     scope: Namespaced
     versions:
     - additionalPrinterColumns:
@@ -1277,8 +1277,8 @@
       name: v1alpha1
       schema:
         openAPIV3Schema:
-          description: "ProviderReference exposes information of a service provider.
-            \n ProviderReference objects are created automatically by KubeCarrier
+          description: "Provider exposes information of a service account which has
+            Provider role. \n Provider objects are created automatically by KubeCarrier
             in Account namespaces, that have a service offered to them via a Catalog."
           properties:
             apiVersion:
@@ -1295,7 +1295,7 @@
             metadata:
               type: object
             spec:
-              description: ProviderReferenceSpec defines the desired state of ProviderReference
+              description: ProviderSpec defines the desired state of Provider
               properties:
                 metadata:
                   description: Metadata contains the metadata (display name, description,
@@ -2320,7 +2320,7 @@
   - apiGroups:
     - catalog.kubecarrier.io
     resources:
-    - providerreferences
+    - providers
     verbs:
     - create
     - delete
@@ -2739,9 +2739,9 @@
       service:
         name: kubecarrier-manager-webhook-service
         namespace: test3000
-        path: /validate-catalog-kubecarrier-io-v1alpha1-providerreference
+        path: /validate-catalog-kubecarrier-io-v1alpha1-provider
     failurePolicy: Fail
-    name: vproviderreference.kubecarrier.io
+    name: vprovider.kubecarrier.io
     rules:
     - apiGroups:
       - catalog.kubecarrier.io
@@ -2751,7 +2751,7 @@
       - CREATE
       - UPDATE
       resources:
-      - providerreferences
+      - providers
   - clientConfig:
       caBundle: Cg==
       service:

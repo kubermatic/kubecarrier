@@ -151,7 +151,7 @@ func TestCatalogReconciler(t *testing.T) {
 
 	catalogFound := &catalogv1alpha1.Catalog{}
 	offeringFound := &catalogv1alpha1.Offering{}
-	providerReferenceFound := &catalogv1alpha1.ProviderReference{}
+	providerFound := &catalogv1alpha1.Provider{}
 	serviceClusterReferenceFound := &catalogv1alpha1.ServiceClusterReference{}
 	serviceClusterAssignmentFound := &corev1alpha1.ServiceClusterAssignment{}
 	if !t.Run("create/update Catalog", func(t *testing.T) {
@@ -194,13 +194,13 @@ func TestCatalogReconciler(t *testing.T) {
 		assert.Equal(t, offeringFound.Offering.Metadata.Description, catalogEntry.Spec.Metadata.Description, "Wrong Offering description")
 		assert.Equal(t, offeringFound.Offering.CRD, *catalogEntry.Status.CRD, "Wrong Offering description")
 
-		// Check ProviderReference
+		// Check Provider
 		require.NoError(t, client.Get(ctx, types.NamespacedName{
 			Name:      provider.Name,
 			Namespace: tenantNamespace.Name,
-		}, providerReferenceFound), "getting ProviderReference error")
-		assert.Equal(t, providerReferenceFound.Spec.Metadata.Description, provider.Spec.Metadata.Description, "Wrong ProviderReference Metadata.Description")
-		assert.Equal(t, providerReferenceFound.Spec.Metadata.DisplayName, provider.Spec.Metadata.DisplayName, "Wrong ProviderReference Metadata.DisplayName")
+		}, providerFound), "getting Provider error")
+		assert.Equal(t, providerFound.Spec.Metadata.Description, provider.Spec.Metadata.Description, "Wrong Provider Metadata.Description")
+		assert.Equal(t, providerFound.Spec.Metadata.DisplayName, provider.Spec.Metadata.DisplayName, "Wrong Provider Metadata.DisplayName")
 
 		// Check ServiceClusterReference
 		require.NoError(t, client.Get(ctx, types.NamespacedName{
@@ -260,12 +260,12 @@ func TestCatalogReconciler(t *testing.T) {
 			Namespace: offeringFound.Namespace,
 		}, offeringCheck)), "Offering should be gone")
 
-		// Check ProviderReference
-		providerReferenceCheck := &catalogv1alpha1.ProviderReference{}
+		// Check Provider
+		providerCheck := &catalogv1alpha1.Provider{}
 		assert.True(t, errors.IsNotFound(client.Get(ctx, types.NamespacedName{
-			Name:      providerReferenceFound.Name,
-			Namespace: providerReferenceFound.Namespace,
-		}, providerReferenceCheck)), "ProviderReference should be gone")
+			Name:      providerFound.Name,
+			Namespace: providerFound.Namespace,
+		}, providerCheck)), "Provider should be gone")
 
 		// Check ServiceClusterReference
 		serviceClusterReferenceCheck := &catalogv1alpha1.ServiceClusterReference{}

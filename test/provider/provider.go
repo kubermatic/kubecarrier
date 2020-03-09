@@ -300,16 +300,16 @@ func NewCatalogSuite(
 			return offeringFound.Offering.CRD.Name == catalogEntry.Status.CRD.Name && offeringFound.Offering.Provider.Name == provider.Name, nil
 		}), "getting the Offering error")
 
-		// Check the ProviderReference object is created.
-		providerReferenceFound := &catalogv1alpha1.ProviderReference{
+		// Check the Provider object is created.
+		providerFound := &catalogv1alpha1.Provider{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      provider.Name,
 				Namespace: tenant.Status.Namespace.Name,
 			},
 		}
-		require.NoError(t, testutil.WaitUntilFound(managementClient, providerReferenceFound), "getting the ProviderReference error")
-		assert.Equal(t, providerReferenceFound.Spec.Metadata.DisplayName, provider.Spec.Metadata.DisplayName)
-		assert.Equal(t, providerReferenceFound.Spec.Metadata.Description, provider.Spec.Metadata.Description)
+		require.NoError(t, testutil.WaitUntilFound(managementClient, providerFound), "getting the Provider error")
+		assert.Equal(t, providerFound.Spec.Metadata.DisplayName, provider.Spec.Metadata.DisplayName)
+		assert.Equal(t, providerFound.Spec.Metadata.Description, provider.Spec.Metadata.Description)
 
 		// Check the ServiceClusterReference object is created.
 		serviceClusterReferenceFound := &catalogv1alpha1.ServiceClusterReference{
@@ -410,12 +410,12 @@ func NewCatalogSuite(
 				Namespace: offeringFound.Namespace,
 			}, offeringCheck)), "offering object should also be deleted.")
 
-			// ProviderReference object should also be removed
-			providerReferenceCheck := &catalogv1alpha1.ProviderReference{}
+			// Provider object should also be removed
+			providerCheck := &catalogv1alpha1.Provider{}
 			assert.True(t, errors.IsNotFound(managementClient.Get(ctx, types.NamespacedName{
-				Name:      providerReferenceFound.Name,
-				Namespace: providerReferenceFound.Namespace,
-			}, providerReferenceCheck)), "providerReference object should also be deleted.")
+				Name:      providerFound.Name,
+				Namespace: providerFound.Namespace,
+			}, providerCheck)), "provider object should also be deleted.")
 
 			// ServiceClusterReference object should also be removed
 			serviceClusterReferenceCheck := &catalogv1alpha1.ServiceClusterReference{}

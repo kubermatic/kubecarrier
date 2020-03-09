@@ -405,9 +405,9 @@ The `catalog.kubecarrier.io` API group contains all objects that are used to set
 * [OfferingData.catalog.kubecarrier.io/v1alpha1](#offeringdata.catalog.kubecarrier.io/v1alpha1)
 * [OfferingList.catalog.kubecarrier.io/v1alpha1](#offeringlist.catalog.kubecarrier.io/v1alpha1)
 * [OfferingMetadata.catalog.kubecarrier.io/v1alpha1](#offeringmetadata.catalog.kubecarrier.io/v1alpha1)
-* [ProviderReference.catalog.kubecarrier.io/v1alpha1](#providerreference.catalog.kubecarrier.io/v1alpha1)
-* [ProviderReferenceList.catalog.kubecarrier.io/v1alpha1](#providerreferencelist.catalog.kubecarrier.io/v1alpha1)
-* [ProviderReferenceSpec.catalog.kubecarrier.io/v1alpha1](#providerreferencespec.catalog.kubecarrier.io/v1alpha1)
+* [Provider.catalog.kubecarrier.io/v1alpha1](#provider.catalog.kubecarrier.io/v1alpha1)
+* [ProviderList.catalog.kubecarrier.io/v1alpha1](#providerlist.catalog.kubecarrier.io/v1alpha1)
+* [ProviderSpec.catalog.kubecarrier.io/v1alpha1](#providerspec.catalog.kubecarrier.io/v1alpha1)
 * [ServiceClusterReference.catalog.kubecarrier.io/v1alpha1](#serviceclusterreference.catalog.kubecarrier.io/v1alpha1)
 * [ServiceClusterReferenceList.catalog.kubecarrier.io/v1alpha1](#serviceclusterreferencelist.catalog.kubecarrier.io/v1alpha1)
 * [ServiceClusterReferenceSpec.catalog.kubecarrier.io/v1alpha1](#serviceclusterreferencespec.catalog.kubecarrier.io/v1alpha1)
@@ -951,7 +951,7 @@ OfferingData defines the data (metadata, provider, crds, etc.) of Offering.
 | Field | Description | Scheme | Required |
 | ----- | ----------- | ------ | -------- |
 | metadata |  | catalog.kubecarrier.io/v1alpha1.OfferingMetadata | false |
-| provider | Provider references a ProviderReference of this Offering. | catalog.kubecarrier.io/v1alpha1.ObjectReference | true |
+| provider | Provider references Provider who owns  of this Offering. | catalog.kubecarrier.io/v1alpha1.ObjectReference | true |
 | crd | CRD holds the information about the underlying CRD that is offered by this offering. | catalog.kubecarrier.io/v1alpha1.CRDInformation | false |
 
 [Back to Group](#catalog)
@@ -978,33 +978,33 @@ OfferingMetadata contains the metadata (display name, description, etc) of the O
 
 [Back to Group](#catalog)
 
-### ProviderReference.catalog.kubecarrier.io/v1alpha1
+### Provider.catalog.kubecarrier.io/v1alpha1
 
-ProviderReference exposes information of a service provider.
+Provider exposes information of a service account which has Provider role.
 
-ProviderReference objects are created automatically by KubeCarrier in Account namespaces, that have a service offered to them via a Catalog.
+Provider objects are created automatically by KubeCarrier in Account namespaces, that have a service offered to them via a Catalog.
 
 | Field | Description | Scheme | Required |
 | ----- | ----------- | ------ | -------- |
 | metadata |  | [metav1.ObjectMeta](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.14/#objectmeta-v1-meta) | false |
-| spec |  | catalog.kubecarrier.io/v1alpha1.ProviderReferenceSpec | false |
+| spec |  | catalog.kubecarrier.io/v1alpha1.ProviderSpec | false |
 
 [Back to Group](#catalog)
 
-### ProviderReferenceList.catalog.kubecarrier.io/v1alpha1
+### ProviderList.catalog.kubecarrier.io/v1alpha1
 
-ProviderReferenceList contains a list of ProviderReference.
+ProviderList contains a list of Provider.
 
 | Field | Description | Scheme | Required |
 | ----- | ----------- | ------ | -------- |
 | metadata |  | [metav1.ListMeta](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.14/#listmeta-v1-meta) | false |
-| items |  | []catalog.kubecarrier.io/v1alpha1.ProviderReference | true |
+| items |  | []catalog.kubecarrier.io/v1alpha1.Provider | true |
 
 [Back to Group](#catalog)
 
-### ProviderReferenceSpec.catalog.kubecarrier.io/v1alpha1
+### ProviderSpec.catalog.kubecarrier.io/v1alpha1
 
-ProviderReferenceSpec defines the desired state of ProviderReference
+ProviderSpec defines the desired state of Provider
 
 | Field | Description | Scheme | Required |
 | ----- | ----------- | ------ | -------- |
