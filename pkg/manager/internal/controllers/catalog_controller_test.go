@@ -250,7 +250,7 @@ func TestCatalogReconciler(t *testing.T) {
 		// Check Provider Role
 		require.NoError(t, client.Get(ctx, types.NamespacedName{
 			Name:      fmt.Sprintf("kubecarrier:provider:%s", catalogEntry.Name),
-			Namespace: tenant.Status.Namespace.Name,
+			Namespace: tenantAccount.Status.Namespace.Name,
 		}, providerRoleFound), "getting Role error")
 		assert.Contains(t, providerRoleFound.Rules, rbacv1.PolicyRule{
 			Verbs:     []string{rbacv1.VerbAll},
@@ -261,14 +261,14 @@ func TestCatalogReconciler(t *testing.T) {
 		// Check Provider RoleBinding
 		require.NoError(t, client.Get(ctx, types.NamespacedName{
 			Name:      fmt.Sprintf("kubecarrier:provider:%s", catalogEntry.Name),
-			Namespace: tenant.Status.Namespace.Name,
+			Namespace: tenantAccount.Status.Namespace.Name,
 		}, providerRoleBindingFound), "getting RoleBinding error")
 		assert.Equal(t, providerRoleBindingFound.Subjects, provider.Spec.Subjects, "Subjects is different")
 
 		// Check Tenant Role
 		require.NoError(t, client.Get(ctx, types.NamespacedName{
 			Name:      fmt.Sprintf("kubecarrier:tenant:%s", catalogEntry.Name),
-			Namespace: tenant.Status.Namespace.Name,
+			Namespace: tenantAccount.Status.Namespace.Name,
 		}, tenantRoleFound), "getting Role error")
 		assert.Contains(t, tenantRoleFound.Rules, rbacv1.PolicyRule{
 			Verbs:     []string{rbacv1.VerbAll},
@@ -279,9 +279,9 @@ func TestCatalogReconciler(t *testing.T) {
 		// Check Tenant RoleBinding
 		require.NoError(t, client.Get(ctx, types.NamespacedName{
 			Name:      fmt.Sprintf("kubecarrier:tenant:%s", catalogEntry.Name),
-			Namespace: tenant.Status.Namespace.Name,
+			Namespace: tenantAccount.Status.Namespace.Name,
 		}, tenantRoleBindingFound), "getting RoleBinding error")
-		assert.Equal(t, tenantRoleBindingFound.Subjects, tenant.Spec.Subjects, "Subjects is different")
+		assert.Equal(t, tenantRoleBindingFound.Subjects, tenantAccount.Spec.Subjects, "Subjects is different")
 	}) {
 		t.FailNow()
 	}

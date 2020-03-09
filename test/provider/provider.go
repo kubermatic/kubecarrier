@@ -337,7 +337,7 @@ func NewCatalogSuite(
 		providerRoleFound := &rbacv1.Role{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      fmt.Sprintf("kubecarrier:provider:%s", catalogEntry.Name),
-				Namespace: tenant.Status.Namespace.Name,
+				Namespace: tenantAccount.Status.Namespace.Name,
 			},
 		}
 		require.NoError(t, testutil.WaitUntilFound(managementClient, providerRoleFound), "getting Provider Role error")
@@ -351,7 +351,7 @@ func NewCatalogSuite(
 		providerRoleBindingFound := &rbacv1.RoleBinding{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      fmt.Sprintf("kubecarrier:provider:%s", catalogEntry.Name),
-				Namespace: tenant.Status.Namespace.Name,
+				Namespace: tenantAccount.Status.Namespace.Name,
 			},
 		}
 		require.NoError(t, testutil.WaitUntilFound(managementClient, providerRoleBindingFound), "getting Provider RoleBinding error")
@@ -361,7 +361,7 @@ func NewCatalogSuite(
 		tenantRoleFound := &rbacv1.Role{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      fmt.Sprintf("kubecarrier:tenant:%s", catalogEntry.Name),
-				Namespace: tenant.Status.Namespace.Name,
+				Namespace: tenantAccount.Status.Namespace.Name,
 			},
 		}
 		require.NoError(t, testutil.WaitUntilFound(managementClient, tenantRoleFound), "getting Tenant Role error")
@@ -375,11 +375,11 @@ func NewCatalogSuite(
 		tenantRoleBindingFound := &rbacv1.RoleBinding{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      fmt.Sprintf("kubecarrier:tenant:%s", catalogEntry.Name),
-				Namespace: tenant.Status.Namespace.Name,
+				Namespace: tenantAccount.Status.Namespace.Name,
 			},
 		}
 		require.NoError(t, testutil.WaitUntilFound(managementClient, tenantRoleBindingFound), "getting Tenant RoleBinding error")
-		assert.Equal(t, tenantRoleBindingFound.Subjects, tenant.Spec.Subjects, "Subjects is different")
+		assert.Equal(t, tenantRoleBindingFound.Subjects, tenantAccount.Spec.Subjects, "Subjects is different")
 
 		// Check if the status will be updated when tenant is removed.
 		t.Run("Catalog status updates when adding and removing Tenant", func(t *testing.T) {
