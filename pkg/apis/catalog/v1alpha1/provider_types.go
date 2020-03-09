@@ -26,7 +26,7 @@ type ProviderSpec struct {
 	Metadata AccountMetadata `json:"metadata,omitempty"`
 }
 
-// Provider exposes information of a service account which has Provider role.
+// Provider exposes information of an Account with the Provider role.
 //
 // Provider objects are created automatically by KubeCarrier in Account namespaces, that have a service offered to them via a Catalog.
 // +kubebuilder:object:root=true
