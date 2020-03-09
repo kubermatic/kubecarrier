@@ -20,11 +20,11 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/kubermatic/kubecarrier/pkg/anchor"
+	"github.com/kubermatic/kubecarrier/pkg/cli"
 )
 
 func main() {
-	if err := anchor.NewAnchor().Execute(); err != nil {
+	if err := cli.NewKubecarrierCLI().Execute(); err != nil {
 		fmt.Println(err)
 		os.Exit(1)
 	}

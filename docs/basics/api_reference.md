@@ -689,7 +689,8 @@ CatalogEntryStatus represents the observed state of CatalogEntry.
 
 | Field | Description | Scheme | Required |
 | ----- | ----------- | ------ | -------- |
-| crd | CRD holds the information about the underlying BaseCRD that are offered by this CatalogEntry. | *catalog.kubecarrier.io/v1alpha1.CRDInformation | false |
+| tenantCRD | TenantCRD holds the information about the Tenant facing CRD that is offered by this CatalogEntry. | *catalog.kubecarrier.io/v1alpha1.CRDInformation | false |
+| providerCRD | ProviderCRD holds the information about the Provider facing CRD that is offered by this CatalogEntry. | *catalog.kubecarrier.io/v1alpha1.CRDInformation | false |
 | observedGeneration | ObservedGeneration is the most recent generation observed for this CatalogEntry by the controller. | catalog.kubecarrier.io/v1alpha1.int64 | false |
 | conditions | Conditions represents the latest available observations of a CatalogEntry's current state. | []catalog.kubecarrier.io/v1alpha1.CatalogEntryCondition | false |
 | phase | DEPRECATED. Phase represents the current lifecycle state of this object. Consider this field DEPRECATED, it will be removed as soon as there is a mechanism to map conditions to strings when printing the property. This is only for display purpose, for everything else use conditions. | catalog.kubecarrier.io/v1alpha1.CatalogEntryPhaseType | false |
@@ -818,6 +819,7 @@ CRDInformation contains type information about the CRD.
 | name |  | string | true |
 | apiGroup |  | string | true |
 | kind |  | string | true |
+| plural |  | string | true |
 | versions |  | []catalog.kubecarrier.io/v1alpha1.CRDVersion | true |
 | serviceCluster | ServiceCluster references a ServiceClusterReference of this CRD. | catalog.kubecarrier.io/v1alpha1.ObjectReference | true |
 

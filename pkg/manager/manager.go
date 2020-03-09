@@ -22,6 +22,7 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/spf13/cobra"
+	rbacv1 "k8s.io/api/rbac/v1"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
@@ -116,6 +117,12 @@ func run(flags *flags, log logr.Logger) error {
 	}
 	if err := multiowner.AddOwnerReverseFieldIndex(fieldIndexerLog.WithName("ServiceClusterAssignment"), mgr.GetFieldIndexer(), &corev1alpha1.ServiceClusterAssignment{}); err != nil {
 		return fmt.Errorf("registering ServiceClusterAssignment owner field index: %w", err)
+	}
+	if err := multiowner.AddOwnerReverseFieldIndex(fieldIndexerLog.WithName("Role"), mgr.GetFieldIndexer(), &rbacv1.Role{}); err != nil {
+		return fmt.Errorf("registering Role owner field index: %w", err)
+	}
+	if err := multiowner.AddOwnerReverseFieldIndex(fieldIndexerLog.WithName("RoleBinding"), mgr.GetFieldIndexer(), &rbacv1.RoleBinding{}); err != nil {
+		return fmt.Errorf("registering RoleBinding owner field index: %w", err)
 	}
 
 	if err = (&controllers.AccountReconciler{

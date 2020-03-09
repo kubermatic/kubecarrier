@@ -174,13 +174,15 @@ func (r *CatalogEntryReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error
 		})
 	}
 
+	providerCRDInfo, err := getCRDInformation(crd)
+	if err != nil {
+		return ctrl.Result{}, fmt.Errorf("getting Provider CRDInformation: %w", err)
+	}
+	catalogEntry.Status.ProviderCRD = &providerCRDInfo
+
 	if catalogEntry.Spec.Derive == nil {
 		// If the Derive is not specified, we just put the info of the BaseCRD as CatalogEntry.Status.CRD
-		crdInfo, err := getCRDInformation(crd)
-		if err != nil {
-			return ctrl.Result{}, fmt.Errorf("getting CRDInformation: %w", err)
-		}
-		catalogEntry.Status.CRD = &crdInfo
+		catalogEntry.Status.TenantCRD = &providerCRDInfo
 
 		return ctrl.Result{}, r.updateStatus(ctx, catalogEntry, &catalogv1alpha1.CatalogEntryCondition{
 			Type:    catalogv1alpha1.CatalogEntryReady,
@@ -219,11 +221,11 @@ func (r *CatalogEntryReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error
 		})
 	}
 
-	crdInfo, err := getCRDInformation(derivedCRD)
+	tenantCRDInfo, err := getCRDInformation(derivedCRD)
 	if err != nil {
-		return ctrl.Result{}, fmt.Errorf("getting CRDInformation: %w", err)
+		return ctrl.Result{}, fmt.Errorf("getting Tenant CRDInformation: %w", err)
 	}
-	catalogEntry.Status.CRD = &crdInfo
+	catalogEntry.Status.TenantCRD = &tenantCRDInfo
 
 	return ctrl.Result{}, r.updateStatus(ctx, catalogEntry, &catalogv1alpha1.CatalogEntryCondition{
 		Type:    catalogv1alpha1.CatalogEntryReady,
@@ -346,6 +348,7 @@ func getCRDInformation(crd *apiextensionsv1.CustomResourceDefinition) (catalogv1
 		Name:     crd.Name,
 		APIGroup: crd.Spec.Group,
 		Kind:     crd.Spec.Names.Kind,
+		Plural:   crd.Spec.Names.Plural,
 	}
 
 	for _, ver := range crd.Spec.Versions {
