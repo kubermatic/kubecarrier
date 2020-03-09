@@ -29,8 +29,10 @@ import (
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/wait"
+	"k8s.io/apimachinery/pkg/watch"
 
 	catalogv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/catalog/v1alpha1"
 	corev1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/core/v1alpha1"
@@ -81,20 +83,10 @@ func newCatalogSuite(
 		require.NoError(t, testutil.WaitUntilReady(ctx, managementClient, provider))
 
 		// wait for the Tenant to be created.
-		tenant := &catalogv1alpha1.Tenant{}
-		require.NoError(
-			t, wait.Poll(time.Second, 10*time.Second, func() (done bool, err error) {
-				if err := managementClient.Get(ctx, types.NamespacedName{
-					Name:      tenantAccount.Name,
-					Namespace: provider.Status.Namespace.Name,
-				}, tenant); err != nil {
-					if errors.IsNotFound(err) {
-						return false, nil
-					}
-					return true, err
-				}
-				return true, nil
-			}), "waiting for the Tenant to be created")
+		require.NoError(t, testutil.WaitUntilFound(ctx, managementClient, &catalogv1alpha1.Tenant{ObjectMeta: metav1.ObjectMeta{
+			Name:      tenantAccount.Name,
+			Namespace: provider.Status.Namespace.Name,
+		}}))
 
 		// Create CRDs to execute tests
 		crd := &apiextensionsv1.CustomResourceDefinition{
@@ -206,19 +198,10 @@ func newCatalogSuite(
 		require.NoError(t, managementClient.Create(ctx, catalog), "creating Catalog error")
 
 		// Check the status of the Catalog.
-		catalogFound := &catalogv1alpha1.Catalog{}
-		assert.NoError(t, wait.Poll(time.Second, 10*time.Second, func() (done bool, err error) {
-			if err := managementClient.Get(ctx, types.NamespacedName{
-				Name:      catalog.Name,
-				Namespace: catalog.Namespace,
-			}, catalogFound); err != nil {
-				if errors.IsNotFound(err) {
-					return false, nil
-				}
-				return true, err
-			}
-			return len(catalogFound.Status.Entries) == 1 && len(catalogFound.Status.Tenants) > 0, nil
-		}), "getting the Catalog error")
+		assert.NoError(t, managementClient.WaitUntil(ctx, catalog, func(obj runtime.Object, eventType watch.EventType) (b bool, err error) {
+			catalog := obj.(*catalogv1alpha1.Catalog)
+			return len(catalog.Status.Entries) == 1 && len(catalog.Status.Tenants) > 0, nil
+		}))
 
 		// Check the Offering object is created.
 		offeringFound := &catalogv1alpha1.Offering{
