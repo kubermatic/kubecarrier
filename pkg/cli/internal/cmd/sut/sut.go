@@ -49,7 +49,7 @@ Currently not implemented:
 
 Examples:
 
-anchor sut manager
+kubectl kubecarrier sut manager
 
 the tool shall pause and print the telepresence command you ought to run in separate terminal. After the command reaches running state press any key to continue. The SUT utility shall generate necessary InteliJ/vscode configuration ready for this component.
 `),

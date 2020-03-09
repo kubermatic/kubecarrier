@@ -48,28 +48,28 @@ func NewInstallationSuite(f *framework.Framework) func(t *testing.T) {
 		ctx := context.Background()
 		kubeCarrier := &operatorv1alpha1.KubeCarrier{}
 
-		if !t.Run("anchor setup", testAnchorSetup(ctx, f, kubeCarrier)) {
+		if !t.Run("kubecarrier setup", testKubecarrierSetup(ctx, f, kubeCarrier)) {
 			t.FailNow()
 		}
-		if !t.Run("kubeCarrier teardown", testAnchorTeardown(ctx, f, kubeCarrier)) {
+		if !t.Run("kubeCarrier teardown", testKubecarrierTeardown(ctx, f, kubeCarrier)) {
 			t.FailNow()
 		}
 
 		var out bytes.Buffer
-		c := exec.Command("anchor", "setup", "--kubeconfig", f.Config().ManagementExternalKubeconfigPath)
+		c := exec.Command("kubectl", "kubecarrier", "setup", "--kubeconfig", f.Config().ManagementExternalKubeconfigPath)
 		c.Stdout = &out
 		c.Stderr = &out
-		require.NoError(t, c.Run(), "\"anchor setup\" returned an error: %s", out.String())
+		require.NoError(t, c.Run(), "\"kubectl kubecarrier setup\" returned an error: %s", out.String())
 	}
 }
 
-func testAnchorSetup(ctx context.Context, f *framework.Framework, kubeCarrier *operatorv1alpha1.KubeCarrier) func(t *testing.T) {
+func testKubecarrierSetup(ctx context.Context, f *framework.Framework, kubeCarrier *operatorv1alpha1.KubeCarrier) func(t *testing.T) {
 	return func(t *testing.T) {
 		var out bytes.Buffer
-		c := exec.Command("anchor", "setup", "--kubeconfig", f.Config().ManagementExternalKubeconfigPath)
+		c := exec.Command("kubectl", "kubecarrier", "setup", "--kubeconfig", f.Config().ManagementExternalKubeconfigPath)
 		c.Stdout = &out
 		c.Stderr = &out
-		require.NoError(t, c.Run(), "\"anchor setup\" returned an error: %s", out.String())
+		require.NoError(t, c.Run(), "\"kubectl kubecarrier setup\" returned an error: %s", out.String())
 
 		// Create another client due to some issues about the restmapper.
 		// The issue is that if you use the client that created before, and here try to create the kubeCarrier,
@@ -144,7 +144,7 @@ func testAnchorSetup(ctx context.Context, f *framework.Framework, kubeCarrier *o
 	}
 }
 
-func testAnchorTeardown(ctx context.Context, f *framework.Framework, kubeCarrier *operatorv1alpha1.KubeCarrier) func(t *testing.T) {
+func testKubecarrierTeardown(ctx context.Context, f *framework.Framework, kubeCarrier *operatorv1alpha1.KubeCarrier) func(t *testing.T) {
 	return func(t *testing.T) {
 		managementClient, err := f.ManagementClient()
 		require.NoError(t, err, "creating management client")

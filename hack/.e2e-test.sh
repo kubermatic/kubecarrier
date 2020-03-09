@@ -33,4 +33,4 @@ function cleanup() {
 }
 
 trap cleanup EXIT
-go run -ldflags "-w ${LD_FLAGS}" ./cmd/anchor e2e-test run --test.v --test-id=${TEST_ID} | richgo testfilter
+kubectl kubecarrier e2e-test run --test.v --test-id=${TEST_ID} | richgo testfilter
