@@ -23,7 +23,6 @@ import (
 )
 
 const (
-	ProviderLabel        = "kubecarrier.io/provider"
 	ServiceClusterLabel  = "kubecarrier.io/service-cluster"
 	OriginNamespaceLabel = "kubecarrier.io/origin-namespace"
 )

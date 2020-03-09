@@ -365,15 +365,29 @@
                     - type
                     type: object
                   type: array
-                crd:
-                  description: CRD holds the information about the underlying BaseCRD
-                    that are offered by this CatalogEntry.
+                observedGeneration:
+                  description: ObservedGeneration is the most recent generation observed
+                    for this CatalogEntry by the controller.
+                  format: int64
+                  type: integer
+                phase:
+                  description: DEPRECATED. Phase represents the current lifecycle
+                    state of this object. Consider this field DEPRECATED, it will
+                    be removed as soon as there is a mechanism to map conditions to
+                    strings when printing the property. This is only for display purpose,
+                    for everything else use conditions.
+                  type: string
+                providerCRD:
+                  description: ProviderCRD holds the information about the Provider
+                    facing CRD that is offered by this CatalogEntry.
                   properties:
                     apiGroup:
                       type: string
                     kind:
                       type: string
                     name:
+                      type: string
+                    plural:
                       type: string
                     serviceCluster:
                       description: ServiceCluster references a ServiceClusterReference
@@ -404,21 +418,55 @@
                   - apiGroup
                   - kind
                   - name
+                  - plural
                   - serviceCluster
                   - versions
                   type: object
-                observedGeneration:
-                  description: ObservedGeneration is the most recent generation observed
-                    for this CatalogEntry by the controller.
-                  format: int64
-                  type: integer
-                phase:
-                  description: DEPRECATED. Phase represents the current lifecycle
-                    state of this object. Consider this field DEPRECATED, it will
-                    be removed as soon as there is a mechanism to map conditions to
-                    strings when printing the property. This is only for display purpose,
-                    for everything else use conditions.
-                  type: string
+                tenantCRD:
+                  description: TenantCRD holds the information about the Tenant facing
+                    CRD that is offered by this CatalogEntry.
+                  properties:
+                    apiGroup:
+                      type: string
+                    kind:
+                      type: string
+                    name:
+                      type: string
+                    plural:
+                      type: string
+                    serviceCluster:
+                      description: ServiceCluster references a ServiceClusterReference
+                        of this CRD.
+                      properties:
+                        name:
+                          type: string
+                      required:
+                      - name
+                      type: object
+                    versions:
+                      items:
+                        description: CRDVersion holds CRD version specific details.
+                        properties:
+                          name:
+                            description: 'Name of this version, for example: v1, v1alpha1,
+                              v1beta1'
+                            type: string
+                          schema:
+                            description: Schema of this CRD version.
+                            type: object
+                            x-kubernetes-preserve-unknown-fields: true
+                        required:
+                        - name
+                        type: object
+                      type: array
+                  required:
+                  - apiGroup
+                  - kind
+                  - name
+                  - plural
+                  - serviceCluster
+                  - versions
+                  type: object
               type: object
           type: object
       served: true
@@ -1178,6 +1226,8 @@
                       type: string
                     name:
                       type: string
+                    plural:
+                      type: string
                     serviceCluster:
                       description: ServiceCluster references a ServiceClusterReference
                         of this CRD.
@@ -1207,6 +1257,7 @@
                   - apiGroup
                   - kind
                   - name
+                  - plural
                   - serviceCluster
                   - versions
                   type: object

@@ -17,9 +17,10 @@ limitations under the License.
 package controllers
 
 import (
-	corev1 "k8s.io/api/core/v1"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
+	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 
 	catalogv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/catalog/v1alpha1"
 	corev1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/core/v1alpha1"
@@ -30,19 +31,9 @@ var testScheme = runtime.NewScheme()
 
 func init() {
 	// setup scheme for all tests
-	if err := corev1.AddToScheme(testScheme); err != nil {
-		panic(err)
-	}
-	if err := catalogv1alpha1.AddToScheme(testScheme); err != nil {
-		panic(err)
-	}
-	if err := operatorv1alpha1.AddToScheme(testScheme); err != nil {
-		panic(err)
-	}
-	if err := apiextensionsv1.AddToScheme(testScheme); err != nil {
-		panic(err)
-	}
-	if err := corev1alpha1.AddToScheme(testScheme); err != nil {
-		panic(err)
-	}
+	utilruntime.Must(clientgoscheme.AddToScheme(testScheme))
+	utilruntime.Must(apiextensionsv1.AddToScheme(testScheme))
+	utilruntime.Must(corev1alpha1.AddToScheme(testScheme))
+	utilruntime.Must(catalogv1alpha1.AddToScheme(testScheme))
+	utilruntime.Must(operatorv1alpha1.AddToScheme(testScheme))
 }

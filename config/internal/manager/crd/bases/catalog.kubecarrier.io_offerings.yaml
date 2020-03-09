@@ -60,6 +60,8 @@ spec:
                       type: string
                     name:
                       type: string
+                    plural:
+                      type: string
                     serviceCluster:
                       description: ServiceCluster references a ServiceClusterReference
                         of this CRD.
@@ -89,6 +91,7 @@ spec:
                     - apiGroup
                     - kind
                     - name
+                    - plural
                     - serviceCluster
                     - versions
                   type: object
