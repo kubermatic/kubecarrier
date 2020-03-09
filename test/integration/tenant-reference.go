@@ -37,7 +37,7 @@ import (
 func newAccountRefs(f *testutil.Framework) func(t *testing.T) {
 	return func(t *testing.T) {
 		t.Log("testing how account handles tenant references")
-		ctx, cancel := context.WithTimeout(context.Background(), 45*time.Second)
+		ctx, cancel := context.WithTimeout(context.Background(), 120*time.Second)
 		t.Cleanup(cancel)
 		managementClient, err := f.ManagementClient(t)
 		require.NoError(t, err, "creating management client")

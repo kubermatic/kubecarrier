@@ -40,7 +40,7 @@ func newCatalogSuite(
 	f *testutil.Framework,
 ) func(t *testing.T) {
 	return func(t *testing.T) {
-		ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
+		ctx, cancel := context.WithTimeout(context.Background(), 120*time.Second)
 		t.Cleanup(cancel)
 		managementClient, err := f.ManagementClient(t)
 		require.NoError(t, err, "creating management client")
