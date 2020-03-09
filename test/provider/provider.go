@@ -120,7 +120,7 @@ func NewCatalogSuite(
 		ctx := context.Background()
 
 		// Create a Tenant to execute our tests in
-		tenant := &catalogv1alpha1.Account{
+		tenantAccount := &catalogv1alpha1.Account{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: "test-tenant-catalog",
 			},
@@ -142,24 +142,24 @@ func NewCatalogSuite(
 			},
 		}
 		require.NoError(
-			t, managementClient.Create(ctx, tenant), "creating Tenant error")
-		require.NoError(t, testutil.WaitUntilReady(managementClient, tenant))
+			t, managementClient.Create(ctx, tenantAccount), "creating Tenant error")
+		require.NoError(t, testutil.WaitUntilReady(managementClient, tenantAccount))
 
-		// wait for the TenantReference to be created.
-		tenantReference := &catalogv1alpha1.TenantReference{}
+		// wait for the Tenant to be created.
+		tenant := &catalogv1alpha1.Tenant{}
 		require.NoError(
 			t, wait.Poll(time.Second, 10*time.Second, func() (done bool, err error) {
 				if err := managementClient.Get(ctx, types.NamespacedName{
-					Name:      tenant.Name,
+					Name:      tenantAccount.Name,
 					Namespace: provider.Status.Namespace.Name,
-				}, tenantReference); err != nil {
+				}, tenant); err != nil {
 					if errors.IsNotFound(err) {
 						return false, nil
 					}
 					return true, err
 				}
 				return true, nil
-			}), "waiting for the TenantReference to be created")
+			}), "waiting for the Tenant to be created")
 
 		// Create CRDs to execute tests
 		crd := &apiextensionsv1.CustomResourceDefinition{
@@ -265,7 +265,7 @@ func NewCatalogSuite(
 						"kubecarrier.io/test": "label",
 					},
 				},
-				TenantReferenceSelector: &metav1.LabelSelector{},
+				TenantSelector: &metav1.LabelSelector{},
 			},
 		}
 		require.NoError(t, managementClient.Create(ctx, catalog), "creating Catalog error")
@@ -290,7 +290,7 @@ func NewCatalogSuite(
 		assert.NoError(t, wait.Poll(time.Second, 10*time.Second, func() (done bool, err error) {
 			if err := managementClient.Get(ctx, types.NamespacedName{
 				Name:      catalogEntry.Name,
-				Namespace: tenant.Status.Namespace.Name,
+				Namespace: tenantAccount.Status.Namespace.Name,
 			}, offeringFound); err != nil {
 				if errors.IsNotFound(err) {
 					return false, nil
@@ -304,7 +304,7 @@ func NewCatalogSuite(
 		providerFound := &catalogv1alpha1.Provider{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      provider.Name,
-				Namespace: tenant.Status.Namespace.Name,
+				Namespace: tenantAccount.Status.Namespace.Name,
 			},
 		}
 		require.NoError(t, testutil.WaitUntilFound(managementClient, providerFound), "getting the Provider error")
@@ -315,7 +315,7 @@ func NewCatalogSuite(
 		serviceClusterReferenceFound := &catalogv1alpha1.ServiceClusterReference{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      fmt.Sprintf("%s.%s", serviceCluster.Name, provider.Name),
-				Namespace: tenant.Status.Namespace.Name,
+				Namespace: tenantAccount.Status.Namespace.Name,
 			},
 		}
 		require.NoError(t, testutil.WaitUntilFound(managementClient, serviceClusterReferenceFound), "getting the ServiceClusterReference error")
@@ -325,19 +325,19 @@ func NewCatalogSuite(
 		// Check the ServiceClusterAssignment object is created.
 		serviceClusterAssignmentFound := &corev1alpha1.ServiceClusterAssignment{
 			ObjectMeta: metav1.ObjectMeta{
-				Name:      fmt.Sprintf("%s.%s", tenant.Status.Namespace.Name, serviceCluster.Name),
+				Name:      fmt.Sprintf("%s.%s", tenantAccount.Status.Namespace.Name, serviceCluster.Name),
 				Namespace: provider.Status.Namespace.Name,
 			},
 		}
 		require.NoError(t, testutil.WaitUntilFound(managementClient, serviceClusterAssignmentFound), "getting the ServiceClusterAssignment error")
 		assert.Equal(t, serviceClusterAssignmentFound.Spec.ServiceCluster.Name, serviceCluster.Name)
-		assert.Equal(t, serviceClusterAssignmentFound.Spec.ManagementClusterNamespace.Name, tenant.Status.Namespace.Name)
+		assert.Equal(t, serviceClusterAssignmentFound.Spec.ManagementClusterNamespace.Name, tenantAccount.Status.Namespace.Name)
 
 		// Check Provider Role
 		providerRoleFound := &rbacv1.Role{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      fmt.Sprintf("kubecarrier:provider:%s", catalogEntry.Name),
-				Namespace: tenant.Status.Namespace.Name,
+				Namespace: tenantAccount.Status.Namespace.Name,
 			},
 		}
 		require.NoError(t, testutil.WaitUntilFound(managementClient, providerRoleFound), "getting Provider Role error")
@@ -351,7 +351,7 @@ func NewCatalogSuite(
 		providerRoleBindingFound := &rbacv1.RoleBinding{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      fmt.Sprintf("kubecarrier:provider:%s", catalogEntry.Name),
-				Namespace: tenant.Status.Namespace.Name,
+				Namespace: tenantAccount.Status.Namespace.Name,
 			},
 		}
 		require.NoError(t, testutil.WaitUntilFound(managementClient, providerRoleBindingFound), "getting Provider RoleBinding error")
@@ -361,7 +361,7 @@ func NewCatalogSuite(
 		tenantRoleFound := &rbacv1.Role{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      fmt.Sprintf("kubecarrier:tenant:%s", catalogEntry.Name),
-				Namespace: tenant.Status.Namespace.Name,
+				Namespace: tenantAccount.Status.Namespace.Name,
 			},
 		}
 		require.NoError(t, testutil.WaitUntilFound(managementClient, tenantRoleFound), "getting Tenant Role error")
@@ -375,17 +375,17 @@ func NewCatalogSuite(
 		tenantRoleBindingFound := &rbacv1.RoleBinding{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      fmt.Sprintf("kubecarrier:tenant:%s", catalogEntry.Name),
-				Namespace: tenant.Status.Namespace.Name,
+				Namespace: tenantAccount.Status.Namespace.Name,
 			},
 		}
 		require.NoError(t, testutil.WaitUntilFound(managementClient, tenantRoleBindingFound), "getting Tenant RoleBinding error")
-		assert.Equal(t, tenantRoleBindingFound.Subjects, tenant.Spec.Subjects, "Subjects is different")
+		assert.Equal(t, tenantRoleBindingFound.Subjects, tenantAccount.Spec.Subjects, "Subjects is different")
 
 		// Check if the status will be updated when tenant is removed.
 		t.Run("Catalog status updates when adding and removing Tenant", func(t *testing.T) {
 			// Remove the tenant
-			require.NoError(t, managementClient.Delete(ctx, tenant), "deleting Tenant")
-			require.NoError(t, testutil.WaitUntilNotFound(managementClient, tenant))
+			require.NoError(t, managementClient.Delete(ctx, tenantAccount), "deleting Tenant")
+			require.NoError(t, testutil.WaitUntilNotFound(managementClient, tenantAccount))
 
 			catalogCheck := &catalogv1alpha1.Catalog{}
 			assert.NoError(t, wait.Poll(time.Second, 30*time.Second, func() (done bool, err error) {
@@ -400,7 +400,7 @@ func NewCatalogSuite(
 				}
 
 				for _, t := range catalogCheck.Status.Tenants {
-					if t.Name == tenant.Name {
+					if t.Name == tenantAccount.Name {
 						return false, nil
 					}
 				}
@@ -409,7 +409,7 @@ func NewCatalogSuite(
 			}), catalogCheck.Status.Tenants)
 
 			// Recreate the tenant
-			tenant = &catalogv1alpha1.Account{
+			tenantAccount = &catalogv1alpha1.Account{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "test-tenant2",
 				},
@@ -430,8 +430,8 @@ func NewCatalogSuite(
 					},
 				},
 			}
-			require.NoError(t, managementClient.Create(ctx, tenant), "creating tenant error")
-			require.NoError(t, testutil.WaitUntilReady(managementClient, tenant))
+			require.NoError(t, managementClient.Create(ctx, tenantAccount), "creating tenant error")
+			require.NoError(t, testutil.WaitUntilReady(managementClient, tenantAccount))
 
 			require.NoError(t, wait.Poll(time.Second, 30*time.Second, func() (done bool, err error) {
 				if err := managementClient.Get(ctx, types.NamespacedName{
@@ -443,7 +443,7 @@ func NewCatalogSuite(
 					}
 					return true, err
 				}
-				return len(catalogCheck.Status.Tenants) == 1 && catalogCheck.Status.Tenants[0].Name == tenant.Name, nil
+				return len(catalogCheck.Status.Tenants) == 1 && catalogCheck.Status.Tenants[0].Name == tenantAccount.Name, nil
 			}), "getting the Catalog error")
 		})
 

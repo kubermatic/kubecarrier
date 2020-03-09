@@ -25,13 +25,13 @@ type CatalogSpec struct {
 	// CatalogEntrySelector selects CatalogEntry objects that should be part of this catalog.
 	CatalogEntrySelector *metav1.LabelSelector `json:"catalogEntrySelector,omitempty"`
 
-	// TenantReferenceSelector selects TenantReference objects that the catalog should be published to.
-	TenantReferenceSelector *metav1.LabelSelector `json:"tenantReferenceSelector,omitempty"`
+	// TenantSelector selects Tenant objects that the catalog should be published to.
+	TenantSelector *metav1.LabelSelector `json:"tenantSelector,omitempty"`
 }
 
 // CatalogStatus represents the observed state of Catalog.
 type CatalogStatus struct {
-	// Tenants is the list of the Tenants(TenantReference) that selected by this Catalog.
+	// Tenants is the list of the Tenants(Tenant) that selected by this Catalog.
 	Tenants []ObjectReference `json:"tenants,omitempty"`
 	// Entries is the list of the CatalogEntries that selected by this Catalog.
 	Entries []ObjectReference `json:"entries,omitempty"`
@@ -167,7 +167,7 @@ func (s *CatalogStatus) SetCondition(condition CatalogCondition) {
 // metadata:
 //   name: default
 // spec:
-//   tenantReferenceSelector: {}
+//   tenantSelector: {}
 //   catalogEntrySelector: {}
 // ```
 // +kubebuilder:object:root=true

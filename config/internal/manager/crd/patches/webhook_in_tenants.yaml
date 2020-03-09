@@ -3,7 +3,7 @@
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
-  name: tenantreferences.catalog.kubecarrier.io
+  name: tenants.catalog.kubecarrier.io
 spec:
   conversion:
     strategy: Webhook

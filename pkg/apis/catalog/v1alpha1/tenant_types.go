@@ -20,30 +20,30 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// TenantReferenceSpec defines the desired state of TenantReference
-type TenantReferenceSpec struct{}
+// TenantSpec defines the desired state of Tenant
+type TenantSpec struct{}
 
-// TenantReference exposes information about available Tenants on the platform and allows a Provider to set custom labels on them.
+// Tenant exposes information about available Tenants on the platform and allows a Provider to set custom labels on them.
 //
-// TenantReference objects will be created for all Accounts with the role "Tenant" in all Account Namespaces with the role "Provider".
+// Tenant objects will be created for all Accounts with the role "Tenant" in all Account Namespaces with the role "Provider".
 // +kubebuilder:object:root=true
 // +kubebuilder:printcolumn:name="Age",type="date",JSONPath=".metadata.creationTimestamp"
 // +kubebuilder:resource:categories=kubecarrier-provider,shortName=tr
-type TenantReference struct {
+type Tenant struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec TenantReferenceSpec `json:"spec,omitempty"`
+	Spec TenantSpec `json:"spec,omitempty"`
 }
 
-// TenantReferenceList contains a list of TenantReference.
+// TenantList contains a list of Tenant.
 // +kubebuilder:object:root=true
-type TenantReferenceList struct {
+type TenantList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
-	Items           []TenantReference `json:"items"`
+	Items           []Tenant `json:"items"`
 }
 
 func init() {
-	SchemeBuilder.Register(&TenantReference{}, &TenantReferenceList{})
+	SchemeBuilder.Register(&Tenant{}, &TenantList{})
 }

@@ -29,19 +29,19 @@ import (
 	"github.com/kubermatic/kubecarrier/pkg/internal/util/webhook"
 )
 
-// TenantReferenceWebhookHandler handles mutating/validating of TenantReferences.
-type TenantReferenceWebhookHandler struct {
+// TenantWebhookHandler handles mutating/validating of Tenants.
+type TenantWebhookHandler struct {
 	decoder *admission.Decoder
 	Log     logr.Logger
 }
 
-var _ admission.Handler = (*TenantReferenceWebhookHandler)(nil)
+var _ admission.Handler = (*TenantWebhookHandler)(nil)
 
-// +kubebuilder:webhook:path=/validate-catalog-kubecarrier-io-v1alpha1-tenantreference,mutating=false,failurePolicy=fail,groups=catalog.kubecarrier.io,resources=tenantreferences,verbs=create,versions=v1alpha1,name=vtenantreference.kubecarrier.io
+// +kubebuilder:webhook:path=/validate-catalog-kubecarrier-io-v1alpha1-tenant,mutating=false,failurePolicy=fail,groups=catalog.kubecarrier.io,resources=tenants,verbs=create,versions=v1alpha1,name=vtenant.kubecarrier.io
 
-// Handle is the function to handle create/update requests of TenantReferences.
-func (r *TenantReferenceWebhookHandler) Handle(ctx context.Context, req admission.Request) admission.Response {
-	obj := &catalogv1alpha1.TenantReference{}
+// Handle is the function to handle create/update requests of Tenants.
+func (r *TenantWebhookHandler) Handle(ctx context.Context, req admission.Request) admission.Response {
+	obj := &catalogv1alpha1.Tenant{}
 	if err := r.decoder.Decode(req, obj); err != nil {
 		return admission.Errored(http.StatusBadRequest, err)
 	}
@@ -54,19 +54,19 @@ func (r *TenantReferenceWebhookHandler) Handle(ctx context.Context, req admissio
 	return admission.Allowed("allowed to commit the request")
 }
 
-// TenantReferenceWebhookHandler implements admission.DecoderInjector.
+// TenantWebhookHandler implements admission.DecoderInjector.
 // A decoder will be automatically injected.
 
 // InjectDecoder injects the decoder.
-func (r *TenantReferenceWebhookHandler) InjectDecoder(d *admission.Decoder) error {
+func (r *TenantWebhookHandler) InjectDecoder(d *admission.Decoder) error {
 	r.decoder = d
 	return nil
 }
 
-func (r *TenantReferenceWebhookHandler) validateCreate(tenantReference *catalogv1alpha1.TenantReference) error {
-	r.Log.Info("validate create", "name", tenantReference.Name)
-	if !webhook.IsDNS1123Label(tenantReference.Name) {
-		return fmt.Errorf("tenantReference name: %s is not a valid DNS 1123 Label, %s", tenantReference.Name, webhook.DNS1123LabelDescription)
+func (r *TenantWebhookHandler) validateCreate(tenant *catalogv1alpha1.Tenant) error {
+	r.Log.Info("validate create", "name", tenant.Name)
+	if !webhook.IsDNS1123Label(tenant.Name) {
+		return fmt.Errorf("tenant name: %s is not a valid DNS 1123 Label, %s", tenant.Name, webhook.DNS1123LabelDescription)
 	}
 	return nil
 }
