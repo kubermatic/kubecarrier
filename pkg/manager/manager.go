@@ -230,9 +230,9 @@ func run(flags *flags, log logr.Logger) error {
 		&webhook.Admission{Handler: &webhooks.ServiceClusterReferenceWebhookHandler{
 			Log: log.WithName("validating webhooks").WithName("ServiceClusterReference"),
 		}})
-	wbh.Register(utilwebhook.GenerateValidateWebhookPath(&catalogv1alpha1.TenantReference{}, mgr.GetScheme()),
-		&webhook.Admission{Handler: &webhooks.TenantReferenceWebhookHandler{
-			Log: log.WithName("validating webhooks").WithName("TenantReference"),
+	wbh.Register(utilwebhook.GenerateValidateWebhookPath(&catalogv1alpha1.Tenant{}, mgr.GetScheme()),
+		&webhook.Admission{Handler: &webhooks.TenantWebhookHandler{
+			Log: log.WithName("validating webhooks").WithName("Tenant"),
 		}})
 	wbh.Register(utilwebhook.GenerateValidateWebhookPath(&corev1alpha1.CustomResourceDiscovery{}, mgr.GetScheme()),
 		&webhook.Admission{Handler: &webhooks.CustomResourceDiscoveryWebhookHandler{

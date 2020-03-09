@@ -64,7 +64,7 @@ type CatalogReconciler struct {
 // Reconcile function reconciles the Catalog object which specified by the request. Currently, it does the following:
 // - Fetch the Catalog object.
 // - Handle the deletion of the Catalog object.
-// - Fetch the CatalogEntries and TenantReferences that selected by this Catalog object.
+// - Fetch the CatalogEntries and Tenants that selected by this Catalog object.
 // - Update the Status of the Catalog object.
 func (r *CatalogReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	ctx := context.Background()
@@ -107,10 +107,10 @@ func (r *CatalogReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	}
 	catalog.Status.Entries = entries
 
-	// Get TenantReferences.
+	// Get Tenants.
 	readyTenants, err := r.listSelectedReadyTenants(ctx, log, catalog)
 	if err != nil {
-		return ctrl.Result{}, fmt.Errorf("getting selected TenantReferences: %w", err)
+		return ctrl.Result{}, fmt.Errorf("getting selected Tenants: %w", err)
 	}
 
 	var tenants []catalogv1alpha1.ObjectReference
@@ -221,7 +221,7 @@ func (r *CatalogReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	enqueuerForOwner := multiowner.EnqueueRequestForOwner(&catalogv1alpha1.Catalog{}, mgr.GetScheme())
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&catalogv1alpha1.Catalog{}).
-		Watches(&source.Kind{Type: &catalogv1alpha1.TenantReference{}}, enqueueAllCatalogsInNamespace).
+		Watches(&source.Kind{Type: &catalogv1alpha1.Tenant{}}, enqueueAllCatalogsInNamespace).
 		Watches(&source.Kind{Type: &catalogv1alpha1.CatalogEntry{}}, enqueueAllCatalogsInNamespace).
 		Watches(&source.Kind{Type: &corev1alpha1.ServiceCluster{}}, enqueueAllCatalogsInNamespace).
 		Watches(&source.Kind{Type: &catalogv1alpha1.Offering{}}, enqueuerForOwner).
@@ -325,25 +325,25 @@ func (r *CatalogReconciler) listSelectedReadyCatalogEntries(ctx context.Context,
 }
 
 func (r *CatalogReconciler) listSelectedReadyTenants(ctx context.Context, log logr.Logger, catalog *catalogv1alpha1.Catalog) ([]*catalogv1alpha1.Account, error) {
-	tenantReferenceSelector, err := metav1.LabelSelectorAsSelector(catalog.Spec.TenantReferenceSelector)
+	tenantSelector, err := metav1.LabelSelectorAsSelector(catalog.Spec.TenantSelector)
 	if err != nil {
-		return nil, fmt.Errorf("parsing TenantReference selector: %w", err)
+		return nil, fmt.Errorf("parsing Tenant selector: %w", err)
 	}
-	tenantReferences := &catalogv1alpha1.TenantReferenceList{}
-	if err := r.List(ctx, tenantReferences, client.InNamespace(catalog.Namespace), client.MatchingLabelsSelector{Selector: tenantReferenceSelector}); err != nil {
-		return nil, fmt.Errorf("listing TenantReference: %w", err)
+	tenants := &catalogv1alpha1.TenantList{}
+	if err := r.List(ctx, tenants, client.InNamespace(catalog.Namespace), client.MatchingLabelsSelector{Selector: tenantSelector}); err != nil {
+		return nil, fmt.Errorf("listing Tenant: %w", err)
 	}
 	var readyTenants []*catalogv1alpha1.Account
-	for _, tenantReference := range tenantReferences.Items {
-		tenant := &catalogv1alpha1.Account{}
+	for _, tenant := range tenants.Items {
+		tenantAccount := &catalogv1alpha1.Account{}
 		if err := r.Get(ctx, types.NamespacedName{
-			Name: tenantReference.Name,
-		}, tenant); err != nil {
+			Name: tenant.Name,
+		}, tenantAccount); err != nil {
 			return nil, fmt.Errorf("getting Tenant: %w", err)
 		}
 
-		if tenant.IsReady() && tenant.HasRole(catalogv1alpha1.TenantRole) {
-			readyTenants = append(readyTenants, tenant)
+		if tenantAccount.IsReady() && tenantAccount.HasRole(catalogv1alpha1.TenantRole) {
+			readyTenants = append(readyTenants, tenantAccount)
 		}
 	}
 	return readyTenants, nil

@@ -66,7 +66,7 @@ func TestCatalogReconciler(t *testing.T) {
 	}
 	owner.SetOwnerReference(provider, providerNamespace, testScheme)
 
-	tenant := &catalogv1alpha1.Account{
+	tenantAccount := &catalogv1alpha1.Account{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "example-tenant",
 		},
@@ -83,17 +83,17 @@ func TestCatalogReconciler(t *testing.T) {
 			},
 		},
 	}
-	tenant.Status.SetCondition(catalogv1alpha1.AccountCondition{
+	tenantAccount.Status.SetCondition(catalogv1alpha1.AccountCondition{
 		Type:    catalogv1alpha1.AccountReady,
 		Status:  catalogv1alpha1.ConditionTrue,
 		Reason:  "SetupComplete",
 		Message: "Tenant setup is complete.",
 	})
-	tenant.Status.Namespace.Name = tenant.Name
+	tenantAccount.Status.Namespace.Name = tenantAccount.Name
 
-	tenantReference := &catalogv1alpha1.TenantReference{
+	tenant := &catalogv1alpha1.Tenant{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      tenant.Name,
+			Name:      tenantAccount.Name,
 			Namespace: providerNamespace.Name,
 		},
 	}
@@ -159,12 +159,12 @@ func TestCatalogReconciler(t *testing.T) {
 			Namespace: providerNamespace.Name,
 		},
 		Spec: catalogv1alpha1.CatalogSpec{
-			CatalogEntrySelector:    &metav1.LabelSelector{},
-			TenantReferenceSelector: &metav1.LabelSelector{},
+			CatalogEntrySelector: &metav1.LabelSelector{},
+			TenantSelector:       &metav1.LabelSelector{},
 		},
 	}
 
-	client := fakeclient.NewFakeClientWithScheme(testScheme, catalogEntry, catalog, provider, providerNamespace, tenant, tenantReference, tenantNamespace, serviceCluster)
+	client := fakeclient.NewFakeClientWithScheme(testScheme, catalogEntry, catalog, provider, providerNamespace, tenant, tenantAccount, tenantNamespace, serviceCluster)
 	log := testutil.NewLogger(t)
 	r := &CatalogReconciler{
 		Client: client,
@@ -205,8 +205,8 @@ func TestCatalogReconciler(t *testing.T) {
 		// Check Catalog Status
 		assert.Len(t, catalogFound.Status.Entries, 1, "CatalogEntry is not added to the Catalog.Status.Entries")
 		assert.Equal(t, catalogFound.Status.Entries[0].Name, catalogEntry.Name, "CatalogEntry name is wrong")
-		assert.Len(t, catalogFound.Status.Tenants, 1, "TenantReference is not added to the Catalog.Status.Tenants")
-		assert.Equal(t, catalogFound.Status.Tenants[0].Name, tenantReference.Name, "TenantReference name is wrong")
+		assert.Len(t, catalogFound.Status.Tenants, 1, "Tenant is not added to the Catalog.Status.Tenants")
+		assert.Equal(t, catalogFound.Status.Tenants[0].Name, tenant.Name, "Tenant name is wrong")
 
 		// Check CatalogEntry Conditions
 		readyCondition, readyConditionExists := catalogFound.Status.GetCondition(catalogv1alpha1.CatalogReady)
@@ -250,7 +250,7 @@ func TestCatalogReconciler(t *testing.T) {
 		// Check Provider Role
 		require.NoError(t, client.Get(ctx, types.NamespacedName{
 			Name:      fmt.Sprintf("kubecarrier:provider:%s", catalogEntry.Name),
-			Namespace: tenant.Status.Namespace.Name,
+			Namespace: tenantAccount.Status.Namespace.Name,
 		}, providerRoleFound), "getting Role error")
 		assert.Contains(t, providerRoleFound.Rules, rbacv1.PolicyRule{
 			Verbs:     []string{rbacv1.VerbAll},
@@ -261,14 +261,14 @@ func TestCatalogReconciler(t *testing.T) {
 		// Check Provider RoleBinding
 		require.NoError(t, client.Get(ctx, types.NamespacedName{
 			Name:      fmt.Sprintf("kubecarrier:provider:%s", catalogEntry.Name),
-			Namespace: tenant.Status.Namespace.Name,
+			Namespace: tenantAccount.Status.Namespace.Name,
 		}, providerRoleBindingFound), "getting RoleBinding error")
 		assert.Equal(t, providerRoleBindingFound.Subjects, provider.Spec.Subjects, "Subjects is different")
 
 		// Check Tenant Role
 		require.NoError(t, client.Get(ctx, types.NamespacedName{
 			Name:      fmt.Sprintf("kubecarrier:tenant:%s", catalogEntry.Name),
-			Namespace: tenant.Status.Namespace.Name,
+			Namespace: tenantAccount.Status.Namespace.Name,
 		}, tenantRoleFound), "getting Role error")
 		assert.Contains(t, tenantRoleFound.Rules, rbacv1.PolicyRule{
 			Verbs:     []string{rbacv1.VerbAll},
@@ -279,9 +279,9 @@ func TestCatalogReconciler(t *testing.T) {
 		// Check Tenant RoleBinding
 		require.NoError(t, client.Get(ctx, types.NamespacedName{
 			Name:      fmt.Sprintf("kubecarrier:tenant:%s", catalogEntry.Name),
-			Namespace: tenant.Status.Namespace.Name,
+			Namespace: tenantAccount.Status.Namespace.Name,
 		}, tenantRoleBindingFound), "getting RoleBinding error")
-		assert.Equal(t, tenantRoleBindingFound.Subjects, tenant.Spec.Subjects, "Subjects is different")
+		assert.Equal(t, tenantRoleBindingFound.Subjects, tenantAccount.Spec.Subjects, "Subjects is different")
 	}) {
 		t.FailNow()
 	}

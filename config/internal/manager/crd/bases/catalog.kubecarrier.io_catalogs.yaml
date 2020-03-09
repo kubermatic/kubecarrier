@@ -34,7 +34,7 @@ spec:
           of Tenants. \n KubeCarrier will automatically create ServiceClusterAssignment
           objects for each Tenant selected by the Catalog. \n **Example** ```yaml
           apiVersion: catalog.kubecarrier.io/v1alpha1 kind: Catalog metadata:   name:
-          default spec:   tenantReferenceSelector: {}   catalogEntrySelector: {} ```"
+          default spec:   tenantSelector: {}   catalogEntrySelector: {} ```"
         properties:
           apiVersion:
             description: 'APIVersion defines the versioned schema of this representation
@@ -96,9 +96,9 @@ spec:
                       are ANDed.
                     type: object
                 type: object
-              tenantReferenceSelector:
-                description: TenantReferenceSelector selects TenantReference objects
-                  that the catalog should be published to.
+              tenantSelector:
+                description: TenantSelector selects Tenant objects that the catalog
+                  should be published to.
                 properties:
                   matchExpressions:
                     description: matchExpressions is a list of label selector requirements.
@@ -207,8 +207,8 @@ spec:
                   else use conditions.
                 type: string
               tenants:
-                description: Tenants is the list of the Tenants(TenantReference) that
-                  selected by this Catalog.
+                description: Tenants is the list of the Tenants(Tenant) that selected
+                  by this Catalog.
                 items:
                   description: ObjectReference describes the link to another object
                     in the same namespace.
