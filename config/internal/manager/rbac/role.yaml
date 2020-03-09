@@ -132,7 +132,7 @@ rules:
 - apiGroups:
   - catalog.kubecarrier.io
   resources:
-  - providerreferences
+  - providers
   verbs:
   - create
   - delete
