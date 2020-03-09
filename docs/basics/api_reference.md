@@ -411,9 +411,9 @@ The `catalog.kubecarrier.io` API group contains all objects that are used to set
 * [ServiceClusterReference.catalog.kubecarrier.io/v1alpha1](#serviceclusterreference.catalog.kubecarrier.io/v1alpha1)
 * [ServiceClusterReferenceList.catalog.kubecarrier.io/v1alpha1](#serviceclusterreferencelist.catalog.kubecarrier.io/v1alpha1)
 * [ServiceClusterReferenceSpec.catalog.kubecarrier.io/v1alpha1](#serviceclusterreferencespec.catalog.kubecarrier.io/v1alpha1)
-* [TenantReference.catalog.kubecarrier.io/v1alpha1](#tenantreference.catalog.kubecarrier.io/v1alpha1)
-* [TenantReferenceList.catalog.kubecarrier.io/v1alpha1](#tenantreferencelist.catalog.kubecarrier.io/v1alpha1)
-* [TenantReferenceSpec.catalog.kubecarrier.io/v1alpha1](#tenantreferencespec.catalog.kubecarrier.io/v1alpha1)
+* [Tenant.catalog.kubecarrier.io/v1alpha1](#tenant.catalog.kubecarrier.io/v1alpha1)
+* [TenantList.catalog.kubecarrier.io/v1alpha1](#tenantlist.catalog.kubecarrier.io/v1alpha1)
+* [TenantSpec.catalog.kubecarrier.io/v1alpha1](#tenantspec.catalog.kubecarrier.io/v1alpha1)
 * [ObjectReference.catalog.kubecarrier.io/v1alpha1](#objectreference.catalog.kubecarrier.io/v1alpha1)
 
 ### Account.catalog.kubecarrier.io/v1alpha1
@@ -519,7 +519,7 @@ kind: Catalog
 metadata:
   name: default
 spec:
-  tenantReferenceSelector: {}
+  tenantSelector: {}
   catalogEntrySelector: {}
 ```
 
@@ -563,7 +563,7 @@ CatalogSpec describes the desired contents of a Catalog.
 | Field | Description | Scheme | Required |
 | ----- | ----------- | ------ | -------- |
 | catalogEntrySelector | CatalogEntrySelector selects CatalogEntry objects that should be part of this catalog. | *[metav1.LabelSelector](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.14/#labelselector-v1-meta) | false |
-| tenantReferenceSelector | TenantReferenceSelector selects TenantReference objects that the catalog should be published to. | *[metav1.LabelSelector](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.14/#labelselector-v1-meta) | false |
+| tenantSelector | TenantSelector selects Tenant objects that the catalog should be published to. | *[metav1.LabelSelector](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.14/#labelselector-v1-meta) | false |
 
 [Back to Group](#catalog)
 
@@ -573,7 +573,7 @@ CatalogStatus represents the observed state of Catalog.
 
 | Field | Description | Scheme | Required |
 | ----- | ----------- | ------ | -------- |
-| tenants | Tenants is the list of the Tenants(TenantReference) that selected by this Catalog. | []catalog.kubecarrier.io/v1alpha1.ObjectReference | false |
+| tenants | Tenants is the list of the Tenants(Tenant) that selected by this Catalog. | []catalog.kubecarrier.io/v1alpha1.ObjectReference | false |
 | entries | Entries is the list of the CatalogEntries that selected by this Catalog. | []catalog.kubecarrier.io/v1alpha1.ObjectReference | false |
 | observedGeneration | ObservedGeneration is the most recent generation observed for this Catalog by the controller. | catalog.kubecarrier.io/v1alpha1.int64 | false |
 | conditions | Conditions represents the latest available observations of a Catalog's current state. | []catalog.kubecarrier.io/v1alpha1.CatalogCondition | false |
@@ -1047,33 +1047,33 @@ ServiceClusterReferenceSpec defines the desired state of ServiceClusterReference
 
 [Back to Group](#catalog)
 
-### TenantReference.catalog.kubecarrier.io/v1alpha1
+### Tenant.catalog.kubecarrier.io/v1alpha1
 
-TenantReference exposes information about available Tenants on the platform and allows a Provider to set custom labels on them.
+Tenant exposes information about available Tenants on the platform and allows a Provider to set custom labels on them.
 
-TenantReference objects will be created for all Accounts with the role \"Tenant\" in all Account Namespaces with the role \"Provider\".
+Tenant objects will be created for all Accounts with the role \"Tenant\" in all Account Namespaces with the role \"Provider\".
 
 | Field | Description | Scheme | Required |
 | ----- | ----------- | ------ | -------- |
 | metadata |  | [metav1.ObjectMeta](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.14/#objectmeta-v1-meta) | false |
-| spec |  | catalog.kubecarrier.io/v1alpha1.TenantReferenceSpec | false |
+| spec |  | catalog.kubecarrier.io/v1alpha1.TenantSpec | false |
 
 [Back to Group](#catalog)
 
-### TenantReferenceList.catalog.kubecarrier.io/v1alpha1
+### TenantList.catalog.kubecarrier.io/v1alpha1
 
-TenantReferenceList contains a list of TenantReference.
+TenantList contains a list of Tenant.
 
 | Field | Description | Scheme | Required |
 | ----- | ----------- | ------ | -------- |
 | metadata |  | [metav1.ListMeta](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.14/#listmeta-v1-meta) | false |
-| items |  | []catalog.kubecarrier.io/v1alpha1.TenantReference | true |
+| items |  | []catalog.kubecarrier.io/v1alpha1.Tenant | true |
 
 [Back to Group](#catalog)
 
-### TenantReferenceSpec.catalog.kubecarrier.io/v1alpha1
+### TenantSpec.catalog.kubecarrier.io/v1alpha1
 
-TenantReferenceSpec defines the desired state of TenantReference
+TenantSpec defines the desired state of Tenant
 
 | Field | Description | Scheme | Required |
 | ----- | ----------- | ------ | -------- |

@@ -51,7 +51,7 @@ type AccountReconciler struct {
 // +kubebuilder:rbac:groups=catalog.kubecarrier.io,resources=accounts,verbs=get;list;watch;update;
 // +kubebuilder:rbac:groups=catalog.kubecarrier.io,resources=accounts/status,verbs=get;update;patch
 // +kubebuilder:rbac:groups="",resources=namespaces,verbs=get;list;watch;create;update;patch;delete
-// +kubebuilder:rbac:groups=catalog.kubecarrier.io,resources=tenantreferences,verbs=get;list;watch;create;update;delete
+// +kubebuilder:rbac:groups=catalog.kubecarrier.io,resources=tenants,verbs=get;list;watch;create;update;delete
 // +kubebuilder:rbac:groups=rbac.authorization.k8s.io,resources=roles,verbs=get;list;watch;create;update;patch;delete;escalate;bind
 // +kubebuilder:rbac:groups=rbac.authorization.k8s.io,resources=rolebindings,verbs=get;list;watch;create;update;patch;delete
 
@@ -103,7 +103,7 @@ func (r *AccountReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 		}
 	}
 
-	if err := r.reconcileTenantReferences(ctx, log, account); err != nil {
+	if err := r.reconcileTenants(ctx, log, account); err != nil {
 		return ctrl.Result{}, fmt.Errorf("reconciling tenant references: %w", err)
 	}
 
@@ -116,7 +116,7 @@ func (r *AccountReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&catalogv1alpha1.Account{}).
 		Watches(&source.Kind{Type: &corev1.Namespace{}}, enqueuer).
-		Watches(&source.Kind{Type: &catalogv1alpha1.TenantReference{}}, enqueuer).
+		Watches(&source.Kind{Type: &catalogv1alpha1.Tenant{}}, enqueuer).
 		Watches(&source.Kind{Type: &rbacv1.Role{}}, enqueuer).
 		Watches(&source.Kind{Type: &rbacv1.RoleBinding{}}, enqueuer).
 		Watches(&source.Kind{Type: &catalogv1alpha1.Account{}}, &handler.EnqueueRequestsFromMapFunc{
@@ -167,7 +167,7 @@ func (r *AccountReconciler) handleDeletion(ctx context.Context, log logr.Logger,
 
 	cleanedUp, err := util.DeleteObjects(ctx, r.Client, r.Scheme, []runtime.Object{
 		&corev1.Namespace{},
-		&catalogv1alpha1.TenantReference{},
+		&catalogv1alpha1.Tenant{},
 		&rbacv1.Role{},
 		&rbacv1.RoleBinding{},
 	}, owner.OwnedBy(account, r.Scheme))
@@ -199,7 +199,7 @@ func (r *AccountReconciler) reconcileNamespace(ctx context.Context, log logr.Log
 	return nil
 }
 
-func (r *AccountReconciler) reconcileTenantReferences(ctx context.Context, log logr.Logger, account *catalogv1alpha1.Account) error {
+func (r *AccountReconciler) reconcileTenants(ctx context.Context, log logr.Logger, account *catalogv1alpha1.Account) error {
 	accountList := &catalogv1alpha1.AccountList{}
 	if err := r.List(ctx, accountList); err != nil {
 		return fmt.Errorf("listing Accounts: %w", err)
@@ -214,18 +214,18 @@ func (r *AccountReconciler) reconcileTenantReferences(ctx context.Context, log l
 			if condition, _ := providerAccount.Status.GetCondition(catalogv1alpha1.AccountReady); condition.Status != catalogv1alpha1.ConditionTrue {
 				continue
 			}
-			tenantReference := &catalogv1alpha1.TenantReference{
+			tenant := &catalogv1alpha1.Tenant{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      account.Name,
 					Namespace: providerAccount.Status.Namespace.Name,
 				},
 			}
-			owner.SetOwnerReference(account, tenantReference, r.Scheme)
-			wantedRefs = append(wantedRefs, tenantReference)
+			owner.SetOwnerReference(account, tenant, r.Scheme)
+			wantedRefs = append(wantedRefs, tenant)
 		}
 	}
 
-	_, err := owner.ReconcileOwnedObjects(ctx, r.Client, log, r.Scheme, account, wantedRefs, &catalogv1alpha1.TenantReference{}, nil)
+	_, err := owner.ReconcileOwnedObjects(ctx, r.Client, log, r.Scheme, account, wantedRefs, &catalogv1alpha1.Tenant{}, nil)
 	if err != nil {
 		return fmt.Errorf("cannot reconcile objects: %w", err)
 	}
@@ -265,7 +265,7 @@ func (r *AccountReconciler) reconcileRolesAndRoleBindings(ctx context.Context, l
 				{
 					APIGroups: []string{"catalog.kubecarrier.io"},
 					Resources: []string{
-						"tenantreferences",
+						"tenants",
 					},
 					Verbs: []string{"get", "list", "watch", "update", "patch"},
 				},

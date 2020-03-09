@@ -724,8 +724,7 @@
             of Tenants. \n KubeCarrier will automatically create ServiceClusterAssignment
             objects for each Tenant selected by the Catalog. \n **Example** ```yaml
             apiVersion: catalog.kubecarrier.io/v1alpha1 kind: Catalog metadata:   name:
-            default spec:   tenantReferenceSelector: {}   catalogEntrySelector: {}
-            ```"
+            default spec:   tenantSelector: {}   catalogEntrySelector: {} ```"
           properties:
             apiVersion:
               description: 'APIVersion defines the versioned schema of this representation
@@ -788,9 +787,9 @@
                         are ANDed.
                       type: object
                   type: object
-                tenantReferenceSelector:
-                  description: TenantReferenceSelector selects TenantReference objects
-                    that the catalog should be published to.
+                tenantSelector:
+                  description: TenantSelector selects Tenant objects that the catalog
+                    should be published to.
                   properties:
                     matchExpressions:
                       description: matchExpressions is a list of label selector requirements.
@@ -899,8 +898,8 @@
                     for everything else use conditions.
                   type: string
                 tenants:
-                  description: Tenants is the list of the Tenants(TenantReference)
-                    that selected by this Catalog.
+                  description: Tenants is the list of the Tenants(Tenant) that selected
+                    by this Catalog.
                   items:
                     description: ObjectReference describes the link to another object
                       in the same namespace.
@@ -1425,18 +1424,18 @@
     creationTimestamp: null
     labels:
       kubecarrier.io/role: manager
-    name: tenantreferences.catalog.kubecarrier.io
+    name: tenants.catalog.kubecarrier.io
   spec:
     group: catalog.kubecarrier.io
     names:
       categories:
       - kubecarrier-provider
-      kind: TenantReference
-      listKind: TenantReferenceList
-      plural: tenantreferences
+      kind: Tenant
+      listKind: TenantList
+      plural: tenants
       shortNames:
       - tr
-      singular: tenantreference
+      singular: tenant
     scope: Namespaced
     versions:
     - additionalPrinterColumns:
@@ -1446,10 +1445,10 @@
       name: v1alpha1
       schema:
         openAPIV3Schema:
-          description: "TenantReference exposes information about available Tenants
-            on the platform and allows a Provider to set custom labels on them. \n
-            TenantReference objects will be created for all Accounts with the role
-            \"Tenant\" in all Account Namespaces with the role \"Provider\"."
+          description: "Tenant exposes information about available Tenants on the
+            platform and allows a Provider to set custom labels on them. \n Tenant
+            objects will be created for all Accounts with the role \"Tenant\" in all
+            Account Namespaces with the role \"Provider\"."
           properties:
             apiVersion:
               description: 'APIVersion defines the versioned schema of this representation
@@ -1465,7 +1464,7 @@
             metadata:
               type: object
             spec:
-              description: TenantReferenceSpec defines the desired state of TenantReference
+              description: TenantSpec defines the desired state of Tenant
               type: object
           type: object
       served: true
@@ -2342,7 +2341,7 @@
   - apiGroups:
     - catalog.kubecarrier.io
     resources:
-    - tenantreferences
+    - tenants
     verbs:
     - create
     - delete
@@ -2810,9 +2809,9 @@
       service:
         name: kubecarrier-manager-webhook-service
         namespace: test3000
-        path: /validate-catalog-kubecarrier-io-v1alpha1-tenantreference
+        path: /validate-catalog-kubecarrier-io-v1alpha1-tenant
     failurePolicy: Fail
-    name: vtenantreference.kubecarrier.io
+    name: vtenant.kubecarrier.io
     rules:
     - apiGroups:
       - catalog.kubecarrier.io
@@ -2821,7 +2820,7 @@
       operations:
       - CREATE
       resources:
-      - tenantreferences
+      - tenants
 - apiVersion: v1
   kind: Service
   metadata:

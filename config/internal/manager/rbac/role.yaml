@@ -154,7 +154,7 @@ rules:
 - apiGroups:
   - catalog.kubecarrier.io
   resources:
-  - tenantreferences
+  - tenants
   verbs:
   - create
   - delete

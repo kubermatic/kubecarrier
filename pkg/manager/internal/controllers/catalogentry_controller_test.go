@@ -260,8 +260,8 @@ func TestCatalogEntryReconciler(t *testing.T) {
 		assert.NotContains(t, crdCheck.Annotations, catalogEntryReferenceAnnotation, "the catalogEntry annotation should be removed from the CRD")
 	})
 
-	// Check TenantReference
-	derivedCustomResourceCheck := &catalogv1alpha1.TenantReference{}
+	// Check Tenant
+	derivedCustomResourceCheck := &catalogv1alpha1.Tenant{}
 	assert.True(t, errors.IsNotFound(client.Get(ctx, types.NamespacedName{
 		Name:      derivedCustomResource.Name,
 		Namespace: derivedCustomResource.Namespace,
