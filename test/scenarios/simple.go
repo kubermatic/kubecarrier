@@ -21,6 +21,7 @@ import (
 	"io/ioutil"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/require"
 	corev1 "k8s.io/api/core/v1"
@@ -34,9 +35,9 @@ import (
 func newSimpleScenario(f *testutil.Framework) func(t *testing.T) {
 	return func(t *testing.T) {
 		// Setup
-		//ctx, cancel := context.WithTimeout(context.Background(), 120*time.Second)
-		//t.Cleanup(cancel)
-		ctx := context.Background()
+		ctx, cancel := context.WithTimeout(context.Background(), 120*time.Second)
+		t.Cleanup(cancel)
+		//ctx = context.Background()
 
 		managementClient, err := f.ManagementClient(t)
 		require.NoError(t, err, "creating management client")
@@ -59,7 +60,7 @@ func newSimpleScenario(f *testutil.Framework) func(t *testing.T) {
 		require.NotEmpty(t, tenant.Status.Namespace.Name)
 		require.NotEmpty(t, provider.Status.Namespace.Name)
 
-		t.Log("===== checking tenant reference =====")
+		t.Log("===== checking tenant =====")
 		tenantReference := &catalogv1alpha1.Tenant{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      tenant.Name,
@@ -102,5 +103,42 @@ func newSimpleScenario(f *testutil.Framework) func(t *testing.T) {
 		t.Log("===== creating CRD on the service cluster =====")
 		baseCRD := f.NewFakeCouchDBCRD(testName + ".test.kubecarrier.io")
 		require.NoError(t, serviceClient.Create(ctx, baseCRD))
+
+		catalogEntrySet := &catalogv1alpha1.CatalogEntrySet{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "couchdbs",
+				Namespace: provider.Status.Namespace.Name,
+			},
+			Spec: catalogv1alpha1.CatalogEntrySetSpec{
+				Metadata: catalogv1alpha1.CatalogEntrySetMetadata{
+					DisplayName: "couchdb database",
+					Description: "small database living near Tegel airport",
+				},
+				Derive: &catalogv1alpha1.DerivedConfig{
+					KindOverride: "CouchDB",
+					Expose: []catalogv1alpha1.VersionExposeConfig{
+						{
+							Versions: []string{
+								"v1alpha1",
+							},
+							Fields: []catalogv1alpha1.FieldPath{
+								{JSONPath: ".spec.prop1"},
+								{JSONPath: ".status.observedGeneration"},
+								{JSONPath: ".status.prop1"},
+							},
+						},
+					},
+				},
+				DiscoverySet: catalogv1alpha1.CustomResourceDiscoverySetConfig{
+					CRD: catalogv1alpha1.ObjectReference{
+						Name: baseCRD.Name,
+					},
+					ServiceClusterSelector: metav1.LabelSelector{},
+					KindOverride:           "CouchDBInternal",
+				},
+			},
+		}
+		require.NoError(t, managementClient.Create(ctx, catalogEntrySet))
+		require.NoError(t, testutil.WaitUntilReady(ctx, managementClient, catalogEntrySet))
 	}
 }
