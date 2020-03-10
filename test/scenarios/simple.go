@@ -27,7 +27,9 @@ import (
 	"github.com/stretchr/testify/require"
 	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
+	"k8s.io/apiextensions-apiserver/pkg/apis/apiextensions"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/rest"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -152,6 +154,15 @@ func newSimpleScenario(f *testutil.Framework) func(t *testing.T) {
 		}
 		require.NoError(t, managementClient.Create(ctx, catalogEntrySet))
 		require.NoError(t, testutil.WaitUntilReady(ctx, managementClient, catalogEntrySet))
+
+		internalCRD := &apiextensions.CustomResourceDefinition{}
+		require.NotEmpty(t, managementClient.Get(ctx, types.NamespacedName{
+			Name: strings.Join([]string{"couchdbinternals", serviceCluster.Name, provider.Name}, "."),
+		}, internalCRD))
+		externalCRD := &apiextensions.CustomResourceDefinition{}
+		require.NotEmpty(t, managementClient.Get(ctx, types.NamespacedName{
+			Name: strings.Join([]string{"couchdb", serviceCluster.Name, provider.Name}, "."),
+		}, externalCRD))
 
 		catalog := &catalogv1alpha1.Catalog{
 			ObjectMeta: metav1.ObjectMeta{
