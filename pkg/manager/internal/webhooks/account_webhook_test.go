@@ -56,43 +56,6 @@ func TestAccountValidatingCreate(t *testing.T) {
 			expectedError: true,
 		},
 		{
-			name: "metadata missing",
-			object: &catalogv1alpha1.Account{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "test-account",
-				},
-			},
-			expectedError: true,
-		},
-		{
-			name: "description missing",
-			object: &catalogv1alpha1.Account{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "test-account",
-				},
-				Spec: catalogv1alpha1.AccountSpec{
-					Metadata: catalogv1alpha1.AccountMetadata{
-						DisplayName: "test Account",
-					},
-				},
-			},
-			expectedError: true,
-		},
-		{
-			name: "displayName missing",
-			object: &catalogv1alpha1.Account{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "test-account",
-				},
-				Spec: catalogv1alpha1.AccountSpec{
-					Metadata: catalogv1alpha1.AccountMetadata{
-						Description: "test Account",
-					},
-				},
-			},
-			expectedError: true,
-		},
-		{
 			name: "duplicate roles",
 			object: &catalogv1alpha1.Account{
 				ObjectMeta: metav1.ObjectMeta{

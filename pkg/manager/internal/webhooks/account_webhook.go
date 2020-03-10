@@ -110,19 +110,15 @@ func (r *AccountWebhookHandler) validateCreate(ctx context.Context, account *cat
 	default:
 		return fmt.Errorf("getting namespace: %w", err)
 	}
-	return r.validateMetadataAndRoles(account)
+	return r.validateRoles(account)
 }
 
 func (r *AccountWebhookHandler) validateUpdate(oldObj, newObj *catalogv1alpha1.Account) error {
 	r.Log.Info("validate update", "name", newObj.Name)
-	return r.validateMetadataAndRoles(newObj)
+	return r.validateRoles(newObj)
 }
 
-func (r *AccountWebhookHandler) validateMetadataAndRoles(account *catalogv1alpha1.Account) error {
-	if account.Spec.Metadata.Description == "" || account.Spec.Metadata.DisplayName == "" {
-		return fmt.Errorf("the description or the display name of the Account: %s cannot be empty", account.Name)
-	}
-
+func (r *AccountWebhookHandler) validateRoles(account *catalogv1alpha1.Account) error {
 	roles := make(map[catalogv1alpha1.AccountRole]struct{})
 	for _, role := range account.Spec.Roles {
 		_, duplicate := roles[role]
