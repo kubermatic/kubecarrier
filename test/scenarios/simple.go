@@ -101,17 +101,17 @@ func newSimpleScenario(f *testutil.Framework) func(t *testing.T) {
 		require.NoError(t, testutil.WaitUntilReady(ctx, managementClient, serviceCluster))
 
 		t.Log("===== creating CRD on the service cluster =====")
-		baseCRD := f.NewFakeCouchDBCRD(testName + ".test.kubecarrier.io")
+		baseCRD := f.NewFakeCouchDBCRD("aa" + ".test.kubecarrier.io")
 		require.NoError(t, serviceClient.Create(ctx, baseCRD))
 
 		catalogEntrySet := &catalogv1alpha1.CatalogEntrySet{
 			ObjectMeta: metav1.ObjectMeta{
-				Name:      "couchdbs",
+				Name:      "couchdbs.eu-west-1",
 				Namespace: provider.Status.Namespace.Name,
 			},
 			Spec: catalogv1alpha1.CatalogEntrySetSpec{
 				Metadata: catalogv1alpha1.CatalogEntrySetMetadata{
-					DisplayName: "couchdb database",
+					DisplayName: "CouchDB",
 					Description: "small database living near Tegel airport",
 				},
 				Derive: &catalogv1alpha1.DerivedConfig{
