@@ -131,18 +131,28 @@ func New(c FrameworkConfig) (f *Framework, err error) {
 	return
 }
 
-func (f *Framework) ManagementClient(t *testing.T) (*RecordingClient, error) {
-	cfg := f.managementConfig
-	c, err := util.NewClientWatcher(cfg, f.ManagementScheme, NewLogger(t))
+func (f *Framework) ManagementClient(t *testing.T, options ...func(config *restclient.Config) error) (*RecordingClient, error) {
+	cfg := *f.managementConfig
+	for _, f := range options {
+		if err := f(&cfg); err != nil {
+			return nil, err
+		}
+	}
+	c, err := util.NewClientWatcher(&cfg, f.ManagementScheme, NewLogger(t))
 	if err != nil {
 		return nil, err
 	}
 	return recordingClient(c, f.ManagementScheme, t, f.config.CleanUpStrategy), nil
 }
 
-func (f *Framework) ServiceClient(t *testing.T) (*RecordingClient, error) {
-	cfg := f.serviceConfig
-	c, err := util.NewClientWatcher(cfg, f.ServiceScheme, NewLogger(t))
+func (f *Framework) ServiceClient(t *testing.T, options ...func(config *restclient.Config) error) (*RecordingClient, error) {
+	cfg := *f.serviceConfig
+	for _, f := range options {
+		if err := f(&cfg); err != nil {
+			return nil, err
+		}
+	}
+	c, err := util.NewClientWatcher(&cfg, f.ServiceScheme, NewLogger(t))
 	if err != nil {
 		return nil, err
 	}

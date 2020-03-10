@@ -25,7 +25,9 @@ import (
 
 	"github.com/stretchr/testify/require"
 	corev1 "k8s.io/api/core/v1"
+	rbacv1 "k8s.io/api/rbac/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/rest"
 
 	catalogv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/catalog/v1alpha1"
 	corev1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/core/v1alpha1"
@@ -50,8 +52,40 @@ func newSimpleScenario(f *testutil.Framework) func(t *testing.T) {
 
 		// Creating account
 		t.Log("===== creating necessary accounts =====")
-		tenant := f.NewTenantAccount(testName)
-		provider := f.NewProviderAccount(testName)
+		tenant := f.NewTenantAccount(testName, rbacv1.Subject{
+			Kind:     rbacv1.UserKind,
+			APIGroup: "rbac.authorization.k8s.io",
+			Name:     testName + "-tenant",
+		})
+		provider := f.NewProviderAccount(testName, rbacv1.Subject{
+			Kind:     rbacv1.UserKind,
+			APIGroup: "rbac.authorization.k8s.io",
+			Name:     testName + "-provider",
+		})
+
+		providerClient, err := f.ManagementClient(t, func(config *rest.Config) error {
+			config.Impersonate = rest.ImpersonationConfig{
+				UserName: testName + "-provider",
+				Groups:   nil,
+				Extra:    nil,
+			}
+			return nil
+		})
+		require.NoError(t, err)
+		t.Cleanup(providerClient.CleanUpFunc(ctx))
+		tenantClient, err := f.ManagementClient(t, func(config *rest.Config) error {
+			config.Impersonate = rest.ImpersonationConfig{
+				UserName: testName + "-provider",
+				Groups:   nil,
+				Extra:    nil,
+			}
+			return nil
+		})
+		require.NoError(t, err)
+		t.Cleanup(providerClient.CleanUpFunc(ctx))
+
+		_ = providerClient
+		_ = tenantClient
 
 		require.NoError(t, managementClient.Create(ctx, tenant), "creating tenant error")
 		require.NoError(t, managementClient.Create(ctx, provider), "creating provider error")
