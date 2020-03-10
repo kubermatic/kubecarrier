@@ -295,6 +295,7 @@
                               required:
                               - jsonPath
                               type: object
+                            minItems: 1
                             type: array
                           versions:
                             description: specifies the versions of the referenced
@@ -302,6 +303,7 @@
                               may not be specified in multiple VersionExposeConfigs.
                             items:
                               type: string
+                            minItems: 1
                             type: array
                         required:
                         - fields
@@ -565,6 +567,7 @@
                               required:
                               - jsonPath
                               type: object
+                            minItems: 1
                             type: array
                           versions:
                             description: specifies the versions of the referenced
@@ -572,6 +575,7 @@
                               may not be specified in multiple VersionExposeConfigs.
                             items:
                               type: string
+                            minItems: 1
                             type: array
                         required:
                         - fields
@@ -1064,6 +1068,7 @@
                           required:
                           - jsonPath
                           type: object
+                        minItems: 1
                         type: array
                       versions:
                         description: specifies the versions of the referenced CRD,
@@ -1071,11 +1076,13 @@
                           not be specified in multiple VersionExposeConfigs.
                         items:
                           type: string
+                        minItems: 1
                         type: array
                     required:
                     - fields
                     - versions
                     type: object
+                  minItems: 1
                   type: array
                 kindOverride:
                   description: overrides the kind of the derived CRD.
@@ -2782,7 +2789,6 @@
       apiVersions:
       - v1alpha1
       operations:
-      - CREATE
       - UPDATE
       resources:
       - derivedcustomresources

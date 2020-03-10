@@ -80,6 +80,7 @@ spec:
                         required:
                         - jsonPath
                         type: object
+                      minItems: 1
                       type: array
                     versions:
                       description: specifies the versions of the referenced CRD, that
@@ -87,11 +88,13 @@ spec:
                         specified in multiple VersionExposeConfigs.
                       items:
                         type: string
+                      minItems: 1
                       type: array
                   required:
                   - fields
                   - versions
                   type: object
+                minItems: 1
                 type: array
               kindOverride:
                 description: overrides the kind of the derived CRD.

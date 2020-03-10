@@ -25,6 +25,7 @@ type DerivedCustomResourceSpec struct {
 	// overrides the kind of the derived CRD.
 	KindOverride string `json:"kindOverride,omitempty"`
 	// controls which fields will be present in the derived CRD.
+	// +kubebuilder:validation:MinItems=1
 	Expose []VersionExposeConfig `json:"expose"`
 }
 
@@ -32,8 +33,10 @@ type DerivedCustomResourceSpec struct {
 type VersionExposeConfig struct {
 	// specifies the versions of the referenced CRD, that this expose config applies to.
 	// The same version may not be specified in multiple VersionExposeConfigs.
+	// +kubebuilder:validation:MinItems=1
 	Versions []string `json:"versions"`
 	// specifies the fields that should be present in the derived CRD.
+	// +kubebuilder:validation:MinItems=1
 	Fields []FieldPath `json:"fields"`
 }
 

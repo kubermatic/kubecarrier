@@ -93,6 +93,7 @@ spec:
                               required:
                                 - jsonPath
                               type: object
+                            minItems: 1
                             type: array
                           versions:
                             description: specifies the versions of the referenced
@@ -100,6 +101,7 @@ spec:
                               may not be specified in multiple VersionExposeConfigs.
                             items:
                               type: string
+                            minItems: 1
                             type: array
                         required:
                           - fields
