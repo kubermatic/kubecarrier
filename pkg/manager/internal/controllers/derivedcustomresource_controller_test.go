@@ -47,7 +47,9 @@ func Test_DerivedCustomResourceReconciler(t *testing.T) {
 			},
 		},
 		Status: catalogv1alpha1.AccountStatus{
-			Namespace: catalogv1alpha1.ObjectReference{Name: "dcr"},
+			Namespace: &catalogv1alpha1.ObjectReference{
+				Name: "dcr",
+			},
 		},
 	}
 

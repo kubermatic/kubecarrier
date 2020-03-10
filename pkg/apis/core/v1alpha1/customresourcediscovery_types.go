@@ -53,7 +53,7 @@ type CustomResourceDiscoveryStatus struct {
 	// +kubebuilder:pruning:PreserveUnknownFields
 	CRD *apiextensionsv1.CustomResourceDefinition `json:"crd,omitempty"`
 	// ManagementClusterCRD references the CustomResourceDefinition that is created by a CustomResourceDiscovery.
-	ManagementClusterCRD ObjectReference `json:"managementClusterCRD,omitempty"`
+	ManagementClusterCRD *ObjectReference `json:"managementClusterCRD,omitempty"`
 	// DEPRECATED.
 	// Phase represents the current lifecycle state of this object
 	// consider this field DEPRECATED, it will be removed as soon as there
@@ -194,6 +194,21 @@ type CustomResourceDiscovery struct {
 
 	Spec   CustomResourceDiscoverySpec   `json:"spec,omitempty"`
 	Status CustomResourceDiscoveryStatus `json:"status,omitempty"`
+}
+
+// IsReady returns if the CustomResourceDiscovery is ready.
+func (s *CustomResourceDiscovery) IsReady() bool {
+	if s.Generation != s.Status.ObservedGeneration {
+		return false
+	}
+
+	for _, condition := range s.Status.Conditions {
+		if condition.Type == CustomResourceDiscoveryReady &&
+			condition.Status == ConditionTrue {
+			return true
+		}
+	}
+	return false
 }
 
 // CustomResourceDiscoveryList is a list of CustomResourceDiscovery.

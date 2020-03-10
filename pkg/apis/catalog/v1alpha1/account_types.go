@@ -56,7 +56,7 @@ const (
 // AccountStatus represents the observed state of Account.
 type AccountStatus struct {
 	// NamespaceName is the name of the Namespace that the Account manages.
-	Namespace ObjectReference `json:"namespace,omitempty"`
+	Namespace *ObjectReference `json:"namespace,omitempty"`
 	// ObservedGeneration is the most recent generation observed for this Account by the controller.
 	ObservedGeneration int64 `json:"observedGeneration,omitempty"`
 	// Conditions represents the latest available observations of a Account's current state.

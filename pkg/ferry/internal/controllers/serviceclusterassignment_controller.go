@@ -96,7 +96,7 @@ func (r *ServiceClusterAssignmentReconciler) Reconcile(req ctrl.Request) (ctrl.R
 		return ctrl.Result{}, fmt.Errorf("cannot create TenantAssignment namespace: %w", err)
 	}
 
-	serviceClusterAssignment.Status.ServiceClusterNamespace = corev1alpha1.ObjectReference{
+	serviceClusterAssignment.Status.ServiceClusterNamespace = &corev1alpha1.ObjectReference{
 		Name: ns.Name,
 	}
 	serviceClusterAssignment.Status.ObservedGeneration = serviceClusterAssignment.Generation

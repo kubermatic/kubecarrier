@@ -109,7 +109,7 @@ CustomResourceDiscoveryStatus represents the observed state of a CustomResourceD
 | Field | Description | Scheme | Required |
 | ----- | ----------- | ------ | -------- |
 | crd | CRD defines the original CustomResourceDefinition specification from the service cluster. | *apiextensionsv1.CustomResourceDefinition | false |
-| managementClusterCRD | ManagementClusterCRD references the CustomResourceDefinition that is created by a CustomResourceDiscovery. | kubecarrier.io/v1alpha1.ObjectReference | false |
+| managementClusterCRD | ManagementClusterCRD references the CustomResourceDefinition that is created by a CustomResourceDiscovery. | *kubecarrier.io/v1alpha1.ObjectReference | false |
 | phase | DEPRECATED. Phase represents the current lifecycle state of this object consider this field DEPRECATED, it will be removed as soon as there is a mechanism to map conditions to a string when printing the property is only present for display purposes, for everything else use conditions | kubecarrier.io/v1alpha1.CustomResourceDiscoveryPhaseType | false |
 | conditions | Conditions is a list of all conditions this CustomResourceDiscovery is in. | []kubecarrier.io/v1alpha1.CustomResourceDiscoveryCondition | false |
 | observedGeneration | The most recent generation observed by the controller. | kubecarrier.io/v1alpha1.int64 | false |
@@ -349,7 +349,7 @@ ServiceClusterAssignmentStatus represents the observed state of ServiceClusterAs
 | phase | DEPRECATED. Phase represents the current lifecycle state of this object consider this field DEPRECATED, it will be removed as soon as there is a mechanism to map conditions to a string when printing the property is only present for display purposes, for everything else use conditions | kubecarrier.io/v1alpha1.ServiceClusterAssignmentPhaseType | false |
 | conditions | Conditions is a list of all conditions this ServiceClusterAssignment is in. | []kubecarrier.io/v1alpha1.ServiceClusterAssignmentCondition | false |
 | observedGeneration | The most recent generation observed by the controller. | kubecarrier.io/v1alpha1.int64 | false |
-| serviceClusterNamespace | ServiceClusterNamespace references the Namespace on the ServiceCluster that was assigned. | kubecarrier.io/v1alpha1.ObjectReference | false |
+| serviceClusterNamespace | ServiceClusterNamespace references the Namespace on the ServiceCluster that was assigned. | *kubecarrier.io/v1alpha1.ObjectReference | false |
 
 [Back to Group](#core)
 
@@ -499,7 +499,7 @@ AccountStatus represents the observed state of Account.
 
 | Field | Description | Scheme | Required |
 | ----- | ----------- | ------ | -------- |
-| namespace | NamespaceName is the name of the Namespace that the Account manages. | catalog.kubecarrier.io/v1alpha1.ObjectReference | false |
+| namespace | NamespaceName is the name of the Namespace that the Account manages. | *catalog.kubecarrier.io/v1alpha1.ObjectReference | false |
 | observedGeneration | ObservedGeneration is the most recent generation observed for this Account by the controller. | catalog.kubecarrier.io/v1alpha1.int64 | false |
 | conditions | Conditions represents the latest available observations of a Account's current state. | []catalog.kubecarrier.io/v1alpha1.AccountCondition | false |
 | phase | DEPRECATED. Phase represents the current lifecycle state of this object. Consider this field DEPRECATED, it will be removed as soon as there is a mechanism to map conditions to strings when printing the property. This is only for display purpose, for everything else use conditions. | catalog.kubecarrier.io/v1alpha1.AccountPhaseType | false |

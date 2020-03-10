@@ -70,7 +70,7 @@ func TestManagementClusterObjReconciler(t *testing.T) {
 					Status: corev1alpha1.ConditionTrue,
 				},
 			},
-			ServiceClusterNamespace: corev1alpha1.ObjectReference{
+			ServiceClusterNamespace: &corev1alpha1.ObjectReference{
 				Name: "sc-test-123",
 			},
 		},
@@ -212,7 +212,7 @@ func TestManagementClusterObjReconciler(t *testing.T) {
 				Status: corev1alpha1.ConditionTrue,
 			},
 		}
-		sca.Status.ServiceClusterNamespace = corev1alpha1.ObjectReference{
+		sca.Status.ServiceClusterNamespace = &corev1alpha1.ObjectReference{
 			Name: "sc-test-123",
 		}
 		require.NoError(t, managementClient.Status().Update(ctx, sca))

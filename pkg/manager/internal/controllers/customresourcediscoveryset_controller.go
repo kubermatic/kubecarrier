@@ -97,14 +97,13 @@ func (r *CustomResourceDiscoverySetReconciler) Reconcile(req ctrl.Request) (ctrl
 		}
 		existingCRDiscoveryNames[currentCRDiscovery.Name] = struct{}{}
 
-		ready, _ := currentCRDiscovery.Status.GetCondition(corev1alpha1.CustomResourceDiscoveryReady)
-		if ready.Status != corev1alpha1.ConditionTrue {
-			unreadyCRDiscoveryNames = append(unreadyCRDiscoveryNames, currentCRDiscovery.Name)
-		} else {
+		if currentCRDiscovery.IsReady() {
 			readyCRDReferences = append(readyCRDReferences,
 				corev1alpha1.ObjectReference{
 					Name: currentCRDiscovery.Status.ManagementClusterCRD.Name,
 				})
+		} else {
+			unreadyCRDiscoveryNames = append(unreadyCRDiscoveryNames, currentCRDiscovery.Name)
 		}
 	}
 

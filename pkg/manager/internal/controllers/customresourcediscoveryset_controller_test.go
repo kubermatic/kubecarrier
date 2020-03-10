@@ -114,6 +114,9 @@ func TestCustomResourceDiscoverySetReconciler(t *testing.T) {
 			Status: corev1alpha1.ConditionTrue,
 		},
 	}
+	crDiscoveryServicCluster1.Status.ManagementClusterCRD = &corev1alpha1.ObjectReference{
+		Name: "couchdb.example",
+	}
 	require.NoError(t, r.Status().Update(ctx, crDiscoveryServicCluster1))
 
 	crDiscoveryServicCluster2.Status.Conditions = []corev1alpha1.CustomResourceDiscoveryCondition{
@@ -121,6 +124,9 @@ func TestCustomResourceDiscoverySetReconciler(t *testing.T) {
 			Type:   corev1alpha1.CustomResourceDiscoveryReady,
 			Status: corev1alpha1.ConditionTrue,
 		},
+	}
+	crDiscoveryServicCluster2.Status.ManagementClusterCRD = &corev1alpha1.ObjectReference{
+		Name: "couchdb.example",
 	}
 	require.NoError(t, r.Status().Update(ctx, crDiscoveryServicCluster2))
 
