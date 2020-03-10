@@ -23,11 +23,13 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/rest"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	catalogv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/catalog/v1alpha1"
 	corev1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/core/v1alpha1"
@@ -62,30 +64,6 @@ func newSimpleScenario(f *testutil.Framework) func(t *testing.T) {
 			APIGroup: "rbac.authorization.k8s.io",
 			Name:     testName + "-provider",
 		})
-
-		providerClient, err := f.ManagementClient(t, func(config *rest.Config) error {
-			config.Impersonate = rest.ImpersonationConfig{
-				UserName: testName + "-provider",
-				Groups:   nil,
-				Extra:    nil,
-			}
-			return nil
-		})
-		require.NoError(t, err)
-		t.Cleanup(providerClient.CleanUpFunc(ctx))
-		tenantClient, err := f.ManagementClient(t, func(config *rest.Config) error {
-			config.Impersonate = rest.ImpersonationConfig{
-				UserName: testName + "-provider",
-				Groups:   nil,
-				Extra:    nil,
-			}
-			return nil
-		})
-		require.NoError(t, err)
-		t.Cleanup(providerClient.CleanUpFunc(ctx))
-
-		_ = providerClient
-		_ = tenantClient
 
 		require.NoError(t, managementClient.Create(ctx, tenant), "creating tenant error")
 		require.NoError(t, managementClient.Create(ctx, provider), "creating provider error")
@@ -174,5 +152,50 @@ func newSimpleScenario(f *testutil.Framework) func(t *testing.T) {
 		}
 		require.NoError(t, managementClient.Create(ctx, catalogEntrySet))
 		require.NoError(t, testutil.WaitUntilReady(ctx, managementClient, catalogEntrySet))
+
+		catalog := &catalogv1alpha1.Catalog{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "default",
+				Namespace: provider.Status.Namespace.Name,
+			},
+			Spec: catalogv1alpha1.CatalogSpec{
+				CatalogEntrySelector: &metav1.LabelSelector{},
+				TenantSelector:       &metav1.LabelSelector{},
+			},
+		}
+		require.NoError(t, managementClient.Create(ctx, catalog))
+		require.NoError(t, testutil.WaitUntilReady(ctx, managementClient, catalog))
+
+		tenantClient, err := f.ManagementClient(t, func(config *rest.Config) error {
+			config.Impersonate = rest.ImpersonationConfig{
+				UserName: testName + "-provider",
+				Groups:   nil,
+				Extra:    nil,
+			}
+			return nil
+		})
+		require.NoError(t, err)
+		t.Cleanup(tenantClient.CleanUpFunc(ctx))
+
+		offeringList := &catalogv1alpha1.OfferingList{}
+		require.NoError(t, tenantClient.List(ctx, offeringList, client.InNamespace(tenant.Status.Namespace.Name)))
+		assert.NotEmpty(t, offeringList.Items, "no offerings found")
+		t.Logf("tenant offerings:\n%v", offeringList.Items)
+
+		providerClient, err := f.ManagementClient(t, func(config *rest.Config) error {
+			config.Impersonate = rest.ImpersonationConfig{
+				UserName: testName + "-provider",
+				Groups:   nil,
+				Extra:    nil,
+			}
+			return nil
+		})
+		require.NoError(t, err)
+		t.Cleanup(providerClient.CleanUpFunc(ctx))
+
+		tenantList := &catalogv1alpha1.TenantList{}
+		require.NoError(t, providerClient.List(ctx, tenantList, client.InNamespace(provider.Status.Namespace.Name)))
+		assert.NotEmpty(t, tenantList.Items, "no tenants found")
+		t.Logf("tenants:\n%v", tenantList.Items)
 	}
 }
