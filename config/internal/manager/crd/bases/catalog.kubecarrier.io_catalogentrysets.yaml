@@ -104,6 +104,7 @@ spec:
                       the ServiceCluster.
                     properties:
                       name:
+                        minLength: 1
                         type: string
                     required:
                     - name

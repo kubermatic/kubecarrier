@@ -64,6 +64,7 @@ spec:
                     CatalogEntry refers to.
                   properties:
                     name:
+                      minLength: 1
                       type: string
                   required:
                     - name
@@ -118,10 +119,12 @@ spec:
                     description:
                       description: Description shows the human-readable description
                         of this CatalogEntry.
+                      minLength: 1
                       type: string
                     displayName:
                       description: DisplayName shows the human-readable name of this
                         CatalogEntry.
+                      minLength: 1
                       type: string
                   type: object
               type: object
@@ -193,6 +196,7 @@ spec:
                         of this CRD.
                       properties:
                         name:
+                          minLength: 1
                           type: string
                       required:
                         - name
@@ -238,6 +242,7 @@ spec:
                         of this CRD.
                       properties:
                         name:
+                          minLength: 1
                           type: string
                       required:
                         - name

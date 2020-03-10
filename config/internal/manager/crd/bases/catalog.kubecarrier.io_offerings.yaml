@@ -67,6 +67,7 @@ spec:
                         of this CRD.
                       properties:
                         name:
+                          minLength: 1
                           type: string
                       required:
                         - name
@@ -112,6 +113,7 @@ spec:
                   description: Provider references the Provider managing this Offering.
                   properties:
                     name:
+                      minLength: 1
                       type: string
                   required:
                     - name

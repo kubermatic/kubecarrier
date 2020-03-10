@@ -168,6 +168,7 @@
                     Account manages.
                   properties:
                     name:
+                      minLength: 1
                       type: string
                   required:
                   - name
@@ -265,6 +266,7 @@
                     CatalogEntry refers to.
                   properties:
                     name:
+                      minLength: 1
                       type: string
                   required:
                   - name
@@ -319,10 +321,12 @@
                     description:
                       description: Description shows the human-readable description
                         of this CatalogEntry.
+                      minLength: 1
                       type: string
                     displayName:
                       description: DisplayName shows the human-readable name of this
                         CatalogEntry.
+                      minLength: 1
                       type: string
                   type: object
               type: object
@@ -394,6 +398,7 @@
                         of this CRD.
                       properties:
                         name:
+                          minLength: 1
                           type: string
                       required:
                       - name
@@ -439,6 +444,7 @@
                         of this CRD.
                       properties:
                         name:
+                          minLength: 1
                           type: string
                       required:
                       - name
@@ -587,6 +593,7 @@
                         the ServiceCluster.
                       properties:
                         name:
+                          minLength: 1
                           type: string
                       required:
                       - name
@@ -928,6 +935,7 @@
                       in the same namespace.
                     properties:
                       name:
+                        minLength: 1
                         type: string
                     required:
                     - name
@@ -953,6 +961,7 @@
                       in the same namespace.
                     properties:
                       name:
+                        minLength: 1
                         type: string
                     required:
                     - name
@@ -1030,6 +1039,7 @@
                     from.
                   properties:
                     name:
+                      minLength: 1
                       type: string
                   required:
                   - name
@@ -1232,6 +1242,7 @@
                         of this CRD.
                       properties:
                         name:
+                          minLength: 1
                           type: string
                       required:
                       - name
@@ -1277,6 +1288,7 @@
                   description: Provider references the Provider managing this Offering.
                   properties:
                     name:
+                      minLength: 1
                       type: string
                   required:
                   - name
@@ -1449,6 +1461,7 @@
                     belongs to.
                   properties:
                     name:
+                      minLength: 1
                       type: string
                   required:
                   - name
@@ -2726,7 +2739,6 @@
       apiVersions:
       - v1alpha1
       operations:
-      - CREATE
       - UPDATE
       resources:
       - catalogentries

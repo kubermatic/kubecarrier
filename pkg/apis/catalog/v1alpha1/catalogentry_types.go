@@ -41,8 +41,10 @@ type DerivedConfig struct {
 // CatalogEntryMetadata contains metadata of the CatalogEntry.
 type CatalogEntryMetadata struct {
 	// DisplayName shows the human-readable name of this CatalogEntry.
+	// +kubebuilder:validation:MinLength=1
 	DisplayName string `json:"displayName,omitempty"`
 	// Description shows the human-readable description of this CatalogEntry.
+	// +kubebuilder:validation:MinLength=1
 	Description string `json:"description,omitempty"`
 }
 
