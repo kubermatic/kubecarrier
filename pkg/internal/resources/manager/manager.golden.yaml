@@ -2826,7 +2826,6 @@
       - v1alpha1
       operations:
       - CREATE
-      - UPDATE
       resources:
       - providers
   - clientConfig:

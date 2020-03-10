@@ -37,7 +37,7 @@ type ProviderWebhookHandler struct {
 
 var _ admission.Handler = (*ProviderWebhookHandler)(nil)
 
-// +kubebuilder:webhook:path=/validate-catalog-kubecarrier-io-v1alpha1-provider,mutating=false,failurePolicy=fail,groups=catalog.kubecarrier.io,resources=providers,verbs=create;update,versions=v1alpha1,name=vprovider.kubecarrier.io
+// +kubebuilder:webhook:path=/validate-catalog-kubecarrier-io-v1alpha1-provider,mutating=false,failurePolicy=fail,groups=catalog.kubecarrier.io,resources=providers,verbs=create,versions=v1alpha1,name=vprovider.kubecarrier.io
 
 // Handle is the function to handle create/update requests of Providers.
 func (r *ProviderWebhookHandler) Handle(ctx context.Context, req admission.Request) admission.Response {
@@ -49,14 +49,6 @@ func (r *ProviderWebhookHandler) Handle(ctx context.Context, req admission.Reque
 	switch req.Operation {
 	case adminv1beta1.Create:
 		if err := r.validateCreate(obj); err != nil {
-			return admission.Denied(err.Error())
-		}
-	case adminv1beta1.Update:
-		oldObj := &catalogv1alpha1.Provider{}
-		if err := r.decoder.DecodeRaw(req.OldObject, oldObj); err != nil {
-			return admission.Errored(http.StatusBadRequest, err)
-		}
-		if err := r.validateUpdate(oldObj, obj); err != nil {
 			return admission.Denied(err.Error())
 		}
 	}
@@ -77,18 +69,6 @@ func (r *ProviderWebhookHandler) validateCreate(provider *catalogv1alpha1.Provid
 	r.Log.Info("validate create", "name", provider.Name)
 	if !webhook.IsDNS1123Label(provider.Name) {
 		return fmt.Errorf("provider name: %s is not a valid DNS 1123 Label, %s", provider.Name, webhook.DNS1123LabelDescription)
-	}
-	return r.validateMetadata(provider)
-}
-
-func (r *ProviderWebhookHandler) validateUpdate(oldObj, newObj *catalogv1alpha1.Provider) error {
-	r.Log.Info("validate update", "name", newObj.Name)
-	return r.validateMetadata(newObj)
-}
-
-func (r *ProviderWebhookHandler) validateMetadata(provider *catalogv1alpha1.Provider) error {
-	if provider.Spec.Metadata.Description == "" || provider.Spec.Metadata.DisplayName == "" {
-		return fmt.Errorf("the description or the display name of the Provider: %s cannot be empty", provider.Name)
 	}
 	return nil
 }
