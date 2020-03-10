@@ -36,7 +36,7 @@ type CustomResourceDiscoveryWebhookHandler struct {
 
 var _ admission.Handler = (*CustomResourceDiscoveryWebhookHandler)(nil)
 
-// +kubebuilder:webhook:path=/validate-kubecarrier-io-v1alpha1-customresourcediscovery,mutating=false,failurePolicy=fail,groups=kubecarrier.io,resources=customresourcediscoveries,verbs=create;update,versions=v1alpha1,name=vcustomresourcediscovery.kubecarrier.io
+// +kubebuilder:webhook:path=/validate-kubecarrier-io-v1alpha1-customresourcediscovery,mutating=false,failurePolicy=fail,groups=kubecarrier.io,resources=customresourcediscoveries,verbs=update,versions=v1alpha1,name=vcustomresourcediscovery.kubecarrier.io
 
 // Handle is the function to handle create/update requests of CustomResourceDiscoveries.
 func (r *CustomResourceDiscoveryWebhookHandler) Handle(ctx context.Context, req admission.Request) admission.Response {
@@ -46,10 +46,6 @@ func (r *CustomResourceDiscoveryWebhookHandler) Handle(ctx context.Context, req 
 	}
 
 	switch req.Operation {
-	case adminv1beta1.Create:
-		if err := r.validateCreate(obj); err != nil {
-			return admission.Denied(err.Error())
-		}
 	case adminv1beta1.Update:
 		oldObj := &corev1alpha1.CustomResourceDiscovery{}
 		if err := r.decoder.DecodeRaw(req.OldObject, oldObj); err != nil {
@@ -69,15 +65,6 @@ func (r *CustomResourceDiscoveryWebhookHandler) Handle(ctx context.Context, req 
 // InjectDecoder injects the decoder.
 func (r *CustomResourceDiscoveryWebhookHandler) InjectDecoder(d *admission.Decoder) error {
 	r.decoder = d
-	return nil
-}
-
-func (r *CustomResourceDiscoveryWebhookHandler) validateCreate(crDiscovery *corev1alpha1.CustomResourceDiscovery) error {
-	r.Log.Info("validate create", "name", crDiscovery.Name)
-	if crDiscovery.Spec.ServiceCluster.Name == "" ||
-		crDiscovery.Spec.CRD.Name == "" {
-		return fmt.Errorf("the ServiceCluster, or CRD of CustomResourceDiscovery is specified as empty string")
-	}
 	return nil
 }
 

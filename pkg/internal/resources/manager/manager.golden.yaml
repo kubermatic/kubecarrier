@@ -1609,6 +1609,7 @@
                     ServiceCluster.
                   properties:
                     name:
+                      minLength: 1
                       type: string
                   required:
                   - name
@@ -1621,6 +1622,7 @@
                     the CustomResourceDefinition on.
                   properties:
                     name:
+                      minLength: 1
                       type: string
                   required:
                   - name
@@ -1691,6 +1693,7 @@
                     that is created by a CustomResourceDiscovery.
                   properties:
                     name:
+                      minLength: 1
                       type: string
                   required:
                   - name
@@ -1778,6 +1781,7 @@
                     ServiceCluster.
                   properties:
                     name:
+                      minLength: 1
                       type: string
                   required:
                   - name
@@ -1894,6 +1898,7 @@
                       in the same Namespace.
                     properties:
                       name:
+                        minLength: 1
                         type: string
                     required:
                     - name
@@ -1981,6 +1986,7 @@
                   description: References the source namespace in the management cluster.
                   properties:
                     name:
+                      minLength: 1
                       type: string
                   required:
                   - name
@@ -1989,6 +1995,7 @@
                   description: References the ServiceCluster.
                   properties:
                     name:
+                      minLength: 1
                       type: string
                   required:
                   - name
@@ -2052,6 +2059,7 @@
                     the ServiceCluster that was assigned.
                   properties:
                     name:
+                      minLength: 1
                       type: string
                   required:
                   - name
@@ -2130,6 +2138,7 @@
                     connecting to the ServiceCluster.
                   properties:
                     name:
+                      minLength: 1
                       type: string
                   required:
                   - name
@@ -2756,7 +2765,6 @@
       apiVersions:
       - v1alpha1
       operations:
-      - CREATE
       - UPDATE
       resources:
       - customresourcediscoveries
