@@ -71,7 +71,7 @@ func NewClientWatcher(conf *rest.Config, scheme *runtime.Scheme, log logr.Logger
 // WaitUntil waits until the Object's condition function is true, or the context deadline is reached
 //
 // condition function should operate on the passed object in a closure and should not modify the obj
-func (cw *ClientWatcher) WaitUntil(ctx context.Context, obj runtime.Object, cond ...func() (done bool, err error)) error {
+func (cw *ClientWatcher) WaitUntil(ctx context.Context, obj runtime.Object, cond func() (done bool, err error)) error {
 	lw, err := cw.objListWatch(obj)
 	if err != nil {
 		return fmt.Errorf("getting objListWatch: %w", err)
@@ -92,14 +92,12 @@ func (cw *ClientWatcher) WaitUntil(ctx context.Context, obj runtime.Object, cond
 		if err := cw.scheme.Convert(event.Object, obj, nil); err != nil {
 			return false, err
 		}
-		for _, f := range cond {
-			ok, err := f()
-			if err != nil {
-				return false, err
-			}
-			if !ok {
-				return false, nil
-			}
+		ok, err := cond()
+		if err != nil {
+			return false, err
+		}
+		if !ok {
+			return false, nil
 		}
 		return true, nil
 	}); err != nil {

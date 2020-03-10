@@ -153,6 +153,9 @@ func (f *Framework) NewProviderAccount(name string, subjects ...rbacv1.Subject) 
 	return &catalogv1alpha1.Account{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: name + "-provider",
+			Labels: map[string]string{
+				"test-case": name,
+			},
 		},
 		Spec: catalogv1alpha1.AccountSpec{
 			Metadata: catalogv1alpha1.AccountMetadata{
@@ -181,6 +184,53 @@ func (f *Framework) NewTenantAccount(name string, subjects ...rbacv1.Subject) *c
 				catalogv1alpha1.TenantRole,
 			},
 			Subjects: subjects,
+		},
+	}
+}
+
+func (f *Framework) NewFakeCouchDBCRD(group string) *apiextensionsv1.CustomResourceDefinition {
+	return &apiextensionsv1.CustomResourceDefinition{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "couchdbs." + group,
+		},
+		Spec: apiextensionsv1.CustomResourceDefinitionSpec{
+			Group: group,
+			Names: apiextensionsv1.CustomResourceDefinitionNames{
+				Plural: "couchdbs",
+				Kind:   "CouchDB",
+			},
+			Versions: []apiextensionsv1.CustomResourceDefinitionVersion{
+				{
+					Name:    "v1alpha1",
+					Storage: true,
+					Schema: &apiextensionsv1.CustomResourceValidation{
+						OpenAPIV3Schema: &apiextensionsv1.JSONSchemaProps{
+							Properties: map[string]apiextensionsv1.JSONSchemaProps{
+								"apiVersion": {Type: "string"},
+								"kind":       {Type: "string"},
+								"metadata":   {Type: "object"},
+								"spec": {
+									Type: "object",
+									Properties: map[string]apiextensionsv1.JSONSchemaProps{
+										"prop1": {Type: "string"},
+										"prop2": {Type: "string"},
+									},
+								},
+								"status": {
+									Type: "object",
+									Properties: map[string]apiextensionsv1.JSONSchemaProps{
+										"observedGeneration": {Type: "integer"},
+										"prop1":              {Type: "string"},
+										"prop2":              {Type: "string"},
+									},
+								},
+							},
+							Type: "object",
+						},
+					},
+				},
+			},
+			Scope: apiextensionsv1.NamespaceScoped,
 		},
 	}
 }
