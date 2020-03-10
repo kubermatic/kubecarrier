@@ -36,7 +36,7 @@ type ServiceClusterReferenceWebhookHandler struct {
 
 var _ admission.Handler = (*ServiceClusterReferenceWebhookHandler)(nil)
 
-// +kubebuilder:webhook:path=/validate-catalog-kubecarrier-io-v1alpha1-serviceclusterreference,mutating=false,failurePolicy=fail,groups=catalog.kubecarrier.io,resources=serviceclusterreferences,verbs=create;update,versions=v1alpha1,name=vserviceclusterreference.kubecarrier.io
+// +kubebuilder:webhook:path=/validate-catalog-kubecarrier-io-v1alpha1-serviceclusterreference,mutating=false,failurePolicy=fail,groups=catalog.kubecarrier.io,resources=serviceclusterreferences,verbs=update,versions=v1alpha1,name=vserviceclusterreference.kubecarrier.io
 
 // Handle is the function to handle create/update requests of ServiceClusterReferences.
 func (r *ServiceClusterReferenceWebhookHandler) Handle(ctx context.Context, req admission.Request) admission.Response {
@@ -46,10 +46,6 @@ func (r *ServiceClusterReferenceWebhookHandler) Handle(ctx context.Context, req 
 	}
 
 	switch req.Operation {
-	case adminv1beta1.Create:
-		if err := r.validateCreate(obj); err != nil {
-			return admission.Denied(err.Error())
-		}
 	case adminv1beta1.Update:
 		oldObj := &catalogv1alpha1.ServiceClusterReference{}
 		if err := r.decoder.DecodeRaw(req.OldObject, oldObj); err != nil {
@@ -69,14 +65,6 @@ func (r *ServiceClusterReferenceWebhookHandler) Handle(ctx context.Context, req 
 // InjectDecoder injects the decoder.
 func (r *ServiceClusterReferenceWebhookHandler) InjectDecoder(d *admission.Decoder) error {
 	r.decoder = d
-	return nil
-}
-
-func (r *ServiceClusterReferenceWebhookHandler) validateCreate(serviceClusterReference *catalogv1alpha1.ServiceClusterReference) error {
-	r.Log.Info("validate create", "name", serviceClusterReference.Name)
-	if serviceClusterReference.Spec.Provider.Name == "" {
-		return fmt.Errorf("the Provider of ServiceClusterReference is not specifed")
-	}
 	return nil
 }
 
