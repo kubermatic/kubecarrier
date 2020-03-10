@@ -46,52 +46,25 @@ func newAccountRefs(f *testutil.Framework) func(t *testing.T) {
 		testName := strings.Replace(strings.ToLower(t.Name()), "/", "-", -1)
 
 		var (
-			mdata = catalogv1alpha1.AccountMetadata{
-				DisplayName: "metadata name",
-				Description: "metadata desc",
-			}
-			provider = &catalogv1alpha1.Account{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: testName + "-provider",
-				},
-				Spec: catalogv1alpha1.AccountSpec{
-					Metadata: mdata,
-					Roles: []catalogv1alpha1.AccountRole{
-						catalogv1alpha1.ProviderRole,
-					},
-					Subjects: []rbacv1.Subject{
-						{
-							Kind:     rbacv1.GroupKind,
-							APIGroup: "rbac.authorization.k8s.io",
-							Name:     "provider1",
-						},
-					},
-				},
-			}
-			tenant = &catalogv1alpha1.Account{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: testName + "-tenant",
-				},
-				Spec: catalogv1alpha1.AccountSpec{
-					Metadata: mdata,
-					Roles: []catalogv1alpha1.AccountRole{
-						catalogv1alpha1.TenantRole,
-					},
-					Subjects: []rbacv1.Subject{
-						{
-							Kind:     rbacv1.GroupKind,
-							APIGroup: "rbac.authorization.k8s.io",
-							Name:     "tenant",
-						},
-					},
-				},
-			}
+			provider = f.NewProviderAccount(testName, rbacv1.Subject{
+				Kind:     rbacv1.GroupKind,
+				APIGroup: "rbac.authorization.k8s.io",
+				Name:     "provider1",
+			})
+			tenant = f.NewTenantAccount(testName, rbacv1.Subject{
+				Kind:     rbacv1.GroupKind,
+				APIGroup: "rbac.authorization.k8s.io",
+				Name:     "tenant",
+			})
 			providerTenant = &catalogv1alpha1.Account{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: testName + "-providertenant",
 				},
 				Spec: catalogv1alpha1.AccountSpec{
-					Metadata: mdata,
+					Metadata: catalogv1alpha1.AccountMetadata{
+						DisplayName: "metadata name",
+						Description: "metadata desc",
+					},
 					Roles: []catalogv1alpha1.AccountRole{
 						catalogv1alpha1.TenantRole,
 						catalogv1alpha1.ProviderRole,

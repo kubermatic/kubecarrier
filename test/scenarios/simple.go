@@ -50,20 +50,7 @@ func newSimpleScenario(f *testutil.Framework) func(t *testing.T) {
 		testName := strings.Replace(strings.ToLower(t.Name()), "/", "-", -1)
 
 		// Create a Tenant
-		tenant := &catalogv1alpha1.Account{
-			ObjectMeta: metav1.ObjectMeta{
-				Name: testName + "-tenant",
-			},
-			Spec: catalogv1alpha1.AccountSpec{
-				Metadata: catalogv1alpha1.AccountMetadata{
-					DisplayName: "tenant display name",
-					Description: "tenant desc",
-				},
-				Roles: []catalogv1alpha1.AccountRole{
-					catalogv1alpha1.TenantRole,
-				},
-			},
-		}
+		tenant := f.NewTenantAccount(testName)
 		require.NoError(t, managementClient.Create(ctx, tenant), "creating tenant error")
 		require.NoError(t, testutil.WaitUntilReady(ctx, managementClient, tenant))
 
@@ -74,20 +61,7 @@ func newSimpleScenario(f *testutil.Framework) func(t *testing.T) {
 		}, tenantNamespace))
 
 		// Create a Provider
-		provider := &catalogv1alpha1.Account{
-			ObjectMeta: metav1.ObjectMeta{
-				Name: testName + "-provider",
-			},
-			Spec: catalogv1alpha1.AccountSpec{
-				Metadata: catalogv1alpha1.AccountMetadata{
-					DisplayName: "provider",
-					Description: "provider test description",
-				},
-				Roles: []catalogv1alpha1.AccountRole{
-					catalogv1alpha1.ProviderRole,
-				},
-			},
-		}
+		provider := f.NewProviderAccount(testName)
 		require.NoError(t, managementClient.Create(ctx, provider), "creating provider error")
 		require.NoError(t, testutil.WaitUntilReady(ctx, managementClient, provider))
 

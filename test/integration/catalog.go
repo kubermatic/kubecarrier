@@ -51,27 +51,11 @@ func newCatalogSuite(
 		testName := strings.Replace(strings.ToLower(t.Name()), "/", "-", -1)
 
 		// Create a Tenant to execute our tests in
-		tenantAccount := &catalogv1alpha1.Account{
-			ObjectMeta: metav1.ObjectMeta{
-				Name: testName + "-tenant-catalog",
-			},
-			Spec: catalogv1alpha1.AccountSpec{
-				Metadata: catalogv1alpha1.AccountMetadata{
-					DisplayName: "test tenant",
-					Description: "A simple, humble test tenant from Berlin",
-				},
-				Roles: []catalogv1alpha1.AccountRole{
-					catalogv1alpha1.TenantRole,
-				},
-				Subjects: []rbacv1.Subject{
-					{
-						Kind:     rbacv1.GroupKind,
-						APIGroup: "rbac.authorization.k8s.io",
-						Name:     "admin",
-					},
-				},
-			},
-		}
+		tenantAccount := f.NewTenantAccount(testName, rbacv1.Subject{
+			Kind:     rbacv1.GroupKind,
+			APIGroup: "rbac.authorization.k8s.io",
+			Name:     "admin",
+		})
 		provider := f.NewProviderAccount(testName)
 		require.NoError(t, managementClient.Create(ctx, tenantAccount), "creating Tenant error")
 		require.NoError(t, managementClient.Create(ctx, provider), "creating Tenant error")
@@ -305,27 +289,11 @@ func newCatalogSuite(
 		}))
 
 		// Recreate the tenant
-		tenantAccount = &catalogv1alpha1.Account{
-			ObjectMeta: metav1.ObjectMeta{
-				Name: testName + "-tenant2",
-			},
-			Spec: catalogv1alpha1.AccountSpec{
-				Metadata: catalogv1alpha1.AccountMetadata{
-					DisplayName: "test tenant 2",
-					Description: "A lovely perky tenant from the German capital",
-				},
-				Roles: []catalogv1alpha1.AccountRole{
-					catalogv1alpha1.TenantRole,
-				},
-				Subjects: []rbacv1.Subject{
-					{
-						Kind:     rbacv1.GroupKind,
-						APIGroup: "rbac.authorization.k8s.io",
-						Name:     "admin",
-					},
-				},
-			},
-		}
+		tenantAccount = f.NewTenantAccount(testName, rbacv1.Subject{
+			Kind:     rbacv1.GroupKind,
+			APIGroup: "rbac.authorization.k8s.io",
+			Name:     "admin",
+		})
 		require.NoError(t, managementClient.Create(ctx, tenantAccount), "creating tenant error")
 		require.NoError(t, testutil.WaitUntilReady(ctx, managementClient, tenantAccount))
 

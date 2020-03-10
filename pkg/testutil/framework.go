@@ -24,6 +24,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
+	rbacv1 "k8s.io/api/rbac/v1"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -148,7 +149,7 @@ func (f *Framework) ServiceClient(t *testing.T) (*RecordingClient, error) {
 	return recordingClient(c, f.ServiceScheme, t, f.config.CleanUpStrategy), nil
 }
 
-func (f *Framework) NewProviderAccount(name string) *catalogv1alpha1.Account {
+func (f *Framework) NewProviderAccount(name string, subjects ...rbacv1.Subject) *catalogv1alpha1.Account {
 	return &catalogv1alpha1.Account{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: name + "-provider",
@@ -161,11 +162,12 @@ func (f *Framework) NewProviderAccount(name string) *catalogv1alpha1.Account {
 			Roles: []catalogv1alpha1.AccountRole{
 				catalogv1alpha1.ProviderRole,
 			},
+			Subjects: subjects,
 		},
 	}
 }
 
-func (f *Framework) NewTenantAccount(name string) *catalogv1alpha1.Account {
+func (f *Framework) NewTenantAccount(name string, subjects ...rbacv1.Subject) *catalogv1alpha1.Account {
 	return &catalogv1alpha1.Account{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: name + "-tenant",
@@ -178,6 +180,7 @@ func (f *Framework) NewTenantAccount(name string) *catalogv1alpha1.Account {
 			Roles: []catalogv1alpha1.AccountRole{
 				catalogv1alpha1.TenantRole,
 			},
+			Subjects: subjects,
 		},
 	}
 }
