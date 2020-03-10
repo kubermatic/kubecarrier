@@ -247,6 +247,9 @@ func NewCatalogSuite(
 					DisplayName: "eu-west-1",
 					Description: "eu-west-1 service cluster!",
 				},
+				KubeconfigSecret: corev1alpha1.ObjectReference{
+					Name: "eu-west-1-secret",
+				},
 			},
 		}
 		require.NoError(
