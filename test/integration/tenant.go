@@ -36,7 +36,7 @@ import (
 
 func newAccountRefs(f *testutil.Framework) func(t *testing.T) {
 	return func(t *testing.T) {
-		t.Log("testing how account handles tenant references")
+		t.Log("testing how account handles tenant")
 		ctx, cancel := context.WithTimeout(context.Background(), 120*time.Second)
 		t.Cleanup(cancel)
 		managementClient, err := f.ManagementClient(t)
@@ -162,7 +162,7 @@ func newAccountRefs(f *testutil.Framework) func(t *testing.T) {
 }
 
 func tenantPresent(t *testing.T, cl *testutil.RecordingClient, ctx context.Context, tenant *catalogv1alpha1.Account, provider *catalogv1alpha1.Account, expected bool) {
-	tref := &catalogv1alpha1.Tenant{
+	tenantObj := &catalogv1alpha1.Tenant{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      tenant.Name,
 			Namespace: provider.Status.Namespace.Name,
@@ -173,9 +173,9 @@ func tenantPresent(t *testing.T, cl *testutil.RecordingClient, ctx context.Conte
 	defer cancel()
 
 	if expected {
-		assert.NoError(t, testutil.WaitUntilFound(ctx, cl, tref), "tenantReference %s not found in provider %s", tenant.Name, provider.Name)
+		assert.NoError(t, testutil.WaitUntilFound(ctx, cl, tenantObj), "tenantReference %s not found in provider %s", tenant.Name, provider.Name)
 	} else {
-		assert.NoError(t, testutil.WaitUntilNotFound(ctx, cl, tref), "tenantReference %s found in provider %s", tenant.Name, provider.Name)
+		assert.NoError(t, testutil.WaitUntilNotFound(ctx, cl, tenantObj), "tenantReference %s found in provider %s", tenant.Name, provider.Name)
 	}
 }
 

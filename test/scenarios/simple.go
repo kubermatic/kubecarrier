@@ -23,12 +23,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	corev1 "k8s.io/api/core/v1"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/types"
 
 	catalogv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/catalog/v1alpha1"
 	corev1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/core/v1alpha1"
@@ -49,40 +47,29 @@ func newSimpleScenario(f *testutil.Framework) func(t *testing.T) {
 		t.Cleanup(serviceClient.CleanUpFunc(ctx))
 		testName := strings.Replace(strings.ToLower(t.Name()), "/", "-", -1)
 
-		// Create a Tenant
+		// Creating account
+		t.Log("creating necessary accounts")
 		tenant := f.NewTenantAccount(testName)
-		require.NoError(t, managementClient.Create(ctx, tenant), "creating tenant error")
-		require.NoError(t, testutil.WaitUntilReady(ctx, managementClient, tenant))
-
-		tenantNamespaceName := tenant.Status.Namespace.Name
-		tenantNamespace := &corev1.Namespace{}
-		assert.NoError(t, managementClient.Get(ctx, types.NamespacedName{
-			Name: tenantNamespaceName,
-		}, tenantNamespace))
-
-		// Create a Provider
 		provider := f.NewProviderAccount(testName)
+
+		require.NoError(t, managementClient.Create(ctx, tenant), "creating tenant error")
 		require.NoError(t, managementClient.Create(ctx, provider), "creating provider error")
+		require.NoError(t, testutil.WaitUntilReady(ctx, managementClient, tenant))
 		require.NoError(t, testutil.WaitUntilReady(ctx, managementClient, provider))
-
-		providerNamespaceName := provider.Status.Namespace.Name
-		providerNamespace := &corev1.Namespace{}
-		assert.NoError(t, managementClient.Get(ctx, types.NamespacedName{
-			Name: providerNamespaceName,
-		}, providerNamespace))
-
+		require.NotEmpty(t, tenant.Status.Namespace.Name)
+		require.NotEmpty(t, provider.Status.Namespace.Name)
 		tenantReference := &catalogv1alpha1.Tenant{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      tenant.Name,
-				Namespace: providerNamespaceName,
+				Namespace: provider.Status.Namespace.Name,
 			},
 		}
 		t.Log("checking tenant reference")
 		require.NoError(t, testutil.WaitUntilFound(ctx, managementClient, tenantReference))
 
+		t.Log("creating service cluster")
 		serviceKubeconfig, err := ioutil.ReadFile(f.Config().ServiceInternalKubeconfigPath)
 		require.NoError(t, err, "cannot read service internal kubeconfig")
-		t.Log("creating service cluster")
 		serviceClusterSecret := &corev1.Secret{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "eu-west-1",

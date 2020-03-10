@@ -136,7 +136,7 @@ func main() {
 		"Integration/derivedCR",
 		"Integration/serviceCluster",
 		"Integration/catalog",
-		"Integration/tenant-references",
+		"Integration/tenant",
 		"Scenarios",
 		"Scenarios/simple",
 	} {
