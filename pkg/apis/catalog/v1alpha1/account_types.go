@@ -31,7 +31,7 @@ type AccountSpec struct {
 	Roles []AccountRole `json:"roles"`
 	// Subjects holds references to the objects that manged RBAC roles should apply to.
 	// +kubebuilder:validation:MinItems=1
-	Subjects []rbacv1.Subject `json:"subjects,omitempty"`
+	Subjects []rbacv1.Subject `json:"subjects"`
 }
 
 // AccountMetadata contains the metadata of the Account.
