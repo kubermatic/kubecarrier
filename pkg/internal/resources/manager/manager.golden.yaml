@@ -1285,10 +1285,12 @@
                     description:
                       description: Description shows the human-readable description
                         of this Offering.
+                      minLength: 1
                       type: string
                     displayName:
                       description: DisplayName shows the human-readable name of this
                         Offering.
+                      minLength: 1
                       type: string
                   type: object
                 provider:
@@ -2806,7 +2808,6 @@
       apiVersions:
       - v1alpha1
       operations:
-      - CREATE
       - UPDATE
       resources:
       - offerings

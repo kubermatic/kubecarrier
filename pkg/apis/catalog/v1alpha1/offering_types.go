@@ -32,8 +32,10 @@ type OfferingData struct {
 // OfferingMetadata contains the metadata (display name, description, etc) of the Offering.
 type OfferingMetadata struct {
 	// DisplayName shows the human-readable name of this Offering.
+	// +kubebuilder:validation:MinLength=1
 	DisplayName string `json:"displayName,omitempty"`
 	// Description shows the human-readable description of this Offering.
+	// +kubebuilder:validation:MinLength=1
 	Description string `json:"description,omitempty"`
 }
 
