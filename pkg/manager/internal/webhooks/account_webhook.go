@@ -106,7 +106,7 @@ func (r *AccountWebhookHandler) validateCreate(ctx context.Context, account *cat
 	case errors.IsNotFound(err):
 		break
 	case err == nil:
-		return fmt.Errorf("namespace %s already exists: %w", account.Name, err)
+		return fmt.Errorf("namespace %s already exists", account.Name)
 	default:
 		return fmt.Errorf("getting namespace: %w", err)
 	}
@@ -119,10 +119,6 @@ func (r *AccountWebhookHandler) validateUpdate(oldObj, newObj *catalogv1alpha1.A
 }
 
 func (r *AccountWebhookHandler) validateMetadataAndRoles(account *catalogv1alpha1.Account) error {
-	if account.Spec.Metadata.Description == "" || account.Spec.Metadata.DisplayName == "" {
-		return fmt.Errorf("the description or the display name of the Account: %s cannot be empty", account.Name)
-	}
-
 	roles := make(map[catalogv1alpha1.AccountRole]struct{})
 	for _, role := range account.Spec.Roles {
 		_, duplicate := roles[role]
@@ -134,6 +130,15 @@ func (r *AccountWebhookHandler) validateMetadataAndRoles(account *catalogv1alpha
 	if len(account.Spec.Roles) == 0 {
 		return fmt.Errorf("no roles assigned")
 	}
+
+	if _, ok := roles[catalogv1alpha1.ProviderRole]; ok {
+		// Account has the Provider Role
+		if account.Spec.Metadata.Description == "" ||
+			account.Spec.Metadata.DisplayName == "" {
+			return fmt.Errorf("the description or the display name of an Account with Provider role cannot be empty")
+		}
+	}
+
 	return nil
 }
 

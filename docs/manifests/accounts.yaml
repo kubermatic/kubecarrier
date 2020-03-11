@@ -1,0 +1,29 @@
+apiVersion: catalog.kubecarrier.io/v1alpha1
+kind: Account
+metadata:
+  name: team-a
+spec:
+  metadata:
+    displayName: The A Team
+    description: In 1972, a crack commando unit was sent to prison by a military court...
+  roles:
+  - Provider
+  subjects:
+  - kind: User
+    name: hannibal
+    apiGroup: rbac.authorization.k8s.io
+  - kind: User
+    name: team-a-member
+    apiGroup: rbac.authorization.k8s.io
+---
+apiVersion: catalog.kubecarrier.io/v1alpha1
+kind: Account
+metadata:
+  name: team-b
+spec:
+  roles:
+  - Tenant
+  subjects:
+  - kind: User
+    name: team-b-member
+    apiGroup: rbac.authorization.k8s.io
