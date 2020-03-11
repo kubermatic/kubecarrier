@@ -218,6 +218,8 @@ func (s *CatalogEntryStatus) SetCondition(condition CatalogEntryCondition) {
 // +kubebuilder:object:root=true
 // +kubebuilder:subresource:status
 // +kubebuilder:printcolumn:name="Status",type="string",JSONPath=".status.phase"
+// +kubebuilder:printcolumn:name="Base CRD",type="string",JSONPath=".spec.baseCRD.name"
+// +kubebuilder:printcolumn:name="Tenant CRD",type="string",JSONPath=".status.tenantCRD.name"
 // +kubebuilder:printcolumn:name="Age",type="date",JSONPath=".metadata.creationTimestamp"
 // +kubebuilder:resource:categories=kubecarrier-provider,shortName=ce
 type CatalogEntry struct {

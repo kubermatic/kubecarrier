@@ -24,12 +24,15 @@ spec:
     - jsonPath: .status.phase
       name: Status
       type: string
-    - jsonPath: .metadata.creationTimestamp
-      name: Age
-      type: date
     - jsonPath: .spec.metadata.displayName
       name: Display Name
       type: string
+    - jsonPath: .status.kubernetesVersion.gitVersion
+      name: Kubernetes Version
+      type: string
+    - jsonPath: .metadata.creationTimestamp
+      name: Age
+      type: date
     name: v1alpha1
     schema:
       openAPIV3Schema:

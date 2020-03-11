@@ -99,11 +99,11 @@ func (r *CatalogEntrySetReconciler) Reconcile(req ctrl.Request) (ctrl.Result, er
 	// Reconcile CatalogEntry objects
 	var unreadyCatalogEntryNames []string
 	existingCatalogEntryNames := map[string]struct{}{}
-	for _, crd := range currentCustomResourceDiscoverySet.Status.ManagementClusterCRDs {
-		currentCatalogEntry, err := r.reconcileCatalogEntry(ctx, &crd, catalogEntrySet)
+	for _, crdReference := range currentCustomResourceDiscoverySet.Status.ManagementClusterCRDs {
+		currentCatalogEntry, err := r.reconcileCatalogEntry(ctx, crdReference, catalogEntrySet)
 		if err != nil {
 			return ctrl.Result{}, fmt.Errorf(
-				"reconciling CatalogEntry for CRD %s: %w", crd.Name, err)
+				"reconciling CatalogEntry for CRD %s: %w", crdReference.CRD.Name, err)
 		}
 		existingCatalogEntryNames[currentCatalogEntry.Name] = struct{}{}
 
@@ -168,10 +168,10 @@ func (r *CatalogEntrySetReconciler) reconcileCustomResourceDiscoverySet(
 		},
 		Spec: corev1alpha1.CustomResourceDiscoverySetSpec{
 			CRD: corev1alpha1.ObjectReference{
-				Name: catalogEntrySet.Spec.DiscoverySet.CRD.Name,
+				Name: catalogEntrySet.Spec.Discover.CRD.Name,
 			},
-			ServiceClusterSelector: catalogEntrySet.Spec.DiscoverySet.ServiceClusterSelector,
-			KindOverride:           catalogEntrySet.Spec.DiscoverySet.KindOverride,
+			ServiceClusterSelector: catalogEntrySet.Spec.Discover.ServiceClusterSelector,
+			KindOverride:           catalogEntrySet.Spec.Discover.KindOverride,
 		},
 	}
 	err := controllerutil.SetControllerReference(catalogEntrySet, desiredCustomResourceDiscoverySet, r.Scheme)
@@ -207,12 +207,12 @@ func (r *CatalogEntrySetReconciler) reconcileCustomResourceDiscoverySet(
 }
 
 func (r *CatalogEntrySetReconciler) reconcileCatalogEntry(
-	ctx context.Context, crdReference *corev1alpha1.ObjectReference,
+	ctx context.Context, crdReference corev1alpha1.CustomResourceDiscoverySetCRDReference,
 	catalogEntrySet *catalogv1alpha1.CatalogEntrySet,
 ) (*catalogv1alpha1.CatalogEntry, error) {
 	desiredCatalogEntry := &catalogv1alpha1.CatalogEntry{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      crdReference.Name,
+			Name:      fmt.Sprintf("%s.%s", catalogEntrySet.Name, crdReference.ServiceCluster.Name),
 			Namespace: catalogEntrySet.Namespace,
 			Labels: map[string]string{
 				catalogEntriesLabel: catalogEntrySet.Name,
@@ -224,7 +224,7 @@ func (r *CatalogEntrySetReconciler) reconcileCatalogEntry(
 				Description: catalogEntrySet.Spec.Metadata.Description,
 			},
 			BaseCRD: catalogv1alpha1.ObjectReference{
-				Name: crdReference.Name,
+				Name: crdReference.CRD.Name,
 			},
 			Derive: catalogEntrySet.Spec.Derive,
 		},

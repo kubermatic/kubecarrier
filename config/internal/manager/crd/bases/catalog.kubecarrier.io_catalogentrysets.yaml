@@ -24,6 +24,9 @@ spec:
     - jsonPath: .status.phase
       name: Status
       type: string
+    - jsonPath: .spec.discover.crd.name
+      name: CRD
+      type: string
     - jsonPath: .metadata.creationTimestamp
       name: Age
       type: date
@@ -96,8 +99,8 @@ spec:
                 required:
                 - expose
                 type: object
-              discoverySet:
-                description: DiscoverySet contains the configuration to create a CustomResourceDiscoverySet.
+              discover:
+                description: Discover contains the configuration to create a CustomResourceDiscoverySet.
                 properties:
                   crd:
                     description: CRD references a CustomResourceDefinition within
@@ -187,7 +190,7 @@ spec:
                     type: string
                 type: object
             required:
-            - discoverySet
+            - discover
             type: object
           status:
             description: CatalogEntrySetStatus defines the observed state of CatalogEntrySet.

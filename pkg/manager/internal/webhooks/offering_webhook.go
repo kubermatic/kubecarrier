@@ -74,7 +74,7 @@ func (r *OfferingWebhookHandler) InjectDecoder(d *admission.Decoder) error {
 
 func (r *OfferingWebhookHandler) validateCreate(offering *catalogv1alpha1.Offering) error {
 	r.Log.Info("validate create", "name", offering.Name)
-	if offering.Offering.Provider.Name == "" {
+	if offering.Spec.Provider.Name == "" {
 		return fmt.Errorf("the Provider of Offering is not specifed")
 	}
 	return r.validateMetadata(offering)
@@ -82,14 +82,14 @@ func (r *OfferingWebhookHandler) validateCreate(offering *catalogv1alpha1.Offeri
 
 func (r *OfferingWebhookHandler) validateUpdate(oldObj, newObj *catalogv1alpha1.Offering) error {
 	r.Log.Info("validate update", "name", newObj.Name)
-	if newObj.Offering.Provider.Name != oldObj.Offering.Provider.Name {
+	if newObj.Spec.Provider.Name != oldObj.Spec.Provider.Name {
 		return fmt.Errorf("the Provider of Offering is immutable")
 	}
 	return r.validateMetadata(newObj)
 }
 
 func (r *OfferingWebhookHandler) validateMetadata(offering *catalogv1alpha1.Offering) error {
-	if offering.Offering.Metadata.Description == "" || offering.Offering.Metadata.DisplayName == "" {
+	if offering.Spec.Metadata.Description == "" || offering.Spec.Metadata.DisplayName == "" {
 		return fmt.Errorf("the description or the display name of the Offering: %s cannot be empty", offering.Name)
 	}
 	return nil
