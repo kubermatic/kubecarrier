@@ -186,7 +186,7 @@ func newCatalogSuite(
 		// Check the Offering object is created.
 		offeringFound := &catalogv1alpha1.Offering{
 			ObjectMeta: metav1.ObjectMeta{
-				Name:      catalogEntry.Name,
+				Name:      catalogEntry.Status.TenantCRD.Name,
 				Namespace: tenantAccount.Status.Namespace.Name,
 			},
 		}
