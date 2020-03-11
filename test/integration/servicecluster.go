@@ -187,7 +187,7 @@ func newServiceClusterSuite(
 		// Check the CatalogEntry Object
 		catalogEntry := &catalogv1alpha1.CatalogEntry{}
 		require.NoError(t, managementClient.Get(ctx, types.NamespacedName{
-			Name:      "redis.eu-west-1." + provider.Status.Namespace.Name,
+			Name:      "redis." + serviceCluster.Name,
 			Namespace: catalogEntrySet.Namespace,
 		}, catalogEntry), "getting CatalogEntry")
 

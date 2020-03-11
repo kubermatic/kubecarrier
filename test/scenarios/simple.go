@@ -27,8 +27,10 @@ import (
 	"github.com/stretchr/testify/require"
 	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
-	"k8s.io/apiextensions-apiserver/pkg/apis/apiextensions"
+	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/rest"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -147,7 +149,7 @@ func newSimpleScenario(f *testutil.Framework) func(t *testing.T) {
 						},
 					},
 				},
-				DiscoverySet: catalogv1alpha1.CustomResourceDiscoverySetConfig{
+				Discover: catalogv1alpha1.CustomResourceDiscoverySetConfig{
 					CRD: catalogv1alpha1.ObjectReference{
 						Name: baseCRD.Name,
 					},
@@ -159,13 +161,13 @@ func newSimpleScenario(f *testutil.Framework) func(t *testing.T) {
 		require.NoError(t, managementClient.Create(ctx, catalogEntrySet))
 		require.NoError(t, testutil.WaitUntilReady(ctx, managementClient, catalogEntrySet))
 
-		internalCRD := &apiextensions.CustomResourceDefinition{}
-		require.NotEmpty(t, managementClient.Get(ctx, types.NamespacedName{
+		internalCRD := &apiextensionsv1.CustomResourceDefinition{}
+		require.NoError(t, managementClient.Get(ctx, types.NamespacedName{
 			Name: strings.Join([]string{"couchdbinternals", serviceCluster.Name, provider.Name}, "."),
 		}, internalCRD))
-		externalCRD := &apiextensions.CustomResourceDefinition{}
-		require.NotEmpty(t, managementClient.Get(ctx, types.NamespacedName{
-			Name: strings.Join([]string{"couchdb", serviceCluster.Name, provider.Name}, "."),
+		externalCRD := &apiextensionsv1.CustomResourceDefinition{}
+		require.NoError(t, managementClient.Get(ctx, types.NamespacedName{
+			Name: strings.Join([]string{"couchdbs", serviceCluster.Name, provider.Name}, "."),
 		}, externalCRD))
 
 		catalog := &catalogv1alpha1.Catalog{
@@ -200,9 +202,40 @@ func newSimpleScenario(f *testutil.Framework) func(t *testing.T) {
 			offering := &catalogv1alpha1.Offering{}
 			if assert.NoError(t, tenantClient.Get(ctx, types.NamespacedName{
 				Namespace: tenant.Status.Namespace.Name,
-				Name:      strings.Join([]string{"couchdbs", serviceCluster.Name, provider.Name}, "."),
+				Name:      strings.Join([]string{"couchdb", serviceCluster.Name}, "."),
 			}, offering), "tenant %s doesn't have the required offering", tenant.Name) {
-				// TODO: create the off
+				assert.Equal(t, externalCRD.Name, offering.Spec.CRD.Name)
+				u := &unstructured.Unstructured{}
+				u.SetAPIVersion(offering.Spec.CRD.APIGroup)
+				u.SetKind(offering.Spec.CRD.Kind)
+				u.SetNamespace(tenant.Status.Namespace.Name)
+				u.SetName("db1")
+				u.Object["spec"] = map[string]interface{}{
+					"prop1": "dummy value",
+				}
+				require.NoError(t, tenantClient.Create(ctx, u))
+
+				sca := &corev1alpha1.ServiceClusterAssignment{}
+				require.NoError(t, managementClient.Get(ctx, types.NamespacedName{
+					Namespace: provider.Status.Namespace.Name,
+					Name:      tenant.Name + "." + serviceCluster.Name,
+				}, sca))
+
+				svcU := &unstructured.Unstructured{}
+				svcU.SetGroupVersionKind(schema.GroupVersionKind{
+					Group:   baseCRD.Spec.Group,
+					Version: baseCRD.Spec.Versions[0].Name,
+					Kind:    baseCRD.Spec.Names.Kind,
+				})
+				svcU.SetName(u.GetName())
+				svcU.SetNamespace(sca.Status.ServiceClusterNamespace.Name)
+
+				ctx, cancel := context.WithTimeout(ctx, 15*time.Second)
+				t.Cleanup(cancel)
+				assert.NoError(t,
+					testutil.WaitUntilFound(ctx, serviceClient, svcU),
+					"cannot find the CRD on the service cluster within the time limit",
+				)
 			}
 
 			providerList := &catalogv1alpha1.ProviderList{}
