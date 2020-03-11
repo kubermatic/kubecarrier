@@ -358,7 +358,7 @@ func (r *CatalogReconciler) buildDesiredOfferings(
 	for _, catalogEntry := range catalogEntries {
 		desiredOfferings = append(desiredOfferings, catalogv1alpha1.Offering{
 			ObjectMeta: metav1.ObjectMeta{
-				Name:      catalogEntry.Name,
+				Name:      catalogEntry.Status.TenantCRD.Name,
 				Namespace: tenant.Status.Namespace.Name,
 			},
 			Spec: catalogv1alpha1.OfferingSpec{
