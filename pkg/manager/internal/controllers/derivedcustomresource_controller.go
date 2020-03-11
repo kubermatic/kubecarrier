@@ -462,6 +462,8 @@ func (r *DerivedCustomResourceReconciler) applyExposeConfig(
 			return fmt.Errorf("filtering schema: %w", err)
 		}
 		crdVersion.Schema.OpenAPIV3Schema = &filteredSchema
+		crdVersion.AdditionalPrinterColumns = filterPrinterColumns(
+			crdVersion.AdditionalPrinterColumns, exposeConfig)
 		filteredVersions = append(filteredVersions, crdVersion)
 	}
 	crd.Spec.Versions = filteredVersions
@@ -469,7 +471,32 @@ func (r *DerivedCustomResourceReconciler) applyExposeConfig(
 	return nil
 }
 
-// filterSchema removes fields from the schema that are not exposed
+// filterPrinterColumns filters all printercolumns that are not exposed.
+func filterPrinterColumns(
+	printerColumns []apiextensionsv1.CustomResourceColumnDefinition,
+	exposeConfig catalogv1alpha1.VersionExposeConfig,
+) []apiextensionsv1.CustomResourceColumnDefinition {
+	var filtered []apiextensionsv1.CustomResourceColumnDefinition
+
+	for _, printerColumn := range printerColumns {
+		if printerColumn.JSONPath == ".apiVersion" ||
+			printerColumn.JSONPath == ".kind" ||
+			strings.HasPrefix(printerColumn.JSONPath, ".metadata") {
+			filtered = append(filtered, printerColumn)
+			continue
+		}
+
+		for _, exposedField := range exposeConfig.Fields {
+			if strings.HasPrefix(printerColumn.JSONPath, exposedField.JSONPath) {
+				filtered = append(filtered, printerColumn)
+			}
+		}
+	}
+
+	return filtered
+}
+
+// filterSchema removes fields from the schema that are not exposed.
 func filterSchema(
 	jsonSchema apiextensionsv1.JSONSchemaProps,
 	exposeConfig catalogv1alpha1.VersionExposeConfig,
@@ -486,13 +513,6 @@ func filterSchema(
 }
 
 type dummyObject map[string]dummyObject
-
-const arrayKey string = "__ARRAY__"
-
-func (d dummyObject) IsArray() bool {
-	_, ok := d[arrayKey]
-	return ok
-}
 
 func dummyObjectToInterface(d dummyObject) map[string]interface{} {
 	m := map[string]interface{}{}
@@ -521,18 +541,10 @@ func walkDummyObject(in apiextensionsv1.JSONSchemaProps, obj dummyObject) {
 		return
 	}
 
-	// key value handling:
-	if in.Properties != nil {
-		for field, props := range in.Properties {
-			obj[field] = dummyObject{}
-			walkDummyObject(props, obj[field])
-		}
-		return
+	for field, props := range in.Properties {
+		obj[field] = dummyObject{}
+		walkDummyObject(props, obj[field])
 	}
-
-	// array handling
-	obj[arrayKey] = dummyObject{}
-	walkDummyObject(*in.Items.Schema, obj[arrayKey])
 }
 
 // markDummyObject sets all fields to <nil> that are targeted by a field selector,
@@ -543,9 +555,7 @@ func markDummyObject(
 ) (dummyObject, error) {
 	obj := dummyObjectToInterface(d)
 	for _, field := range exposeConfig.Fields {
-		path := strings.Replace(field.JSONPath, "[]", "."+arrayKey, -1)
-		path = strings.Trim(path, ".") // trim trailing and leading dots
-
+		path := strings.Trim(field.JSONPath, ".") // trim trailing and leading dots
 		err := unstructuredv1.SetNestedField(obj, nil, strings.Split(path, ".")...)
 		if err != nil {
 			return dummyObject{}, fmt.Errorf("filtering object fields by json path %s: %w", field.JSONPath, err)
@@ -577,15 +587,6 @@ func walkFilterSchema(in apiextensionsv1.JSONSchemaProps, filterObj dummyObject)
 		obj          = filterObj
 	)
 
-	// array
-	if filterObj.IsArray() {
-		if in.Items == nil || in.Items.Schema == nil {
-			return *out, fmt.Errorf("path is for type array, but schema is not")
-		}
-		inProperties = in.Items.Schema.Properties
-		obj = filterObj[arrayKey]
-	}
-
 	// properties
 	updatedProperties := map[string]apiextensionsv1.JSONSchemaProps{}
 	for field, properties := range inProperties {
@@ -602,17 +603,14 @@ func walkFilterSchema(in apiextensionsv1.JSONSchemaProps, filterObj dummyObject)
 		}
 		if len(subProperties.Properties) == 0 &&
 			subProperties.Items == nil {
-			// this no sub-field or array sub-field is targeted by a selector
-			// so we can omit this whole key
+			// subfield has neither fields nor is an array
+			// so we can omit it completely
 			continue
 		}
 		updatedProperties[field] = subProperties
 	}
 
-	if filterObj.IsArray() {
-		out.Items.Schema.Properties = updatedProperties
-	} else {
-		out.Properties = updatedProperties
-	}
+	out.Properties = updatedProperties
+	out.Items = nil
 	return *out, nil
 }

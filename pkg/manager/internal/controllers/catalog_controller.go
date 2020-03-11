@@ -361,7 +361,7 @@ func (r *CatalogReconciler) buildDesiredOfferings(
 				Name:      catalogEntry.Name,
 				Namespace: tenant.Status.Namespace.Name,
 			},
-			Offering: catalogv1alpha1.OfferingData{
+			Spec: catalogv1alpha1.OfferingSpec{
 				Metadata: catalogv1alpha1.OfferingMetadata{
 					DisplayName: catalogEntry.Spec.Metadata.DisplayName,
 					Description: catalogEntry.Spec.Metadata.Description,
@@ -556,8 +556,8 @@ func (r *CatalogReconciler) reconcileOfferings(
 		if err != nil {
 			return fmt.Errorf("inserting OwnerReference: %w", err)
 		}
-		if !reflect.DeepEqual(desiredOffering.Offering, foundOffering.Offering) || ownerChanged {
-			foundOffering.Offering = desiredOffering.Offering
+		if !reflect.DeepEqual(desiredOffering.Spec, foundOffering.Spec) || ownerChanged {
+			foundOffering.Spec = desiredOffering.Spec
 			if err := r.Update(ctx, foundOffering); err != nil {
 				return fmt.Errorf("updaing Offering: %w", err)
 			}
@@ -941,14 +941,6 @@ func serviceClusterAssignmentsToObjectArray(serviceClusterAssignments []corev1al
 	out := make([]object, len(serviceClusterAssignments))
 	for i := range serviceClusterAssignments {
 		out[i] = &serviceClusterAssignments[i]
-	}
-	return out
-}
-
-func clusterRolesToObjectArray(clusterRoles []rbacv1.ClusterRole) []object {
-	out := make([]object, len(clusterRoles))
-	for i := range clusterRoles {
-		out[i] = &clusterRoles[i]
 	}
 	return out
 }

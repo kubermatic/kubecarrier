@@ -163,7 +163,7 @@ func newServiceClusterSuite(
 					DisplayName: "Test CatalogEntrySet",
 					Description: "Test CatalogEntrySet",
 				},
-				DiscoverySet: catalogv1alpha1.CustomResourceDiscoverySetConfig{
+				Discover: catalogv1alpha1.CustomResourceDiscoverySetConfig{
 					CRD: catalogv1alpha1.ObjectReference{
 						Name: crd.Name,
 					},
@@ -187,7 +187,7 @@ func newServiceClusterSuite(
 		// Check the CatalogEntry Object
 		catalogEntry := &catalogv1alpha1.CatalogEntry{}
 		require.NoError(t, managementClient.Get(ctx, types.NamespacedName{
-			Name:      "redisinternals.eu-west-1." + provider.Status.Namespace.Name,
+			Name:      "redis.eu-west-1." + provider.Status.Namespace.Name,
 			Namespace: catalogEntrySet.Namespace,
 		}, catalogEntry), "getting CatalogEntry")
 

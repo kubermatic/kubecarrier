@@ -101,7 +101,7 @@ func TestCatalogEntrySetReconciler(t *testing.T) {
 					},
 				},
 			},
-			DiscoverySet: catalogv1alpha1.CustomResourceDiscoverySetConfig{
+			Discover: catalogv1alpha1.CustomResourceDiscoverySetConfig{
 				CRD: catalogv1alpha1.ObjectReference{
 					Name: baseCRD.Name,
 				},
@@ -150,9 +150,14 @@ func TestCatalogEntrySetReconciler(t *testing.T) {
 			Status: corev1alpha1.ConditionTrue,
 		},
 	}
-	customResourceDiscoverySet.Status.ManagementClusterCRDs = []corev1alpha1.ObjectReference{
+	customResourceDiscoverySet.Status.ManagementClusterCRDs = []corev1alpha1.CustomResourceDiscoverySetCRDReference{
 		{
-			Name: internalCRDName,
+			CRD: corev1alpha1.ObjectReference{
+				Name: internalCRDName,
+			},
+			ServiceCluster: corev1alpha1.ObjectReference{
+				Name: "eu-west-1",
+			},
 		},
 	}
 	require.NoError(t, r.Status().Update(ctx, customResourceDiscoverySet))
@@ -161,7 +166,7 @@ func TestCatalogEntrySetReconciler(t *testing.T) {
 
 	catalogEntry := &catalogv1alpha1.CatalogEntry{}
 	require.NoError(t, r.Get(ctx, types.NamespacedName{
-		Name:      internalCRDName,
+		Name:      catalogEntrySet.Name + "." + "eu-west-1",
 		Namespace: catalogEntrySet.Namespace,
 	}, catalogEntry))
 
