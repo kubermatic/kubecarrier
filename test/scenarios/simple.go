@@ -209,7 +209,7 @@ func newSimpleScenario(f *testutil.Framework) func(t *testing.T) {
 			offering := &catalogv1alpha1.Offering{}
 			if assert.NoError(t, tenantClient.Get(ctx, types.NamespacedName{
 				Namespace: tenant.Status.Namespace.Name,
-				Name:      strings.Join([]string{"couchdb", serviceCluster.Name, provider.Name}, "."),
+				Name:      strings.Join([]string{"couchdbs", serviceCluster.Name, provider.Name}, "."),
 			}, offering), "tenant %s doesn't have the required offering", tenant.Name) {
 				assert.Equal(t, externalCRD.Name, offering.Spec.CRD.Name)
 				externalObj := &unstructured.Unstructured{}
