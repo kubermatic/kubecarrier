@@ -21,6 +21,8 @@ import (
 	"fmt"
 
 	"github.com/go-logr/logr"
+	certv1alpha2 "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
+	adminv1beta1 "k8s.io/api/admissionregistration/v1beta1"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
@@ -57,6 +59,9 @@ type ElevatorReconciler struct {
 // +kubebuilder:rbac:groups=apps,resources=deployments,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups="",resources=services,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups="",resources=serviceaccounts,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=admissionregistration.k8s.io,resources=mutatingwebhookconfigurations,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=cert-manager.io,resources=issuers,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=cert-manager.io,resources=certificates,verbs=get;list;watch;create;update;patch;delete
 
 // Reconcile function reconciles the Elevator object which specified by the request. Currently, it does the following:
 // 1. Fetch the Elevator object.
@@ -134,9 +139,12 @@ func (r *ElevatorReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		Owns(&corev1.Service{}).
 		Owns(&rbacv1.Role{}).
 		Owns(&rbacv1.RoleBinding{}).
+		Owns(&certv1alpha2.Issuer{}).
+		Owns(&certv1alpha2.Certificate{}).
 		Watches(&source.Kind{Type: &corev1.ServiceAccount{}}, enqueuer).
 		Watches(&source.Kind{Type: &rbacv1.ClusterRole{}}, enqueuer).
 		Watches(&source.Kind{Type: &rbacv1.ClusterRoleBinding{}}, enqueuer).
+		Watches(&source.Kind{Type: &adminv1beta1.MutatingWebhookConfiguration{}}, enqueuer).
 		Complete(r)
 }
 
@@ -180,8 +188,16 @@ func (r *ElevatorReconciler) handleDeletion(ctx context.Context, elevator *opera
 		return fmt.Errorf("cleaning CustomResourceDefinitions: %w", err)
 	}
 
+	mutatingWebhookConfigurationsCleaned, err := cleanupMutatingWebhookConfigurations(ctx, r.Client, ownedByFilter)
+	if err != nil {
+		return fmt.Errorf("cleaning MutatingWebhookConfigurations: %w", err)
+	}
+
 	// Make sure all the ClusterRoleBindings, ClusterRoles and CustomResourceDefinitions are deleted.
-	if !clusterRoleBindingsCleaned || !clusterRolesCleaned || !customResourceDefinitionsCleaned {
+	if !clusterRoleBindingsCleaned ||
+		!clusterRolesCleaned ||
+		!customResourceDefinitionsCleaned ||
+		!mutatingWebhookConfigurationsCleaned {
 		return nil
 	}
 

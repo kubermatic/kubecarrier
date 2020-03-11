@@ -30,20 +30,27 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/cache"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/healthz"
+	"sigs.k8s.io/controller-runtime/pkg/webhook"
 
 	catalogv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/catalog/v1alpha1"
 	"github.com/kubermatic/kubecarrier/pkg/elevator/internal/controllers"
+	"github.com/kubermatic/kubecarrier/pkg/elevator/internal/webhooks"
 	"github.com/kubermatic/kubecarrier/pkg/internal/util"
 )
 
 type flags struct {
 	metricsAddr          string
+	healthAddr           string
 	enableLeaderElection bool
+	certDir              string
 
 	providerKind, providerVersion, providerGroup string
 	tenantKind, tenantVersion, tenantGroup       string
 	derivedCRName                                string
 	providerNamespace                            string
+
+	mutatingWebhookPath string
 }
 
 var (
@@ -71,8 +78,10 @@ func NewElevator() *cobra.Command {
 		},
 	}
 	cmd.Flags().StringVar(&flags.metricsAddr, "metrics-addr", ":8080", "The address the metric endpoint binds to.")
+	cmd.Flags().StringVar(&flags.healthAddr, "health-addr", ":9440", "The address the health endpoint binds to.")
 	cmd.Flags().BoolVar(&flags.enableLeaderElection, "enable-leader-election", false,
 		"Enable leader election for controller manager. Enabling this will ensure there is only one active controller manager.")
+	cmd.Flags().StringVar(&flags.certDir, "cert-dir", "/tmp/k8s-webhook-server/serving-certs", "The webhook TLS certificates directory")
 
 	cmd.Flags().StringVar(
 		&flags.providerKind, "provider-kind",
@@ -102,6 +111,10 @@ func NewElevator() *cobra.Command {
 		&flags.providerNamespace, "provider-namespace",
 		os.Getenv("KUBERNETES_NAMESPACE"), "Name of the provider namespace in the management cluster.")
 
+	cmd.Flags().StringVar(
+		&flags.mutatingWebhookPath, "mutating-webhook-path",
+		os.Getenv("ELEVATOR_MUTATING_WEBHOOK_PATH"), "The URL path of the mutating webhook service.")
+
 	return util.CmdLogMixin(cmd)
 }
 
@@ -118,6 +131,7 @@ func run(flags *flags, log logr.Logger) error {
 		{value: flags.tenantGroup, env: "ELEVATOR_TENANT_GROUP", flag: "tenant-group"},
 		{value: flags.derivedCRName, env: "ELEVATOR_DERIVED_CRD_NAME", flag: "derived-crd-name"},
 		{value: flags.providerNamespace, env: "KUBERNETES_NAMESPACE", flag: "provider-namespace"},
+		{value: flags.mutatingWebhookPath, env: "ELEVATOR_MUTATING_WEBHOOK_PATH", flag: "mutating-webhook-path"},
 	}
 	var errs []string
 	for _, check := range checks {
@@ -133,9 +147,11 @@ func run(flags *flags, log logr.Logger) error {
 	mgr, err := ctrl.NewManager(cfg, ctrl.Options{
 		Scheme:                  scheme,
 		MetricsBindAddress:      flags.metricsAddr,
+		HealthProbeBindAddress:  flags.healthAddr,
 		LeaderElection:          flags.enableLeaderElection,
 		LeaderElectionNamespace: flags.providerNamespace,
 		LeaderElectionID:        "elevator-" + flags.derivedCRName,
+		CertDir:                 flags.certDir,
 		NewClient: func(cache cache.Cache, config *rest.Config, options client.Options) (client.Client, error) {
 			// Create the Client for Write operations.
 			c, err := client.New(config, options)
@@ -219,6 +235,31 @@ func run(flags *flags, log logr.Logger) error {
 	}).SetupWithManager(mgr); err != nil {
 		return fmt.Errorf("cannot add %s controller: %w", "AdoptionReconciler", err)
 	}
+
+	if err := mgr.AddReadyzCheck("ping", healthz.Ping); err != nil {
+		return fmt.Errorf("adding readyz checker: %w", err)
+	}
+
+	if err := mgr.AddHealthzCheck("ping", healthz.Ping); err != nil {
+		return fmt.Errorf("adding healthz checker: %w", err)
+	}
+
+	// Register webhooks as handlers
+	wbh := mgr.GetWebhookServer()
+
+	// mutating webhook
+	wbh.Register(flags.mutatingWebhookPath,
+		&webhook.Admission{Handler: &webhooks.TenantObjWebhookHandler{
+			Log:    log.WithName("mutating webhooks").WithName(tenantGVK.Kind),
+			Scheme: mgr.GetScheme(),
+
+			ManagementClusterClient: namespacedClient,
+
+			TenantGVK:   tenantGVK,
+			ProviderGVK: providerGVK,
+
+			ProviderNamespace: flags.providerNamespace,
+		}})
 
 	log.Info("starting manager")
 	if err := mgr.Start(ctrl.SetupSignalHandler()); err != nil {
