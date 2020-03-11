@@ -219,7 +219,7 @@ func TestCatalogReconciler(t *testing.T) {
 
 		// Check Offering
 		require.NoError(t, client.Get(ctx, types.NamespacedName{
-			Name:      catalogEntry.Name,
+			Name:      catalogEntry.Status.TenantCRD.Name,
 			Namespace: tenantNamespace.Name,
 		}, offeringFound), "getting Offering error")
 		assert.Equal(t, offeringFound.Spec.Provider.Name, provider.Name, "Wrong Offering provider name")

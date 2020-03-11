@@ -45,7 +45,6 @@ type OfferingMetadata struct {
 // +kubebuilder:object:root=true
 // +kubebuilder:printcolumn:name="Display Name",type="string",JSONPath=".spec.metadata.displayName"
 // +kubebuilder:printcolumn:name="Provider",type="string",JSONPath=".spec.provider.name"
-// +kubebuilder:printcolumn:name="CRD",type="string",JSONPath=".spec.crd.name"
 // +kubebuilder:printcolumn:name="Age",type="date",JSONPath=".metadata.creationTimestamp"
 // +kubebuilder:resource:categories=kubecarrier-tenant,shortName=off
 type Offering struct {

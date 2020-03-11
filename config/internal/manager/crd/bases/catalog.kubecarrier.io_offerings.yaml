@@ -25,9 +25,6 @@ spec:
         - jsonPath: .spec.provider.name
           name: Provider
           type: string
-        - jsonPath: .spec.crd.name
-          name: CRD
-          type: string
         - jsonPath: .metadata.creationTimestamp
           name: Age
           type: date
