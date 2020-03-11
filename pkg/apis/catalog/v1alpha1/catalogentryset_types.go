@@ -51,10 +51,10 @@ type CustomResourceDiscoverySetConfig struct {
 type CatalogEntrySetMetadata struct {
 	// DisplayName shows the human-readable name of this CatalogEntrySet.
 	// +kubebuilder:validation:MinLength=1
-	DisplayName string `json:"displayName,omitempty"`
+	DisplayName string `json:"displayName"`
 	// Description shows the human-readable description of this CatalogEntrySet.
 	// +kubebuilder:validation:MinLength=1
-	Description string `json:"description,omitempty"`
+	Description string `json:"description"`
 }
 
 // CatalogEntrySetStatus defines the observed state of CatalogEntrySet.

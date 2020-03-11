@@ -33,10 +33,10 @@ type OfferingSpec struct {
 type OfferingMetadata struct {
 	// DisplayName shows the human-readable name of this Offering.
 	// +kubebuilder:validation:MinLength=1
-	DisplayName string `json:"displayName,omitempty"`
+	DisplayName string `json:"displayName"`
 	// Description shows the human-readable description of this Offering.
 	// +kubebuilder:validation:MinLength=1
-	Description string `json:"description,omitempty"`
+	Description string `json:"description"`
 }
 
 // Offering is used for Tenants to discover services that have been made available to them.

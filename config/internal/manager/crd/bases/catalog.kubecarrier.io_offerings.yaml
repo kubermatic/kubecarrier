@@ -116,6 +116,9 @@ spec:
                         Offering.
                       minLength: 1
                       type: string
+                  required:
+                    - description
+                    - displayName
                   type: object
                 provider:
                   description: Provider references the Provider managing this Offering.

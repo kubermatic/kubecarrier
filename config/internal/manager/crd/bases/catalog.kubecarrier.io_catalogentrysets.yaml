@@ -193,6 +193,9 @@ spec:
                       CatalogEntrySet.
                     minLength: 1
                     type: string
+                required:
+                - description
+                - displayName
                 type: object
             required:
             - discover

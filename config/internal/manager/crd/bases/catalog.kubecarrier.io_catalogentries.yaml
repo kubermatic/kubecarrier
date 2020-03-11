@@ -134,6 +134,9 @@ spec:
                         CatalogEntry.
                       minLength: 1
                       type: string
+                  required:
+                    - description
+                    - displayName
                   type: object
               type: object
             status:
