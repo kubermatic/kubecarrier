@@ -115,12 +115,12 @@ func newSimpleScenario(f *testutil.Framework) func(t *testing.T) {
 		require.NoError(t, testutil.WaitUntilReady(ctx, managementClient, serviceCluster))
 
 		t.Log("===== creating CRD on the service cluster =====")
-		baseCRD := f.NewFakeCouchDBCRD("aa" + ".test.kubecarrier.io")
+		baseCRD := f.NewFakeCouchDBCRD(testName + ".test.kubecarrier.io")
 		require.NoError(t, serviceClient.Create(ctx, baseCRD))
 
 		catalogEntrySet := &catalogv1alpha1.CatalogEntrySet{
 			ObjectMeta: metav1.ObjectMeta{
-				Name:      "couchdbs.eu-west-1",
+				Name:      "couchdb",
 				Namespace: provider.Status.Namespace.Name,
 			},
 			Spec: catalogv1alpha1.CatalogEntrySetSpec{
@@ -180,8 +180,6 @@ func newSimpleScenario(f *testutil.Framework) func(t *testing.T) {
 		tenantClient, err := f.ManagementClient(t, func(config *rest.Config) error {
 			config.Impersonate = rest.ImpersonationConfig{
 				UserName: testName + "-provider",
-				Groups:   nil,
-				Extra:    nil,
 			}
 			return nil
 		})
@@ -195,9 +193,7 @@ func newSimpleScenario(f *testutil.Framework) func(t *testing.T) {
 
 		providerClient, err := f.ManagementClient(t, func(config *rest.Config) error {
 			config.Impersonate = rest.ImpersonationConfig{
-				UserName: testName + "-provider",
-				Groups:   nil,
-				Extra:    nil,
+				UserName: testName + "-tenant",
 			}
 			return nil
 		})

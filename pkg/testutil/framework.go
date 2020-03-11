@@ -213,6 +213,7 @@ func (f *Framework) NewFakeCouchDBCRD(group string) *apiextensionsv1.CustomResou
 				{
 					Name:    "v1alpha1",
 					Storage: true,
+					Served:  true,
 					Schema: &apiextensionsv1.CustomResourceValidation{
 						OpenAPIV3Schema: &apiextensionsv1.JSONSchemaProps{
 							Properties: map[string]apiextensionsv1.JSONSchemaProps{

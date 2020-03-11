@@ -30,7 +30,7 @@ func NewIntegrationSuite(f *testutil.Framework) func(t *testing.T) {
 			"derivedCR":      newDerivedCR,
 			"serviceCluster": newServiceClusterSuite,
 			"catalog":        newCatalogSuite,
-			"tenant":         newAccountRefs,
+			"tenant":         newAccount,
 		} {
 			name := name
 			testFn := testFn

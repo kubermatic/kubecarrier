@@ -34,9 +34,9 @@ import (
 	"github.com/kubermatic/kubecarrier/pkg/testutil"
 )
 
-func newAccountRefs(f *testutil.Framework) func(t *testing.T) {
+func newAccount(f *testutil.Framework) func(t *testing.T) {
 	return func(t *testing.T) {
-		t.Log("testing how account handles tenant")
+		t.Log("testing how account handles tenants")
 		ctx, cancel := context.WithTimeout(context.Background(), 120*time.Second)
 		t.Cleanup(cancel)
 		managementClient, err := f.ManagementClient(t)
@@ -51,10 +51,10 @@ func newAccountRefs(f *testutil.Framework) func(t *testing.T) {
 				APIGroup: "rbac.authorization.k8s.io",
 				Name:     "provider1",
 			})
-			tenant = f.NewTenantAccount(testName, rbacv1.Subject{
+			tenantAccount = f.NewTenantAccount(testName, rbacv1.Subject{
 				Kind:     rbacv1.GroupKind,
 				APIGroup: "rbac.authorization.k8s.io",
-				Name:     "tenant",
+				Name:     "tenantAccount",
 			})
 			providerTenant = &catalogv1alpha1.Account{
 				ObjectMeta: metav1.ObjectMeta{
@@ -90,17 +90,17 @@ func newAccountRefs(f *testutil.Framework) func(t *testing.T) {
 		providerRoleAndRoleBindingPresent(t, managementClient, ctx, provider, true)
 		tenantRoleAndRoleBindingPresent(t, managementClient, ctx, provider, false)
 
-		t.Log("adding single tenant")
-		require.NoError(t, managementClient.Create(ctx, tenant), "creating tenant")
-		require.NoError(t, testutil.WaitUntilReady(ctx, managementClient, tenant))
+		t.Log("adding single tenantAccount")
+		require.NoError(t, managementClient.Create(ctx, tenantAccount), "creating tenantAccount")
+		require.NoError(t, testutil.WaitUntilReady(ctx, managementClient, tenantAccount))
 		assert.NoError(t, managementClient.Get(ctx, types.NamespacedName{
-			Name: tenant.Status.Namespace.Name,
+			Name: tenantAccount.Status.Namespace.Name,
 		}, ns))
-		providerRoleAndRoleBindingPresent(t, managementClient, ctx, tenant, false)
-		tenantRoleAndRoleBindingPresent(t, managementClient, ctx, tenant, true)
+		providerRoleAndRoleBindingPresent(t, managementClient, ctx, tenantAccount, false)
+		tenantRoleAndRoleBindingPresent(t, managementClient, ctx, tenantAccount, true)
 
-		tenantPresent(t, managementClient, ctx, tenant, provider, true)
-		tenantPresent(t, managementClient, ctx, tenant, tenant, false)
+		tenantPresent(t, managementClient, ctx, tenantAccount, provider, true)
+		tenantPresent(t, managementClient, ctx, tenantAccount, tenantAccount, false)
 
 		t.Log("adding providerTenant")
 		require.NoError(t, managementClient.Create(ctx, providerTenant), "creating providerTenant")
@@ -111,37 +111,37 @@ func newAccountRefs(f *testutil.Framework) func(t *testing.T) {
 		providerRoleAndRoleBindingPresent(t, managementClient, ctx, providerTenant, true)
 		tenantRoleAndRoleBindingPresent(t, managementClient, ctx, providerTenant, true)
 
-		tenantPresent(t, managementClient, ctx, tenant, provider, true)
-		tenantPresent(t, managementClient, ctx, tenant, providerTenant, true)
-		tenantPresent(t, managementClient, ctx, tenant, tenant, false)
+		tenantPresent(t, managementClient, ctx, tenantAccount, provider, true)
+		tenantPresent(t, managementClient, ctx, tenantAccount, providerTenant, true)
+		tenantPresent(t, managementClient, ctx, tenantAccount, tenantAccount, false)
 
 		tenantPresent(t, managementClient, ctx, provider, provider, false)
 		tenantPresent(t, managementClient, ctx, provider, providerTenant, false)
-		tenantPresent(t, managementClient, ctx, provider, tenant, false)
+		tenantPresent(t, managementClient, ctx, provider, tenantAccount, false)
 
 		tenantPresent(t, managementClient, ctx, providerTenant, provider, true)
 		tenantPresent(t, managementClient, ctx, providerTenant, providerTenant, true)
-		tenantPresent(t, managementClient, ctx, providerTenant, tenant, false)
+		tenantPresent(t, managementClient, ctx, providerTenant, tenantAccount, false)
 
-		t.Log("deleting tenant")
-		require.NoError(t, testutil.DeleteAndWaitUntilNotFound(ctx, managementClient, tenant))
+		t.Log("deleting tenantAccount")
+		require.NoError(t, testutil.DeleteAndWaitUntilNotFound(ctx, managementClient, tenantAccount))
 		assert.True(t, errors.IsNotFound(managementClient.Get(ctx, types.NamespacedName{
-			Name: tenant.Status.Namespace.Name,
+			Name: tenantAccount.Status.Namespace.Name,
 		}, ns)), "namespace should also be deleted.")
-		providerRoleAndRoleBindingPresent(t, managementClient, ctx, tenant, false)
-		tenantRoleAndRoleBindingPresent(t, managementClient, ctx, tenant, false)
+		providerRoleAndRoleBindingPresent(t, managementClient, ctx, tenantAccount, false)
+		tenantRoleAndRoleBindingPresent(t, managementClient, ctx, tenantAccount, false)
 
-		tenantPresent(t, managementClient, ctx, tenant, provider, false)
-		tenantPresent(t, managementClient, ctx, tenant, providerTenant, false)
-		tenantPresent(t, managementClient, ctx, tenant, tenant, false)
+		tenantPresent(t, managementClient, ctx, tenantAccount, provider, false)
+		tenantPresent(t, managementClient, ctx, tenantAccount, providerTenant, false)
+		tenantPresent(t, managementClient, ctx, tenantAccount, tenantAccount, false)
 
 		tenantPresent(t, managementClient, ctx, provider, provider, false)
 		tenantPresent(t, managementClient, ctx, provider, providerTenant, false)
-		tenantPresent(t, managementClient, ctx, provider, tenant, false)
+		tenantPresent(t, managementClient, ctx, provider, tenantAccount, false)
 
 		tenantPresent(t, managementClient, ctx, providerTenant, provider, true)
 		tenantPresent(t, managementClient, ctx, providerTenant, providerTenant, true)
-		tenantPresent(t, managementClient, ctx, providerTenant, tenant, false)
+		tenantPresent(t, managementClient, ctx, providerTenant, tenantAccount, false)
 
 		t.Log("deleting provider")
 		require.NoError(t, testutil.DeleteAndWaitUntilNotFound(ctx, managementClient, provider))
@@ -173,9 +173,9 @@ func tenantPresent(t *testing.T, cl *testutil.RecordingClient, ctx context.Conte
 	defer cancel()
 
 	if expected {
-		assert.NoError(t, testutil.WaitUntilFound(ctx, cl, tenantObj), "tenantReference %s not found in provider %s", tenant.Name, provider.Name)
+		assert.NoError(t, testutil.WaitUntilFound(ctx, cl, tenantObj), "tenant object %s not found in provider %s", tenant.Name, provider.Name)
 	} else {
-		assert.NoError(t, testutil.WaitUntilNotFound(ctx, cl, tenantObj), "tenantReference %s found in provider %s", tenant.Name, provider.Name)
+		assert.NoError(t, testutil.WaitUntilNotFound(ctx, cl, tenantObj), "tenant object %s found in provider %s", tenant.Name, provider.Name)
 	}
 }
 
