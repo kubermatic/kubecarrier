@@ -191,7 +191,7 @@ func (r *BaseReconciler) updateStatus(ctx context.Context, c Component, deployme
 func (r *BaseReconciler) reconcileOwnedObjects(ctx context.Context, obj Component, objects []unstructured.Unstructured) (bool, error) {
 	var deploymentIsReady bool
 	for _, object := range objects {
-		gvk, err := apiutil.GVKForObject(obj, r.Scheme)
+		gvk, err := apiutil.GVKForObject(&object, r.Scheme)
 		if err != nil {
 			return false, err
 		}
