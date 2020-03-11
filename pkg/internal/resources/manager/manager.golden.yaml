@@ -69,12 +69,10 @@
                     description:
                       description: Description is the human-readable description of
                         this Account.
-                      minLength: 1
                       type: string
                     displayName:
                       description: DisplayName is the human-readable name of this
                         Account.
-                      minLength: 1
                       type: string
                   type: object
                 roles:
@@ -224,6 +222,12 @@
     - additionalPrinterColumns:
       - jsonPath: .status.phase
         name: Status
+        type: string
+      - jsonPath: .spec.baseCRD.name
+        name: Base CRD
+        type: string
+      - jsonPath: .status.tenantCRD.name
+        name: Tenant CRD
         type: string
       - jsonPath: .metadata.creationTimestamp
         name: Age
@@ -514,6 +518,9 @@
       - jsonPath: .status.phase
         name: Status
         type: string
+      - jsonPath: .spec.discover.crd.name
+        name: CRD
+        type: string
       - jsonPath: .metadata.creationTimestamp
         name: Age
         type: date
@@ -589,9 +596,8 @@
                   required:
                   - expose
                   type: object
-                discoverySet:
-                  description: DiscoverySet contains the configuration to create a
-                    CustomResourceDiscoverySet.
+                discover:
+                  description: Discover contains the configuration to create a CustomResourceDiscoverySet.
                   properties:
                     crd:
                       description: CRD references a CustomResourceDefinition within
@@ -676,14 +682,16 @@
                     description:
                       description: Description shows the human-readable description
                         of this CatalogEntrySet.
+                      minLength: 1
                       type: string
                     displayName:
                       description: DisplayName shows the human-readable name of this
                         CatalogEntrySet.
+                      minLength: 1
                       type: string
                   type: object
               required:
-              - discoverySet
+              - discover
               type: object
             status:
               description: CatalogEntrySetStatus defines the observed state of CatalogEntrySet.
@@ -1202,8 +1210,14 @@
     scope: Namespaced
     versions:
     - additionalPrinterColumns:
-      - jsonPath: .offering.metadata.displayName
+      - jsonPath: .spec.metadata.displayName
         name: Display Name
+        type: string
+      - jsonPath: .spec.provider.name
+        name: Provider
+        type: string
+      - jsonPath: .spec.crd.name
+        name: CRD
         type: string
       - jsonPath: .metadata.creationTimestamp
         name: Age
@@ -1229,8 +1243,8 @@
               type: string
             metadata:
               type: object
-            offering:
-              description: OfferingData defines the data (metadata, provider, crds,
+            spec:
+              description: OfferingSpec defines the data (metadata, provider, crds,
                 etc.) of Offering.
               properties:
                 crd:
@@ -1376,12 +1390,10 @@
                     description:
                       description: Description is the human-readable description of
                         this Account.
-                      minLength: 1
                       type: string
                     displayName:
                       description: DisplayName is the human-readable name of this
                         Account.
-                      minLength: 1
                       type: string
                   type: object
               type: object
@@ -1904,14 +1916,32 @@
                   description: ManagementClusterCRDs contains the CRDs information
                     that created by the CustomResourceDiscovery objects of this CustomResourceDiscoverySet.
                   items:
-                    description: ObjectReference describes the link to another object
-                      in the same Namespace.
+                    description: CustomResourceDiscoverySetCRDReference references
+                      a discovered CustomResourceDefinition.
                     properties:
-                      name:
-                        minLength: 1
-                        type: string
+                      crd:
+                        description: ObjectReference describes the link to another
+                          object in the same Namespace.
+                        properties:
+                          name:
+                            minLength: 1
+                            type: string
+                        required:
+                        - name
+                        type: object
+                      serviceCluster:
+                        description: ObjectReference describes the link to another
+                          object in the same Namespace.
+                        properties:
+                          name:
+                            minLength: 1
+                            type: string
+                        required:
+                        - name
+                        type: object
                     required:
-                    - name
+                    - crd
+                    - serviceCluster
                     type: object
                   type: array
                 observedGeneration:
@@ -2113,12 +2143,15 @@
       - jsonPath: .status.phase
         name: Status
         type: string
-      - jsonPath: .metadata.creationTimestamp
-        name: Age
-        type: date
       - jsonPath: .spec.metadata.displayName
         name: Display Name
         type: string
+      - jsonPath: .status.kubernetesVersion.gitVersion
+        name: Kubernetes Version
+        type: string
+      - jsonPath: .metadata.creationTimestamp
+        name: Age
+        type: date
       name: v1alpha1
       schema:
         openAPIV3Schema:

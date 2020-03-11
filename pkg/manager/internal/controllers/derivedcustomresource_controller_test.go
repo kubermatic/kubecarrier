@@ -286,14 +286,6 @@ type: object
 	})
 }
 
-func Test_dummyObject(t *testing.T) {
-	t.Run("IsArray", func(t *testing.T) {
-		assert.True(t, dummyObject{
-			arrayKey: {},
-		}.IsArray(), "IsArray should be true")
-	})
-}
-
 const testObjectSchema string = `
 properties:
   apiVersion:
@@ -307,6 +299,12 @@ properties:
         type: string
       prop2:
         type: string
+      roles:
+        type: array
+        items:
+          properties:
+            test1:
+              type: string
   status:
     type: object
     properties:
@@ -335,17 +333,39 @@ func Test_walkDummyObject(t *testing.T) {
 		"spec": {
 			"prop1": {},
 			"prop2": {},
+			"roles": {},
 		},
 		"status": {
-			"phase": {},
-			"conditions": {
-				arrayKey: {
-					"message": {},
-					"reason":  {},
-				},
-			},
+			"phase":      {},
+			"conditions": {},
 		},
 	}, obj)
+}
+
+func Test_filterPrinterColumns(t *testing.T) {
+	columns := []apiextensionsv1.CustomResourceColumnDefinition{
+		{JSONPath: ".metadata.creationTimestamp"},
+		{JSONPath: ".kind"},
+		{JSONPath: ".apiVersion"},
+		{JSONPath: ".status.phase"},
+		{JSONPath: ".spec.test.sub.sub"},
+		{JSONPath: ".spec.field"},
+	}
+	exposeConfig := catalogv1alpha1.VersionExposeConfig{
+		Fields: []catalogv1alpha1.FieldPath{
+			{JSONPath: ".spec.test"},
+			{JSONPath: ".status.phase"},
+		},
+	}
+
+	filtered := filterPrinterColumns(columns, exposeConfig)
+	assert.Equal(t, []apiextensionsv1.CustomResourceColumnDefinition{
+		{JSONPath: ".metadata.creationTimestamp"},
+		{JSONPath: ".kind"},
+		{JSONPath: ".apiVersion"},
+		{JSONPath: ".status.phase"},
+		{JSONPath: ".spec.test.sub.sub"},
+	}, filtered)
 }
 
 func Test_filterSchema(t *testing.T) {
@@ -355,8 +375,8 @@ func Test_filterSchema(t *testing.T) {
 	exposeConfig := catalogv1alpha1.VersionExposeConfig{
 		Fields: []catalogv1alpha1.FieldPath{
 			{JSONPath: ".spec.prop1"},
+			{JSONPath: ".spec.roles"},
 			{JSONPath: ".status.phase"},
-			{JSONPath: ".status.conditions[].message"},
 		},
 	}
 
@@ -375,15 +395,15 @@ func Test_filterSchema(t *testing.T) {
     properties:
       prop1:
         type: string
+      roles:
+        items:
+          properties:
+            test1:
+              type: string
+        type: array
     type: object
   status:
     properties:
-      conditions:
-        items:
-          properties:
-            message:
-              type: string
-        type: array
       phase:
         type: string
     type: object
@@ -395,7 +415,6 @@ func Test_markDummyObject(t *testing.T) {
 		Fields: []catalogv1alpha1.FieldPath{
 			{JSONPath: ".kind"},
 			{JSONPath: ".status.phase"},
-			{JSONPath: ".status.conditions[].message"},
 		},
 	}
 	marked, err := markDummyObject(exposeConfig, dummyObject{
@@ -403,13 +422,8 @@ func Test_markDummyObject(t *testing.T) {
 		"kind":       {},
 		"metadata":   {},
 		"status": {
-			"phase": {},
-			"conditions": {
-				arrayKey: {
-					"message": {},
-					"reason":  {},
-				},
-			},
+			"phase":      {},
+			"conditions": {},
 		},
 	})
 	require.NoError(t, err)
@@ -419,13 +433,8 @@ func Test_markDummyObject(t *testing.T) {
 		"kind":       nil,
 		"metadata":   nil,
 		"status": {
-			"phase": nil,
-			"conditions": {
-				arrayKey: {
-					"message": nil,
-					"reason":  {},
-				},
-			},
+			"phase":      nil,
+			"conditions": {},
 		},
 	}, marked)
 }

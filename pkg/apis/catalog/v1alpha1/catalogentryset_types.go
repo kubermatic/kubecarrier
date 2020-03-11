@@ -28,8 +28,8 @@ type CatalogEntrySetSpec struct {
 	Metadata CatalogEntrySetMetadata `json:"metadata,omitempty"`
 	// Derive contains the configuration to generate DerivedCustomResources from the BaseCRDs that are selected by this CatalogEntrySet.
 	Derive *DerivedConfig `json:"derive,omitempty"`
-	// DiscoverySet contains the configuration to create a CustomResourceDiscoverySet.
-	DiscoverySet CustomResourceDiscoverySetConfig `json:"discoverySet"`
+	// Discover contains the configuration to create a CustomResourceDiscoverySet.
+	Discover CustomResourceDiscoverySetConfig `json:"discover"`
 }
 
 type CustomResourceDiscoverySetConfig struct {
@@ -50,8 +50,10 @@ type CustomResourceDiscoverySetConfig struct {
 // CatalogEntrySetMetadata contains the metadata (display name, description, etc) of the CatalogEntrySet.
 type CatalogEntrySetMetadata struct {
 	// DisplayName shows the human-readable name of this CatalogEntrySet.
+	// +kubebuilder:validation:MinLength=1
 	DisplayName string `json:"displayName,omitempty"`
 	// Description shows the human-readable description of this CatalogEntrySet.
+	// +kubebuilder:validation:MinLength=1
 	Description string `json:"description,omitempty"`
 }
 
@@ -203,6 +205,7 @@ func (s *CatalogEntrySetStatus) SetCondition(condition CatalogEntrySetCondition)
 // +kubebuilder:object:root=true
 // +kubebuilder:subresource:status
 // +kubebuilder:printcolumn:name="Status",type="string",JSONPath=".status.phase"
+// +kubebuilder:printcolumn:name="CRD",type="string",JSONPath=".spec.discover.crd.name"
 // +kubebuilder:printcolumn:name="Age",type="date",JSONPath=".metadata.creationTimestamp"
 // +kubebuilder:resource:categories=kubecarrier-provider,shortName=ces
 type CatalogEntrySet struct {

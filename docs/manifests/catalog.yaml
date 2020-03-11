@@ -1,0 +1,7 @@
+apiVersion: catalog.kubecarrier.io/v1alpha1
+kind: Catalog
+metadata:
+  name: default
+spec:
+  tenantSelector: {}
+  catalogEntrySelector: {}

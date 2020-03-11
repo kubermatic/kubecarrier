@@ -168,11 +168,14 @@ func (r *CustomResourceDiscoveryReconciler) SetupWithManager(managementMgr ctrl.
 		Watches(source.Func(crdSource.Start), owner.EnqueueRequestForOwner(&corev1alpha1.CustomResourceDiscovery{}, r.ManagementScheme)).
 		WithEventFilter(util.PredicateFn(func(obj runtime.Object) bool {
 			if crDiscovery, ok := obj.(*corev1alpha1.CustomResourceDiscovery); ok {
-				if crDiscovery.Spec.ServiceCluster.Name == r.ServiceClusterName {
-					return true
+				// We are just interested in CustomResourceDiscovery objects assigned to this ServiceCluster.
+				if crDiscovery.Spec.ServiceCluster.Name != r.ServiceClusterName {
+					return false
 				}
 			}
-			return false
+
+			// We don't want to filter CustomResourceDefinition events
+			return true
 		})).
 		Complete(r)
 }

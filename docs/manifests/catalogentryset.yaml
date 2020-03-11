@@ -1,0 +1,25 @@
+apiVersion: catalog.kubecarrier.io/v1alpha1
+kind: CatalogEntrySet
+metadata:
+  name: couchdbs
+spec:
+  metadata:
+    displayName: CouchDB
+    description: The compfy database
+  discover:
+    crd:
+      name: couchdbs.couchdb.io
+    serviceClusterSelector: {}
+    kindOverride: CouchDBInternal
+  derive:
+    kindOverride: CouchDB
+    expose:
+    - versions:
+      - v1alpha1
+      fields:
+      - jsonPath: .spec.username
+      - jsonPath: .spec.password
+      - jsonPath: .status.phase
+      - jsonPath: .status.fauxtonAddress
+      - jsonPath: .status.address
+      - jsonPath: .status.observedGeneration

@@ -222,9 +222,9 @@ func TestCatalogReconciler(t *testing.T) {
 			Name:      catalogEntry.Name,
 			Namespace: tenantNamespace.Name,
 		}, offeringFound), "getting Offering error")
-		assert.Equal(t, offeringFound.Offering.Provider.Name, provider.Name, "Wrong Offering provider name")
-		assert.Equal(t, offeringFound.Offering.Metadata.Description, catalogEntry.Spec.Metadata.Description, "Wrong Offering description")
-		assert.Equal(t, offeringFound.Offering.CRD, *catalogEntry.Status.TenantCRD, "Wrong Offering description")
+		assert.Equal(t, offeringFound.Spec.Provider.Name, provider.Name, "Wrong Offering provider name")
+		assert.Equal(t, offeringFound.Spec.Metadata.Description, catalogEntry.Spec.Metadata.Description, "Wrong Offering description")
+		assert.Equal(t, offeringFound.Spec.CRD, *catalogEntry.Status.TenantCRD, "Wrong Offering description")
 
 		// Check Provider
 		require.NoError(t, client.Get(ctx, types.NamespacedName{

@@ -20,8 +20,8 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// OfferingData defines the data (metadata, provider, crds, etc.) of Offering.
-type OfferingData struct {
+// OfferingSpec defines the data (metadata, provider, crds, etc.) of Offering.
+type OfferingSpec struct {
 	Metadata OfferingMetadata `json:"metadata,omitempty"`
 	// Provider references the Provider managing this Offering.
 	Provider ObjectReference `json:"provider"`
@@ -43,14 +43,16 @@ type OfferingMetadata struct {
 //
 // Offering objects are created automatically by KubeCarrier in Account namespaces, that have a service offered to them via a Catalog.
 // +kubebuilder:object:root=true
-// +kubebuilder:printcolumn:name="Display Name",type="string",JSONPath=".offering.metadata.displayName"
+// +kubebuilder:printcolumn:name="Display Name",type="string",JSONPath=".spec.metadata.displayName"
+// +kubebuilder:printcolumn:name="Provider",type="string",JSONPath=".spec.provider.name"
+// +kubebuilder:printcolumn:name="CRD",type="string",JSONPath=".spec.crd.name"
 // +kubebuilder:printcolumn:name="Age",type="date",JSONPath=".metadata.creationTimestamp"
 // +kubebuilder:resource:categories=kubecarrier-tenant,shortName=off
 type Offering struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Offering OfferingData `json:"offering,omitempty"`
+	Spec OfferingSpec `json:"spec,omitempty"`
 }
 
 // OfferingList contains a list of Offering.

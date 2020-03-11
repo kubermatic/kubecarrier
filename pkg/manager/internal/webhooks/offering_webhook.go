@@ -70,7 +70,7 @@ func (r *OfferingWebhookHandler) InjectDecoder(d *admission.Decoder) error {
 
 func (r *OfferingWebhookHandler) validateUpdate(oldObj, newObj *catalogv1alpha1.Offering) error {
 	r.Log.Info("validate update", "name", newObj.Name)
-	if newObj.Offering.Provider.Name != oldObj.Offering.Provider.Name {
+	if newObj.Spec.Provider.Name != oldObj.Spec.Provider.Name {
 		return fmt.Errorf("the Provider of Offering is immutable")
 	}
 	return nil

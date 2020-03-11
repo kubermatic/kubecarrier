@@ -36,7 +36,7 @@ func TestOfferingValidatingUpdate(t *testing.T) {
 			Name:      "test-offering",
 			Namespace: "test-namespace",
 		},
-		Offering: catalogv1alpha1.OfferingData{
+		Spec: catalogv1alpha1.OfferingSpec{
 			Metadata: catalogv1alpha1.OfferingMetadata{
 				Description: "Test Offering",
 				DisplayName: "Test Offering",
@@ -59,7 +59,7 @@ func TestOfferingValidatingUpdate(t *testing.T) {
 					Name:      "test-offering",
 					Namespace: "test-namespace",
 				},
-				Offering: catalogv1alpha1.OfferingData{
+				Spec: catalogv1alpha1.OfferingSpec{
 					Metadata: catalogv1alpha1.OfferingMetadata{
 						Description: "Test Offering",
 						DisplayName: "Test Offering",
@@ -78,7 +78,7 @@ func TestOfferingValidatingUpdate(t *testing.T) {
 					Name:      "test-offering",
 					Namespace: "test-namespace",
 				},
-				Offering: catalogv1alpha1.OfferingData{
+				Spec: catalogv1alpha1.OfferingSpec{
 					Metadata: catalogv1alpha1.OfferingMetadata{
 						Description: "Test Offering",
 						DisplayName: "Test Offering new displayName",

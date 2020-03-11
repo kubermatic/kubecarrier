@@ -1,0 +1,9 @@
+apiVersion: kubecarrier.io/v1alpha1
+kind: ServiceCluster
+metadata:
+  name: eu-west-1
+spec:
+  metadata:
+    displayName: EU West 1
+  kubeconfigSecret:
+    name: eu-west-1-kubeconfig

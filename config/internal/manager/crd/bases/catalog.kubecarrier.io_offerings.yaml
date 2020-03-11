@@ -19,8 +19,14 @@ spec:
   scope: Namespaced
   versions:
     - additionalPrinterColumns:
-        - jsonPath: .offering.metadata.displayName
+        - jsonPath: .spec.metadata.displayName
           name: Display Name
+          type: string
+        - jsonPath: .spec.provider.name
+          name: Provider
+          type: string
+        - jsonPath: .spec.crd.name
+          name: CRD
           type: string
         - jsonPath: .metadata.creationTimestamp
           name: Age
@@ -46,8 +52,8 @@ spec:
               type: string
             metadata:
               type: object
-            offering:
-              description: OfferingData defines the data (metadata, provider, crds,
+            spec:
+              description: OfferingSpec defines the data (metadata, provider, crds,
                 etc.) of Offering.
               properties:
                 crd:
