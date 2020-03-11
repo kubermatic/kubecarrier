@@ -217,10 +217,17 @@ func TestCatalogEntryReconciler(t *testing.T) {
 		assert.Equal(t, catalogv1alpha1.ConditionTrue, readyCondition.Status, "Wrong Ready condition.Status")
 
 		// Check CatalogEntry Status
-		assert.Equal(t, catalogEntry.Status.CRD.Kind, derivedCRD.Spec.Names.Kind, "CRD Kind is wrong")
-		assert.Equal(t, catalogEntry.Status.CRD.Name, derivedCRD.Name, "CRD Name is wrong")
-		assert.Equal(t, catalogEntry.Status.CRD.ServiceCluster.Name, derivedCRD.Labels[ServiceClusterLabel], "CRD ServiceCluster is wrong")
-		assert.Equal(t, catalogEntry.Status.CRD.APIGroup, derivedCRD.Spec.Group, "CRD APIGroup is wrong")
+		assert.Equal(t, catalogEntry.Status.TenantCRD.Kind, derivedCRD.Spec.Names.Kind, "CRD Kind is wrong")
+		assert.Equal(t, catalogEntry.Status.TenantCRD.Name, derivedCRD.Name, "CRD Name is wrong")
+		assert.Equal(t, catalogEntry.Status.TenantCRD.ServiceCluster.Name, derivedCRD.Labels[ServiceClusterLabel], "CRD ServiceCluster is wrong")
+		assert.Equal(t, catalogEntry.Status.TenantCRD.APIGroup, derivedCRD.Spec.Group, "CRD APIGroup is wrong")
+		assert.Equal(t, catalogEntry.Status.TenantCRD.Plural, derivedCRD.Spec.Names.Plural, "CRD Plural is wrong")
+
+		assert.Equal(t, catalogEntry.Status.ProviderCRD.Kind, baseCRD.Spec.Names.Kind, "CRD Kind is wrong")
+		assert.Equal(t, catalogEntry.Status.ProviderCRD.Name, baseCRD.Name, "CRD Name is wrong")
+		assert.Equal(t, catalogEntry.Status.ProviderCRD.ServiceCluster.Name, baseCRD.Labels[ServiceClusterLabel], "CRD ServiceCluster is wrong")
+		assert.Equal(t, catalogEntry.Status.ProviderCRD.APIGroup, baseCRD.Spec.Group, "CRD APIGroup is wrong")
+		assert.Equal(t, catalogEntry.Status.ProviderCRD.Plural, baseCRD.Spec.Names.Plural, "CRD Plural is wrong")
 
 		// Check CRDs Annotation
 		require.NoError(t, client.Get(ctx, types.NamespacedName{
@@ -260,8 +267,8 @@ func TestCatalogEntryReconciler(t *testing.T) {
 		assert.NotContains(t, crdCheck.Annotations, catalogEntryReferenceAnnotation, "the catalogEntry annotation should be removed from the CRD")
 	})
 
-	// Check TenantReference
-	derivedCustomResourceCheck := &catalogv1alpha1.TenantReference{}
+	// Check Tenant
+	derivedCustomResourceCheck := &catalogv1alpha1.Tenant{}
 	assert.True(t, errors.IsNotFound(client.Get(ctx, types.NamespacedName{
 		Name:      derivedCustomResource.Name,
 		Namespace: derivedCustomResource.Namespace,

@@ -365,15 +365,29 @@
                     - type
                     type: object
                   type: array
-                crd:
-                  description: CRD holds the information about the underlying BaseCRD
-                    that are offered by this CatalogEntry.
+                observedGeneration:
+                  description: ObservedGeneration is the most recent generation observed
+                    for this CatalogEntry by the controller.
+                  format: int64
+                  type: integer
+                phase:
+                  description: DEPRECATED. Phase represents the current lifecycle
+                    state of this object. Consider this field DEPRECATED, it will
+                    be removed as soon as there is a mechanism to map conditions to
+                    strings when printing the property. This is only for display purpose,
+                    for everything else use conditions.
+                  type: string
+                providerCRD:
+                  description: ProviderCRD holds the information about the Provider
+                    facing CRD that is offered by this CatalogEntry.
                   properties:
                     apiGroup:
                       type: string
                     kind:
                       type: string
                     name:
+                      type: string
+                    plural:
                       type: string
                     serviceCluster:
                       description: ServiceCluster references a ServiceClusterReference
@@ -404,21 +418,55 @@
                   - apiGroup
                   - kind
                   - name
+                  - plural
                   - serviceCluster
                   - versions
                   type: object
-                observedGeneration:
-                  description: ObservedGeneration is the most recent generation observed
-                    for this CatalogEntry by the controller.
-                  format: int64
-                  type: integer
-                phase:
-                  description: DEPRECATED. Phase represents the current lifecycle
-                    state of this object. Consider this field DEPRECATED, it will
-                    be removed as soon as there is a mechanism to map conditions to
-                    strings when printing the property. This is only for display purpose,
-                    for everything else use conditions.
-                  type: string
+                tenantCRD:
+                  description: TenantCRD holds the information about the Tenant facing
+                    CRD that is offered by this CatalogEntry.
+                  properties:
+                    apiGroup:
+                      type: string
+                    kind:
+                      type: string
+                    name:
+                      type: string
+                    plural:
+                      type: string
+                    serviceCluster:
+                      description: ServiceCluster references a ServiceClusterReference
+                        of this CRD.
+                      properties:
+                        name:
+                          type: string
+                      required:
+                      - name
+                      type: object
+                    versions:
+                      items:
+                        description: CRDVersion holds CRD version specific details.
+                        properties:
+                          name:
+                            description: 'Name of this version, for example: v1, v1alpha1,
+                              v1beta1'
+                            type: string
+                          schema:
+                            description: Schema of this CRD version.
+                            type: object
+                            x-kubernetes-preserve-unknown-fields: true
+                        required:
+                        - name
+                        type: object
+                      type: array
+                  required:
+                  - apiGroup
+                  - kind
+                  - name
+                  - plural
+                  - serviceCluster
+                  - versions
+                  type: object
               type: object
           type: object
       served: true
@@ -724,8 +772,7 @@
             of Tenants. \n KubeCarrier will automatically create ServiceClusterAssignment
             objects for each Tenant selected by the Catalog. \n **Example** ```yaml
             apiVersion: catalog.kubecarrier.io/v1alpha1 kind: Catalog metadata:   name:
-            default spec:   tenantReferenceSelector: {}   catalogEntrySelector: {}
-            ```"
+            default spec:   tenantSelector: {}   catalogEntrySelector: {} ```"
           properties:
             apiVersion:
               description: 'APIVersion defines the versioned schema of this representation
@@ -788,9 +835,9 @@
                         are ANDed.
                       type: object
                   type: object
-                tenantReferenceSelector:
-                  description: TenantReferenceSelector selects TenantReference objects
-                    that the catalog should be published to.
+                tenantSelector:
+                  description: TenantSelector selects Tenant objects that the catalog
+                    should be published to.
                   properties:
                     matchExpressions:
                       description: matchExpressions is a list of label selector requirements.
@@ -899,8 +946,8 @@
                     for everything else use conditions.
                   type: string
                 tenants:
-                  description: Tenants is the list of the Tenants(TenantReference)
-                    that selected by this Catalog.
+                  description: Tenants is the list of the Tenants(Tenant) that selected
+                    by this Catalog.
                   items:
                     description: ObjectReference describes the link to another object
                       in the same namespace.
@@ -1178,6 +1225,8 @@
                       type: string
                     name:
                       type: string
+                    plural:
+                      type: string
                     serviceCluster:
                       description: ServiceCluster references a ServiceClusterReference
                         of this CRD.
@@ -1207,6 +1256,7 @@
                   - apiGroup
                   - kind
                   - name
+                  - plural
                   - serviceCluster
                   - versions
                   type: object
@@ -1224,7 +1274,7 @@
                       type: string
                   type: object
                 provider:
-                  description: Provider references a ProviderReference of this Offering.
+                  description: Provider references the Provider managing this Offering.
                   properties:
                     name:
                       type: string
@@ -1253,18 +1303,18 @@
     creationTimestamp: null
     labels:
       kubecarrier.io/role: manager
-    name: providerreferences.catalog.kubecarrier.io
+    name: providers.catalog.kubecarrier.io
   spec:
     group: catalog.kubecarrier.io
     names:
       categories:
       - kubecarrier-tenant
-      kind: ProviderReference
-      listKind: ProviderReferenceList
-      plural: providerreferences
+      kind: Provider
+      listKind: ProviderList
+      plural: providers
       shortNames:
       - pr
-      singular: providerreference
+      singular: provider
     scope: Namespaced
     versions:
     - additionalPrinterColumns:
@@ -1277,9 +1327,9 @@
       name: v1alpha1
       schema:
         openAPIV3Schema:
-          description: "ProviderReference exposes information of a service provider.
-            \n ProviderReference objects are created automatically by KubeCarrier
-            in Account namespaces, that have a service offered to them via a Catalog."
+          description: "Provider exposes information of an Account with the Provider
+            role. \n Provider objects are created automatically by KubeCarrier in
+            Account namespaces, that have a service offered to them via a Catalog."
           properties:
             apiVersion:
               description: 'APIVersion defines the versioned schema of this representation
@@ -1295,7 +1345,7 @@
             metadata:
               type: object
             spec:
-              description: ProviderReferenceSpec defines the desired state of ProviderReference
+              description: ProviderSpec defines the desired state of Provider
               properties:
                 metadata:
                   description: Metadata contains the metadata (display name, description,
@@ -1425,18 +1475,18 @@
     creationTimestamp: null
     labels:
       kubecarrier.io/role: manager
-    name: tenantreferences.catalog.kubecarrier.io
+    name: tenants.catalog.kubecarrier.io
   spec:
     group: catalog.kubecarrier.io
     names:
       categories:
       - kubecarrier-provider
-      kind: TenantReference
-      listKind: TenantReferenceList
-      plural: tenantreferences
+      kind: Tenant
+      listKind: TenantList
+      plural: tenants
       shortNames:
       - tr
-      singular: tenantreference
+      singular: tenant
     scope: Namespaced
     versions:
     - additionalPrinterColumns:
@@ -1446,10 +1496,10 @@
       name: v1alpha1
       schema:
         openAPIV3Schema:
-          description: "TenantReference exposes information about available Tenants
-            on the platform and allows a Provider to set custom labels on them. \n
-            TenantReference objects will be created for all Accounts with the role
-            \"Tenant\" in all Account Namespaces with the role \"Provider\"."
+          description: "Tenant exposes information about available Tenants on the
+            platform and allows a Provider to set custom labels on them. \n Tenant
+            objects will be created for all Accounts with the role \"Tenant\" in all
+            Account Namespaces with the role \"Provider\"."
           properties:
             apiVersion:
               description: 'APIVersion defines the versioned schema of this representation
@@ -1465,7 +1515,7 @@
             metadata:
               type: object
             spec:
-              description: TenantReferenceSpec defines the desired state of TenantReference
+              description: TenantSpec defines the desired state of Tenant
               type: object
           type: object
       served: true
@@ -2320,7 +2370,7 @@
   - apiGroups:
     - catalog.kubecarrier.io
     resources:
-    - providerreferences
+    - providers
     verbs:
     - create
     - delete
@@ -2342,7 +2392,7 @@
   - apiGroups:
     - catalog.kubecarrier.io
     resources:
-    - tenantreferences
+    - tenants
     verbs:
     - create
     - delete
@@ -2739,9 +2789,9 @@
       service:
         name: kubecarrier-manager-webhook-service
         namespace: test3000
-        path: /validate-catalog-kubecarrier-io-v1alpha1-providerreference
+        path: /validate-catalog-kubecarrier-io-v1alpha1-provider
     failurePolicy: Fail
-    name: vproviderreference.kubecarrier.io
+    name: vprovider.kubecarrier.io
     rules:
     - apiGroups:
       - catalog.kubecarrier.io
@@ -2751,7 +2801,7 @@
       - CREATE
       - UPDATE
       resources:
-      - providerreferences
+      - providers
   - clientConfig:
       caBundle: Cg==
       service:
@@ -2810,9 +2860,9 @@
       service:
         name: kubecarrier-manager-webhook-service
         namespace: test3000
-        path: /validate-catalog-kubecarrier-io-v1alpha1-tenantreference
+        path: /validate-catalog-kubecarrier-io-v1alpha1-tenant
     failurePolicy: Fail
-    name: vtenantreference.kubecarrier.io
+    name: vtenant.kubecarrier.io
     rules:
     - apiGroups:
       - catalog.kubecarrier.io
@@ -2821,7 +2871,7 @@
       operations:
       - CREATE
       resources:
-      - tenantreferences
+      - tenants
 - apiVersion: v1
   kind: Service
   metadata:

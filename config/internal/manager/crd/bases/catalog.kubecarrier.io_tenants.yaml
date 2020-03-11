@@ -6,33 +6,31 @@ metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.2.5
   creationTimestamp: null
-  name: providerreferences.catalog.kubecarrier.io
+  name: tenants.catalog.kubecarrier.io
 spec:
   group: catalog.kubecarrier.io
   names:
     categories:
-    - kubecarrier-tenant
-    kind: ProviderReference
-    listKind: ProviderReferenceList
-    plural: providerreferences
+    - kubecarrier-provider
+    kind: Tenant
+    listKind: TenantList
+    plural: tenants
     shortNames:
-    - pr
-    singular: providerreference
+    - tr
+    singular: tenant
   scope: Namespaced
   versions:
   - additionalPrinterColumns:
-    - jsonPath: .spec.metadata.displayName
-      name: Display Name
-      type: string
     - jsonPath: .metadata.creationTimestamp
       name: Age
       type: date
     name: v1alpha1
     schema:
       openAPIV3Schema:
-        description: "ProviderReference exposes information of a service provider.
-          \n ProviderReference objects are created automatically by KubeCarrier in
-          Account namespaces, that have a service offered to them via a Catalog."
+        description: "Tenant exposes information about available Tenants on the platform
+          and allows a Provider to set custom labels on them. \n Tenant objects will
+          be created for all Accounts with the role \"Tenant\" in all Account Namespaces
+          with the role \"Provider\"."
         properties:
           apiVersion:
             description: 'APIVersion defines the versioned schema of this representation
@@ -47,22 +45,7 @@ spec:
           metadata:
             type: object
           spec:
-            description: ProviderReferenceSpec defines the desired state of ProviderReference
-            properties:
-              metadata:
-                description: Metadata contains the metadata (display name, description,
-                  etc) of the Provider.
-                properties:
-                  description:
-                    description: Description is the human-readable description of
-                      this Account.
-                    minLength: 1
-                    type: string
-                  displayName:
-                    description: DisplayName is the human-readable name of this Account.
-                    minLength: 1
-                    type: string
-                type: object
+            description: TenantSpec defines the desired state of Tenant
             type: object
         type: object
     served: true

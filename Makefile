@@ -45,9 +45,6 @@ KIND_NODE_IMAGE?=kindest/node:v1.17.0@sha256:9512edae126da271b66b990b6fff768fbb7
 # KIND_NODE_IMAGE=kindest/node:v1.14.10@sha256:81ae5a3237c779efc4dda43cc81c696f88a194abcc4f8fa34f86cf674aa14977
 
 all: \
-	bin/linux_amd64/anchor \
-	bin/darwin_amd64/anchor \
-	bin/windows_amd64/anchor \
 	bin/linux_amd64/operator \
 	bin/linux_amd64/manager
 
@@ -86,8 +83,20 @@ test:
 	CGO_ENABLED=1 go test -race -v ./...
 .PHONY: test
 
+release:
+	goreleaser release --rm-dist
+	go run ./hack/krew-manifest -version=$(shell git describe --tags --abbrev=0) > dist/krew.yaml
+.PHONY: release
+
+krew-install:
+	@goreleaser release --snapshot  --rm-dist
+	@go run ./hack/krew-manifest -version=$(shell git describe --tags --abbrev=0)-SNAPSHOT-$(shell git rev-parse --short HEAD) > dist/krew.yaml
+	@kubectl krew uninstall kubecarrier || true
+	@kubectl krew install --manifest=dist/krew.yaml --archive=dist/kubecarrier_$(shell go env GOOS)_$(shell go env GOARCH).tar.gz
+.PHONY: krew-install
+
 install:
-	go install -ldflags "-w $(LD_FLAGS)" ./cmd/anchor
+	@go install -ldflags "-w $(LD_FLAGS)" ./cmd/kubectl-kubecarrier
 .PHONY: install
 
 TEST_ID?=1
@@ -113,7 +122,7 @@ e2e-setup: install require-docker
 
 # soft-reinstall reinstall kubecarrier in the e2e cluster. It's intended for usage during development
 soft-reinstall: e2e-setup install
-	@anchor setup --kubeconfig "${HOME}/.kube/kind-config-${MANAGEMENT_KIND_CLUSTER}"
+	@kubectl kubecarrier setup --kubeconfig "${HOME}/.kube/kind-config-${MANAGEMENT_KIND_CLUSTER}"
 	@kubectl --kubeconfig "${HOME}/.kube/kind-config-${MANAGEMENT_KIND_CLUSTER}" delete pod --all -n kubecarrier-system
 
 e2e-test: e2e-setup

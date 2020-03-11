@@ -26,32 +26,32 @@ import (
 	"github.com/kubermatic/kubecarrier/pkg/testutil"
 )
 
-func TestTenantReferenceValidatingCreate(t *testing.T) {
-	tenantReferenceWebhookHandler := TenantReferenceWebhookHandler{
+func TestTenantValidatingCreate(t *testing.T) {
+	tenantWebhookHandler := TenantWebhookHandler{
 		Log: testutil.NewLogger(t),
 	}
 
 	tests := []struct {
 		name          string
-		object        *catalogv1alpha1.TenantReference
+		object        *catalogv1alpha1.Tenant
 		expectedError bool
 	}{
 		{
-			name: "invalid tenantReference name",
-			object: &catalogv1alpha1.TenantReference{
+			name: "invalid tenant name",
+			object: &catalogv1alpha1.Tenant{
 				ObjectMeta: metav1.ObjectMeta{
-					Name:      "test.tenantreference",
-					Namespace: "test-tenantReference-namespace",
+					Name:      "test.tenant",
+					Namespace: "test-tenant-namespace",
 				},
 			},
 			expectedError: true,
 		},
 		{
 			name: "can pass validate create",
-			object: &catalogv1alpha1.TenantReference{
+			object: &catalogv1alpha1.Tenant{
 				ObjectMeta: metav1.ObjectMeta{
-					Name:      "test-tenantreference",
-					Namespace: "test-tenantReference-namespace",
+					Name:      "test-tenant",
+					Namespace: "test-tenant-namespace",
 				},
 			},
 			expectedError: false,
@@ -60,7 +60,7 @@ func TestTenantReferenceValidatingCreate(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			assert.Equal(t, test.expectedError, tenantReferenceWebhookHandler.validateCreate(test.object) != nil)
+			assert.Equal(t, test.expectedError, tenantWebhookHandler.validateCreate(test.object) != nil)
 		})
 	}
 }

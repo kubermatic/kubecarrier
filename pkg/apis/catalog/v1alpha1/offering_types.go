@@ -23,7 +23,7 @@ import (
 // OfferingData defines the data (metadata, provider, crds, etc.) of Offering.
 type OfferingData struct {
 	Metadata OfferingMetadata `json:"metadata,omitempty"`
-	// Provider references a ProviderReference of this Offering.
+	// Provider references the Provider managing this Offering.
 	Provider ObjectReference `json:"provider"`
 	// CRD holds the information about the underlying CRD that is offered by this offering.
 	CRD CRDInformation `json:"crd,omitempty"`

@@ -125,8 +125,8 @@ func NewAdminSuite(f *framework.Framework) func(t *testing.T) {
 		providerRoleAndRoleBindingPresent(t, managementClient, ctx, tenant, false)
 		tenantRoleAndRoleBindingPresent(t, managementClient, ctx, tenant, true)
 
-		tenantReferencePresent(t, managementClient, ctx, tenant, provider, true)
-		tenantReferencePresent(t, managementClient, ctx, tenant, tenant, false)
+		tenantPresent(t, managementClient, ctx, tenant, provider, true)
+		tenantPresent(t, managementClient, ctx, tenant, tenant, false)
 
 		t.Log("adding providerTenant")
 		require.NoError(t, managementClient.Create(ctx, providerTenant), "creating providerTenant")
@@ -137,17 +137,17 @@ func NewAdminSuite(f *framework.Framework) func(t *testing.T) {
 		providerRoleAndRoleBindingPresent(t, managementClient, ctx, providerTenant, true)
 		tenantRoleAndRoleBindingPresent(t, managementClient, ctx, providerTenant, true)
 
-		tenantReferencePresent(t, managementClient, ctx, tenant, provider, true)
-		tenantReferencePresent(t, managementClient, ctx, tenant, providerTenant, true)
-		tenantReferencePresent(t, managementClient, ctx, tenant, tenant, false)
+		tenantPresent(t, managementClient, ctx, tenant, provider, true)
+		tenantPresent(t, managementClient, ctx, tenant, providerTenant, true)
+		tenantPresent(t, managementClient, ctx, tenant, tenant, false)
 
-		tenantReferencePresent(t, managementClient, ctx, provider, provider, false)
-		tenantReferencePresent(t, managementClient, ctx, provider, providerTenant, false)
-		tenantReferencePresent(t, managementClient, ctx, provider, tenant, false)
+		tenantPresent(t, managementClient, ctx, provider, provider, false)
+		tenantPresent(t, managementClient, ctx, provider, providerTenant, false)
+		tenantPresent(t, managementClient, ctx, provider, tenant, false)
 
-		tenantReferencePresent(t, managementClient, ctx, providerTenant, provider, true)
-		tenantReferencePresent(t, managementClient, ctx, providerTenant, providerTenant, true)
-		tenantReferencePresent(t, managementClient, ctx, providerTenant, tenant, false)
+		tenantPresent(t, managementClient, ctx, providerTenant, provider, true)
+		tenantPresent(t, managementClient, ctx, providerTenant, providerTenant, true)
+		tenantPresent(t, managementClient, ctx, providerTenant, tenant, false)
 
 		t.Log("deleting tenant")
 		require.NoError(t, testutil.DeleteAndWaitUntilNotFound(managementClient, tenant))
@@ -157,17 +157,17 @@ func NewAdminSuite(f *framework.Framework) func(t *testing.T) {
 		providerRoleAndRoleBindingPresent(t, managementClient, ctx, tenant, false)
 		tenantRoleAndRoleBindingPresent(t, managementClient, ctx, tenant, false)
 
-		tenantReferencePresent(t, managementClient, ctx, tenant, provider, false)
-		tenantReferencePresent(t, managementClient, ctx, tenant, providerTenant, false)
-		tenantReferencePresent(t, managementClient, ctx, tenant, tenant, false)
+		tenantPresent(t, managementClient, ctx, tenant, provider, false)
+		tenantPresent(t, managementClient, ctx, tenant, providerTenant, false)
+		tenantPresent(t, managementClient, ctx, tenant, tenant, false)
 
-		tenantReferencePresent(t, managementClient, ctx, provider, provider, false)
-		tenantReferencePresent(t, managementClient, ctx, provider, providerTenant, false)
-		tenantReferencePresent(t, managementClient, ctx, provider, tenant, false)
+		tenantPresent(t, managementClient, ctx, provider, provider, false)
+		tenantPresent(t, managementClient, ctx, provider, providerTenant, false)
+		tenantPresent(t, managementClient, ctx, provider, tenant, false)
 
-		tenantReferencePresent(t, managementClient, ctx, providerTenant, provider, true)
-		tenantReferencePresent(t, managementClient, ctx, providerTenant, providerTenant, true)
-		tenantReferencePresent(t, managementClient, ctx, providerTenant, tenant, false)
+		tenantPresent(t, managementClient, ctx, providerTenant, provider, true)
+		tenantPresent(t, managementClient, ctx, providerTenant, providerTenant, true)
+		tenantPresent(t, managementClient, ctx, providerTenant, tenant, false)
 
 		t.Log("deleting provider")
 		require.NoError(t, testutil.DeleteAndWaitUntilNotFound(managementClient, provider))
@@ -187,8 +187,8 @@ func NewAdminSuite(f *framework.Framework) func(t *testing.T) {
 	}
 }
 
-func tenantReferencePresent(t *testing.T, managementClient client.Client, ctx context.Context, tenant *catalogv1alpha1.Account, provider *catalogv1alpha1.Account, expected bool) {
-	trefs := &catalogv1alpha1.TenantReferenceList{}
+func tenantPresent(t *testing.T, managementClient client.Client, ctx context.Context, tenant *catalogv1alpha1.Account, provider *catalogv1alpha1.Account, expected bool) {
+	trefs := &catalogv1alpha1.TenantList{}
 	require.NoError(t, managementClient.List(ctx, trefs, client.InNamespace(provider.Status.Namespace.Name)))
 	var found bool
 	for _, tref := range trefs.Items {
@@ -196,7 +196,7 @@ func tenantReferencePresent(t *testing.T, managementClient client.Client, ctx co
 			found = true
 		}
 	}
-	assert.Equalf(t, expected, found, "tenantReference %s presence in provider %s", tenant.Name, provider.Name)
+	assert.Equalf(t, expected, found, "tenant %s presence in provider %s", tenant.Name, provider.Name)
 }
 
 func providerRoleAndRoleBindingPresent(t *testing.T, managementClient client.Client, ctx context.Context, account *catalogv1alpha1.Account, expected bool) {
@@ -204,7 +204,7 @@ func providerRoleAndRoleBindingPresent(t *testing.T, managementClient client.Cli
 	role := &rbacv1.Role{}
 	roleBinding := &rbacv1.RoleBinding{}
 	if err := managementClient.Get(ctx, types.NamespacedName{
-		Name:      "kubecarrier-provider-role",
+		Name:      "kubecarrier:provider",
 		Namespace: account.Status.Namespace.Name,
 	}, role); err == nil {
 		found = true
@@ -212,7 +212,7 @@ func providerRoleAndRoleBindingPresent(t *testing.T, managementClient client.Cli
 	assert.Equalf(t, expected, found, "provider Role of account %s", account.Name)
 	found = false
 	if err := managementClient.Get(ctx, types.NamespacedName{
-		Name:      "kubecarrier-provider-rolebinding",
+		Name:      "kubecarrier:provider",
 		Namespace: account.Status.Namespace.Name,
 	}, roleBinding); err == nil {
 		found = true
@@ -225,7 +225,7 @@ func tenantRoleAndRoleBindingPresent(t *testing.T, managementClient client.Clien
 	role := &rbacv1.Role{}
 	roleBinding := &rbacv1.RoleBinding{}
 	if err := managementClient.Get(ctx, types.NamespacedName{
-		Name:      "kubecarrier-tenant-role",
+		Name:      "kubecarrier:tenant",
 		Namespace: account.Status.Namespace.Name,
 	}, role); err == nil {
 		found = true
@@ -233,7 +233,7 @@ func tenantRoleAndRoleBindingPresent(t *testing.T, managementClient client.Clien
 	assert.Equalf(t, expected, found, "tenant Role of account %s", account.Name)
 	found = false
 	if err := managementClient.Get(ctx, types.NamespacedName{
-		Name:      "kubecarrier-tenant-rolebinding",
+		Name:      "kubecarrier:tenant",
 		Namespace: account.Status.Namespace.Name,
 	}, roleBinding); err == nil {
 		found = true

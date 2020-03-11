@@ -405,15 +405,15 @@ The `catalog.kubecarrier.io` API group contains all objects that are used to set
 * [OfferingData.catalog.kubecarrier.io/v1alpha1](#offeringdata.catalog.kubecarrier.io/v1alpha1)
 * [OfferingList.catalog.kubecarrier.io/v1alpha1](#offeringlist.catalog.kubecarrier.io/v1alpha1)
 * [OfferingMetadata.catalog.kubecarrier.io/v1alpha1](#offeringmetadata.catalog.kubecarrier.io/v1alpha1)
-* [ProviderReference.catalog.kubecarrier.io/v1alpha1](#providerreference.catalog.kubecarrier.io/v1alpha1)
-* [ProviderReferenceList.catalog.kubecarrier.io/v1alpha1](#providerreferencelist.catalog.kubecarrier.io/v1alpha1)
-* [ProviderReferenceSpec.catalog.kubecarrier.io/v1alpha1](#providerreferencespec.catalog.kubecarrier.io/v1alpha1)
+* [Provider.catalog.kubecarrier.io/v1alpha1](#provider.catalog.kubecarrier.io/v1alpha1)
+* [ProviderList.catalog.kubecarrier.io/v1alpha1](#providerlist.catalog.kubecarrier.io/v1alpha1)
+* [ProviderSpec.catalog.kubecarrier.io/v1alpha1](#providerspec.catalog.kubecarrier.io/v1alpha1)
 * [ServiceClusterReference.catalog.kubecarrier.io/v1alpha1](#serviceclusterreference.catalog.kubecarrier.io/v1alpha1)
 * [ServiceClusterReferenceList.catalog.kubecarrier.io/v1alpha1](#serviceclusterreferencelist.catalog.kubecarrier.io/v1alpha1)
 * [ServiceClusterReferenceSpec.catalog.kubecarrier.io/v1alpha1](#serviceclusterreferencespec.catalog.kubecarrier.io/v1alpha1)
-* [TenantReference.catalog.kubecarrier.io/v1alpha1](#tenantreference.catalog.kubecarrier.io/v1alpha1)
-* [TenantReferenceList.catalog.kubecarrier.io/v1alpha1](#tenantreferencelist.catalog.kubecarrier.io/v1alpha1)
-* [TenantReferenceSpec.catalog.kubecarrier.io/v1alpha1](#tenantreferencespec.catalog.kubecarrier.io/v1alpha1)
+* [Tenant.catalog.kubecarrier.io/v1alpha1](#tenant.catalog.kubecarrier.io/v1alpha1)
+* [TenantList.catalog.kubecarrier.io/v1alpha1](#tenantlist.catalog.kubecarrier.io/v1alpha1)
+* [TenantSpec.catalog.kubecarrier.io/v1alpha1](#tenantspec.catalog.kubecarrier.io/v1alpha1)
 * [ObjectReference.catalog.kubecarrier.io/v1alpha1](#objectreference.catalog.kubecarrier.io/v1alpha1)
 
 ### Account.catalog.kubecarrier.io/v1alpha1
@@ -519,7 +519,7 @@ kind: Catalog
 metadata:
   name: default
 spec:
-  tenantReferenceSelector: {}
+  tenantSelector: {}
   catalogEntrySelector: {}
 ```
 
@@ -563,7 +563,7 @@ CatalogSpec describes the desired contents of a Catalog.
 | Field | Description | Scheme | Required |
 | ----- | ----------- | ------ | -------- |
 | catalogEntrySelector | CatalogEntrySelector selects CatalogEntry objects that should be part of this catalog. | *[metav1.LabelSelector](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.14/#labelselector-v1-meta) | false |
-| tenantReferenceSelector | TenantReferenceSelector selects TenantReference objects that the catalog should be published to. | *[metav1.LabelSelector](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.14/#labelselector-v1-meta) | false |
+| tenantSelector | TenantSelector selects Tenant objects that the catalog should be published to. | *[metav1.LabelSelector](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.14/#labelselector-v1-meta) | false |
 
 [Back to Group](#catalog)
 
@@ -573,7 +573,7 @@ CatalogStatus represents the observed state of Catalog.
 
 | Field | Description | Scheme | Required |
 | ----- | ----------- | ------ | -------- |
-| tenants | Tenants is the list of the Tenants(TenantReference) that selected by this Catalog. | []catalog.kubecarrier.io/v1alpha1.ObjectReference | false |
+| tenants | Tenants is the list of the Tenants(Tenant) that selected by this Catalog. | []catalog.kubecarrier.io/v1alpha1.ObjectReference | false |
 | entries | Entries is the list of the CatalogEntries that selected by this Catalog. | []catalog.kubecarrier.io/v1alpha1.ObjectReference | false |
 | observedGeneration | ObservedGeneration is the most recent generation observed for this Catalog by the controller. | catalog.kubecarrier.io/v1alpha1.int64 | false |
 | conditions | Conditions represents the latest available observations of a Catalog's current state. | []catalog.kubecarrier.io/v1alpha1.CatalogCondition | false |
@@ -689,7 +689,8 @@ CatalogEntryStatus represents the observed state of CatalogEntry.
 
 | Field | Description | Scheme | Required |
 | ----- | ----------- | ------ | -------- |
-| crd | CRD holds the information about the underlying BaseCRD that are offered by this CatalogEntry. | *catalog.kubecarrier.io/v1alpha1.CRDInformation | false |
+| tenantCRD | TenantCRD holds the information about the Tenant facing CRD that is offered by this CatalogEntry. | *catalog.kubecarrier.io/v1alpha1.CRDInformation | false |
+| providerCRD | ProviderCRD holds the information about the Provider facing CRD that is offered by this CatalogEntry. | *catalog.kubecarrier.io/v1alpha1.CRDInformation | false |
 | observedGeneration | ObservedGeneration is the most recent generation observed for this CatalogEntry by the controller. | catalog.kubecarrier.io/v1alpha1.int64 | false |
 | conditions | Conditions represents the latest available observations of a CatalogEntry's current state. | []catalog.kubecarrier.io/v1alpha1.CatalogEntryCondition | false |
 | phase | DEPRECATED. Phase represents the current lifecycle state of this object. Consider this field DEPRECATED, it will be removed as soon as there is a mechanism to map conditions to strings when printing the property. This is only for display purpose, for everything else use conditions. | catalog.kubecarrier.io/v1alpha1.CatalogEntryPhaseType | false |
@@ -818,6 +819,7 @@ CRDInformation contains type information about the CRD.
 | name |  | string | true |
 | apiGroup |  | string | true |
 | kind |  | string | true |
+| plural |  | string | true |
 | versions |  | []catalog.kubecarrier.io/v1alpha1.CRDVersion | true |
 | serviceCluster | ServiceCluster references a ServiceClusterReference of this CRD. | catalog.kubecarrier.io/v1alpha1.ObjectReference | true |
 
@@ -951,7 +953,7 @@ OfferingData defines the data (metadata, provider, crds, etc.) of Offering.
 | Field | Description | Scheme | Required |
 | ----- | ----------- | ------ | -------- |
 | metadata |  | catalog.kubecarrier.io/v1alpha1.OfferingMetadata | false |
-| provider | Provider references a ProviderReference of this Offering. | catalog.kubecarrier.io/v1alpha1.ObjectReference | true |
+| provider | Provider references the Provider managing this Offering. | catalog.kubecarrier.io/v1alpha1.ObjectReference | true |
 | crd | CRD holds the information about the underlying CRD that is offered by this offering. | catalog.kubecarrier.io/v1alpha1.CRDInformation | false |
 
 [Back to Group](#catalog)
@@ -978,33 +980,33 @@ OfferingMetadata contains the metadata (display name, description, etc) of the O
 
 [Back to Group](#catalog)
 
-### ProviderReference.catalog.kubecarrier.io/v1alpha1
+### Provider.catalog.kubecarrier.io/v1alpha1
 
-ProviderReference exposes information of a service provider.
+Provider exposes information of an Account with the Provider role.
 
-ProviderReference objects are created automatically by KubeCarrier in Account namespaces, that have a service offered to them via a Catalog.
+Provider objects are created automatically by KubeCarrier in Account namespaces, that have a service offered to them via a Catalog.
 
 | Field | Description | Scheme | Required |
 | ----- | ----------- | ------ | -------- |
 | metadata |  | [metav1.ObjectMeta](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.14/#objectmeta-v1-meta) | false |
-| spec |  | catalog.kubecarrier.io/v1alpha1.ProviderReferenceSpec | false |
+| spec |  | catalog.kubecarrier.io/v1alpha1.ProviderSpec | false |
 
 [Back to Group](#catalog)
 
-### ProviderReferenceList.catalog.kubecarrier.io/v1alpha1
+### ProviderList.catalog.kubecarrier.io/v1alpha1
 
-ProviderReferenceList contains a list of ProviderReference.
+ProviderList contains a list of Provider.
 
 | Field | Description | Scheme | Required |
 | ----- | ----------- | ------ | -------- |
 | metadata |  | [metav1.ListMeta](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.14/#listmeta-v1-meta) | false |
-| items |  | []catalog.kubecarrier.io/v1alpha1.ProviderReference | true |
+| items |  | []catalog.kubecarrier.io/v1alpha1.Provider | true |
 
 [Back to Group](#catalog)
 
-### ProviderReferenceSpec.catalog.kubecarrier.io/v1alpha1
+### ProviderSpec.catalog.kubecarrier.io/v1alpha1
 
-ProviderReferenceSpec defines the desired state of ProviderReference
+ProviderSpec defines the desired state of Provider
 
 | Field | Description | Scheme | Required |
 | ----- | ----------- | ------ | -------- |
@@ -1047,33 +1049,33 @@ ServiceClusterReferenceSpec defines the desired state of ServiceClusterReference
 
 [Back to Group](#catalog)
 
-### TenantReference.catalog.kubecarrier.io/v1alpha1
+### Tenant.catalog.kubecarrier.io/v1alpha1
 
-TenantReference exposes information about available Tenants on the platform and allows a Provider to set custom labels on them.
+Tenant exposes information about available Tenants on the platform and allows a Provider to set custom labels on them.
 
-TenantReference objects will be created for all Accounts with the role \"Tenant\" in all Account Namespaces with the role \"Provider\".
+Tenant objects will be created for all Accounts with the role \"Tenant\" in all Account Namespaces with the role \"Provider\".
 
 | Field | Description | Scheme | Required |
 | ----- | ----------- | ------ | -------- |
 | metadata |  | [metav1.ObjectMeta](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.14/#objectmeta-v1-meta) | false |
-| spec |  | catalog.kubecarrier.io/v1alpha1.TenantReferenceSpec | false |
+| spec |  | catalog.kubecarrier.io/v1alpha1.TenantSpec | false |
 
 [Back to Group](#catalog)
 
-### TenantReferenceList.catalog.kubecarrier.io/v1alpha1
+### TenantList.catalog.kubecarrier.io/v1alpha1
 
-TenantReferenceList contains a list of TenantReference.
+TenantList contains a list of Tenant.
 
 | Field | Description | Scheme | Required |
 | ----- | ----------- | ------ | -------- |
 | metadata |  | [metav1.ListMeta](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.14/#listmeta-v1-meta) | false |
-| items |  | []catalog.kubecarrier.io/v1alpha1.TenantReference | true |
+| items |  | []catalog.kubecarrier.io/v1alpha1.Tenant | true |
 
 [Back to Group](#catalog)
 
-### TenantReferenceSpec.catalog.kubecarrier.io/v1alpha1
+### TenantSpec.catalog.kubecarrier.io/v1alpha1
 
-TenantReferenceSpec defines the desired state of TenantReference
+TenantSpec defines the desired state of Tenant
 
 | Field | Description | Scheme | Required |
 | ----- | ----------- | ------ | -------- |
