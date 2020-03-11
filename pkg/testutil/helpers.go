@@ -26,6 +26,8 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/util/jsonpath"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+
+	"github.com/kubermatic/kubecarrier/pkg/internal/util"
 )
 
 func ConditionStatusEqual(obj runtime.Object, ConditionType, ConditionStatus interface{}) error {
@@ -58,23 +60,27 @@ func LogObject(t *testing.T, obj interface{}) {
 	t.Log("\n", string(b))
 }
 
-func WaitUntilNotFound(ctx context.Context, c *RecordingClient, obj runtime.Object) error {
+var (
+	WithTimeout = util.WithClientWatcherTimeout
+)
+
+func WaitUntilNotFound(ctx context.Context, c *RecordingClient, obj runtime.Object, options ...util.ClientWatcherOption) error {
 	c.t.Helper()
-	return c.WaitUntilNotFound(ctx, obj)
+	return c.WaitUntilNotFound(ctx, obj, options...)
 }
 
-func WaitUntilFound(ctx context.Context, c *RecordingClient, obj runtime.Object) error {
+func WaitUntilFound(ctx context.Context, c *RecordingClient, obj runtime.Object, options ...util.ClientWatcherOption) error {
 	c.t.Helper()
 	return c.WaitUntil(ctx, obj, func() (done bool, err error) {
 		return true, nil
-	})
+	}, options...)
 }
 
-func WaitUntilCondition(ctx context.Context, c *RecordingClient, obj runtime.Object, ConditionType, conditionStatus interface{}) error {
+func WaitUntilCondition(ctx context.Context, c *RecordingClient, obj runtime.Object, ConditionType, conditionStatus interface{}, options ...util.ClientWatcherOption) error {
 	c.t.Helper()
 	err := c.WaitUntil(ctx, obj, func() (done bool, err error) {
 		return ConditionStatusEqual(obj, ConditionType, conditionStatus) == nil, nil
-	})
+	}, options...)
 
 	if err != nil {
 		b, marshallErr := json.MarshalIndent(obj, "", "\t")
@@ -86,15 +92,15 @@ func WaitUntilCondition(ctx context.Context, c *RecordingClient, obj runtime.Obj
 	return nil
 }
 
-func WaitUntilReady(ctx context.Context, c *RecordingClient, obj runtime.Object) error {
+func WaitUntilReady(ctx context.Context, c *RecordingClient, obj runtime.Object, options ...util.ClientWatcherOption) error {
 	c.t.Helper()
-	return WaitUntilCondition(ctx, c, obj, "Ready", "True")
+	return WaitUntilCondition(ctx, c, obj, "Ready", "True", options...)
 }
 
-func DeleteAndWaitUntilNotFound(ctx context.Context, c *RecordingClient, obj runtime.Object) error {
+func DeleteAndWaitUntilNotFound(ctx context.Context, c *RecordingClient, obj runtime.Object, options ...util.ClientWatcherOption) error {
 	c.t.Helper()
 	if err := c.Delete(ctx, obj); client.IgnoreNotFound(err) != nil {
 		return err
 	}
-	return WaitUntilNotFound(ctx, c, obj)
+	return WaitUntilNotFound(ctx, c, obj, options...)
 }

@@ -19,6 +19,7 @@ package util
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/go-logr/logr"
 	"k8s.io/apimachinery/pkg/api/meta"
@@ -32,6 +33,19 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/apiutil"
 )
+
+type clientWatcherOption struct {
+	timeout time.Duration
+}
+
+type ClientWatcherOption func(*clientWatcherOption) error
+
+func WithClientWatcherTimeout(t time.Duration) ClientWatcherOption {
+	return func(option *clientWatcherOption) error {
+		option.timeout = t
+		return nil
+	}
+}
 
 type ClientWatcher struct {
 	dynamicClient dynamic.Interface
@@ -71,7 +85,19 @@ func NewClientWatcher(conf *rest.Config, scheme *runtime.Scheme, log logr.Logger
 // WaitUntil waits until the Object's condition function is true, or the context deadline is reached
 //
 // condition function should operate on the passed object in a closure and should not modify the obj
-func (cw *ClientWatcher) WaitUntil(ctx context.Context, obj runtime.Object, cond func() (done bool, err error)) error {
+func (cw *ClientWatcher) WaitUntil(ctx context.Context, obj runtime.Object, cond func() (done bool, err error), options ...ClientWatcherOption) error {
+	cfg := &clientWatcherOption{}
+	for _, f := range options {
+		if err := f(cfg); err != nil {
+			return err
+		}
+	}
+	if cfg.timeout > time.Duration(0) {
+		var cancel func()
+		ctx, cancel = context.WithTimeout(ctx, cfg.timeout)
+		defer cancel()
+	}
+
 	lw, err := cw.objListWatch(obj)
 	if err != nil {
 		return fmt.Errorf("getting objListWatch: %w", err)
@@ -107,7 +133,19 @@ func (cw *ClientWatcher) WaitUntil(ctx context.Context, obj runtime.Object, cond
 }
 
 // WaitUntilNotFound waits until the object is not found or the context deadline is exceeded
-func (cw *ClientWatcher) WaitUntilNotFound(ctx context.Context, obj runtime.Object) error {
+func (cw *ClientWatcher) WaitUntilNotFound(ctx context.Context, obj runtime.Object, options ...ClientWatcherOption) error {
+	cfg := &clientWatcherOption{}
+	for _, f := range options {
+		if err := f(cfg); err != nil {
+			return err
+		}
+	}
+	if cfg.timeout > time.Duration(0) {
+		var cancel func()
+		ctx, cancel = context.WithTimeout(ctx, cfg.timeout)
+		defer cancel()
+	}
+
 	// things get a bit tricky with not found watches
 	//  clientwatch.UntilWithSync seems useful since it has cache pre-conditions which I can check whether
 	// the objects existed in initial list operation. But there are few other issues with it:

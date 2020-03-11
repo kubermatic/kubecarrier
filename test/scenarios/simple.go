@@ -192,6 +192,14 @@ func newSimpleScenario(f *testutil.Framework) func(t *testing.T) {
 		require.NoError(t, err)
 		t.Cleanup(tenantClient.CleanUpFunc(ctx))
 
+		providerClient, err := f.ManagementClient(t, func(config *rest.Config) error {
+			config.Impersonate = rest.ImpersonationConfig{
+				UserName: providerUser,
+			}
+			return nil
+		})
+		require.NoError(t, err)
+		t.Cleanup(providerClient.CleanUpFunc(ctx))
 		{
 			offeringList := &catalogv1alpha1.OfferingList{}
 			require.NoError(t, tenantClient.List(ctx, offeringList, client.InNamespace(tenant.Status.Namespace.Name)))
@@ -205,15 +213,32 @@ func newSimpleScenario(f *testutil.Framework) func(t *testing.T) {
 				Name:      strings.Join([]string{"couchdb", serviceCluster.Name}, "."),
 			}, offering), "tenant %s doesn't have the required offering", tenant.Name) {
 				assert.Equal(t, externalCRD.Name, offering.Spec.CRD.Name)
-				u := &unstructured.Unstructured{}
-				u.SetAPIVersion(offering.Spec.CRD.APIGroup)
-				u.SetKind(offering.Spec.CRD.Kind)
-				u.SetNamespace(tenant.Status.Namespace.Name)
-				u.SetName("db1")
-				u.Object["spec"] = map[string]interface{}{
+				externalObj := &unstructured.Unstructured{}
+				externalObj.SetGroupVersionKind(schema.GroupVersionKind{
+					Group:   offering.Spec.CRD.APIGroup,
+					Version: offering.Spec.CRD.Versions[0].Name,
+					Kind:    offering.Spec.CRD.Kind,
+				})
+				externalObj.SetNamespace(tenant.Status.Namespace.Name)
+				externalObj.SetName("db1")
+				externalObj.Object["spec"] = map[string]interface{}{
 					"prop1": "dummy value",
 				}
-				require.NoError(t, tenantClient.Create(ctx, u))
+				require.NoError(t, tenantClient.Create(ctx, externalObj))
+
+				t.Log("checking internal object existance")
+				internalObj := &unstructured.Unstructured{}
+				internalObj.SetGroupVersionKind(schema.GroupVersionKind{
+					Group:   internalCRD.Spec.Group,
+					Version: internalCRD.Spec.Versions[0].Name,
+					Kind:    internalCRD.Spec.Names.Kind,
+				})
+				internalObj.SetNamespace(tenant.Status.Namespace.Name)
+				internalObj.SetName(externalObj.GetName())
+				assert.NoError(t,
+					testutil.WaitUntilFound(ctx, providerClient, internalObj, testutil.WithTimeout(15*time.Second)),
+					"cannot find the CRD on the service cluster within the time limit",
+				)
 
 				sca := &corev1alpha1.ServiceClusterAssignment{}
 				require.NoError(t, managementClient.Get(ctx, types.NamespacedName{
@@ -221,19 +246,18 @@ func newSimpleScenario(f *testutil.Framework) func(t *testing.T) {
 					Name:      tenant.Name + "." + serviceCluster.Name,
 				}, sca))
 
-				svcU := &unstructured.Unstructured{}
-				svcU.SetGroupVersionKind(schema.GroupVersionKind{
+				t.Log("checking internal object")
+				svcObj := &unstructured.Unstructured{}
+				svcObj.SetGroupVersionKind(schema.GroupVersionKind{
 					Group:   baseCRD.Spec.Group,
 					Version: baseCRD.Spec.Versions[0].Name,
 					Kind:    baseCRD.Spec.Names.Kind,
 				})
-				svcU.SetName(u.GetName())
-				svcU.SetNamespace(sca.Status.ServiceClusterNamespace.Name)
+				svcObj.SetName(externalObj.GetName())
+				svcObj.SetNamespace(sca.Status.ServiceClusterNamespace.Name)
 
-				ctx, cancel := context.WithTimeout(ctx, 15*time.Second)
-				t.Cleanup(cancel)
 				assert.NoError(t,
-					testutil.WaitUntilFound(ctx, serviceClient, svcU),
+					testutil.WaitUntilFound(ctx, serviceClient, svcObj, testutil.WithTimeout(15*time.Second)),
 					"cannot find the CRD on the service cluster within the time limit",
 				)
 			}
@@ -247,14 +271,6 @@ func newSimpleScenario(f *testutil.Framework) func(t *testing.T) {
 		}
 
 		{
-			providerClient, err := f.ManagementClient(t, func(config *rest.Config) error {
-				config.Impersonate = rest.ImpersonationConfig{
-					UserName: providerUser,
-				}
-				return nil
-			})
-			require.NoError(t, err)
-			t.Cleanup(providerClient.CleanUpFunc(ctx))
 
 			tenantList := &catalogv1alpha1.TenantList{}
 			require.NoError(t, providerClient.List(ctx, tenantList, client.InNamespace(provider.Status.Namespace.Name)))
