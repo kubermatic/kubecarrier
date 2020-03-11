@@ -152,6 +152,7 @@ func run(flags *flags, log logr.Logger) error {
 		LeaderElectionNamespace: flags.providerNamespace,
 		LeaderElectionID:        "elevator-" + flags.derivedCRName,
 		CertDir:                 flags.certDir,
+		Port:                    9443,
 		NewClient: func(cache cache.Cache, config *rest.Config, options client.Options) (client.Client, error) {
 			// Create the Client for Write operations.
 			c, err := client.New(config, options)
