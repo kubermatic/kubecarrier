@@ -69,10 +69,12 @@
                     description:
                       description: Description is the human-readable description of
                         this Account.
+                      minLength: 1
                       type: string
                     displayName:
                       description: DisplayName is the human-readable name of this
                         Account.
+                      minLength: 1
                       type: string
                   type: object
                 roles:
@@ -1390,10 +1392,12 @@
                     description:
                       description: Description is the human-readable description of
                         this Account.
+                      minLength: 1
                       type: string
                     displayName:
                       description: DisplayName is the human-readable name of this
                         Account.
+                      minLength: 1
                       type: string
                   type: object
               type: object
