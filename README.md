@@ -458,8 +458,8 @@ Here we also use `kubectl` user impersonation (`--as`), to showcase RBAC:
 # Offering objects contain information about CRDs that are shared to a Tenant.
 # They contain all the information to validate and create new instances.
 $ kubectl get offering -n team-b --as=team-b-member
-NAME                        DISPLAY NAME   PROVIDER   CRD                         AGE
-couchdbs.eu-west-1.team-a   CouchDB        team-a     couchdbs.eu-west-1.team-a   3m15s
+NAME                        DISPLAY NAME   PROVIDER   AGE
+couchdbs.eu-west-1.team-a   CouchDB        team-a     3m15s
 
 # ServiceClusterReference exposes information about the underlying Clusters.
 $ kubectl get serviceclusterreference -n team-b --as=team-b-member
