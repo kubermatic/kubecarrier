@@ -47,6 +47,17 @@ func WithClientWatcherTimeout(t time.Duration) ClientWatcherOption {
 	}
 }
 
+func WithoutClientWatcher() ClientWatcherOption {
+	return func(option *clientWatcherOption) error {
+		option.timeout = time.Duration(0)
+		return nil
+	}
+}
+
+const (
+	defaultTimeout = 30 * time.Second
+)
+
 type ClientWatcher struct {
 	dynamicClient dynamic.Interface
 	restMapper    meta.RESTMapper
@@ -86,7 +97,9 @@ func NewClientWatcher(conf *rest.Config, scheme *runtime.Scheme, log logr.Logger
 //
 // condition function should operate on the passed object in a closure and should not modify the obj
 func (cw *ClientWatcher) WaitUntil(ctx context.Context, obj runtime.Object, cond func() (done bool, err error), options ...ClientWatcherOption) error {
-	cfg := &clientWatcherOption{}
+	cfg := &clientWatcherOption{
+		timeout: defaultTimeout,
+	}
 	for _, f := range options {
 		if err := f(cfg); err != nil {
 			return err
@@ -134,7 +147,9 @@ func (cw *ClientWatcher) WaitUntil(ctx context.Context, obj runtime.Object, cond
 
 // WaitUntilNotFound waits until the object is not found or the context deadline is exceeded
 func (cw *ClientWatcher) WaitUntilNotFound(ctx context.Context, obj runtime.Object, options ...ClientWatcherOption) error {
-	cfg := &clientWatcherOption{}
+	cfg := &clientWatcherOption{
+		timeout: defaultTimeout,
+	}
 	for _, f := range options {
 		if err := f(cfg); err != nil {
 			return err

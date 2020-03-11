@@ -260,6 +260,8 @@ func newSimpleScenario(f *testutil.Framework) func(t *testing.T) {
 					testutil.WaitUntilFound(ctx, serviceClient, svcObj, testutil.WithTimeout(15*time.Second)),
 					"cannot find the CRD on the service cluster within the time limit",
 				)
+				assert.NoError(t, testutil.DeleteAndWaitUntilNotFound(ctx, tenantClient, externalObj))
+				assert.NoError(t, testutil.WaitUntilNotFound(ctx, serviceClient, svcObj))
 			}
 
 			providerList := &catalogv1alpha1.ProviderList{}
