@@ -28,11 +28,8 @@ import (
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
-	"sigs.k8s.io/controller-runtime/pkg/builder"
-	"sigs.k8s.io/controller-runtime/pkg/source"
 
 	operatorv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/operator/v1alpha1"
-	"github.com/kubermatic/kubecarrier/pkg/internal/owner"
 	"github.com/kubermatic/kubecarrier/pkg/internal/resources/manager"
 )
 
@@ -51,15 +48,21 @@ import (
 // +kubebuilder:rbac:groups=cert-manager.io,resources=issuers,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=cert-manager.io,resources=certificates,verbs=get;list;watch;create;update;patch;delete
 
-type KubeCarrierController struct {
+type KubeCarrierStrategy struct {
 }
 
-func (c *KubeCarrierController) GetObj() Component {
+func (c *KubeCarrierStrategy) GetObj() Component {
 	return &operatorv1alpha1.KubeCarrier{}
 }
 
-func (c *KubeCarrierController) GetOwnedObjectsTypes() []runtime.Object {
+func (c *KubeCarrierStrategy) GetOwnedObjectsTypes() []runtime.Object {
 	return []runtime.Object{
+		&appsv1.Deployment{},
+		&corev1.Service{},
+		&rbacv1.Role{},
+		&rbacv1.RoleBinding{},
+		&certv1alpha2.Issuer{},
+		&certv1alpha2.Certificate{},
 		&rbacv1.ClusterRole{},
 		&rbacv1.ClusterRoleBinding{},
 		&apiextensionsv1.CustomResourceDefinition{},
@@ -68,7 +71,7 @@ func (c *KubeCarrierController) GetOwnedObjectsTypes() []runtime.Object {
 	}
 }
 
-func (c *KubeCarrierController) GetManifests(ctx context.Context, component Component) ([]unstructured.Unstructured, error) {
+func (c *KubeCarrierStrategy) GetManifests(ctx context.Context, component Component) ([]unstructured.Unstructured, error) {
 	kubeCarrier, ok := component.(*operatorv1alpha1.KubeCarrier)
 	if !ok {
 		return nil, fmt.Errorf("can't assert to KubeCarrier: %v", component)
@@ -77,20 +80,4 @@ func (c *KubeCarrierController) GetManifests(ctx context.Context, component Comp
 		manager.Config{
 			Namespace: kubeCarrier.Namespace,
 		})
-}
-
-func (c *KubeCarrierController) SetupWithManager(builder *builder.Builder, scheme *runtime.Scheme) *builder.Builder {
-	enqueuer := owner.EnqueueRequestForOwner(&operatorv1alpha1.KubeCarrier{}, scheme)
-	return builder.For(&operatorv1alpha1.KubeCarrier{}).
-		Owns(&appsv1.Deployment{}).
-		Owns(&corev1.Service{}).
-		Owns(&rbacv1.Role{}).
-		Owns(&rbacv1.RoleBinding{}).
-		Owns(&certv1alpha2.Issuer{}).
-		Owns(&certv1alpha2.Certificate{}).
-		Watches(&source.Kind{Type: &rbacv1.ClusterRole{}}, enqueuer).
-		Watches(&source.Kind{Type: &rbacv1.ClusterRoleBinding{}}, enqueuer).
-		Watches(&source.Kind{Type: &apiextensionsv1.CustomResourceDefinition{}}, enqueuer).
-		Watches(&source.Kind{Type: &adminv1beta1.MutatingWebhookConfiguration{}}, enqueuer).
-		Watches(&source.Kind{Type: &adminv1beta1.ValidatingWebhookConfiguration{}}, enqueuer)
 }

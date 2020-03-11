@@ -76,7 +76,7 @@ func NewBaseReconciler(ctr ControllerStrategy, c client.Client, scheme *runtime.
 }
 
 func (r *BaseReconciler) SetupWithManager(mgr ctrl.Manager) error {
-	controllerBuilder := ctrl.NewControllerManagedBy(mgr)
+	controllerBuilder := ctrl.NewControllerManagedBy(mgr).For(r.Controller.GetObj())
 	for _, obj := range r.Controller.GetOwnedObjectsTypes() {
 		gvk, err := apiutil.GVKForObject(obj, r.Scheme)
 		if err != nil {

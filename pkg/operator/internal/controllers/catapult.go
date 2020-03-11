@@ -25,16 +25,12 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
-	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
-	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/source"
 
 	operatorv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/operator/v1alpha1"
-	"github.com/kubermatic/kubecarrier/pkg/internal/owner"
 	resourcescatapult "github.com/kubermatic/kubecarrier/pkg/internal/resources/catapult"
 )
 
@@ -52,40 +48,30 @@ import (
 // +kubebuilder:rbac:groups=cert-manager.io,resources=issuers,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=cert-manager.io,resources=certificates,verbs=get;list;watch;create;update;patch;delete
 
-type CatapultController struct {
+type CatapultStrategy struct {
 	Client client.Client
 }
 
-func (c *CatapultController) GetObj() Component {
+func (c *CatapultStrategy) GetObj() Component {
 	return &operatorv1alpha1.Catapult{}
 }
 
-func (c *CatapultController) GetOwnedObjectsTypes() []runtime.Object {
+func (c *CatapultStrategy) GetOwnedObjectsTypes() []runtime.Object {
 	return []runtime.Object{
+		&appsv1.Deployment{},
+		&corev1.Service{},
+		&rbacv1.Role{},
+		&rbacv1.RoleBinding{},
+		&certv1alpha2.Issuer{},
+		&certv1alpha2.Certificate{},
 		&rbacv1.ClusterRole{},
 		&rbacv1.ClusterRoleBinding{},
-		&apiextensionsv1.CustomResourceDefinition{},
 		&adminv1beta1.MutatingWebhookConfiguration{},
 		&adminv1beta1.ValidatingWebhookConfiguration{},
 	}
 }
 
-func (c *CatapultController) SetupWithManager(builder *builder.Builder, scheme *runtime.Scheme) *builder.Builder {
-	enqueuer := owner.EnqueueRequestForOwner(&operatorv1alpha1.Catapult{}, scheme)
-	return builder.For(&operatorv1alpha1.Catapult{}).
-		Owns(&appsv1.Deployment{}).
-		Owns(&corev1.Service{}).
-		Owns(&rbacv1.Role{}).
-		Owns(&rbacv1.RoleBinding{}).
-		Owns(&certv1alpha2.Issuer{}).
-		Owns(&certv1alpha2.Certificate{}).
-		Watches(&source.Kind{Type: &rbacv1.ClusterRole{}}, enqueuer).
-		Watches(&source.Kind{Type: &rbacv1.ClusterRoleBinding{}}, enqueuer).
-		Watches(&source.Kind{Type: &adminv1beta1.MutatingWebhookConfiguration{}}, enqueuer).
-		Watches(&source.Kind{Type: &adminv1beta1.ValidatingWebhookConfiguration{}}, enqueuer)
-}
-
-func (c *CatapultController) GetManifests(ctx context.Context, component Component) ([]unstructured.Unstructured, error) {
+func (c *CatapultStrategy) GetManifests(ctx context.Context, component Component) ([]unstructured.Unstructured, error) {
 
 	catapult, ok := component.(*operatorv1alpha1.Catapult)
 	if !ok {

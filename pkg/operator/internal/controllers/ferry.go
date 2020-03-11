@@ -25,12 +25,8 @@ import (
 	rbacv1 "k8s.io/api/rbac/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
-	"sigs.k8s.io/controller-runtime/pkg/builder"
-	"sigs.k8s.io/controller-runtime/pkg/handler"
-	"sigs.k8s.io/controller-runtime/pkg/source"
 
 	operatorv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/operator/v1alpha1"
-	"github.com/kubermatic/kubecarrier/pkg/internal/owner"
 	resourceferry "github.com/kubermatic/kubecarrier/pkg/internal/resources/ferry"
 )
 
@@ -42,14 +38,14 @@ import (
 // +kubebuilder:rbac:groups=operator.kubecarrier.io,resources=ferries,verbs=get;list;watch;update;patch
 // +kubebuilder:rbac:groups=operator.kubecarrier.io,resources=ferries/status,verbs=get;update;patch
 
-type FerryController struct {
+type FerryStrategy struct {
 }
 
-func (c *FerryController) GetObj() Component {
+func (c *FerryStrategy) GetObj() Component {
 	return &operatorv1alpha1.Ferry{}
 }
 
-func (c *FerryController) GetOwnedObjectsTypes() []runtime.Object {
+func (c *FerryStrategy) GetOwnedObjectsTypes() []runtime.Object {
 	return []runtime.Object{
 		&corev1.Service{},
 		&corev1.ServiceAccount{},
@@ -60,21 +56,7 @@ func (c *FerryController) GetOwnedObjectsTypes() []runtime.Object {
 
 }
 
-func (c *FerryController) SetupWithManager(builder *builder.Builder, scheme *runtime.Scheme) *builder.Builder {
-	builder = builder.For(&operatorv1alpha1.Ferry{})
-	for _, obj := range c.GetOwnedObjectsTypes() {
-		// namespaces scoped
-		// we use metadata.
-		builder = builder.Watches(&source.Kind{Type: obj}, &handler.EnqueueRequestForOwner{OwnerType: &operatorv1alpha1.Ferry{}})
-
-		//cluster scoped
-		// we use owner references
-		builder = builder.Watches(&source.Kind{Type: obj}, owner.EnqueueRequestForOwner(obj, scheme))
-	}
-	return builder
-}
-
-func (c *FerryController) GetManifests(ctx context.Context, component Component) ([]unstructured.Unstructured, error) {
+func (c *FerryStrategy) GetManifests(ctx context.Context, component Component) ([]unstructured.Unstructured, error) {
 	ferry, ok := component.(*operatorv1alpha1.Ferry)
 	if !ok {
 		return nil, fmt.Errorf("can't assert to Ferry: %v", component)

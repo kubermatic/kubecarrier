@@ -23,14 +23,10 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
-	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
-	"sigs.k8s.io/controller-runtime/pkg/builder"
-	"sigs.k8s.io/controller-runtime/pkg/source"
 
 	operatorv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/operator/v1alpha1"
-	"github.com/kubermatic/kubecarrier/pkg/internal/owner"
 	resourceselevator "github.com/kubermatic/kubecarrier/pkg/internal/resources/elevator"
 )
 
@@ -44,33 +40,26 @@ import (
 // +kubebuilder:rbac:groups="",resources=services,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups="",resources=serviceaccounts,verbs=get;list;watch;create;update;patch;delete
 
-type ElevatorController struct {
+type ElevatorStrategy struct {
 }
 
-func (c *ElevatorController) GetObj() Component {
+func (c *ElevatorStrategy) GetObj() Component {
 	return &operatorv1alpha1.Elevator{}
 }
 
-func (c *ElevatorController) GetOwnedObjectsTypes() []runtime.Object {
+func (c *ElevatorStrategy) GetOwnedObjectsTypes() []runtime.Object {
 	return []runtime.Object{
+		&appsv1.Deployment{},
+		&corev1.Service{},
+		&rbacv1.Role{},
+		&rbacv1.RoleBinding{},
+		&corev1.ServiceAccount{},
 		&rbacv1.ClusterRole{},
 		&rbacv1.ClusterRoleBinding{},
-		&apiextensionsv1.CustomResourceDefinition{},
 	}
 }
-func (c *ElevatorController) SetupWithManager(builder *builder.Builder, scheme *runtime.Scheme) *builder.Builder {
-	enqueuer := owner.EnqueueRequestForOwner(&operatorv1alpha1.Elevator{}, scheme)
-	return builder.For(&operatorv1alpha1.Elevator{}).
-		Owns(&appsv1.Deployment{}).
-		Owns(&corev1.Service{}).
-		Owns(&rbacv1.Role{}).
-		Owns(&rbacv1.RoleBinding{}).
-		Watches(&source.Kind{Type: &corev1.ServiceAccount{}}, enqueuer).
-		Watches(&source.Kind{Type: &rbacv1.ClusterRole{}}, enqueuer).
-		Watches(&source.Kind{Type: &rbacv1.ClusterRoleBinding{}}, enqueuer)
-}
 
-func (c *ElevatorController) GetManifests(ctx context.Context, component Component) ([]unstructured.Unstructured, error) {
+func (c *ElevatorStrategy) GetManifests(ctx context.Context, component Component) ([]unstructured.Unstructured, error) {
 	elevator, ok := component.(*operatorv1alpha1.Elevator)
 	if !ok {
 		return nil, fmt.Errorf("can't assert to Elevator: %v", component)

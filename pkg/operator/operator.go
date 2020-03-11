@@ -82,7 +82,7 @@ func run(flags *flags, log logr.Logger) error {
 	}
 
 	if err := controllers.NewBaseReconciler(
-		&controllers.KubeCarrierController{},
+		&controllers.KubeCarrierStrategy{},
 		mgr.GetClient(),
 		mgr.GetScheme(),
 		mgr.GetRESTMapper(),
@@ -92,7 +92,7 @@ func run(flags *flags, log logr.Logger) error {
 		return fmt.Errorf("creating KubeCarrier controller: %w", err)
 	}
 	if err := controllers.NewBaseReconciler(
-		&controllers.FerryController{},
+		&controllers.FerryStrategy{},
 		mgr.GetClient(),
 		mgr.GetScheme(),
 		mgr.GetRESTMapper(),
@@ -102,7 +102,7 @@ func run(flags *flags, log logr.Logger) error {
 		return fmt.Errorf("creating Ferry controller: %w", err)
 	}
 	if err := controllers.NewBaseReconciler(
-		&controllers.CatapultController{Client: mgr.GetClient()},
+		&controllers.CatapultStrategy{Client: mgr.GetClient()},
 		mgr.GetClient(),
 		mgr.GetScheme(),
 		mgr.GetRESTMapper(),
@@ -113,7 +113,7 @@ func run(flags *flags, log logr.Logger) error {
 		return fmt.Errorf("creating Catapult controller: %w", err)
 	}
 	if err := controllers.NewBaseReconciler(
-		&controllers.ElevatorController{},
+		&controllers.ElevatorStrategy{},
 		mgr.GetClient(),
 		mgr.GetScheme(),
 		mgr.GetRESTMapper(),
