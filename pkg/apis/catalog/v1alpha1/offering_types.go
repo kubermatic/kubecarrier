@@ -22,7 +22,7 @@ import (
 
 // OfferingSpec defines the data (metadata, provider, crds, etc.) of Offering.
 type OfferingSpec struct {
-	Metadata OfferingMetadata `json:"metadata,omitempty"`
+	Metadata OfferingMetadata `json:"metadata"`
 	// Provider references the Provider managing this Offering.
 	Provider ObjectReference `json:"provider"`
 	// CRD holds the information about the underlying CRD that is offered by this offering.

@@ -25,7 +25,7 @@ import (
 // CatalogEntrySetSpec defines the desired state of CatalogEntrySet.
 type CatalogEntrySetSpec struct {
 	// Metadata contains the metadata of each CatalogEntry for the Service Catalog.
-	Metadata CatalogEntrySetMetadata `json:"metadata,omitempty"`
+	Metadata CatalogEntrySetMetadata `json:"metadata"`
 	// Derive contains the configuration to generate DerivedCustomResources from the BaseCRDs that are selected by this CatalogEntrySet.
 	Derive *DerivedConfig `json:"derive,omitempty"`
 	// Discover contains the configuration to create a CustomResourceDiscoverySet.

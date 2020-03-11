@@ -138,6 +138,8 @@ spec:
                     - description
                     - displayName
                   type: object
+              required:
+                - metadata
               type: object
             status:
               description: CatalogEntryStatus represents the observed state of CatalogEntry.

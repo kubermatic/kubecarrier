@@ -199,6 +199,7 @@ spec:
                 type: object
             required:
             - discover
+            - metadata
             type: object
           status:
             description: CatalogEntrySetStatus defines the observed state of CatalogEntrySet.
