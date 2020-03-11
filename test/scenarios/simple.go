@@ -61,7 +61,7 @@ func newSimpleScenario(f *testutil.Framework) func(t *testing.T) {
 			tenantUser   = testName + "-tenant"
 			providerUser = testName + "-provider"
 		)
-		tenant := f.NewTenantAccount(testName, rbacv1.Subject{
+		tenantAccount := f.NewTenantAccount(testName, rbacv1.Subject{
 			Kind:     rbacv1.UserKind,
 			APIGroup: "rbac.authorization.k8s.io",
 			Name:     tenantUser,
@@ -72,21 +72,21 @@ func newSimpleScenario(f *testutil.Framework) func(t *testing.T) {
 			Name:     providerUser,
 		})
 
-		require.NoError(t, managementClient.Create(ctx, tenant), "creating tenant error")
+		require.NoError(t, managementClient.Create(ctx, tenantAccount), "creating tenant error")
 		require.NoError(t, managementClient.Create(ctx, provider), "creating provider error")
-		require.NoError(t, testutil.WaitUntilReady(ctx, managementClient, tenant))
+		require.NoError(t, testutil.WaitUntilReady(ctx, managementClient, tenantAccount))
 		require.NoError(t, testutil.WaitUntilReady(ctx, managementClient, provider))
-		require.NotEmpty(t, tenant.Status.Namespace.Name)
+		require.NotEmpty(t, tenantAccount.Status.Namespace.Name)
 		require.NotEmpty(t, provider.Status.Namespace.Name)
 
 		t.Log("===== checking tenant =====")
-		tenantReference := &catalogv1alpha1.Tenant{
+		tenant := &catalogv1alpha1.Tenant{
 			ObjectMeta: metav1.ObjectMeta{
-				Name:      tenant.Name,
+				Name:      tenantAccount.Name,
 				Namespace: provider.Status.Namespace.Name,
 			},
 		}
-		require.NoError(t, testutil.WaitUntilFound(ctx, managementClient, tenantReference))
+		require.NoError(t, testutil.WaitUntilFound(ctx, managementClient, tenant))
 
 		t.Log("===== creating service cluster =====")
 		serviceKubeconfig, err := ioutil.ReadFile(f.Config().ServiceInternalKubeconfigPath)
@@ -201,16 +201,16 @@ func newSimpleScenario(f *testutil.Framework) func(t *testing.T) {
 		t.Cleanup(providerClient.CleanUpFunc(ctx))
 		{
 			offeringList := &catalogv1alpha1.OfferingList{}
-			require.NoError(t, tenantClient.List(ctx, offeringList, client.InNamespace(tenant.Status.Namespace.Name)))
+			require.NoError(t, tenantClient.List(ctx, offeringList, client.InNamespace(tenantAccount.Status.Namespace.Name)))
 			assert.NotEmpty(t, offeringList.Items, "no offerings found")
 			for _, it := range offeringList.Items {
-				t.Logf("tenant %s has offerring %s", tenant.Name, it.Name)
+				t.Logf("tenant %s has offerring %s", tenantAccount.Name, it.Name)
 			}
 			offering := &catalogv1alpha1.Offering{}
 			if assert.NoError(t, tenantClient.Get(ctx, types.NamespacedName{
-				Namespace: tenant.Status.Namespace.Name,
+				Namespace: tenantAccount.Status.Namespace.Name,
 				Name:      strings.Join([]string{"couchdbs", serviceCluster.Name, provider.Name}, "."),
-			}, offering), "tenant %s doesn't have the required offering", tenant.Name) {
+			}, offering), "tenant %s doesn't have the required offering", tenantAccount.Name) {
 				assert.Equal(t, externalCRD.Name, offering.Spec.CRD.Name)
 				externalObj := &unstructured.Unstructured{}
 				externalObj.SetGroupVersionKind(schema.GroupVersionKind{
@@ -218,7 +218,7 @@ func newSimpleScenario(f *testutil.Framework) func(t *testing.T) {
 					Version: offering.Spec.CRD.Versions[0].Name,
 					Kind:    offering.Spec.CRD.Kind,
 				})
-				externalObj.SetNamespace(tenant.Status.Namespace.Name)
+				externalObj.SetNamespace(tenantAccount.Status.Namespace.Name)
 				externalObj.SetName("db1")
 				externalObj.Object["spec"] = map[string]interface{}{
 					"prop1": "dummy value",
@@ -232,7 +232,7 @@ func newSimpleScenario(f *testutil.Framework) func(t *testing.T) {
 					Version: internalCRD.Spec.Versions[0].Name,
 					Kind:    internalCRD.Spec.Names.Kind,
 				})
-				internalObj.SetNamespace(tenant.Status.Namespace.Name)
+				internalObj.SetNamespace(tenantAccount.Status.Namespace.Name)
 				internalObj.SetName(externalObj.GetName())
 				assert.NoError(t,
 					testutil.WaitUntilFound(ctx, providerClient, internalObj, testutil.WithTimeout(15*time.Second)),
@@ -242,7 +242,7 @@ func newSimpleScenario(f *testutil.Framework) func(t *testing.T) {
 				sca := &corev1alpha1.ServiceClusterAssignment{}
 				require.NoError(t, managementClient.Get(ctx, types.NamespacedName{
 					Namespace: provider.Status.Namespace.Name,
-					Name:      tenant.Name + "." + serviceCluster.Name,
+					Name:      tenantAccount.Name + "." + serviceCluster.Name,
 				}, sca))
 
 				t.Log("checking internal object")
@@ -265,10 +265,10 @@ func newSimpleScenario(f *testutil.Framework) func(t *testing.T) {
 			}
 
 			providerList := &catalogv1alpha1.ProviderList{}
-			require.NoError(t, tenantClient.List(ctx, providerList, client.InNamespace(tenant.Status.Namespace.Name)))
+			require.NoError(t, tenantClient.List(ctx, providerList, client.InNamespace(tenantAccount.Status.Namespace.Name)))
 			assert.NotEmpty(t, providerList.Items, "no offerings found")
 			for _, it := range providerList.Items {
-				t.Logf("tenant %s has provider %s", tenant.Name, it.Name)
+				t.Logf("tenant %s has provider %s", tenantAccount.Name, it.Name)
 			}
 		}
 
@@ -280,11 +280,11 @@ func newSimpleScenario(f *testutil.Framework) func(t *testing.T) {
 			var tenantFound bool
 			for _, it := range tenantList.Items {
 				t.Logf("provider %s has tenant %s", provider.Name, it.Name)
-				if it.Name == tenant.Name {
+				if it.Name == tenantAccount.Name {
 					tenantFound = true
 				}
 			}
-			assert.True(t, tenantFound, "cannot find tenant %s for the provider %s", tenant.Name, provider.Name)
+			assert.True(t, tenantFound, "cannot find tenant %s for the provider %s", tenantAccount.Name, provider.Name)
 		}
 	}
 }
