@@ -43,7 +43,7 @@ func newSimpleScenario(f *testutil.Framework) func(t *testing.T) {
 		// Setup
 		ctx, cancel := context.WithTimeout(context.Background(), 120*time.Second)
 		t.Cleanup(cancel)
-		//ctx = context.Background()
+		ctx = context.Background()
 
 		managementClient, err := f.ManagementClient(t)
 		require.NoError(t, err, "creating management client")
@@ -56,15 +56,19 @@ func newSimpleScenario(f *testutil.Framework) func(t *testing.T) {
 
 		// Creating account
 		t.Log("===== creating necessary accounts =====")
+		var (
+			tenantUser   = testName + "-tenant"
+			providerUser = testName + "-provider"
+		)
 		tenant := f.NewTenantAccount(testName, rbacv1.Subject{
 			Kind:     rbacv1.UserKind,
 			APIGroup: "rbac.authorization.k8s.io",
-			Name:     testName + "-tenant",
+			Name:     tenantUser,
 		})
 		provider := f.NewProviderAccount(testName, rbacv1.Subject{
 			Kind:     rbacv1.UserKind,
 			APIGroup: "rbac.authorization.k8s.io",
-			Name:     testName + "-provider",
+			Name:     providerUser,
 		})
 
 		require.NoError(t, managementClient.Create(ctx, tenant), "creating tenant error")
@@ -179,30 +183,57 @@ func newSimpleScenario(f *testutil.Framework) func(t *testing.T) {
 
 		tenantClient, err := f.ManagementClient(t, func(config *rest.Config) error {
 			config.Impersonate = rest.ImpersonationConfig{
-				UserName: testName + "-provider",
+				UserName: tenantUser,
 			}
 			return nil
 		})
 		require.NoError(t, err)
 		t.Cleanup(tenantClient.CleanUpFunc(ctx))
 
-		offeringList := &catalogv1alpha1.OfferingList{}
-		require.NoError(t, tenantClient.List(ctx, offeringList, client.InNamespace(tenant.Status.Namespace.Name)))
-		assert.NotEmpty(t, offeringList.Items, "no offerings found")
-		t.Logf("tenant offerings:\n%v", offeringList.Items)
-
-		providerClient, err := f.ManagementClient(t, func(config *rest.Config) error {
-			config.Impersonate = rest.ImpersonationConfig{
-				UserName: testName + "-tenant",
+		{
+			offeringList := &catalogv1alpha1.OfferingList{}
+			require.NoError(t, tenantClient.List(ctx, offeringList, client.InNamespace(tenant.Status.Namespace.Name)))
+			assert.NotEmpty(t, offeringList.Items, "no offerings found")
+			for _, it := range offeringList.Items {
+				t.Logf("tenant %s has offerring %s", tenant.Name, it.Name)
 			}
-			return nil
-		})
-		require.NoError(t, err)
-		t.Cleanup(providerClient.CleanUpFunc(ctx))
+			offering := &catalogv1alpha1.Offering{}
+			if assert.NoError(t, tenantClient.Get(ctx, types.NamespacedName{
+				Namespace: tenant.Status.Namespace.Name,
+				Name:      strings.Join([]string{"couchdbs", serviceCluster.Name, provider.Name}, "."),
+			}, offering), "tenant %s doesn't have the required offering", tenant.Name) {
+				// TODO: create the off
+			}
 
-		tenantList := &catalogv1alpha1.TenantList{}
-		require.NoError(t, providerClient.List(ctx, tenantList, client.InNamespace(provider.Status.Namespace.Name)))
-		assert.NotEmpty(t, tenantList.Items, "no tenants found")
-		t.Logf("tenants:\n%v", tenantList.Items)
+			providerList := &catalogv1alpha1.ProviderList{}
+			require.NoError(t, tenantClient.List(ctx, providerList, client.InNamespace(tenant.Status.Namespace.Name)))
+			assert.NotEmpty(t, providerList.Items, "no offerings found")
+			for _, it := range providerList.Items {
+				t.Logf("tenant %s has provider %s", tenant.Name, it.Name)
+			}
+		}
+
+		{
+			providerClient, err := f.ManagementClient(t, func(config *rest.Config) error {
+				config.Impersonate = rest.ImpersonationConfig{
+					UserName: providerUser,
+				}
+				return nil
+			})
+			require.NoError(t, err)
+			t.Cleanup(providerClient.CleanUpFunc(ctx))
+
+			tenantList := &catalogv1alpha1.TenantList{}
+			require.NoError(t, providerClient.List(ctx, tenantList, client.InNamespace(provider.Status.Namespace.Name)))
+			assert.NotEmpty(t, tenantList.Items, "no tenants found")
+			var tenantFound bool
+			for _, it := range tenantList.Items {
+				t.Logf("provider %s has tenant %s", provider.Name, it.Name)
+				if it.Name == tenant.Name {
+					tenantFound = true
+				}
+			}
+			assert.True(t, tenantFound, "cannot find tenant %s for the provider %s", tenant.Name, provider.Name)
+		}
 	}
 }
