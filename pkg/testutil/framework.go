@@ -239,6 +239,9 @@ func (f *Framework) NewFakeCouchDBCRD(group string) *apiextensionsv1.CustomResou
 							Type: "object",
 						},
 					},
+					Subresources: &apiextensionsv1.CustomResourceSubresources{
+						Status: &apiextensionsv1.CustomResourceSubresourceStatus{},
+					},
 				},
 			},
 			Scope: apiextensionsv1.NamespaceScoped,

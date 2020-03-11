@@ -45,7 +45,6 @@ func newSimpleScenario(f *testutil.Framework) func(t *testing.T) {
 		// Setup
 		ctx, cancel := context.WithTimeout(context.Background(), 120*time.Second)
 		t.Cleanup(cancel)
-		ctx = context.Background()
 
 		managementClient, err := f.ManagementClient(t)
 		require.NoError(t, err, "creating management client")
@@ -256,6 +255,7 @@ func newSimpleScenario(f *testutil.Framework) func(t *testing.T) {
 				svcObj.SetName(externalObj.GetName())
 				svcObj.SetNamespace(sca.Status.ServiceClusterNamespace.Name)
 
+				t.Log("checking service cluster object")
 				assert.NoError(t,
 					testutil.WaitUntilFound(ctx, serviceClient, svcObj, testutil.WithTimeout(15*time.Second)),
 					"cannot find the CRD on the service cluster within the time limit",
