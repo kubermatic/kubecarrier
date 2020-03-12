@@ -102,9 +102,11 @@ KubeCarrier is distributed via a public container registry [quay.io/kubecarrier]
 
 This CLI tool will gain more utility functions as the project matures.
 
-#### Install the Kubectl plugin
+#### Install the kubectl plugin
 
-To install the kubectl plugin, just visit the KubeCarrier [release page](https://github.com/kubermatic/kubecarrier/releases), download the archive and put the contained `kubectl-kubecarrier` binary into your `$PATH`. Make sure the binary is executable.
+To install the kubectl plugin, just visit the KubeCarrier [release page](https://github.com/kubermatic/kubecarrier/releases), download the archive and put the contained `kubecarrier` binary into your `$PATH` as `kubectl-kubecarrier`.
+
+Make sure the binary is executable.
 
 If everything worked, you should now be setup with the `kubecarrier` plugin:
 *(Your version should be way newer than this example)*
