@@ -22,6 +22,7 @@ KubeCarrier is an open source system for managing applications and services acro
   - [Before you start](#before-you-start)
   - [Pull Requests](#pull-requests)
   - [Developer Documentation](developer-documentation)
+- [FAQ](#faq)
 - [Changelog](#changelog)
 
 ---
@@ -34,7 +35,7 @@ KubeCarrier is an open source system for managing applications and services acro
 
 ## Project Status
 
-KubeCarrier is currently in alpha and is not ready for production use, the APIs are not yet final and breaking changes might be introduced in every release.
+KubeCarrier is currently in early development and is not ready for production use, the APIs are not yet final and breaking changes might be introduced in every release.
 
 ## Features
 
@@ -536,6 +537,23 @@ Feedback and discussion are available on [the mailing list][11].
 ### Pull requests
 
 * We welcome pull requests. Feel free to dig through the [issues][1] and jump in.
+
+## FAQ
+
+### Whats the difference to OLM / Crossplane?
+
+The Operator Lifecycle Manager from RedHat and Crossplane are both projects that manage installation, upgrade and deletion of Operators and their CustomResourceDefinitions in a Kubernetes cluster.
+
+KubeCarrier on the other hand is just working with existing CustomResourceDefinitions and already installed Operators.
+As both OLM and Crossplane are driven by CRDs, they can be combined with KubeCarrier to manage their configuration across clusters.
+
+### Whats the difference to KubeFed - Kubernetes Federation?
+
+The [Kubernetes Federation Project](https://github.com/kubernetes-sigs/kubefed) was created to distribute Workload across Kubernetes Clusters for e.g. geo-replication and disaster recovery.
+It's intentionally low-level to work for generic workload to be spread across clusters.
+
+While KubeCarrier is also operating on multiple clusters, KubeCarrier operates on a higher abstraction level.
+KubeCarrier assigns applications onto single pre-determined Kubernetes clusters. Kubernetes Operators that enable these applications, may still use KubeFed underneath to spread the workload across clusters.
 
 ## Changelog
 
