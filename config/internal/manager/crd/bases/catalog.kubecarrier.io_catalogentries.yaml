@@ -139,6 +139,7 @@ spec:
                     - displayName
                   type: object
               required:
+                - baseCRD
                 - metadata
               type: object
             status:

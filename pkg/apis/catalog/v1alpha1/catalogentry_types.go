@@ -25,7 +25,7 @@ type CatalogEntrySpec struct {
 	// Metadata contains the metadata of the CatalogEntry for the Service Catalog.
 	Metadata CatalogEntryMetadata `json:"metadata"`
 	// BaseCRD is the underlying BaseCRD objects that this CatalogEntry refers to.
-	BaseCRD ObjectReference `json:"baseCRD,omitempty"`
+	BaseCRD ObjectReference `json:"baseCRD"`
 	// Derive contains the configuration to generate DerivedCustomResource from the BaseCRD of this CatalogEntry.
 	Derive *DerivedConfig `json:"derive,omitempty"`
 }
