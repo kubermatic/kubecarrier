@@ -540,9 +540,9 @@ Feedback and discussion are available on [the mailing list][11].
 
 ## FAQ
 
-### Whats the difference to OLM / Crossplane?
+### What`s the difference to OLM / Crossplane?
 
-The Operator Lifecycle Manager from RedHat and Crossplane are both projects that manage installation, upgrade and deletion of Operators and their CustomResourceDefinitions in a Kubernetes cluster.
+The [Operator Lifecycle Manager](https://github.com/operator-framework/operator-lifecycle-manager) from RedHat and [Crossplane](https://crossplane.io/) are both projects that manage installation, upgrade and deletion of Operators and their CustomResourceDefinitions in a Kubernetes cluster.
 
 KubeCarrier on the other hand is just working with existing CustomResourceDefinitions and already installed Operators.
 As both OLM and Crossplane are driven by CRDs, they can be combined with KubeCarrier to manage their configuration across clusters.
