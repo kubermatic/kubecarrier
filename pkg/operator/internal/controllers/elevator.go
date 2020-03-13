@@ -25,6 +25,7 @@ import (
 	rbacv1 "k8s.io/api/rbac/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
+	"sigs.k8s.io/controller-runtime/pkg/builder"
 
 	operatorv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/operator/v1alpha1"
 	resourceselevator "github.com/kubermatic/kubecarrier/pkg/internal/resources/elevator"
@@ -49,13 +50,9 @@ func (c *ElevatorStrategy) GetObj() Component {
 
 func (c *ElevatorStrategy) GetOwnedObjectsTypes() []runtime.Object {
 	return []runtime.Object{
-		&appsv1.Deployment{},
-		&corev1.Service{},
-		&rbacv1.Role{},
-		&rbacv1.RoleBinding{},
-		&corev1.ServiceAccount{},
 		&rbacv1.ClusterRole{},
 		&rbacv1.ClusterRoleBinding{},
+		&corev1.ServiceAccount{},
 	}
 }
 
@@ -81,4 +78,12 @@ func (c *ElevatorStrategy) GetManifests(ctx context.Context, component Component
 
 			DerivedCRName: elevator.Spec.DerivedCR.Name,
 		})
+}
+
+func (c *ElevatorStrategy) AddWatches(builder *builder.Builder, scheme *runtime.Scheme) *builder.Builder {
+	return builder.
+		Owns(&appsv1.Deployment{}).
+		Owns(&corev1.Service{}).
+		Owns(&rbacv1.Role{}).
+		Owns(&rbacv1.RoleBinding{})
 }

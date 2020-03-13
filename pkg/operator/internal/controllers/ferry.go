@@ -25,6 +25,7 @@ import (
 	rbacv1 "k8s.io/api/rbac/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
+	"sigs.k8s.io/controller-runtime/pkg/builder"
 
 	operatorv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/operator/v1alpha1"
 	resourceferry "github.com/kubermatic/kubecarrier/pkg/internal/resources/ferry"
@@ -46,13 +47,7 @@ func (c *FerryStrategy) GetObj() Component {
 }
 
 func (c *FerryStrategy) GetOwnedObjectsTypes() []runtime.Object {
-	return []runtime.Object{
-		&corev1.Service{},
-		&corev1.ServiceAccount{},
-		&rbacv1.Role{},
-		&rbacv1.RoleBinding{},
-		&appsv1.Deployment{},
-	}
+	return []runtime.Object{}
 
 }
 
@@ -67,4 +62,13 @@ func (c *FerryStrategy) GetManifests(ctx context.Context, component Component) (
 			Name:                 ferry.Name,
 			KubeconfigSecretName: ferry.Spec.KubeconfigSecret.Name,
 		})
+}
+
+func (c *FerryStrategy) AddWatches(builder *builder.Builder, scheme *runtime.Scheme) *builder.Builder {
+	return builder.
+		Owns(&appsv1.Deployment{}).
+		Owns(&corev1.Service{}).
+		Owns(&rbacv1.Role{}).
+		Owns(&rbacv1.RoleBinding{}).
+		Owns(&corev1.ServiceAccount{})
 }

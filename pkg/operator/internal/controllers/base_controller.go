@@ -28,6 +28,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/apiutil"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
@@ -51,6 +52,7 @@ type ControllerStrategy interface {
 	GetObj() Component
 	GetManifests(context.Context, Component) ([]unstructured.Unstructured, error)
 	GetOwnedObjectsTypes() []runtime.Object
+	AddWatches(builder *builder.Builder, scheme *runtime.Scheme) *builder.Builder
 }
 
 type BaseReconciler struct {
@@ -76,29 +78,13 @@ func NewBaseReconciler(ctr ControllerStrategy, c client.Client, scheme *runtime.
 }
 
 func (r *BaseReconciler) SetupWithManager(mgr ctrl.Manager) error {
-	controllerBuilder := ctrl.NewControllerManagedBy(mgr).For(r.Controller.GetObj())
+	controllerBuilder := ctrl.NewControllerManagedBy(mgr)
+	controllerBuilder = controllerBuilder.For(r.Controller.GetObj())
+	enqueuer := owner.EnqueueRequestForOwner(r.Controller.GetObj(), mgr.GetScheme())
 	for _, obj := range r.Controller.GetOwnedObjectsTypes() {
-		gvk, err := apiutil.GVKForObject(obj, r.Scheme)
-		if err != nil {
-			return err
-		}
-		restMapping, err := r.RESTMapper.RESTMapping(schema.GroupKind{
-			Group: gvk.Group,
-			Kind:  gvk.Kind,
-		}, gvk.Version)
-		if err != nil {
-			return err
-		}
-
-		switch restMapping.Scope.Name() {
-		case meta.RESTScopeNameNamespace:
-			controllerBuilder = controllerBuilder.Owns(obj)
-		case meta.RESTScopeNameRoot:
-			controllerBuilder = controllerBuilder.Watches(&source.Kind{Type: obj}, owner.EnqueueRequestForOwner(obj, mgr.GetScheme()))
-		default:
-			return fmt.Errorf("unknown REST scope: %s", restMapping.Scope.Name())
-		}
+		controllerBuilder = controllerBuilder.Watches(&source.Kind{Type: obj}, enqueuer)
 	}
+	controllerBuilder = r.Controller.AddWatches(controllerBuilder, mgr.GetScheme())
 	return controllerBuilder.Complete(r)
 }
 

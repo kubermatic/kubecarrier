@@ -28,6 +28,7 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
+	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	operatorv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/operator/v1alpha1"
@@ -58,12 +59,6 @@ func (c *CatapultStrategy) GetObj() Component {
 
 func (c *CatapultStrategy) GetOwnedObjectsTypes() []runtime.Object {
 	return []runtime.Object{
-		&appsv1.Deployment{},
-		&corev1.Service{},
-		&rbacv1.Role{},
-		&rbacv1.RoleBinding{},
-		&certv1alpha2.Issuer{},
-		&certv1alpha2.Certificate{},
 		&rbacv1.ClusterRole{},
 		&rbacv1.ClusterRoleBinding{},
 		&adminv1beta1.MutatingWebhookConfiguration{},
@@ -105,4 +100,14 @@ func (c *CatapultStrategy) GetManifests(ctx context.Context, component Component
 			ServiceClusterSecret: ferry.Spec.KubeconfigSecret.Name,
 			WebhookStrategy:      string(catapult.Spec.WebhookStrategy),
 		})
+}
+
+func (c *CatapultStrategy) AddWatches(builder *builder.Builder, scheme *runtime.Scheme) *builder.Builder {
+	return builder.
+		Owns(&appsv1.Deployment{}).
+		Owns(&corev1.Service{}).
+		Owns(&rbacv1.Role{}).
+		Owns(&rbacv1.RoleBinding{}).
+		Owns(&certv1alpha2.Issuer{}).
+		Owns(&certv1alpha2.Certificate{})
 }

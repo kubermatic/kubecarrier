@@ -28,6 +28,7 @@ import (
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
+	"sigs.k8s.io/controller-runtime/pkg/builder"
 
 	operatorv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/operator/v1alpha1"
 	"github.com/kubermatic/kubecarrier/pkg/internal/resources/manager"
@@ -57,12 +58,6 @@ func (c *KubeCarrierStrategy) GetObj() Component {
 
 func (c *KubeCarrierStrategy) GetOwnedObjectsTypes() []runtime.Object {
 	return []runtime.Object{
-		&appsv1.Deployment{},
-		&corev1.Service{},
-		&rbacv1.Role{},
-		&rbacv1.RoleBinding{},
-		&certv1alpha2.Issuer{},
-		&certv1alpha2.Certificate{},
 		&rbacv1.ClusterRole{},
 		&rbacv1.ClusterRoleBinding{},
 		&apiextensionsv1.CustomResourceDefinition{},
@@ -80,4 +75,14 @@ func (c *KubeCarrierStrategy) GetManifests(ctx context.Context, component Compon
 		manager.Config{
 			Namespace: kubeCarrier.Namespace,
 		})
+}
+
+func (c *KubeCarrierStrategy) AddWatches(builder *builder.Builder, scheme *runtime.Scheme) *builder.Builder {
+	return builder.
+		Owns(&appsv1.Deployment{}).
+		Owns(&corev1.Service{}).
+		Owns(&rbacv1.Role{}).
+		Owns(&rbacv1.RoleBinding{}).
+		Owns(&certv1alpha2.Issuer{}).
+		Owns(&certv1alpha2.Certificate{})
 }
