@@ -20,7 +20,7 @@ spec:
       - image: quay.io/kubecarrier/elevator:latest
         name: manager
         args:
-          - "--cert-dir=$(CERT_DIR)"
+        - "--cert-dir=$(CERT_DIR)"
         env:
         - name: KUBERNETES_NAMESPACE
           valueFrom:

@@ -200,6 +200,7 @@ func Manifests(c Config) ([]unstructured.Unstructured, error) {
 	}
 
 	failurePolicyFail := adminv1beta1.Fail
+	sideEffectsDryRun := adminv1beta1.SideEffectClassNoneOnDryRun
 	mutatingWebhookConfiguration := adminv1beta1.MutatingWebhookConfiguration{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: "admissionregistration.k8s.io/v1beta1",
@@ -233,6 +234,7 @@ func Manifests(c Config) ([]unstructured.Unstructured, error) {
 						},
 					},
 				},
+				SideEffects: &sideEffectsDryRun,
 			},
 		},
 	}

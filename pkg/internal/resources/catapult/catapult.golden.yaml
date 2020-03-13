@@ -253,6 +253,7 @@
       - UPDATE
       resources:
       - couchdbinternals
+    sideEffects: NoneOnDryRun
 - apiVersion: v1
   kind: Service
   metadata:

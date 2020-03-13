@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package controllers
+package util
 
 import (
 	"testing"
@@ -34,7 +34,7 @@ func Test_splitStatusFields(t *testing.T) {
 		{JSONPath: ".data.something_else"},
 	}
 
-	statusFields, otherFields := splitStatusFields(fields)
+	statusFields, otherFields := SplitStatusFields(fields)
 	assert.Equal(t, []catalogv1alpha1.FieldPath{
 		{JSONPath: ".status.observedGeneration"},
 		{JSONPath: "status.conditions"},
@@ -127,7 +127,7 @@ func Test_copyFields(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			err := copyFields(test.src, test.dest, test.fields)
+			err := CopyFields(test.src, test.dest, test.fields)
 			require.NoError(t, err)
 
 			assert.Equal(

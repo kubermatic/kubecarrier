@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package controllers
+package util
 
 import (
 	"fmt"
@@ -25,7 +25,7 @@ import (
 	catalogv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/catalog/v1alpha1"
 )
 
-func splitStatusFields(fields []catalogv1alpha1.FieldPath) (
+func SplitStatusFields(fields []catalogv1alpha1.FieldPath) (
 	statusFields []catalogv1alpha1.FieldPath,
 	otherFields []catalogv1alpha1.FieldPath,
 ) {
@@ -41,7 +41,7 @@ func splitStatusFields(fields []catalogv1alpha1.FieldPath) (
 	return
 }
 
-func copyFields(
+func CopyFields(
 	src, dest *unstructured.Unstructured,
 	fields []catalogv1alpha1.FieldPath) error {
 
@@ -64,7 +64,7 @@ func copyFields(
 	return nil
 }
 
-func versionExposeConfigForVersion(
+func VersionExposeConfigForVersion(
 	exposeConfigs []catalogv1alpha1.VersionExposeConfig, version string,
 ) (catalogv1alpha1.VersionExposeConfig, bool) {
 	for _, exposeConfig := range exposeConfigs {

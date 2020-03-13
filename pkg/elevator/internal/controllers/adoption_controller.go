@@ -31,6 +31,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	catalogv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/catalog/v1alpha1"
+	elevatorutil "github.com/kubermatic/kubecarrier/pkg/elevator/internal/util"
 	"github.com/kubermatic/kubecarrier/pkg/internal/util"
 )
 
@@ -68,7 +69,7 @@ func (r *AdoptionReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 		return result, fmt.Errorf("getting DerivedCustomResource: %w", err)
 	}
 	version := r.ProviderGVK.Version
-	exposeConfig, ok := versionExposeConfigForVersion(derivedCR.Spec.Expose, version)
+	exposeConfig, ok := elevatorutil.VersionExposeConfigForVersion(derivedCR.Spec.Expose, version)
 	if !ok {
 		return result, fmt.Errorf("missing version expose config for version %q", version)
 	}
@@ -107,7 +108,7 @@ func (r *AdoptionReconciler) reconcileProviderObj(
 	desiredTenantObj.SetNamespace(providerObj.GetNamespace())
 
 	// prepare config
-	_, otherFields := splitStatusFields(config.Fields)
+	_, otherFields := elevatorutil.SplitStatusFields(config.Fields)
 
 	// Lookup current instance
 	currentTenantObj := r.newTenantObject()
@@ -120,7 +121,7 @@ func (r *AdoptionReconciler) reconcileProviderObj(
 	}
 	if errors.IsNotFound(err) {
 		// Create the Tenant Obj
-		if err = copyFields(providerObj, desiredTenantObj, otherFields); err != nil {
+		if err = elevatorutil.CopyFields(providerObj, desiredTenantObj, otherFields); err != nil {
 			return fmt.Errorf("copy fields: %w", err)
 		}
 

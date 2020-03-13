@@ -254,12 +254,14 @@ func run(flags *flags, log logr.Logger) error {
 			Log:    log.WithName("mutating webhooks").WithName(tenantGVK.Kind),
 			Scheme: mgr.GetScheme(),
 
-			ManagementClusterClient: namespacedClient,
+			Client:           mgr.GetClient(),
+			NamespacedClient: namespacedClient,
 
 			TenantGVK:   tenantGVK,
 			ProviderGVK: providerGVK,
 
 			ProviderNamespace: flags.providerNamespace,
+			DerivedCRName:     flags.derivedCRName,
 		}})
 
 	log.Info("starting manager")
