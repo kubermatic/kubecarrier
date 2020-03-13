@@ -16,7 +16,7 @@
 
 set -euo pipefail
 
-cat << 'EOF' > ./docs/basics/api_reference.md
+cat << 'EOF' > ./docs/api_reference.md
 # KubeCarrier - API Reference
 
 The KubeCarrier API is implemented as a extension of the [Kubernetes API](https://kubernetes.io/docs/reference/using-api/api-overview/) as `CustomResourceDefinitions`.
@@ -32,32 +32,32 @@ EOF
 # Core API Group
 # --------------
 echo -e "Core API"
-cat << 'EOF' >> ./docs/basics/api_reference.md
+cat << 'EOF' >> ./docs/api_reference.md
 ## Core
 
 The core `kubecarrier.io` API group contains the basic buildings blocks of KubeCarrier and objects to setup cross-cluster management of resources.
 
 EOF
-find ./pkg/apis/core -name '*types.go' | xargs ./bin/docgen -section-link='#core' >> ./docs/basics/api_reference.md
+find ./pkg/apis/core -name '*types.go' | xargs ./bin/docgen -section-link='#core' >> ./docs/api_reference.md
 
 # Catalog API Group
 # -----------------
 echo -e "\nCatalog API"
-cat << 'EOF' >> ./docs/basics/api_reference.md
+cat << 'EOF' >> ./docs/api_reference.md
 ## Catalog
 
 The `catalog.kubecarrier.io` API group contains all objects that are used to setup service catalogs in KubeCarrier.
 
 EOF
-find ./pkg/apis/catalog -name '*types.go' | xargs ./bin/docgen -section-link='#catalog' >> ./docs/basics/api_reference.md
+find ./pkg/apis/catalog -name '*types.go' | xargs ./bin/docgen -section-link='#catalog' >> ./docs/api_reference.md
 
 # Operator API Group
 # ------------------
 echo -e "\nOperator API"
-cat << 'EOF' >> ./docs/basics/api_reference.md
+cat << 'EOF' >> ./docs/api_reference.md
 ## Operator
 
 The `operator.kubecarrier.io` API group contains objects to interact with the KubeCarrier installation.
 
 EOF
-find ./pkg/apis/operator -name '*types.go' | xargs ./bin/docgen -section-link='#operator' >> ./docs/basics/api_reference.md
+find ./pkg/apis/operator -name '*types.go' | xargs ./bin/docgen -section-link='#operator' >> ./docs/api_reference.md

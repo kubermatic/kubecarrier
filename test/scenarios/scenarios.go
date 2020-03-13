@@ -14,15 +14,27 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package util
+package scenarios
 
 import (
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
+	"testing"
+
+	"github.com/kubermatic/kubecarrier/pkg/testutil"
 )
 
-// object generic k8s object with metav1 and runtime Object interfaces implemented
-type object interface {
-	runtime.Object
-	metav1.Object
+func NewSuite(f *testutil.Framework) func(t *testing.T) {
+	return func(t *testing.T) {
+		t.Parallel()
+		for name, testFn := range map[string]func(f *testutil.Framework) func(t *testing.T){
+			"simple": newSimpleScenario,
+		} {
+			name := name
+			testFn := testFn
+
+			t.Run(name, func(t *testing.T) {
+				t.Parallel()
+				testFn(f)(t)
+			})
+		}
+	}
 }

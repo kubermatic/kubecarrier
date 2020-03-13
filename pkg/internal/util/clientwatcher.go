@@ -19,7 +19,9 @@ package util
 import (
 	"context"
 	"fmt"
+	"time"
 
+	"github.com/go-logr/logr"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -32,7 +34,41 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client/apiutil"
 )
 
-func NewClientWatcher(conf *rest.Config, scheme *runtime.Scheme) (*ClientWatcher, error) {
+type clientWatcherOption struct {
+	timeout time.Duration
+}
+
+type ClientWatcherOption func(*clientWatcherOption) error
+
+func WithClientWatcherTimeout(t time.Duration) ClientWatcherOption {
+	return func(option *clientWatcherOption) error {
+		option.timeout = t
+		return nil
+	}
+}
+
+func WithoutClientWatcher() ClientWatcherOption {
+	return func(option *clientWatcherOption) error {
+		option.timeout = time.Duration(0)
+		return nil
+	}
+}
+
+const (
+	defaultTimeout = 30 * time.Second
+)
+
+type ClientWatcher struct {
+	dynamicClient dynamic.Interface
+	restMapper    meta.RESTMapper
+	scheme        *runtime.Scheme
+	log           logr.Logger
+	client.Client
+}
+
+var _ client.Client = (*ClientWatcher)(nil)
+
+func NewClientWatcher(conf *rest.Config, scheme *runtime.Scheme, log logr.Logger) (*ClientWatcher, error) {
 	mapper, err := apiutil.NewDynamicRESTMapper(conf, apiutil.WithLazyDiscovery)
 	if err != nil {
 		return nil, fmt.Errorf("rest mapper: %w", err)
@@ -53,62 +89,142 @@ func NewClientWatcher(conf *rest.Config, scheme *runtime.Scheme) (*ClientWatcher
 		restMapper:    mapper,
 		scheme:        scheme,
 		Client:        k8sClient,
+		log:           log,
 	}, nil
 }
 
-type ClientWatcher struct {
-	dynamicClient dynamic.Interface
-	restMapper    meta.RESTMapper
-	scheme        *runtime.Scheme
-	client.Client
-}
-
-// WaitUntil waits until the object's condition function is true, or the context deadline is reached
-func (cw *ClientWatcher) WaitUntil(ctx context.Context, obj runtime.Object, cond ...func(obj runtime.Object) (bool, error)) error {
-	objGVK, err := apiutil.GVKForObject(obj, cw.scheme)
-	if err != nil {
-		return err
+// WaitUntil waits until the Object's condition function is true, or the context deadline is reached
+//
+// condition function should operate on the passed object in a closure and should not modify the obj
+func (cw *ClientWatcher) WaitUntil(ctx context.Context, obj runtime.Object, cond func() (done bool, err error), options ...ClientWatcherOption) error {
+	cfg := &clientWatcherOption{
+		timeout: defaultTimeout,
 	}
-	restMapping, err := cw.restMapper.RESTMapping(objGVK.GroupKind(), objGVK.Version)
-	if err != nil {
-		return err
-	}
-	objNN, err := client.ObjectKeyFromObject(obj)
-	if err != nil {
-		return err
-	}
-
-	resourceInterface := cw.dynamicClient.Resource(restMapping.Resource).Namespace(objNN.Namespace)
-	if _, err := clientwatch.ListWatchUntil(ctx, &cache.ListWatch{
-		ListFunc: func(options metav1.ListOptions) (object runtime.Object, err error) {
-			return resourceInterface.List(options)
-		},
-		WatchFunc: resourceInterface.Watch,
-	}, func(event watch.Event) (b bool, err error) {
-		objTmp, err := cw.scheme.New(objGVK)
-		if err != nil {
-			return false, err
+	for _, f := range options {
+		if err := f(cfg); err != nil {
+			return err
 		}
-		obj := objTmp.(object)
+	}
+	if cfg.timeout > time.Duration(0) {
+		var cancel func()
+		ctx, cancel = context.WithTimeout(ctx, cfg.timeout)
+		defer cancel()
+	}
+
+	lw, err := cw.objListWatch(obj)
+	if err != nil {
+		return fmt.Errorf("getting objListWatch: %w", err)
+	}
+	if _, err := clientwatch.ListWatchUntil(ctx, lw, func(event watch.Event) (b bool, err error) {
+		switch event.Type {
+		case watch.Added:
+			fallthrough
+		case watch.Modified:
+		case watch.Deleted:
+			return
+		case watch.Bookmark:
+			return
+		case watch.Error:
+			return false, fmt.Errorf("watch error")
+		}
+
 		if err := cw.scheme.Convert(event.Object, obj, nil); err != nil {
 			return false, err
 		}
-		if obj.GetNamespace() != objNN.Namespace || obj.GetName() != objNN.Name {
-			// not the right object
-			return false, nil
+		ok, err := cond()
+		if err != nil {
+			return false, err
 		}
-		for _, f := range cond {
-			ok, err := f(objTmp)
-			if err != nil {
-				return false, err
-			}
-			if !ok {
-				return false, nil
-			}
+		if !ok {
+			return false, nil
 		}
 		return true, nil
 	}); err != nil {
-		return err
+		return fmt.Errorf("%s: %w", MustLogLine(obj, cw.scheme), err)
 	}
 	return nil
+}
+
+// WaitUntilNotFound waits until the object is not found or the context deadline is exceeded
+func (cw *ClientWatcher) WaitUntilNotFound(ctx context.Context, obj runtime.Object, options ...ClientWatcherOption) error {
+	cfg := &clientWatcherOption{
+		timeout: defaultTimeout,
+	}
+	for _, f := range options {
+		if err := f(cfg); err != nil {
+			return err
+		}
+	}
+	if cfg.timeout > time.Duration(0) {
+		var cancel func()
+		ctx, cancel = context.WithTimeout(ctx, cfg.timeout)
+		defer cancel()
+	}
+
+	// things get a bit tricky with not found watches
+	//  clientwatch.UntilWithSync seems useful since it has cache pre-conditions which I can check whether
+	// the objects existed in initial list operation. But there are few other issues with it:
+	// * it doesn't call condition function with DELETED event types for some reason (nor does it get it from watch interface to my current debugging knowledge)
+	// * it doesn't properly update the cache store since the event objects are types to *unstructured.Unstructured instead of GVK schema type
+	lw, err := cw.objListWatch(obj)
+	if err != nil {
+		return fmt.Errorf("getting objListWatch: %w", err)
+	}
+	list, err := lw.List(metav1.ListOptions{})
+	if err != nil {
+		return err
+	}
+	initialItems, err := meta.ExtractList(list)
+	if err != nil {
+		return err
+	}
+	if len(initialItems) == 0 {
+		return nil
+	}
+
+	metaObj, err := meta.ListAccessor(list)
+	if err != nil {
+		return err
+	}
+	currResourceVersion := metaObj.GetResourceVersion()
+	_, err = clientwatch.Until(ctx, currResourceVersion, lw, func(event watch.Event) (b bool, err error) {
+		return event.Type == watch.Deleted, nil
+	})
+	if err != nil {
+		return fmt.Errorf("%s: %w", MustLogLine(obj, cw.scheme), err)
+	}
+	return nil
+}
+
+func (cw *ClientWatcher) objListWatch(obj runtime.Object) (*cache.ListWatch, error) {
+	objGVK, err := apiutil.GVKForObject(obj, cw.scheme)
+	if err != nil {
+		return nil, err
+	}
+	objNN, err := client.ObjectKeyFromObject(obj)
+	if err != nil {
+		return nil, fmt.Errorf("getting object key: %w", err)
+	}
+	if objNN.Name == "" {
+		return nil, fmt.Errorf("name must not be empty")
+	}
+	restMapping, err := cw.restMapper.RESTMapping(objGVK.GroupKind(), objGVK.Version)
+	if err != nil {
+		return nil, err
+	}
+	if restMapping.Scope.Name() == meta.RESTScopeNameNamespace && objNN.Namespace == "" {
+		return nil, fmt.Errorf("namespace must not be empty")
+	}
+
+	resourceInterface := cw.dynamicClient.Resource(restMapping.Resource).Namespace(objNN.Namespace)
+	return &cache.ListWatch{
+		ListFunc: func(options metav1.ListOptions) (object runtime.Object, err error) {
+			options.FieldSelector = "metadata.name=" + objNN.Name
+			return resourceInterface.List(options)
+		},
+		WatchFunc: func(options metav1.ListOptions) (w watch.Interface, err error) {
+			options.FieldSelector = "metadata.name=" + objNN.Name
+			return resourceInterface.Watch(options)
+		},
+	}, nil
 }

@@ -14,11 +14,12 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package provider
+package integration
 
 import (
 	"context"
 	"fmt"
+	"strings"
 	"testing"
 	"time"
 
@@ -33,21 +34,22 @@ import (
 
 	catalogv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/catalog/v1alpha1"
 	"github.com/kubermatic/kubecarrier/pkg/testutil"
-	"github.com/kubermatic/kubecarrier/test/framework"
 )
 
-func NewDerivedCRSuite(
-	f *framework.Framework,
-	provider *catalogv1alpha1.Account,
+func newDerivedCR(
+	f *testutil.Framework,
 ) func(t *testing.T) {
 	return func(t *testing.T) {
-		// Setup
-		//
-		managementClient, err := f.ManagementClient()
+		managementClient, err := f.ManagementClient(t)
 		require.NoError(t, err, "creating management client")
-		defer managementClient.CleanUp(t)
+		ctx, cancel := context.WithTimeout(context.Background(), 120*time.Second)
+		t.Cleanup(cancel)
+		t.Cleanup(managementClient.CleanUpFunc(ctx))
 
-		ctx := context.Background()
+		testName := strings.Replace(strings.ToLower(t.Name()), "/", "-", -1)
+		provider := f.NewProviderAccount(testName)
+		require.NoError(t, managementClient.Create(ctx, provider))
+		require.NoError(t, testutil.WaitUntilReady(ctx, managementClient, provider))
 
 		baseCRD := &apiextensionsv1.CustomResourceDefinition{
 			ObjectMeta: metav1.ObjectMeta{
@@ -144,7 +146,7 @@ func NewDerivedCRSuite(
 
 		// Wait for the CatalogEntry to be ready, it takes more time since it requires the
 		// DerivedCustomResource object and Elevator get ready
-		require.NoError(t, testutil.WaitUntilReady(managementClient, catalogEntry, testutil.WithTimeout(300*time.Second)))
+		require.NoError(t, testutil.WaitUntilReady(ctx, managementClient, catalogEntry))
 
 		// Check the DerivedCustomResource Object
 		dcr := &catalogv1alpha1.DerivedCustomResource{}
@@ -202,20 +204,21 @@ type: object
 		// Create a Tenant obj
 		someNamespace := &corev1.Namespace{
 			ObjectMeta: metav1.ObjectMeta{
-				Name: "derived-crd-test-namespace",
+				Name: testName + "derived-crd-test-namespace",
 			},
 		}
 		require.NoError(
 			t, managementClient.Create(ctx, someNamespace), "creating a Namespace")
 
 		// to be able to work with the new CRD, we have to re-create the client
-		managementClient, err = f.ManagementClient()
+		managementClient, err = f.ManagementClient(t)
 		require.NoError(t, err, "recreating management client")
+		t.Cleanup(managementClient.CleanUpFunc(ctx))
 
 		// Check Tenant -> Provider
 		tenantObj := &unstructured.Unstructured{
 			Object: map[string]interface{}{
-				"apiVersion": "eu-west-1.test-derivedcr/v1alpha1",
+				"apiVersion": fmt.Sprintf("eu-west-1.%s/v1alpha1", provider.Status.Namespace.Name),
 				"kind":       "TestResource",
 				"metadata": map[string]interface{}{
 					"name":      "test-instance-1",
@@ -239,7 +242,7 @@ type: object
 				},
 			},
 		}
-		require.NoError(t, testutil.WaitUntilFound(managementClient, providerObj))
+		require.NoError(t, testutil.WaitUntilFound(ctx, managementClient, providerObj))
 
 		// Check Provider -> Tenant
 		providerObj2 := &unstructured.Unstructured{
@@ -272,6 +275,6 @@ type: object
 				},
 			},
 		}
-		require.NoError(t, testutil.WaitUntilFound(managementClient, tenantObj2))
+		require.NoError(t, testutil.WaitUntilFound(ctx, managementClient, tenantObj2))
 	}
 }

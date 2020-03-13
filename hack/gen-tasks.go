@@ -130,12 +130,15 @@ func main() {
 
 	for _, test := range []string{
 		"",
-		"AdminSuite",
-		"FerrySuite",
 		"InstallationSuite",
-		"ProviderSuite",
-		"TenantSuite",
 		"VerifySuite",
+		"Integration",
+		"Integration/derivedCR",
+		"Integration/serviceCluster",
+		"Integration/catalog",
+		"Integration/account",
+		"Scenarios",
+		"Scenarios/simple",
 	} {
 		tasks = append(tasks, ide.Task{
 			Name:    "e2e:" + test,
@@ -147,6 +150,7 @@ func main() {
 				"--test.v",
 				"--test.run=" + test,
 				"--test-id=1",
+				"--clean-up-strategy=always",
 			},
 		})
 

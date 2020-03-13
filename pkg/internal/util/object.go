@@ -123,3 +123,15 @@ func DeleteObjects(ctx context.Context, cl client.Client, scheme *runtime.Scheme
 	}
 	return cleanedUp, nil
 }
+
+func MustLogLine(obj runtime.Object, scheme *runtime.Scheme) string {
+	objGVK, err := apiutil.GVKForObject(obj, scheme)
+	if err != nil {
+		panic(err)
+	}
+	objNN, err := client.ObjectKeyFromObject(obj)
+	if err != nil {
+		panic(err)
+	}
+	return fmt.Sprintf("%s.%s: %s", objGVK.Kind, objGVK.Group, objNN.String())
+}
