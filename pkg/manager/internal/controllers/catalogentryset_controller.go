@@ -172,6 +172,7 @@ func (r *CatalogEntrySetReconciler) reconcileCustomResourceDiscoverySet(
 			},
 			ServiceClusterSelector: catalogEntrySet.Spec.Discover.ServiceClusterSelector,
 			KindOverride:           catalogEntrySet.Spec.Discover.KindOverride,
+			WebhookStrategy:        catalogEntrySet.Spec.Discover.WebhookStrategy,
 		},
 	}
 	err := controllerutil.SetControllerReference(catalogEntrySet, desiredCustomResourceDiscoverySet, r.Scheme)
