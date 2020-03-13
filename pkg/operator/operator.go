@@ -81,32 +81,45 @@ func run(flags *flags, log logr.Logger) error {
 		return fmt.Errorf("starting manager: %w", err)
 	}
 
-	if err = (&controllers.KubeCarrierReconciler{
-		Client: mgr.GetClient(),
-		Log:    log.WithName("controllers").WithName("KubeCarrier"),
-		Scheme: mgr.GetScheme(),
-	}).SetupWithManager(mgr); err != nil {
+	if err := controllers.NewBaseReconciler(
+		&controllers.KubeCarrierStrategy{},
+		mgr.GetClient(),
+		mgr.GetScheme(),
+		mgr.GetRESTMapper(),
+		log.WithName("controllers").WithName("KubeCarrier"),
+		"KubeCarrier",
+		"kubecarrier.kubecarrier.io/controller").SetupWithManager(mgr); err != nil {
 		return fmt.Errorf("creating KubeCarrier controller: %w", err)
 	}
-	if err = (&controllers.FerryReconciler{
-		Client: mgr.GetClient(),
-		Scheme: mgr.GetScheme(),
-		Log:    log.WithName("controllers").WithName("Ferry"),
-	}).SetupWithManager(mgr); err != nil {
+	if err := controllers.NewBaseReconciler(
+		&controllers.FerryStrategy{},
+		mgr.GetClient(),
+		mgr.GetScheme(),
+		mgr.GetRESTMapper(),
+		log.WithName("controllers").WithName("Ferry"),
+		"Ferry",
+		"").SetupWithManager(mgr); err != nil {
 		return fmt.Errorf("creating Ferry controller: %w", err)
 	}
-	if err = (&controllers.CatapultReconciler{
-		Client: mgr.GetClient(),
-		Log:    log.WithName("controllers").WithName("Catapult"),
-		Scheme: mgr.GetScheme(),
-	}).SetupWithManager(mgr); err != nil {
+	if err := controllers.NewBaseReconciler(
+		&controllers.CatapultStrategy{Client: mgr.GetClient()},
+		mgr.GetClient(),
+		mgr.GetScheme(),
+		mgr.GetRESTMapper(),
+		log.WithName("controllers").WithName("Catapult"),
+		"Catapult",
+		"catapult.kubecarrier.io/controller",
+	).SetupWithManager(mgr); err != nil {
 		return fmt.Errorf("creating Catapult controller: %w", err)
 	}
-	if err = (&controllers.ElevatorReconciler{
-		Client: mgr.GetClient(),
-		Log:    log.WithName("controllers").WithName("Elevator"),
-		Scheme: mgr.GetScheme(),
-	}).SetupWithManager(mgr); err != nil {
+	if err := controllers.NewBaseReconciler(
+		&controllers.ElevatorStrategy{},
+		mgr.GetClient(),
+		mgr.GetScheme(),
+		mgr.GetRESTMapper(),
+		log.WithName("controllers").WithName("Elevator"),
+		"Elevator",
+		"elevator.kubecarrier.io/controller").SetupWithManager(mgr); err != nil {
 		return fmt.Errorf("creating Elevator controller: %w", err)
 	}
 

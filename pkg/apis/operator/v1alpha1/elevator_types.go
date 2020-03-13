@@ -182,6 +182,50 @@ func (s *Elevator) IsReady() bool {
 	return false
 }
 
+func (s *Elevator) SetReadyCondition() bool {
+	if !s.IsReady() {
+		s.Status.ObservedGeneration = s.Generation
+		s.Status.SetCondition(ElevatorCondition{
+			Type:    ElevatorReady,
+			Status:  ConditionTrue,
+			Reason:  "DeploymentReady",
+			Message: "the deployment of the Elevator controller manager is ready",
+		})
+		return true
+	}
+	return false
+}
+func (s *Elevator) SetUnReadyCondition() bool {
+	readyCondition, _ := s.Status.GetCondition(ElevatorReady)
+	if readyCondition.Status != ConditionFalse {
+		s.Status.ObservedGeneration = s.Generation
+		s.Status.SetCondition(ElevatorCondition{
+			Type:    ElevatorReady,
+			Status:  ConditionFalse,
+			Reason:  "DeploymentUnready",
+			Message: "the deployment of the Elevator controller manager is not ready",
+		})
+		return true
+	}
+	return false
+}
+
+func (s *Elevator) SetTerminatingCondition() bool {
+	readyCondition, _ := s.Status.GetCondition(ElevatorReady)
+	if readyCondition.Status != ConditionFalse ||
+		readyCondition.Status == ConditionFalse && readyCondition.Reason != ElevatorTerminatingReason {
+		s.Status.ObservedGeneration = s.Generation
+		s.Status.SetCondition(ElevatorCondition{
+			Type:    ElevatorReady,
+			Status:  ConditionFalse,
+			Reason:  ElevatorTerminatingReason,
+			Message: "Elevator is being deleted",
+		})
+		return true
+	}
+	return false
+}
+
 // ElevatorList contains a list of Elevator.
 // +kubebuilder:object:root=true
 type ElevatorList struct {
