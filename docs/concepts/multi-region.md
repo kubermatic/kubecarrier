@@ -136,6 +136,7 @@ Features:
   - common list and watch interface across types
 - RBAC should be offloaded to Kubernetes (if extra RBAC is needed)
 - Must retain user-context via e.g. impersonation
+- aggregates catalog information from all `Peers`
 
 ## Tasks
 
