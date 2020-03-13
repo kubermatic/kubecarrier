@@ -56,7 +56,7 @@ func (c *KubeCarrierStrategy) GetObj() Component {
 	return &operatorv1alpha1.KubeCarrier{}
 }
 
-func (c *KubeCarrierStrategy) GetOwnedObjectsTypes() []runtime.Object {
+func (c *KubeCarrierStrategy) GetDeletionObjectTypes() []runtime.Object {
 	return []runtime.Object{
 		&rbacv1.ClusterRole{},
 		&rbacv1.ClusterRoleBinding{},

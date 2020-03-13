@@ -46,7 +46,7 @@ func (c *FerryStrategy) GetObj() Component {
 	return &operatorv1alpha1.Ferry{}
 }
 
-func (c *FerryStrategy) GetOwnedObjectsTypes() []runtime.Object {
+func (c *FerryStrategy) GetDeletionObjectTypes() []runtime.Object {
 	return []runtime.Object{}
 
 }

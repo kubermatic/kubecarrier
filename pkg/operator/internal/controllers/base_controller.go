@@ -51,7 +51,7 @@ type ControllerStrategy interface {
 	// GetObj - return origin controller object
 	GetObj() Component
 	GetManifests(context.Context, Component) ([]unstructured.Unstructured, error)
-	GetOwnedObjectsTypes() []runtime.Object
+	GetDeletionObjectTypes() []runtime.Object
 	AddWatches(builder *builder.Builder, scheme *runtime.Scheme) *builder.Builder
 }
 
@@ -81,7 +81,7 @@ func (r *BaseReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	controllerBuilder := ctrl.NewControllerManagedBy(mgr)
 	controllerBuilder = controllerBuilder.For(r.Controller.GetObj())
 	enqueuer := owner.EnqueueRequestForOwner(r.Controller.GetObj(), mgr.GetScheme())
-	for _, obj := range r.Controller.GetOwnedObjectsTypes() {
+	for _, obj := range r.Controller.GetDeletionObjectTypes() {
 		controllerBuilder = controllerBuilder.Watches(&source.Kind{Type: obj}, enqueuer)
 	}
 	controllerBuilder = r.Controller.AddWatches(controllerBuilder, mgr.GetScheme())
@@ -103,7 +103,7 @@ func (r *BaseReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	}
 
 	if !obj.GetDeletionTimestamp().IsZero() {
-		if err := r.handleDeletion(ctx, obj, r.Controller.GetOwnedObjectsTypes()); err != nil {
+		if err := r.handleDeletion(ctx, obj, r.Controller.GetDeletionObjectTypes()); err != nil {
 			return ctrl.Result{}, fmt.Errorf("handle deletion: %w", err)
 		}
 		return ctrl.Result{}, nil

@@ -48,7 +48,7 @@ func (c *ElevatorStrategy) GetObj() Component {
 	return &operatorv1alpha1.Elevator{}
 }
 
-func (c *ElevatorStrategy) GetOwnedObjectsTypes() []runtime.Object {
+func (c *ElevatorStrategy) GetDeletionObjectTypes() []runtime.Object {
 	return []runtime.Object{
 		&rbacv1.ClusterRole{},
 		&rbacv1.ClusterRoleBinding{},

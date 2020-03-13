@@ -57,7 +57,7 @@ func (c *CatapultStrategy) GetObj() Component {
 	return &operatorv1alpha1.Catapult{}
 }
 
-func (c *CatapultStrategy) GetOwnedObjectsTypes() []runtime.Object {
+func (c *CatapultStrategy) GetDeletionObjectTypes() []runtime.Object {
 	return []runtime.Object{
 		&rbacv1.ClusterRole{},
 		&rbacv1.ClusterRoleBinding{},
