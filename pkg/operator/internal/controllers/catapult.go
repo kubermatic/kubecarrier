@@ -62,7 +62,6 @@ func (c *CatapultStrategy) GetDeletionObjectTypes() []runtime.Object {
 		&rbacv1.ClusterRole{},
 		&rbacv1.ClusterRoleBinding{},
 		&adminv1beta1.MutatingWebhookConfiguration{},
-		&adminv1beta1.ValidatingWebhookConfiguration{},
 	}
 }
 
@@ -106,6 +105,7 @@ func (c *CatapultStrategy) AddWatches(builder *builder.Builder, scheme *runtime.
 	return builder.
 		Owns(&appsv1.Deployment{}).
 		Owns(&corev1.Service{}).
+		Owns(&corev1.ServiceAccount{}).
 		Owns(&rbacv1.Role{}).
 		Owns(&rbacv1.RoleBinding{}).
 		Owns(&certv1alpha2.Issuer{}).

@@ -52,7 +52,6 @@ func (c *ElevatorStrategy) GetDeletionObjectTypes() []runtime.Object {
 	return []runtime.Object{
 		&rbacv1.ClusterRole{},
 		&rbacv1.ClusterRoleBinding{},
-		&corev1.ServiceAccount{},
 	}
 }
 
@@ -84,6 +83,7 @@ func (c *ElevatorStrategy) AddWatches(builder *builder.Builder, scheme *runtime.
 	return builder.
 		Owns(&appsv1.Deployment{}).
 		Owns(&corev1.Service{}).
+		Owns(&corev1.ServiceAccount{}).
 		Owns(&rbacv1.Role{}).
 		Owns(&rbacv1.RoleBinding{})
 }

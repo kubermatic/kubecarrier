@@ -81,6 +81,7 @@ func (c *KubeCarrierStrategy) AddWatches(builder *builder.Builder, scheme *runti
 	return builder.
 		Owns(&appsv1.Deployment{}).
 		Owns(&corev1.Service{}).
+		Owns(&corev1.ServiceAccount{}).
 		Owns(&rbacv1.Role{}).
 		Owns(&rbacv1.RoleBinding{}).
 		Owns(&certv1alpha2.Issuer{}).
