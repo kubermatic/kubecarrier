@@ -107,6 +107,7 @@ func TestCatalogEntrySetReconciler(t *testing.T) {
 				},
 				ServiceClusterSelector: metav1.LabelSelector{},
 				KindOverride:           "CatapultInternal",
+				WebhookStrategy:        corev1alpha1.WebhookStrategyTypeServiceCluster,
 			},
 		},
 	}
@@ -136,6 +137,7 @@ func TestCatalogEntrySetReconciler(t *testing.T) {
 		Name:      catalogEntrySet.Name,
 		Namespace: catalogEntrySet.Namespace,
 	}, customResourceDiscoverySet))
+	assert.Equal(t, corev1alpha1.WebhookStrategyTypeServiceCluster, customResourceDiscoverySet.Spec.WebhookStrategy)
 
 	ready, ok := catalogEntrySet.Status.GetCondition(catalogv1alpha1.CatalogEntrySetReady)
 	if assert.True(t, ok) {

@@ -183,6 +183,7 @@ func newServiceClusterSuite(
 			Name:      catalogEntrySet.Name,
 			Namespace: catalogEntrySet.Namespace,
 		}, crDiscoverySet), "getting CustomResourceDiscoverySet")
+		assert.Equal(t, crDiscoverySet.Spec.WebhookStrategy, catalogEntrySet.Spec.Discover.WebhookStrategy)
 
 		// Check the CatalogEntry Object
 		catalogEntry := &catalogv1alpha1.CatalogEntry{}
