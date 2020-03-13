@@ -14,13 +14,15 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package provider
+package integration
 
 import (
 	"context"
 	"fmt"
 	"io/ioutil"
+	"strings"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -33,22 +35,26 @@ import (
 	catalogv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/catalog/v1alpha1"
 	corev1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/core/v1alpha1"
 	"github.com/kubermatic/kubecarrier/pkg/testutil"
-	"github.com/kubermatic/kubecarrier/test/framework"
 )
 
 // ServiceClusterSuite registers a ServiceCluster and tests apis interacting with it.
-func NewServiceClusterSuite(
-	f *framework.Framework,
-	provider *catalogv1alpha1.Account,
+func newServiceClusterSuite(
+	f *testutil.Framework,
 ) func(t *testing.T) {
 	return func(t *testing.T) {
-		managementClient, err := f.ManagementClient()
+		ctx, cancel := context.WithTimeout(context.Background(), 120*time.Second)
+		t.Cleanup(cancel)
+		managementClient, err := f.ManagementClient(t)
 		require.NoError(t, err, "creating management client")
-		defer managementClient.CleanUp(t)
-
-		serviceClient, err := f.ServiceClient()
+		t.Cleanup(managementClient.CleanUpFunc(ctx))
+		serviceClient, err := f.ServiceClient(t)
 		require.NoError(t, err, "creating service client")
-		defer serviceClient.CleanUp(t)
+		t.Cleanup(serviceClient.CleanUpFunc(ctx))
+		testName := strings.Replace(strings.ToLower(t.Name()), "/", "-", -1)
+
+		provider := f.NewProviderAccount(testName)
+		require.NoError(t, managementClient.Create(ctx, provider))
+		require.NoError(t, testutil.WaitUntilReady(ctx, managementClient, provider))
 
 		// Setup
 		serviceKubeconfig, err := ioutil.ReadFile(f.Config().ServiceInternalKubeconfigPath)
@@ -117,7 +123,7 @@ func NewServiceClusterSuite(
 
 		serviceNamespace := &corev1.Namespace{
 			ObjectMeta: metav1.ObjectMeta{
-				Name: "servicecluster-svc-test",
+				Name: testName + "-svc-test",
 			},
 		}
 
@@ -136,13 +142,14 @@ func NewServiceClusterSuite(
 			},
 		}
 
-		ctx := context.Background()
 		require.NoError(t, managementClient.Create(ctx, serviceClusterSecret))
 		require.NoError(t, managementClient.Create(ctx, serviceCluster))
 		require.NoError(t, managementClient.Create(ctx, serviceNamespace))
 		require.NoError(t, managementClient.Create(ctx, serviceClusterAssignment))
-		require.NoError(t, testutil.WaitUntilReady(managementClient, serviceCluster))
-		require.NoError(t, testutil.WaitUntilReady(managementClient, serviceClusterAssignment))
+		require.NoError(t, testutil.WaitUntilReady(ctx, managementClient, serviceCluster))
+		require.NoError(t, testutil.WaitUntilReady(ctx, managementClient, serviceClusterAssignment))
+		t.Log("service cluster successfully created")
+
 		require.NoError(t, serviceClient.Create(ctx, crd))
 
 		// Test CatalogEntrySet
@@ -167,7 +174,8 @@ func NewServiceClusterSuite(
 			},
 		}
 		require.NoError(t, managementClient.Create(ctx, catalogEntrySet))
-		require.NoError(t, testutil.WaitUntilReady(managementClient, catalogEntrySet))
+		require.NoError(t, testutil.WaitUntilReady(ctx, managementClient, catalogEntrySet))
+		t.Log("CatalogEntrySet successfully created")
 
 		// Check the CustomResourceDiscoverySet
 		crDiscoverySet := &corev1alpha1.CustomResourceDiscoverySet{}
@@ -175,34 +183,36 @@ func NewServiceClusterSuite(
 			Name:      catalogEntrySet.Name,
 			Namespace: catalogEntrySet.Namespace,
 		}, crDiscoverySet), "getting CustomResourceDiscoverySet")
+		assert.Equal(t, crDiscoverySet.Spec.WebhookStrategy, catalogEntrySet.Spec.Discover.WebhookStrategy)
 
 		// Check the CatalogEntry Object
 		catalogEntry := &catalogv1alpha1.CatalogEntry{}
 		require.NoError(t, managementClient.Get(ctx, types.NamespacedName{
-			Name:      "redis.eu-west-1",
+			Name:      "redis." + serviceCluster.Name,
 			Namespace: catalogEntrySet.Namespace,
 		}, catalogEntry), "getting CatalogEntry")
+
+		t.Log("CatalogEntry & CustomResourceDiscoverySet exists")
 
 		err = managementClient.Delete(ctx, provider)
 		if assert.Error(t, err, "dirty provider %s deletion should error out", provider.Name) {
 			assert.Equal(t,
-				`admission webhook "vaccount.kubecarrier.io" denied the request: deletion blocking objects found:
+				fmt.Sprintf(`admission webhook "vaccount.kubecarrier.io" denied the request: deletion blocking objects found:
 CustomResourceDiscovery.kubecarrier.io/v1alpha1: redis.eu-west-1
 CustomResourceDiscoverySet.kubecarrier.io/v1alpha1: redis
-ServiceClusterAssignment.kubecarrier.io/v1alpha1: servicecluster-svc-test.eu-west-1
-`,
+ServiceClusterAssignment.kubecarrier.io/v1alpha1: %s.eu-west-1
+`, serviceNamespace.Name),
 				err.Error(),
 				"deleting dirty provider %s", provider.Name)
 		}
 
 		// We have created/registered new CRD's, so we need a new client
-		managementClient, err = f.ManagementClient()
+		managementClient, err = f.ManagementClient(t)
 		require.NoError(t, err, "creating management client")
-		defer managementClient.CleanUp(t)
-
-		serviceClient, err = f.ServiceClient()
+		t.Cleanup(managementClient.CleanUpFunc(ctx))
+		serviceClient, err = f.ServiceClient(t)
 		require.NoError(t, err, "creating service client")
-		defer serviceClient.CleanUp(t)
+		t.Cleanup(serviceClient.CleanUpFunc(ctx))
 
 		// management cluster -> service cluster
 		//
@@ -233,7 +243,7 @@ ServiceClusterAssignment.kubecarrier.io/v1alpha1: servicecluster-svc-test.eu-wes
 			},
 		}
 		require.NoError(
-			t, testutil.WaitUntilFound(serviceClient, serviceClusterObj))
+			t, testutil.WaitUntilFound(ctx, serviceClient, serviceClusterObj))
 
 		// service cluster -> management cluster
 		//
@@ -268,6 +278,6 @@ ServiceClusterAssignment.kubecarrier.io/v1alpha1: servicecluster-svc-test.eu-wes
 		}
 		managementClient.RegisterForCleanup(managementClusterObj2)
 		require.NoError(
-			t, testutil.WaitUntilFound(managementClient, managementClusterObj2))
+			t, testutil.WaitUntilFound(ctx, managementClient, managementClusterObj2))
 	}
 }

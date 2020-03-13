@@ -73,7 +73,7 @@ func main() {
 			},
 		} {
 			platform := index.Platform{
-				URI: fmt.Sprintf("https://github.com/kubermatic/kubecarrier/releases/download/%s/kubecarrier_%s_%s.tar.gz", *version, os.osName, arch),
+				URI: fmt.Sprintf("https://github.com/kubermatic/kubecarrier/releases/download/%s/kubecarrier_%s_%s%s", *version, os.osName, arch, os.archiveExt),
 				Selector: &metav1.LabelSelector{
 					MatchLabels: map[string]string{
 						"os":   os.osName,

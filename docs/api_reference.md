@@ -18,6 +18,7 @@ The core `kubecarrier.io` API group contains the basic buildings blocks of KubeC
 * [CustomResourceDiscoverySpec.kubecarrier.io/v1alpha1](#customresourcediscoveryspec.kubecarrier.io/v1alpha1)
 * [CustomResourceDiscoveryStatus.kubecarrier.io/v1alpha1](#customresourcediscoverystatus.kubecarrier.io/v1alpha1)
 * [CustomResourceDiscoverySet.kubecarrier.io/v1alpha1](#customresourcediscoveryset.kubecarrier.io/v1alpha1)
+* [CustomResourceDiscoverySetCRDReference.kubecarrier.io/v1alpha1](#customresourcediscoverysetcrdreference.kubecarrier.io/v1alpha1)
 * [CustomResourceDiscoverySetCondition.kubecarrier.io/v1alpha1](#customresourcediscoverysetcondition.kubecarrier.io/v1alpha1)
 * [CustomResourceDiscoverySetList.kubecarrier.io/v1alpha1](#customresourcediscoverysetlist.kubecarrier.io/v1alpha1)
 * [CustomResourceDiscoverySetSpec.kubecarrier.io/v1alpha1](#customresourcediscoverysetspec.kubecarrier.io/v1alpha1)
@@ -140,6 +141,17 @@ spec:
 
 [Back to Group](#core)
 
+### CustomResourceDiscoverySetCRDReference.kubecarrier.io/v1alpha1
+
+CustomResourceDiscoverySetCRDReference references a discovered CustomResourceDefinition.
+
+| Field | Description | Scheme | Required |
+| ----- | ----------- | ------ | -------- |
+| crd |  | kubecarrier.io/v1alpha1.ObjectReference | true |
+| serviceCluster |  | kubecarrier.io/v1alpha1.ObjectReference | true |
+
+[Back to Group](#core)
+
 ### CustomResourceDiscoverySetCondition.kubecarrier.io/v1alpha1
 
 CustomResourceDiscoverySetCondition contains details for the current condition of this CustomResourceDiscoverySet.
@@ -184,7 +196,7 @@ CustomResourceDiscoverySetStatus represents the observed state of a CustomResour
 
 | Field | Description | Scheme | Required |
 | ----- | ----------- | ------ | -------- |
-| managementClusterCRDs | ManagementClusterCRDs contains the CRDs information that created by the CustomResourceDiscovery objects of this CustomResourceDiscoverySet. | []kubecarrier.io/v1alpha1.ObjectReference | false |
+| managementClusterCRDs | ManagementClusterCRDs contains the CRDs information that created by the CustomResourceDiscovery objects of this CustomResourceDiscoverySet. | []kubecarrier.io/v1alpha1.CustomResourceDiscoverySetCRDReference | false |
 | phase | DEPRECATED. Phase represents the current lifecycle state of this object consider this field DEPRECATED, it will be removed as soon as there is a mechanism to map conditions to a string when printing the property is only present for display purposes, for everything else use conditions | kubecarrier.io/v1alpha1.CustomResourceDiscoverySetPhaseType | false |
 | conditions | Conditions is a list of all conditions this CustomResourceDiscovery is in. | []kubecarrier.io/v1alpha1.CustomResourceDiscoverySetCondition | false |
 | observedGeneration | The most recent generation observed by the controller. | kubecarrier.io/v1alpha1.int64 | false |
@@ -402,9 +414,9 @@ The `catalog.kubecarrier.io` API group contains all objects that are used to set
 * [FieldPath.catalog.kubecarrier.io/v1alpha1](#fieldpath.catalog.kubecarrier.io/v1alpha1)
 * [VersionExposeConfig.catalog.kubecarrier.io/v1alpha1](#versionexposeconfig.catalog.kubecarrier.io/v1alpha1)
 * [Offering.catalog.kubecarrier.io/v1alpha1](#offering.catalog.kubecarrier.io/v1alpha1)
-* [OfferingData.catalog.kubecarrier.io/v1alpha1](#offeringdata.catalog.kubecarrier.io/v1alpha1)
 * [OfferingList.catalog.kubecarrier.io/v1alpha1](#offeringlist.catalog.kubecarrier.io/v1alpha1)
 * [OfferingMetadata.catalog.kubecarrier.io/v1alpha1](#offeringmetadata.catalog.kubecarrier.io/v1alpha1)
+* [OfferingSpec.catalog.kubecarrier.io/v1alpha1](#offeringspec.catalog.kubecarrier.io/v1alpha1)
 * [Provider.catalog.kubecarrier.io/v1alpha1](#provider.catalog.kubecarrier.io/v1alpha1)
 * [ProviderList.catalog.kubecarrier.io/v1alpha1](#providerlist.catalog.kubecarrier.io/v1alpha1)
 * [ProviderSpec.catalog.kubecarrier.io/v1alpha1](#providerspec.catalog.kubecarrier.io/v1alpha1)
@@ -781,7 +793,7 @@ CatalogEntrySetSpec defines the desired state of CatalogEntrySet.
 | ----- | ----------- | ------ | -------- |
 | metadata | Metadata contains the metadata of each CatalogEntry for the Service Catalog. | catalog.kubecarrier.io/v1alpha1.CatalogEntrySetMetadata | false |
 | derive | Derive contains the configuration to generate DerivedCustomResources from the BaseCRDs that are selected by this CatalogEntrySet. | *catalog.kubecarrier.io/v1alpha1.DerivedConfig | false |
-| discoverySet | DiscoverySet contains the configuration to create a CustomResourceDiscoverySet. | catalog.kubecarrier.io/v1alpha1.CustomResourceDiscoverySetConfig | true |
+| discover | Discover contains the configuration to create a CustomResourceDiscoverySet. | catalog.kubecarrier.io/v1alpha1.CustomResourceDiscoverySetConfig | true |
 
 [Back to Group](#catalog)
 
@@ -942,19 +954,7 @@ Offering objects are created automatically by KubeCarrier in Account namespaces,
 | Field | Description | Scheme | Required |
 | ----- | ----------- | ------ | -------- |
 | metadata |  | [metav1.ObjectMeta](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.14/#objectmeta-v1-meta) | false |
-| offering |  | catalog.kubecarrier.io/v1alpha1.OfferingData | false |
-
-[Back to Group](#catalog)
-
-### OfferingData.catalog.kubecarrier.io/v1alpha1
-
-OfferingData defines the data (metadata, provider, crds, etc.) of Offering.
-
-| Field | Description | Scheme | Required |
-| ----- | ----------- | ------ | -------- |
-| metadata |  | catalog.kubecarrier.io/v1alpha1.OfferingMetadata | false |
-| provider | Provider references the Provider managing this Offering. | catalog.kubecarrier.io/v1alpha1.ObjectReference | true |
-| crd | CRD holds the information about the underlying CRD that is offered by this offering. | catalog.kubecarrier.io/v1alpha1.CRDInformation | false |
+| spec |  | catalog.kubecarrier.io/v1alpha1.OfferingSpec | false |
 
 [Back to Group](#catalog)
 
@@ -977,6 +977,18 @@ OfferingMetadata contains the metadata (display name, description, etc) of the O
 | ----- | ----------- | ------ | -------- |
 | displayName | DisplayName shows the human-readable name of this Offering. | string | false |
 | description | Description shows the human-readable description of this Offering. | string | false |
+
+[Back to Group](#catalog)
+
+### OfferingSpec.catalog.kubecarrier.io/v1alpha1
+
+OfferingSpec defines the data (metadata, provider, crds, etc.) of Offering.
+
+| Field | Description | Scheme | Required |
+| ----- | ----------- | ------ | -------- |
+| metadata |  | catalog.kubecarrier.io/v1alpha1.OfferingMetadata | false |
+| provider | Provider references the Provider managing this Offering. | catalog.kubecarrier.io/v1alpha1.ObjectReference | true |
+| crd | CRD holds the information about the underlying CRD that is offered by this offering. | catalog.kubecarrier.io/v1alpha1.CRDInformation | false |
 
 [Back to Group](#catalog)
 

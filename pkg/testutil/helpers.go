@@ -21,16 +21,13 @@ import (
 	"encoding/json"
 	"fmt"
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/require"
-	"k8s.io/apimachinery/pkg/api/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/types"
-	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/util/jsonpath"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+
+	"github.com/kubermatic/kubecarrier/pkg/internal/util"
 )
 
 func ConditionStatusEqual(obj runtime.Object, ConditionType, ConditionStatus interface{}) error {
@@ -57,157 +54,53 @@ func ConditionStatusEqual(obj runtime.Object, ConditionType, ConditionStatus int
 }
 
 func LogObject(t *testing.T, obj interface{}) {
+	t.Helper()
 	b, err := json.MarshalIndent(obj, "", "\t")
 	require.NoError(t, err)
 	t.Log("\n", string(b))
 }
 
-const (
-	defaultWaitTimeout  = 120 * time.Second
-	defaultPollInterval = time.Second
+var (
+	WithTimeout = util.WithClientWatcherTimeout
 )
 
-// common options for Wait* helpers
-type waitOptions struct {
-	timeout      time.Duration
-	pollInterval time.Duration
+func WaitUntilNotFound(ctx context.Context, c *RecordingClient, obj runtime.Object, options ...util.ClientWatcherOption) error {
+	c.t.Helper()
+	return c.WaitUntilNotFound(ctx, obj, options...)
 }
 
-// interface for option overrides
-type waitOption func(opt *waitOptions)
-
-// WithTimeout overrides the default 30s timeout for watch helpers.
-func WithTimeout(timeout time.Duration) waitOption {
-	return func(opt *waitOptions) {
-		opt.timeout = timeout
-	}
-}
-
-// WithPollInterval overrides the default 1s poll interval for watch helpers.
-func WithPollInterval(pollInterval time.Duration) waitOption {
-	return func(opt *waitOptions) {
-		opt.pollInterval = pollInterval
-	}
-}
-
-func WaitUntilNotFound(c client.Client, obj runtime.Object, opts ...waitOption) error {
-	opt := &waitOptions{
-		timeout:      defaultWaitTimeout,
-		pollInterval: defaultPollInterval,
-	}
-	for _, fn := range opts {
-		fn(opt)
-	}
-
-	o, ok := obj.(metav1.Object)
-	if !ok {
-		return fmt.Errorf("%T does not implement metav1.Object", obj)
-	}
-
-	return wait.Poll(opt.pollInterval, opt.timeout, func() (done bool, err error) {
-		err = c.Get(context.Background(), types.NamespacedName{
-			Namespace: o.GetNamespace(),
-			Name:      o.GetName(),
-		}, obj)
-		switch {
-		case errors.IsNotFound(err):
-			return true, nil
-		case err == nil:
-			return false, nil
-		default:
-			return false, err
-
-		}
-	})
-}
-
-func WaitUntilFound(c client.Client, obj runtime.Object, opts ...waitOption) error {
-	opt := &waitOptions{
-		timeout:      defaultWaitTimeout,
-		pollInterval: defaultPollInterval,
-	}
-	for _, fn := range opts {
-		fn(opt)
-	}
-
-	o, ok := obj.(metav1.Object)
-	if !ok {
-		return fmt.Errorf("%T does not implement metav1.Object", obj)
-	}
-	nn := types.NamespacedName{
-		Name:      o.GetName(),
-		Namespace: o.GetNamespace(),
-	}
-	err := wait.Poll(opt.pollInterval, opt.timeout, func() (done bool, err error) {
-		if err := c.Get(context.Background(), nn, obj); err != nil {
-			if errors.IsNotFound(err) {
-				return false, nil
-			}
-			return true, err
-		}
+func WaitUntilFound(ctx context.Context, c *RecordingClient, obj runtime.Object, options ...util.ClientWatcherOption) error {
+	c.t.Helper()
+	return c.WaitUntil(ctx, obj, func() (done bool, err error) {
 		return true, nil
-	})
-	if err != nil {
-		return fmt.Errorf("%s not found: %w, after %s", nn.String(), err, opt.timeout)
-	}
-	return nil
+	}, options...)
 }
 
-func WaitUntilCondition(c client.Client, obj runtime.Object, ConditionType, conditionStatus interface{}, opts ...waitOption) error {
-	opt := &waitOptions{
-		timeout:      defaultWaitTimeout,
-		pollInterval: defaultPollInterval,
-	}
-	for _, fn := range opts {
-		fn(opt)
-	}
-
-	o, ok := obj.(metav1.Object)
-	if !ok {
-		return fmt.Errorf("%T does not implement metav1.Object", obj)
-	}
-	var lastErr error
-	nn := types.NamespacedName{
-		Name:      o.GetName(),
-		Namespace: o.GetNamespace(),
-	}
-	err := wait.Poll(opt.pollInterval, opt.timeout, func() (done bool, err error) {
-		err = c.Get(context.Background(), nn, obj)
-		switch {
-		case errors.IsNotFound(err):
-			return true, fmt.Errorf("%s not found", nn)
-		case err == nil:
-			lastErr = ConditionStatusEqual(obj, ConditionType, conditionStatus)
-			return lastErr == nil, nil
-		default:
-			return false, err
-		}
-	})
+func WaitUntilCondition(ctx context.Context, c *RecordingClient, obj runtime.Object, ConditionType, conditionStatus interface{}, options ...util.ClientWatcherOption) error {
+	c.t.Helper()
+	err := c.WaitUntil(ctx, obj, func() (done bool, err error) {
+		return ConditionStatusEqual(obj, ConditionType, conditionStatus) == nil, nil
+	}, options...)
 
 	if err != nil {
 		b, marshallErr := json.MarshalIndent(obj, "", "\t")
 		if marshallErr != nil {
 			return fmt.Errorf("cannot marshall indent obj!!! %v %w", marshallErr, err)
 		}
-
-		if lastErr != nil {
-			return fmt.Errorf("%s not found: %w, after %s\n%s", nn, lastErr, opt.timeout, string(b))
-		}
-		return fmt.Errorf("%s not found: %w, after %s\n%s", nn, err, opt.timeout, string(b))
+		return fmt.Errorf("%w\n%s", err, string(b))
 	}
 	return nil
 }
 
-func WaitUntilReady(c client.Client, obj runtime.Object, opts ...waitOption) error {
-	return WaitUntilCondition(c, obj, "Ready", "True", opts...)
+func WaitUntilReady(ctx context.Context, c *RecordingClient, obj runtime.Object, options ...util.ClientWatcherOption) error {
+	c.t.Helper()
+	return WaitUntilCondition(ctx, c, obj, "Ready", "True", options...)
 }
 
-func DeleteAndWaitUntilNotFound(c client.Client, obj runtime.Object) error {
-	if err := c.Delete(context.Background(), obj); err != nil {
-		if errors.IsNotFound(err) {
-			return nil
-		}
+func DeleteAndWaitUntilNotFound(ctx context.Context, c *RecordingClient, obj runtime.Object, options ...util.ClientWatcherOption) error {
+	c.t.Helper()
+	if err := c.Delete(ctx, obj); client.IgnoreNotFound(err) != nil {
 		return err
 	}
-	return WaitUntilNotFound(c, obj)
+	return WaitUntilNotFound(ctx, c, obj, options...)
 }
