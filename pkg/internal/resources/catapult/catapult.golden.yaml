@@ -224,7 +224,7 @@
         - name: cert
           secret:
             defaultMode: 420
-            secretName: webhook-server-cert
+            secretName: db-eu-west-1-catapult-webhook-service-webhook-service-cert
 - apiVersion: admissionregistration.k8s.io/v1beta1
   kind: MutatingWebhookConfiguration
   metadata:
@@ -291,4 +291,4 @@
     issuerRef:
       kind: Issuer
       name: db-eu-west-1-catapult-selfsigned-issuer
-    secretName: webhook-server-cert
+    secretName: db-eu-west-1-catapult-webhook-service-webhook-service-cert
