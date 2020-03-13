@@ -66,3 +66,11 @@ vars:
     kind: Service
     version: v1
     name: webhook-service
+- name: SECRET_NAME
+  objref:
+    kind: Service
+    version: v1
+    name: webhook-service
+
+configurations:
+  - kustomizeconfig.yaml
