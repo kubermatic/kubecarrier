@@ -20,16 +20,15 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/kubermatic/kubecarrier/test/admin"
-	"github.com/kubermatic/kubecarrier/test/framework"
+	"github.com/kubermatic/kubecarrier/pkg/testutil"
 	"github.com/kubermatic/kubecarrier/test/installation"
-	"github.com/kubermatic/kubecarrier/test/provider"
-	"github.com/kubermatic/kubecarrier/test/tenant"
+	"github.com/kubermatic/kubecarrier/test/integration"
+	"github.com/kubermatic/kubecarrier/test/scenarios"
 	"github.com/kubermatic/kubecarrier/test/verify"
 )
 
-func AllTests(config framework.Config) ([]testing.InternalTest, error) {
-	f, err := framework.New(config)
+func AllTests(config testutil.FrameworkConfig) ([]testing.InternalTest, error) {
+	f, err := testutil.New(config)
 	if err != nil {
 		return nil, fmt.Errorf("creating test framework:%w", err)
 	}
@@ -44,18 +43,13 @@ func AllTests(config framework.Config) ([]testing.InternalTest, error) {
 			Name: "InstallationSuite",
 			F:    installation.NewInstallationSuite(f),
 		},
-
 		testing.InternalTest{
-			Name: "AdminSuite",
-			F:    admin.NewAdminSuite(f),
+			Name: "Integration",
+			F:    integration.NewIntegrationSuite(f),
 		},
 		testing.InternalTest{
-			Name: "ProviderSuite",
-			F:    provider.NewProviderSuite(f),
-		},
-		testing.InternalTest{
-			Name: "TenantSuite",
-			F:    tenant.NewTenantSuite(f),
+			Name: "Scenarios",
+			F:    scenarios.NewSuite(f),
 		},
 	)
 

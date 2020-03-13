@@ -19,6 +19,7 @@ package verify
 import (
 	"context"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -26,49 +27,47 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/clientcmd"
 
-	"github.com/kubermatic/kubecarrier/test/framework"
+	"github.com/kubermatic/kubecarrier/pkg/testutil"
 )
 
 // VerifySuite verifies if we can reach both kubernetes clusters (management and service).
 // and whether they are configured for our e2e tests.
-func NewVerifySuite(f *framework.Framework) func(t *testing.T) {
+func NewVerifySuite(f *testutil.Framework) func(t *testing.T) {
 	return func(t *testing.T) {
 		// Setup
-		managementClient, err := f.ManagementClient()
+		managementClient, err := f.ManagementClient(t)
 		require.NoError(t, err)
 
-		serviceClient, err := f.ServiceClient()
+		serviceClient, err := f.ServiceClient(t)
 		require.NoError(t, err)
 
-		t.Run("", func(t *testing.T) {
-			// parallel-group
-			t.Run("validate management cluster connection", func(t *testing.T) {
-				cm := &corev1.ConfigMap{}
-				require.NoError(t, managementClient.Get(context.Background(), types.NamespacedName{
-					Name:      "cluster-info",
-					Namespace: "kube-public",
-				}, cm), "cannot fetch cluster-info")
-			})
-
-			t.Run("validate service connection", func(t *testing.T) {
-				cm := &corev1.ConfigMap{}
-				require.NoError(t, serviceClient.Get(context.Background(), types.NamespacedName{
-					Name:      "cluster-info",
-					Namespace: "kube-public",
-				}, cm), "cannot fetch cluster-info")
-			})
-			t.Run("internal service cluster config validation", func(t *testing.T) {
-				loader := clientcmd.NewDefaultClientConfigLoadingRules()
-				loader.ExplicitPath = f.Config().ServiceInternalKubeconfigPath
-				clientConfig := clientcmd.NewNonInteractiveDeferredLoadingClientConfig(
-					loader,
-					&clientcmd.ConfigOverrides{},
-				)
-				cfg, err := clientConfig.ClientConfig()
-				require.NoError(t, err)
-				assert.Equal(t, "system:serviceaccount:default:kubecarrier", cfg.Impersonate.UserName, "internal service cluster kubeconfig has wrong impersonation")
-			})
+		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		t.Cleanup(cancel)
+		t.Run("validate management cluster connection", func(t *testing.T) {
+			cm := &corev1.ConfigMap{}
+			require.NoError(t, managementClient.Get(ctx, types.NamespacedName{
+				Name:      "cluster-info",
+				Namespace: "kube-public",
+			}, cm), "cannot fetch cluster-info")
 		})
 
+		t.Run("validate service connection", func(t *testing.T) {
+			cm := &corev1.ConfigMap{}
+			require.NoError(t, serviceClient.Get(ctx, types.NamespacedName{
+				Name:      "cluster-info",
+				Namespace: "kube-public",
+			}, cm), "cannot fetch cluster-info")
+		})
+		t.Run("internal service cluster config validation", func(t *testing.T) {
+			loader := clientcmd.NewDefaultClientConfigLoadingRules()
+			loader.ExplicitPath = f.Config().ServiceInternalKubeconfigPath
+			clientConfig := clientcmd.NewNonInteractiveDeferredLoadingClientConfig(
+				loader,
+				&clientcmd.ConfigOverrides{},
+			)
+			cfg, err := clientConfig.ClientConfig()
+			require.NoError(t, err)
+			assert.Equal(t, "system:serviceaccount:default:kubecarrier", cfg.Impersonate.UserName, "internal service cluster kubeconfig has wrong impersonation")
+		})
 	}
 }

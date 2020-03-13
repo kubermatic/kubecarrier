@@ -25,11 +25,11 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/spf13/cobra"
 
+	"github.com/kubermatic/kubecarrier/pkg/testutil"
 	"github.com/kubermatic/kubecarrier/test"
-	"github.com/kubermatic/kubecarrier/test/framework"
 )
 
-func newRunCommand(log logr.Logger, cfg *framework.Config) *cobra.Command {
+func newRunCommand(log logr.Logger, cfg *testutil.FrameworkConfig) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "run",
 		Short: "run all end2end tests",

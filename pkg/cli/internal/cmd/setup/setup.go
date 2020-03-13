@@ -95,7 +95,7 @@ func runE(conf *rest.Config, log logr.Logger, cmd *cobra.Command) error {
 	s := wow.New(cmd.OutOrStdout(), spin.Get(spin.Dots), "")
 	startTime := time.Now()
 	// Get a client from the configuration of the kubernetes cluster.
-	c, err := util.NewClientWatcher(conf, scheme)
+	c, err := util.NewClientWatcher(conf, scheme, log)
 	if err != nil {
 		return fmt.Errorf("creating Kubernetes client: %w", err)
 	}
@@ -163,8 +163,8 @@ func reconcileOperator(ctx context.Context, log logr.Logger, c *util.ClientWatch
 				Namespace: kubecarrierNamespaceName,
 			},
 		}
-		return c.WaitUntil(ctx, deployment, func(obj runtime.Object) (b bool, err error) {
-			return util.DeploymentIsAvailable(obj.(*appsv1.Deployment)), nil
+		return c.WaitUntil(ctx, deployment, func() (done bool, err error) {
+			return util.DeploymentIsAvailable(deployment), nil
 		})
 
 	}
@@ -185,7 +185,7 @@ func deployKubeCarrier(ctx context.Context, kubeCarrierNamespace *corev1.Namespa
 				Namespace: kubeCarrierNamespace.Name,
 			},
 		}
-		w, err := util.NewClientWatcher(conf, scheme)
+		w, err := util.NewClientWatcher(conf, scheme, ctrl.Log)
 		if err != nil {
 			return err
 		}
@@ -194,8 +194,8 @@ func deployKubeCarrier(ctx context.Context, kubeCarrierNamespace *corev1.Namespa
 		}); err != nil {
 			return fmt.Errorf("cannot create or update KubeCarrier: %w", err)
 		}
-		return w.WaitUntil(ctx, kubeCarrier, func(obj runtime.Object) (b bool, err error) {
-			return obj.(*operatorv1alpha1.KubeCarrier).IsReady(), nil
+		return w.WaitUntil(ctx, kubeCarrier, func() (done bool, err error) {
+			return kubeCarrier.IsReady(), nil
 		})
 	}
 }

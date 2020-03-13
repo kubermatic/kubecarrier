@@ -104,13 +104,14 @@ MANAGEMENT_KIND_CLUSTER?=kubecarrier-${TEST_ID}
 SVC_KIND_CLUSTER?=kubecarrier-svc-${TEST_ID}
 
 e2e-setup: install require-docker
-	@kind create cluster --name=${MANAGEMENT_KIND_CLUSTER} --image=${KIND_NODE_IMAGE} "--kubeconfig=${HOME}/.kube/kind-config-${MANAGEMENT_KIND_CLUSTER}" || true
+	@bash -c "kind create cluster --kubeconfig=${HOME}/.kube/kind-config-${MANAGEMENT_KIND_CLUSTER} --name=${MANAGEMENT_KIND_CLUSTER} --image=${KIND_NODE_IMAGE} & kind create cluster --kubeconfig=${HOME}/.kube/kind-config-${SVC_KIND_CLUSTER} --name=${SVC_KIND_CLUSTER} --image=${KIND_NODE_IMAGE} & wait < <(jobs -p)"
 	@kind get kubeconfig --internal --name=${MANAGEMENT_KIND_CLUSTER} > "${HOME}/.kube/internal-kind-config-${MANAGEMENT_KIND_CLUSTER}"
+	@kind get kubeconfig --name=${MANAGEMENT_KIND_CLUSTER} > "${HOME}/.kube/kind-config-${MANAGEMENT_KIND_CLUSTER}"
 	@echo "Deploy cert-manger in management cluster"
 	# Deploy cert-manager right after the creation of the management cluster, since the deployments of cert-manger take some time to get ready.
 	@$(MAKE) KUBECONFIG=${HOME}/.kube/kind-config-${MANAGEMENT_KIND_CLUSTER} cert-manager
-	@kind create cluster --name=${SVC_KIND_CLUSTER} --image=${KIND_NODE_IMAGE} "--kubeconfig=${HOME}/.kube/kind-config-${SVC_KIND_CLUSTER}" || true
 	@kind get kubeconfig --internal --name=${SVC_KIND_CLUSTER} > "${HOME}/.kube/internal-kind-config-${SVC_KIND_CLUSTER}"
+	@kind get kubeconfig --name=${SVC_KIND_CLUSTER} > "${HOME}/.kube/kind-config-${SVC_KIND_CLUSTER}"
 	@echo "kind clusters created"
 	@kubectl --kubeconfig=${HOME}/.kube/kind-config-${SVC_KIND_CLUSTER} apply -n default -f ./config/serviceCluster
 	@kubectl create serviceaccount kubecarrier -n default --dry-run -o yaml | kubectl apply --kubeconfig=${HOME}/.kube/kind-config-${SVC_KIND_CLUSTER} -f -
