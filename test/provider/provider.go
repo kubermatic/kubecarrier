@@ -289,7 +289,7 @@ func NewCatalogSuite(
 		offeringFound := &catalogv1alpha1.Offering{}
 		assert.NoError(t, wait.Poll(time.Second, 10*time.Second, func() (done bool, err error) {
 			if err := managementClient.Get(ctx, types.NamespacedName{
-				Name:      catalogEntry.Name,
+				Name:      catalogEntry.Status.TenantCRD.Name,
 				Namespace: tenantAccount.Status.Namespace.Name,
 			}, offeringFound); err != nil {
 				if errors.IsNotFound(err) {

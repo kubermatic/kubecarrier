@@ -22,6 +22,7 @@ KubeCarrier is an open source system for managing applications and services acro
   - [Before you start](#before-you-start)
   - [Pull Requests](#pull-requests)
   - [Developer Documentation](developer-documentation)
+- [FAQ](#faq)
 - [Changelog](#changelog)
 
 ---
@@ -34,7 +35,7 @@ KubeCarrier is an open source system for managing applications and services acro
 
 ## Project Status
 
-KubeCarrier is currently in alpha and is not ready for production use, the APIs are not yet final and breaking changes might be introduced in every release.
+KubeCarrier is currently in early development and is not ready for production use, the APIs are not yet final and breaking changes might be introduced in every release.
 
 ## Features
 
@@ -101,9 +102,11 @@ KubeCarrier is distributed via a public container registry [quay.io/kubecarrier]
 
 This CLI tool will gain more utility functions as the project matures.
 
-#### Install the Kubectl plugin
+#### Install the kubectl plugin
 
-To install the kubectl plugin, just visit the KubeCarrier [release page](https://github.com/kubermatic/kubecarrier/releases), download the archive and put the contained `kubectl-kubecarrier` binary into your `$PATH`. Make sure the binary is executable.
+To install the kubectl plugin, just visit the KubeCarrier [release page](https://github.com/kubermatic/kubecarrier/releases), download the archive and put the contained `kubecarrier` binary into your `$PATH` as `kubectl-kubecarrier`.
+
+Make sure the binary is executable.
 
 If everything worked, you should now be setup with the `kubecarrier` plugin:
 *(Your version should be way newer than this example)*
@@ -458,8 +461,8 @@ Here we also use `kubectl` user impersonation (`--as`), to showcase RBAC:
 # Offering objects contain information about CRDs that are shared to a Tenant.
 # They contain all the information to validate and create new instances.
 $ kubectl get offering -n team-b --as=team-b-member
-NAME                 DISPLAY NAME   PROVIDER   CRD                         AGE
-couchdbs.eu-west-1   CouchDB        team-a     couchdbs.eu-west-1.team-a   3m15s
+NAME                        DISPLAY NAME   PROVIDER   AGE
+couchdbs.eu-west-1.team-a   CouchDB        team-a     3m15s
 
 # ServiceClusterReference exposes information about the underlying Clusters.
 $ kubectl get serviceclusterreference -n team-b --as=team-b-member
@@ -536,6 +539,23 @@ Feedback and discussion are available on [the mailing list][11].
 ### Pull requests
 
 * We welcome pull requests. Feel free to dig through the [issues][1] and jump in.
+
+## FAQ
+
+### What`s the difference to OLM / Crossplane?
+
+The [Operator Lifecycle Manager](https://github.com/operator-framework/operator-lifecycle-manager) from RedHat and [Crossplane](https://crossplane.io/) are both projects that manage installation, upgrade and deletion of Operators and their CustomResourceDefinitions in a Kubernetes cluster.
+
+KubeCarrier on the other hand is just working with existing CustomResourceDefinitions and already installed Operators.
+As both OLM and Crossplane are driven by CRDs, they can be combined with KubeCarrier to manage their configuration across clusters.
+
+### What`s the difference to KubeFed - Kubernetes Federation?
+
+The [Kubernetes Federation Project](https://github.com/kubernetes-sigs/kubefed) was created to distribute Workload across Kubernetes Clusters for e.g. geo-replication and disaster recovery.
+It's intentionally low-level to work for generic workload to be spread across clusters.
+
+While KubeCarrier is also operating on multiple clusters, KubeCarrier operates on a higher abstraction level.
+KubeCarrier assigns applications onto single pre-determined Kubernetes clusters. Kubernetes Operators that enable these applications, may still use KubeFed underneath to spread the workload across clusters.
 
 ## Changelog
 
