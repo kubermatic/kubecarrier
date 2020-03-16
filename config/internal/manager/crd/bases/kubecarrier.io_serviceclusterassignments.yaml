@@ -55,6 +55,7 @@ spec:
                 description: References the source namespace in the management cluster.
                 properties:
                   name:
+                    minLength: 1
                     type: string
                 required:
                 - name
@@ -63,6 +64,7 @@ spec:
                 description: References the ServiceCluster.
                 properties:
                   name:
+                    minLength: 1
                     type: string
                 required:
                 - name
@@ -126,6 +128,7 @@ spec:
                   ServiceCluster that was assigned.
                 properties:
                   name:
+                    minLength: 1
                     type: string
                 required:
                 - name

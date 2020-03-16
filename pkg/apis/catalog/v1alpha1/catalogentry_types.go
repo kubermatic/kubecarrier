@@ -23,9 +23,9 @@ import (
 // CatalogEntrySpec describes the desired state of CatalogEntry.
 type CatalogEntrySpec struct {
 	// Metadata contains the metadata of the CatalogEntry for the Service Catalog.
-	Metadata CatalogEntryMetadata `json:"metadata,omitempty"`
+	Metadata CatalogEntryMetadata `json:"metadata"`
 	// BaseCRD is the underlying BaseCRD objects that this CatalogEntry refers to.
-	BaseCRD ObjectReference `json:"baseCRD,omitempty"`
+	BaseCRD ObjectReference `json:"baseCRD"`
 	// Derive contains the configuration to generate DerivedCustomResource from the BaseCRD of this CatalogEntry.
 	Derive *DerivedConfig `json:"derive,omitempty"`
 }
@@ -41,9 +41,11 @@ type DerivedConfig struct {
 // CatalogEntryMetadata contains metadata of the CatalogEntry.
 type CatalogEntryMetadata struct {
 	// DisplayName shows the human-readable name of this CatalogEntry.
-	DisplayName string `json:"displayName,omitempty"`
+	// +kubebuilder:validation:MinLength=1
+	DisplayName string `json:"displayName"`
 	// Description shows the human-readable description of this CatalogEntry.
-	Description string `json:"description,omitempty"`
+	// +kubebuilder:validation:MinLength=1
+	Description string `json:"description"`
 }
 
 // CatalogEntryStatus represents the observed state of CatalogEntry.

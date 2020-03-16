@@ -32,10 +32,13 @@ const (
 func RegisterServiceClusterAssignmentNamespaceFieldIndex(indexer client.FieldIndexer) error {
 	return indexer.IndexField(
 		&ServiceClusterAssignment{}, ServiceClusterAssignmentNamespaceFieldIndex,
-		client.IndexerFunc(func(obj runtime.Object) []string {
+		func(obj runtime.Object) (vals []string) {
 			sca := obj.(*ServiceClusterAssignment)
-			return []string{sca.Status.ServiceClusterNamespace.Name}
-		}))
+			if sca.IsReady() {
+				return []string{sca.Status.ServiceClusterNamespace.Name}
+			}
+			return
+		})
 }
 
 func GetServiceClusterAssignmentByServiceClusterNamespace(ctx context.Context, c client.Client, serviceClusterNamespace string) (*ServiceClusterAssignment, error) {

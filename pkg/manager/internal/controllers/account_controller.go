@@ -190,8 +190,10 @@ func (r *AccountReconciler) reconcileNamespace(ctx context.Context, log logr.Log
 		return fmt.Errorf("cannot reconcile namespace: %w", err)
 	}
 
-	if account.Status.Namespace.Name == "" {
-		account.Status.Namespace.Name = ns.Name
+	if account.Status.Namespace == nil {
+		account.Status.Namespace = &catalogv1alpha1.ObjectReference{
+			Name: ns.Name,
+		}
 		if err := r.Status().Update(ctx, account); err != nil {
 			return fmt.Errorf("updating NamespaceName: %w", err)
 		}

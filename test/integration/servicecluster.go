@@ -27,6 +27,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	corev1 "k8s.io/api/core/v1"
+	rbacv1 "k8s.io/api/rbac/v1"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -52,7 +53,11 @@ func newServiceClusterSuite(
 		t.Cleanup(serviceClient.CleanUpFunc(ctx))
 		testName := strings.Replace(strings.ToLower(t.Name()), "/", "-", -1)
 
-		provider := f.NewProviderAccount(testName)
+		provider := f.NewProviderAccount(testName, rbacv1.Subject{
+			Kind:     rbacv1.GroupKind,
+			APIGroup: "rbac.authorization.k8s.io",
+			Name:     "provider",
+		})
 		require.NoError(t, managementClient.Create(ctx, provider))
 		require.NoError(t, testutil.WaitUntilReady(ctx, managementClient, provider))
 

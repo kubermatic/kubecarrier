@@ -70,6 +70,7 @@ spec:
                     CatalogEntry refers to.
                   properties:
                     name:
+                      minLength: 1
                       type: string
                   required:
                     - name
@@ -98,6 +99,7 @@ spec:
                               required:
                                 - jsonPath
                               type: object
+                            minItems: 1
                             type: array
                           versions:
                             description: specifies the versions of the referenced
@@ -105,6 +107,7 @@ spec:
                               may not be specified in multiple VersionExposeConfigs.
                             items:
                               type: string
+                            minItems: 1
                             type: array
                         required:
                           - fields
@@ -124,12 +127,20 @@ spec:
                     description:
                       description: Description shows the human-readable description
                         of this CatalogEntry.
+                      minLength: 1
                       type: string
                     displayName:
                       description: DisplayName shows the human-readable name of this
                         CatalogEntry.
+                      minLength: 1
                       type: string
+                  required:
+                    - description
+                    - displayName
                   type: object
+              required:
+                - baseCRD
+                - metadata
               type: object
             status:
               description: CatalogEntryStatus represents the observed state of CatalogEntry.
@@ -199,6 +210,7 @@ spec:
                         of this CRD.
                       properties:
                         name:
+                          minLength: 1
                           type: string
                       required:
                         - name
@@ -244,6 +256,7 @@ spec:
                         of this CRD.
                       properties:
                         name:
+                          minLength: 1
                           type: string
                       required:
                         - name

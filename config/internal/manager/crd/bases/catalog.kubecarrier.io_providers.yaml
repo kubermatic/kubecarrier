@@ -63,6 +63,8 @@ spec:
                     minLength: 1
                     type: string
                 type: object
+            required:
+            - metadata
             type: object
         type: object
     served: true

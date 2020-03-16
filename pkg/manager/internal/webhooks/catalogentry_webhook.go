@@ -36,7 +36,7 @@ type CatalogEntryWebhookHandler struct {
 
 var _ admission.Handler = (*CatalogEntryWebhookHandler)(nil)
 
-// +kubebuilder:webhook:path=/validate-catalog-kubecarrier-io-v1alpha1-catalogentry,mutating=false,failurePolicy=fail,groups=catalog.kubecarrier.io,resources=catalogentries,verbs=create;update,versions=v1alpha1,name=vcatalogentry.kubecarrier.io
+// +kubebuilder:webhook:path=/validate-catalog-kubecarrier-io-v1alpha1-catalogentry,mutating=false,failurePolicy=fail,groups=catalog.kubecarrier.io,resources=catalogentries,verbs=update,versions=v1alpha1,name=vcatalogentry.kubecarrier.io
 
 // Handle is the function to handle validating requests of CatalogEntries.
 func (r *CatalogEntryWebhookHandler) Handle(ctx context.Context, req admission.Request) admission.Response {
@@ -46,10 +46,6 @@ func (r *CatalogEntryWebhookHandler) Handle(ctx context.Context, req admission.R
 	}
 
 	switch req.Operation {
-	case adminv1beta1.Create:
-		if err := r.validateCreate(obj); err != nil {
-			return admission.Denied(err.Error())
-		}
 	case adminv1beta1.Update:
 		oldObj := &catalogv1alpha1.CatalogEntry{}
 		if err := r.decoder.DecodeRaw(req.OldObject, oldObj); err != nil {
@@ -70,25 +66,10 @@ func (r *CatalogEntryWebhookHandler) InjectDecoder(d *admission.Decoder) error {
 	return nil
 }
 
-func (r *CatalogEntryWebhookHandler) validateCreate(catalogEntry *catalogv1alpha1.CatalogEntry) error {
-	r.Log.Info("validate create", "name", catalogEntry.Name)
-	if catalogEntry.Spec.BaseCRD.Name == "" {
-		return fmt.Errorf("the Referenced CRD of CatalogEntry is not specifed")
-	}
-	return r.validateMetadata(catalogEntry)
-}
-
 func (r *CatalogEntryWebhookHandler) validateUpdate(oldObj, newObj *catalogv1alpha1.CatalogEntry) error {
 	r.Log.Info("validate update", "name", newObj.Name)
 	if newObj.Spec.BaseCRD.Name != oldObj.Spec.BaseCRD.Name {
 		return fmt.Errorf("the Referenced CRD of CatalogEntry is immutable")
-	}
-	return r.validateMetadata(newObj)
-}
-
-func (r *CatalogEntryWebhookHandler) validateMetadata(catalogEntry *catalogv1alpha1.CatalogEntry) error {
-	if catalogEntry.Spec.Metadata.Description == "" || catalogEntry.Spec.Metadata.DisplayName == "" {
-		return fmt.Errorf("the description or the display name of the CatalogEntry: %s cannot be empty", catalogEntry.Name)
 	}
 	return nil
 }

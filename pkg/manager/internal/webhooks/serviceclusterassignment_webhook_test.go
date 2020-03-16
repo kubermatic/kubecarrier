@@ -55,36 +55,6 @@ func TestServiceClusterAssignmentValidatingCreate(t *testing.T) {
 			expectedError: true,
 		},
 		{
-			name: "service cluster missing",
-			object: &corev1alpha1.ServiceClusterAssignment{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "management-namespace.service-cluster",
-					Namespace: "test-namespace",
-				},
-				Spec: corev1alpha1.ServiceClusterAssignmentSpec{
-					ManagementClusterNamespace: corev1alpha1.ObjectReference{
-						Name: "management-namespace",
-					},
-				},
-			},
-			expectedError: true,
-		},
-		{
-			name: "management cluster namespace missing",
-			object: &corev1alpha1.ServiceClusterAssignment{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "management-namespace.service-cluster",
-					Namespace: "test-namespace",
-				},
-				Spec: corev1alpha1.ServiceClusterAssignmentSpec{
-					ServiceCluster: corev1alpha1.ObjectReference{
-						Name: "service-cluster",
-					},
-				},
-			},
-			expectedError: true,
-		},
-		{
 			name: "can pass validating create",
 			object: &corev1alpha1.ServiceClusterAssignment{
 				ObjectMeta: metav1.ObjectMeta{

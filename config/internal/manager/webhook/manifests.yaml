@@ -39,7 +39,6 @@ webhooks:
     apiVersions:
     - v1alpha1
     operations:
-    - CREATE
     - UPDATE
     resources:
     - catalogentries
@@ -57,7 +56,6 @@ webhooks:
     apiVersions:
     - v1alpha1
     operations:
-    - CREATE
     - UPDATE
     resources:
     - customresourcediscoveries
@@ -75,7 +73,6 @@ webhooks:
     apiVersions:
     - v1alpha1
     operations:
-    - CREATE
     - UPDATE
     resources:
     - derivedcustomresources
@@ -93,7 +90,6 @@ webhooks:
     apiVersions:
     - v1alpha1
     operations:
-    - CREATE
     - UPDATE
     resources:
     - offerings
@@ -112,7 +108,6 @@ webhooks:
     - v1alpha1
     operations:
     - CREATE
-    - UPDATE
     resources:
     - providers
 - clientConfig:
@@ -164,7 +159,6 @@ webhooks:
     apiVersions:
     - v1alpha1
     operations:
-    - CREATE
     - UPDATE
     resources:
     - serviceclusterreferences

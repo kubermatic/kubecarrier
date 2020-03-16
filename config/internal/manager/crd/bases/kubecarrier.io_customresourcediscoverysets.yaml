@@ -57,6 +57,7 @@ spec:
                   ServiceCluster.
                 properties:
                   name:
+                    minLength: 1
                     type: string
                 required:
                 - name
@@ -177,6 +178,7 @@ spec:
                         in the same Namespace.
                       properties:
                         name:
+                          minLength: 1
                           type: string
                       required:
                       - name
@@ -186,6 +188,7 @@ spec:
                         in the same Namespace.
                       properties:
                         name:
+                          minLength: 1
                           type: string
                       required:
                       - name

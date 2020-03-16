@@ -37,5 +37,6 @@ const (
 
 // ObjectReference describes the link to another object in the same namespace.
 type ObjectReference struct {
+	// +kubebuilder:validation:MinLength=1
 	Name string `json:"name"`
 }

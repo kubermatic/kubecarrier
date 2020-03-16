@@ -64,6 +64,7 @@ spec:
                     ServiceCluster.
                   properties:
                     name:
+                      minLength: 1
                       type: string
                   required:
                     - name
@@ -76,6 +77,7 @@ spec:
                     the CustomResourceDefinition on.
                   properties:
                     name:
+                      minLength: 1
                       type: string
                   required:
                     - name
@@ -146,6 +148,7 @@ spec:
                     that is created by a CustomResourceDiscovery.
                   properties:
                     name:
+                      minLength: 1
                       type: string
                   required:
                     - name

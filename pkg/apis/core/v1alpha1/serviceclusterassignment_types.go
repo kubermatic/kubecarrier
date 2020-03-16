@@ -41,7 +41,7 @@ type ServiceClusterAssignmentStatus struct {
 	// The most recent generation observed by the controller.
 	ObservedGeneration int64 `json:"observedGeneration,omitempty"`
 	// ServiceClusterNamespace references the Namespace on the ServiceCluster that was assigned.
-	ServiceClusterNamespace ObjectReference `json:"serviceClusterNamespace,omitempty"`
+	ServiceClusterNamespace *ObjectReference `json:"serviceClusterNamespace,omitempty"`
 }
 
 // ServiceClusterAssignmentPhaseType represents all conditions as a single string for printing in kubectl.

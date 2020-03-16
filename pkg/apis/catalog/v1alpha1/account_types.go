@@ -31,7 +31,7 @@ type AccountSpec struct {
 	Roles []AccountRole `json:"roles"`
 	// Subjects holds references to the objects that manged RBAC roles should apply to.
 	// +kubebuilder:validation:MinItems=1
-	Subjects []rbacv1.Subject `json:"subjects,omitempty"`
+	Subjects []rbacv1.Subject `json:"subjects"`
 }
 
 // AccountMetadata contains the metadata of the Account.
@@ -56,7 +56,7 @@ const (
 // AccountStatus represents the observed state of Account.
 type AccountStatus struct {
 	// NamespaceName is the name of the Namespace that the Account manages.
-	Namespace ObjectReference `json:"namespace,omitempty"`
+	Namespace *ObjectReference `json:"namespace,omitempty"`
 	// ObservedGeneration is the most recent generation observed for this Account by the controller.
 	ObservedGeneration int64 `json:"observedGeneration,omitempty"`
 	// Conditions represents the latest available observations of a Account's current state.

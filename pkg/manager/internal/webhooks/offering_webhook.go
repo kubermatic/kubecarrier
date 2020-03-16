@@ -36,7 +36,7 @@ type OfferingWebhookHandler struct {
 
 var _ admission.Handler = (*OfferingWebhookHandler)(nil)
 
-// +kubebuilder:webhook:path=/validate-catalog-kubecarrier-io-v1alpha1-offering,mutating=false,failurePolicy=fail,groups=catalog.kubecarrier.io,resources=offerings,verbs=create;update,versions=v1alpha1,name=voffering.kubecarrier.io
+// +kubebuilder:webhook:path=/validate-catalog-kubecarrier-io-v1alpha1-offering,mutating=false,failurePolicy=fail,groups=catalog.kubecarrier.io,resources=offerings,verbs=update,versions=v1alpha1,name=voffering.kubecarrier.io
 
 // Handle is the function to handle create/update requests of Offerings.
 func (r *OfferingWebhookHandler) Handle(ctx context.Context, req admission.Request) admission.Response {
@@ -46,10 +46,6 @@ func (r *OfferingWebhookHandler) Handle(ctx context.Context, req admission.Reque
 	}
 
 	switch req.Operation {
-	case adminv1beta1.Create:
-		if err := r.validateCreate(obj); err != nil {
-			return admission.Denied(err.Error())
-		}
 	case adminv1beta1.Update:
 		oldObj := &catalogv1alpha1.Offering{}
 		if err := r.decoder.DecodeRaw(req.OldObject, oldObj); err != nil {
@@ -72,25 +68,10 @@ func (r *OfferingWebhookHandler) InjectDecoder(d *admission.Decoder) error {
 	return nil
 }
 
-func (r *OfferingWebhookHandler) validateCreate(offering *catalogv1alpha1.Offering) error {
-	r.Log.Info("validate create", "name", offering.Name)
-	if offering.Spec.Provider.Name == "" {
-		return fmt.Errorf("the Provider of Offering is not specifed")
-	}
-	return r.validateMetadata(offering)
-}
-
 func (r *OfferingWebhookHandler) validateUpdate(oldObj, newObj *catalogv1alpha1.Offering) error {
 	r.Log.Info("validate update", "name", newObj.Name)
 	if newObj.Spec.Provider.Name != oldObj.Spec.Provider.Name {
 		return fmt.Errorf("the Provider of Offering is immutable")
-	}
-	return r.validateMetadata(newObj)
-}
-
-func (r *OfferingWebhookHandler) validateMetadata(offering *catalogv1alpha1.Offering) error {
-	if offering.Spec.Metadata.Description == "" || offering.Spec.Metadata.DisplayName == "" {
-		return fmt.Errorf("the description or the display name of the Offering: %s cannot be empty", offering.Name)
 	}
 	return nil
 }

@@ -37,7 +37,7 @@ type ProviderWebhookHandler struct {
 
 var _ admission.Handler = (*ProviderWebhookHandler)(nil)
 
-// +kubebuilder:webhook:path=/validate-catalog-kubecarrier-io-v1alpha1-provider,mutating=false,failurePolicy=fail,groups=catalog.kubecarrier.io,resources=providers,verbs=create;update,versions=v1alpha1,name=vprovider.kubecarrier.io
+// +kubebuilder:webhook:path=/validate-catalog-kubecarrier-io-v1alpha1-provider,mutating=false,failurePolicy=fail,groups=catalog.kubecarrier.io,resources=providers,verbs=create,versions=v1alpha1,name=vprovider.kubecarrier.io
 
 // Handle is the function to handle create/update requests of Providers.
 func (r *ProviderWebhookHandler) Handle(ctx context.Context, req admission.Request) admission.Response {
@@ -49,14 +49,6 @@ func (r *ProviderWebhookHandler) Handle(ctx context.Context, req admission.Reque
 	switch req.Operation {
 	case adminv1beta1.Create:
 		if err := r.validateCreate(obj); err != nil {
-			return admission.Denied(err.Error())
-		}
-	case adminv1beta1.Update:
-		oldObj := &catalogv1alpha1.Provider{}
-		if err := r.decoder.DecodeRaw(req.OldObject, oldObj); err != nil {
-			return admission.Errored(http.StatusBadRequest, err)
-		}
-		if err := r.validateUpdate(oldObj, obj); err != nil {
 			return admission.Denied(err.Error())
 		}
 	}
