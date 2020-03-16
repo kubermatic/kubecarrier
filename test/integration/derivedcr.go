@@ -162,6 +162,14 @@ func newDerivedCR(
 			assert.Equal(t, catalogEntry.Status.TenantCRD.Kind, dcr.Status.DerivedCR.Kind)
 			assert.Equal(t, catalogEntry.Status.TenantCRD.Plural, dcr.Status.DerivedCR.Plural)
 		}
+
+		// Check the Elevator dynamic webhook service is deployed.
+		webhookService := &corev1.Service{}
+		assert.NoError(t, managementClient.Get(ctx, types.NamespacedName{
+			Name:      fmt.Sprintf("%s-elevator-webhook-service", dcr.Name),
+			Namespace: catalogEntry.Namespace,
+		}, webhookService), "get the Webhook Service that owned by Elevator object")
+
 		err = managementClient.Delete(ctx, provider)
 		if assert.Error(t, err, "dirty provider %s deletion should error out", provider.Name) {
 			assert.Equal(t,
