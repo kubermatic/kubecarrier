@@ -36,7 +36,7 @@ import (
 	elevatorutil "github.com/kubermatic/kubecarrier/pkg/elevator/internal/util"
 )
 
-// TenantObjWebhookHandler handles validating of TenantObjs.
+// TenantObjWebhookHandler handles TenantObjs validation.
 type TenantObjWebhookHandler struct {
 	Log     logr.Logger
 	Scheme  *runtime.Scheme
