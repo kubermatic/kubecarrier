@@ -52,7 +52,7 @@ type TenantObjWebhookHandler struct {
 
 var _ admission.Handler = (*TenantObjWebhookHandler)(nil)
 
-// Handle is the function to handle validating requests of ManagementClusterObjs.
+// Handle is the function to handle TenantObjs validating requests.
 func (r *TenantObjWebhookHandler) Handle(ctx context.Context, req admission.Request) admission.Response {
 	obj := &unstructured.Unstructured{}
 	if err := r.decoder.Decode(req, obj); err != nil {
