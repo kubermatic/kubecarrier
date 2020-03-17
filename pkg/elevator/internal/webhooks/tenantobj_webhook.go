@@ -42,7 +42,9 @@ type TenantObjWebhookHandler struct {
 	Scheme  *runtime.Scheme
 	decoder *admission.Decoder
 
+	// Client is used to perform Create/Update request with dry-run flag to against the Catapult webhook.
 	client.Client
+	// NamespacedClient is allowed to access the provider namespace only, this is used to fetch the DerivedCustomResource object.
 	NamespacedClient client.Client
 
 	TenantGVK, ProviderGVK schema.GroupVersionKind
@@ -104,6 +106,36 @@ func (r *TenantObjWebhookHandler) Handle(ctx context.Context, req admission.Requ
 
 	// Check if the ProviderObj has already been created, if it is created, then regards this request
 	// as a UPDATE, if it is not crated, regards this request as a CREATE.
+	// Using `req.admission.Request` to determine if the request is CREATE or UPDATE was the first attempt and finally,
+	// we decided not to use that because it just doesn't work with the `dry-run` requests, here is an example in the
+	// following and you will see the problem:
+	//
+	// If we use the following for our elevator webhook:
+	// ```
+	// switch req.Operation {
+	// case adminv1beta1.Create:
+	// 	if err := r.Create(ctx, providerObj, client.DryRunAll); err != nil {
+	// 		return admission.Errored(http.StatusInternalServerError, err)
+	// 	}
+	// case adminv1beta1.Update:
+	// 	if err := r.Update(ctx, providerObj, client.DryRunAll); err != nil {
+	// 		return admission.Errored(http.StatusInternalServerError, err)
+	// 	}
+	// }
+	// ```
+	// Then go through the request flow when the tenant tries to create the TenantCRD object:
+	// 1. Tenant sends a `CREATE` request.
+	// 2. The above webhook regards this as a `CREATE` request, the `DryRun` request can pass (NO problem with this step).
+	// 3. TenantObj controller of `Elevator` tries to update the finalizer for the TenantCRD object, and send an `UPDATE` request.
+	// Then the problem happens: the above webhook regards this as an `UPDATE` request, and the `DryRun` request will fail
+	// with `IsNotFound` error, since the ProviderObj has not been created.
+	// The similar problem also happens when the TenantObj is removed, and update the finalizer later. Also, there are
+	// also some other corner cases that can not be handled by this above approach.
+	// There is a workaround that we can remove the `DryRun` flag and do an actual `Create`/`Update` call, in the webhook,
+	// but we feels like creating objects and introducing some side effects is not the right way to go.
+	// That's why we decided to not use the `req.Operation` but to check if the `ProviderObj` is created or not.
+	// Also, if you think about our approach, it also makes sense, i.e., if the `ProviderObj` is not there,
+	// of course it is a `CREATE` request, and it also works fine.
 	err := r.Get(ctx, types.NamespacedName{
 		Name:      providerObj.GetName(),
 		Namespace: providerObj.GetNamespace(),
