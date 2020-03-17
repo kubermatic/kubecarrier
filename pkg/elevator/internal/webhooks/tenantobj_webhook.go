@@ -42,9 +42,10 @@ type TenantObjWebhookHandler struct {
 	Scheme  *runtime.Scheme
 	decoder *admission.Decoder
 
-	// Client is used to perform Create/Update request with dry-run flag to against the Catapult webhook.
+	// Client has a global cache, and is used to perform Create/Update request with dry-run flag to against the Catapult webhook.
 	client.Client
-	// NamespacedClient is allowed to access the provider namespace only, this is used to fetch the DerivedCustomResource object.
+	// NamespacedClient has a namespace-only cache, and is only allowed to access the provider namespace,
+	// this is used to fetch the DerivedCustomResource object.
 	NamespacedClient client.Client
 
 	TenantGVK, ProviderGVK schema.GroupVersionKind
