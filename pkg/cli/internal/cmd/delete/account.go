@@ -24,8 +24,8 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/spf13/cobra"
 	"k8s.io/apimachinery/pkg/api/meta"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	catalogv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/catalog/v1alpha1"
@@ -63,10 +63,11 @@ func newAccountCommand(log logr.Logger, cl *util.ClientWatcher) *cobra.Command {
 			}
 			for _, it := range args {
 				fmt.Println("deleting account", "name", it)
-				account := &catalogv1alpha1.Account{
-					ObjectMeta: metav1.ObjectMeta{Name: it},
+				account := &catalogv1alpha1.Account{}
+				if err := client.IgnoreNotFound(cl.Get(ctx, types.NamespacedName{Name: it}, account)); err != nil {
+					return err
 				}
-				err := cl.Delete(ctx, account)
+				err := client.IgnoreNotFound(cl.Delete(ctx, account))
 				if err != nil {
 					if !force || !strings.HasPrefix(err.Error(), "admission webhook \"vaccount.kubecarrier.io\" denied the request: deletion blocking objects found") {
 						return err
@@ -89,7 +90,7 @@ func newAccountCommand(log logr.Logger, cl *util.ClientWatcher) *cobra.Command {
 						}
 						for _, obj := range objs {
 							fmt.Println("deleting", util.MustLogLine(obj, scheme))
-							if err := cl.Delete(ctx, obj); err != nil {
+							if err := client.IgnoreNotFound(cl.Delete(ctx, obj)); err != nil {
 								return err
 							}
 						}
@@ -98,6 +99,9 @@ func newAccountCommand(log logr.Logger, cl *util.ClientWatcher) *cobra.Command {
 								return err
 							}
 						}
+					}
+					if err := cl.Delete(ctx, account); err != nil {
+						return err
 					}
 				}
 				if err := cl.WaitUntilNotFound(ctx, account); err != nil {

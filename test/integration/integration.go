@@ -31,6 +31,7 @@ func NewIntegrationSuite(f *testutil.Framework) func(t *testing.T) {
 			"serviceCluster": newServiceClusterSuite,
 			"catalog":        newCatalogSuite,
 			"account":        newAccount,
+			"cli":            newCLI,
 		} {
 			name := name
 			testFn := testFn

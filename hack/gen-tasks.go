@@ -137,6 +137,7 @@ func main() {
 		"Integration/serviceCluster",
 		"Integration/catalog",
 		"Integration/account",
+		"Integration/cli",
 		"Scenarios",
 		"Scenarios/simple",
 	} {

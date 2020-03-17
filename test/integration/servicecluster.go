@@ -19,7 +19,6 @@ package integration
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
 	"strings"
 	"testing"
 	"time"
@@ -62,34 +61,7 @@ func newServiceClusterSuite(
 		require.NoError(t, testutil.WaitUntilReady(ctx, managementClient, provider))
 
 		// Setup
-		serviceKubeconfig, err := ioutil.ReadFile(f.Config().ServiceInternalKubeconfigPath)
-		require.NoError(t, err, "cannot read service internal kubeconfig")
-
-		serviceClusterSecret := &corev1.Secret{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "eu-west-1",
-				Namespace: provider.Status.Namespace.Name,
-			},
-			Data: map[string][]byte{
-				"kubeconfig": serviceKubeconfig,
-			},
-		}
-
-		serviceCluster := &corev1alpha1.ServiceCluster{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "eu-west-1",
-				Namespace: provider.Status.Namespace.Name,
-			},
-			Spec: corev1alpha1.ServiceClusterSpec{
-				Metadata: corev1alpha1.ServiceClusterMetadata{
-					DisplayName: "eu-west-1",
-					Description: "eu-west-1 service cluster",
-				},
-				KubeconfigSecret: corev1alpha1.ObjectReference{
-					Name: "eu-west-1",
-				},
-			},
-		}
+		serviceCluster := f.SetupServiceCluster(ctx, managementClient, t, "eu-west-1", provider)
 
 		crd := &apiextensionsv1.CustomResourceDefinition{
 			ObjectMeta: metav1.ObjectMeta{
@@ -147,11 +119,8 @@ func newServiceClusterSuite(
 			},
 		}
 
-		require.NoError(t, managementClient.Create(ctx, serviceClusterSecret))
-		require.NoError(t, managementClient.Create(ctx, serviceCluster))
 		require.NoError(t, managementClient.Create(ctx, serviceNamespace))
 		require.NoError(t, managementClient.Create(ctx, serviceClusterAssignment))
-		require.NoError(t, testutil.WaitUntilReady(ctx, managementClient, serviceCluster))
 		require.NoError(t, testutil.WaitUntilReady(ctx, managementClient, serviceClusterAssignment))
 		t.Log("service cluster successfully created")
 
