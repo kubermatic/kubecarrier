@@ -175,7 +175,9 @@
           kubecarrier.io/role: elevator
       spec:
         containers:
-        - env:
+        - args:
+          - --cert-dir=$(CERT_DIR)
+          env:
           - name: ELEVATOR_DERIVED_CRD_NAME
             value: couchdbs.eu-west-1
           - name: ELEVATOR_PROVIDER_KIND
@@ -190,12 +192,31 @@
             value: v1alpha1
           - name: ELEVATOR_TENANT_GROUP
             value: eu-west-1.provider
+          - name: ELEVATOR_MUTATING_WEBHOOK_PATH
+            value: /mutate-eu-west-1-provider-v1alpha1-couchdb
           - name: KUBERNETES_NAMESPACE
             valueFrom:
               fieldRef:
                 fieldPath: metadata.namespace
+          - name: CERT_DIR
+            value: /tmp/k8s-webhook-server/serving-certs
           image: quay.io/kubecarrier/elevator:was not build properly
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: readiness-port
           name: manager
+          ports:
+          - containerPort: 9443
+            name: webhook-server
+            protocol: TCP
+          - containerPort: 9440
+            name: readiness-port
+            protocol: TCP
+          readinessProbe:
+            httpGet:
+              path: /readyz
+              port: readiness-port
           resources:
             limits:
               cpu: 100m
@@ -203,5 +224,80 @@
             requests:
               cpu: 100m
               memory: 20Mi
+          volumeMounts:
+          - mountPath: /tmp/k8s-webhook-server/serving-certs
+            name: cert
+            readOnly: true
         serviceAccountName: db-eu-west-1-elevator-sa
         terminationGracePeriodSeconds: 10
+        volumes:
+        - name: cert
+          secret:
+            defaultMode: 420
+            secretName: db-eu-west-1-elevator-webhook-service-webhook-service-cert
+- apiVersion: admissionregistration.k8s.io/v1beta1
+  kind: MutatingWebhookConfiguration
+  metadata:
+    annotations:
+      cert-manager.io/inject-ca-from: test3000/db-eu-west-1-elevator-serving-cert
+    creationTimestamp: null
+    labels:
+      kubecarrier.io/role: elevator
+    name: db-eu-west-1-elevator-mutating-webhook-configuration
+  webhooks:
+  - clientConfig:
+      caBundle: Q2c9PQ==
+      service:
+        name: db-eu-west-1-elevator-webhook-service
+        namespace: test3000
+        path: /mutate-eu-west-1-provider-v1alpha1-couchdb
+    failurePolicy: Fail
+    name: mcouchdb.kubecarrier.io
+    rules:
+    - apiGroups:
+      - eu-west-1.provider
+      apiVersions:
+      - v1alpha1
+      operations:
+      - CREATE
+      - UPDATE
+      resources:
+      - couchdbs
+- apiVersion: v1
+  kind: Service
+  metadata:
+    labels:
+      kubecarrier.io/role: elevator
+    name: db-eu-west-1-elevator-webhook-service
+    namespace: test3000
+  spec:
+    ports:
+    - port: 443
+      targetPort: 9443
+    selector:
+      control-plane: manager
+      kubecarrier.io/role: elevator
+- apiVersion: cert-manager.io/v1alpha2
+  kind: Issuer
+  metadata:
+    labels:
+      kubecarrier.io/role: elevator
+    name: db-eu-west-1-elevator-selfsigned-issuer
+    namespace: test3000
+  spec:
+    selfSigned: {}
+- apiVersion: cert-manager.io/v1alpha2
+  kind: Certificate
+  metadata:
+    labels:
+      kubecarrier.io/role: elevator
+    name: db-eu-west-1-elevator-serving-cert
+    namespace: test3000
+  spec:
+    dnsNames:
+    - db-eu-west-1-elevator-webhook-service.test3000.svc
+    - db-eu-west-1-elevator-webhook-service.test3000.svc.cluster.local
+    issuerRef:
+      kind: Issuer
+      name: db-eu-west-1-elevator-selfsigned-issuer
+    secretName: db-eu-west-1-elevator-webhook-service-webhook-service-cert
