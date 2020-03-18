@@ -18,14 +18,12 @@ package scenarios
 
 import (
 	"context"
-	"io/ioutil"
 	"strings"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -89,35 +87,7 @@ func newSimpleScenario(f *testutil.Framework) func(t *testing.T) {
 		require.NoError(t, testutil.WaitUntilFound(ctx, managementClient, tenant))
 
 		t.Log("===== creating service cluster =====")
-		serviceKubeconfig, err := ioutil.ReadFile(f.Config().ServiceInternalKubeconfigPath)
-		require.NoError(t, err, "cannot read service internal kubeconfig")
-		serviceClusterSecret := &corev1.Secret{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "eu-west-1",
-				Namespace: provider.Status.Namespace.Name,
-			},
-			Data: map[string][]byte{
-				"kubeconfig": serviceKubeconfig,
-			},
-		}
-		serviceCluster := &corev1alpha1.ServiceCluster{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "eu-west-1",
-				Namespace: provider.Status.Namespace.Name,
-			},
-			Spec: corev1alpha1.ServiceClusterSpec{
-				Metadata: corev1alpha1.ServiceClusterMetadata{
-					DisplayName: "eu-west-1",
-					Description: "eu-west-1 service cluster in German's capital",
-				},
-				KubeconfigSecret: corev1alpha1.ObjectReference{
-					Name: "eu-west-1",
-				},
-			},
-		}
-		require.NoError(t, managementClient.Create(ctx, serviceClusterSecret))
-		require.NoError(t, managementClient.Create(ctx, serviceCluster))
-		require.NoError(t, testutil.WaitUntilReady(ctx, managementClient, serviceCluster))
+		serviceCluster := f.SetupServiceCluster(ctx, managementClient, t, "eu-east-1", provider)
 
 		t.Log("===== creating CRD on the service cluster =====")
 		baseCRD := f.NewFakeCouchDBCRD(testName + ".test.kubecarrier.io")

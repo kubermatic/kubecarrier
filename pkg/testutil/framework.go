@@ -19,11 +19,13 @@ package testutil
 import (
 	"context"
 	"fmt"
+	"io/ioutil"
 	"os"
 	"sync"
 	"testing"
 
 	"github.com/stretchr/testify/require"
+	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -247,6 +249,44 @@ func (f *Framework) NewFakeCouchDBCRD(group string) *apiextensionsv1.CustomResou
 			Scope: apiextensionsv1.NamespaceScoped,
 		},
 	}
+}
+
+func (f *Framework) SetupServiceCluster(ctx context.Context, cl *RecordingClient, t *testing.T, name string, account *catalogv1alpha1.Account) *corev1alpha1.ServiceCluster {
+	// Setup
+	serviceKubeconfig, err := ioutil.ReadFile(f.Config().ServiceInternalKubeconfigPath)
+	require.NoError(t, err, "cannot read service internal kubeconfig")
+
+	serviceClusterSecret := &corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      name,
+			Namespace: account.Status.Namespace.Name,
+		},
+		Data: map[string][]byte{
+			"kubeconfig": serviceKubeconfig,
+		},
+	}
+
+	serviceCluster := &corev1alpha1.ServiceCluster{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      name,
+			Namespace: account.Status.Namespace.Name,
+		},
+		Spec: corev1alpha1.ServiceClusterSpec{
+			Metadata: corev1alpha1.ServiceClusterMetadata{
+				DisplayName: name,
+				Description: name + "service cluster",
+			},
+			KubeconfigSecret: corev1alpha1.ObjectReference{
+				Name: serviceClusterSecret.Name,
+			},
+		},
+	}
+
+	require.NoError(t, cl.Create(ctx, serviceClusterSecret))
+	require.NoError(t, cl.Create(ctx, serviceCluster))
+	require.NoError(t, WaitUntilReady(ctx, cl, serviceCluster))
+	t.Logf("service cluster %s successfully created for provider %s", name, account.Name)
+	return serviceCluster
 }
 
 func (f *Framework) Config() FrameworkConfig {
