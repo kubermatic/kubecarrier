@@ -118,7 +118,7 @@ func DeleteObjects(ctx context.Context, cl client.Client, scheme *runtime.Scheme
 			cleanedUp = false
 		case errors.IsNotFound(err):
 		default:
-			return false, fmt.Errorf("deleting ")
+			return false, fmt.Errorf("deleting %v %w", obj, err)
 		}
 	}
 	return cleanedUp, nil
