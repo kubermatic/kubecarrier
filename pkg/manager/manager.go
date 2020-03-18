@@ -255,6 +255,10 @@ func run(flags *flags, log logr.Logger) error {
 		return fmt.Errorf("adding readyz checker: %w", err)
 	}
 
+	if err := mgr.AddHealthzCheck("ping", healthz.Ping); err != nil {
+		return fmt.Errorf("adding healthz checker: %w", err)
+	}
+
 	log.Info("starting manager")
 	if err := mgr.Start(ctrl.SetupSignalHandler()); err != nil {
 		return fmt.Errorf("running manager: %w", err)

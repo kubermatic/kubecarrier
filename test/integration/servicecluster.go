@@ -199,6 +199,13 @@ func newServiceClusterSuite(
 
 		t.Log("CatalogEntry & CustomResourceDiscoverySet exists")
 
+		// Check the Catapult dynamic webhook service is deployed.
+		webhookService := &corev1.Service{}
+		assert.NoError(t, managementClient.Get(ctx, types.NamespacedName{
+			Name:      fmt.Sprintf("%s-%s-catapult-webhook-service", catalogEntrySet.Name, serviceCluster.Name),
+			Namespace: catalogEntrySet.Namespace,
+		}, webhookService), "get the Webhook Service that owned by Catapult object")
+
 		err = managementClient.Delete(ctx, provider)
 		if assert.Error(t, err, "dirty provider %s deletion should error out", provider.Name) {
 			assert.Equal(t,
