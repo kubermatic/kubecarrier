@@ -62,15 +62,15 @@ func newAccountCommand(log logr.Logger, cl *util.ClientWatcher) *cobra.Command {
 				}
 			}
 			for _, it := range args {
-				fmt.Println("deleting account", "name", it)
+				_, _ = fmt.Fprintln(cmd.OutOrStdout(), "deleting account", "name", it)
 				account := &catalogv1alpha1.Account{}
 				if err := client.IgnoreNotFound(cl.Get(ctx, types.NamespacedName{Name: it}, account)); err != nil {
-					return err
+					return fmt.Errorf("getting account %s: %w", it, err)
 				}
 				err := client.IgnoreNotFound(cl.Delete(ctx, account))
 				if err != nil {
 					if !force || !strings.HasPrefix(err.Error(), "admission webhook \"vaccount.kubecarrier.io\" denied the request: deletion blocking objects found") {
-						return err
+						return fmt.Errorf("deleting account %s : %w", account.Name, err)
 					}
 
 					for _, objKind := range []runtime.Object{
@@ -89,7 +89,7 @@ func newAccountCommand(log logr.Logger, cl *util.ClientWatcher) *cobra.Command {
 							return err
 						}
 						for _, obj := range objs {
-							fmt.Println("deleting", util.MustLogLine(obj, scheme))
+							_, _ = fmt.Fprintln(cmd.OutOrStdout(), "deleting", util.MustLogLine(obj, scheme))
 							if err := client.IgnoreNotFound(cl.Delete(ctx, obj)); err != nil {
 								return err
 							}
@@ -100,7 +100,7 @@ func newAccountCommand(log logr.Logger, cl *util.ClientWatcher) *cobra.Command {
 							}
 						}
 					}
-					if err := cl.Delete(ctx, account); err != nil {
+					if err := client.IgnoreNotFound(cl.Delete(ctx, account)); err != nil {
 						return err
 					}
 				}
