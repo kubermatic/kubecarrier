@@ -235,9 +235,12 @@ func run(flags *flags, log logr.Logger) error {
 			Log: log.WithName("validating webhooks").WithName("Tenant"),
 		}})
 	wbh.Register(utilwebhook.GenerateValidateWebhookPath(&corev1alpha1.CustomResourceDiscovery{}, mgr.GetScheme()),
-		&webhook.Admission{Handler: &webhooks.CustomResourceDiscoveryWebhookHandler{
-			Log: log.WithName("validating webhooks").WithName("CustomResourceDiscovery"),
-		}})
+		&webhook.Admission{
+			Handler: &webhooks.CustomResourceDiscoveryWebhookHandler{
+				Log:    log.WithName("validating webhooks").WithName("CustomResourceDiscovery"),
+				Scheme: mgr.GetScheme(),
+				Client: mgr.GetClient(),
+			}})
 	wbh.Register(utilwebhook.GenerateValidateWebhookPath(&corev1alpha1.ServiceCluster{}, mgr.GetScheme()),
 		&webhook.Admission{Handler: &webhooks.ServiceClusterWebhookHandler{
 			Log: log.WithName("validating webhooks").WithName("ServiceCluster"),

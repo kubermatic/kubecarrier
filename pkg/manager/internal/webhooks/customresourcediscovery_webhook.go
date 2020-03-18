@@ -20,23 +20,34 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"strings"
 
 	"github.com/go-logr/logr"
 	adminv1beta1 "k8s.io/api/admission/v1beta1"
+	"k8s.io/apiextensions-apiserver/pkg/apis/apiextensions"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/apimachinery/pkg/types"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
 	corev1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/core/v1alpha1"
+	"github.com/kubermatic/kubecarrier/pkg/internal/util"
 )
 
 // CustomResourceDiscoveryWebhookHandler handles mutating/validating of CustomResourceDiscoveries.
 type CustomResourceDiscoveryWebhookHandler struct {
 	decoder *admission.Decoder
 	Log     logr.Logger
+	client.Client
+	Scheme *runtime.Scheme
 }
 
 var _ admission.Handler = (*CustomResourceDiscoveryWebhookHandler)(nil)
 
 // +kubebuilder:webhook:path=/validate-kubecarrier-io-v1alpha1-customresourcediscovery,mutating=false,failurePolicy=fail,groups=kubecarrier.io,resources=customresourcediscoveries,verbs=update,versions=v1alpha1,name=vcustomresourcediscovery.kubecarrier.io
+// TODO: enable the deletion webhook after the RBAC is handled
 
 // Handle is the function to handle create/update requests of CustomResourceDiscoveries.
 func (r *CustomResourceDiscoveryWebhookHandler) Handle(ctx context.Context, req admission.Request) admission.Response {
@@ -52,6 +63,14 @@ func (r *CustomResourceDiscoveryWebhookHandler) Handle(ctx context.Context, req 
 			return admission.Errored(http.StatusBadRequest, err)
 		}
 		if err := r.validateUpdate(oldObj, obj); err != nil {
+			return admission.Denied(err.Error())
+		}
+	case adminv1beta1.Delete:
+		oldObj := &corev1alpha1.CustomResourceDiscovery{}
+		if err := r.decoder.DecodeRaw(req.OldObject, oldObj); err != nil {
+			return admission.Errored(http.StatusBadRequest, err)
+		}
+		if err := r.validateDelete(ctx, oldObj); err != nil {
 			return admission.Denied(err.Error())
 		}
 	}
@@ -76,4 +95,33 @@ func (r *CustomResourceDiscoveryWebhookHandler) validateUpdate(oldObj, newObj *c
 		return fmt.Errorf("the Spec (ServiceCluster, CRD, and KindOverride) of CustomResourceDiscovery is immutable")
 	}
 	return nil
+}
+
+func (r *CustomResourceDiscoveryWebhookHandler) validateDelete(ctx context.Context, obj *corev1alpha1.CustomResourceDiscovery) error {
+	if obj.Status.ManagementClusterCRD == nil {
+		return nil
+	}
+
+	crd := &apiextensions.CustomResourceDefinition{}
+	if err := r.Get(ctx, types.NamespacedName{Name: obj.Status.ManagementClusterCRD.Name}, crd); err != nil {
+		return err
+	}
+	u := &unstructured.UnstructuredList{}
+	u.SetGroupVersionKind(schema.GroupVersionKind{
+		Group:   crd.Spec.Group,
+		Version: crd.Spec.Versions[0].Name,
+		Kind:    crd.Spec.Names.ListKind,
+	})
+	if err := r.List(ctx, u); err != nil {
+		return err
+	}
+	if len(u.Items) == 0 {
+		return nil
+	}
+
+	errorMsg := new(strings.Builder)
+	for _, it := range u.Items {
+		_, _ = fmt.Fprintln(errorMsg, util.MustLogLine(&it, r.Scheme)+"still present")
+	}
+	return fmt.Errorf("%s", errorMsg)
 }
