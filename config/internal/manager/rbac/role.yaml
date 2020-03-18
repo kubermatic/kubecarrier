@@ -3,6 +3,8 @@ kind: ClusterRole
 metadata:
   creationTimestamp: null
   name: manager-role
+  labels:
+    kubecarrier.io/manager: 'true'
 rules:
   - apiGroups:
       - ""
@@ -312,7 +314,3 @@ rules:
       - patch
       - update
       - watch
-aggregationRule:
-  clusterRoleSelectors:
-    - matchLabels:
-        kubecarrier.io/manager: 'true'
