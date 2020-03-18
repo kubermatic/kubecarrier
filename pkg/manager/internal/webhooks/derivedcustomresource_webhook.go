@@ -100,7 +100,7 @@ func (r *DerivedCustomResourceWebhookHandler) validateDelete(ctx context.Context
 
 	crd := &apiextensionsv1.CustomResourceDefinition{}
 	if err := r.Get(ctx, types.NamespacedName{
-		Name: obj.Status.DerivedCR.Plural + "." + obj.Status.DerivedCR.Group,
+		Name: obj.Status.DerivedCR.Name,
 	}, crd); err != nil {
 		return err
 	}

@@ -408,7 +408,6 @@ The `catalog.kubecarrier.io` API group contains all objects that are used to set
 * [DerivedCustomResource.catalog.kubecarrier.io/v1alpha1](#derivedcustomresource.catalog.kubecarrier.io/v1alpha1)
 * [DerivedCustomResourceCondition.catalog.kubecarrier.io/v1alpha1](#derivedcustomresourcecondition.catalog.kubecarrier.io/v1alpha1)
 * [DerivedCustomResourceList.catalog.kubecarrier.io/v1alpha1](#derivedcustomresourcelist.catalog.kubecarrier.io/v1alpha1)
-* [DerivedCustomResourceReference.catalog.kubecarrier.io/v1alpha1](#derivedcustomresourcereference.catalog.kubecarrier.io/v1alpha1)
 * [DerivedCustomResourceSpec.catalog.kubecarrier.io/v1alpha1](#derivedcustomresourcespec.catalog.kubecarrier.io/v1alpha1)
 * [DerivedCustomResourceStatus.catalog.kubecarrier.io/v1alpha1](#derivedcustomresourcestatus.catalog.kubecarrier.io/v1alpha1)
 * [FieldPath.catalog.kubecarrier.io/v1alpha1](#fieldpath.catalog.kubecarrier.io/v1alpha1)
@@ -885,20 +884,6 @@ DerivedCustomResourceList contains a list of DerivedCustomResource.
 
 [Back to Group](#catalog)
 
-### DerivedCustomResourceReference.catalog.kubecarrier.io/v1alpha1
-
-DerivedCustomResourceReference references the derived CRD controlled by this DerivedCustomResource instance.
-
-| Field | Description | Scheme | Required |
-| ----- | ----------- | ------ | -------- |
-| name | Name of the derived CRD. | string | true |
-| group | API Group of the derived CRD. | string | true |
-| kind |  | string | true |
-| plural |  | string | true |
-| singular |  | string | true |
-
-[Back to Group](#catalog)
-
 ### DerivedCustomResourceSpec.catalog.kubecarrier.io/v1alpha1
 
 DerivedCustomResourceSpec defines the desired state of DerivedCustomResource.
@@ -920,7 +905,7 @@ DerivedCustomResourceStatus defines the observed state of DerivedCustomResource.
 | observedGeneration | ObservedGeneration is the most recent generation observed for this DerivedCustomResource by the controller. | catalog.kubecarrier.io/v1alpha1.int64 | false |
 | conditions | Conditions represents the latest available observations of a DerivedCustomResource's current state. | []catalog.kubecarrier.io/v1alpha1.DerivedCustomResourceCondition | false |
 | phase | DEPRECATED. Phase represents the current lifecycle state of this object. Consider this field DEPRECATED, it will be removed as soon as there is a mechanism to map conditions to strings when printing the property. This is only for display purpose, for everything else use conditions. | catalog.kubecarrier.io/v1alpha1.DerivedCustomResourcePhaseType | false |
-| derivedCR | DerivedCR holds information about the derived CRD. | *catalog.kubecarrier.io/v1alpha1.DerivedCustomResourceReference | false |
+| derivedCR | DerivedCR holds information about the derived CRD. | *catalog.kubecarrier.io/v1alpha1.ObjectReference | false |
 
 [Back to Group](#catalog)
 

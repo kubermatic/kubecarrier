@@ -1155,24 +1155,11 @@
                 derivedCR:
                   description: DerivedCR holds information about the derived CRD.
                   properties:
-                    group:
-                      description: API Group of the derived CRD.
-                      type: string
-                    kind:
-                      type: string
                     name:
-                      description: Name of the derived CRD.
-                      type: string
-                    plural:
-                      type: string
-                    singular:
+                      minLength: 1
                       type: string
                   required:
-                  - group
-                  - kind
                   - name
-                  - plural
-                  - singular
                   type: object
                 observedGeneration:
                   description: ObservedGeneration is the most recent generation observed
@@ -2327,29 +2314,29 @@
       kubecarrier.io/role: manager
     name: kubecarrier-manager-manager-role
   rules:
-    - apiGroups:
-        - ""
-      resources:
-        - namespaces
-      verbs:
-        - create
-        - delete
-        - get
-        - list
-        - patch
-        - update
-        - watch
-    - apiGroups:
-        - apiextensions.k8s.io
-      resources:
-        - customresourcedefinitions
-      verbs:
-        - create
-        - delete
-        - get
-        - list
-        - patch
-        - update
+  - apiGroups:
+    - ""
+    resources:
+    - namespaces
+    verbs:
+    - create
+    - delete
+    - get
+    - list
+    - patch
+    - update
+    - watch
+  - apiGroups:
+    - apiextensions.k8s.io
+    resources:
+    - customresourcedefinitions
+    verbs:
+    - create
+    - delete
+    - get
+    - list
+    - patch
+    - update
     - watch
   - apiGroups:
     - catalog.kubecarrier.io
@@ -2637,10 +2624,10 @@
     - watch
 - aggregationRule:
     clusterRoleSelectors:
-      - matchLabels:
-          kubecarrier.io/manager: "true"
-      - matchLabels:
-          kubecarrier.io/role: manager
+    - matchLabels:
+        kubecarrier.io/manager: "true"
+    - matchLabels:
+        kubecarrier.io/role: manager
   apiVersion: rbac.authorization.k8s.io/v1
   kind: ClusterRole
   metadata:
