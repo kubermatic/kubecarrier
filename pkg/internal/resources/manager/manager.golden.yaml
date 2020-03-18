@@ -2768,7 +2768,7 @@
         - name: cert
           secret:
             defaultMode: 420
-            secretName: webhook-server-cert
+            secretName: kubecarrier-manager-webhook-service-webhook-service-cert
 - apiVersion: admissionregistration.k8s.io/v1beta1
   kind: ValidatingWebhookConfiguration
   metadata:
@@ -2989,4 +2989,4 @@
     issuerRef:
       kind: Issuer
       name: kubecarrier-manager-selfsigned-issuer
-    secretName: webhook-server-cert
+    secretName: kubecarrier-manager-webhook-service-webhook-service-cert

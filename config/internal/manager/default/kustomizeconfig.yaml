@@ -1,0 +1,4 @@
+varReference:
+  - kind: Deployment
+    group: apps
+    path: spec/template/spec/volumes/secret
