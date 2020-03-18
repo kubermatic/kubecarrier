@@ -209,9 +209,12 @@ func run(flags *flags, log logr.Logger) error {
 			Log: log.WithName("validating webhooks").WithName("CatalogEntry"),
 		}})
 	wbh.Register(utilwebhook.GenerateValidateWebhookPath(&catalogv1alpha1.DerivedCustomResource{}, mgr.GetScheme()),
-		&webhook.Admission{Handler: &webhooks.DerivedCustomResourceWebhookHandler{
-			Log: log.WithName("validating webhooks").WithName("DerivedCustomResource"),
-		}})
+		&webhook.Admission{
+			Handler: &webhooks.DerivedCustomResourceWebhookHandler{
+				Log:    log.WithName("validating webhooks").WithName("DerivedCustomResource"),
+				Scheme: mgr.GetScheme(),
+				Client: mgr.GetClient(),
+			}})
 	wbh.Register(utilwebhook.GenerateValidateWebhookPath(&catalogv1alpha1.Offering{}, mgr.GetScheme()),
 		&webhook.Admission{Handler: &webhooks.OfferingWebhookHandler{
 			Log: log.WithName("validating webhooks").WithName("Offering"),
@@ -237,9 +240,7 @@ func run(flags *flags, log logr.Logger) error {
 	wbh.Register(utilwebhook.GenerateValidateWebhookPath(&corev1alpha1.CustomResourceDiscovery{}, mgr.GetScheme()),
 		&webhook.Admission{
 			Handler: &webhooks.CustomResourceDiscoveryWebhookHandler{
-				Log:    log.WithName("validating webhooks").WithName("CustomResourceDiscovery"),
-				Scheme: mgr.GetScheme(),
-				Client: mgr.GetClient(),
+				Log: log.WithName("validating webhooks").WithName("CustomResourceDiscovery"),
 			}})
 	wbh.Register(utilwebhook.GenerateValidateWebhookPath(&corev1alpha1.ServiceCluster{}, mgr.GetScheme()),
 		&webhook.Admission{Handler: &webhooks.ServiceClusterWebhookHandler{

@@ -181,11 +181,17 @@ type: object
 		}
 		require.NoError(t, testutil.WaitUntilFound(ctx, managementClient, providerObj))
 
-		// TODO: enable the deletion webhook test after the RBAC is handled & webhook enabled
-		//assert.Error(t,
-		//managementClient.Delete(ctx, dcr),
-		//"derived custom resource must not be allowed to delete if derived CRD instances are present",
-		//)
+		err = managementClient.Delete(ctx, dcr)
+		if assert.Error(t, err,
+			"derived custom resource must not be allowed to delete if derived CRD instances are present",
+		) {
+			assert.Contains(
+				t,
+				err.Error(),
+				"derived CRD instances are still present in the cluster",
+				"derivedCR deletion webhook should error out on derived CRD instance presence",
+			)
+		}
 
 		// Check Provider -> Tenant
 		providerObj2 := &unstructured.Unstructured{
