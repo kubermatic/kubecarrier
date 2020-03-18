@@ -90,9 +90,7 @@ func (r *ManagementClusterObjReconciler) Reconcile(req ctrl.Request) (ctrl.Resul
 	}, sca); err != nil {
 		return result, fmt.Errorf("getting ServiceClusterAssignment: %w", err)
 	}
-	if readyCondition, _ := sca.Status.GetCondition(
-		corev1alpha1.ServiceClusterAssignmentReady,
-	); readyCondition.Status != corev1alpha1.ConditionTrue {
+	if !sca.IsReady() {
 		// SCA not yet ready
 		result.Requeue = true
 		return result, nil

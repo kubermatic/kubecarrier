@@ -56,7 +56,11 @@ func newCatalogSuite(
 			APIGroup: "rbac.authorization.k8s.io",
 			Name:     "admin",
 		})
-		provider := f.NewProviderAccount(testName)
+		provider := f.NewProviderAccount(testName, rbacv1.Subject{
+			Kind:     rbacv1.GroupKind,
+			APIGroup: "rbac.authorization.k8s.io",
+			Name:     "provider",
+		})
 		require.NoError(t, managementClient.Create(ctx, tenantAccount), "creating Tenant error")
 		require.NoError(t, managementClient.Create(ctx, provider), "creating Tenant error")
 
@@ -154,6 +158,9 @@ func newCatalogSuite(
 				Metadata: corev1alpha1.ServiceClusterMetadata{
 					DisplayName: "eu-west-1",
 					Description: "eu-west-1 service cluster!",
+				},
+				KubeconfigSecret: corev1alpha1.ObjectReference{
+					Name: "eu-west-1-secret",
 				},
 			},
 		}

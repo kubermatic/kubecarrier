@@ -25,7 +25,7 @@ import (
 // CatalogEntrySetSpec defines the desired state of CatalogEntrySet.
 type CatalogEntrySetSpec struct {
 	// Metadata contains the metadata of each CatalogEntry for the Service Catalog.
-	Metadata CatalogEntrySetMetadata `json:"metadata,omitempty"`
+	Metadata CatalogEntrySetMetadata `json:"metadata"`
 	// Derive contains the configuration to generate DerivedCustomResources from the BaseCRDs that are selected by this CatalogEntrySet.
 	Derive *DerivedConfig `json:"derive,omitempty"`
 	// Discover contains the configuration to create a CustomResourceDiscoverySet.
@@ -50,9 +50,11 @@ type CustomResourceDiscoverySetConfig struct {
 // CatalogEntrySetMetadata contains the metadata (display name, description, etc) of the CatalogEntrySet.
 type CatalogEntrySetMetadata struct {
 	// DisplayName shows the human-readable name of this CatalogEntrySet.
-	DisplayName string `json:"displayName,omitempty"`
+	// +kubebuilder:validation:MinLength=1
+	DisplayName string `json:"displayName"`
 	// Description shows the human-readable description of this CatalogEntrySet.
-	Description string `json:"description,omitempty"`
+	// +kubebuilder:validation:MinLength=1
+	Description string `json:"description"`
 }
 
 // CatalogEntrySetStatus defines the observed state of CatalogEntrySet.

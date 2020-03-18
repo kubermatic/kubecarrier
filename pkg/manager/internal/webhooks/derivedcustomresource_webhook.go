@@ -36,7 +36,7 @@ type DerivedCustomResourceWebhookHandler struct {
 
 var _ admission.Handler = (*DerivedCustomResourceWebhookHandler)(nil)
 
-// +kubebuilder:webhook:path=/validate-catalog-kubecarrier-io-v1alpha1-derivedcustomresource,mutating=false,failurePolicy=fail,groups=catalog.kubecarrier.io,resources=derivedcustomresources,verbs=create;update,versions=v1alpha1,name=vderivedcustomresource.kubecarrier.io
+// +kubebuilder:webhook:path=/validate-catalog-kubecarrier-io-v1alpha1-derivedcustomresource,mutating=false,failurePolicy=fail,groups=catalog.kubecarrier.io,resources=derivedcustomresources,verbs=update,versions=v1alpha1,name=vderivedcustomresource.kubecarrier.io
 
 // Handle is the function to handle create/update requests of DerivedCustomResources.
 func (r *DerivedCustomResourceWebhookHandler) Handle(ctx context.Context, req admission.Request) admission.Response {
@@ -46,10 +46,6 @@ func (r *DerivedCustomResourceWebhookHandler) Handle(ctx context.Context, req ad
 	}
 
 	switch req.Operation {
-	case adminv1beta1.Create:
-		if err := r.validateCreate(obj); err != nil {
-			return admission.Denied(err.Error())
-		}
 	case adminv1beta1.Update:
 		oldObj := &catalogv1alpha1.DerivedCustomResource{}
 		if err := r.decoder.DecodeRaw(req.OldObject, oldObj); err != nil {
@@ -72,35 +68,10 @@ func (r *DerivedCustomResourceWebhookHandler) InjectDecoder(d *admission.Decoder
 	return nil
 }
 
-func (r *DerivedCustomResourceWebhookHandler) validateCreate(derivedCustomResource *catalogv1alpha1.DerivedCustomResource) error {
-	r.Log.Info("validate create", "name", derivedCustomResource.Name)
-	if derivedCustomResource.Spec.BaseCRD.Name == "" {
-		return fmt.Errorf("the BaseCRD of DerivedCustomResource is not specifed")
-	}
-	return r.validateExpose(derivedCustomResource)
-}
-
 func (r *DerivedCustomResourceWebhookHandler) validateUpdate(oldObj, newObj *catalogv1alpha1.DerivedCustomResource) error {
 	r.Log.Info("validate update", "name", newObj.Name)
 	if newObj.Spec.BaseCRD.Name != oldObj.Spec.BaseCRD.Name {
 		return fmt.Errorf("the BaseCRD of DerivedCustomResource is immutable")
 	}
-	return r.validateExpose(newObj)
-}
-
-func (r *DerivedCustomResourceWebhookHandler) validateExpose(derivedCustomResource *catalogv1alpha1.DerivedCustomResource) error {
-	if derivedCustomResource.Spec.Expose == nil || len(derivedCustomResource.Spec.Expose) == 0 {
-		return fmt.Errorf("the DerivedCustomResource should expose at least one version config")
-	}
-
-	for _, versionExposeConfig := range derivedCustomResource.Spec.Expose {
-		if versionExposeConfig.Versions == nil || len(versionExposeConfig.Versions) == 0 {
-			return fmt.Errorf("the VersionExposeConfig should contain at least one exposed version")
-		}
-		if versionExposeConfig.Fields == nil || len(versionExposeConfig.Fields) == 0 {
-			return fmt.Errorf("the VersionExposeConfig should contain at least one exposed Field")
-		}
-	}
-
 	return nil
 }

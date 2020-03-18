@@ -26,6 +26,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	corev1 "k8s.io/api/core/v1"
+	rbacv1 "k8s.io/api/rbac/v1"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -47,7 +48,11 @@ func newDerivedCR(
 		t.Cleanup(managementClient.CleanUpFunc(ctx))
 
 		testName := strings.Replace(strings.ToLower(t.Name()), "/", "-", -1)
-		provider := f.NewProviderAccount(testName)
+		provider := f.NewProviderAccount(testName, rbacv1.Subject{
+			Kind:     rbacv1.GroupKind,
+			APIGroup: "rbac.authorization.k8s.io",
+			Name:     "provider",
+		})
 		require.NoError(t, managementClient.Create(ctx, provider))
 		require.NoError(t, testutil.WaitUntilReady(ctx, managementClient, provider))
 
@@ -162,6 +167,14 @@ func newDerivedCR(
 			assert.Equal(t, catalogEntry.Status.TenantCRD.Kind, dcr.Status.DerivedCR.Kind)
 			assert.Equal(t, catalogEntry.Status.TenantCRD.Plural, dcr.Status.DerivedCR.Plural)
 		}
+
+		// Check the Elevator dynamic webhook service is deployed.
+		webhookService := &corev1.Service{}
+		assert.NoError(t, managementClient.Get(ctx, types.NamespacedName{
+			Name:      fmt.Sprintf("%s-elevator-webhook-service", dcr.Name),
+			Namespace: catalogEntry.Namespace,
+		}, webhookService), "get the Webhook Service that owned by Elevator object")
+
 		err = managementClient.Delete(ctx, provider)
 		if assert.Error(t, err, "dirty provider %s deletion should error out", provider.Name) {
 			assert.Equal(t,

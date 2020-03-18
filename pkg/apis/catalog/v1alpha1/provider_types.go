@@ -23,7 +23,7 @@ import (
 // ProviderSpec defines the desired state of Provider
 type ProviderSpec struct {
 	// Metadata contains the metadata (display name, description, etc) of the Provider.
-	Metadata AccountMetadata `json:"metadata,omitempty"`
+	Metadata AccountMetadata `json:"metadata"`
 }
 
 // Provider exposes information of an Account with the Provider role.

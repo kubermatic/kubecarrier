@@ -20,6 +20,8 @@ import (
 	"context"
 	"fmt"
 
+	certv1alpha2 "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
+	adminv1beta1 "k8s.io/api/admissionregistration/v1beta1"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
@@ -52,6 +54,7 @@ func (c *ElevatorStrategy) GetDeletionObjectTypes() []runtime.Object {
 	return []runtime.Object{
 		&rbacv1.ClusterRole{},
 		&rbacv1.ClusterRoleBinding{},
+		&adminv1beta1.MutatingWebhookConfiguration{},
 	}
 }
 
@@ -85,5 +88,7 @@ func (c *ElevatorStrategy) AddWatches(builder *builder.Builder, scheme *runtime.
 		Owns(&corev1.Service{}).
 		Owns(&corev1.ServiceAccount{}).
 		Owns(&rbacv1.Role{}).
-		Owns(&rbacv1.RoleBinding{})
+		Owns(&rbacv1.RoleBinding{}).
+		Owns(&certv1alpha2.Issuer{}).
+		Owns(&certv1alpha2.Certificate{})
 }

@@ -75,10 +75,6 @@ func (r *ServiceClusterAssignmentWebhookHandler) InjectDecoder(d *admission.Deco
 
 func (r *ServiceClusterAssignmentWebhookHandler) validateCreate(serviceClusterAssignment *corev1alpha1.ServiceClusterAssignment) error {
 	r.Log.Info("validate create", "name", serviceClusterAssignment.Name)
-	if serviceClusterAssignment.Spec.ServiceCluster.Name == "" ||
-		serviceClusterAssignment.Spec.ManagementClusterNamespace.Name == "" {
-		return fmt.Errorf("the ServiceCluster or ManagementClusterNamespace of ServiceClusterAssignment is specified as empty string")
-	}
 	return r.validateName(serviceClusterAssignment)
 }
 

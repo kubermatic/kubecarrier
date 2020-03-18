@@ -123,6 +123,7 @@
                   type: array
               required:
               - roles
+              - subjects
               type: object
             status:
               description: AccountStatus represents the observed state of Account.
@@ -168,6 +169,7 @@
                     Account manages.
                   properties:
                     name:
+                      minLength: 1
                       type: string
                   required:
                   - name
@@ -271,6 +273,7 @@
                     CatalogEntry refers to.
                   properties:
                     name:
+                      minLength: 1
                       type: string
                   required:
                   - name
@@ -299,6 +302,7 @@
                               required:
                               - jsonPath
                               type: object
+                            minItems: 1
                             type: array
                           versions:
                             description: specifies the versions of the referenced
@@ -306,6 +310,7 @@
                               may not be specified in multiple VersionExposeConfigs.
                             items:
                               type: string
+                            minItems: 1
                             type: array
                         required:
                         - fields
@@ -325,12 +330,20 @@
                     description:
                       description: Description shows the human-readable description
                         of this CatalogEntry.
+                      minLength: 1
                       type: string
                     displayName:
                       description: DisplayName shows the human-readable name of this
                         CatalogEntry.
+                      minLength: 1
                       type: string
+                  required:
+                  - description
+                  - displayName
                   type: object
+              required:
+              - baseCRD
+              - metadata
               type: object
             status:
               description: CatalogEntryStatus represents the observed state of CatalogEntry.
@@ -400,6 +413,7 @@
                         of this CRD.
                       properties:
                         name:
+                          minLength: 1
                           type: string
                       required:
                       - name
@@ -445,6 +459,7 @@
                         of this CRD.
                       properties:
                         name:
+                          minLength: 1
                           type: string
                       required:
                       - name
@@ -568,6 +583,7 @@
                               required:
                               - jsonPath
                               type: object
+                            minItems: 1
                             type: array
                           versions:
                             description: specifies the versions of the referenced
@@ -575,6 +591,7 @@
                               may not be specified in multiple VersionExposeConfigs.
                             items:
                               type: string
+                            minItems: 1
                             type: array
                         required:
                         - fields
@@ -595,6 +612,7 @@
                         the ServiceCluster.
                       properties:
                         name:
+                          minLength: 1
                           type: string
                       required:
                       - name
@@ -672,14 +690,20 @@
                     description:
                       description: Description shows the human-readable description
                         of this CatalogEntrySet.
+                      minLength: 1
                       type: string
                     displayName:
                       description: DisplayName shows the human-readable name of this
                         CatalogEntrySet.
+                      minLength: 1
                       type: string
+                  required:
+                  - description
+                  - displayName
                   type: object
               required:
               - discover
+              - metadata
               type: object
             status:
               description: CatalogEntrySetStatus defines the observed state of CatalogEntrySet.
@@ -936,6 +960,7 @@
                       in the same namespace.
                     properties:
                       name:
+                        minLength: 1
                         type: string
                     required:
                     - name
@@ -961,6 +986,7 @@
                       in the same namespace.
                     properties:
                       name:
+                        minLength: 1
                         type: string
                     required:
                     - name
@@ -1038,6 +1064,7 @@
                     from.
                   properties:
                     name:
+                      minLength: 1
                       type: string
                   required:
                   - name
@@ -1062,6 +1089,7 @@
                           required:
                           - jsonPath
                           type: object
+                        minItems: 1
                         type: array
                       versions:
                         description: specifies the versions of the referenced CRD,
@@ -1069,11 +1097,13 @@
                           not be specified in multiple VersionExposeConfigs.
                         items:
                           type: string
+                        minItems: 1
                         type: array
                     required:
                     - fields
                     - versions
                     type: object
+                  minItems: 1
                   type: array
                 kindOverride:
                   description: overrides the kind of the derived CRD.
@@ -1243,6 +1273,7 @@
                         of this CRD.
                       properties:
                         name:
+                          minLength: 1
                           type: string
                       required:
                       - name
@@ -1278,21 +1309,28 @@
                     description:
                       description: Description shows the human-readable description
                         of this Offering.
+                      minLength: 1
                       type: string
                     displayName:
                       description: DisplayName shows the human-readable name of this
                         Offering.
+                      minLength: 1
                       type: string
+                  required:
+                  - description
+                  - displayName
                   type: object
                 provider:
                   description: Provider references the Provider managing this Offering.
                   properties:
                     name:
+                      minLength: 1
                       type: string
                   required:
                   - name
                   type: object
               required:
+              - metadata
               - provider
               type: object
           type: object
@@ -1373,6 +1411,8 @@
                       minLength: 1
                       type: string
                   type: object
+              required:
+              - metadata
               type: object
           type: object
       served: true
@@ -1460,6 +1500,7 @@
                     belongs to.
                   properties:
                     name:
+                      minLength: 1
                       type: string
                   required:
                   - name
@@ -1607,6 +1648,7 @@
                     ServiceCluster.
                   properties:
                     name:
+                      minLength: 1
                       type: string
                   required:
                   - name
@@ -1619,6 +1661,7 @@
                     the CustomResourceDefinition on.
                   properties:
                     name:
+                      minLength: 1
                       type: string
                   required:
                   - name
@@ -1689,6 +1732,7 @@
                     that is created by a CustomResourceDiscovery.
                   properties:
                     name:
+                      minLength: 1
                       type: string
                   required:
                   - name
@@ -1776,6 +1820,7 @@
                     ServiceCluster.
                   properties:
                     name:
+                      minLength: 1
                       type: string
                   required:
                   - name
@@ -1896,6 +1941,7 @@
                           object in the same Namespace.
                         properties:
                           name:
+                            minLength: 1
                             type: string
                         required:
                         - name
@@ -1905,6 +1951,7 @@
                           object in the same Namespace.
                         properties:
                           name:
+                            minLength: 1
                             type: string
                         required:
                         - name
@@ -1996,6 +2043,7 @@
                   description: References the source namespace in the management cluster.
                   properties:
                     name:
+                      minLength: 1
                       type: string
                   required:
                   - name
@@ -2004,6 +2052,7 @@
                   description: References the ServiceCluster.
                   properties:
                     name:
+                      minLength: 1
                       type: string
                   required:
                   - name
@@ -2067,6 +2116,7 @@
                     the ServiceCluster that was assigned.
                   properties:
                     name:
+                      minLength: 1
                       type: string
                   required:
                   - name
@@ -2148,6 +2198,7 @@
                     connecting to the ServiceCluster.
                   properties:
                     name:
+                      minLength: 1
                       type: string
                   required:
                   - name
@@ -2757,7 +2808,6 @@
       apiVersions:
       - v1alpha1
       operations:
-      - CREATE
       - UPDATE
       resources:
       - catalogentries
@@ -2775,7 +2825,6 @@
       apiVersions:
       - v1alpha1
       operations:
-      - CREATE
       - UPDATE
       resources:
       - customresourcediscoveries
@@ -2793,7 +2842,6 @@
       apiVersions:
       - v1alpha1
       operations:
-      - CREATE
       - UPDATE
       resources:
       - derivedcustomresources
@@ -2811,7 +2859,6 @@
       apiVersions:
       - v1alpha1
       operations:
-      - CREATE
       - UPDATE
       resources:
       - offerings
@@ -2830,7 +2877,6 @@
       - v1alpha1
       operations:
       - CREATE
-      - UPDATE
       resources:
       - providers
   - clientConfig:
@@ -2882,7 +2928,6 @@
       apiVersions:
       - v1alpha1
       operations:
-      - CREATE
       - UPDATE
       resources:
       - serviceclusterreferences

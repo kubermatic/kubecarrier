@@ -120,6 +120,7 @@ spec:
                 type: array
             required:
             - roles
+            - subjects
             type: object
           status:
             description: AccountStatus represents the observed state of Account.
@@ -165,6 +166,7 @@ spec:
                   manages.
                 properties:
                   name:
+                    minLength: 1
                     type: string
                 required:
                 - name

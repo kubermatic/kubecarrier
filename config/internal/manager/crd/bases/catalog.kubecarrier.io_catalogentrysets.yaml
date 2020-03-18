@@ -80,6 +80,7 @@ spec:
                             required:
                             - jsonPath
                             type: object
+                          minItems: 1
                           type: array
                         versions:
                           description: specifies the versions of the referenced CRD,
@@ -87,6 +88,7 @@ spec:
                             not be specified in multiple VersionExposeConfigs.
                           items:
                             type: string
+                          minItems: 1
                           type: array
                       required:
                       - fields
@@ -107,6 +109,7 @@ spec:
                       the ServiceCluster.
                     properties:
                       name:
+                        minLength: 1
                         type: string
                     required:
                     - name
@@ -183,14 +186,20 @@ spec:
                   description:
                     description: Description shows the human-readable description
                       of this CatalogEntrySet.
+                    minLength: 1
                     type: string
                   displayName:
                     description: DisplayName shows the human-readable name of this
                       CatalogEntrySet.
+                    minLength: 1
                     type: string
+                required:
+                - description
+                - displayName
                 type: object
             required:
             - discover
+            - metadata
             type: object
           status:
             description: CatalogEntrySetStatus defines the observed state of CatalogEntrySet.

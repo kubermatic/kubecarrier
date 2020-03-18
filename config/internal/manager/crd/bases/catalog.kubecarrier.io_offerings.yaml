@@ -70,6 +70,7 @@ spec:
                         of this CRD.
                       properties:
                         name:
+                          minLength: 1
                           type: string
                       required:
                         - name
@@ -105,21 +106,28 @@ spec:
                     description:
                       description: Description shows the human-readable description
                         of this Offering.
+                      minLength: 1
                       type: string
                     displayName:
                       description: DisplayName shows the human-readable name of this
                         Offering.
+                      minLength: 1
                       type: string
+                  required:
+                    - description
+                    - displayName
                   type: object
                 provider:
                   description: Provider references the Provider managing this Offering.
                   properties:
                     name:
+                      minLength: 1
                       type: string
                   required:
                     - name
                   type: object
               required:
+                - metadata
                 - provider
               type: object
           type: object

@@ -31,6 +31,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
 	catalogv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/catalog/v1alpha1"
+	elevatorutil "github.com/kubermatic/kubecarrier/pkg/elevator/internal/util"
 	"github.com/kubermatic/kubecarrier/pkg/internal/util"
 )
 
@@ -71,7 +72,7 @@ func (r *TenantObjReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 		return result, fmt.Errorf("getting DerivedCustomResource: %w", err)
 	}
 	version := r.ProviderGVK.Version
-	exposeConfig, ok := versionExposeConfigForVersion(derivedCR.Spec.Expose, version)
+	exposeConfig, ok := elevatorutil.VersionExposeConfigForVersion(derivedCR.Spec.Expose, version)
 	if !ok {
 		return result, fmt.Errorf("missing version expose config for version %q", version)
 	}
@@ -108,7 +109,7 @@ func (r *TenantObjReconciler) reconcileTenantObj(
 	}
 
 	// prepare config
-	statusFields, otherFields := splitStatusFields(config.Fields)
+	statusFields, otherFields := elevatorutil.SplitStatusFields(config.Fields)
 
 	// Lookup current instance
 	currentProviderObj := r.newProviderObject()
@@ -122,7 +123,7 @@ func (r *TenantObjReconciler) reconcileTenantObj(
 
 	if errors.IsNotFound(err) {
 		// Create the Provider Obj
-		if err = copyFields(tenantObj, desiredProviderObj, otherFields); err != nil {
+		if err = elevatorutil.CopyFields(tenantObj, desiredProviderObj, otherFields); err != nil {
 			return fmt.Errorf("copy fields: %w", err)
 		}
 
@@ -144,7 +145,7 @@ func (r *TenantObjReconciler) reconcileTenantObj(
 	}
 
 	// Update existing provider instance
-	if err = copyFields(tenantObj, currentProviderObj, otherFields); err != nil {
+	if err = elevatorutil.CopyFields(tenantObj, currentProviderObj, otherFields); err != nil {
 		return fmt.Errorf(
 			"copy fields from %s to %s: %w",
 			r.TenantGVK.Kind, r.ProviderGVK.Kind, err)
@@ -154,7 +155,7 @@ func (r *TenantObjReconciler) reconcileTenantObj(
 	}
 
 	// Sync status from provider to tenant instance
-	if err = copyFields(currentProviderObj, tenantObj, statusFields); err != nil {
+	if err = elevatorutil.CopyFields(currentProviderObj, tenantObj, statusFields); err != nil {
 		return fmt.Errorf(
 			"copy status fields from %s to %s: %w",
 			r.ProviderGVK.Kind, r.TenantGVK.Kind, err)
