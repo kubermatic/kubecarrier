@@ -301,3 +301,39 @@
       kind: Issuer
       name: db-eu-west-1-elevator-selfsigned-issuer
     secretName: db-eu-west-1-elevator-webhook-service-webhook-service-cert
+- apiVersion: rbac.authorization.k8s.io/v1
+  kind: ClusterRole
+  metadata:
+    creationTimestamp: null
+    labels:
+      kubecarrier.io/manager: "true"
+    name: db-eu-west-1-view-only
+  rules:
+    - apiGroups:
+        - eu-west-1.provider
+      resources:
+        - couchdbinternals
+      verbs:
+        - get
+        - list
+        - watch
+    - apiGroups:
+        - eu-west-1.provider
+      resources:
+        - couchdbinternals/status
+      verbs:
+        - get
+    - apiGroups:
+        - eu-west-1.provider
+      resources:
+        - couchdbs
+      verbs:
+        - get
+        - list
+        - watch
+    - apiGroups:
+        - eu-west-1.provider
+      resources:
+        - couchdbs/status
+      verbs:
+        - get

@@ -61,7 +61,10 @@ func Manifests(c Config) ([]unstructured.Unstructured, error) {
 				NewTag: v.Version,
 			},
 		},
-		Resources: []string{"../default"},
+		Resources: []string{
+			"../default",
+			"root-manager-role.yaml",
+		},
 		PatchesStrategicMerge: []types.PatchStrategicMerge{
 			"manager_env_patch.yaml",
 		},
@@ -181,6 +184,48 @@ func Manifests(c Config) ([]unstructured.Unstructured, error) {
 	}
 	if err := kc.WriteFile("/rbac/cluster_role.yaml", roleBytes); err != nil {
 		return nil, fmt.Errorf("writing /rbac/cluster_role.yaml: %w", err)
+	}
+
+	rootManagerrole := rbacv1.ClusterRole{
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: "rbac.authorization.k8s.io/v1",
+			Kind:       "ClusterRole",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "view-only",
+			Labels: map[string]string{
+				"kubecarrier.io/manager": "true",
+			},
+		},
+		Rules: []rbacv1.PolicyRule{
+			{
+				APIGroups: []string{c.ProviderGroup},
+				Resources: []string{c.ProviderPlural},
+				Verbs:     []string{"get", "list", "watch"},
+			},
+			{
+				APIGroups: []string{c.ProviderGroup},
+				Resources: []string{c.ProviderPlural + "/status"},
+				Verbs:     []string{"get"},
+			},
+			{
+				APIGroups: []string{c.TenantGroup},
+				Resources: []string{c.TenantPlural},
+				Verbs:     []string{"get", "list", "watch"},
+			},
+			{
+				APIGroups: []string{c.TenantGroup},
+				Resources: []string{c.TenantPlural + "/status"},
+				Verbs:     []string{"get"},
+			},
+		},
+	}
+	roleBytes, err = yaml.Marshal(rootManagerrole)
+	if err != nil {
+		return nil, fmt.Errorf("marshalling root manager cluster role: %w", err)
+	}
+	if err := kc.WriteFile("/man/root-manager-role.yaml", roleBytes); err != nil {
+		return nil, fmt.Errorf("writing /man/root-manager-role.yaml: %w", err)
 	}
 
 	failurePolicyFail := adminv1beta1.Fail

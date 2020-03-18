@@ -1,316 +1,318 @@
-
----
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
   creationTimestamp: null
   name: manager-role
 rules:
-- apiGroups:
-  - ""
-  resources:
-  - namespaces
-  verbs:
-  - create
-  - delete
-  - get
-  - list
-  - patch
-  - update
-  - watch
-- apiGroups:
-  - apiextensions.k8s.io
-  resources:
-  - customresourcedefinitions
-  verbs:
-  - create
-  - delete
-  - get
-  - list
-  - patch
-  - update
-  - watch
-- apiGroups:
-  - catalog.kubecarrier.io
-  resources:
-  - accounts
-  verbs:
-  - get
-  - list
-  - update
-  - watch
-- apiGroups:
-  - catalog.kubecarrier.io
-  resources:
-  - accounts/status
-  verbs:
-  - get
-  - patch
-  - update
-- apiGroups:
-  - catalog.kubecarrier.io
-  resources:
-  - catalogentries
-  verbs:
-  - create
-  - delete
-  - get
-  - list
-  - update
-  - watch
-- apiGroups:
-  - catalog.kubecarrier.io
-  resources:
-  - catalogentries/status
-  verbs:
-  - get
-  - patch
-  - update
-- apiGroups:
-  - catalog.kubecarrier.io
-  resources:
-  - catalogentrysets
-  verbs:
-  - get
-  - list
-  - update
-  - watch
-- apiGroups:
-  - catalog.kubecarrier.io
-  resources:
-  - catalogentrysets/status
-  verbs:
-  - get
-  - patch
-  - update
-- apiGroups:
-  - catalog.kubecarrier.io
-  resources:
-  - catalogs
-  verbs:
-  - get
-  - list
-  - update
-  - watch
-- apiGroups:
-  - catalog.kubecarrier.io
-  resources:
-  - catalogs/status
-  verbs:
-  - get
-  - patch
-  - update
-- apiGroups:
-  - catalog.kubecarrier.io
-  resources:
-  - derivedcustomresources
-  verbs:
-  - create
-  - get
-  - list
-  - update
-  - watch
-- apiGroups:
-  - catalog.kubecarrier.io
-  resources:
-  - derivedcustomresources/status
-  verbs:
-  - get
-  - patch
-  - update
-- apiGroups:
-  - catalog.kubecarrier.io
-  resources:
-  - offerings
-  verbs:
-  - create
-  - delete
-  - get
-  - list
-  - update
-  - watch
-- apiGroups:
-  - catalog.kubecarrier.io
-  resources:
-  - providers
-  verbs:
-  - create
-  - delete
-  - get
-  - list
-  - update
-  - watch
-- apiGroups:
-  - catalog.kubecarrier.io
-  resources:
-  - serviceclusterreferences
-  verbs:
-  - create
-  - delete
-  - get
-  - list
-  - update
-  - watch
-- apiGroups:
-  - catalog.kubecarrier.io
-  resources:
-  - tenants
-  verbs:
-  - create
-  - delete
-  - get
-  - list
-  - update
-  - watch
-- apiGroups:
-  - kubecarrier.io
-  resources:
-  - customresourcediscoveries
-  verbs:
-  - create
-  - delete
-  - get
-  - list
-  - update
-  - watch
-- apiGroups:
-  - kubecarrier.io
-  resources:
-  - customresourcediscoveries/status
-  verbs:
-  - get
-  - patch
-  - update
-- apiGroups:
-  - kubecarrier.io
-  resources:
-  - customresourcediscoverysets
-  verbs:
-  - create
-  - delete
-  - get
-  - list
-  - update
-  - watch
-- apiGroups:
-  - kubecarrier.io
-  resources:
-  - customresourcediscoverysets/status
-  verbs:
-  - get
-  - patch
-  - update
-- apiGroups:
-  - kubecarrier.io
-  resources:
-  - serviceclusterassignments
-  verbs:
-  - create
-  - delete
-  - get
-  - list
-  - update
-  - watch
-- apiGroups:
-  - kubecarrier.io
-  resources:
-  - serviceclusters
-  verbs:
-  - get
-  - list
-  - update
-  - watch
-- apiGroups:
-  - kubecarrier.io
-  resources:
-  - serviceclusters/status
-  verbs:
-  - get
-  - patch
-  - update
-- apiGroups:
-  - operator.kubecarrier.io
-  resources:
-  - catapults
-  verbs:
-  - create
-  - delete
-  - get
-  - list
-  - patch
-  - update
-  - watch
-- apiGroups:
-  - operator.kubecarrier.io
-  resources:
-  - catapults/status
-  verbs:
-  - get
-  - patch
-  - update
-- apiGroups:
-  - operator.kubecarrier.io
-  resources:
-  - elevators
-  verbs:
-  - create
-  - delete
-  - get
-  - list
-  - patch
-  - update
-  - watch
-- apiGroups:
-  - operator.kubecarrier.io
-  resources:
-  - elevators/status
-  verbs:
-  - get
-  - patch
-  - update
-- apiGroups:
-  - operator.kubecarrier.io
-  resources:
-  - ferries
-  verbs:
-  - create
-  - delete
-  - get
-  - list
-  - patch
-  - update
-  - watch
-- apiGroups:
-  - operator.kubecarrier.io
-  resources:
-  - ferries/status
-  verbs:
-  - get
-  - patch
-  - update
-- apiGroups:
-  - rbac.authorization.k8s.io
-  resources:
-  - rolebindings
-  verbs:
-  - create
-  - delete
-  - get
-  - list
-  - patch
-  - update
-  - watch
-- apiGroups:
-  - rbac.authorization.k8s.io
-  resources:
-  - roles
-  verbs:
-  - bind
-  - create
-  - delete
-  - escalate
-  - get
-  - list
-  - patch
-  - update
-  - watch
+  - apiGroups:
+      - ""
+    resources:
+      - namespaces
+    verbs:
+      - create
+      - delete
+      - get
+      - list
+      - patch
+      - update
+      - watch
+  - apiGroups:
+      - apiextensions.k8s.io
+    resources:
+      - customresourcedefinitions
+    verbs:
+      - create
+      - delete
+      - get
+      - list
+      - patch
+      - update
+      - watch
+  - apiGroups:
+      - catalog.kubecarrier.io
+    resources:
+      - accounts
+    verbs:
+      - get
+      - list
+      - update
+      - watch
+  - apiGroups:
+      - catalog.kubecarrier.io
+    resources:
+      - accounts/status
+    verbs:
+      - get
+      - patch
+      - update
+  - apiGroups:
+      - catalog.kubecarrier.io
+    resources:
+      - catalogentries
+    verbs:
+      - create
+      - delete
+      - get
+      - list
+      - update
+      - watch
+  - apiGroups:
+      - catalog.kubecarrier.io
+    resources:
+      - catalogentries/status
+    verbs:
+      - get
+      - patch
+      - update
+  - apiGroups:
+      - catalog.kubecarrier.io
+    resources:
+      - catalogentrysets
+    verbs:
+      - get
+      - list
+      - update
+      - watch
+  - apiGroups:
+      - catalog.kubecarrier.io
+    resources:
+      - catalogentrysets/status
+    verbs:
+      - get
+      - patch
+      - update
+  - apiGroups:
+      - catalog.kubecarrier.io
+    resources:
+      - catalogs
+    verbs:
+      - get
+      - list
+      - update
+      - watch
+  - apiGroups:
+      - catalog.kubecarrier.io
+    resources:
+      - catalogs/status
+    verbs:
+      - get
+      - patch
+      - update
+  - apiGroups:
+      - catalog.kubecarrier.io
+    resources:
+      - derivedcustomresources
+    verbs:
+      - create
+      - get
+      - list
+      - update
+      - watch
+  - apiGroups:
+      - catalog.kubecarrier.io
+    resources:
+      - derivedcustomresources/status
+    verbs:
+      - get
+      - patch
+      - update
+  - apiGroups:
+      - catalog.kubecarrier.io
+    resources:
+      - offerings
+    verbs:
+      - create
+      - delete
+      - get
+      - list
+      - update
+      - watch
+  - apiGroups:
+      - catalog.kubecarrier.io
+    resources:
+      - providers
+    verbs:
+      - create
+      - delete
+      - get
+      - list
+      - update
+      - watch
+  - apiGroups:
+      - catalog.kubecarrier.io
+    resources:
+      - serviceclusterreferences
+    verbs:
+      - create
+      - delete
+      - get
+      - list
+      - update
+      - watch
+  - apiGroups:
+      - catalog.kubecarrier.io
+    resources:
+      - tenants
+    verbs:
+      - create
+      - delete
+      - get
+      - list
+      - update
+      - watch
+  - apiGroups:
+      - kubecarrier.io
+    resources:
+      - customresourcediscoveries
+    verbs:
+      - create
+      - delete
+      - get
+      - list
+      - update
+      - watch
+  - apiGroups:
+      - kubecarrier.io
+    resources:
+      - customresourcediscoveries/status
+    verbs:
+      - get
+      - patch
+      - update
+  - apiGroups:
+      - kubecarrier.io
+    resources:
+      - customresourcediscoverysets
+    verbs:
+      - create
+      - delete
+      - get
+      - list
+      - update
+      - watch
+  - apiGroups:
+      - kubecarrier.io
+    resources:
+      - customresourcediscoverysets/status
+    verbs:
+      - get
+      - patch
+      - update
+  - apiGroups:
+      - kubecarrier.io
+    resources:
+      - serviceclusterassignments
+    verbs:
+      - create
+      - delete
+      - get
+      - list
+      - update
+      - watch
+  - apiGroups:
+      - kubecarrier.io
+    resources:
+      - serviceclusters
+    verbs:
+      - get
+      - list
+      - update
+      - watch
+  - apiGroups:
+      - kubecarrier.io
+    resources:
+      - serviceclusters/status
+    verbs:
+      - get
+      - patch
+      - update
+  - apiGroups:
+      - operator.kubecarrier.io
+    resources:
+      - catapults
+    verbs:
+      - create
+      - delete
+      - get
+      - list
+      - patch
+      - update
+      - watch
+  - apiGroups:
+      - operator.kubecarrier.io
+    resources:
+      - catapults/status
+    verbs:
+      - get
+      - patch
+      - update
+  - apiGroups:
+      - operator.kubecarrier.io
+    resources:
+      - elevators
+    verbs:
+      - create
+      - delete
+      - get
+      - list
+      - patch
+      - update
+      - watch
+  - apiGroups:
+      - operator.kubecarrier.io
+    resources:
+      - elevators/status
+    verbs:
+      - get
+      - patch
+      - update
+  - apiGroups:
+      - operator.kubecarrier.io
+    resources:
+      - ferries
+    verbs:
+      - create
+      - delete
+      - get
+      - list
+      - patch
+      - update
+      - watch
+  - apiGroups:
+      - operator.kubecarrier.io
+    resources:
+      - ferries/status
+    verbs:
+      - get
+      - patch
+      - update
+  - apiGroups:
+      - rbac.authorization.k8s.io
+    resources:
+      - rolebindings
+    verbs:
+      - create
+      - delete
+      - get
+      - list
+      - patch
+      - update
+      - watch
+  - apiGroups:
+      - rbac.authorization.k8s.io
+    resources:
+      - roles
+    verbs:
+      - bind
+      - create
+      - delete
+      - escalate
+      - get
+      - list
+      - patch
+      - update
+      - watch
+aggregationRule:
+  clusterRoleSelectors:
+    - matchLabels:
+        kubecarrier.io/manager: 'true'
