@@ -678,8 +678,8 @@ CatalogEntryMetadata contains metadata of the CatalogEntry.
 
 | Field | Description | Scheme | Required |
 | ----- | ----------- | ------ | -------- |
-| displayName | DisplayName shows the human-readable name of this CatalogEntry. | string | false |
-| description | Description shows the human-readable description of this CatalogEntry. | string | false |
+| displayName | DisplayName shows the human-readable name of this CatalogEntry. | string | true |
+| description | Description shows the human-readable description of this CatalogEntry. | string | true |
 
 [Back to Group](#catalog)
 
@@ -689,8 +689,8 @@ CatalogEntrySpec describes the desired state of CatalogEntry.
 
 | Field | Description | Scheme | Required |
 | ----- | ----------- | ------ | -------- |
-| metadata | Metadata contains the metadata of the CatalogEntry for the Service Catalog. | catalog.kubecarrier.io/v1alpha1.CatalogEntryMetadata | false |
-| baseCRD | BaseCRD is the underlying BaseCRD objects that this CatalogEntry refers to. | catalog.kubecarrier.io/v1alpha1.ObjectReference | false |
+| metadata | Metadata contains the metadata of the CatalogEntry for the Service Catalog. | catalog.kubecarrier.io/v1alpha1.CatalogEntryMetadata | true |
+| baseCRD | BaseCRD is the underlying BaseCRD objects that this CatalogEntry refers to. | catalog.kubecarrier.io/v1alpha1.ObjectReference | true |
 | derive | Derive contains the configuration to generate DerivedCustomResource from the BaseCRD of this CatalogEntry. | *catalog.kubecarrier.io/v1alpha1.DerivedConfig | false |
 
 [Back to Group](#catalog)
@@ -780,8 +780,8 @@ CatalogEntrySetMetadata contains the metadata (display name, description, etc) o
 
 | Field | Description | Scheme | Required |
 | ----- | ----------- | ------ | -------- |
-| displayName | DisplayName shows the human-readable name of this CatalogEntrySet. | string | false |
-| description | Description shows the human-readable description of this CatalogEntrySet. | string | false |
+| displayName | DisplayName shows the human-readable name of this CatalogEntrySet. | string | true |
+| description | Description shows the human-readable description of this CatalogEntrySet. | string | true |
 
 [Back to Group](#catalog)
 
@@ -791,7 +791,7 @@ CatalogEntrySetSpec defines the desired state of CatalogEntrySet.
 
 | Field | Description | Scheme | Required |
 | ----- | ----------- | ------ | -------- |
-| metadata | Metadata contains the metadata of each CatalogEntry for the Service Catalog. | catalog.kubecarrier.io/v1alpha1.CatalogEntrySetMetadata | false |
+| metadata | Metadata contains the metadata of each CatalogEntry for the Service Catalog. | catalog.kubecarrier.io/v1alpha1.CatalogEntrySetMetadata | true |
 | derive | Derive contains the configuration to generate DerivedCustomResources from the BaseCRDs that are selected by this CatalogEntrySet. | *catalog.kubecarrier.io/v1alpha1.DerivedConfig | false |
 | discover | Discover contains the configuration to create a CustomResourceDiscoverySet. | catalog.kubecarrier.io/v1alpha1.CustomResourceDiscoverySetConfig | true |
 
@@ -942,6 +942,7 @@ VersionExposeConfig specifies which fields to expose in the derived CRD.
 | ----- | ----------- | ------ | -------- |
 | versions | specifies the versions of the referenced CRD, that this expose config applies to. The same version may not be specified in multiple VersionExposeConfigs. | []string | true |
 | fields | specifies the fields that should be present in the derived CRD. | []catalog.kubecarrier.io/v1alpha1.FieldPath | true |
+| patch | Patch which will be applied for every derived CRD instance before created the base CRD instance. It is using [strategic-merge-path](https://github.com/kubernetes/community/blob/master/contributors/devel/sig-api-machinery/strategic-merge-patch.md) therefore it's important for base CRD setting the right OpenAPIv3Schema annotation [link](https://github.com/kubernetes/enhancements/blob/master/keps/sig-api-machinery/0006-apply.md#api-topology) defined in the mainstream kubernetes community. | *unstructured.Unstructured | false |
 
 [Back to Group](#catalog)
 
@@ -975,8 +976,8 @@ OfferingMetadata contains the metadata (display name, description, etc) of the O
 
 | Field | Description | Scheme | Required |
 | ----- | ----------- | ------ | -------- |
-| displayName | DisplayName shows the human-readable name of this Offering. | string | false |
-| description | Description shows the human-readable description of this Offering. | string | false |
+| displayName | DisplayName shows the human-readable name of this Offering. | string | true |
+| description | Description shows the human-readable description of this Offering. | string | true |
 
 [Back to Group](#catalog)
 
@@ -986,7 +987,7 @@ OfferingSpec defines the data (metadata, provider, crds, etc.) of Offering.
 
 | Field | Description | Scheme | Required |
 | ----- | ----------- | ------ | -------- |
-| metadata |  | catalog.kubecarrier.io/v1alpha1.OfferingMetadata | false |
+| metadata |  | catalog.kubecarrier.io/v1alpha1.OfferingMetadata | true |
 | provider | Provider references the Provider managing this Offering. | catalog.kubecarrier.io/v1alpha1.ObjectReference | true |
 | crd | CRD holds the information about the underlying CRD that is offered by this offering. | catalog.kubecarrier.io/v1alpha1.CRDInformation | false |
 
@@ -1022,7 +1023,7 @@ ProviderSpec defines the desired state of Provider
 
 | Field | Description | Scheme | Required |
 | ----- | ----------- | ------ | -------- |
-| metadata | Metadata contains the metadata (display name, description, etc) of the Provider. | catalog.kubecarrier.io/v1alpha1.AccountMetadata | false |
+| metadata | Metadata contains the metadata (display name, description, etc) of the Provider. | catalog.kubecarrier.io/v1alpha1.AccountMetadata | true |
 
 [Back to Group](#catalog)
 

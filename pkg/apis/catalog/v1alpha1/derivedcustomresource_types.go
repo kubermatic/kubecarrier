@@ -16,7 +16,10 @@ limitations under the License.
 
 package v1alpha1
 
-import metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+import (
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+)
 
 // DerivedCustomResourceSpec defines the desired state of DerivedCustomResource.
 type DerivedCustomResourceSpec struct {
@@ -38,6 +41,12 @@ type VersionExposeConfig struct {
 	// specifies the fields that should be present in the derived CRD.
 	// +kubebuilder:validation:MinItems=1
 	Fields []FieldPath `json:"fields"`
+
+	// Patch which will be applied for every derived CRD instance before
+	// created the base CRD instance. It is using [strategic-merge-path](https://github.com/kubernetes/community/blob/master/contributors/devel/sig-api-machinery/strategic-merge-patch.md)
+	// therefore it's important for base CRD setting the right OpenAPIv3Schema annotation [link](https://github.com/kubernetes/enhancements/blob/master/keps/sig-api-machinery/0006-apply.md#api-topology)
+	// defined in the mainstream kubernetes community.
+	Patch *unstructured.Unstructured `json:"patch,omitempty"`
 }
 
 // FieldPath is specifying how to address a certain field.

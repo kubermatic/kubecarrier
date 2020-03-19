@@ -28,5 +28,6 @@ require (
 	sigs.k8s.io/controller-runtime v0.5.0
 	sigs.k8s.io/krew v0.3.4
 	sigs.k8s.io/kustomize/v3 v3.3.1
+	sigs.k8s.io/structured-merge-diff/v3 v3.0.0
 	sigs.k8s.io/yaml v1.1.0
 )

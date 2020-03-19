@@ -27,6 +27,7 @@ import (
 	fakeclient "sigs.k8s.io/controller-runtime/pkg/client/fake"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
+	catalogv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/catalog/v1alpha1"
 	"github.com/kubermatic/kubecarrier/pkg/testutil"
 )
 
@@ -217,4 +218,64 @@ func TestTenantObjReconciler(t *testing.T) {
 			},
 		}, checkProviderObj.Object)
 	})
+}
+
+func TestPatch(t *testing.T) {
+	tenantObj := &unstructured.Unstructured{Object: map[string]interface{}{
+		"metadata": map[string]interface{}{
+			"name":      "test-1",
+			"namespace": "default",
+		},
+		"spec": map[string]interface{}{
+			"test1": "spec2000",
+		},
+	}}
+
+	log := testutil.NewLogger(t)
+	specFields := []catalogv1alpha1.FieldPath{{JSONPath: ".spec.test1"}}
+	patch := &unstructured.Unstructured{Object: map[string]interface{}{
+		"spec": map[string]interface{}{
+			"test2": "test2",
+		},
+	}}
+	client := fakeclient.NewFakeClientWithScheme(testScheme)
+	r := TenantObjReconciler{
+		Client:           client,
+		Log:              log,
+		Scheme:           testScheme,
+		NamespacedClient: client,
+
+		ProviderGVK: providerGVK,
+		TenantGVK:   tenantGVK,
+
+		DerivedCRName:     dcr.Name,
+		ProviderNamespace: providerNamespace,
+	}
+	tenantObj.SetGroupVersionKind(r.TenantGVK)
+	providerObj, err := r.buildProviderObj(tenantObj, specFields, patch)
+	require.NoError(t, err)
+
+	wantedProviderObj := &unstructured.Unstructured{Object: map[string]interface{}{
+		"apiVersion": "eu-west-1.provider/v1alpha1",
+		"kind":       "CouchDBInternal",
+		"metadata": map[string]interface{}{
+			"name":      "test-1",
+			"namespace": "default",
+			"ownerReferences": []interface{}{
+				map[string]interface{}{
+					"apiVersion":         "eu-west-1.provider/v1alpha1",
+					"blockOwnerDeletion": true,
+					"controller":         true,
+					"kind":               "CouchDB",
+					"name":               "test-1",
+					"uid":                "",
+				},
+			},
+		},
+		"spec": map[string]interface{}{
+			"test1": "spec2000",
+			"test2": "test2",
+		},
+	}}
+	assert.Equal(t, wantedProviderObj, providerObj)
 }

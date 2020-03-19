@@ -21,7 +21,6 @@ import (
 	"fmt"
 
 	"github.com/go-logr/logr"
-	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -29,10 +28,10 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
+	"sigs.k8s.io/structured-merge-diff/v3/typed"
 
 	catalogv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/catalog/v1alpha1"
 	elevatorutil "github.com/kubermatic/kubecarrier/pkg/elevator/internal/util"
-	"github.com/kubermatic/kubecarrier/pkg/internal/util"
 )
 
 // TenantObjReconciler reconciles a tenant-side CRD by converting it into a provider-side object and syncing the status back:
@@ -77,10 +76,13 @@ func (r *TenantObjReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 		return result, fmt.Errorf("missing version expose config for version %q", version)
 	}
 
-	// Reconcile TenantCRD
-	err := r.reconcileTenantObj(
-		ctx, tenantObj, exposeConfig)
+	statusFields, nonStatusFields := elevatorutil.SplitStatusFields(exposeConfig.Fields)
+	providerObj, err := r.buildProviderObj(tenantObj, nonStatusFields, exposeConfig.Patch)
 	if err != nil {
+		return ctrl.Result{}, fmt.Errorf("build provider Obj: %w", err)
+	}
+	// Reconcile TenantCRD
+	if err := r.reconcileTenantObj(ctx, tenantObj, providerObj, statusFields); err != nil {
 		return result, fmt.Errorf("reconciling %s: %w", r.ProviderGVK.Kind, err)
 	}
 
@@ -94,81 +96,55 @@ func (r *TenantObjReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		Complete(r)
 }
 
-func (r *TenantObjReconciler) reconcileTenantObj(
-	ctx context.Context, tenantObj *unstructured.Unstructured,
-	config catalogv1alpha1.VersionExposeConfig,
-) error {
-	desiredProviderObj := r.newProviderObject()
+func (r *TenantObjReconciler) buildProviderObj(tenantObj *unstructured.Unstructured, exposedFields []catalogv1alpha1.FieldPath, patch *unstructured.Unstructured) (*unstructured.Unstructured, error) {
+	desiredProviderObj := &unstructured.Unstructured{}
+	desiredProviderObj.SetGroupVersionKind(r.ProviderGVK)
 	desiredProviderObj.SetName(tenantObj.GetName())
 	desiredProviderObj.SetNamespace(tenantObj.GetNamespace())
-
 	err := controllerutil.SetControllerReference(
 		tenantObj, desiredProviderObj, r.Scheme)
 	if err != nil {
-		return fmt.Errorf("set controller reference: %w", err)
+		return nil, fmt.Errorf("set controller reference: %w", err)
 	}
 
-	// prepare config
-	statusFields, otherFields := elevatorutil.SplitStatusFields(config.Fields)
-
-	// Lookup current instance
-	currentProviderObj := r.newProviderObject()
-	err = r.Get(ctx, types.NamespacedName{
-		Name:      desiredProviderObj.GetName(),
-		Namespace: desiredProviderObj.GetNamespace(),
-	}, currentProviderObj)
-	if err != nil && !errors.IsNotFound(err) {
-		return fmt.Errorf("getting %s: %w", r.ProviderGVK.Kind, err)
+	if err = elevatorutil.CopyFields(tenantObj, desiredProviderObj, exposedFields); err != nil {
+		return nil, fmt.Errorf("copy fields: %w", err)
 	}
 
-	if errors.IsNotFound(err) {
-		// Create the Provider Obj
-		if err = elevatorutil.CopyFields(tenantObj, desiredProviderObj, otherFields); err != nil {
-			return fmt.Errorf("copy fields: %w", err)
+	if patch != nil {
+		lhs, err := typed.DeducedParseableType.FromUnstructured(desiredProviderObj.Object)
+		if err != nil {
+			return nil, fmt.Errorf("cannot convert to patch: %w", err)
 		}
-
-		if err = r.Create(ctx, desiredProviderObj); err != nil {
-			return fmt.Errorf("creating %s: %w", r.ProviderGVK.Kind, err)
+		patch, err := typed.DeducedParseableType.FromUnstructured(patch.Object)
+		if err != nil {
+			return nil, fmt.Errorf("cannot convert to patch: %w", err)
 		}
-		return nil
+		val, err := lhs.Merge(patch)
+		if err != nil {
+			return nil, err
+		}
+		desiredProviderObj.Object = val.AsValue().Unstructured().(map[string]interface{})
 	}
+	return desiredProviderObj, nil
+}
 
-	// Make sure we take ownership of the provider instance,
-	// if the OwnerReference is not yet set.
-	// Note:
-	// this will raise an error,
-	// if the provider object is already owned by someone else
-	err = controllerutil.SetControllerReference(
-		tenantObj, currentProviderObj, r.Scheme)
-	if err != nil {
-		return fmt.Errorf("set controller reference: %w", err)
+func (r *TenantObjReconciler) reconcileTenantObj(
+	ctx context.Context, tenantObj, providerObj *unstructured.Unstructured,
+	statusFields []catalogv1alpha1.FieldPath,
+) error {
+	if err := r.Patch(ctx, providerObj, client.Apply, client.FieldOwner("tenantObjController")); err != nil {
+		return err
 	}
-
-	// Update existing provider instance
-	if err = elevatorutil.CopyFields(tenantObj, currentProviderObj, otherFields); err != nil {
-		return fmt.Errorf(
-			"copy fields from %s to %s: %w",
-			r.TenantGVK.Kind, r.ProviderGVK.Kind, err)
-	}
-	if err = r.Update(ctx, currentProviderObj); err != nil {
-		return fmt.Errorf("updating %s: %w", r.ProviderGVK.Kind, err)
-	}
-
 	// Sync status from provider to tenant instance
-	if err = elevatorutil.CopyFields(currentProviderObj, tenantObj, statusFields); err != nil {
+	if err := elevatorutil.CopyFields(providerObj, tenantObj, statusFields); err != nil {
 		return fmt.Errorf(
 			"copy status fields from %s to %s: %w",
 			r.ProviderGVK.Kind, r.TenantGVK.Kind, err)
 	}
-	if err = util.UpdateObservedGeneration(currentProviderObj, tenantObj); err != nil {
-		return fmt.Errorf(
-			"update observedGeneration, by comparing %s to %s: %w",
-			r.ProviderGVK.Kind, r.TenantGVK.Kind, err)
-	}
-	if err = r.Status().Update(ctx, tenantObj); err != nil {
+	if err := r.Status().Update(ctx, tenantObj); err != nil {
 		return fmt.Errorf("updating %s: %w", r.TenantGVK.Kind, err)
 	}
-
 	return nil
 }
 
