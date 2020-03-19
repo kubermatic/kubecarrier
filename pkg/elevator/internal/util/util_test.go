@@ -21,10 +21,22 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/runtime"
+	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 
 	catalogv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/catalog/v1alpha1"
 )
+
+var (
+	testScheme = runtime.NewScheme()
+)
+
+func init() {
+	utilruntime.Must(corev1.AddToScheme(testScheme))
+	utilruntime.Must(catalogv1alpha1.AddToScheme(testScheme))
+}
 
 func Test_splitStatusFields(t *testing.T) {
 	fields := []catalogv1alpha1.FieldPath{
@@ -134,4 +146,56 @@ func Test_copyFields(t *testing.T) {
 				t, test.expected, test.dest.Object)
 		})
 	}
+}
+
+func TestPatch(t *testing.T) {
+	tenantObj := &unstructured.Unstructured{Object: map[string]interface{}{
+		"apiVersion": "eu-west-1.provider/v1alpha1",
+		"kind":       "CouchDB",
+		"metadata": map[string]interface{}{
+			"name":      "test-1",
+			"namespace": "default",
+			"uid":       "uuid-field",
+		},
+		"spec": map[string]interface{}{
+			"test1": "spec2000",
+		},
+	}}
+
+	specFields := []catalogv1alpha1.FieldPath{{JSONPath: ".spec.test1"}}
+	patch := map[string]interface{}{
+		"spec": map[string]interface{}{
+			"test2": "test2",
+		},
+	}
+	providerObj := &unstructured.Unstructured{Object: map[string]interface{}{
+		"apiVersion": "eu-west-1.provider/v1alpha1",
+		"kind":       "CouchDBInternal",
+	}}
+
+	require.NoError(t, BuildProviderObj(tenantObj, providerObj, testScheme, specFields, patch))
+
+	wantedProviderObj := &unstructured.Unstructured{Object: map[string]interface{}{
+		"apiVersion": "eu-west-1.provider/v1alpha1",
+		"kind":       "CouchDBInternal",
+		"metadata": map[string]interface{}{
+			"name":      "test-1",
+			"namespace": "default",
+			"ownerReferences": []interface{}{
+				map[string]interface{}{
+					"apiVersion":         "eu-west-1.provider/v1alpha1",
+					"blockOwnerDeletion": true,
+					"controller":         true,
+					"kind":               "CouchDB",
+					"name":               "test-1",
+					"uid":                "uuid-field",
+				},
+			},
+		},
+		"spec": map[string]interface{}{
+			"test1": "spec2000",
+			"test2": "test2",
+		},
+	}}
+	assert.Equal(t, wantedProviderObj, providerObj)
 }

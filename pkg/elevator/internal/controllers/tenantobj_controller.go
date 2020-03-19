@@ -27,9 +27,6 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
-	"sigs.k8s.io/structured-merge-diff/v3/typed"
-	"sigs.k8s.io/yaml"
 
 	catalogv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/catalog/v1alpha1"
 	elevatorutil "github.com/kubermatic/kubecarrier/pkg/elevator/internal/util"
@@ -78,16 +75,12 @@ func (r *TenantObjReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	}
 
 	statusFields, nonStatusFields := elevatorutil.SplitStatusFields(exposeConfig.Fields)
-
-	var patch interface{}
-	if exposeConfig.Patch != nil {
-		patch = make(map[string]interface{})
-		if err := yaml.Unmarshal(exposeConfig.Patch.Raw, &patch); err != nil {
-			return ctrl.Result{}, fmt.Errorf("patch isn")
-		}
+	patch, err := elevatorutil.FormPatch(exposeConfig.Patch)
+	if err != nil {
+		return ctrl.Result{}, fmt.Errorf("patch forming: %w", err)
 	}
-
-	providerObj, err := r.buildProviderObj(tenantObj, nonStatusFields, patch)
+	providerObj := r.newProviderObject()
+	err = elevatorutil.BuildProviderObj(tenantObj, providerObj, r.Scheme, nonStatusFields, patch)
 	if err != nil {
 		return ctrl.Result{}, fmt.Errorf("build provider Obj: %w", err)
 	}
@@ -106,44 +99,11 @@ func (r *TenantObjReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		Complete(r)
 }
 
-func (r *TenantObjReconciler) buildProviderObj(tenantObj *unstructured.Unstructured, exposedFields []catalogv1alpha1.FieldPath, patch interface{}) (*unstructured.Unstructured, error) {
-	desiredProviderObj := &unstructured.Unstructured{}
-	desiredProviderObj.SetGroupVersionKind(r.ProviderGVK)
-	desiredProviderObj.SetName(tenantObj.GetName())
-	desiredProviderObj.SetNamespace(tenantObj.GetNamespace())
-	err := controllerutil.SetControllerReference(
-		tenantObj, desiredProviderObj, r.Scheme)
-	if err != nil {
-		return nil, fmt.Errorf("set controller reference: %w", err)
-	}
-
-	if err = elevatorutil.CopyFields(tenantObj, desiredProviderObj, exposedFields); err != nil {
-		return nil, fmt.Errorf("copy fields: %w", err)
-	}
-
-	if patch != nil {
-		lhs, err := typed.DeducedParseableType.FromUnstructured(desiredProviderObj.Object)
-		if err != nil {
-			return nil, fmt.Errorf("cannot convert to patch: %w", err)
-		}
-		patch, err := typed.DeducedParseableType.FromUnstructured(patch)
-		if err != nil {
-			return nil, fmt.Errorf("cannot convert to patch: %w", err)
-		}
-		val, err := lhs.Merge(patch)
-		if err != nil {
-			return nil, err
-		}
-		desiredProviderObj.Object = val.AsValue().Unstructured().(map[string]interface{})
-	}
-	return desiredProviderObj, nil
-}
-
 func (r *TenantObjReconciler) reconcileTenantObj(
 	ctx context.Context, tenantObj, providerObj *unstructured.Unstructured,
 	statusFields []catalogv1alpha1.FieldPath,
 ) error {
-	if err := r.Patch(ctx, providerObj, client.Apply, client.FieldOwner("tenantObjController")); err != nil {
+	if err := r.Patch(ctx, providerObj, client.Apply, elevatorutil.FieldOwner); err != nil {
 		return err
 	}
 	// Sync status from provider to tenant instance

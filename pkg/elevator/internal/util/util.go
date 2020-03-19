@@ -21,8 +21,17 @@ import (
 	"strings"
 
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/runtime"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
+	"sigs.k8s.io/structured-merge-diff/v3/typed"
+	"sigs.k8s.io/yaml"
 
 	catalogv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/catalog/v1alpha1"
+)
+
+var (
+	FieldOwner = client.FieldOwner("elevator-tenantobj-controller")
 )
 
 func SplitStatusFields(fields []catalogv1alpha1.FieldPath) (
@@ -75,4 +84,50 @@ func VersionExposeConfigForVersion(
 		}
 	}
 	return catalogv1alpha1.VersionExposeConfig{}, false
+}
+
+func FormPatch(patchField *runtime.RawExtension) (patch interface{}, err error) {
+	if patchField != nil {
+		patch = make(map[string]interface{})
+		if err := yaml.Unmarshal(patchField.Raw, &patch); err != nil {
+			return nil, fmt.Errorf("patch isn")
+		}
+	}
+	return
+}
+
+func BuildProviderObj(tenantObj *unstructured.Unstructured, providerObj *unstructured.Unstructured, scheme *runtime.Scheme, elevateFields []catalogv1alpha1.FieldPath, patch interface{}) error {
+	providerObj.SetName(tenantObj.GetName())
+	providerObj.SetNamespace(tenantObj.GetNamespace())
+
+	// controller reference without UID is invalid!
+	// it will fail upon creation
+	if tenantObj.GetUID() != "" {
+		err := controllerutil.SetControllerReference(
+			tenantObj, providerObj, scheme)
+		if err != nil {
+			return fmt.Errorf("set controller reference: %w", err)
+		}
+	}
+
+	if err := CopyFields(tenantObj, providerObj, elevateFields); err != nil {
+		return fmt.Errorf("copy fields: %w", err)
+	}
+
+	if patch != nil {
+		lhs, err := typed.DeducedParseableType.FromUnstructured(providerObj.Object)
+		if err != nil {
+			return fmt.Errorf("cannot convert to patch: %w", err)
+		}
+		patch, err := typed.DeducedParseableType.FromUnstructured(patch)
+		if err != nil {
+			return fmt.Errorf("cannot convert to patch: %w", err)
+		}
+		val, err := lhs.Merge(patch)
+		if err != nil {
+			return err
+		}
+		providerObj.Object = val.AsValue().Unstructured().(map[string]interface{})
+	}
+	return nil
 }
