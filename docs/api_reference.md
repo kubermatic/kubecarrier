@@ -942,7 +942,7 @@ VersionExposeConfig specifies which fields to expose in the derived CRD.
 | ----- | ----------- | ------ | -------- |
 | versions | specifies the versions of the referenced CRD, that this expose config applies to. The same version may not be specified in multiple VersionExposeConfigs. | []string | true |
 | fields | specifies the fields that should be present in the derived CRD. | []catalog.kubecarrier.io/v1alpha1.FieldPath | true |
-| patch | Patch which will be applied for every derived CRD instance before created the base CRD instance. It is using [strategic-merge-path](https://github.com/kubernetes/community/blob/master/contributors/devel/sig-api-machinery/strategic-merge-patch.md) therefore it's important for base CRD setting the right OpenAPIv3Schema annotation [link](https://github.com/kubernetes/enhancements/blob/master/keps/sig-api-machinery/0006-apply.md#api-topology) defined in the mainstream kubernetes community. | *runtime.RawExtension | false |
+| patch | Patch which will be applied for every derived CRD instance before created the base CRD instance. The workflow is as following: first exposed derivedCR fields are applied, then the patch | *runtime.RawExtension | false |
 
 [Back to Group](#catalog)
 

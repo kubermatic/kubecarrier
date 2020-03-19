@@ -102,12 +102,10 @@ spec:
                             minItems: 1
                             type: array
                           patch:
-                            description: Patch which will be applied for every derived
-                              CRD instance before created the base CRD instance. It
-                              is using [strategic-merge-path](https://github.com/kubernetes/community/blob/master/contributors/devel/sig-api-machinery/strategic-merge-patch.md)
-                              therefore it's important for base CRD setting the right
-                              OpenAPIv3Schema annotation [link](https://github.com/kubernetes/enhancements/blob/master/keps/sig-api-machinery/0006-apply.md#api-topology)
-                              defined in the mainstream kubernetes community.
+                            description: 'Patch which will be applied for every derived
+                              CRD instance before created the base CRD instance. The
+                              workflow is as following: first exposed derivedCR fields
+                              are applied, then the patch'
                             type: object
                             x-kubernetes-preserve-unknown-fields: true
                           versions:
