@@ -18,7 +18,7 @@ package v1alpha1
 
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/runtime"
 )
 
 // DerivedCustomResourceSpec defines the desired state of DerivedCustomResource.
@@ -46,7 +46,8 @@ type VersionExposeConfig struct {
 	// created the base CRD instance. It is using [strategic-merge-path](https://github.com/kubernetes/community/blob/master/contributors/devel/sig-api-machinery/strategic-merge-patch.md)
 	// therefore it's important for base CRD setting the right OpenAPIv3Schema annotation [link](https://github.com/kubernetes/enhancements/blob/master/keps/sig-api-machinery/0006-apply.md#api-topology)
 	// defined in the mainstream kubernetes community.
-	Patch *unstructured.Unstructured `json:"patch,omitempty"`
+	// +kubebuilder:pruning:PreserveUnknownFields
+	Patch *runtime.RawExtension `json:"patch,omitempty"`
 }
 
 // FieldPath is specifying how to address a certain field.

@@ -41,11 +41,11 @@ func TestPatch(t *testing.T) {
 
 	log := testutil.NewLogger(t)
 	specFields := []catalogv1alpha1.FieldPath{{JSONPath: ".spec.test1"}}
-	patch := &unstructured.Unstructured{Object: map[string]interface{}{
+	patch := map[string]interface{}{
 		"spec": map[string]interface{}{
 			"test2": "test2",
 		},
-	}}
+	}
 	client := fakeclient.NewFakeClientWithScheme(testScheme)
 	r := TenantObjReconciler{
 		Client:           client,

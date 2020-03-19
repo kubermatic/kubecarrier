@@ -90,6 +90,7 @@ spec:
                         annotation [link](https://github.com/kubernetes/enhancements/blob/master/keps/sig-api-machinery/0006-apply.md#api-topology)
                         defined in the mainstream kubernetes community.
                       type: object
+                      x-kubernetes-preserve-unknown-fields: true
                     versions:
                       description: specifies the versions of the referenced CRD, that
                         this expose config applies to. The same version may not be

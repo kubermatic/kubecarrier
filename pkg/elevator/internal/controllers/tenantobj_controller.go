@@ -29,6 +29,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/structured-merge-diff/v3/typed"
+	"sigs.k8s.io/yaml"
 
 	catalogv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/catalog/v1alpha1"
 	elevatorutil "github.com/kubermatic/kubecarrier/pkg/elevator/internal/util"
@@ -77,7 +78,16 @@ func (r *TenantObjReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	}
 
 	statusFields, nonStatusFields := elevatorutil.SplitStatusFields(exposeConfig.Fields)
-	providerObj, err := r.buildProviderObj(tenantObj, nonStatusFields, exposeConfig.Patch)
+
+	var patch interface{}
+	if exposeConfig.Patch != nil {
+		patch = make(map[string]interface{})
+		if err := yaml.Unmarshal(exposeConfig.Patch.Raw, &patch); err != nil {
+			return ctrl.Result{}, fmt.Errorf("patch isn")
+		}
+	}
+
+	providerObj, err := r.buildProviderObj(tenantObj, nonStatusFields, patch)
 	if err != nil {
 		return ctrl.Result{}, fmt.Errorf("build provider Obj: %w", err)
 	}
@@ -96,7 +106,7 @@ func (r *TenantObjReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		Complete(r)
 }
 
-func (r *TenantObjReconciler) buildProviderObj(tenantObj *unstructured.Unstructured, exposedFields []catalogv1alpha1.FieldPath, patch *unstructured.Unstructured) (*unstructured.Unstructured, error) {
+func (r *TenantObjReconciler) buildProviderObj(tenantObj *unstructured.Unstructured, exposedFields []catalogv1alpha1.FieldPath, patch interface{}) (*unstructured.Unstructured, error) {
 	desiredProviderObj := &unstructured.Unstructured{}
 	desiredProviderObj.SetGroupVersionKind(r.ProviderGVK)
 	desiredProviderObj.SetName(tenantObj.GetName())
@@ -116,7 +126,7 @@ func (r *TenantObjReconciler) buildProviderObj(tenantObj *unstructured.Unstructu
 		if err != nil {
 			return nil, fmt.Errorf("cannot convert to patch: %w", err)
 		}
-		patch, err := typed.DeducedParseableType.FromUnstructured(patch.Object)
+		patch, err := typed.DeducedParseableType.FromUnstructured(patch)
 		if err != nil {
 			return nil, fmt.Errorf("cannot convert to patch: %w", err)
 		}

@@ -30,6 +30,7 @@ import (
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/yaml"
 
@@ -140,6 +141,7 @@ func newDerivedCR(
 								{JSONPath: ".status.observedGeneration"},
 								{JSONPath: ".status.prop1"},
 							},
+							Patch: &runtime.RawExtension{Raw: []byte(`{"spec": {"prop2": "patch"}}`)},
 						},
 					},
 				},
@@ -256,6 +258,10 @@ type: object
 			},
 		}
 		require.NoError(t, testutil.WaitUntilFound(ctx, managementClient, providerObj))
+		assert.Equal(t, map[string]interface{}{
+			"prop1": "test1",
+			"prop2": "patch",
+		}, providerObj.Object["spec"], "provider object spec isn't properly constructed")
 
 		// Check Provider -> Tenant
 		providerObj2 := &unstructured.Unstructured{
