@@ -2,7 +2,7 @@
   kind: CustomResourceDefinition
   metadata:
     annotations:
-      controller-gen.kubebuilder.io/version: v0.2.5
+      controller-gen.kubebuilder.io/version: v0.2.8
     creationTimestamp: null
     labels:
       kubecarrier.io/role: operator
@@ -112,7 +112,7 @@
   kind: CustomResourceDefinition
   metadata:
     annotations:
-      controller-gen.kubebuilder.io/version: v0.2.5
+      controller-gen.kubebuilder.io/version: v0.2.8
     creationTimestamp: null
     labels:
       kubecarrier.io/role: operator
@@ -242,7 +242,7 @@
   kind: CustomResourceDefinition
   metadata:
     annotations:
-      controller-gen.kubebuilder.io/version: v0.2.5
+      controller-gen.kubebuilder.io/version: v0.2.8
     creationTimestamp: null
     labels:
       kubecarrier.io/role: operator
@@ -415,7 +415,7 @@
   kind: CustomResourceDefinition
   metadata:
     annotations:
-      controller-gen.kubebuilder.io/version: v0.2.5
+      controller-gen.kubebuilder.io/version: v0.2.8
     creationTimestamp: null
     labels:
       kubecarrier.io/role: operator
