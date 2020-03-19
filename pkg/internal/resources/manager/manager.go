@@ -24,13 +24,16 @@ import (
 	"sigs.k8s.io/kustomize/v3/pkg/types"
 
 	"github.com/kubermatic/kubecarrier/pkg/internal/kustomize"
+	"github.com/kubermatic/kubecarrier/pkg/internal/resources/util"
 	"github.com/kubermatic/kubecarrier/pkg/internal/version"
 )
 
-// Config holds the config information to generate the kubecarrier controller manager setup.
+// Config holds the config information to generate the KubeCarrier controller manager setup.
 type Config struct {
-	// Namespace is the kubecarrier controller manager should be deployed into.
+	// Namespace is the KubeCarrier controller manager should be deployed into.
 	Namespace string
+	// Name of this KubeCarrier object
+	Name string
 }
 
 var k = kustomize.NewDefaultKustomize()
@@ -55,6 +58,17 @@ func Manifests(c Config) ([]unstructured.Unstructured, error) {
 	objects, err := kc.Build("/man")
 	if err != nil {
 		return nil, fmt.Errorf("running kustomize build: %w", err)
+	}
+	for _, obj := range objects {
+		labels := obj.GetLabels()
+		if labels == nil {
+			labels = map[string]string{}
+		}
+		labels[util.NameLabel] = "kubecarrier-controller-manager"
+		labels[util.InstanceLabel] = c.Name
+		labels[util.ManagedbyLabel] = util.ManagedbyKubeCarrierOperator
+		labels[util.VersionLabel] = v.Version
+		obj.SetLabels(labels)
 	}
 	return objects, nil
 }

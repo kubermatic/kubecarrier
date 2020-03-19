@@ -3,6 +3,10 @@
   metadata:
     creationTimestamp: null
     labels:
+      app.kubernetes.io/instance: db.eu-west-1
+      app.kubernetes.io/managed-by: kubecarrier-operator
+      app.kubernetes.io/name: elevator
+      app.kubernetes.io/version: was not build properly
       kubecarrier.io/role: elevator
     name: db-eu-west-1-elevator-manager
     namespace: test3000
@@ -26,6 +30,10 @@
   metadata:
     creationTimestamp: null
     labels:
+      app.kubernetes.io/instance: db.eu-west-1
+      app.kubernetes.io/managed-by: kubecarrier-operator
+      app.kubernetes.io/name: elevator
+      app.kubernetes.io/version: was not build properly
       kubecarrier.io/role: elevator
     name: db-eu-west-1-elevator-manager
   rules:
@@ -73,6 +81,10 @@
   kind: ServiceAccount
   metadata:
     labels:
+      app.kubernetes.io/instance: db.eu-west-1
+      app.kubernetes.io/managed-by: kubecarrier-operator
+      app.kubernetes.io/name: elevator
+      app.kubernetes.io/version: was not build properly
       kubecarrier.io/role: elevator
     name: db-eu-west-1-elevator-sa
     namespace: test3000
@@ -80,6 +92,10 @@
   kind: ClusterRoleBinding
   metadata:
     labels:
+      app.kubernetes.io/instance: db.eu-west-1
+      app.kubernetes.io/managed-by: kubecarrier-operator
+      app.kubernetes.io/name: elevator
+      app.kubernetes.io/version: was not build properly
       kubecarrier.io/role: elevator
     name: db-eu-west-1-elevator-manager
   roleRef:
@@ -94,6 +110,10 @@
   kind: RoleBinding
   metadata:
     labels:
+      app.kubernetes.io/instance: db.eu-west-1
+      app.kubernetes.io/managed-by: kubecarrier-operator
+      app.kubernetes.io/name: elevator
+      app.kubernetes.io/version: was not build properly
       kubecarrier.io/role: elevator
     name: db-eu-west-1-elevator-manager
     namespace: test3000
@@ -109,6 +129,10 @@
   kind: Role
   metadata:
     labels:
+      app.kubernetes.io/instance: db.eu-west-1
+      app.kubernetes.io/managed-by: kubecarrier-operator
+      app.kubernetes.io/name: elevator
+      app.kubernetes.io/version: was not build properly
       kubecarrier.io/role: elevator
     name: db-eu-west-1-elevator-leader-election-role
     namespace: test3000
@@ -143,6 +167,10 @@
   kind: RoleBinding
   metadata:
     labels:
+      app.kubernetes.io/instance: db.eu-west-1
+      app.kubernetes.io/managed-by: kubecarrier-operator
+      app.kubernetes.io/name: elevator
+      app.kubernetes.io/version: was not build properly
       kubecarrier.io/role: elevator
     name: db-eu-west-1-elevator-leader-election-rolebinding
     namespace: test3000
@@ -158,6 +186,10 @@
   kind: Deployment
   metadata:
     labels:
+      app.kubernetes.io/instance: db.eu-west-1
+      app.kubernetes.io/managed-by: kubecarrier-operator
+      app.kubernetes.io/name: elevator
+      app.kubernetes.io/version: was not build properly
       control-plane: manager
       kubecarrier.io/role: elevator
     name: db-eu-west-1-elevator-manager
@@ -242,6 +274,10 @@
       cert-manager.io/inject-ca-from: test3000/db-eu-west-1-elevator-serving-cert
     creationTimestamp: null
     labels:
+      app.kubernetes.io/instance: db.eu-west-1
+      app.kubernetes.io/managed-by: kubecarrier-operator
+      app.kubernetes.io/name: elevator
+      app.kubernetes.io/version: was not build properly
       kubecarrier.io/role: elevator
     name: db-eu-west-1-elevator-mutating-webhook-configuration
   webhooks:
@@ -267,6 +303,10 @@
   kind: Service
   metadata:
     labels:
+      app.kubernetes.io/instance: db.eu-west-1
+      app.kubernetes.io/managed-by: kubecarrier-operator
+      app.kubernetes.io/name: elevator
+      app.kubernetes.io/version: was not build properly
       kubecarrier.io/role: elevator
     name: db-eu-west-1-elevator-webhook-service
     namespace: test3000
@@ -281,6 +321,10 @@
   kind: Issuer
   metadata:
     labels:
+      app.kubernetes.io/instance: db.eu-west-1
+      app.kubernetes.io/managed-by: kubecarrier-operator
+      app.kubernetes.io/name: elevator
+      app.kubernetes.io/version: was not build properly
       kubecarrier.io/role: elevator
     name: db-eu-west-1-elevator-selfsigned-issuer
     namespace: test3000
@@ -290,6 +334,10 @@
   kind: Certificate
   metadata:
     labels:
+      app.kubernetes.io/instance: db.eu-west-1
+      app.kubernetes.io/managed-by: kubecarrier-operator
+      app.kubernetes.io/name: elevator
+      app.kubernetes.io/version: was not build properly
       kubecarrier.io/role: elevator
     name: db-eu-west-1-elevator-serving-cert
     namespace: test3000

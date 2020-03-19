@@ -30,6 +30,7 @@ import (
 	"sigs.k8s.io/yaml"
 
 	"github.com/kubermatic/kubecarrier/pkg/internal/kustomize"
+	"github.com/kubermatic/kubecarrier/pkg/internal/resources/util"
 	utilwebhook "github.com/kubermatic/kubecarrier/pkg/internal/util/webhook"
 	"github.com/kubermatic/kubecarrier/pkg/internal/version"
 )
@@ -232,6 +233,17 @@ func Manifests(c Config) ([]unstructured.Unstructured, error) {
 	objects, err := kc.Build("/man")
 	if err != nil {
 		return nil, fmt.Errorf("running kustomize build: %w", err)
+	}
+	for _, obj := range objects {
+		labels := obj.GetLabels()
+		if labels == nil {
+			labels = map[string]string{}
+		}
+		labels[util.NameLabel] = "elevator"
+		labels[util.InstanceLabel] = c.Name
+		labels[util.ManagedbyLabel] = util.ManagedbyKubeCarrierOperator
+		labels[util.VersionLabel] = v.Version
+		obj.SetLabels(labels)
 	}
 	return objects, nil
 }
