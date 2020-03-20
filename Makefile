@@ -66,7 +66,6 @@ quick-clean:
 	kubectl --kubeconfig=${HOME}/.kube/kind-config-${MANAGEMENT_KIND_CLUSTER} delete kubecarriers.operator.kubecarrier.io --all
 	KUBECONFIG=${HOME}/.kube/kind-config-${MANAGEMENT_KIND_CLUSTER} kubectl delete deployments --all --namespace kubecarrier-system
 	kubectl --kubeconfig=${HOME}/.kube/kind-config-${SVC_KIND_CLUSTER} delete crd --all
-	kubectl --kubeconfig=${HOME}/.kube/kind-config-${MANAGEMENT_KIND_CLUSTER} get crd | grep kubecarrier.io | cut -f1 -d ' ' | xargs -I {} kubectl --kubeconfig=${HOME}/.kube/kind-config-${MANAGEMENT_KIND_CLUSTER} delete crd {}
 
 clean:
 	rm -rf bin/$*
