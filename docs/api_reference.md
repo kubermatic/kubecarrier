@@ -408,7 +408,6 @@ The `catalog.kubecarrier.io` API group contains all objects that are used to set
 * [DerivedCustomResource.catalog.kubecarrier.io/v1alpha1](#derivedcustomresource.catalog.kubecarrier.io/v1alpha1)
 * [DerivedCustomResourceCondition.catalog.kubecarrier.io/v1alpha1](#derivedcustomresourcecondition.catalog.kubecarrier.io/v1alpha1)
 * [DerivedCustomResourceList.catalog.kubecarrier.io/v1alpha1](#derivedcustomresourcelist.catalog.kubecarrier.io/v1alpha1)
-* [DerivedCustomResourceReference.catalog.kubecarrier.io/v1alpha1](#derivedcustomresourcereference.catalog.kubecarrier.io/v1alpha1)
 * [DerivedCustomResourceSpec.catalog.kubecarrier.io/v1alpha1](#derivedcustomresourcespec.catalog.kubecarrier.io/v1alpha1)
 * [DerivedCustomResourceStatus.catalog.kubecarrier.io/v1alpha1](#derivedcustomresourcestatus.catalog.kubecarrier.io/v1alpha1)
 * [FieldPath.catalog.kubecarrier.io/v1alpha1](#fieldpath.catalog.kubecarrier.io/v1alpha1)
@@ -678,8 +677,8 @@ CatalogEntryMetadata contains metadata of the CatalogEntry.
 
 | Field | Description | Scheme | Required |
 | ----- | ----------- | ------ | -------- |
-| displayName | DisplayName shows the human-readable name of this CatalogEntry. | string | false |
-| description | Description shows the human-readable description of this CatalogEntry. | string | false |
+| displayName | DisplayName shows the human-readable name of this CatalogEntry. | string | true |
+| description | Description shows the human-readable description of this CatalogEntry. | string | true |
 
 [Back to Group](#catalog)
 
@@ -689,8 +688,8 @@ CatalogEntrySpec describes the desired state of CatalogEntry.
 
 | Field | Description | Scheme | Required |
 | ----- | ----------- | ------ | -------- |
-| metadata | Metadata contains the metadata of the CatalogEntry for the Service Catalog. | catalog.kubecarrier.io/v1alpha1.CatalogEntryMetadata | false |
-| baseCRD | BaseCRD is the underlying BaseCRD objects that this CatalogEntry refers to. | catalog.kubecarrier.io/v1alpha1.ObjectReference | false |
+| metadata | Metadata contains the metadata of the CatalogEntry for the Service Catalog. | catalog.kubecarrier.io/v1alpha1.CatalogEntryMetadata | true |
+| baseCRD | BaseCRD is the underlying BaseCRD objects that this CatalogEntry refers to. | catalog.kubecarrier.io/v1alpha1.ObjectReference | true |
 | derive | Derive contains the configuration to generate DerivedCustomResource from the BaseCRD of this CatalogEntry. | *catalog.kubecarrier.io/v1alpha1.DerivedConfig | false |
 
 [Back to Group](#catalog)
@@ -780,8 +779,8 @@ CatalogEntrySetMetadata contains the metadata (display name, description, etc) o
 
 | Field | Description | Scheme | Required |
 | ----- | ----------- | ------ | -------- |
-| displayName | DisplayName shows the human-readable name of this CatalogEntrySet. | string | false |
-| description | Description shows the human-readable description of this CatalogEntrySet. | string | false |
+| displayName | DisplayName shows the human-readable name of this CatalogEntrySet. | string | true |
+| description | Description shows the human-readable description of this CatalogEntrySet. | string | true |
 
 [Back to Group](#catalog)
 
@@ -791,7 +790,7 @@ CatalogEntrySetSpec defines the desired state of CatalogEntrySet.
 
 | Field | Description | Scheme | Required |
 | ----- | ----------- | ------ | -------- |
-| metadata | Metadata contains the metadata of each CatalogEntry for the Service Catalog. | catalog.kubecarrier.io/v1alpha1.CatalogEntrySetMetadata | false |
+| metadata | Metadata contains the metadata of each CatalogEntry for the Service Catalog. | catalog.kubecarrier.io/v1alpha1.CatalogEntrySetMetadata | true |
 | derive | Derive contains the configuration to generate DerivedCustomResources from the BaseCRDs that are selected by this CatalogEntrySet. | *catalog.kubecarrier.io/v1alpha1.DerivedConfig | false |
 | discover | Discover contains the configuration to create a CustomResourceDiscoverySet. | catalog.kubecarrier.io/v1alpha1.CustomResourceDiscoverySetConfig | true |
 
@@ -885,20 +884,6 @@ DerivedCustomResourceList contains a list of DerivedCustomResource.
 
 [Back to Group](#catalog)
 
-### DerivedCustomResourceReference.catalog.kubecarrier.io/v1alpha1
-
-DerivedCustomResourceReference references the derived CRD controlled by this DerivedCustomResource instance.
-
-| Field | Description | Scheme | Required |
-| ----- | ----------- | ------ | -------- |
-| name | Name of the derived CRD. | string | true |
-| group | API Group of the derived CRD. | string | true |
-| kind |  | string | true |
-| plural |  | string | true |
-| singular |  | string | true |
-
-[Back to Group](#catalog)
-
 ### DerivedCustomResourceSpec.catalog.kubecarrier.io/v1alpha1
 
 DerivedCustomResourceSpec defines the desired state of DerivedCustomResource.
@@ -920,7 +905,7 @@ DerivedCustomResourceStatus defines the observed state of DerivedCustomResource.
 | observedGeneration | ObservedGeneration is the most recent generation observed for this DerivedCustomResource by the controller. | catalog.kubecarrier.io/v1alpha1.int64 | false |
 | conditions | Conditions represents the latest available observations of a DerivedCustomResource's current state. | []catalog.kubecarrier.io/v1alpha1.DerivedCustomResourceCondition | false |
 | phase | DEPRECATED. Phase represents the current lifecycle state of this object. Consider this field DEPRECATED, it will be removed as soon as there is a mechanism to map conditions to strings when printing the property. This is only for display purpose, for everything else use conditions. | catalog.kubecarrier.io/v1alpha1.DerivedCustomResourcePhaseType | false |
-| derivedCR | DerivedCR holds information about the derived CRD. | *catalog.kubecarrier.io/v1alpha1.DerivedCustomResourceReference | false |
+| derivedCR | DerivedCR holds information about the derived CRD. | *catalog.kubecarrier.io/v1alpha1.ObjectReference | false |
 
 [Back to Group](#catalog)
 
@@ -975,8 +960,8 @@ OfferingMetadata contains the metadata (display name, description, etc) of the O
 
 | Field | Description | Scheme | Required |
 | ----- | ----------- | ------ | -------- |
-| displayName | DisplayName shows the human-readable name of this Offering. | string | false |
-| description | Description shows the human-readable description of this Offering. | string | false |
+| displayName | DisplayName shows the human-readable name of this Offering. | string | true |
+| description | Description shows the human-readable description of this Offering. | string | true |
 
 [Back to Group](#catalog)
 
@@ -986,7 +971,7 @@ OfferingSpec defines the data (metadata, provider, crds, etc.) of Offering.
 
 | Field | Description | Scheme | Required |
 | ----- | ----------- | ------ | -------- |
-| metadata |  | catalog.kubecarrier.io/v1alpha1.OfferingMetadata | false |
+| metadata |  | catalog.kubecarrier.io/v1alpha1.OfferingMetadata | true |
 | provider | Provider references the Provider managing this Offering. | catalog.kubecarrier.io/v1alpha1.ObjectReference | true |
 | crd | CRD holds the information about the underlying CRD that is offered by this offering. | catalog.kubecarrier.io/v1alpha1.CRDInformation | false |
 
@@ -1022,7 +1007,7 @@ ProviderSpec defines the desired state of Provider
 
 | Field | Description | Scheme | Required |
 | ----- | ----------- | ------ | -------- |
-| metadata | Metadata contains the metadata (display name, description, etc) of the Provider. | catalog.kubecarrier.io/v1alpha1.AccountMetadata | false |
+| metadata | Metadata contains the metadata (display name, description, etc) of the Provider. | catalog.kubecarrier.io/v1alpha1.AccountMetadata | true |
 
 [Back to Group](#catalog)
 
