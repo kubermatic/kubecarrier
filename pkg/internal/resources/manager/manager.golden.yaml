@@ -3,7 +3,7 @@
   metadata:
     annotations:
       cert-manager.io/inject-ca-from: test3000/kubecarrier-manager-serving-cert
-      controller-gen.kubebuilder.io/version: v0.2.5
+      controller-gen.kubebuilder.io/version: v0.2.8
     creationTimestamp: null
     labels:
       kubecarrier.io/role: manager
@@ -203,7 +203,7 @@
   metadata:
     annotations:
       cert-manager.io/inject-ca-from: test3000/kubecarrier-manager-serving-cert
-      controller-gen.kubebuilder.io/version: v0.2.5
+      controller-gen.kubebuilder.io/version: v0.2.8
     creationTimestamp: null
     labels:
       kubecarrier.io/role: manager
@@ -504,7 +504,7 @@
   kind: CustomResourceDefinition
   metadata:
     annotations:
-      controller-gen.kubebuilder.io/version: v0.2.5
+      controller-gen.kubebuilder.io/version: v0.2.8
     creationTimestamp: null
     labels:
       kubecarrier.io/role: manager
@@ -772,7 +772,7 @@
   kind: CustomResourceDefinition
   metadata:
     annotations:
-      controller-gen.kubebuilder.io/version: v0.2.5
+      controller-gen.kubebuilder.io/version: v0.2.8
     creationTimestamp: null
     labels:
       kubecarrier.io/role: manager
@@ -1009,7 +1009,7 @@
   metadata:
     annotations:
       cert-manager.io/inject-ca-from: test3000/kubecarrier-manager-serving-cert
-      controller-gen.kubebuilder.io/version: v0.2.5
+      controller-gen.kubebuilder.io/version: v0.2.8
     creationTimestamp: null
     labels:
       kubecarrier.io/role: manager
@@ -1190,7 +1190,7 @@
   metadata:
     annotations:
       cert-manager.io/inject-ca-from: test3000/kubecarrier-manager-serving-cert
-      controller-gen.kubebuilder.io/version: v0.2.5
+      controller-gen.kubebuilder.io/version: v0.2.8
     creationTimestamp: null
     labels:
       kubecarrier.io/role: manager
@@ -1335,7 +1335,7 @@
   metadata:
     annotations:
       cert-manager.io/inject-ca-from: test3000/kubecarrier-manager-serving-cert
-      controller-gen.kubebuilder.io/version: v0.2.5
+      controller-gen.kubebuilder.io/version: v0.2.8
     creationTimestamp: null
     labels:
       kubecarrier.io/role: manager
@@ -1416,7 +1416,7 @@
   metadata:
     annotations:
       cert-manager.io/inject-ca-from: test3000/kubecarrier-manager-serving-cert
-      controller-gen.kubebuilder.io/version: v0.2.5
+      controller-gen.kubebuilder.io/version: v0.2.8
     creationTimestamp: null
     labels:
       kubecarrier.io/role: manager
@@ -1510,7 +1510,7 @@
   metadata:
     annotations:
       cert-manager.io/inject-ca-from: test3000/kubecarrier-manager-serving-cert
-      controller-gen.kubebuilder.io/version: v0.2.5
+      controller-gen.kubebuilder.io/version: v0.2.8
     creationTimestamp: null
     labels:
       kubecarrier.io/role: manager
@@ -1571,7 +1571,7 @@
   metadata:
     annotations:
       cert-manager.io/inject-ca-from: test3000/kubecarrier-manager-serving-cert
-      controller-gen.kubebuilder.io/version: v0.2.5
+      controller-gen.kubebuilder.io/version: v0.2.8
     creationTimestamp: null
     labels:
       kubecarrier.io/role: manager
@@ -1751,7 +1751,7 @@
   kind: CustomResourceDefinition
   metadata:
     annotations:
-      controller-gen.kubebuilder.io/version: v0.2.5
+      controller-gen.kubebuilder.io/version: v0.2.8
     creationTimestamp: null
     labels:
       kubecarrier.io/role: manager
@@ -1976,7 +1976,7 @@
   metadata:
     annotations:
       cert-manager.io/inject-ca-from: test3000/kubecarrier-manager-serving-cert
-      controller-gen.kubebuilder.io/version: v0.2.5
+      controller-gen.kubebuilder.io/version: v0.2.8
     creationTimestamp: null
     labels:
       kubecarrier.io/role: manager
@@ -2125,7 +2125,7 @@
   metadata:
     annotations:
       cert-manager.io/inject-ca-from: test3000/kubecarrier-manager-serving-cert
-      controller-gen.kubebuilder.io/version: v0.2.5
+      controller-gen.kubebuilder.io/version: v0.2.8
     creationTimestamp: null
     labels:
       kubecarrier.io/role: manager

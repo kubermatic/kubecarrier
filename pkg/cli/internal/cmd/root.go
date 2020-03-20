@@ -20,6 +20,7 @@ import (
 	"github.com/spf13/cobra"
 	ctrl "sigs.k8s.io/controller-runtime"
 
+	deletecmd "github.com/kubermatic/kubecarrier/pkg/cli/internal/cmd/delete"
 	e2e_test "github.com/kubermatic/kubecarrier/pkg/cli/internal/cmd/e2e-test"
 	"github.com/kubermatic/kubecarrier/pkg/cli/internal/cmd/setup"
 	"github.com/kubermatic/kubecarrier/pkg/cli/internal/cmd/sut"
@@ -43,6 +44,7 @@ https://github.com/kubermatic/kubecarrier`,
 		setup.NewCommand(log),
 		version.NewCommand(log),
 		sut.NewCommand(log),
+		deletecmd.NewDeleteCommand(log),
 	)
 
 	return util.CmdLogMixin(cmd)
