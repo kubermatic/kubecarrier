@@ -1175,24 +1175,11 @@
                 derivedCR:
                   description: DerivedCR holds information about the derived CRD.
                   properties:
-                    group:
-                      description: API Group of the derived CRD.
-                      type: string
-                    kind:
-                      type: string
                     name:
-                      description: Name of the derived CRD.
-                      type: string
-                    plural:
-                      type: string
-                    singular:
+                      minLength: 1
                       type: string
                   required:
-                  - group
-                  - kind
                   - name
-                  - plural
-                  - singular
                   type: object
                 observedGeneration:
                   description: ObservedGeneration is the most recent generation observed
@@ -2379,6 +2366,7 @@
       app.kubernetes.io/managed-by: kubecarrier-operator
       app.kubernetes.io/name: kubecarrier-controller-manager
       app.kubernetes.io/version: was not build properly
+      kubecarrier.io/manager: "true"
       kubecarrier.io/role: manager
     name: kubecarrier-manager-manager-role
   rules:
@@ -2690,6 +2678,24 @@
     - patch
     - update
     - watch
+- aggregationRule:
+    clusterRoleSelectors:
+    - matchLabels:
+        kubecarrier.io/manager: "true"
+    - matchLabels:
+        kubecarrier.io/role: manager
+  apiVersion: rbac.authorization.k8s.io/v1
+  kind: ClusterRole
+  metadata:
+    creationTimestamp: null
+    labels:
+      app.kubernetes.io/instance: kubecarrier-test
+      app.kubernetes.io/managed-by: kubecarrier-operator
+      app.kubernetes.io/name: kubecarrier-controller-manager
+      app.kubernetes.io/version: was not build properly
+      kubecarrier.io/role: manager
+    name: kubecarrier-manager-agg-manager-role
+  rules: []
 - apiVersion: v1
   kind: ServiceAccount
   metadata:
@@ -2714,7 +2720,7 @@
   roleRef:
     apiGroup: rbac.authorization.k8s.io
     kind: ClusterRole
-    name: kubecarrier-manager-manager-role
+    name: kubecarrier-manager-agg-manager-role
   subjects:
   - kind: ServiceAccount
     name: kubecarrier-manager-sa
@@ -2927,6 +2933,7 @@
       - v1alpha1
       operations:
       - UPDATE
+      - DELETE
       resources:
       - derivedcustomresources
   - clientConfig:

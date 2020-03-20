@@ -74,6 +74,7 @@ webhooks:
     - v1alpha1
     operations:
     - UPDATE
+    - DELETE
     resources:
     - derivedcustomresources
 - clientConfig:
