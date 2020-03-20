@@ -22,6 +22,7 @@ import (
 
 	deletecmd "github.com/kubermatic/kubecarrier/pkg/cli/internal/cmd/delete"
 	e2e_test "github.com/kubermatic/kubecarrier/pkg/cli/internal/cmd/e2e-test"
+	"github.com/kubermatic/kubecarrier/pkg/cli/internal/cmd/preflight"
 	"github.com/kubermatic/kubecarrier/pkg/cli/internal/cmd/setup"
 	"github.com/kubermatic/kubecarrier/pkg/cli/internal/cmd/sut"
 	"github.com/kubermatic/kubecarrier/pkg/cli/internal/cmd/version"
@@ -45,6 +46,7 @@ https://github.com/kubermatic/kubecarrier`,
 		version.NewCommand(log),
 		sut.NewCommand(log),
 		deletecmd.NewDeleteCommand(log),
+		preflight.NewPreflightCommand(log),
 	)
 
 	return util.CmdLogMixin(cmd)
