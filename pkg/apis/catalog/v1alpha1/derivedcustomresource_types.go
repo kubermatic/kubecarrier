@@ -68,18 +68,7 @@ type DerivedCustomResourceStatus struct {
 	// This is only for display purpose, for everything else use conditions.
 	Phase DerivedCustomResourcePhaseType `json:"phase,omitempty"`
 	// DerivedCR holds information about the derived CRD.
-	DerivedCR *DerivedCustomResourceReference `json:"derivedCR,omitempty"`
-}
-
-// DerivedCustomResourceReference references the derived CRD controlled by this DerivedCustomResource instance.
-type DerivedCustomResourceReference struct {
-	// Name of the derived CRD.
-	Name string `json:"name"`
-	// API Group of the derived CRD.
-	Group    string `json:"group"`
-	Kind     string `json:"kind"`
-	Plural   string `json:"plural"`
-	Singular string `json:"singular"`
+	DerivedCR *ObjectReference `json:"derivedCR,omitempty"`
 }
 
 // DerivedCustomResourcePhaseType represents all conditions as a single string for printing by using kubectl commands.

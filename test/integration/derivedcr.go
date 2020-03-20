@@ -21,7 +21,6 @@ import (
 	"fmt"
 	"strings"
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -44,7 +43,7 @@ func newDerivedCR(
 	return func(t *testing.T) {
 		managementClient, err := f.ManagementClient(t)
 		require.NoError(t, err, "creating management client")
-		ctx, cancel := context.WithTimeout(context.Background(), 120*time.Second)
+		ctx, cancel := context.WithCancel(context.Background())
 		t.Cleanup(cancel)
 		t.Cleanup(managementClient.CleanUpFunc(ctx))
 
@@ -57,124 +56,49 @@ func newDerivedCR(
 		require.NoError(t, managementClient.Create(ctx, provider))
 		require.NoError(t, testutil.WaitUntilReady(ctx, managementClient, provider))
 
-		baseCRD := &apiextensionsv1.CustomResourceDefinition{
-			ObjectMeta: metav1.ObjectMeta{
-				Name: "catapults.test.kubecarrier.io",
-				Labels: map[string]string{
-					"kubecarrier.io/service-cluster":  "eu-west-1",
-					"kubecarrier.io/origin-namespace": provider.Status.Namespace.Name,
-				},
-			},
-			Spec: apiextensionsv1.CustomResourceDefinitionSpec{
-				Group: "test.kubecarrier.io",
-				Names: apiextensionsv1.CustomResourceDefinitionNames{
-					Kind:     "Catapult",
-					ListKind: "CatapultList",
-					Plural:   "catapults",
-					Singular: "catapult",
-				},
-				Scope: apiextensionsv1.NamespaceScoped,
-				Versions: []apiextensionsv1.CustomResourceDefinitionVersion{
-					{
-						Name:    "v1alpha1",
-						Served:  true,
-						Storage: true,
-						Subresources: &apiextensionsv1.CustomResourceSubresources{
-							Status: &apiextensionsv1.CustomResourceSubresourceStatus{},
-						},
-						Schema: &apiextensionsv1.CustomResourceValidation{
-							OpenAPIV3Schema: &apiextensionsv1.JSONSchemaProps{
-								Properties: map[string]apiextensionsv1.JSONSchemaProps{
-									"apiVersion": {Type: "string"},
-									"kind":       {Type: "string"},
-									"metadata":   {Type: "object"},
-									"spec": {
-										Type: "object",
-										Properties: map[string]apiextensionsv1.JSONSchemaProps{
-											"prop1": {Type: "string"},
-											"prop2": {Type: "string"},
-										},
-									},
-									"status": {
-										Type: "object",
-										Properties: map[string]apiextensionsv1.JSONSchemaProps{
-											"observedGeneration": {Type: "integer"},
-											"prop1":              {Type: "string"},
-											"prop2":              {Type: "string"},
-										},
-									},
-								},
-								Type: "object",
-							},
-						},
-					},
-				},
-			},
+		baseCRD := f.NewFakeCouchDBCRD(testName + "test.kubecarrier.io")
+		baseCRD.Labels = map[string]string{
+			"kubecarrier.io/service-cluster":  "eu-west-1",
+			"kubecarrier.io/origin-namespace": provider.Status.Namespace.Name,
 		}
 		// create base CRD
 		require.NoError(t, managementClient.Create(ctx, baseCRD), "creating base CRD")
 
-		// Test
-		// Create a CatalogEntry to execute our tests in
-		catalogEntry := &catalogv1alpha1.CatalogEntry{
+		// Check the DerivedCustomResource Object
+		dcr := &catalogv1alpha1.DerivedCustomResource{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "test",
 				Namespace: provider.Status.Namespace.Name,
 			},
-			Spec: catalogv1alpha1.CatalogEntrySpec{
-				Metadata: catalogv1alpha1.CatalogEntryMetadata{
-					DisplayName: "Catapult",
-					Description: "Catapult",
-				},
+			Spec: catalogv1alpha1.DerivedCustomResourceSpec{
 				BaseCRD: catalogv1alpha1.ObjectReference{
 					Name: baseCRD.Name,
 				},
-				Derive: &catalogv1alpha1.DerivedConfig{
-					KindOverride: "TestResource",
-					Expose: []catalogv1alpha1.VersionExposeConfig{
-						{
-							Versions: []string{
-								"v1alpha1",
-							},
-							Fields: []catalogv1alpha1.FieldPath{
-								{JSONPath: ".spec.prop1"},
-								{JSONPath: ".status.observedGeneration"},
-								{JSONPath: ".status.prop1"},
-							},
-							Patch: &runtime.RawExtension{Raw: []byte(`{"spec": {"prop2": "patch"}}`)},
+				KindOverride: "TestResource",
+				Expose: []catalogv1alpha1.VersionExposeConfig{
+					{
+						Versions: []string{
+							"v1alpha1",
 						},
+						Fields: []catalogv1alpha1.FieldPath{
+							{JSONPath: ".spec.prop1"},
+							{JSONPath: ".status.observedGeneration"},
+							{JSONPath: ".status.prop1"},
+						},
+						Patch: &runtime.RawExtension{Raw: []byte(`{"spec": {"prop2": "patch"}}`)},
 					},
 				},
 			},
 		}
 
-		require.NoError(
-			t, managementClient.Create(ctx, catalogEntry), "creating CatalogEntry")
-
-		// Wait for the CatalogEntry to be ready, it takes more time since it requires the
-		// DerivedCustomResource object and Elevator get ready
-		require.NoError(t, testutil.WaitUntilReady(ctx, managementClient, catalogEntry))
-
-		// Check the DerivedCustomResource Object
-		dcr := &catalogv1alpha1.DerivedCustomResource{}
-		require.NoError(t, managementClient.Get(ctx, types.NamespacedName{
-			Name:      catalogEntry.Name,
-			Namespace: catalogEntry.Namespace,
-		}, dcr), "getting derived CRD")
-		// Check reported status
-		if assert.NotNil(t, dcr.Status.DerivedCR, ".status.derivedCR should be set") &&
-			assert.NotNil(t, catalogEntry.Status.TenantCRD, ".status.CRD should be set") {
-			assert.Equal(t, catalogEntry.Status.TenantCRD.Name, dcr.Status.DerivedCR.Name)
-			assert.Equal(t, catalogEntry.Status.TenantCRD.APIGroup, dcr.Status.DerivedCR.Group)
-			assert.Equal(t, catalogEntry.Status.TenantCRD.Kind, dcr.Status.DerivedCR.Kind)
-			assert.Equal(t, catalogEntry.Status.TenantCRD.Plural, dcr.Status.DerivedCR.Plural)
-		}
+		require.NoError(t, managementClient.Create(ctx, dcr))
+		require.NoError(t, testutil.WaitUntilReady(ctx, managementClient, dcr))
 
 		// Check the Elevator dynamic webhook service is deployed.
 		webhookService := &corev1.Service{}
 		assert.NoError(t, managementClient.Get(ctx, types.NamespacedName{
 			Name:      fmt.Sprintf("%s-elevator-webhook-service", dcr.Name),
-			Namespace: catalogEntry.Namespace,
+			Namespace: provider.Status.Namespace.Name,
 		}, webhookService), "get the Webhook Service that owned by Elevator object")
 
 		err = managementClient.Delete(ctx, provider)
@@ -249,8 +173,8 @@ type: object
 
 		providerObj := &unstructured.Unstructured{
 			Object: map[string]interface{}{
-				"apiVersion": "test.kubecarrier.io/v1alpha1",
-				"kind":       "Catapult",
+				"apiVersion": fmt.Sprintf("%s/v1alpha1", baseCRD.Spec.Group),
+				"kind":       baseCRD.Spec.Names.Kind,
 				"metadata": map[string]interface{}{
 					"name":      "test-instance-1",
 					"namespace": someNamespace.Name,
@@ -263,11 +187,23 @@ type: object
 			"prop2": "patch",
 		}, providerObj.Object["spec"], "provider object spec isn't properly constructed")
 
+		err = managementClient.Delete(ctx, dcr)
+		if assert.Error(t, err,
+			"derived custom resource must not be allowed to delete if derived CRD instances are present",
+		) {
+			assert.Contains(
+				t,
+				err.Error(),
+				"derived CRD instances are still present in the cluster",
+				"derivedCR deletion webhook should error out on derived CRD instance presence",
+			)
+		}
+
 		// Check Provider -> Tenant
 		providerObj2 := &unstructured.Unstructured{
 			Object: map[string]interface{}{
-				"apiVersion": "test.kubecarrier.io/v1alpha1",
-				"kind":       "Catapult",
+				"apiVersion": fmt.Sprintf("%s/v1alpha1", baseCRD.Spec.Group),
+				"kind":       baseCRD.Spec.Names.Kind,
 				"metadata": map[string]interface{}{
 					"name":      "test-instance-2",
 					"namespace": someNamespace.Name,
@@ -283,8 +219,8 @@ type: object
 
 		tenantObj2 := &unstructured.Unstructured{
 			Object: map[string]interface{}{
-				"apiVersion": "test.kubecarrier.io/v1alpha1",
-				"kind":       "Catapult",
+				"apiVersion": fmt.Sprintf("%s/v1alpha1", baseCRD.Spec.Group),
+				"kind":       baseCRD.Spec.Names.Kind,
 				"metadata": map[string]interface{}{
 					"name":      "test-instance-2",
 					"namespace": someNamespace.Name,

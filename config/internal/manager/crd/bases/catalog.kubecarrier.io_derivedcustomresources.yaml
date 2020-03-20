@@ -153,24 +153,11 @@ spec:
               derivedCR:
                 description: DerivedCR holds information about the derived CRD.
                 properties:
-                  group:
-                    description: API Group of the derived CRD.
-                    type: string
-                  kind:
-                    type: string
                   name:
-                    description: Name of the derived CRD.
-                    type: string
-                  plural:
-                    type: string
-                  singular:
+                    minLength: 1
                     type: string
                 required:
-                - group
-                - kind
                 - name
-                - plural
-                - singular
                 type: object
               observedGeneration:
                 description: ObservedGeneration is the most recent generation observed
