@@ -32,6 +32,7 @@ import (
 	versionutil "k8s.io/apimachinery/pkg/util/version"
 	"k8s.io/client-go/discovery"
 	"k8s.io/client-go/rest"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/kubermatic/kubecarrier/pkg/cli/internal/spinner"
 	"github.com/kubermatic/kubecarrier/pkg/internal/util"
@@ -49,10 +50,10 @@ func init() {
 const (
 	firstSupportedKubernetesVersion = "v1.16.0"
 
-	certManagerNamespace            = "cert-manager"
-	certManagerCAInjectorDeployment = "cert-manager-cainjector"
-	certManagerWebhookDeployment    = "cert-manager-webhook"
-	certManagerDeployment           = "cert-manager"
+	certManagerNamespaceName            = "cert-manager"
+	certManagerCAInjectorDeploymentName = "cert-manager-cainjector"
+	certManagerWebhookDeploymentName    = "cert-manager-webhook"
+	certManagerDeploymentName           = "cert-manager"
 )
 
 // checker checks if the state of the system meets KubeCarrier installation requirements
@@ -61,18 +62,29 @@ type checker interface {
 	name() string
 }
 
-func RunCheckers(c *rest.Config, s *wow.Wow, startTime time.Time, log logr.Logger) error {
+func RunChecks(c *rest.Config, s *wow.Wow, startTime time.Time, log logr.Logger) error {
+	discoveryClient, err := discovery.NewDiscoveryClientForConfig(c)
+	if err != nil {
+		return fmt.Errorf("cannot create discovery client: %w", err)
+	}
+	kubernetesVersion, err := discoveryClient.ServerVersion()
+	if err != nil {
+		return fmt.Errorf("can not get the kubernetesVersion: %w", err)
+	}
+	cl, err := util.NewClientWatcher(c, scheme, log)
+	if err != nil {
+		return fmt.Errorf("creating Kubernetes client: %w", err)
+	}
 	var errBuffer bytes.Buffer
 	checkers := []checker{
 		&kubernetesVersionChecker{
-			config:                c,
 			firstSupportedVersion: firstSupportedKubernetesVersion,
+			kubernetesVersion:     kubernetesVersion.String(),
 		},
 		&certManagerChecker{
-			config:                 c,
-			log:                    log,
-			certManagerNamespace:   certManagerNamespace,
-			certManagerDeployments: []string{certManagerDeployment, certManagerCAInjectorDeployment, certManagerWebhookDeployment},
+			client:                 cl,
+			certManagerNamespace:   certManagerNamespaceName,
+			certManagerDeployments: []string{certManagerDeploymentName, certManagerCAInjectorDeploymentName, certManagerWebhookDeploymentName},
 		},
 	}
 	for _, checker := range checkers {
@@ -90,29 +102,21 @@ func RunCheckers(c *rest.Config, s *wow.Wow, startTime time.Time, log logr.Logge
 
 // kubernetesVersionChecker checks if the Kubernetes version of the cluster meets the requirement to deploy KubeCarrier.
 type kubernetesVersionChecker struct {
-	config                *rest.Config
 	firstSupportedVersion string
+	kubernetesVersion     string
 }
 
 func (c *kubernetesVersionChecker) check() error {
-	discoveryClient, err := discovery.NewDiscoveryClientForConfig(c.config)
-	if err != nil {
-		return fmt.Errorf("cannot create discovery client: %w", err)
-	}
-	kubernetesVersion, err := discoveryClient.ServerVersion()
-	if err != nil {
-		return fmt.Errorf("can not get the kubernetesVersion: %w", err)
-	}
 	firstSupportedVersion, err := versionutil.ParseSemantic(c.firstSupportedVersion)
 	if err != nil {
 		return err
 	}
-	kubernetesGitVersion, err := versionutil.ParseSemantic(kubernetesVersion.String())
+	kubernetesGitVersion, err := versionutil.ParseSemantic(c.kubernetesVersion)
 	if err != nil {
 		return err
 	}
 	if kubernetesGitVersion.LessThan(firstSupportedVersion) {
-		return fmt.Errorf("kubernetes version is lower than the oldest version that KubeCarrier supports, requrires: >= %s, found: %s", firstSupportedVersion.String(), kubernetesGitVersion.String())
+		return fmt.Errorf("kubernetes version is lower than the oldest version that KubeCarrier supports, requrires: >= v%s, found: v%s", firstSupportedVersion.String(), kubernetesGitVersion.String())
 	}
 	return nil
 }
@@ -123,22 +127,17 @@ func (c *kubernetesVersionChecker) name() string {
 
 // certManager checks if the cert-manager related deployments are ready.
 type certManagerChecker struct {
-	config                 *rest.Config
-	log                    logr.Logger
+	client                 client.Client
 	certManagerNamespace   string
 	certManagerDeployments []string
 }
 
 func (c *certManagerChecker) check() error {
 	// Get a client from the configuration of the kubernetes cluster.
-	var errBuffer bytes.Buffer
 	ctx := context.Background()
-	client, err := util.NewClientWatcher(c.config, scheme, c.log)
-	if err != nil {
-		return fmt.Errorf("creating Kubernetes client: %w", err)
-	}
+	var errBuffer bytes.Buffer
 	namespace := &corev1.Namespace{}
-	if err := client.Get(ctx, types.NamespacedName{
+	if err := c.client.Get(ctx, types.NamespacedName{
 		Name: c.certManagerNamespace,
 	}, namespace); err != nil {
 		errBuffer.WriteString(err.Error() + "\n")
@@ -146,7 +145,7 @@ func (c *certManagerChecker) check() error {
 
 	for _, deploymentName := range c.certManagerDeployments {
 		deployment := &appsv1.Deployment{}
-		if err := client.Get(ctx, types.NamespacedName{
+		if err := c.client.Get(ctx, types.NamespacedName{
 			Name:      deploymentName,
 			Namespace: c.certManagerNamespace,
 		}, deployment); err != nil {

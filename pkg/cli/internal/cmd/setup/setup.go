@@ -95,7 +95,7 @@ func runE(conf *rest.Config, log logr.Logger, cmd *cobra.Command) error {
 
 	s := wow.New(cmd.OutOrStdout(), spin.Get(spin.Dots), "")
 	startTime := time.Now()
-	if err := preflight.RunCheckers(conf, s, startTime, log); err != nil {
+	if err := preflight.RunChecks(conf, s, startTime, log); err != nil {
 		return err
 	}
 	// Get a client from the configuration of the kubernetes cluster.

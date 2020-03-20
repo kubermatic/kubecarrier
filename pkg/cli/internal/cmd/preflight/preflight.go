@@ -41,7 +41,7 @@ func NewPreflightCommand(log logr.Logger) *cobra.Command {
 			}
 			s := wow.New(cmd.OutOrStdout(), spin.Get(spin.Dots), "")
 			startTime := time.Now()
-			return RunCheckers(cfg, s, startTime, log)
+			return RunChecks(cfg, s, startTime, log)
 		},
 	}
 	return cmd
