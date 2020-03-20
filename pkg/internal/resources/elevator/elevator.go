@@ -199,24 +199,9 @@ func Manifests(c Config) ([]unstructured.Unstructured, error) {
 		},
 		Rules: []rbacv1.PolicyRule{
 			{
-				APIGroups: []string{c.ProviderGroup},
-				Resources: []string{c.ProviderPlural},
-				Verbs:     []string{"get", "list", "watch"},
-			},
-			{
-				APIGroups: []string{c.ProviderGroup},
-				Resources: []string{c.ProviderPlural + "/status"},
-				Verbs:     []string{"get"},
-			},
-			{
 				APIGroups: []string{c.TenantGroup},
 				Resources: []string{c.TenantPlural},
 				Verbs:     []string{"get", "list", "watch"},
-			},
-			{
-				APIGroups: []string{c.TenantGroup},
-				Resources: []string{c.TenantPlural + "/status"},
-				Verbs:     []string{"get"},
 			},
 		},
 	}
