@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package util
+package constants
 
 const (
 	// Kubernetes recommended labels labels: https://kubernetes.io/docs/concepts/overview/working-with-objects/common-labels/#labels

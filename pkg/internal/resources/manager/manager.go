@@ -24,7 +24,7 @@ import (
 	"sigs.k8s.io/kustomize/v3/pkg/types"
 
 	"github.com/kubermatic/kubecarrier/pkg/internal/kustomize"
-	"github.com/kubermatic/kubecarrier/pkg/internal/resources/util"
+	"github.com/kubermatic/kubecarrier/pkg/internal/resources/constants"
 	"github.com/kubermatic/kubecarrier/pkg/internal/version"
 )
 
@@ -64,10 +64,10 @@ func Manifests(c Config) ([]unstructured.Unstructured, error) {
 		if labels == nil {
 			labels = map[string]string{}
 		}
-		labels[util.NameLabel] = "kubecarrier-controller-manager"
-		labels[util.InstanceLabel] = c.Name
-		labels[util.ManagedbyLabel] = util.ManagedbyKubeCarrierOperator
-		labels[util.VersionLabel] = v.Version
+		labels[constants.NameLabel] = "kubecarrier-controller-manager"
+		labels[constants.InstanceLabel] = c.Name
+		labels[constants.ManagedbyLabel] = constants.ManagedbyKubeCarrierOperator
+		labels[constants.VersionLabel] = v.Version
 		obj.SetLabels(labels)
 	}
 	return objects, nil
