@@ -24,6 +24,7 @@ import (
 	"reflect"
 
 	"github.com/go-logr/logr"
+	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -112,16 +113,76 @@ func (r *TenantObjWebhookHandler) Handle(ctx context.Context, req admission.Requ
 	if err := elevatorutil.BuildProviderObj(tenantObj, providerObj, r.Scheme, nonStatusExposedFields, patch); err != nil {
 		return admission.Errored(http.StatusInternalServerError, fmt.Errorf("build and elevate: %w", err))
 	}
-	if err := r.Patch(ctx, providerObj, client.Apply, elevatorutil.FieldOwner, client.DryRunAll, client.ForceOwnership); err != nil {
-		return admission.Errored(http.StatusInternalServerError, fmt.Errorf("webhook patch: %w", err))
+
+	// Check if the ProviderObj has already been created, if it is created, then regards this request
+	// as a UPDATE, if it is not crated, regards this request as a CREATE.
+	// Using `req.admission.Request` to determine if the request is CREATE or UPDATE was the first attempt and finally,
+	// we decided not to use that because it just doesn't work with the `dry-run` requests, here is an example in the
+	// following and you will see the problem:
+	//
+	// If we use the following for our elevator webhook:
+	// ```
+	// switch req.Operation {
+	// case adminv1beta1.Create:
+	// 	if err := r.Create(ctx, providerObj, client.DryRunAll); err != nil {
+	// 		return admission.Errored(http.StatusInternalServerError, err)
+	// 	}
+	// case adminv1beta1.Update:
+	// 	if err := r.Update(ctx, providerObj, client.DryRunAll); err != nil {
+	// 		return admission.Errored(http.StatusInternalServerError, err)
+	// 	}
+	// }
+	// ```
+	// Then go through the request flow when the tenant tries to create the TenantCRD object:
+	// 1. Tenant sends a `CREATE` request.
+	// 2. The above webhook regards this as a `CREATE` request, the `DryRun` request can pass (NO problem with this step).
+	// 3. TenantObj controller of `Elevator` tries to update the finalizer for the TenantCRD object, and send an `UPDATE` request.
+	// Then the problem happens: the above webhook regards this as an `UPDATE` request, and the `DryRun` request will fail
+	// with `IsNotFound` error, since the ProviderObj has not been created.
+	// The similar problem also happens when the TenantObj is removed, and update the finalizer later. Also, there are
+	// also some other corner cases that can not be handled by this above approach.
+	// There is a workaround that we can remove the `DryRun` flag and do an actual `Create`/`Update` call, in the webhook,
+	// but we feels like creating objects and introducing some side effects is not the right way to go.
+	// That's why we decided to not use the `req.Operation` but to check if the `ProviderObj` is created or not.
+	// Also, if you think about our approach, it also makes sense, i.e., if the `ProviderObj` is not there,
+	// of course it is a `CREATE` request, and it also works fine.
+	err = r.Get(ctx, types.NamespacedName{
+		Name:      providerObj.GetName(),
+		Namespace: providerObj.GetNamespace(),
+	}, providerObj)
+	if err != nil && !errors.IsNotFound(err) {
+		return admission.Errored(http.StatusInternalServerError, fmt.Errorf("getting providerObj: %w", err))
 	}
-	if err := elevatorutil.CopyFields(providerObj, tenantObj, nonStatusExposedFields); err != nil {
-		return admission.Errored(http.StatusInternalServerError, fmt.Errorf("fields copy: %w", err))
+
+	if errors.IsNotFound(err) {
+		r.Log.Info("validate create", "name", obj.GetName())
+		if err := elevatorutil.CopyFields(obj, providerObj, nonStatusExposedFields); err != nil {
+			return admission.Errored(http.StatusInternalServerError, fmt.Errorf("copy fields: %w", err))
+		}
+		if err := r.Create(ctx, providerObj, client.DryRunAll); err != nil {
+			return admission.Errored(http.StatusInternalServerError, err)
+		}
+	} else {
+		r.Log.Info("validate update", "name", obj.GetName())
+		if err := elevatorutil.CopyFields(obj, providerObj, nonStatusExposedFields); err != nil {
+			return admission.Errored(http.StatusInternalServerError, fmt.Errorf("copy fields: %w", err))
+		}
+		if err := r.Update(ctx, providerObj, client.DryRunAll); err != nil {
+			return admission.Errored(http.StatusInternalServerError, err)
+		}
 	}
-	marshalledObj, err := json.Marshal(tenantObj)
+
+	newObj := obj.DeepCopy()
+	if err := elevatorutil.CopyFields(providerObj, newObj, nonStatusExposedFields); err != nil {
+		return admission.Errored(http.StatusInternalServerError,
+			fmt.Errorf("changing %s .fields back: %w", r.ProviderGVK.Kind, err))
+	}
+
+	marshalledObj, err := json.Marshal(newObj)
 	if err != nil {
 		return admission.Errored(http.StatusInternalServerError, err)
 	}
+	// Create the patch
 	return admission.PatchResponseFromRaw(req.Object.Raw, marshalledObj)
 }
 

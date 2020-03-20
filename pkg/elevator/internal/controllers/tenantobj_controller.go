@@ -27,6 +27,7 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
 	catalogv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/catalog/v1alpha1"
 	elevatorutil "github.com/kubermatic/kubecarrier/pkg/elevator/internal/util"
@@ -85,7 +86,7 @@ func (r *TenantObjReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 		return ctrl.Result{}, fmt.Errorf("build provider Obj: %w", err)
 	}
 	// Reconcile TenantCRD
-	if err := r.reconcileTenantObj(ctx, tenantObj, providerObj, statusFields); err != nil {
+	if err := r.reconcileTenantObj(ctx, tenantObj, providerObj, nonStatusFields, statusFields); err != nil {
 		return result, fmt.Errorf("reconciling %s: %w", r.ProviderGVK.Kind, err)
 	}
 
@@ -101,9 +102,11 @@ func (r *TenantObjReconciler) SetupWithManager(mgr ctrl.Manager) error {
 
 func (r *TenantObjReconciler) reconcileTenantObj(
 	ctx context.Context, tenantObj, providerObj *unstructured.Unstructured,
-	statusFields []catalogv1alpha1.FieldPath,
+	nonStatusFields, statusFields []catalogv1alpha1.FieldPath,
 ) error {
-	if err := r.Patch(ctx, providerObj, client.Apply, elevatorutil.FieldOwner, client.ForceOwnership); err != nil {
+	if _, err := controllerutil.CreateOrUpdate(ctx, r.Client, providerObj, func() error {
+		return elevatorutil.CopyFields(tenantObj, providerObj, nonStatusFields)
+	}); err != nil {
 		return err
 	}
 	// Sync status from provider to tenant instance

@@ -62,15 +62,16 @@ bin/docgen: hack/docgen/main.go
 	$(GOARGS) go build -ldflags "-w $(LD_FLAGS)" -o bin/docgen ./hack/docgen
 
 quick-clean:
-	echo "cleaning up all account"
 	KUBECONFIG=${HOME}/.kube/kind-config-${MANAGEMENT_KIND_CLUSTER} kubectl kubecarrier delete account --all --force
-	echo "cleaning up service cluster CRDs"
+	kubectl --kubeconfig=${HOME}/.kube/kind-config-${MANAGEMENT_KIND_CLUSTER} delete kubecarriers.operator.kubecarrier.io --all
 	KUBECONFIG=${HOME}/.kube/kind-config-${MANAGEMENT_KIND_CLUSTER} kubectl delete deployments --all --namespace kubecarrier-system
-	echo "cleaning up management cluster CRDs"
-	kubectl --kubeconfig=${HOME}/.kube/kind-config-${SVC_KIND_CLUSTER} get crd | grep kubecarrier.io | cut -f1 -d ' ' | xargs -I {} kubectl --kubeconfig=${HOME}/.kube/kind-config-${SVC_KIND_CLUSTER} delete crd {}
+	kubectl --kubeconfig=${HOME}/.kube/kind-config-${SVC_KIND_CLUSTER} delete crd --all
+	kubectl --kubeconfig=${HOME}/.kube/kind-config-${MANAGEMENT_KIND_CLUSTER} get crd | grep kubecarrier.io | cut -f1 -d ' ' | xargs -I {} kubectl --kubeconfig=${HOME}/.kube/kind-config-${MANAGEMENT_KIND_CLUSTER} delete crd {}
 
-clean: e2e-test-clean
+clean:
 	rm -rf bin/$*
+	@kind delete cluster --name=${MANAGEMENT_KIND_CLUSTER} "--kubeconfig=${HOME}/.kube/kind-config-${MANAGEMENT_KIND_CLUSTER}" || true
+	@kind delete cluster --name=${SVC_KIND_CLUSTER} "--kubeconfig=${HOME}/.kube/kind-config-${SVC_KIND_CLUSTER}" || true
 .PHONEY: clean
 
 # Generate code
@@ -139,10 +140,6 @@ e2e-test: e2e-setup
 
 .PHONY: e2e-test
 
-e2e-test-clean:
-	@kind delete cluster --name=${MANAGEMENT_KIND_CLUSTER} "--kubeconfig=${HOME}/.kube/kind-config-${MANAGEMENT_KIND_CLUSTER}" || true
-	@kind delete cluster --name=${SVC_KIND_CLUSTER} "--kubeconfig=${HOME}/.kube/kind-config-${SVC_KIND_CLUSTER}" || true
-.PHONY: e2e-test-clean
 
 lint:
 	pre-commit run -a
