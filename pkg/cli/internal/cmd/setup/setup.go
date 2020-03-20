@@ -41,6 +41,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
 	operatorv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/operator/v1alpha1"
+	"github.com/kubermatic/kubecarrier/pkg/cli/internal/cmd/preflight"
 	"github.com/kubermatic/kubecarrier/pkg/cli/internal/spinner"
 	"github.com/kubermatic/kubecarrier/pkg/internal/reconcile"
 	"github.com/kubermatic/kubecarrier/pkg/internal/resources/operator"
@@ -94,6 +95,9 @@ func runE(conf *rest.Config, log logr.Logger, cmd *cobra.Command) error {
 
 	s := wow.New(cmd.OutOrStdout(), spin.Get(spin.Dots), "")
 	startTime := time.Now()
+	if err := preflight.RunCheckers(conf, s, startTime, log); err != nil {
+		return err
+	}
 	// Get a client from the configuration of the kubernetes cluster.
 	c, err := util.NewClientWatcher(conf, scheme, log)
 	if err != nil {

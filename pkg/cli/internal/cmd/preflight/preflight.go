@@ -17,6 +17,10 @@ limitations under the License.
 package preflight
 
 import (
+	"time"
+
+	"github.com/gernest/wow"
+	"github.com/gernest/wow/spin"
 	"github.com/go-logr/logr"
 	"github.com/spf13/cobra"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
@@ -35,7 +39,9 @@ func NewPreflightCommand(log logr.Logger) *cobra.Command {
 			if err != nil {
 				return err
 			}
-			return RunCheckers(cfg)
+			s := wow.New(cmd.OutOrStdout(), spin.Get(spin.Dots), "")
+			startTime := time.Now()
+			return RunCheckers(cfg, s, startTime, log)
 		},
 	}
 	return cmd
