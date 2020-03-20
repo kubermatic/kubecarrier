@@ -41,7 +41,7 @@ import (
 func newSimpleScenario(f *testutil.Framework) func(t *testing.T) {
 	return func(t *testing.T) {
 		// Setup
-		ctx, cancel := context.WithTimeout(context.Background(), 120*time.Second)
+		ctx, cancel := context.WithCancel(context.Background())
 		t.Cleanup(cancel)
 
 		managementClient, err := f.ManagementClient(t)
@@ -230,6 +230,45 @@ func newSimpleScenario(f *testutil.Framework) func(t *testing.T) {
 					testutil.WaitUntilFound(ctx, serviceClient, svcObj, testutil.WithTimeout(15*time.Second)),
 					"cannot find the CRD on the service cluster within the time limit",
 				)
+
+				t.Log("setting the status on the service cluster object")
+				const statusMsg = "I'm a nice little status from Berlin. "
+				svcObj.Object["status"] = map[string]interface{}{
+					"prop1": statusMsg,
+				}
+				require.NoError(t, serviceClient.Status().Update(ctx, svcObj))
+				t.Log("waiting for status backpropagation to the managment's internal CRD")
+				assert.NoError(t, managementClient.WaitUntil(ctx, internalObj, func() (done bool, err error) {
+					val, found, err := unstructured.NestedString(internalObj.Object, "status", "prop1")
+					if err != nil {
+						return false, err
+					}
+					return found && val == statusMsg, nil
+				}))
+
+				t.Log("waiting for status backpropagation to the managment's external CRD")
+				assert.NoError(t, managementClient.WaitUntil(ctx, externalObj, func() (done bool, err error) {
+					val, found, err := unstructured.NestedString(externalObj.Object, "status", "prop1")
+					if err != nil {
+						return false, err
+					}
+					return found && val == statusMsg, nil
+				}))
+
+				t.Log("update prop1 in the external CRD")
+				const updateProp1Values = "social distancing"
+				require.NoError(t, unstructured.SetNestedField(externalObj.Object, updateProp1Values, "spec", "prop1"))
+				require.NoError(t, tenantClient.Update(ctx, externalObj))
+
+				t.Log("wait for propagation to the service cluster")
+				require.NoError(t, serviceClient.WaitUntil(ctx, svcObj, func() (done bool, err error) {
+					val, found, err := unstructured.NestedString(svcObj.Object, "spec", "prop1")
+					if err != nil {
+						return false, err
+					}
+					return found && val == updateProp1Values, nil
+				}))
+
 				assert.NoError(t, testutil.DeleteAndWaitUntilNotFound(ctx, tenantClient, externalObj))
 				assert.NoError(t, testutil.WaitUntilNotFound(ctx, serviceClient, svcObj))
 			}

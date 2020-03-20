@@ -103,7 +103,7 @@ func (r *TenantObjReconciler) reconcileTenantObj(
 	ctx context.Context, tenantObj, providerObj *unstructured.Unstructured,
 	statusFields []catalogv1alpha1.FieldPath,
 ) error {
-	if err := r.Patch(ctx, providerObj, client.Apply, elevatorutil.FieldOwner); err != nil {
+	if err := r.Patch(ctx, providerObj, client.Apply, elevatorutil.FieldOwner, client.ForceOwnership); err != nil {
 		return err
 	}
 	// Sync status from provider to tenant instance

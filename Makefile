@@ -61,6 +61,14 @@ FORCE:
 bin/docgen: hack/docgen/main.go
 	$(GOARGS) go build -ldflags "-w $(LD_FLAGS)" -o bin/docgen ./hack/docgen
 
+quick-clean:
+	echo "cleaning up all account"
+	KUBECONFIG=${HOME}/.kube/kind-config-${MANAGEMENT_KIND_CLUSTER} kubectl kubecarrier delete account --all --force
+	echo "cleaning up service cluster CRDs"
+	KUBECONFIG=${HOME}/.kube/kind-config-${MANAGEMENT_KIND_CLUSTER} kubectl delete deployments --all --namespace kubecarrier-system
+	echo "cleaning up management cluster CRDs"
+	kubectl --kubeconfig=${HOME}/.kube/kind-config-${SVC_KIND_CLUSTER} get crd | grep kubecarrier.io | cut -f1 -d ' ' | xargs -I {} kubectl --kubeconfig=${HOME}/.kube/kind-config-${SVC_KIND_CLUSTER} delete crd {}
+
 clean: e2e-test-clean
 	rm -rf bin/$*
 .PHONEY: clean

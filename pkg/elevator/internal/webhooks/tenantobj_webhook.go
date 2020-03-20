@@ -112,7 +112,7 @@ func (r *TenantObjWebhookHandler) Handle(ctx context.Context, req admission.Requ
 	if err := elevatorutil.BuildProviderObj(tenantObj, providerObj, r.Scheme, nonStatusExposedFields, patch); err != nil {
 		return admission.Errored(http.StatusInternalServerError, fmt.Errorf("build and elevate: %w", err))
 	}
-	if err := r.Patch(ctx, providerObj, client.Apply, elevatorutil.FieldOwner, client.DryRunAll); err != nil {
+	if err := r.Patch(ctx, providerObj, client.Apply, elevatorutil.FieldOwner, client.DryRunAll, client.ForceOwnership); err != nil {
 		return admission.Errored(http.StatusInternalServerError, fmt.Errorf("webhook patch: %w", err))
 	}
 	if err := elevatorutil.CopyFields(providerObj, tenantObj, nonStatusExposedFields); err != nil {
