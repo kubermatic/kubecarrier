@@ -312,28 +312,8 @@
   - apiGroups:
     - eu-west-1.provider
     resources:
-    - couchdbinternals
-    verbs:
-    - get
-    - list
-    - watch
-  - apiGroups:
-    - eu-west-1.provider
-    resources:
-    - couchdbinternals/status
-    verbs:
-    - get
-  - apiGroups:
-    - eu-west-1.provider
-    resources:
     - couchdbs
     verbs:
     - get
     - list
     - watch
-  - apiGroups:
-    - eu-west-1.provider
-    resources:
-    - couchdbs/status
-    verbs:
-    - get
