@@ -58,9 +58,9 @@ func TestAttachSpinnerTo(t *testing.T) {
 			out := b.String()
 			assert.Contains(t, msg, out, "the output should contain the initial message")
 			if !tt.wantErr {
-				assert.Contains(t, Succeed, out, fmt.Sprintf("the output should contain %s", Succeed))
+				assert.Contains(t, succeed, out, fmt.Sprintf("the output should contain %s", succeed))
 			} else {
-				assert.Contains(t, Failed, out, fmt.Sprintf("the output should contain %s", Failed))
+				assert.Contains(t, failed, out, fmt.Sprintf("the output should contain %s", failed))
 			}
 		})
 	}

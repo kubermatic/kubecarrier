@@ -25,8 +25,8 @@ import (
 )
 
 const (
-	Succeed = "✔ "
-	Failed  = "✖ "
+	succeed = "✔ "
+	failed  = "✖ "
 )
 
 // AttachSpinnerTo attaches a spinner to a function with the message given.
@@ -41,9 +41,9 @@ func AttachSpinnerTo(spinner *wow.Wow, startTime time.Time, msg string, f func()
 	spinner.Text(fmt.Sprintf(" %s...", msg))
 	spinner.Start()
 	if err := f(); err != nil {
-		spinner.PersistWith(spin.Spinner{Frames: []string{fmt.Sprintf("%4.2fs %s ", float64(time.Since(startTime))/float64(time.Second), Failed)}}, msg)
+		spinner.PersistWith(spin.Spinner{Frames: []string{fmt.Sprintf("%4.2fs %s ", float64(time.Since(startTime))/float64(time.Second), failed)}}, msg)
 		return err
 	}
-	spinner.PersistWith(spin.Spinner{Frames: []string{fmt.Sprintf("%4.2fs %s ", float64(time.Since(startTime))/float64(time.Second), Succeed)}}, msg)
+	spinner.PersistWith(spin.Spinner{Frames: []string{fmt.Sprintf("%4.2fs %s ", float64(time.Since(startTime))/float64(time.Second), succeed)}}, msg)
 	return nil
 }
