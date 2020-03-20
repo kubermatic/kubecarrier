@@ -207,7 +207,7 @@ func TestCatalogEntryReconciler(t *testing.T) {
 				Status: catalogv1alpha1.ConditionTrue,
 			},
 		}
-		derivedCustomResource.Status.DerivedCR = &catalogv1alpha1.DerivedCustomResourceReference{
+		derivedCustomResource.Status.DerivedCR = &catalogv1alpha1.ObjectReference{
 			Name: derivedCRD.Name,
 		}
 		require.NoError(t, client.Status().Update(ctx, derivedCustomResource))

@@ -186,6 +186,28 @@ func (r *DerivedCustomResourceReconciler) Reconcile(req ctrl.Request) (ctrl.Resu
 	derivedCR.Spec.Names = names
 	owner.SetOwnerReference(dcr, derivedCR, r.Scheme)
 
+	// the future created derived CRD name is written to this object
+	// before the CRD is created. This is due to derivedCustromResouce webhook.
+	//
+	// The deletion wehhook checks if the CRD is created. If not the deletion is allowed.
+	// If the derived CRD name would be written after its creation the following error
+	// scenario is feasable:
+	// * user creates derivedCustromResource
+	// * the CRD is created
+	// * the user created CRD instances
+	// * the user deleted derivedCustromResource
+	// * the webhook doesn't stop it since it assume the derived CRD hasn't been created
+	// ( empty .Status.DerivedCR )
+	// * and only then the .Status.DerivedCR is written
+	if dcr.Status.DerivedCR == nil {
+		dcr.Status.DerivedCR = &catalogv1alpha1.ObjectReference{
+			Name: derivedCR.Name,
+		}
+		if err := r.Status().Update(ctx, dcr); err != nil {
+			return ctrl.Result{}, fmt.Errorf("updating derivedCR CRD name status: %w", err)
+		}
+	}
+
 	if err = r.applyExposeConfig(dcr, derivedCR); err != nil {
 		return result, fmt.Errorf("apply expose config: %w", err)
 	}
@@ -210,13 +232,6 @@ func (r *DerivedCustomResourceReconciler) Reconcile(req ctrl.Request) (ctrl.Resu
 		return result, nil
 	}
 
-	dcr.Status.DerivedCR = &catalogv1alpha1.DerivedCustomResourceReference{
-		Name:     currentDerivedCR.Name,
-		Group:    currentDerivedCR.Spec.Group,
-		Kind:     currentDerivedCR.Status.AcceptedNames.Kind,
-		Plural:   currentDerivedCR.Status.AcceptedNames.Plural,
-		Singular: currentDerivedCR.Status.AcceptedNames.Singular,
-	}
 	if err = r.updateStatus(ctx, dcr, catalogv1alpha1.DerivedCustomResourceCondition{
 		Type:    catalogv1alpha1.DerivedCustomResourceEstablished,
 		Status:  catalogv1alpha1.ConditionTrue,
