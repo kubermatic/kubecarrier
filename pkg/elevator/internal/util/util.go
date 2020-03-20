@@ -22,16 +22,11 @@ import (
 
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/structured-merge-diff/v3/typed"
 	"sigs.k8s.io/yaml"
 
 	catalogv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/catalog/v1alpha1"
-)
-
-var (
-	FieldOwner = client.FieldOwner("elevator-tenantobj-controller")
 )
 
 func SplitStatusFields(fields []catalogv1alpha1.FieldPath) (
@@ -86,7 +81,7 @@ func VersionExposeConfigForVersion(
 	return catalogv1alpha1.VersionExposeConfig{}, false
 }
 
-func FormPatch(patchField *runtime.RawExtension) (patch interface{}, err error) {
+func FormPatch(patchField *runtime.RawExtension) (patch map[string]interface{}, err error) {
 	if patchField != nil {
 		patch = make(map[string]interface{})
 		if err := yaml.Unmarshal(patchField.Raw, &patch); err != nil {
