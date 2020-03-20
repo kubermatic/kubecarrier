@@ -6,6 +6,10 @@
       controller-gen.kubebuilder.io/version: v0.2.8
     creationTimestamp: null
     labels:
+      app.kubernetes.io/instance: kubecarrier-test
+      app.kubernetes.io/managed-by: kubecarrier-operator
+      app.kubernetes.io/name: kubecarrier-controller-manager
+      app.kubernetes.io/version: was not build properly
       kubecarrier.io/role: manager
     name: accounts.catalog.kubecarrier.io
   spec:
@@ -206,6 +210,10 @@
       controller-gen.kubebuilder.io/version: v0.2.8
     creationTimestamp: null
     labels:
+      app.kubernetes.io/instance: kubecarrier-test
+      app.kubernetes.io/managed-by: kubecarrier-operator
+      app.kubernetes.io/name: kubecarrier-controller-manager
+      app.kubernetes.io/version: was not build properly
       kubecarrier.io/role: manager
     name: catalogentries.catalog.kubecarrier.io
   spec:
@@ -507,6 +515,10 @@
       controller-gen.kubebuilder.io/version: v0.2.8
     creationTimestamp: null
     labels:
+      app.kubernetes.io/instance: kubecarrier-test
+      app.kubernetes.io/managed-by: kubecarrier-operator
+      app.kubernetes.io/name: kubecarrier-controller-manager
+      app.kubernetes.io/version: was not build properly
       kubecarrier.io/role: manager
     name: catalogentrysets.catalog.kubecarrier.io
   spec:
@@ -775,6 +787,10 @@
       controller-gen.kubebuilder.io/version: v0.2.8
     creationTimestamp: null
     labels:
+      app.kubernetes.io/instance: kubecarrier-test
+      app.kubernetes.io/managed-by: kubecarrier-operator
+      app.kubernetes.io/name: kubecarrier-controller-manager
+      app.kubernetes.io/version: was not build properly
       kubecarrier.io/role: manager
     name: catalogs.catalog.kubecarrier.io
   spec:
@@ -1012,6 +1028,10 @@
       controller-gen.kubebuilder.io/version: v0.2.8
     creationTimestamp: null
     labels:
+      app.kubernetes.io/instance: kubecarrier-test
+      app.kubernetes.io/managed-by: kubecarrier-operator
+      app.kubernetes.io/name: kubecarrier-controller-manager
+      app.kubernetes.io/version: was not build properly
       kubecarrier.io/role: manager
     name: derivedcustomresources.catalog.kubecarrier.io
   spec:
@@ -1193,6 +1213,10 @@
       controller-gen.kubebuilder.io/version: v0.2.8
     creationTimestamp: null
     labels:
+      app.kubernetes.io/instance: kubecarrier-test
+      app.kubernetes.io/managed-by: kubecarrier-operator
+      app.kubernetes.io/name: kubecarrier-controller-manager
+      app.kubernetes.io/version: was not build properly
       kubecarrier.io/role: manager
     name: offerings.catalog.kubecarrier.io
   spec:
@@ -1338,6 +1362,10 @@
       controller-gen.kubebuilder.io/version: v0.2.8
     creationTimestamp: null
     labels:
+      app.kubernetes.io/instance: kubecarrier-test
+      app.kubernetes.io/managed-by: kubecarrier-operator
+      app.kubernetes.io/name: kubecarrier-controller-manager
+      app.kubernetes.io/version: was not build properly
       kubecarrier.io/role: manager
     name: providers.catalog.kubecarrier.io
   spec:
@@ -1419,6 +1447,10 @@
       controller-gen.kubebuilder.io/version: v0.2.8
     creationTimestamp: null
     labels:
+      app.kubernetes.io/instance: kubecarrier-test
+      app.kubernetes.io/managed-by: kubecarrier-operator
+      app.kubernetes.io/name: kubecarrier-controller-manager
+      app.kubernetes.io/version: was not build properly
       kubecarrier.io/role: manager
     name: serviceclusterreferences.catalog.kubecarrier.io
   spec:
@@ -1513,6 +1545,10 @@
       controller-gen.kubebuilder.io/version: v0.2.8
     creationTimestamp: null
     labels:
+      app.kubernetes.io/instance: kubecarrier-test
+      app.kubernetes.io/managed-by: kubecarrier-operator
+      app.kubernetes.io/name: kubecarrier-controller-manager
+      app.kubernetes.io/version: was not build properly
       kubecarrier.io/role: manager
     name: tenants.catalog.kubecarrier.io
   spec:
@@ -1574,6 +1610,10 @@
       controller-gen.kubebuilder.io/version: v0.2.8
     creationTimestamp: null
     labels:
+      app.kubernetes.io/instance: kubecarrier-test
+      app.kubernetes.io/managed-by: kubecarrier-operator
+      app.kubernetes.io/name: kubecarrier-controller-manager
+      app.kubernetes.io/version: was not build properly
       kubecarrier.io/role: manager
     name: customresourcediscoveries.kubecarrier.io
   spec:
@@ -1754,6 +1794,10 @@
       controller-gen.kubebuilder.io/version: v0.2.8
     creationTimestamp: null
     labels:
+      app.kubernetes.io/instance: kubecarrier-test
+      app.kubernetes.io/managed-by: kubecarrier-operator
+      app.kubernetes.io/name: kubecarrier-controller-manager
+      app.kubernetes.io/version: was not build properly
       kubecarrier.io/role: manager
     name: customresourcediscoverysets.kubecarrier.io
   spec:
@@ -1979,6 +2023,10 @@
       controller-gen.kubebuilder.io/version: v0.2.8
     creationTimestamp: null
     labels:
+      app.kubernetes.io/instance: kubecarrier-test
+      app.kubernetes.io/managed-by: kubecarrier-operator
+      app.kubernetes.io/name: kubecarrier-controller-manager
+      app.kubernetes.io/version: was not build properly
       kubecarrier.io/role: manager
     name: serviceclusterassignments.kubecarrier.io
   spec:
@@ -2128,6 +2176,10 @@
       controller-gen.kubebuilder.io/version: v0.2.8
     creationTimestamp: null
     labels:
+      app.kubernetes.io/instance: kubecarrier-test
+      app.kubernetes.io/managed-by: kubecarrier-operator
+      app.kubernetes.io/name: kubecarrier-controller-manager
+      app.kubernetes.io/version: was not build properly
       kubecarrier.io/role: manager
     name: serviceclusters.kubecarrier.io
   spec:
@@ -2310,6 +2362,10 @@
   metadata:
     creationTimestamp: null
     labels:
+      app.kubernetes.io/instance: kubecarrier-test
+      app.kubernetes.io/managed-by: kubecarrier-operator
+      app.kubernetes.io/name: kubecarrier-controller-manager
+      app.kubernetes.io/version: was not build properly
       kubecarrier.io/manager: "true"
       kubecarrier.io/role: manager
     name: kubecarrier-manager-manager-role
@@ -2633,6 +2689,10 @@
   metadata:
     creationTimestamp: null
     labels:
+      app.kubernetes.io/instance: kubecarrier-test
+      app.kubernetes.io/managed-by: kubecarrier-operator
+      app.kubernetes.io/name: kubecarrier-controller-manager
+      app.kubernetes.io/version: was not build properly
       kubecarrier.io/role: manager
     name: kubecarrier-manager-agg-manager-role
   rules: []
@@ -2640,6 +2700,10 @@
   kind: ServiceAccount
   metadata:
     labels:
+      app.kubernetes.io/instance: kubecarrier-test
+      app.kubernetes.io/managed-by: kubecarrier-operator
+      app.kubernetes.io/name: kubecarrier-controller-manager
+      app.kubernetes.io/version: was not build properly
       kubecarrier.io/role: manager
     name: kubecarrier-manager-sa
     namespace: test3000
@@ -2647,6 +2711,10 @@
   kind: ClusterRoleBinding
   metadata:
     labels:
+      app.kubernetes.io/instance: kubecarrier-test
+      app.kubernetes.io/managed-by: kubecarrier-operator
+      app.kubernetes.io/name: kubecarrier-controller-manager
+      app.kubernetes.io/version: was not build properly
       kubecarrier.io/role: manager
     name: kubecarrier-manager-manager-rolebinding
   roleRef:
@@ -2661,6 +2729,10 @@
   kind: Role
   metadata:
     labels:
+      app.kubernetes.io/instance: kubecarrier-test
+      app.kubernetes.io/managed-by: kubecarrier-operator
+      app.kubernetes.io/name: kubecarrier-controller-manager
+      app.kubernetes.io/version: was not build properly
       kubecarrier.io/role: manager
     name: kubecarrier-manager-leader-election-role
     namespace: test3000
@@ -2695,6 +2767,10 @@
   kind: RoleBinding
   metadata:
     labels:
+      app.kubernetes.io/instance: kubecarrier-test
+      app.kubernetes.io/managed-by: kubecarrier-operator
+      app.kubernetes.io/name: kubecarrier-controller-manager
+      app.kubernetes.io/version: was not build properly
       kubecarrier.io/role: manager
     name: kubecarrier-manager-leader-election-rolebinding
     namespace: test3000
@@ -2710,6 +2786,10 @@
   kind: Deployment
   metadata:
     labels:
+      app.kubernetes.io/instance: kubecarrier-test
+      app.kubernetes.io/managed-by: kubecarrier-operator
+      app.kubernetes.io/name: kubecarrier-controller-manager
+      app.kubernetes.io/version: was not build properly
       control-plane: controller-manager
       kubecarrier.io/role: manager
     name: kubecarrier-manager-controller-manager
@@ -2778,6 +2858,10 @@
       cert-manager.io/inject-ca-from: test3000/kubecarrier-manager-serving-cert
     creationTimestamp: null
     labels:
+      app.kubernetes.io/instance: kubecarrier-test
+      app.kubernetes.io/managed-by: kubecarrier-operator
+      app.kubernetes.io/name: kubecarrier-controller-manager
+      app.kubernetes.io/version: was not build properly
       kubecarrier.io/role: manager
     name: kubecarrier-manager-validating-webhook-configuration
   webhooks:
@@ -2959,6 +3043,10 @@
   kind: Service
   metadata:
     labels:
+      app.kubernetes.io/instance: kubecarrier-test
+      app.kubernetes.io/managed-by: kubecarrier-operator
+      app.kubernetes.io/name: kubecarrier-controller-manager
+      app.kubernetes.io/version: was not build properly
       kubecarrier.io/role: manager
     name: kubecarrier-manager-webhook-service
     namespace: test3000
@@ -2973,6 +3061,10 @@
   kind: Issuer
   metadata:
     labels:
+      app.kubernetes.io/instance: kubecarrier-test
+      app.kubernetes.io/managed-by: kubecarrier-operator
+      app.kubernetes.io/name: kubecarrier-controller-manager
+      app.kubernetes.io/version: was not build properly
       kubecarrier.io/role: manager
     name: kubecarrier-manager-selfsigned-issuer
     namespace: test3000
@@ -2982,6 +3074,10 @@
   kind: Certificate
   metadata:
     labels:
+      app.kubernetes.io/instance: kubecarrier-test
+      app.kubernetes.io/managed-by: kubecarrier-operator
+      app.kubernetes.io/name: kubecarrier-controller-manager
+      app.kubernetes.io/version: was not build properly
       kubecarrier.io/role: manager
     name: kubecarrier-manager-serving-cert
     namespace: test3000
