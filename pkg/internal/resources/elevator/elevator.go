@@ -186,7 +186,7 @@ func Manifests(c Config) ([]unstructured.Unstructured, error) {
 		return nil, fmt.Errorf("writing /rbac/cluster_role.yaml: %w", err)
 	}
 
-	rootManagerrole := rbacv1.ClusterRole{
+	rootManagerRole := rbacv1.ClusterRole{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: "rbac.authorization.k8s.io/v1",
 			Kind:       "ClusterRole",
@@ -220,7 +220,7 @@ func Manifests(c Config) ([]unstructured.Unstructured, error) {
 			},
 		},
 	}
-	roleBytes, err = yaml.Marshal(rootManagerrole)
+	roleBytes, err = yaml.Marshal(rootManagerRole)
 	if err != nil {
 		return nil, fmt.Errorf("marshalling root manager cluster role: %w", err)
 	}
