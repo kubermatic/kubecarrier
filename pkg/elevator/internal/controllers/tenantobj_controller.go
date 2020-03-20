@@ -86,7 +86,7 @@ func (r *TenantObjReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 		return ctrl.Result{}, fmt.Errorf("build provider Obj: %w", err)
 	}
 	// Reconcile TenantCRD
-	if err := r.reconcileTenantObj(ctx, tenantObj, providerObj, nonStatusFields, statusFields); err != nil {
+	if err := r.reconcileTenantObj(ctx, tenantObj, providerObj, statusFields); err != nil {
 		return result, fmt.Errorf("reconciling %s: %w", r.ProviderGVK.Kind, err)
 	}
 
@@ -102,12 +102,27 @@ func (r *TenantObjReconciler) SetupWithManager(mgr ctrl.Manager) error {
 
 func (r *TenantObjReconciler) reconcileTenantObj(
 	ctx context.Context, tenantObj, providerObj *unstructured.Unstructured,
-	nonStatusFields, statusFields []catalogv1alpha1.FieldPath,
+	statusFields []catalogv1alpha1.FieldPath,
 ) error {
+	// this is a workaround until apply patch bugs are fixed and merged into k8s
+	// https://github.com/kubernetes/kubernetes/issues/88901
+	wantedProviderObj := providerObj.DeepCopy()
 	if _, err := controllerutil.CreateOrUpdate(ctx, r.Client, providerObj, func() error {
-		return elevatorutil.CopyFields(tenantObj, providerObj, nonStatusFields)
+		// copy all non status/metadata object
+		for k := range wantedProviderObj.Object {
+			if k != "status" && k != "metadata" {
+				providerObj.Object[k] = wantedProviderObj.Object[k]
+			}
+		}
+		// delete unwanted keys
+		for k := range providerObj.Object {
+			if _, present := wantedProviderObj.Object[k]; !present {
+				delete(providerObj.Object, k)
+			}
+		}
+		return nil
 	}); err != nil {
-		return err
+		return fmt.Errorf("create or update: %w", err)
 	}
 	// Sync status from provider to tenant instance
 	if err := elevatorutil.CopyFields(providerObj, tenantObj, statusFields); err != nil {

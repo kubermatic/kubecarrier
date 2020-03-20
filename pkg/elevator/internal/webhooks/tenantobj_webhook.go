@@ -100,20 +100,6 @@ func (r *TenantObjWebhookHandler) Handle(ctx context.Context, req admission.Requ
 	// prepare config
 	_, nonStatusExposedFields := elevatorutil.SplitStatusFields(exposeConfig.Fields)
 
-	providerObj := &unstructured.Unstructured{}
-	providerObj.SetGroupVersionKind(r.ProviderGVK)
-	providerObj.SetName(obj.GetName())
-	providerObj.SetNamespace(obj.GetNamespace())
-
-	tenantObj := obj.DeepCopy()
-	patch, err := elevatorutil.FormPatch(exposeConfig.Patch)
-	if err != nil {
-		return admission.Errored(http.StatusInternalServerError, fmt.Errorf("forming patch: %w", err))
-	}
-	if err := elevatorutil.BuildProviderObj(tenantObj, providerObj, r.Scheme, nonStatusExposedFields, patch); err != nil {
-		return admission.Errored(http.StatusInternalServerError, fmt.Errorf("build and elevate: %w", err))
-	}
-
 	// Check if the ProviderObj has already been created, if it is created, then regards this request
 	// as a UPDATE, if it is not crated, regards this request as a CREATE.
 	// Using `req.admission.Request` to determine if the request is CREATE or UPDATE was the first attempt and finally,
@@ -146,27 +132,31 @@ func (r *TenantObjWebhookHandler) Handle(ctx context.Context, req admission.Requ
 	// That's why we decided to not use the `req.Operation` but to check if the `ProviderObj` is created or not.
 	// Also, if you think about our approach, it also makes sense, i.e., if the `ProviderObj` is not there,
 	// of course it is a `CREATE` request, and it also works fine.
+
+	tenantObj := obj.DeepCopy()
+	providerObj := &unstructured.Unstructured{}
+	providerObj.SetGroupVersionKind(r.ProviderGVK)
+	patch, err := elevatorutil.FormPatch(exposeConfig.Patch)
+	if err != nil {
+		return admission.Errored(http.StatusInternalServerError, fmt.Errorf("forming patch: %w", err))
+	}
 	err = r.Get(ctx, types.NamespacedName{
-		Name:      providerObj.GetName(),
-		Namespace: providerObj.GetNamespace(),
+		Name:      tenantObj.GetName(),
+		Namespace: tenantObj.GetNamespace(),
 	}, providerObj)
 	if err != nil && !errors.IsNotFound(err) {
 		return admission.Errored(http.StatusInternalServerError, fmt.Errorf("getting providerObj: %w", err))
 	}
-
+	if err := elevatorutil.BuildProviderObj(tenantObj, providerObj, r.Scheme, nonStatusExposedFields, patch); err != nil {
+		return admission.Errored(http.StatusInternalServerError, fmt.Errorf("build and elevate: %w", err))
+	}
 	if errors.IsNotFound(err) {
 		r.Log.Info("validate create", "name", obj.GetName())
-		if err := elevatorutil.CopyFields(obj, providerObj, nonStatusExposedFields); err != nil {
-			return admission.Errored(http.StatusInternalServerError, fmt.Errorf("copy fields: %w", err))
-		}
 		if err := r.Create(ctx, providerObj, client.DryRunAll); err != nil {
 			return admission.Errored(http.StatusInternalServerError, err)
 		}
 	} else {
 		r.Log.Info("validate update", "name", obj.GetName())
-		if err := elevatorutil.CopyFields(obj, providerObj, nonStatusExposedFields); err != nil {
-			return admission.Errored(http.StatusInternalServerError, fmt.Errorf("copy fields: %w", err))
-		}
 		if err := r.Update(ctx, providerObj, client.DryRunAll); err != nil {
 			return admission.Errored(http.StatusInternalServerError, err)
 		}
