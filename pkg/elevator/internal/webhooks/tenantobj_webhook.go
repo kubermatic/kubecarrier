@@ -122,7 +122,7 @@ func (r *TenantObjWebhookHandler) Handle(ctx context.Context, req admission.Requ
 	// we use server-side-apply in both UPDATE and CREATE path since it would create an base CRD instance if it
 	// doesn't exist
 	if err := r.Patch(ctx, providerObj, client.Apply, client.DryRunAll, client.ForceOwnership, elevatorutil.FieldOwner); err != nil {
-		return admission.Errored(http.StatusInternalServerError, fmt.Errorf("%w", err))
+		return admission.Errored(http.StatusInternalServerError, fmt.Errorf("apply-patch %w", err))
 	}
 
 	newObj := obj.DeepCopy()
