@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -186,6 +187,23 @@ type: object
 			"prop1": "test1",
 			"prop2": "patch",
 		}, providerObj.Object["spec"], "provider object spec isn't properly constructed")
+
+		t.Log("updating baseCRD instance status")
+		require.NoError(t, unstructured.SetNestedField(providerObj.Object, "self-isolation", "status", "prop1"))
+		require.NoError(t, managementClient.Status().Update(ctx, providerObj))
+		providerResourceVersion := providerObj.GetResourceVersion()
+		assert.NoError(t, managementClient.WaitUntil(ctx, tenantObj, func() (done bool, err error) {
+			val, found, err := unstructured.NestedString(tenantObj.Object, "status", "prop1")
+			if err != nil {
+				return false, err
+			}
+			return found && val == "self-isolation", nil
+		}))
+		// we're sleeping for 5 seconds in case there's ping-ponging between providerObj and tenantObj updates between operators
+		time.Sleep(5 * time.Second)
+		// get the object
+		require.NoError(t, testutil.WaitUntilFound(ctx, managementClient, providerObj))
+		assert.Equal(t, providerResourceVersion, providerObj.GetResourceVersion(), "provider object modified and it should be")
 
 		err = managementClient.Delete(ctx, dcr)
 		if assert.Error(t, err,
