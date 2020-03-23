@@ -76,12 +76,12 @@ func (r *TenantObjReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	}
 
 	statusFields, nonStatusFields := elevatorutil.SplitStatusFields(exposeConfig.Fields)
-	patch, err := elevatorutil.FormPatch(exposeConfig.Patch)
+	defaults, err := elevatorutil.FormDefaults(exposeConfig.Default)
 	if err != nil {
-		return ctrl.Result{}, fmt.Errorf("patch forming: %w", err)
+		return ctrl.Result{}, fmt.Errorf("defaults forming: %w", err)
 	}
 	providerObj := r.newProviderObject()
-	err = elevatorutil.BuildProviderObj(tenantObj, providerObj, r.Scheme, nonStatusFields, patch)
+	err = elevatorutil.BuildProviderObj(tenantObj, providerObj, r.Scheme, nonStatusFields, defaults)
 	if err != nil {
 		return ctrl.Result{}, fmt.Errorf("build provider Obj: %w", err)
 	}

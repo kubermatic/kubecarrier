@@ -85,7 +85,7 @@ func newDerivedCR(
 							{JSONPath: ".status.observedGeneration"},
 							{JSONPath: ".status.prop1"},
 						},
-						Patch: &runtime.RawExtension{Raw: []byte(`{"spec": {"prop2": "patch"}}`)},
+						Default: &runtime.RawExtension{Raw: []byte(`{"spec": {"prop2": "patch"}}`)},
 					},
 				},
 			},

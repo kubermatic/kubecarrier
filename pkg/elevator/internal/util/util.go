@@ -81,17 +81,17 @@ func VersionExposeConfigForVersion(
 	return catalogv1alpha1.VersionExposeConfig{}, false
 }
 
-func FormPatch(patchField *runtime.RawExtension) (patch map[string]interface{}, err error) {
-	if patchField != nil {
-		patch = make(map[string]interface{})
-		if err := yaml.Unmarshal(patchField.Raw, &patch); err != nil {
-			return nil, fmt.Errorf("patch isn")
+func FormDefaults(defaultField *runtime.RawExtension) (defaults map[string]interface{}, err error) {
+	if defaultField != nil {
+		defaults = make(map[string]interface{})
+		if err := yaml.Unmarshal(defaultField.Raw, &defaults); err != nil {
+			return nil, fmt.Errorf("defaults yaml marshalling: %w", err)
 		}
 	}
 	return
 }
 
-func BuildProviderObj(tenantObj *unstructured.Unstructured, providerObj *unstructured.Unstructured, scheme *runtime.Scheme, elevateFields []catalogv1alpha1.FieldPath, patch interface{}) error {
+func BuildProviderObj(tenantObj *unstructured.Unstructured, providerObj *unstructured.Unstructured, scheme *runtime.Scheme, elevateFields []catalogv1alpha1.FieldPath, defaults interface{}) error {
 	providerObj.SetName(tenantObj.GetName())
 	providerObj.SetNamespace(tenantObj.GetNamespace())
 
@@ -109,16 +109,16 @@ func BuildProviderObj(tenantObj *unstructured.Unstructured, providerObj *unstruc
 		return fmt.Errorf("copy fields: %w", err)
 	}
 
-	if patch != nil {
-		lhs, err := typed.DeducedParseableType.FromUnstructured(providerObj.Object)
+	if defaults != nil {
+		patch, err := typed.DeducedParseableType.FromUnstructured(providerObj.Object)
 		if err != nil {
-			return fmt.Errorf("cannot convert to patch: %w", err)
+			return fmt.Errorf("cannot convert to defaults: %w", err)
 		}
-		patch, err := typed.DeducedParseableType.FromUnstructured(patch)
+		defaultsObj, err := typed.DeducedParseableType.FromUnstructured(defaults)
 		if err != nil {
-			return fmt.Errorf("cannot convert to patch: %w", err)
+			return fmt.Errorf("cannot convert to defaults: %w", err)
 		}
-		val, err := lhs.Merge(patch)
+		val, err := defaultsObj.Merge(patch)
 		if err != nil {
 			return err
 		}

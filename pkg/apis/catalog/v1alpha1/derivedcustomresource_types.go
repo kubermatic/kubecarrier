@@ -42,11 +42,10 @@ type VersionExposeConfig struct {
 	// +kubebuilder:validation:MinItems=1
 	Fields []FieldPath `json:"fields"`
 
-	// Patch which will be applied for every derived CRD instance before
-	// created the base CRD instance. The workflow is as following:
-	// first exposed derivedCR fields are applied, then the patch
+	// Default values for the baseCRD object instance. The derived CR object definitions shall be
+	// applied on top defaults with the same mechanics as kubernetes MergePatch operation.
 	// +kubebuilder:pruning:PreserveUnknownFields
-	Patch *runtime.RawExtension `json:"patch,omitempty"`
+	Default *runtime.RawExtension `json:"default,omitempty"`
 }
 
 // FieldPath is specifying how to address a certain field.

@@ -79,7 +79,7 @@ func Manifests(c Config) ([]unstructured.Unstructured, error) {
 		Kind:    c.TenantKind,
 	})
 
-	// Patch environment
+	// Default environment
 	// Note:
 	// we are not using *appsv1.Deployment here,
 	// because some fields will be defaulted to empty and

@@ -1143,8 +1143,8 @@ func (in *VersionExposeConfig) DeepCopyInto(out *VersionExposeConfig) {
 		*out = make([]FieldPath, len(*in))
 		copy(*out, *in)
 	}
-	if in.Patch != nil {
-		in, out := &in.Patch, &out.Patch
+	if in.Default != nil {
+		in, out := &in.Default, &out.Default
 		*out = new(runtime.RawExtension)
 		(*in).DeepCopyInto(*out)
 	}

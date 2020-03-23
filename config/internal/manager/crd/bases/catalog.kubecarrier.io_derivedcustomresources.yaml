@@ -67,6 +67,13 @@ spec:
                   description: VersionExposeConfig specifies which fields to expose
                     in the derived CRD.
                   properties:
+                    default:
+                      description: Default values for the baseCRD object instance.
+                        The derived CR object definitions shall be applied on top
+                        defaults with the same mechanics as kubernetes MergePatch
+                        operation.
+                      type: object
+                      x-kubernetes-preserve-unknown-fields: true
                     fields:
                       description: specifies the fields that should be present in
                         the derived CRD.
@@ -82,13 +89,6 @@ spec:
                         type: object
                       minItems: 1
                       type: array
-                    patch:
-                      description: 'Patch which will be applied for every derived
-                        CRD instance before created the base CRD instance. The workflow
-                        is as following: first exposed derivedCR fields are applied,
-                        then the patch'
-                      type: object
-                      x-kubernetes-preserve-unknown-fields: true
                     versions:
                       description: specifies the versions of the referenced CRD, that
                         this expose config applies to. The same version may not be

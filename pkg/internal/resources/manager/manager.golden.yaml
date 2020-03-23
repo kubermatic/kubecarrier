@@ -297,6 +297,13 @@
                         description: VersionExposeConfig specifies which fields to
                           expose in the derived CRD.
                         properties:
+                          default:
+                            description: Default values for the baseCRD object instance.
+                              The derived CR object definitions shall be applied on
+                              top defaults with the same mechanics as kubernetes MergePatch
+                              operation.
+                            type: object
+                            x-kubernetes-preserve-unknown-fields: true
                           fields:
                             description: specifies the fields that should be present
                               in the derived CRD.
@@ -582,6 +589,13 @@
                         description: VersionExposeConfig specifies which fields to
                           expose in the derived CRD.
                         properties:
+                          default:
+                            description: Default values for the baseCRD object instance.
+                              The derived CR object definitions shall be applied on
+                              top defaults with the same mechanics as kubernetes MergePatch
+                              operation.
+                            type: object
+                            x-kubernetes-preserve-unknown-fields: true
                           fields:
                             description: specifies the fields that should be present
                               in the derived CRD.
@@ -1096,6 +1110,13 @@
                     description: VersionExposeConfig specifies which fields to expose
                       in the derived CRD.
                     properties:
+                      default:
+                        description: Default values for the baseCRD object instance.
+                          The derived CR object definitions shall be applied on top
+                          defaults with the same mechanics as kubernetes MergePatch
+                          operation.
+                        type: object
+                        x-kubernetes-preserve-unknown-fields: true
                       fields:
                         description: specifies the fields that should be present in
                           the derived CRD.

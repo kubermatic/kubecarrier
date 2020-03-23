@@ -136,9 +136,9 @@ func (r *TenantObjWebhookHandler) Handle(ctx context.Context, req admission.Requ
 	tenantObj := obj.DeepCopy()
 	providerObj := &unstructured.Unstructured{}
 	providerObj.SetGroupVersionKind(r.ProviderGVK)
-	patch, err := elevatorutil.FormPatch(exposeConfig.Patch)
+	defaults, err := elevatorutil.FormDefaults(exposeConfig.Default)
 	if err != nil {
-		return admission.Errored(http.StatusInternalServerError, fmt.Errorf("forming patch: %w", err))
+		return admission.Errored(http.StatusInternalServerError, fmt.Errorf("forming defaults: %w", err))
 	}
 	err = r.Get(ctx, types.NamespacedName{
 		Name:      tenantObj.GetName(),
@@ -147,7 +147,7 @@ func (r *TenantObjWebhookHandler) Handle(ctx context.Context, req admission.Requ
 	if err != nil && !errors.IsNotFound(err) {
 		return admission.Errored(http.StatusInternalServerError, fmt.Errorf("getting providerObj: %w", err))
 	}
-	if err := elevatorutil.BuildProviderObj(tenantObj, providerObj, r.Scheme, nonStatusExposedFields, patch); err != nil {
+	if err := elevatorutil.BuildProviderObj(tenantObj, providerObj, r.Scheme, nonStatusExposedFields, defaults); err != nil {
 		return admission.Errored(http.StatusInternalServerError, fmt.Errorf("build and elevate: %w", err))
 	}
 	if errors.IsNotFound(err) {
@@ -172,7 +172,7 @@ func (r *TenantObjWebhookHandler) Handle(ctx context.Context, req admission.Requ
 	if err != nil {
 		return admission.Errored(http.StatusInternalServerError, err)
 	}
-	// Create the patch
+	// Create the defaults
 	return admission.PatchResponseFromRaw(req.Object.Raw, marshalledObj)
 }
 

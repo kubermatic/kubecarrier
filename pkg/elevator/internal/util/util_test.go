@@ -163,7 +163,7 @@ func TestPatch(t *testing.T) {
 	}}
 
 	specFields := []catalogv1alpha1.FieldPath{{JSONPath: ".spec.test1"}}
-	patch := map[string]interface{}{
+	defaults := map[string]interface{}{
 		"spec": map[string]interface{}{
 			"test2": "test2",
 		},
@@ -173,7 +173,7 @@ func TestPatch(t *testing.T) {
 		"kind":       "CouchDBInternal",
 	}}
 
-	require.NoError(t, BuildProviderObj(tenantObj, providerObj, testScheme, specFields, patch))
+	require.NoError(t, BuildProviderObj(tenantObj, providerObj, testScheme, specFields, defaults))
 
 	wantedProviderObj := &unstructured.Unstructured{Object: map[string]interface{}{
 		"apiVersion": "eu-west-1.provider/v1alpha1",
