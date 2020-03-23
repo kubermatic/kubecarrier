@@ -162,7 +162,7 @@ func newServiceClusterSuite(
 		// Check the CustomResourceDiscovery object
 		customResourceDiscovery := &corev1alpha1.CustomResourceDiscovery{}
 		require.NoError(t, managementClient.Get(ctx, types.NamespacedName{
-			Name:      crDiscoverySet.Name + serviceCluster.Name,
+			Name:      crDiscoverySet.Name + "." + serviceCluster.Name,
 			Namespace: catalogEntrySet.Namespace,
 		}, customResourceDiscovery), "getting CustomResourceDiscovery")
 
