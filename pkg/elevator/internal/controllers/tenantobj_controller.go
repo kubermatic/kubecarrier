@@ -85,7 +85,6 @@ func (r *TenantObjReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	if err != nil {
 		return ctrl.Result{}, fmt.Errorf("build provider Obj: %w", err)
 	}
-	// Reconcile TenantCRD
 	if err := r.reconcileTenantObj(ctx, tenantObj, providerObj, statusFields); err != nil {
 		return result, fmt.Errorf("reconciling %s: %w", r.ProviderGVK.Kind, err)
 	}
@@ -107,6 +106,8 @@ func (r *TenantObjReconciler) reconcileTenantObj(
 	// this is a workaround until apply patch bugs is merged into k8s releases
 	// https://github.com/kubernetes/kubernetes/issues/88901
 	// we'd use server-side-apply instead
+	// there are many subtle bugs possible with this implementation. apply patch is cleaner solution
+	// furthermore real API server & fakeclient discrepancies make the testing harder
 	wantedProviderObj := providerObj.DeepCopy()
 	if _, err := controllerutil.CreateOrUpdate(ctx, r.Client, providerObj, func() error {
 		// copy all non status/metadata object
@@ -115,9 +116,14 @@ func (r *TenantObjReconciler) reconcileTenantObj(
 				providerObj.Object[k] = wantedProviderObj.Object[k]
 			}
 		}
+
+		providerObj.SetOwnerReferences(wantedProviderObj.GetOwnerReferences())
+		providerObj.SetLabels(wantedProviderObj.GetLabels())
+		providerObj.SetAnnotations(wantedProviderObj.GetAnnotations())
+
 		// delete unwanted keys
 		for k := range providerObj.Object {
-			if _, present := wantedProviderObj.Object[k]; !present {
+			if _, present := wantedProviderObj.Object[k]; !present && k != "status" {
 				delete(providerObj.Object, k)
 			}
 		}

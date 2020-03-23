@@ -187,6 +187,16 @@ type: object
 			"prop1": "test1",
 			"prop2": "patch",
 		}, providerObj.Object["spec"], "provider object spec isn't properly constructed")
+		tt := true
+		assert.Equal(t, []metav1.OwnerReference{{
+			APIVersion:         tenantObj.GetAPIVersion(),
+			Kind:               tenantObj.GetKind(),
+			Name:               tenantObj.GetName(),
+			UID:                tenantObj.GetUID(),
+			Controller:         &tt,
+			BlockOwnerDeletion: &tt,
+		}}, providerObj.GetOwnerReferences(), "baseCRD object proper owner reference")
+		// we're sleeping for 5 seconds in case there's ping-ponging between providerObj and tenantObj updates between operators
 
 		t.Log("updating baseCRD instance status")
 		require.NoError(t, unstructured.SetNestedField(providerObj.Object, "self-isolation", "status", "prop1"))
@@ -199,7 +209,6 @@ type: object
 			}
 			return found && val == "self-isolation", nil
 		}))
-		// we're sleeping for 5 seconds in case there's ping-ponging between providerObj and tenantObj updates between operators
 		time.Sleep(5 * time.Second)
 		// get the object
 		require.NoError(t, testutil.WaitUntilFound(ctx, managementClient, providerObj))
