@@ -112,7 +112,7 @@ func (r *TenantObjReconciler) reconcileTenantObj(
 	if _, err := controllerutil.CreateOrUpdate(ctx, r.Client, providerObj, func() error {
 		// copy all non status/metadata object
 		for k := range wantedProviderObj.Object {
-			if k != "status" && k != "metadata" {
+			if k != "metadata" {
 				providerObj.Object[k] = wantedProviderObj.Object[k]
 			}
 		}
