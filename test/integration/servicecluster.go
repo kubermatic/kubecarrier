@@ -148,7 +148,7 @@ func newServiceClusterSuite(
 			},
 		}
 		require.NoError(t, managementClient.Create(ctx, catalogEntrySet))
-		require.NoError(t, testutil.WaitUntilReady(ctx, managementClient, catalogEntrySet))
+		require.NoError(t, testutil.WaitUntilReady(ctx, managementClient, catalogEntrySet), testutil.WithTimeout(time.Minute))
 		t.Log("CatalogEntrySet successfully created")
 
 		// Check the CustomResourceDiscoverySet
