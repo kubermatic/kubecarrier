@@ -50,13 +50,13 @@ var _ admission.Handler = (*CustomResourceDiscoveryWebhookHandler)(nil)
 
 // Handle is the function to handle update/delete requests of CustomResourceDiscovery objects.
 func (r *CustomResourceDiscoveryWebhookHandler) Handle(ctx context.Context, req admission.Request) admission.Response {
-	obj := &corev1alpha1.CustomResourceDiscovery{}
-	if err := r.decoder.Decode(req, obj); err != nil {
-		return admission.Errored(http.StatusBadRequest, err)
-	}
-
 	switch req.Operation {
 	case adminv1beta1.Update:
+		obj := &corev1alpha1.CustomResourceDiscovery{}
+		if err := r.decoder.Decode(req, obj); err != nil {
+			return admission.Errored(http.StatusBadRequest, err)
+		}
+
 		oldObj := &corev1alpha1.CustomResourceDiscovery{}
 		if err := r.decoder.DecodeRaw(req.OldObject, oldObj); err != nil {
 			return admission.Errored(http.StatusBadRequest, err)
