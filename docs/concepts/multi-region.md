@@ -1,4 +1,45 @@
-# KubeCarrier - Multi Region API
+# KubeCarrier API and multi region support
+
+## API
+
+KubeCarrier is meant as a central component in the IT stack of a company.
+
+To drive integration with other tools, KubeCarrier needs to expose an API that can be used to drive CLIs, Client-Side Operators, Service Catalog Adapters, UIs and more.
+
+### Goals
+
+- Allows external tools to interact with and extend KubeCarrier
+- Common interface for tooling
+
+### Requirements
+
+- MUST not require to expose the kube-apiserver on public networks
+- MUST be a declarative API, modeled closely on [Kubernetes API conventions](https://github.com/kubernetes/community/blob/master/contributors/devel/sig-architecture/api-conventions.md).
+- MUST expose watch APIs for caching and wait routines
+- clients MUST be made available for common languages
+- MUST be versioned
+- MUST use user impersonation to retain user context
+- MUST allow for Service/Robot Accounts
+- SHOULD integrate with Kubernetes facilities where possible
+  - RBAC, Audit-logging, metric reporting, etc
+
+### TBD
+
+- Compatibility with Web/HTTP Proxies (Protocol Support)
+
+## Multi Region
+
+A main goal of KubeCarrier is the central management of applications/services across Kubernetes Clusters.
+These Kubernetes Clusters may run on prem, in the cloud, on the edge and across the globe.
+
+To enable KubeCarrier to work in globally distributed and network separated environments and to deal with growth of the system. The KubeCarrier controllers may be distributed across multiple Management clusters.
+
+### Goals
+
+- Enable management clusters (and their Service Clusters) behind firewalls
+- Lower latency/Internet data transfer
+- Shard load across multiple management clusters
+- Enable "availability zones" for KubeCarrier
 
 ## Concepts
 
@@ -126,8 +167,6 @@ The Master Controller Manager checks registered `Peer` objects, coordinates `Reg
 
 The KubeCarrier API will be the main integration point for external tooling to interact with KubeCarrier.
 This contains the CLI, Client-Side Operators, Service Catalog Adapters and UIs.
-
-As the central interface to KubeCarrier, it should hide or abstract complexity as much as possible, making it easy to create integrations on top of it.
 
 Features:
 - routes/aggregates requests to/from `Peers`
