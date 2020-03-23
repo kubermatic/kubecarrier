@@ -104,9 +104,6 @@ func (r *CustomResourceDiscoveryReconciler) Reconcile(req ctrl.Request) (ctrl.Re
 		return result, nil
 	}
 
-	crDiscovery.Status.ManagementClusterCRD = &corev1alpha1.ObjectReference{
-		Name: currentCRD.Name,
-	}
 	if err = r.updateStatus(ctx, crDiscovery, corev1alpha1.CustomResourceDiscoveryCondition{
 		Type:    corev1alpha1.CustomResourceDiscoveryEstablished,
 		Status:  corev1alpha1.ConditionTrue,
@@ -177,6 +174,26 @@ func (r *CustomResourceDiscoveryReconciler) reconcileCRD(
 		Status: apiextensionsv1.CustomResourceDefinitionStatus{},
 	}
 	owner.SetOwnerReference(crDiscovery, desiredCRD, r.Scheme)
+
+	// `ManagementClusterCRD name is written to the CustomResourceDiscovery.Status before the CRD is created.
+	// The reason is that in the CustomResourceDiscovery deletion webhook, the deletion will be allowed if the
+	// CustomResourceDiscovery.Status.ManagementClusterCRD is nil. This can lead the following case of not fully cleaned-up
+	// case happen:
+	// 1. CustomResourceDiscovery object is created.
+	// 2. The ManagementCluster CRD is created.
+	// 3. The ManagementCluster CRD instances are created before the CustomResourceDiscovery.Status.ManagementClusterCRD
+	// is set.
+	// 4. CustomResourceDiscovery object is deleted.
+	// Since the CustomResourceDiscovery.Status.ManagementClusterCRD is nil, and step 4 can pass the deletion webhook,
+	// but then the ManagementCluster CRD instances will never be cleaned up.
+	if crDiscovery.Status.ManagementClusterCRD == nil {
+		crDiscovery.Status.ManagementClusterCRD = &corev1alpha1.ObjectReference{
+			Name: desiredCRD.Name,
+		}
+		if err := r.Status().Update(ctx, crDiscovery); err != nil {
+			return nil, fmt.Errorf("updating crDiscoveryStatus.ManagementClusterCRD: %w", err)
+		}
+	}
 
 	currentCRD := &apiextensionsv1.CustomResourceDefinition{}
 	err := r.Get(ctx, types.NamespacedName{
