@@ -22,11 +22,16 @@ import (
 
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/structured-merge-diff/v3/typed"
 	"sigs.k8s.io/yaml"
 
 	catalogv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/catalog/v1alpha1"
+)
+
+const (
+	FieldOwner = client.FieldOwner("elevator")
 )
 
 func SplitStatusFields(fields []catalogv1alpha1.FieldPath) (

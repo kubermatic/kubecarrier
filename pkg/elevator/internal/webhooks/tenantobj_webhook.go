@@ -100,39 +100,6 @@ func (r *TenantObjWebhookHandler) Handle(ctx context.Context, req admission.Requ
 	// prepare config
 	_, nonStatusExposedFields := elevatorutil.SplitStatusFields(exposeConfig.Fields)
 
-	// Check if the ProviderObj has already been created, if it is created, then regards this request
-	// as a UPDATE, if it is not crated, regards this request as a CREATE.
-	// Using `req.admission.Request` to determine if the request is CREATE or UPDATE was the first attempt and finally,
-	// we decided not to use that because it just doesn't work with the `dry-run` requests, here is an example in the
-	// following and you will see the problem:
-	//
-	// If we use the following for our elevator webhook:
-	// ```
-	// switch req.Operation {
-	// case adminv1beta1.Create:
-	// 	if err := r.Create(ctx, providerObj, client.DryRunAll); err != nil {
-	// 		return admission.Errored(http.StatusInternalServerError, err)
-	// 	}
-	// case adminv1beta1.Update:
-	// 	if err := r.Update(ctx, providerObj, client.DryRunAll); err != nil {
-	// 		return admission.Errored(http.StatusInternalServerError, err)
-	// 	}
-	// }
-	// ```
-	// Then go through the request flow when the tenant tries to create the TenantCRD object:
-	// 1. Tenant sends a `CREATE` request.
-	// 2. The above webhook regards this as a `CREATE` request, the `DryRun` request can pass (NO problem with this step).
-	// 3. TenantObj controller of `Elevator` tries to update the finalizer for the TenantCRD object, and send an `UPDATE` request.
-	// Then the problem happens: the above webhook regards this as an `UPDATE` request, and the `DryRun` request will fail
-	// with `IsNotFound` error, since the ProviderObj has not been created.
-	// The similar problem also happens when the TenantObj is removed, and update the finalizer later. Also, there are
-	// also some other corner cases that can not be handled by this above approach.
-	// There is a workaround that we can remove the `DryRun` flag and do an actual `Create`/`Update` call, in the webhook,
-	// but we feels like creating objects and introducing some side effects is not the right way to go.
-	// That's why we decided to not use the `req.Operation` but to check if the `ProviderObj` is created or not.
-	// Also, if you think about our approach, it also makes sense, i.e., if the `ProviderObj` is not there,
-	// of course it is a `CREATE` request, and it also works fine.
-
 	tenantObj := obj.DeepCopy()
 	providerObj := &unstructured.Unstructured{}
 	providerObj.SetGroupVersionKind(r.ProviderGVK)
@@ -150,16 +117,12 @@ func (r *TenantObjWebhookHandler) Handle(ctx context.Context, req admission.Requ
 	if err := elevatorutil.BuildProviderObj(tenantObj, providerObj, r.Scheme, nonStatusExposedFields, defaults); err != nil {
 		return admission.Errored(http.StatusInternalServerError, fmt.Errorf("build and elevate: %w", err))
 	}
-	if errors.IsNotFound(err) {
-		r.Log.Info("validate create", "name", obj.GetName())
-		if err := r.Create(ctx, providerObj, client.DryRunAll); err != nil {
-			return admission.Errored(http.StatusInternalServerError, err)
-		}
-	} else {
-		r.Log.Info("validate update", "name", obj.GetName())
-		if err := r.Update(ctx, providerObj, client.DryRunAll); err != nil {
-			return admission.Errored(http.StatusInternalServerError, err)
-		}
+	// client.ForceOwnership is here until the
+	// https://github.com/kubernetes/kubernetes/issues/88901 is backported
+	// we use server-side-apply in both UPDATE and CREATE path since it would create an base CRD instance if it
+	// doesn't exist
+	if err := r.Patch(ctx, providerObj, client.Apply, client.DryRunAll, client.ForceOwnership, elevatorutil.FieldOwner); err != nil {
+		return admission.Errored(http.StatusInternalServerError, fmt.Errorf("%w", err))
 	}
 
 	newObj := obj.DeepCopy()

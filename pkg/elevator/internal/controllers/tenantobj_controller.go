@@ -104,8 +104,9 @@ func (r *TenantObjReconciler) reconcileTenantObj(
 	ctx context.Context, tenantObj, providerObj *unstructured.Unstructured,
 	statusFields []catalogv1alpha1.FieldPath,
 ) error {
-	// this is a workaround until apply patch bugs are fixed and merged into k8s
+	// this is a workaround until apply patch bugs is merged into k8s releases
 	// https://github.com/kubernetes/kubernetes/issues/88901
+	// we'd use server-side-apply instead
 	wantedProviderObj := providerObj.DeepCopy()
 	if _, err := controllerutil.CreateOrUpdate(ctx, r.Client, providerObj, func() error {
 		// copy all non status/metadata object
