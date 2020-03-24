@@ -18,14 +18,12 @@ To drive integration with other tools, KubeCarrier needs to expose an API that c
 - MUST expose watch APIs for caching and wait routines
 - clients MUST be made available for common languages
 - MUST be versioned
-- MUST use user impersonation to retain user context
+- MUST use user impersonation to retain user context for RBAC
+- MUST offer OIDC for user login
 - MUST allow for Service/Robot Accounts
+- MUST offer a REST Interface
 - SHOULD integrate with Kubernetes facilities where possible
   - RBAC, Audit-logging, metric reporting, etc
-
-### TBD
-
-- Compatibility with Web/HTTP Proxies (Protocol Support)
 
 ## Multi Region
 
