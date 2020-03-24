@@ -34,6 +34,7 @@ func TestManifests(t *testing.T) {
 	)
 	c := Config{
 		Namespace: "test3000",
+		Name:      "kubecarrier-test",
 	}
 
 	manifests, err := Manifests(c)

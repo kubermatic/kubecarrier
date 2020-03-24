@@ -3,6 +3,10 @@
   metadata:
     creationTimestamp: null
     labels:
+      app.kubernetes.io/instance: db.eu-west-1
+      app.kubernetes.io/managed-by: kubecarrier-operator
+      app.kubernetes.io/name: catapult
+      app.kubernetes.io/version: was not build properly
       kubecarrier.io/role: catapult
     name: db-eu-west-1-catapult-manager
     namespace: test3000
@@ -26,6 +30,10 @@
   metadata:
     creationTimestamp: null
     labels:
+      app.kubernetes.io/instance: db.eu-west-1
+      app.kubernetes.io/managed-by: kubecarrier-operator
+      app.kubernetes.io/name: catapult
+      app.kubernetes.io/version: was not build properly
       kubecarrier.io/role: catapult
     name: db-eu-west-1-catapult-manager
   rules:
@@ -53,6 +61,10 @@
   kind: ServiceAccount
   metadata:
     labels:
+      app.kubernetes.io/instance: db.eu-west-1
+      app.kubernetes.io/managed-by: kubecarrier-operator
+      app.kubernetes.io/name: catapult
+      app.kubernetes.io/version: was not build properly
       kubecarrier.io/role: catapult
     name: db-eu-west-1-catapult-sa
     namespace: test3000
@@ -60,6 +72,10 @@
   kind: ClusterRoleBinding
   metadata:
     labels:
+      app.kubernetes.io/instance: db.eu-west-1
+      app.kubernetes.io/managed-by: kubecarrier-operator
+      app.kubernetes.io/name: catapult
+      app.kubernetes.io/version: was not build properly
       kubecarrier.io/role: catapult
     name: db-eu-west-1-catapult-manager
   roleRef:
@@ -74,6 +90,10 @@
   kind: RoleBinding
   metadata:
     labels:
+      app.kubernetes.io/instance: db.eu-west-1
+      app.kubernetes.io/managed-by: kubecarrier-operator
+      app.kubernetes.io/name: catapult
+      app.kubernetes.io/version: was not build properly
       kubecarrier.io/role: catapult
     name: db-eu-west-1-catapult-manager
     namespace: test3000
@@ -89,6 +109,10 @@
   kind: Role
   metadata:
     labels:
+      app.kubernetes.io/instance: db.eu-west-1
+      app.kubernetes.io/managed-by: kubecarrier-operator
+      app.kubernetes.io/name: catapult
+      app.kubernetes.io/version: was not build properly
       kubecarrier.io/role: catapult
     name: db-eu-west-1-catapult-leader-election-role
     namespace: test3000
@@ -123,6 +147,10 @@
   kind: RoleBinding
   metadata:
     labels:
+      app.kubernetes.io/instance: db.eu-west-1
+      app.kubernetes.io/managed-by: kubecarrier-operator
+      app.kubernetes.io/name: catapult
+      app.kubernetes.io/version: was not build properly
       kubecarrier.io/role: catapult
     name: db-eu-west-1-catapult-leader-election-rolebinding
     namespace: test3000
@@ -138,6 +166,10 @@
   kind: Deployment
   metadata:
     labels:
+      app.kubernetes.io/instance: db.eu-west-1
+      app.kubernetes.io/managed-by: kubecarrier-operator
+      app.kubernetes.io/name: catapult
+      app.kubernetes.io/version: was not build properly
       control-plane: manager
       kubecarrier.io/role: catapult
     name: db-eu-west-1-catapult-manager
@@ -232,6 +264,10 @@
       cert-manager.io/inject-ca-from: test3000/db-eu-west-1-catapult-serving-cert
     creationTimestamp: null
     labels:
+      app.kubernetes.io/instance: db.eu-west-1
+      app.kubernetes.io/managed-by: kubecarrier-operator
+      app.kubernetes.io/name: catapult
+      app.kubernetes.io/version: was not build properly
       kubecarrier.io/role: catapult
     name: db-eu-west-1-catapult-mutating-webhook-configuration
   webhooks:
@@ -258,6 +294,10 @@
   kind: Service
   metadata:
     labels:
+      app.kubernetes.io/instance: db.eu-west-1
+      app.kubernetes.io/managed-by: kubecarrier-operator
+      app.kubernetes.io/name: catapult
+      app.kubernetes.io/version: was not build properly
       kubecarrier.io/role: catapult
     name: db-eu-west-1-catapult-webhook-service
     namespace: test3000
@@ -272,6 +312,10 @@
   kind: Issuer
   metadata:
     labels:
+      app.kubernetes.io/instance: db.eu-west-1
+      app.kubernetes.io/managed-by: kubecarrier-operator
+      app.kubernetes.io/name: catapult
+      app.kubernetes.io/version: was not build properly
       kubecarrier.io/role: catapult
     name: db-eu-west-1-catapult-selfsigned-issuer
     namespace: test3000
@@ -281,6 +325,10 @@
   kind: Certificate
   metadata:
     labels:
+      app.kubernetes.io/instance: db.eu-west-1
+      app.kubernetes.io/managed-by: kubecarrier-operator
+      app.kubernetes.io/name: catapult
+      app.kubernetes.io/version: was not build properly
       kubecarrier.io/role: catapult
     name: db-eu-west-1-catapult-serving-cert
     namespace: test3000
@@ -292,3 +340,23 @@
       kind: Issuer
       name: db-eu-west-1-catapult-selfsigned-issuer
     secretName: db-eu-west-1-catapult-webhook-service-webhook-service-cert
+- apiVersion: rbac.authorization.k8s.io/v1
+  kind: ClusterRole
+  metadata:
+    creationTimestamp: null
+    labels:
+      app.kubernetes.io/instance: db.eu-west-1
+      app.kubernetes.io/managed-by: kubecarrier-operator
+      app.kubernetes.io/name: catapult
+      app.kubernetes.io/version: was not build properly
+      kubecarrier.io/manager: "true"
+    name: db-eu-west-1-view-only
+  rules:
+  - apiGroups:
+    - eu-west-1.provider
+    resources:
+    - couchdbinternals
+    verbs:
+    - get
+    - list
+    - watch

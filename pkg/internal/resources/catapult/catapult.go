@@ -30,6 +30,7 @@ import (
 	"sigs.k8s.io/yaml"
 
 	"github.com/kubermatic/kubecarrier/pkg/internal/kustomize"
+	"github.com/kubermatic/kubecarrier/pkg/internal/resources/constants"
 	utilwebhook "github.com/kubermatic/kubecarrier/pkg/internal/util/webhook"
 	"github.com/kubermatic/kubecarrier/pkg/internal/version"
 )
@@ -65,7 +66,7 @@ func Manifests(c Config) ([]unstructured.Unstructured, error) {
 				NewTag: v.Version,
 			},
 		},
-		Resources: []string{"../default"},
+		Resources: []string{"../default", "aggregation-manager-role.yaml"},
 		PatchesStrategicMerge: []types.PatchStrategicMerge{
 			"manager_env_patch.yaml",
 		},
@@ -199,6 +200,33 @@ func Manifests(c Config) ([]unstructured.Unstructured, error) {
 		return nil, fmt.Errorf("writing /rbac/cluster_role.yaml: %w", err)
 	}
 
+	aggregationManagerRole := rbacv1.ClusterRole{
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: "rbac.authorization.k8s.io/v1",
+			Kind:       "ClusterRole",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "view-only",
+			Labels: map[string]string{
+				"kubecarrier.io/manager": "true",
+			},
+		},
+		Rules: []rbacv1.PolicyRule{
+			{
+				APIGroups: []string{c.ManagementClusterGroup},
+				Resources: []string{c.ManagementClusterPlural},
+				Verbs:     []string{"get", "list", "watch"},
+			},
+		},
+	}
+	roleBytes, err = yaml.Marshal(aggregationManagerRole)
+	if err != nil {
+		return nil, fmt.Errorf("marshalling aggreation manager cluster role: %w", err)
+	}
+	if err := kc.WriteFile("/man/aggregation-manager-role.yaml", roleBytes); err != nil {
+		return nil, fmt.Errorf("writing /man/aggregation-manager-role.yaml: %w", err)
+	}
+
 	failurePolicyFail := adminv1beta1.Fail
 	sideEffectsDryRun := adminv1beta1.SideEffectClassNoneOnDryRun
 	mutatingWebhookConfiguration := adminv1beta1.MutatingWebhookConfiguration{
@@ -250,6 +278,18 @@ func Manifests(c Config) ([]unstructured.Unstructured, error) {
 	objects, err := kc.Build("/man")
 	if err != nil {
 		return nil, fmt.Errorf("running kustomize build: %w", err)
+	}
+
+	for _, obj := range objects {
+		labels := obj.GetLabels()
+		if labels == nil {
+			labels = map[string]string{}
+		}
+		labels[constants.NameLabel] = "catapult"
+		labels[constants.InstanceLabel] = c.Name
+		labels[constants.ManagedbyLabel] = constants.ManagedbyKubeCarrierOperator
+		labels[constants.VersionLabel] = v.Version
+		obj.SetLabels(labels)
 	}
 	return objects, nil
 }

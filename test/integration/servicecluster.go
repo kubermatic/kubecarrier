@@ -148,7 +148,7 @@ func newServiceClusterSuite(
 			},
 		}
 		require.NoError(t, managementClient.Create(ctx, catalogEntrySet))
-		require.NoError(t, testutil.WaitUntilReady(ctx, managementClient, catalogEntrySet))
+		require.NoError(t, testutil.WaitUntilReady(ctx, managementClient, catalogEntrySet), testutil.WithTimeout(time.Minute))
 		t.Log("CatalogEntrySet successfully created")
 
 		// Check the CustomResourceDiscoverySet
@@ -158,6 +158,13 @@ func newServiceClusterSuite(
 			Namespace: catalogEntrySet.Namespace,
 		}, crDiscoverySet), "getting CustomResourceDiscoverySet")
 		assert.Equal(t, crDiscoverySet.Spec.WebhookStrategy, catalogEntrySet.Spec.Discover.WebhookStrategy)
+
+		// Check the CustomResourceDiscovery object
+		customResourceDiscovery := &corev1alpha1.CustomResourceDiscovery{}
+		require.NoError(t, managementClient.Get(ctx, types.NamespacedName{
+			Name:      crDiscoverySet.Name + "." + serviceCluster.Name,
+			Namespace: catalogEntrySet.Namespace,
+		}, customResourceDiscovery), "getting CustomResourceDiscovery")
 
 		// Check the CatalogEntry Object
 		catalogEntry := &catalogv1alpha1.CatalogEntry{}
@@ -211,6 +218,18 @@ ServiceClusterAssignment.kubecarrier.io/v1alpha1: %s.eu-west-1
 			},
 		}
 		require.NoError(t, managementClient.Create(ctx, managementClusterObj))
+
+		err = managementClient.Delete(ctx, customResourceDiscovery)
+		if assert.Error(t, err,
+			"CRDiscovery object must not be allowed to delete if ManagementClusterCRD instances are present",
+		) {
+			assert.Contains(
+				t,
+				err.Error(),
+				"management cluster CRD instances are still present in the management cluster",
+				"CRDiscovery deletion webhook should error out on ManagementClusterCRD instance presence",
+			)
+		}
 
 		// a object on the service cluster should have been created
 		serviceClusterObj := &unstructured.Unstructured{

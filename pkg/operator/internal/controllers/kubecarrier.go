@@ -73,6 +73,7 @@ func (c *KubeCarrierStrategy) GetManifests(ctx context.Context, component Compon
 	}
 	return manager.Manifests(
 		manager.Config{
+			Name:      kubeCarrier.Name,
 			Namespace: kubeCarrier.Namespace,
 		})
 }
