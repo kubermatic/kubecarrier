@@ -41,7 +41,7 @@ import (
 func newSimpleScenario(f *testutil.Framework) func(t *testing.T) {
 	return func(t *testing.T) {
 		// Setup
-		ctx, cancel := context.WithTimeout(context.Background(), 120*time.Second)
+		ctx, cancel := context.WithCancel(context.Background())
 		t.Cleanup(cancel)
 
 		managementClient, err := f.ManagementClient(t)
