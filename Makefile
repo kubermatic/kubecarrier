@@ -65,8 +65,11 @@ clean: e2e-test-clean
 	rm -rf bin/$*
 .PHONEY: clean
 
+.goreleaser.yaml:  ./hack/gen-goreleaser/gen-goreleaser.go
+	@go run ./hack/gen-goreleaser > .goreleaser.yaml
+
 # Generate code
-generate: docs
+generate: docs .goreleaser.yaml
 	@hack/codegen.sh
 	# regenerate golden files to update tests
 	FIX_GOLDEN=1 go test ./pkg/internal/resources/...
