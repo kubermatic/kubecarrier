@@ -21,6 +21,7 @@ RUN apt-get -qq update && apt-get -qqy install \
   build-essential \
   ca-certificates \
   curl \
+  ed \
   gettext \
   git \
   gnupg2 \
@@ -34,6 +35,8 @@ RUN curl -fsSL https://get.docker.com | sh
 RUN curl -sL --output /usr/local/bin/kubectl https://storage.googleapis.com/kubernetes-release/release/v1.16.0/bin/linux/amd64/kubectl && chmod a+x /usr/local/bin/kubectl
 RUN curl -sL https://dl.google.com/go/go1.14.linux-amd64.tar.gz | tar -C /usr/local -xz
 ENV PATH=${PATH}:/usr/local/go/bin:/root/go/bin
+# This LC_ALL is needed for yq. https://stackoverflow.com/questions/18649512/unicodedecodeerror-ascii-codec-cant-decode-byte-0xe2-in-position-13-ordinal
+ENV LC_ALL=C.UTF-8
 RUN go env
 
 # binary will be $(go env GOPATH)/bin/golangci-lint
@@ -46,6 +49,7 @@ ARG kubebuilder_version=2.1.0
 RUN curl -sL https://go.kubebuilder.io/dl/${kubebuilder_version}/linux/amd64 | tar -xz -C /tmp/ && mv /tmp/kubebuilder_${kubebuilder_version}_linux_amd64 /usr/local/kubebuilder
 
 RUN go get golang.org/x/tools/cmd/goimports
+RUN go get github.com/rakyll/statik
 RUN pip3 install pre-commit awscli yq
 
 WORKDIR /src
