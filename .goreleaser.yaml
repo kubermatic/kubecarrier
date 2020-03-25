@@ -28,7 +28,22 @@ builds:
     hooks:
       post:
         touch dist/version_{{.Version}}
-
+  - id: operator
+    binary: operator
+    goos:
+      - linux
+    goarch:
+      - amd64
+    env:
+      - CGO_ENABLED=0
+      - GO111MODULE=on
+    main: cmd/operator/main.go
+    ldflags: >
+      -s -w
+      -X github.com/kubermatic/kubecarrier/pkg/internal/version.Version={{.Tag}}
+      -X github.com/kubermatic/kubecarrier/pkg/internal/version.Branch={{.Tag}}
+      -X github.com/kubermatic/kubecarrier/pkg/internal/version.Commit={{.ShortCommit}}
+      -X github.com/kubermatic/kubecarrier/pkg/internal/version.BuildDate={{.Timestamp}}
 archives:
   - id: kubecarrier
     builds:
@@ -41,3 +56,22 @@ archives:
 checksum:
   name_template: "{{ .ProjectName }}_checksums.txt"
   algorithm: sha256
+dockers:
+- goos: linux
+  goarch: amd64
+  binaries:
+    - operator
+  builds:
+    - operator
+  image_templates:
+    - "quay.io/kubecarrier/operator:latest"
+    - "quay.io/kubecarrier/operator:{{ .Tag }}"
+    - "quay.io/kubecarrier/operator:v{{ .Major }}"
+  skip_push: true
+  dockerfile: config/dockerfiles/operator.Dockerfile
+  build_flag_templates:
+  - "--pull"
+  - "--label=org.opencontainers.image.created={{.Date}}"
+  - "--label=org.opencontainers.image.name={{.ProjectName}}"
+  - "--label=org.opencontainers.image.revision={{.FullCommit}}"
+  - "--label=org.opencontainers.image.version={{.Version}}"
