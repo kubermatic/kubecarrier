@@ -23,6 +23,7 @@ import (
 	"os"
 	"sync"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/require"
 	corev1 "k8s.io/api/core/v1"
@@ -379,7 +380,15 @@ func (rc *RecordingClient) CleanUpFunc(ctx context.Context) func() {
 				continue
 			}
 
-			err := DeleteAndWaitUntilNotFound(ctx, rc, obj)
+			var timeout time.Duration
+			switch obj.(type) {
+			case *catalogv1alpha1.CatalogEntrySet:
+				timeout = time.Minute
+			default:
+				timeout = 30 * time.Second
+			}
+
+			err := DeleteAndWaitUntilNotFound(ctx, rc, obj, util.WithClientWatcherTimeout(timeout))
 			if err != nil {
 				err = fmt.Errorf("cleanup %s: %w", key, err)
 			}
