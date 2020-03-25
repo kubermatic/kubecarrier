@@ -55,6 +55,7 @@ type checker interface {
 }
 
 func RunChecks(c *rest.Config, s *wow.Wow, startTime time.Time, log logr.Logger) error {
+	// Get a client from the configuration of the kubernetes cluster.
 	discoveryClient, err := discovery.NewDiscoveryClientForConfig(c)
 	if err != nil {
 		return fmt.Errorf("cannot create discovery client: %w", err)

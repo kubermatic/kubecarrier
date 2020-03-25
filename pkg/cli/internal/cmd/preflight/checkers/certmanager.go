@@ -35,7 +35,6 @@ type certManagerChecker struct {
 }
 
 func (c *certManagerChecker) check() error {
-	// Get a client from the configuration of the kubernetes cluster.
 	ctx := context.Background()
 	var errBuffer bytes.Buffer
 
