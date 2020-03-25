@@ -184,6 +184,9 @@ func (s *DerivedCustomResource) IsReady() bool {
 	if s.Generation != s.Status.ObservedGeneration {
 		return false
 	}
+	if !s.DeletionTimestamp.IsZero() {
+		return false
+	}
 
 	for _, condition := range s.Status.Conditions {
 		if condition.Type == DerivedCustomResourceReady &&

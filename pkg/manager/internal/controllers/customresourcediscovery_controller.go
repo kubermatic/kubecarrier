@@ -23,6 +23,7 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/gobuffalo/flect"
+	rbacv1 "k8s.io/api/rbac/v1"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -53,6 +54,7 @@ type CustomResourceDiscoveryReconciler struct {
 // +kubebuilder:rbac:groups=apiextensions.k8s.io,resources=customresourcedefinitions,verbs=get;list;watch;update;create;patch;delete
 // +kubebuilder:rbac:groups=operator.kubecarrier.io,resources=catapults,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=operator.kubecarrier.io,resources=catapults/status,verbs=get;update;patch
+// +kubebuilder:rbac:groups=rbac.authorization.k8s.io,resources=clusterroles,verbs=get;list;watch;create;update;patch;delete;escalate;bind
 
 func (r *CustomResourceDiscoveryReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	var (
@@ -86,14 +88,17 @@ func (r *CustomResourceDiscoveryReconciler) Reconcile(req ctrl.Request) (ctrl.Re
 		}
 	}
 
-	currentCRD, err := r.reconcileCRD(ctx, crDiscovery)
-	if err != nil {
+	currentCRD := r.buildDesiredCRD(crDiscovery)
+	if err := r.reconcileClusterRole(ctx, crDiscovery, currentCRD); err != nil {
+		return result, fmt.Errorf("reconciling clusterRole: %w", err)
+	}
+	if err := r.reconcileCRD(ctx, crDiscovery, currentCRD); err != nil {
 		return result, fmt.Errorf("reconciling CRD: %w", err)
 	}
 
 	// Report Status
 	if !isCRDReady(currentCRD) {
-		if err = r.updateStatus(ctx, crDiscovery, corev1alpha1.CustomResourceDiscoveryCondition{
+		if err := r.updateStatus(ctx, crDiscovery, corev1alpha1.CustomResourceDiscoveryCondition{
 			Type:    corev1alpha1.CustomResourceDiscoveryEstablished,
 			Status:  corev1alpha1.ConditionFalse,
 			Reason:  "Establishing",
@@ -104,7 +109,7 @@ func (r *CustomResourceDiscoveryReconciler) Reconcile(req ctrl.Request) (ctrl.Re
 		return result, nil
 	}
 
-	if err = r.updateStatus(ctx, crDiscovery, corev1alpha1.CustomResourceDiscoveryCondition{
+	if err := r.updateStatus(ctx, crDiscovery, corev1alpha1.CustomResourceDiscoveryCondition{
 		Type:    corev1alpha1.CustomResourceDiscoveryEstablished,
 		Status:  corev1alpha1.ConditionTrue,
 		Reason:  "Established",
@@ -141,9 +146,82 @@ func (r *CustomResourceDiscoveryReconciler) Reconcile(req ctrl.Request) (ctrl.Re
 	return result, nil
 }
 
+func (r *CustomResourceDiscoveryReconciler) reconcileClusterRole(ctx context.Context, crDiscovery *corev1alpha1.CustomResourceDiscovery, currentCRD *apiextensionsv1.CustomResourceDefinition) error {
+	ViewOnlyClusterRole := &rbacv1.ClusterRole{
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: "rbac.authorization.k8s.io/v1",
+			Kind:       "ClusterRole",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name: fmt.Sprintf("kubecarrier:%s.%s-view", currentCRD.Spec.Names.Plural, currentCRD.Spec.Group),
+			Labels: map[string]string{
+				"kubecarrier.io/manager": "true",
+			},
+		},
+		Rules: []rbacv1.PolicyRule{
+			{
+				APIGroups: []string{currentCRD.Spec.Group},
+				Resources: []string{currentCRD.Spec.Names.Plural},
+				Verbs:     []string{"get", "list", "watch"},
+			},
+		},
+	}
+	owner.SetOwnerReference(crDiscovery, ViewOnlyClusterRole, r.Scheme)
+	if err := r.Patch(ctx, ViewOnlyClusterRole, client.Apply, client.FieldOwner("kubecarrier-manager")); err != nil {
+		return fmt.Errorf("applying clusterrole: %w", err)
+	}
+	return nil
+}
+
 func (r *CustomResourceDiscoveryReconciler) reconcileCRD(
-	ctx context.Context, crDiscovery *corev1alpha1.CustomResourceDiscovery,
-) (*apiextensionsv1.CustomResourceDefinition, error) {
+	ctx context.Context, crDiscovery *corev1alpha1.CustomResourceDiscovery, desiredCRD *apiextensionsv1.CustomResourceDefinition) error {
+	// `ManagementClusterCRD name is written to the CustomResourceDiscovery.Status before the CRD is created.
+	// The reason is that in the CustomResourceDiscovery deletion webhook, the deletion will be allowed if the
+	// CustomResourceDiscovery.Status.ManagementClusterCRD is nil. This can lead the following case of not fully cleaned-up
+	// case happen:
+	// 1. CustomResourceDiscovery object is created.
+	// 2. The ManagementCluster CRD is created.
+	// 3. The ManagementCluster CRD instances are created before the CustomResourceDiscovery.Status.ManagementClusterCRD
+	// is set.
+	// 4. CustomResourceDiscovery object is deleted.
+	// Since the CustomResourceDiscovery.Status.ManagementClusterCRD is nil, and step 4 can pass the deletion webhook,
+	// but then the ManagementCluster CRD instances will never be cleaned up.
+	if crDiscovery.Status.ManagementClusterCRD == nil {
+		crDiscovery.Status.ManagementClusterCRD = &corev1alpha1.ObjectReference{
+			Name: desiredCRD.Name,
+		}
+		if err := r.Status().Update(ctx, crDiscovery); err != nil {
+			return fmt.Errorf("updating crDiscoveryStatus.ManagementClusterCRD: %w", err)
+		}
+	}
+
+	currentCRD := &apiextensionsv1.CustomResourceDefinition{}
+	err := r.Get(ctx, types.NamespacedName{
+		Name:      desiredCRD.Name,
+		Namespace: desiredCRD.Namespace,
+	}, currentCRD)
+	if err != nil && !errors.IsNotFound(err) {
+		return fmt.Errorf("getting CustomResourceDefinition: %w", err)
+	}
+	if errors.IsNotFound(err) {
+		// Create CRD
+		if err = r.Create(ctx, desiredCRD); err != nil {
+			return fmt.Errorf("creating CustomResourceDefinition: %w", err)
+		}
+		return nil
+	}
+
+	// Update CRD
+	currentCRD.Spec.PreserveUnknownFields = desiredCRD.Spec.PreserveUnknownFields
+	currentCRD.Spec.Versions = desiredCRD.Spec.Versions
+	if err = r.Update(ctx, currentCRD); err != nil {
+		return fmt.Errorf("updating CustomResourceDefinition: %w", err)
+	}
+
+	return nil
+}
+
+func (r *CustomResourceDiscoveryReconciler) buildDesiredCRD(crDiscovery *corev1alpha1.CustomResourceDiscovery) *apiextensionsv1.CustomResourceDefinition {
 	// Build desired CRD
 	kind := crDiscovery.Spec.KindOverride
 	if kind == "" {
@@ -174,51 +252,7 @@ func (r *CustomResourceDiscoveryReconciler) reconcileCRD(
 		Status: apiextensionsv1.CustomResourceDefinitionStatus{},
 	}
 	owner.SetOwnerReference(crDiscovery, desiredCRD, r.Scheme)
-
-	// `ManagementClusterCRD name is written to the CustomResourceDiscovery.Status before the CRD is created.
-	// The reason is that in the CustomResourceDiscovery deletion webhook, the deletion will be allowed if the
-	// CustomResourceDiscovery.Status.ManagementClusterCRD is nil. This can lead the following case of not fully cleaned-up
-	// case happen:
-	// 1. CustomResourceDiscovery object is created.
-	// 2. The ManagementCluster CRD is created.
-	// 3. The ManagementCluster CRD instances are created before the CustomResourceDiscovery.Status.ManagementClusterCRD
-	// is set.
-	// 4. CustomResourceDiscovery object is deleted.
-	// Since the CustomResourceDiscovery.Status.ManagementClusterCRD is nil, and step 4 can pass the deletion webhook,
-	// but then the ManagementCluster CRD instances will never be cleaned up.
-	if crDiscovery.Status.ManagementClusterCRD == nil {
-		crDiscovery.Status.ManagementClusterCRD = &corev1alpha1.ObjectReference{
-			Name: desiredCRD.Name,
-		}
-		if err := r.Status().Update(ctx, crDiscovery); err != nil {
-			return nil, fmt.Errorf("updating crDiscoveryStatus.ManagementClusterCRD: %w", err)
-		}
-	}
-
-	currentCRD := &apiextensionsv1.CustomResourceDefinition{}
-	err := r.Get(ctx, types.NamespacedName{
-		Name:      desiredCRD.Name,
-		Namespace: desiredCRD.Namespace,
-	}, currentCRD)
-	if err != nil && !errors.IsNotFound(err) {
-		return nil, fmt.Errorf("getting CustomResourceDefinition: %w", err)
-	}
-	if errors.IsNotFound(err) {
-		// Create CRD
-		if err = r.Create(ctx, desiredCRD); err != nil {
-			return nil, fmt.Errorf("creating CustomResourceDefinition: %w", err)
-		}
-		return desiredCRD, nil
-	}
-
-	// Update CRD
-	currentCRD.Spec.PreserveUnknownFields = desiredCRD.Spec.PreserveUnknownFields
-	currentCRD.Spec.Versions = desiredCRD.Spec.Versions
-	if err = r.Update(ctx, currentCRD); err != nil {
-		return nil, fmt.Errorf("updating CustomResourceDefinition: %w", err)
-	}
-
-	return currentCRD, nil
+	return desiredCRD
 }
 
 func (r *CustomResourceDiscoveryReconciler) reconcileCatapult(
@@ -340,16 +374,17 @@ func (r *CustomResourceDiscoveryReconciler) handleDeletion(ctx context.Context, 
 		}
 	}
 
-	crds := &apiextensionsv1.CustomResourceDefinitionList{}
-	if err := r.List(ctx, crds, owner.OwnedBy(crDiscovery, r.Scheme)); err != nil {
-		return fmt.Errorf("cannot list crds: %w", err)
+	cleanedUp, err := util.DeleteObjects(
+		ctx, r.Client, r.Scheme,
+		[]runtime.Object{
+			&rbacv1.ClusterRole{},
+			&apiextensionsv1.CustomResourceDefinition{},
+		}, owner.OwnedBy(crDiscovery, r.Scheme))
+	if err != nil {
+		return err
 	}
-	if len(crds.Items) > 0 {
-		for _, crd := range crds.Items {
-			if err := r.Delete(ctx, &crd); err != nil {
-				return fmt.Errorf("cannot delete: %w", err)
-			}
-		}
+	if !cleanedUp {
+		// wait for requeue
 		return nil
 	}
 
@@ -365,6 +400,7 @@ func (r *CustomResourceDiscoveryReconciler) SetupWithManager(mgr ctrl.Manager) e
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&corev1alpha1.CustomResourceDiscovery{}).
 		Owns(&operatorv1alpha1.Catapult{}).
+		Watches(&source.Kind{Type: &rbacv1.ClusterRole{}}, owner.EnqueueRequestForOwner(&corev1alpha1.CustomResourceDiscovery{}, r.Scheme)).
 		Watches(
 			&source.Kind{Type: &apiextensionsv1.CustomResourceDefinition{}},
 			owner.EnqueueRequestForOwner(&corev1alpha1.CustomResourceDiscovery{}, r.Scheme)).

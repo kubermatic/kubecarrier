@@ -25,6 +25,7 @@ import (
 	"github.com/go-logr/logr"
 	adminv1beta1 "k8s.io/api/admission/v1beta1"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
+	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -103,11 +104,17 @@ func (r *CustomResourceDiscoveryWebhookHandler) validateDelete(ctx context.Conte
 	}
 
 	crd := &apiextensionsv1.CustomResourceDefinition{}
-	if err := r.Get(ctx, types.NamespacedName{
+	err := r.Get(ctx, types.NamespacedName{
 		Name: obj.Status.ManagementClusterCRD.Name,
-	}, crd); err != nil {
-		return err
+	}, crd)
+	switch {
+	case errors.IsNotFound(err):
+		return nil
+	case err == nil:
+	default:
+		return fmt.Errorf("fetching CRD: %w", err)
 	}
+
 	u := &unstructured.UnstructuredList{}
 	u.SetGroupVersionKind(schema.GroupVersionKind{
 		Group:   crd.Spec.Group,

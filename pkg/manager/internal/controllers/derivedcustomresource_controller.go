@@ -23,6 +23,7 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/gobuffalo/flect"
+	rbacv1 "k8s.io/api/rbac/v1"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -59,6 +60,7 @@ type DerivedCustomResourceReconciler struct {
 // +kubebuilder:rbac:groups=apiextensions.k8s.io,resources=customresourcedefinitions,verbs=get;list;watch;update;create;delete
 // +kubebuilder:rbac:groups=operator.kubecarrier.io,resources=elevators,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=operator.kubecarrier.io,resources=elevators/status,verbs=get;update;patch
+// +kubebuilder:rbac:groups=rbac.authorization.k8s.io,resources=clusterroles,verbs=get;list;watch;create;update;patch;delete;escalate;bind
 
 func (r *DerivedCustomResourceReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	ctx := context.Background()
@@ -185,6 +187,32 @@ func (r *DerivedCustomResourceReconciler) Reconcile(req ctrl.Request) (ctrl.Resu
 	derivedCR.Spec.Group = group
 	derivedCR.Spec.Names = names
 	owner.SetOwnerReference(dcr, derivedCR, r.Scheme)
+
+	// create view-only role required for deletion webhook
+	// This has to happen before dcr.Status.DeriveCR, since by then the webhook is loaded & active
+	ViewOnlyClusterRole := &rbacv1.ClusterRole{
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: "rbac.authorization.k8s.io/v1",
+			Kind:       "ClusterRole",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name: fmt.Sprintf("kubecarrier:%s.%s-view", derivedCR.Spec.Names.Plural, derivedCR.Spec.Group),
+			Labels: map[string]string{
+				"kubecarrier.io/manager": "true",
+			},
+		},
+		Rules: []rbacv1.PolicyRule{
+			{
+				APIGroups: []string{derivedCR.Spec.Group},
+				Resources: []string{derivedCR.Spec.Names.Plural},
+				Verbs:     []string{"get", "list", "watch"},
+			},
+		},
+	}
+	owner.SetOwnerReference(dcr, ViewOnlyClusterRole, r.Scheme)
+	if err := r.Patch(ctx, ViewOnlyClusterRole, client.Apply, client.FieldOwner("kubecarrier-manager")); err != nil {
+		return ctrl.Result{}, fmt.Errorf("applying clusterrole: %w", err)
+	}
 
 	// the future created derived CRD name is written to this object
 	// before the CRD is created. This is due to derivedCustromResouce webhook.
@@ -334,6 +362,7 @@ func (r *DerivedCustomResourceReconciler) SetupWithManager(mgr ctrl.Manager) err
 		For(&catalogv1alpha1.DerivedCustomResource{}).
 		Owns(&operatorv1alpha1.Elevator{}).
 		Watches(&source.Kind{Type: &apiextensionsv1.CustomResourceDefinition{}}, enqueuer).
+		Watches(&source.Kind{Type: &rbacv1.ClusterRole{}}, enqueuer).
 		Watches(&source.Kind{Type: &apiextensionsv1.CustomResourceDefinition{}}, &handler.EnqueueRequestsFromMapFunc{
 			ToRequests: handler.ToRequestsFunc(func(mapObject handler.MapObject) (out []reconcile.Request) {
 				annotations := mapObject.Meta.GetAnnotations()
@@ -363,25 +392,23 @@ func (r *DerivedCustomResourceReconciler) SetupWithManager(mgr ctrl.Manager) err
 }
 
 func (r *DerivedCustomResourceReconciler) handleDeletion(ctx context.Context, dcr *catalogv1alpha1.DerivedCustomResource) error {
-	crdList := &apiextensionsv1.CustomResourceDefinitionList{}
-	if err := r.List(ctx, crdList, owner.OwnedBy(dcr, r.Scheme)); err != nil {
-		return fmt.Errorf("listing owned CRDs: %w", err)
+	cleanedUp, err := util.DeleteObjects(
+		ctx, r.Client, r.Scheme,
+		[]runtime.Object{
+			&rbacv1.ClusterRole{},
+			&apiextensionsv1.CustomResourceDefinition{},
+		}, owner.OwnedBy(dcr, r.Scheme))
+	if err != nil {
+		return err
 	}
-
-	for _, crd := range crdList.Items {
-		if err := r.Delete(ctx, &crd); err != nil {
-			return fmt.Errorf("deleting CRD: %w", err)
-		}
-	}
-
-	if len(crdList.Items) != 0 {
+	if !cleanedUp {
 		// wait for requeue
 		return nil
 	}
 
 	// remove referenced-by annotation
 	baseCRD := &apiextensionsv1.CustomResourceDefinition{}
-	err := r.Get(ctx, types.NamespacedName{
+	err = r.Get(ctx, types.NamespacedName{
 		Name: dcr.Spec.BaseCRD.Name,
 	}, baseCRD)
 	if err != nil && !errors.IsNotFound(err) {
