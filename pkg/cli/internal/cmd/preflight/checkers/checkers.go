@@ -23,8 +23,7 @@ import (
 
 	"github.com/gernest/wow"
 	"github.com/go-logr/logr"
-	appsv1 "k8s.io/api/apps/v1"
-	corev1 "k8s.io/api/core/v1"
+	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/client-go/discovery"
@@ -39,8 +38,7 @@ var (
 )
 
 func init() {
-	utilruntime.Must(appsv1.AddToScheme(scheme))
-	utilruntime.Must(corev1.AddToScheme(scheme))
+	utilruntime.Must(apiextensionsv1.AddToScheme(scheme))
 }
 
 const (
