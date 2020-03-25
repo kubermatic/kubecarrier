@@ -98,7 +98,6 @@ dockers:
     - "quay.io/kubecarrier/{{ . }}:latest"
     - "quay.io/kubecarrier/{{ . }}:{{"{{"}} .Tag }}"
     - "quay.io/kubecarrier/{{ . }}:v{{"{{"}} .Major }}"
-  skip_push: true
   dockerfile: config/dockerfiles/{{ . }}.Dockerfile
   build_flag_templates:
   - "--pull"

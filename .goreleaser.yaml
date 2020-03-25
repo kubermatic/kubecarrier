@@ -132,7 +132,6 @@ dockers:
     - "quay.io/kubecarrier/manager:latest"
     - "quay.io/kubecarrier/manager:{{ .Tag }}"
     - "quay.io/kubecarrier/manager:v{{ .Major }}"
-  skip_push: true
   dockerfile: config/dockerfiles/manager.Dockerfile
   build_flag_templates:
   - "--pull"
@@ -150,7 +149,6 @@ dockers:
     - "quay.io/kubecarrier/operator:latest"
     - "quay.io/kubecarrier/operator:{{ .Tag }}"
     - "quay.io/kubecarrier/operator:v{{ .Major }}"
-  skip_push: true
   dockerfile: config/dockerfiles/operator.Dockerfile
   build_flag_templates:
   - "--pull"
@@ -168,7 +166,6 @@ dockers:
     - "quay.io/kubecarrier/catapult:latest"
     - "quay.io/kubecarrier/catapult:{{ .Tag }}"
     - "quay.io/kubecarrier/catapult:v{{ .Major }}"
-  skip_push: true
   dockerfile: config/dockerfiles/catapult.Dockerfile
   build_flag_templates:
   - "--pull"
@@ -186,7 +183,6 @@ dockers:
     - "quay.io/kubecarrier/ferry:latest"
     - "quay.io/kubecarrier/ferry:{{ .Tag }}"
     - "quay.io/kubecarrier/ferry:v{{ .Major }}"
-  skip_push: true
   dockerfile: config/dockerfiles/ferry.Dockerfile
   build_flag_templates:
   - "--pull"
@@ -204,7 +200,6 @@ dockers:
     - "quay.io/kubecarrier/elevator:latest"
     - "quay.io/kubecarrier/elevator:{{ .Tag }}"
     - "quay.io/kubecarrier/elevator:v{{ .Major }}"
-  skip_push: true
   dockerfile: config/dockerfiles/elevator.Dockerfile
   build_flag_templates:
   - "--pull"

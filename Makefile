@@ -86,12 +86,12 @@ test:
 	CGO_ENABLED=1 go test -race -v ./...
 .PHONY: test
 
-release:
+release: .goreleaser.yaml
 	goreleaser release --rm-dist
 	go run ./hack/krew-manifest -version=$(shell git describe --tags --abbrev=0) > dist/krew.yaml
 .PHONY: release
 
-krew-install:
+krew-install: .goreleaser.yaml
 	@goreleaser release --snapshot  --rm-dist
 	@go run ./hack/krew-manifest -version=$(shell git describe --tags --abbrev=0)-SNAPSHOT-$(shell git rev-parse --short HEAD) > dist/krew.yaml
 	@kubectl krew uninstall kubecarrier || true
