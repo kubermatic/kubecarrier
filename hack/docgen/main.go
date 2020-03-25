@@ -303,7 +303,7 @@ func printAPIDocs(paths []string, sectionLink string) {
 
 		fmt.Println("| Field | Description | Scheme | Required |")
 		fmt.Println("| ----- | ----------- | ------ | -------- |")
-		fields := t[1:(len(t))]
+		fields := t[1:]
 		for _, f := range fields {
 			fmt.Println("|", f.Name, "|", f.Doc, "|", f.Type, "|", f.Mandatory, "|")
 		}
