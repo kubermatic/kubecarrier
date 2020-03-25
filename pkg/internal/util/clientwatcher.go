@@ -55,7 +55,7 @@ func WithoutClientWatcher() ClientWatcherOption {
 }
 
 const (
-	defaultTimeout = 60 * time.Second
+	defaultTimeout = 30 * time.Second
 )
 
 type ClientWatcher struct {
