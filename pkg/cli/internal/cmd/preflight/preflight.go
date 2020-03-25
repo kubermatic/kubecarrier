@@ -24,6 +24,8 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/spf13/cobra"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
+
+	"github.com/kubermatic/kubecarrier/pkg/cli/internal/cmd/preflight/checkers"
 )
 
 // NewPreflightCommand returns the preflight checking subcommand for KubeCarrier CLI.
@@ -41,7 +43,7 @@ func NewPreflightCommand(log logr.Logger) *cobra.Command {
 			}
 			s := wow.New(cmd.OutOrStdout(), spin.Get(spin.Dots), "")
 			startTime := time.Now()
-			return RunChecks(cfg, s, startTime, log)
+			return checkers.RunChecks(cfg, s, startTime, log)
 		},
 	}
 	return cmd
