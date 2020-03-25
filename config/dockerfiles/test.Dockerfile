@@ -37,6 +37,8 @@ RUN curl -sL https://dl.google.com/go/go1.14.linux-amd64.tar.gz | tar -C /usr/lo
 ENV PATH=${PATH}:/usr/local/go/bin:/root/go/bin
 # This LC_ALL is needed for yq. https://stackoverflow.com/questions/18649512/unicodedecodeerror-ascii-codec-cant-decode-byte-0xe2-in-position-13-ordinal
 ENV LC_ALL=C.UTF-8
+# Allowed to use path@version syntax to install controller-gen
+ENV GO111MODULE=on
 RUN go env
 
 # binary will be $(go env GOPATH)/bin/golangci-lint
@@ -50,6 +52,9 @@ RUN curl -sL https://go.kubebuilder.io/dl/${kubebuilder_version}/linux/amd64 | t
 
 RUN go get golang.org/x/tools/cmd/goimports
 RUN go get github.com/rakyll/statik
+# Install controller-gen in the dockerfile, otherwise it will be installed during `make generate` which will modify the go.mod
+# and go.sum files, and make the directory dirty.
+RUN go get sigs.k8s.io/controller-tools/cmd/controller-gen@v0.2.8
 RUN pip3 install pre-commit awscli yq
 
 WORKDIR /src
