@@ -383,7 +383,7 @@ func (rc *RecordingClient) CleanUpFunc(ctx context.Context) func() {
 			var timeout time.Duration
 			switch obj.(type) {
 			case *catalogv1alpha1.CatalogEntrySet:
-				timeout = time.Minute
+				timeout = 90 * time.Second
 			default:
 				timeout = 30 * time.Second
 			}
