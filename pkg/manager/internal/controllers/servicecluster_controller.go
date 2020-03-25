@@ -19,6 +19,7 @@ package controllers
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/go-logr/logr"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -35,8 +36,9 @@ import (
 
 type ServiceClusterReconciler struct {
 	client.Client
-	Log    logr.Logger
-	Scheme *runtime.Scheme
+	Log                  logr.Logger
+	Scheme               *runtime.Scheme
+	MonitorGraceDuration time.Duration
 }
 
 // +kubebuilder:rbac:groups=kubecarrier.io,resources=serviceclusters,verbs=get;list;watch;update
@@ -173,6 +175,14 @@ func (r *ServiceClusterReconciler) updateStatus(
 		corev1alpha1.ServiceClusterControllerReady)
 	serviceClusterReachable, _ := serviceCluster.Status.GetCondition(
 		corev1alpha1.ServiceClusterReachable)
+	timenow := metav1.Now()
+	if timenow.Sub(serviceClusterReachable.LastHeartbeatTime.Time) > r.MonitorGraceDuration {
+		serviceClusterReachable.LastTransitionTime = timenow
+		serviceClusterReachable.Status = corev1alpha1.ConditionUnknown
+		serviceClusterReachable.Message = "cluster reachable heartbeat hasn't been updaed within monitor grace duration"
+		serviceClusterReachable.Reason = "GracePeriodTimeout"
+		serviceCluster.Status.SetCondition(serviceClusterReachable)
+	}
 
 	if controllerReady.True() && serviceClusterReachable.True() {
 		serviceCluster.Status.SetCondition(corev1alpha1.ServiceClusterCondition{
