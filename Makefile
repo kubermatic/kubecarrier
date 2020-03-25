@@ -136,7 +136,8 @@ e2e-test-clean:
 	@kind delete cluster --name=${SVC_KIND_CLUSTER} "--kubeconfig=${HOME}/.kube/kind-config-${SVC_KIND_CLUSTER}" || true
 .PHONY: e2e-test-clean
 
-lint:
+lint: generate
+	@hack/validate-directory-clean.sh
 	pre-commit run -a
 	golangci-lint run ./... --deadline=15m
 

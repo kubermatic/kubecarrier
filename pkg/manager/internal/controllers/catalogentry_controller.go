@@ -202,7 +202,7 @@ func (r *CatalogEntryReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error
 			Type:    catalogv1alpha1.CatalogEntryReady,
 			Status:  catalogv1alpha1.ConditionFalse,
 			Reason:  "DerivedCustomResourceUnready",
-			Message: fmt.Sprintf("The DerivedCustomResource object is not ready"),
+			Message: "The DerivedCustomResource object is not ready",
 		}); err != nil {
 			return ctrl.Result{}, fmt.Errorf("updating status: %w", err)
 		}
