@@ -350,7 +350,7 @@
       app.kubernetes.io/name: catapult
       app.kubernetes.io/version: was not build properly
       kubecarrier.io/manager: "true"
-    name: db-eu-west-1-view-only
+    name: couchdbinternals.eu-west-1.provider-view-only
   rules:
   - apiGroups:
     - eu-west-1.provider

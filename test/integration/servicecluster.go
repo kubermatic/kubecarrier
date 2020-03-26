@@ -219,18 +219,17 @@ ServiceClusterAssignment.kubecarrier.io/v1alpha1: %s.eu-west-1
 		}
 		require.NoError(t, managementClient.Create(ctx, managementClusterObj))
 
-		// TODO: fix this
-		//err = managementClient.Delete(ctx, customResourceDiscovery)
-		//if assert.Error(t, err,
-		//	"CRDiscovery object must not be allowed to delete if ManagementClusterCRD instances are present",
-		//) {
-		//	assert.Contains(
-		//		t,
-		//		err.Error(),
-		//		"management cluster CRD instances are still present in the management cluster",
-		//		"CRDiscovery deletion webhook should error out on ManagementClusterCRD instance presence",
-		//	)
-		//}
+		err = managementClient.Delete(ctx, customResourceDiscovery)
+		if assert.Error(t, err,
+			"CRDiscovery object must not be allowed to delete if ManagementClusterCRD instances are present",
+		) {
+			assert.Contains(
+				t,
+				err.Error(),
+				"management cluster CRD instances are still present in the management cluster",
+				"CRDiscovery deletion webhook should error out on ManagementClusterCRD instance presence",
+			)
+		}
 
 		// a object on the service cluster should have been created
 		serviceClusterObj := &unstructured.Unstructured{
