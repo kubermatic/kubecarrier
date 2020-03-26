@@ -103,7 +103,7 @@ func (r *TenantObjWebhookHandler) Handle(ctx context.Context, req admission.Requ
 	tenantObj := obj.DeepCopy()
 	providerObj := &unstructured.Unstructured{}
 	providerObj.SetGroupVersionKind(r.ProviderGVK)
-	defaults, err := elevatorutil.FormDefaults(exposeConfig.Default)
+	defaults, err := elevatorutil.FromRawExtensions(exposeConfig.Default)
 	if err != nil {
 		return admission.Errored(http.StatusInternalServerError, fmt.Errorf("forming defaults: %w", err))
 	}

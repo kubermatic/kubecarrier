@@ -86,7 +86,7 @@ func VersionExposeConfigForVersion(
 	return catalogv1alpha1.VersionExposeConfig{}, false
 }
 
-func FormDefaults(defaultField *runtime.RawExtension) (defaults map[string]interface{}, err error) {
+func FromRawExtensions(defaultField *runtime.RawExtension) (defaults map[string]interface{}, err error) {
 	if defaultField != nil {
 		defaults = make(map[string]interface{})
 		if err := yaml.Unmarshal(defaultField.Raw, &defaults); err != nil {

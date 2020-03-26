@@ -76,7 +76,7 @@ func (r *TenantObjReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	}
 
 	statusFields, nonStatusFields := elevatorutil.SplitStatusFields(exposeConfig.Fields)
-	defaults, err := elevatorutil.FormDefaults(exposeConfig.Default)
+	defaults, err := elevatorutil.FromRawExtensions(exposeConfig.Default)
 	if err != nil {
 		return ctrl.Result{}, fmt.Errorf("defaults forming: %w", err)
 	}
