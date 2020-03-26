@@ -24,6 +24,7 @@ import (
 	rbacv1 "k8s.io/api/rbac/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"sigs.k8s.io/kustomize/v3/pkg/image"
 	"sigs.k8s.io/kustomize/v3/pkg/types"
@@ -66,7 +67,7 @@ func Manifests(c Config) ([]unstructured.Unstructured, error) {
 				NewTag: v.Version,
 			},
 		},
-		Resources: []string{"../default", "aggregation-manager-role.yaml"},
+		Resources: []string{"../default"},
 		PatchesStrategicMerge: []types.PatchStrategicMerge{
 			"manager_env_patch.yaml",
 		},
@@ -200,33 +201,6 @@ func Manifests(c Config) ([]unstructured.Unstructured, error) {
 		return nil, fmt.Errorf("writing /rbac/cluster_role.yaml: %w", err)
 	}
 
-	aggregationManagerRole := rbacv1.ClusterRole{
-		TypeMeta: metav1.TypeMeta{
-			APIVersion: "rbac.authorization.k8s.io/v1",
-			Kind:       "ClusterRole",
-		},
-		ObjectMeta: metav1.ObjectMeta{
-			Name: "view-only",
-			Labels: map[string]string{
-				"kubecarrier.io/manager": "true",
-			},
-		},
-		Rules: []rbacv1.PolicyRule{
-			{
-				APIGroups: []string{c.ManagementClusterGroup},
-				Resources: []string{c.ManagementClusterPlural},
-				Verbs:     []string{"get", "list", "watch"},
-			},
-		},
-	}
-	roleBytes, err = yaml.Marshal(aggregationManagerRole)
-	if err != nil {
-		return nil, fmt.Errorf("marshalling aggreation manager cluster role: %w", err)
-	}
-	if err := kc.WriteFile("/man/aggregation-manager-role.yaml", roleBytes); err != nil {
-		return nil, fmt.Errorf("writing /man/aggregation-manager-role.yaml: %w", err)
-	}
-
 	failurePolicyFail := adminv1beta1.Fail
 	sideEffectsDryRun := adminv1beta1.SideEffectClassNoneOnDryRun
 	mutatingWebhookConfiguration := adminv1beta1.MutatingWebhookConfiguration{
@@ -279,6 +253,31 @@ func Manifests(c Config) ([]unstructured.Unstructured, error) {
 	if err != nil {
 		return nil, fmt.Errorf("running kustomize build: %w", err)
 	}
+
+	rootManagerRole := &rbacv1.ClusterRole{
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: "rbac.authorization.k8s.io/v1",
+			Kind:       "ClusterRole",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name: c.ManagementClusterPlural + "." + c.ManagementClusterGroup + "-view-only",
+			Labels: map[string]string{
+				"kubecarrier.io/manager": "true",
+			},
+		},
+		Rules: []rbacv1.PolicyRule{
+			{
+				APIGroups: []string{c.ManagementClusterGroup},
+				Resources: []string{c.ManagementClusterPlural},
+				Verbs:     []string{"get", "list", "watch"},
+			},
+		},
+	}
+	obj, err := runtime.DefaultUnstructuredConverter.ToUnstructured(rootManagerRole)
+	if err != nil {
+		return nil, fmt.Errorf("converting to unstructured: %w", err)
+	}
+	objects = append(objects, unstructured.Unstructured{Object: obj})
 
 	for _, obj := range objects {
 		labels := obj.GetLabels()
