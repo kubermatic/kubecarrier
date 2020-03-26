@@ -131,6 +131,17 @@ w
 EOF
 statik-gen elevator config/internal/elevator
 
+# Tower
+# -------
+# RBAC
+$CONTROLLER_GEN rbac:roleName=manager paths="./pkg/tower/..." output:rbac:artifacts:config=config/internal/tower/rbac
+# The `|| true` is because the `,s/ClusterRole/Role/g` will error out if there is no match of `ClusterRole` (eg., the file is empty) in the file.
+ed config/internal/tower/rbac/role.yaml <<EOF || true
+,s/ClusterRole/Role/g
+w
+EOF
+statik-gen tower config/internal/tower
+
 #Service cluster RBAC
 serviceClusterDir=tmp
 mkdir -p ${serviceClusterDir}
