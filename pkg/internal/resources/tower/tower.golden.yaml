@@ -5,7 +5,7 @@
     labels:
       app.kubernetes.io/instance: test3000
       app.kubernetes.io/managed-by: kubecarrier-operator
-      app.kubernetes.io/name: kubecarrier-master-controller-manager
+      app.kubernetes.io/name: tower
       app.kubernetes.io/version: was not build properly
       kubecarrier.io/role: tower
     name: kubecarrier-tower-manager-role
@@ -17,7 +17,7 @@
     labels:
       app.kubernetes.io/instance: test3000
       app.kubernetes.io/managed-by: kubecarrier-operator
-      app.kubernetes.io/name: kubecarrier-master-controller-manager
+      app.kubernetes.io/name: tower
       app.kubernetes.io/version: was not build properly
       kubecarrier.io/role: tower
     name: kubecarrier-tower-sa
@@ -28,7 +28,7 @@
     labels:
       app.kubernetes.io/instance: test3000
       app.kubernetes.io/managed-by: kubecarrier-operator
-      app.kubernetes.io/name: kubecarrier-master-controller-manager
+      app.kubernetes.io/name: tower
       app.kubernetes.io/version: was not build properly
       kubecarrier.io/role: tower
     name: kubecarrier-tower-manager-rolebinding
@@ -46,7 +46,7 @@
     labels:
       app.kubernetes.io/instance: test3000
       app.kubernetes.io/managed-by: kubecarrier-operator
-      app.kubernetes.io/name: kubecarrier-master-controller-manager
+      app.kubernetes.io/name: tower
       app.kubernetes.io/version: was not build properly
       kubecarrier.io/role: tower
     name: kubecarrier-tower-leader-election-role
@@ -84,7 +84,7 @@
     labels:
       app.kubernetes.io/instance: test3000
       app.kubernetes.io/managed-by: kubecarrier-operator
-      app.kubernetes.io/name: kubecarrier-master-controller-manager
+      app.kubernetes.io/name: tower
       app.kubernetes.io/version: was not build properly
       kubecarrier.io/role: tower
     name: kubecarrier-tower-leader-election-rolebinding
@@ -103,7 +103,7 @@
     labels:
       app.kubernetes.io/instance: test3000
       app.kubernetes.io/managed-by: kubecarrier-operator
-      app.kubernetes.io/name: kubecarrier-master-controller-manager
+      app.kubernetes.io/name: tower
       app.kubernetes.io/version: was not build properly
       control-plane: tower
       kubecarrier.io/role: tower
