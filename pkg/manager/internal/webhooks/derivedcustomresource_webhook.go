@@ -64,6 +64,8 @@ func (r *DerivedCustomResourceWebhookHandler) Handle(ctx context.Context, req ad
 			return admission.Denied(err.Error())
 		}
 	case adminv1beta1.Delete:
+		// TODO: FIX THIS!
+		return admission.Allowed("temporary disabled due to bug")
 		oldObj := &catalogv1alpha1.DerivedCustomResource{}
 		if err := r.decoder.DecodeRaw(req.OldObject, oldObj); err != nil {
 			return admission.Errored(http.StatusBadRequest, err)
