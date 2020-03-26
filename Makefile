@@ -32,7 +32,7 @@ IMAGE_ORG?=quay.io/kubecarrier
 MODULE=github.com/kubermatic/kubecarrier
 LD_FLAGS=-X $(MODULE)/pkg/internal/version.Version=$(VERSION) -X $(MODULE)/pkg/internal/version.Branch=$(BRANCH) -X $(MODULE)/pkg/internal/version.Commit=$(SHORT_SHA) -X $(MODULE)/pkg/internal/version.BuildDate=$(BUILD_DATE)
 KIND_CLUSTER?=kubecarrier
-COMPONENTS = operator manager ferry catapult elevator tower
+COMPONENTS = operator manager ferry catapult elevator
 
 # every makefile operation should have explicit kubeconfig
 undefine KUBECONFIG
@@ -61,16 +61,8 @@ FORCE:
 bin/docgen: hack/docgen/main.go
 	$(GOARGS) go build -ldflags "-w $(LD_FLAGS)" -o bin/docgen ./hack/docgen
 
-quick-clean:
-	KUBECONFIG=${HOME}/.kube/kind-config-${MANAGEMENT_KIND_CLUSTER} kubectl kubecarrier delete account --all --force
-	kubectl --kubeconfig=${HOME}/.kube/kind-config-${MANAGEMENT_KIND_CLUSTER} delete kubecarriers.operator.kubecarrier.io --all
-	KUBECONFIG=${HOME}/.kube/kind-config-${MANAGEMENT_KIND_CLUSTER} kubectl delete deployments --all --namespace kubecarrier-system
-	kubectl --kubeconfig=${HOME}/.kube/kind-config-${SVC_KIND_CLUSTER} delete crd --all
-
-clean:
+clean: e2e-test-clean
 	rm -rf bin/$*
-	@kind delete cluster --name=${MANAGEMENT_KIND_CLUSTER} "--kubeconfig=${HOME}/.kube/kind-config-${MANAGEMENT_KIND_CLUSTER}" || true
-	@kind delete cluster --name=${SVC_KIND_CLUSTER} "--kubeconfig=${HOME}/.kube/kind-config-${SVC_KIND_CLUSTER}" || true
 .PHONEY: clean
 
 # Generate code
@@ -139,6 +131,10 @@ e2e-test: e2e-setup
 
 .PHONY: e2e-test
 
+e2e-test-clean:
+	@kind delete cluster --name=${MANAGEMENT_KIND_CLUSTER} "--kubeconfig=${HOME}/.kube/kind-config-${MANAGEMENT_KIND_CLUSTER}" || true
+	@kind delete cluster --name=${SVC_KIND_CLUSTER} "--kubeconfig=${HOME}/.kube/kind-config-${SVC_KIND_CLUSTER}" || true
+.PHONY: e2e-test-clean
 
 lint: generate
 	@hack/validate-directory-clean.sh
