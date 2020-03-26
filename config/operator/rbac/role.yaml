@@ -175,6 +175,24 @@ rules:
   - patch
   - update
 - apiGroups:
+  - operator.kubecarrier.io
+  resources:
+  - towers
+  verbs:
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - operator.kubecarrier.io
+  resources:
+  - towers/status
+  verbs:
+  - get
+  - patch
+  - update
+- apiGroups:
   - rbac.authorization.k8s.io
   resources:
   - clusterrolebindings
