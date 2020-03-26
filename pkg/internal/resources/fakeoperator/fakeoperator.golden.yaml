@@ -16,7 +16,17 @@
       singular: db
     scope: Namespaced
     versions:
-    - name: v1alpha1
+    - additionalPrinterColumns:
+      - jsonPath: .status.phase
+        name: Status
+        type: string
+      - jsonPath: .metadata.creationTimestamp
+        name: Age
+        type: date
+      - jsonPath: .status.connection
+        name: Connection
+        type: string
+      name: v1alpha1
       schema:
         openAPIV3Schema:
           description: DB is core element in joke generation operator
@@ -37,6 +47,14 @@
             spec:
               description: DBSpec defines the desired state of DB
               properties:
+                config:
+                  description: E2E tests params
+                  properties:
+                    deletionAfterSeconds:
+                      type: integer
+                    readyAfterSeconds:
+                      type: integer
+                  type: object
                 databaseName:
                   description: DatabaseName of the created database at start up
                   type: string
@@ -94,6 +112,24 @@
                     - type
                     type: object
                   type: array
+                connection:
+                  description: Connection defines necessary endpoints and credential
+                    for DB usage
+                  properties:
+                    endpoint:
+                      description: Endpoint for this database
+                      type: string
+                    name:
+                      description: Database name
+                      type: string
+                    username:
+                      description: Username for this database
+                      type: string
+                  required:
+                  - endpoint
+                  - name
+                  - username
+                  type: object
                 observedGeneration:
                   description: The most recent generation observed by the controller.
                   format: int64

@@ -155,7 +155,7 @@ func setupE2EOperator(log logr.Logger, kubeconfig string, namespaceName string, 
 		return wait.Poll(time.Second, 60*time.Second, func() (done bool, err error) {
 			deployment := &appsv1.Deployment{}
 			err = c.Get(ctx, types.NamespacedName{
-				Name:      "fake-controller-manager",
+				Name:      "e2e-operator-manager",
 				Namespace: namespace.Name,
 			}, deployment)
 			switch {

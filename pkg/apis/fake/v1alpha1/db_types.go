@@ -17,6 +17,8 @@ limitations under the License.
 package v1alpha1
 
 import (
+	"fmt"
+
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -33,6 +35,15 @@ type DBSpec struct {
 
 	// DatabasePassword for the created database. Leave blank for auto-generation
 	DatabasePassword string `json:"databasePassword"`
+
+	// E2E tests params
+	Config Config `json:"config,omitempty"`
+}
+
+// Config defines the e2e tests params
+type Config struct {
+	ReadyAfterSeconds    int `json:"readyAfterSeconds,omitempty"`
+	DeletionAfterSeconds int `json:"deletionAfterSeconds,omitempty"`
 }
 
 // DBStatus defines the observed state of DB
@@ -41,6 +52,23 @@ type DBStatus struct {
 	ObservedGeneration int64         `json:"observedGeneration,omitempty"`
 	Conditions         []DBCondition `json:"conditions,omitempty"`
 	Phase              DBPhaseType   `json:"phase,omitempty"`
+	Connection         *Connection   `json:"connection,omitempty"`
+}
+
+// Connection defines necessary endpoints and credential for DB usage
+type Connection struct {
+	// Endpoint for this database
+	Endpoint string `json:"endpoint"`
+
+	// Database name
+	Name string `json:"name"`
+
+	// Username for this database
+	Username string `json:"username"`
+}
+
+func (c Connection) String() string {
+	return fmt.Sprintf("%s-%s:%s", c.Endpoint, c.Username, c.Name)
 }
 
 // DBPhaseType represents all conditions as a single string for printing by using kubectl commands.
@@ -154,6 +182,9 @@ func (s *DBStatus) SetCondition(condition DBCondition) {
 // DB is core element in joke generation operator
 // +kubebuilder:object:root=true
 // +kubebuilder:subresource:status
+// +kubebuilder:printcolumn:name="Status",type="string",JSONPath=".status.phase"
+// +kubebuilder:printcolumn:name="Age",type="date",JSONPath=".metadata.creationTimestamp"
+// +kubebuilder:printcolumn:name="Connection",type="string",JSONPath=".status.connection"
 type DB struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
@@ -168,6 +199,65 @@ type DBList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
 	Items           []DB `json:"items"`
+}
+
+// IsReady returns if the DB is ready.
+func (s *DB) IsReady() bool {
+	if s.Generation != s.Status.ObservedGeneration {
+		return false
+	}
+
+	for _, condition := range s.Status.Conditions {
+		if condition.Type == DBReady &&
+			condition.Status == ConditionTrue {
+			return true
+		}
+	}
+	return false
+}
+
+func (s *DB) SetReadyCondition() bool {
+	if !s.IsReady() {
+		s.Status.ObservedGeneration = s.Generation
+		s.Status.SetCondition(DBCondition{
+			Type:    DBReady,
+			Status:  ConditionTrue,
+			Reason:  "DeploymentReady",
+			Message: "the DB is ready",
+		})
+		return true
+	}
+	return false
+}
+func (s *DB) SetUnReadyCondition() bool {
+	readyCondition, _ := s.Status.GetCondition(DBReady)
+	if readyCondition.Status != ConditionFalse {
+		s.Status.ObservedGeneration = s.Generation
+		s.Status.SetCondition(DBCondition{
+			Type:    DBReady,
+			Status:  ConditionFalse,
+			Reason:  "DBUnready",
+			Message: "the DB is not ready",
+		})
+		return true
+	}
+	return false
+}
+
+func (s *DB) SetTerminatingCondition() bool {
+	readyCondition, _ := s.Status.GetCondition(DBReady)
+	if readyCondition.Status != ConditionFalse ||
+		readyCondition.Status == ConditionFalse && readyCondition.Reason != DBTerminatingReason {
+		s.Status.ObservedGeneration = s.Generation
+		s.Status.SetCondition(DBCondition{
+			Type:    DBReady,
+			Status:  ConditionFalse,
+			Reason:  DBTerminatingReason,
+			Message: "DB is being deleted",
+		})
+		return true
+	}
+	return false
 }
 
 func init() {

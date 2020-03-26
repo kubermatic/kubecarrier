@@ -28,7 +28,10 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	fakev1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/fake/v1alpha1"
+	"github.com/kubermatic/kubecarrier/pkg/internal/util"
 )
+
+const finalizer = "fake.kubecarrier.io/controller"
 
 // DBReconciler reconciles a Joke object
 type DBReconciler struct {
@@ -38,7 +41,6 @@ type DBReconciler struct {
 
 // +kubebuilder:rbac:groups=fake.kubecarrier.io,resources=dbs,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=fake.kubecarrier.io,resources=dbs/status,verbs=get;update;patch
-
 func (r *DBReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	ctx := context.Background()
 	db := &fakev1alpha1.DB{}
@@ -49,17 +51,72 @@ func (r *DBReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 		return ctrl.Result{}, fmt.Errorf("cannot fetch database: %w", err)
 	}
 
-	db.Status.ObservedGeneration = db.Generation
+	if !db.GetDeletionTimestamp().IsZero() {
+		if db.SetTerminatingCondition() {
+			if err := r.Client.Status().Update(ctx, db); err != nil {
+				return ctrl.Result{}, fmt.Errorf("updating %s status: %w", "FakeDB controller", err)
+			}
+		}
+		cond, _ := db.Status.GetCondition(fakev1alpha1.DBReady)
+		if time.Now().UTC().Sub(cond.LastTransitionTime.Time).Seconds() < float64(db.Spec.Config.DeletionAfterSeconds) {
+			return ctrl.Result{RequeueAfter: time.Second * time.Duration(db.Spec.Config.DeletionAfterSeconds)}, nil
+		}
+		if util.RemoveFinalizer(db, finalizer) {
+			if err := r.Client.Update(ctx, db); err != nil {
+				return ctrl.Result{}, fmt.Errorf("updating %s Status: %w", "FakeDB controller", err)
+			}
+		}
 
-	db.Status.SetCondition(fakev1alpha1.DBCondition{
-		Message: "No dbs of the appropriate type were found in the dbs database",
-		Reason:  "NoValidJokes",
-		Status:  fakev1alpha1.ConditionTrue,
-		Type:    fakev1alpha1.DBReady,
-	})
+		return ctrl.Result{}, nil
+	}
 
-	if err := r.Status().Update(ctx, db); err != nil {
-		return ctrl.Result{}, fmt.Errorf("cannot update db: %w", err)
+	if util.AddFinalizer(db, finalizer) {
+		if err := r.Client.Update(ctx, db); err != nil {
+			return ctrl.Result{}, fmt.Errorf("updating %s finalizers: %w", "FakeDB controller", err)
+		}
+	}
+
+	cond, ok := db.Status.GetCondition(fakev1alpha1.DBReady)
+	// mark as unready
+	if !ok {
+		if db.SetUnReadyCondition() {
+			if err := r.Status().Update(ctx, db); err != nil {
+				return ctrl.Result{}, fmt.Errorf("cannot update db: %w", err)
+			}
+		}
+		return ctrl.Result{}, nil
+	}
+
+	// DB is in ready state
+	if db.IsReady() {
+		if db.SetReadyCondition() {
+			db.Status.Connection = &fakev1alpha1.Connection{
+				Endpoint: "fake endpoint",
+				Name:     db.Spec.DatabaseName,
+				Username: db.Spec.DatabaseUser,
+			}
+			if err := r.Status().Update(ctx, db); err != nil {
+				return ctrl.Result{}, fmt.Errorf("cannot update db: %w", err)
+			}
+			return ctrl.Result{}, nil
+		}
+	}
+
+	// DB is not ready and waiting for timeout
+	if time.Now().UTC().Sub(cond.LastTransitionTime.Time).Seconds() < float64(db.Spec.Config.ReadyAfterSeconds) {
+		return ctrl.Result{RequeueAfter: time.Second * time.Duration(db.Spec.Config.ReadyAfterSeconds)}, nil
+	}
+
+	// mark as ready after delay
+	if db.SetReadyCondition() {
+		db.Status.Connection = &fakev1alpha1.Connection{
+			Endpoint: "fake endpoint",
+			Name:     db.Spec.DatabaseName,
+			Username: db.Spec.DatabaseUser,
+		}
+		if err := r.Status().Update(ctx, db); err != nil {
+			return ctrl.Result{}, fmt.Errorf("cannot update db: %w", err)
+		}
 	}
 	return ctrl.Result{}, nil
 }
