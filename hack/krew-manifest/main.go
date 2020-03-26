@@ -24,6 +24,7 @@ import (
 	"io/ioutil"
 	"path"
 	"path/filepath"
+	"strings"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/krew/pkg/constants"
@@ -39,11 +40,30 @@ func main() {
 	kubecarrier := &index.Plugin{
 		Spec: index.PluginSpec{
 			Version:          *version,
-			ShortDescription: "KubeCarrier is an open source system for managing applications and services across multiple Kubernetes Clusters",
-			Description:      "KubeCarrier is an open source system for managing applications and services across multiple Kubernetes Clusters; providing a framework to centralize the management of services and provide these services with external users in a self service catalog.",
-			Caveats:          "",
-			Homepage:         "https://github.com/kubermatic/kubecarrier",
-			Platforms:        nil,
+			ShortDescription: "KubeCarrier installation management and control",
+			Description: strings.TrimSpace(`
+The kubecarrier plugin for installing, upgrading and performing management tasks in the Kubecarrier system.
+
+KubeCarrier is an open source system for managing applications and services across multiple Kubernetes Clusters; providing a framework to centralize the management of services and provide these services with external users in a self service catalog.,
+
+Overview:
+	https://github.com/kubermatic/kubecarrier/
+Installation:
+	https://github.com/kubermatic/kubecarrier/#install-kubecarrier
+Quick Start:
+	https://github.com/kubermatic/kubecarrier/blob/master/README.md
+`),
+			Caveats: strings.TrimSpace(`
+The kubecarrier is a management plugin for controlling the KubeCarrier system. See https://github.com/kubermatic/kubecarrier/ for more details.
+
+For quick start installation run:
+
+kubectl kubecarrier setup
+
+For all other commands, options and how to use the system read the official documentation.
+`),
+			Homepage:  "https://github.com/kubermatic/kubecarrier",
+			Platforms: nil,
 		},
 	}
 	kubecarrier.Kind = constants.PluginKind
