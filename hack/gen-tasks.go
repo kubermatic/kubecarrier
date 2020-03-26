@@ -126,6 +126,17 @@ func main() {
 				"KUBECONFIG": managementKubeconfigPath,
 			},
 		},
+		{
+			Name:    "Tower",
+			Program: "cmd/tower",
+			LDFlags: *ldFlags,
+			Args: []string{
+				"--enable-leader-election=false",
+			},
+			Env: map[string]string{
+				"KUBECONFIG": managementKubeconfigPath,
+			},
+		},
 	}
 
 	for _, test := range []string{

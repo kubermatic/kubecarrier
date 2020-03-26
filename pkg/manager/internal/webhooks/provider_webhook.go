@@ -73,11 +73,6 @@ func (r *ProviderWebhookHandler) validateCreate(provider *catalogv1alpha1.Provid
 	return r.validateMetadata(provider)
 }
 
-func (r *ProviderWebhookHandler) validateUpdate(oldObj, newObj *catalogv1alpha1.Provider) error {
-	r.Log.Info("validate update", "name", newObj.Name)
-	return r.validateMetadata(newObj)
-}
-
 func (r *ProviderWebhookHandler) validateMetadata(provider *catalogv1alpha1.Provider) error {
 	if provider.Spec.Metadata.Description == "" || provider.Spec.Metadata.DisplayName == "" {
 		return fmt.Errorf("the description or the display name of the Provider: %s cannot be empty", provider.Name)
