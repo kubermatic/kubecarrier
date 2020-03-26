@@ -146,7 +146,7 @@ func (s *TowerStatus) SetCondition(condition TowerCondition) {
 	s.Conditions = append(s.Conditions, condition)
 }
 
-// Tower is the master controller manager of KubeCarrier.
+// Tower manages the deployment of the KubeCarrier master controller manager.
 // +kubebuilder:object:root=true
 // +kubebuilder:subresource:status
 // +kubebuilder:printcolumn:name="Status",type="string",JSONPath=".status.phase"
