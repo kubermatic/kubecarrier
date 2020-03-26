@@ -1,0 +1,29 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: manager
+  namespace: system
+  labels:
+    control-plane: tower
+spec:
+  selector:
+    matchLabels:
+      control-plane: tower
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        control-plane: tower
+    spec:
+      serviceAccountName: sa
+      containers:
+      - image: quay.io/kubecarrier/tower:lastest
+        name: manager
+        resources:
+          limits:
+            cpu: 100m
+            memory: 100Mi
+          requests:
+            cpu: 100m
+            memory: 100Mi
+      terminationGracePeriodSeconds: 10
