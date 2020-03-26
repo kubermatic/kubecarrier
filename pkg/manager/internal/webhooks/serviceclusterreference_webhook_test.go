@@ -27,20 +27,20 @@ import (
 	"github.com/kubermatic/kubecarrier/pkg/testutil"
 )
 
-func TestServiceClusterReferenceValidatingUpdate(t *testing.T) {
-	serviceClusterReferenceWebhookHandler := ServiceClusterReferenceWebhookHandler{
+func TestRegionValidatingUpdate(t *testing.T) {
+	regionWebhookHandler := RegionWebhookHandler{
 		Log: testutil.NewLogger(t),
 	}
 
-	oldObj := &catalogv1alpha1.ServiceClusterReference{
+	oldObj := &catalogv1alpha1.Region{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      "test-serviceclusterreference",
+			Name:      "test-region",
 			Namespace: "test-namespace",
 		},
-		Spec: catalogv1alpha1.ServiceClusterReferenceSpec{
+		Spec: catalogv1alpha1.RegionSpec{
 			Metadata: corev1alpha1.ServiceClusterMetadata{
-				Description: "Test ServiceClusterReference",
-				DisplayName: "Test ServiceClusterReference",
+				Description: "Test Region",
+				DisplayName: "Test Region",
 			},
 			Provider: catalogv1alpha1.ObjectReference{
 				Name: "Provider",
@@ -50,20 +50,20 @@ func TestServiceClusterReferenceValidatingUpdate(t *testing.T) {
 
 	tests := []struct {
 		name          string
-		object        *catalogv1alpha1.ServiceClusterReference
+		object        *catalogv1alpha1.Region
 		expectedError bool
 	}{
 		{
 			name: "provider immutable",
-			object: &catalogv1alpha1.ServiceClusterReference{
+			object: &catalogv1alpha1.Region{
 				ObjectMeta: metav1.ObjectMeta{
-					Name:      "test-serviceclusterreference",
+					Name:      "test-region",
 					Namespace: "test-namespace",
 				},
-				Spec: catalogv1alpha1.ServiceClusterReferenceSpec{
+				Spec: catalogv1alpha1.RegionSpec{
 					Metadata: corev1alpha1.ServiceClusterMetadata{
-						Description: "Test ServiceClusterReference",
-						DisplayName: "Test ServiceClusterReference",
+						Description: "Test Region",
+						DisplayName: "Test Region",
 					},
 					Provider: catalogv1alpha1.ObjectReference{
 						Name: "Provider2",
@@ -74,15 +74,15 @@ func TestServiceClusterReferenceValidatingUpdate(t *testing.T) {
 		},
 		{
 			name: "can pass validating update",
-			object: &catalogv1alpha1.ServiceClusterReference{
+			object: &catalogv1alpha1.Region{
 				ObjectMeta: metav1.ObjectMeta{
-					Name:      "test-serviceclusterreference",
+					Name:      "test-region",
 					Namespace: "test-namespace",
 				},
-				Spec: catalogv1alpha1.ServiceClusterReferenceSpec{
+				Spec: catalogv1alpha1.RegionSpec{
 					Metadata: corev1alpha1.ServiceClusterMetadata{
-						Description: "Test ServiceClusterReference",
-						DisplayName: "Test ServiceClusterReference new displayName",
+						Description: "Test Region",
+						DisplayName: "Test Region new displayName",
 					},
 					Provider: catalogv1alpha1.ObjectReference{
 						Name: "Provider",
@@ -95,7 +95,7 @@ func TestServiceClusterReferenceValidatingUpdate(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			assert.Equal(t, test.expectedError, serviceClusterReferenceWebhookHandler.validateUpdate(test.object, oldObj) != nil)
+			assert.Equal(t, test.expectedError, regionWebhookHandler.validateUpdate(test.object, oldObj) != nil)
 		})
 	}
 }

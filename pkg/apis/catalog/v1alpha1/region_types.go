@@ -22,8 +22,8 @@ import (
 	corev1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/core/v1alpha1"
 )
 
-// ServiceClusterReferenceSpec defines the desired state of ServiceClusterReference
-type ServiceClusterReferenceSpec struct {
+// RegionSpec defines the desired state of Region
+type RegionSpec struct {
 	// Metadata contains the metadata (display name, description, etc) of the ServiceCluster.
 	Metadata corev1alpha1.ServiceClusterMetadata `json:"metadata,omitempty"`
 
@@ -31,29 +31,29 @@ type ServiceClusterReferenceSpec struct {
 	Provider ObjectReference `json:"provider"`
 }
 
-// ServiceClusterReference exposes information about a Providers Cluster.
+// Region exposes information about a Providers Cluster.
 //
-// ServiceClusterReference objects are created automatically by KubeCarrier in Account namespaces, that have a service offered to them via a Catalog.
+// Region objects are created automatically by KubeCarrier in Account namespaces, that have a service offered to them via a Catalog.
 // +kubebuilder:object:root=true
 // +kubebuilder:printcolumn:name="Provider",type="string",JSONPath=".spec.provider.name"
 // +kubebuilder:printcolumn:name="Display Name",type="string",JSONPath=".spec.metadata.displayName"
 // +kubebuilder:printcolumn:name="Age",type="date",JSONPath=".metadata.creationTimestamp"
 // +kubebuilder:resource:categories=kubecarrier-tenant,shortName=scr
-type ServiceClusterReference struct {
+type Region struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec ServiceClusterReferenceSpec `json:"spec,omitempty"`
+	Spec RegionSpec `json:"spec,omitempty"`
 }
 
-// ServiceClusterReferenceList contains a list of ServiceClusterReference.
+// RegionList contains a list of Region.
 // +kubebuilder:object:root=true
-type ServiceClusterReferenceList struct {
+type RegionList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
-	Items           []ServiceClusterReference `json:"items"`
+	Items           []Region `json:"items"`
 }
 
 func init() {
-	SchemeBuilder.Register(&ServiceClusterReference{}, &ServiceClusterReferenceList{})
+	SchemeBuilder.Register(&Region{}, &RegionList{})
 }

@@ -180,7 +180,7 @@ func TestCatalogReconciler(t *testing.T) {
 	catalogFound := &catalogv1alpha1.Catalog{}
 	offeringFound := &catalogv1alpha1.Offering{}
 	providerFound := &catalogv1alpha1.Provider{}
-	serviceClusterReferenceFound := &catalogv1alpha1.ServiceClusterReference{}
+	regionFound := &catalogv1alpha1.Region{}
 	serviceClusterAssignmentFound := &corev1alpha1.ServiceClusterAssignment{}
 	providerRoleFound := &rbacv1.Role{}
 	providerRoleBindingFound := &rbacv1.RoleBinding{}
@@ -234,14 +234,14 @@ func TestCatalogReconciler(t *testing.T) {
 		assert.Equal(t, providerFound.Spec.Metadata.Description, provider.Spec.Metadata.Description, "Wrong Provider Metadata.Description")
 		assert.Equal(t, providerFound.Spec.Metadata.DisplayName, provider.Spec.Metadata.DisplayName, "Wrong Provider Metadata.DisplayName")
 
-		// Check ServiceClusterReference
+		// Check Region
 		require.NoError(t, client.Get(ctx, types.NamespacedName{
 			Name:      fmt.Sprintf("%s.%s", serviceCluster.Name, provider.Name),
 			Namespace: tenantNamespace.Name,
-		}, serviceClusterReferenceFound), "getting ServiceClusterReference error")
-		assert.Equal(t, serviceClusterReferenceFound.Spec.Provider.Name, provider.Name, "Wrong ServiceClusterReference provider name")
-		assert.Equal(t, serviceClusterReferenceFound.Spec.Metadata.Description, serviceCluster.Spec.Metadata.Description, "Wrong ServiceClusterReference description")
-		assert.Equal(t, serviceClusterReferenceFound.Spec.Metadata.DisplayName, serviceCluster.Spec.Metadata.DisplayName, "Wrong ServiceClusterReference display name")
+		}, regionFound), "getting Region error")
+		assert.Equal(t, regionFound.Spec.Provider.Name, provider.Name, "Wrong Region provider name")
+		assert.Equal(t, regionFound.Spec.Metadata.Description, serviceCluster.Spec.Metadata.Description, "Wrong Region description")
+		assert.Equal(t, regionFound.Spec.Metadata.DisplayName, serviceCluster.Spec.Metadata.DisplayName, "Wrong Region display name")
 
 		// Check ServiceClusterAssignment
 		require.NoError(t, client.Get(ctx, types.NamespacedName{
@@ -335,12 +335,12 @@ func TestCatalogReconciler(t *testing.T) {
 			Namespace: providerFound.Namespace,
 		}, providerCheck)), "Provider should be gone")
 
-		// Check ServiceClusterReference
-		serviceClusterReferenceCheck := &catalogv1alpha1.ServiceClusterReference{}
+		// Check Region
+		regionCheck := &catalogv1alpha1.Region{}
 		assert.True(t, errors.IsNotFound(client.Get(ctx, types.NamespacedName{
-			Name:      serviceClusterReferenceFound.Name,
-			Namespace: serviceClusterReferenceFound.Namespace,
-		}, serviceClusterReferenceCheck)), "ServiceClusterReference should be gone")
+			Name:      regionFound.Name,
+			Namespace: regionFound.Namespace,
+		}, regionCheck)), "Region should be gone")
 
 		// Check ServiceClusterAssignment
 		serviceClusterAssignmentCheck := &corev1alpha1.ServiceClusterAssignment{}

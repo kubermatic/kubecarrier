@@ -206,8 +206,7 @@ spec:
                     plural:
                       type: string
                     serviceCluster:
-                      description: ServiceCluster references a ServiceClusterReference
-                        of this CRD.
+                      description: ServiceCluster references a Region of this CRD.
                       properties:
                         name:
                           minLength: 1
@@ -252,8 +251,7 @@ spec:
                     plural:
                       type: string
                     serviceCluster:
-                      description: ServiceCluster references a ServiceClusterReference
-                        of this CRD.
+                      description: ServiceCluster references a Region of this CRD.
                       properties:
                         name:
                           minLength: 1
