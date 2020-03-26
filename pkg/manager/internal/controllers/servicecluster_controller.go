@@ -91,7 +91,9 @@ func (r *ServiceClusterReconciler) Reconcile(req ctrl.Request) (ctrl.Result, err
 		return ctrl.Result{}, fmt.Errorf("updating status: %w", err)
 	}
 
-	return ctrl.Result{}, nil
+	// added extra seconds to requeue to ensure previous MonitorGraceDuration
+	// expires if no new heartbeats arrive
+	return ctrl.Result{RequeueAfter: r.MonitorGraceDuration + time.Second}, nil
 }
 
 func (r *ServiceClusterReconciler) SetupWithManager(mgr ctrl.Manager) error {
@@ -177,6 +179,7 @@ func (r *ServiceClusterReconciler) updateStatus(
 		corev1alpha1.ServiceClusterReachable)
 	timenow := metav1.Now()
 	if timenow.Sub(serviceClusterReachable.LastHeartbeatTime.Time) > r.MonitorGraceDuration {
+		serviceClusterReachable.Type = corev1alpha1.ServiceClusterReachable
 		serviceClusterReachable.LastTransitionTime = timenow
 		serviceClusterReachable.Status = corev1alpha1.ConditionUnknown
 		serviceClusterReachable.Message = "cluster reachable heartbeat hasn't been updaed within monitor grace duration"

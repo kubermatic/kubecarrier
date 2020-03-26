@@ -19,6 +19,7 @@ package controllers
 import (
 	"context"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -40,9 +41,10 @@ func TestServiceClusterReconciler(t *testing.T) {
 		},
 	}
 	scc := &ServiceClusterReconciler{
-		Log:    testutil.NewLogger(t),
-		Client: fakeclient.NewFakeClientWithScheme(testScheme, serviceCluster),
-		Scheme: testScheme,
+		Log:                  testutil.NewLogger(t),
+		Client:               fakeclient.NewFakeClientWithScheme(testScheme, serviceCluster),
+		Scheme:               testScheme,
+		MonitorGraceDuration: 40 * time.Second,
 	}
 
 	ctx := context.Background()
