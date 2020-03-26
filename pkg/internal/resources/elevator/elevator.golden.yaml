@@ -359,7 +359,7 @@
       app.kubernetes.io/name: elevator
       app.kubernetes.io/version: was not build properly
       kubecarrier.io/manager: "true"
-    name: db-eu-west-1-view-only
+    name: couchdbs.eu-west-1.provider-view-only
   rules:
   - apiGroups:
     - eu-west-1.provider
