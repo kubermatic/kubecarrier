@@ -26,7 +26,8 @@ spec:
     name: v1alpha1
     schema:
       openAPIV3Schema:
-        description: Tower is the master controller manager of KubeCarrier.
+        description: Tower manages the deployment of the KubeCarrier master controller
+          manager.
         properties:
           apiVersion:
             description: 'APIVersion defines the versioned schema of this representation
