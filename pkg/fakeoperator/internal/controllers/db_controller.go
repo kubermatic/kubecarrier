@@ -26,8 +26,13 @@ import (
 	"k8s.io/apimachinery/pkg/api/errors"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/source"
+
+	certv1alpha2 "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
+	adminv1beta1 "k8s.io/api/admissionregistration/v1beta1"
 
 	fakev1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/fake/v1alpha1"
+	"github.com/kubermatic/kubecarrier/pkg/internal/owner"
 	"github.com/kubermatic/kubecarrier/pkg/internal/util"
 )
 
@@ -41,6 +46,10 @@ type DBReconciler struct {
 
 // +kubebuilder:rbac:groups=fake.kubecarrier.io,resources=dbs,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=fake.kubecarrier.io,resources=dbs/status,verbs=get;update;patch
+// +kubebuilder:rbac:groups=admissionregistration.k8s.io,resources=mutatingwebhookconfigurations,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=admissionregistration.k8s.io,resources=validatingwebhookconfigurations,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=cert-manager.io,resources=issuers,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=cert-manager.io,resources=certificates,verbs=get;list;watch;create;update;patch;delete
 func (r *DBReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	ctx := context.Background()
 	db := &fakev1alpha1.DB{}
@@ -122,8 +131,13 @@ func (r *DBReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 }
 
 func (r *DBReconciler) SetupWithManager(mgr ctrl.Manager) error {
+	enqueuer := owner.EnqueueRequestForOwner(&fakev1alpha1.DB{}, mgr.GetScheme())
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&fakev1alpha1.DB{}).
+		Owns(&certv1alpha2.Issuer{}).
+		Owns(&certv1alpha2.Certificate{}).
+		Watches(&source.Kind{Type: &adminv1beta1.MutatingWebhookConfiguration{}}, enqueuer).
+		Watches(&source.Kind{Type: &adminv1beta1.ValidatingWebhookConfiguration{}}, enqueuer).
 		Complete(r)
 }
 

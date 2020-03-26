@@ -23,8 +23,8 @@
       - jsonPath: .metadata.creationTimestamp
         name: Age
         type: date
-      - jsonPath: .status.connection
-        name: Connection
+      - jsonPath: .status.endpoint
+        name: Endpoint
         type: string
       name: v1alpha1
       schema:

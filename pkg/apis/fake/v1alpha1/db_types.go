@@ -184,7 +184,7 @@ func (s *DBStatus) SetCondition(condition DBCondition) {
 // +kubebuilder:subresource:status
 // +kubebuilder:printcolumn:name="Status",type="string",JSONPath=".status.phase"
 // +kubebuilder:printcolumn:name="Age",type="date",JSONPath=".metadata.creationTimestamp"
-// +kubebuilder:printcolumn:name="Connection",type="string",JSONPath=".status.connection"
+// +kubebuilder:printcolumn:name="Endpoint",type="string",JSONPath=".status.endpoint"
 type DB struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
