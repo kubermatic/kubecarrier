@@ -20,20 +20,14 @@ import (
 	"context"
 	"fmt"
 	"net/http"
-	"strings"
 
 	"github.com/go-logr/logr"
 	adminv1beta1 "k8s.io/api/admission/v1beta1"
-	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/runtime/schema"
-	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
 	catalogv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/catalog/v1alpha1"
-	"github.com/kubermatic/kubecarrier/pkg/internal/util"
 )
 
 // DerivedCustomResourceWebhookHandler handles mutating/validating of DerivedCustomResources.
@@ -64,13 +58,8 @@ func (r *DerivedCustomResourceWebhookHandler) Handle(ctx context.Context, req ad
 			return admission.Denied(err.Error())
 		}
 	case adminv1beta1.Delete:
-		oldObj := &catalogv1alpha1.DerivedCustomResource{}
-		if err := r.decoder.DecodeRaw(req.OldObject, oldObj); err != nil {
-			return admission.Errored(http.StatusBadRequest, err)
-		}
-		if err := r.validateDelete(ctx, oldObj); err != nil {
-			return admission.Denied(err.Error())
-		}
+		// TODO: FIX THIS!
+		return admission.Allowed("temporary disabled due to bug")
 	}
 	return admission.Allowed("allowed to commit the request")
 
@@ -91,36 +80,4 @@ func (r *DerivedCustomResourceWebhookHandler) validateUpdate(oldObj, newObj *cat
 		return fmt.Errorf("the BaseCRD of DerivedCustomResource is immutable")
 	}
 	return nil
-}
-
-func (r *DerivedCustomResourceWebhookHandler) validateDelete(ctx context.Context, obj *catalogv1alpha1.DerivedCustomResource) error {
-	if obj.Status.DerivedCR == nil {
-		return nil
-	}
-
-	crd := &apiextensionsv1.CustomResourceDefinition{}
-	if err := r.Get(ctx, types.NamespacedName{
-		Name: obj.Status.DerivedCR.Name,
-	}, crd); err != nil {
-		return err
-	}
-	u := &unstructured.UnstructuredList{}
-	u.SetGroupVersionKind(schema.GroupVersionKind{
-		Group:   crd.Spec.Group,
-		Version: crd.Spec.Versions[0].Name,
-		Kind:    crd.Spec.Names.ListKind,
-	})
-	if err := r.List(ctx, u); err != nil {
-		return err
-	}
-	if len(u.Items) == 0 {
-		return nil
-	}
-
-	errorMsg := new(strings.Builder)
-	errorMsg.WriteString("derived CRD instances are still present in the cluster\n")
-	for _, it := range u.Items {
-		errorMsg.WriteString(util.MustLogLine(&it, r.Scheme) + " still present\n")
-	}
-	return fmt.Errorf("%s", errorMsg)
 }
