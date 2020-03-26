@@ -80,8 +80,7 @@ func (r *TenantObjReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	if err != nil {
 		return ctrl.Result{}, fmt.Errorf("defaults forming: %w", err)
 	}
-	providerObj := r.newProviderObject()
-	err = elevatorutil.BuildProviderObj(tenantObj, providerObj, r.Scheme, nonStatusFields, defaults)
+	providerObj, err := elevatorutil.BuildProviderObj(tenantObj, r.ProviderGVK, nonStatusFields, defaults)
 	if err != nil {
 		return ctrl.Result{}, fmt.Errorf("build provider Obj: %w", err)
 	}

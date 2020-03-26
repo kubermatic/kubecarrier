@@ -24,6 +24,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 
 	catalogv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/catalog/v1alpha1"
@@ -168,12 +169,12 @@ func TestPatch(t *testing.T) {
 			"test2": "test2",
 		},
 	}
-	providerObj := &unstructured.Unstructured{Object: map[string]interface{}{
-		"apiVersion": "eu-west-1.provider/v1alpha1",
-		"kind":       "CouchDBInternal",
-	}}
-
-	require.NoError(t, BuildProviderObj(tenantObj, providerObj, testScheme, specFields, defaults))
+	providerObj, err := BuildProviderObj(tenantObj, schema.GroupVersionKind{
+		Group:   "eu-west-1.provider",
+		Version: "v1alpha1",
+		Kind:    "CouchDBInternal",
+	}, specFields, defaults)
+	require.NoError(t, err)
 
 	wantedProviderObj := &unstructured.Unstructured{Object: map[string]interface{}{
 		"apiVersion": "eu-west-1.provider/v1alpha1",

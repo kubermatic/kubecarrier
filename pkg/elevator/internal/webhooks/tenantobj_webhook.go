@@ -114,7 +114,8 @@ func (r *TenantObjWebhookHandler) Handle(ctx context.Context, req admission.Requ
 	if err != nil && !errors.IsNotFound(err) {
 		return admission.Errored(http.StatusInternalServerError, fmt.Errorf("getting providerObj: %w", err))
 	}
-	if err := elevatorutil.BuildProviderObj(tenantObj, providerObj, r.Scheme, nonStatusExposedFields, defaults); err != nil {
+	providerObj, err = elevatorutil.BuildProviderObj(tenantObj, r.ProviderGVK, nonStatusExposedFields, defaults)
+	if err != nil {
 		return admission.Errored(http.StatusInternalServerError, fmt.Errorf("build and elevate: %w", err))
 	}
 	// client.ForceOwnership is here until the

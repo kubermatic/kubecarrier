@@ -22,6 +22,7 @@ import (
 
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/structured-merge-diff/v3/typed"
 	"sigs.k8s.io/yaml"
@@ -95,28 +96,30 @@ func FromRawExtensions(defaultField *runtime.RawExtension) (defaults map[string]
 	return
 }
 
-func BuildProviderObj(tenantObj *unstructured.Unstructured, providerObj *unstructured.Unstructured, scheme *runtime.Scheme, elevateFields []catalogv1alpha1.FieldPath, defaults interface{}) error {
+func BuildProviderObj(tenantObj *unstructured.Unstructured, providerGVK schema.GroupVersionKind, exposedFields []catalogv1alpha1.FieldPath, defaults interface{}) (*unstructured.Unstructured, error) {
+	providerObj := &unstructured.Unstructured{}
+	providerObj.SetGroupVersionKind(providerGVK)
 	providerObj.SetName(tenantObj.GetName())
 	providerObj.SetNamespace(tenantObj.GetNamespace())
 
-	if err := CopyFields(tenantObj, providerObj, elevateFields); err != nil {
-		return fmt.Errorf("copy fields: %w", err)
+	if err := CopyFields(tenantObj, providerObj, exposedFields); err != nil {
+		return nil, fmt.Errorf("copy fields: %w", err)
 	}
 
 	if defaults != nil {
 		patch, err := typed.DeducedParseableType.FromUnstructured(providerObj.Object)
 		if err != nil {
-			return fmt.Errorf("cannot convert to defaults: %w", err)
+			return nil, fmt.Errorf("cannot convert to defaults: %w", err)
 		}
 		defaultsObj, err := typed.DeducedParseableType.FromUnstructured(defaults)
 		if err != nil {
-			return fmt.Errorf("cannot convert to defaults: %w", err)
+			return nil, fmt.Errorf("cannot convert to defaults: %w", err)
 		}
 		val, err := defaultsObj.Merge(patch)
 		if err != nil {
-			return err
+			return nil, err
 		}
 		providerObj.Object = val.AsValue().Unstructured().(map[string]interface{})
 	}
-	return nil
+	return providerObj, nil
 }
