@@ -181,16 +181,6 @@ func TestPatch(t *testing.T) {
 		"metadata": map[string]interface{}{
 			"name":      "test-1",
 			"namespace": "default",
-			"ownerReferences": []interface{}{
-				map[string]interface{}{
-					"apiVersion":         "eu-west-1.provider/v1alpha1",
-					"blockOwnerDeletion": true,
-					"controller":         true,
-					"kind":               "CouchDB",
-					"name":               "test-1",
-					"uid":                "uuid-field",
-				},
-			},
 		},
 		"spec": map[string]interface{}{
 			"test1": "spec2000",

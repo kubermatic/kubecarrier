@@ -108,6 +108,12 @@ func (r *TenantObjReconciler) reconcileTenantObj(
 	// we'd use server-side-apply instead
 	// there are many subtle bugs possible with this implementation. apply patch is cleaner solution
 	// furthermore real API server & fakeclient discrepancies make the testing harder
+
+	err := controllerutil.SetControllerReference(
+		tenantObj, providerObj, r.Scheme)
+	if err != nil {
+		return fmt.Errorf("set controller reference: %w", err)
+	}
 	wantedProviderObj := providerObj.DeepCopy()
 	if _, err := controllerutil.CreateOrUpdate(ctx, r.Client, providerObj, func() error {
 		// copy all non status/metadata object

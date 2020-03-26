@@ -23,7 +23,6 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/structured-merge-diff/v3/typed"
 	"sigs.k8s.io/yaml"
 
@@ -99,16 +98,6 @@ func FromRawExtensions(defaultField *runtime.RawExtension) (defaults map[string]
 func BuildProviderObj(tenantObj *unstructured.Unstructured, providerObj *unstructured.Unstructured, scheme *runtime.Scheme, elevateFields []catalogv1alpha1.FieldPath, defaults interface{}) error {
 	providerObj.SetName(tenantObj.GetName())
 	providerObj.SetNamespace(tenantObj.GetNamespace())
-
-	// controller reference without UID is invalid!
-	// it will fail upon creation
-	if tenantObj.GetUID() != "" {
-		err := controllerutil.SetControllerReference(
-			tenantObj, providerObj, scheme)
-		if err != nil {
-			return fmt.Errorf("set controller reference: %w", err)
-		}
-	}
 
 	if err := CopyFields(tenantObj, providerObj, elevateFields); err != nil {
 		return fmt.Errorf("copy fields: %w", err)
