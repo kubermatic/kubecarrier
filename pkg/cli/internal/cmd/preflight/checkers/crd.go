@@ -21,26 +21,40 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/go-logr/logr"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/client-go/rest"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/kubermatic/kubecarrier/pkg/internal/util"
 )
 
-// certManager checks if the cert-manager related deployments are ready.
-type certManagerChecker struct {
-	client          client.Client
-	certManagerCRDs []string
+// crdEstablishedChecker checks if preliminary CRDs are established.
+type crdEstablishedChecker struct {
+	config   *rest.Config
+	log      logr.Logger
+	crdNames []string
 }
 
-func (c *certManagerChecker) check() error {
+func (c *crdEstablishedChecker) check() error {
+	cl, err := util.NewClientWatcher(c.config, scheme, c.log)
+	if err != nil {
+		return fmt.Errorf("creating Kubernetes client: %w", err)
+	}
+	return c.checkCRDs(cl)
+}
+
+func (c *crdEstablishedChecker) name() string {
+	return "CRDEstablished"
+}
+
+func (c *crdEstablishedChecker) checkCRDs(client client.Client) error {
 	ctx := context.Background()
 	var errBuffer bytes.Buffer
-
-	for _, crdName := range c.certManagerCRDs {
+	for _, crdName := range c.crdNames {
 		crd := &apiextensionsv1.CustomResourceDefinition{}
-		if err := c.client.Get(ctx, types.NamespacedName{
+		if err := client.Get(ctx, types.NamespacedName{
 			Name: crdName,
 		}, crd); err != nil {
 			errBuffer.WriteString(err.Error() + "\n")
@@ -54,8 +68,4 @@ func (c *certManagerChecker) check() error {
 		return fmt.Errorf(errBuffer.String())
 	}
 	return nil
-}
-
-func (c *certManagerChecker) name() string {
-	return "CertManager"
 }

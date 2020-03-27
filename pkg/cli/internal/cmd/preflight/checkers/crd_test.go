@@ -23,10 +23,11 @@ import (
 	"github.com/stretchr/testify/assert"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 )
 
-func TestCertManagerChecker(t *testing.T) {
+func TestCRDEstablishedChecker(t *testing.T) {
 	certManagerCertificatesCRD := &apiextensionsv1.CustomResourceDefinition{
 		ObjectMeta: v1.ObjectMeta{
 			Name: certManagerCertificatesCRDName,
@@ -62,40 +63,41 @@ func TestCertManagerChecker(t *testing.T) {
 	}
 	tests := []struct {
 		name          string
-		checker       certManagerChecker
+		checker       crdEstablishedChecker
+		client        client.Client
 		expectedError error
 	}{
 		{
 			name: "check can pass",
-			checker: certManagerChecker{
-				client:          fake.NewFakeClientWithScheme(testScheme, certManagerCertificatesCRD, certManagerIssuersCRD),
-				certManagerCRDs: []string{certManagerIssuersCRDName, certManagerCertificatesCRDName},
+			checker: crdEstablishedChecker{
+				crdNames: []string{certManagerIssuersCRDName, certManagerCertificatesCRDName},
 			},
+			client:        fake.NewFakeClientWithScheme(testScheme, certManagerCertificatesCRD, certManagerIssuersCRD),
 			expectedError: nil,
 		},
 		{
 			name: "nothing found",
-			checker: certManagerChecker{
-				client:          fake.NewFakeClientWithScheme(testScheme),
-				certManagerCRDs: []string{certManagerIssuersCRDName, certManagerCertificatesCRDName},
+			checker: crdEstablishedChecker{
+				crdNames: []string{certManagerIssuersCRDName, certManagerCertificatesCRDName},
 			},
+			client: fake.NewFakeClientWithScheme(testScheme),
 			expectedError: fmt.Errorf(`customresourcedefinitions.apiextensions.k8s.io "issuers.cert-manager.io" not found
 customresourcedefinitions.apiextensions.k8s.io "certificates.cert-manager.io" not found
 `),
 		},
 		{
 			name: "crd not established",
-			checker: certManagerChecker{
-				client:          fake.NewFakeClientWithScheme(testScheme, certManagerCertificatesCRD, unestablishedCertManagerIssuersCRD),
-				certManagerCRDs: []string{certManagerIssuersCRDName, certManagerCertificatesCRDName},
+			checker: crdEstablishedChecker{
+				crdNames: []string{certManagerIssuersCRDName, certManagerCertificatesCRDName},
 			},
+			client: fake.NewFakeClientWithScheme(testScheme, certManagerCertificatesCRD, unestablishedCertManagerIssuersCRD),
 			expectedError: fmt.Errorf(`crd issuers.cert-manager.io is not established
 `),
 		},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			assert.Equal(t, test.expectedError, test.checker.check())
+			assert.Equal(t, test.expectedError, test.checker.checkCRDs(test.client))
 		})
 	}
 }

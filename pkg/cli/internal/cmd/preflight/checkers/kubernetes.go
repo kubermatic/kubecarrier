@@ -20,20 +20,39 @@ import (
 	"fmt"
 
 	versionutil "k8s.io/apimachinery/pkg/util/version"
+	"k8s.io/client-go/discovery"
+	"k8s.io/client-go/rest"
 )
 
 // kubernetesVersionChecker checks if the Kubernetes version of the cluster meets the requirement to deploy KubeCarrier.
 type kubernetesVersionChecker struct {
+	config                *rest.Config
 	firstSupportedVersion string
-	kubernetesVersion     string
 }
 
 func (c *kubernetesVersionChecker) check() error {
+	// Get a client from the configuration of the kubernetes cluster.
+	discoveryClient, err := discovery.NewDiscoveryClientForConfig(c.config)
+	if err != nil {
+		return fmt.Errorf("cannot create discovery client: %w", err)
+	}
+	kubernetesVersion, err := discoveryClient.ServerVersion()
+	if err != nil {
+		return fmt.Errorf("can not get the kubernetesVersion: %w", err)
+	}
+	return c.checkKubernetesVersion(kubernetesVersion.String())
+}
+
+func (c *kubernetesVersionChecker) name() string {
+	return "KubernetesVersion"
+}
+
+func (c *kubernetesVersionChecker) checkKubernetesVersion(currentVersion string) error {
 	firstSupportedVersion, err := versionutil.ParseSemantic(c.firstSupportedVersion)
 	if err != nil {
 		return err
 	}
-	kubernetesGitVersion, err := versionutil.ParseSemantic(c.kubernetesVersion)
+	kubernetesGitVersion, err := versionutil.ParseSemantic(currentVersion)
 	if err != nil {
 		return err
 	}
@@ -41,8 +60,4 @@ func (c *kubernetesVersionChecker) check() error {
 		return fmt.Errorf("kubernetes version is lower than the oldest version that KubeCarrier supports, requrires: >= v%s, found: v%s", firstSupportedVersion.String(), kubernetesGitVersion.String())
 	}
 	return nil
-}
-
-func (c *kubernetesVersionChecker) name() string {
-	return "KubernetesVersion"
 }

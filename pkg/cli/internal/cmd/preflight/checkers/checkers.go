@@ -26,11 +26,9 @@ import (
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
-	"k8s.io/client-go/discovery"
 	"k8s.io/client-go/rest"
 
 	"github.com/kubermatic/kubecarrier/pkg/cli/internal/spinner"
-	"github.com/kubermatic/kubecarrier/pkg/internal/util"
 )
 
 var (
@@ -48,35 +46,23 @@ const (
 	certManagerIssuersCRDName      = "issuers.cert-manager.io"
 )
 
-// checker checks if the state of the system meets KubeCarrier installation requirements
+// checker checks if the state of the system meets KubeCarrier installation requirements.
 type checker interface {
 	check() error
 	name() string
 }
 
 func RunChecks(c *rest.Config, s *wow.Wow, startTime time.Time, log logr.Logger) error {
-	// Get a client from the configuration of the kubernetes cluster.
-	discoveryClient, err := discovery.NewDiscoveryClientForConfig(c)
-	if err != nil {
-		return fmt.Errorf("cannot create discovery client: %w", err)
-	}
-	kubernetesVersion, err := discoveryClient.ServerVersion()
-	if err != nil {
-		return fmt.Errorf("can not get the kubernetesVersion: %w", err)
-	}
-	cl, err := util.NewClientWatcher(c, scheme, log)
-	if err != nil {
-		return fmt.Errorf("creating Kubernetes client: %w", err)
-	}
 	var errBuffer bytes.Buffer
 	checkers := []checker{
 		&kubernetesVersionChecker{
+			config:                c,
 			firstSupportedVersion: firstSupportedKubernetesVersion,
-			kubernetesVersion:     kubernetesVersion.String(),
 		},
-		&certManagerChecker{
-			client:          cl,
-			certManagerCRDs: []string{certManagerCertificatesCRDName, certManagerIssuersCRDName},
+		&crdEstablishedChecker{
+			config:   c,
+			log:      log,
+			crdNames: []string{certManagerCertificatesCRDName, certManagerIssuersCRDName},
 		},
 	}
 	for _, checker := range checkers {

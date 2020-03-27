@@ -63,6 +63,7 @@ func init() {
 }
 
 func NewCommand(log logr.Logger) *cobra.Command {
+	var skipPreflight bool
 	flags := genericclioptions.NewConfigFlags(false)
 	cmd := &cobra.Command{
 		Args:  cobra.NoArgs,
@@ -78,14 +79,15 @@ $ kubectl kubecarrier setup --kubeconfig=<kubeconfig path>
 			if err != nil {
 				return err
 			}
-			return runE(cfg, log, cmd)
+			return runE(cfg, log, cmd, skipPreflight)
 		},
 	}
+	cmd.Flags().BoolVar(&skipPreflight, "skip-preflight-checks", false, "If true, preflight checks will be skipped")
 	flags.AddFlags(cmd.Flags())
 	return cmd
 }
 
-func runE(conf *rest.Config, log logr.Logger, cmd *cobra.Command) error {
+func runE(conf *rest.Config, log logr.Logger, cmd *cobra.Command, skipPreflight bool) error {
 	stopCh := ctrl.SetupSignalHandler()
 	ctx, cancelContext := context.WithTimeout(context.Background(), 60*time.Second)
 	go func() {
@@ -95,8 +97,11 @@ func runE(conf *rest.Config, log logr.Logger, cmd *cobra.Command) error {
 
 	s := wow.New(cmd.OutOrStdout(), spin.Get(spin.Dots), "")
 	startTime := time.Now()
-	if err := checkers.RunChecks(conf, s, startTime, log); err != nil {
-		return err
+
+	if !skipPreflight {
+		if err := checkers.RunChecks(conf, s, startTime, log); err != nil {
+			return err
+		}
 	}
 	// Get a client from the configuration of the kubernetes cluster.
 	c, err := util.NewClientWatcher(conf, scheme, log)

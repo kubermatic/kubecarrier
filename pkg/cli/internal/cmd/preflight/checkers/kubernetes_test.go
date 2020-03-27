@@ -25,38 +25,39 @@ import (
 
 func TestKubernetesVersionChecker(t *testing.T) {
 	tests := []struct {
-		name          string
-		checker       kubernetesVersionChecker
-		expectedError error
+		name                     string
+		checker                  kubernetesVersionChecker
+		currentKubernetesVersion string
+		expectedError            error
 	}{
 		{
 			name: "kubernetes version is higher than first supported version",
 			checker: kubernetesVersionChecker{
-				kubernetesVersion:     "v1.16.4",
 				firstSupportedVersion: firstSupportedKubernetesVersion,
 			},
-			expectedError: nil,
+			currentKubernetesVersion: "v1.16.4",
+			expectedError:            nil,
 		},
 		{
 			name: "kubernetes version equals than first supported version",
 			checker: kubernetesVersionChecker{
-				kubernetesVersion:     "v1.16.0",
 				firstSupportedVersion: firstSupportedKubernetesVersion,
 			},
-			expectedError: nil,
+			currentKubernetesVersion: "v1.16.0",
+			expectedError:            nil,
 		},
 		{
 			name: "kubernetes version is lower than first supported version",
 			checker: kubernetesVersionChecker{
-				kubernetesVersion:     "v1.15.4",
 				firstSupportedVersion: firstSupportedKubernetesVersion,
 			},
-			expectedError: fmt.Errorf("kubernetes version is lower than the oldest version that KubeCarrier supports, requrires: >= v1.16.0, found: v1.15.4"),
+			currentKubernetesVersion: "v1.15.4",
+			expectedError:            fmt.Errorf("kubernetes version is lower than the oldest version that KubeCarrier supports, requrires: >= v1.16.0, found: v1.15.4"),
 		},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			assert.Equal(t, test.expectedError, test.checker.check())
+			assert.Equal(t, test.expectedError, test.checker.checkKubernetesVersion(test.currentKubernetesVersion))
 		})
 	}
 }
