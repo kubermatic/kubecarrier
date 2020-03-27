@@ -84,7 +84,7 @@ func NewManagerCommand() *cobra.Command {
 		"Enable leader election for controller manager. Enabling this will ensure there is only one active controller manager.")
 	cmd.Flags().StringVar(&flags.kubeCarrierSystemNamespace, "kubecarrier-system-namespace", os.Getenv("KUBECARRIER_NAMESPACE"), "The namespace that KubeCarrier controller manager deploys to.")
 	cmd.Flags().StringVar(&flags.certDir, "cert-dir", "/tmp/k8s-webhook-server/serving-certs", "The webhook TLS certificates directory")
-	cmd.Flags().DurationVar(&flags.ServiceClusterMonitorGracePeriod, "service-cluster-monitor-grace-period", 40*time.Second, "time before marking service cluster reachibility as unknown, and complete service cluster as unready")
+	cmd.Flags().DurationVar(&flags.ServiceClusterMonitorGracePeriod, "service-cluster-monitor-grace-period", 40*time.Second, "Amount of time which we allow a running ServiceCluster to be unresponsive before marking it unhealthy. Must be N times more than ferry's serviceClusterStatusUpdatePeriod, where N means number of retries allowed for ferry to post cluster status.")
 	return util.CmdLogMixin(cmd)
 }
 
