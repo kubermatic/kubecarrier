@@ -196,10 +196,10 @@ func run(flags *flags, log logr.Logger) error {
 	}
 
 	if err = (&controllers.ServiceClusterReconciler{
-		Client:               mgr.GetClient(),
-		Log:                  log.WithName("controllers").WithName("ServiceCluster"),
-		Scheme:               mgr.GetScheme(),
-		MonitorGraceDuration: flags.ServiceClusterMonitorGracePeriod,
+		Client:             mgr.GetClient(),
+		Log:                log.WithName("controllers").WithName("ServiceCluster"),
+		Scheme:             mgr.GetScheme(),
+		MonitorGracePeriod: flags.ServiceClusterMonitorGracePeriod,
 	}).SetupWithManager(mgr); err != nil {
 		return fmt.Errorf("creating ServiceCluster controller: %w", err)
 	}

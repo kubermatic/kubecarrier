@@ -41,10 +41,10 @@ func TestServiceClusterReconciler(t *testing.T) {
 		},
 	}
 	scc := &ServiceClusterReconciler{
-		Log:                  testutil.NewLogger(t),
-		Client:               fakeclient.NewFakeClientWithScheme(testScheme, serviceCluster),
-		Scheme:               testScheme,
-		MonitorGraceDuration: 40 * time.Second,
+		Log:                testutil.NewLogger(t),
+		Client:             fakeclient.NewFakeClientWithScheme(testScheme, serviceCluster),
+		Scheme:             testScheme,
+		MonitorGracePeriod: 40 * time.Second,
 	}
 
 	ctx := context.Background()

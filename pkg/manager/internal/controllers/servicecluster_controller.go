@@ -36,9 +36,9 @@ import (
 
 type ServiceClusterReconciler struct {
 	client.Client
-	Log                  logr.Logger
-	Scheme               *runtime.Scheme
-	MonitorGraceDuration time.Duration
+	Log                logr.Logger
+	Scheme             *runtime.Scheme
+	MonitorGracePeriod time.Duration
 }
 
 // +kubebuilder:rbac:groups=kubecarrier.io,resources=serviceclusters,verbs=get;list;watch;update
@@ -91,9 +91,9 @@ func (r *ServiceClusterReconciler) Reconcile(req ctrl.Request) (ctrl.Result, err
 		return ctrl.Result{}, fmt.Errorf("updating status: %w", err)
 	}
 
-	// added extra seconds to requeue to ensure previous MonitorGraceDuration
+	// added extra seconds to requeue to ensure previous MonitorGracePeriod
 	// expires if no new heartbeats arrive
-	return ctrl.Result{RequeueAfter: r.MonitorGraceDuration + time.Second}, nil
+	return ctrl.Result{RequeueAfter: r.MonitorGracePeriod + time.Second}, nil
 }
 
 func (r *ServiceClusterReconciler) SetupWithManager(mgr ctrl.Manager) error {
@@ -178,11 +178,11 @@ func (r *ServiceClusterReconciler) updateStatus(
 	serviceClusterReachable, _ := serviceCluster.Status.GetCondition(
 		corev1alpha1.ServiceClusterReachable)
 	timenow := metav1.Now()
-	if timenow.Sub(serviceClusterReachable.LastHeartbeatTime.Time) > r.MonitorGraceDuration {
+	if timenow.Sub(serviceClusterReachable.LastHeartbeatTime.Time) > r.MonitorGracePeriod {
 		serviceClusterReachable.Type = corev1alpha1.ServiceClusterReachable
 		serviceClusterReachable.LastTransitionTime = timenow
 		serviceClusterReachable.Status = corev1alpha1.ConditionUnknown
-		serviceClusterReachable.Message = "cluster reachable heartbeat hasn't been updaed within monitor grace duration"
+		serviceClusterReachable.Message = fmt.Sprintf("cluster stopped posting heartbeats for at least %v", r.MonitorGracePeriod)
 		serviceClusterReachable.Reason = "GracePeriodTimeout"
 		serviceCluster.Status.SetCondition(serviceClusterReachable)
 	}
