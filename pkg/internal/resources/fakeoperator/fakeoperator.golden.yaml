@@ -9,14 +9,6 @@
       kubecarrier.io/role: manager
     name: dbs.fake.kubecarrier.io
   spec:
-    conversion:
-      strategy: Webhook
-      webhookClientConfig:
-        caBundle: Cg==
-        service:
-          name: e2e-operator-webhook-service
-          namespace: test3000
-          path: /convert
     group: fake.kubecarrier.io
     names:
       kind: DB
@@ -267,6 +259,35 @@
           secret:
             defaultMode: 420
             secretName: webhook-server-cert
+- apiVersion: admissionregistration.k8s.io/v1beta1
+  kind: ValidatingWebhookConfiguration
+  metadata:
+    annotations:
+      cert-manager.io/inject-ca-from: test3000/e2e-operator-serving-cert
+    creationTimestamp: null
+    labels:
+      kubecarrier.io/role: manager
+    name: e2e-operator-validating-webhook-configuration
+  webhooks:
+  - clientConfig:
+      caBundle: Cg==
+      service:
+        name: e2e-operator-webhook-service
+        namespace: test3000
+        path: /validate-fake-kubecarrier-io-v1alpha1-db
+    failurePolicy: Fail
+    name: vdb.kubecarrier.io
+    rules:
+    - apiGroups:
+      - fake.kubecarrier.io
+      apiVersions:
+      - v1alpha1
+      operations:
+      - CREATE
+      - UPDATE
+      - DELETE
+      resources:
+      - dbs
 - apiVersion: v1
   kind: Service
   metadata:
