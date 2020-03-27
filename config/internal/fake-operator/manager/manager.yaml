@@ -19,6 +19,8 @@ spec:
       containers:
       - image: quay.io/kubecarrier/fake-operator:latest
         name: manager
+        args:
+          - "--cert-dir=$(CERT_DIR)"
         env:
           - name: CERT_DIR
             value: "/tmp/k8s-webhook-server/serving-certs"

@@ -49,6 +49,8 @@ import (
 
 	"github.com/kubermatic/kubecarrier/pkg/internal/util"
 
+	certv1alpha2 "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
+
 	"github.com/kubermatic/kubecarrier/pkg/internal/reconcile"
 )
 
@@ -60,6 +62,7 @@ func init() {
 	utilruntime.Must(clientgoscheme.AddToScheme(scheme))
 	utilruntime.Must(apiextensionsv1.AddToScheme(scheme))
 	utilruntime.Must(operatorv1alpha1.AddToScheme(scheme))
+	utilruntime.Must(certv1alpha2.AddToScheme(scheme))
 }
 
 func newSetupE2EOperator(log logr.Logger) *cobra.Command {

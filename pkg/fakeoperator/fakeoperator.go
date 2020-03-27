@@ -23,15 +23,20 @@ import (
 	"github.com/spf13/cobra"
 	zap2 "go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
-	"k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
+	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	corescheme "k8s.io/client-go/kubernetes/scheme"
+	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
+	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
 
+	corev1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/core/v1alpha1"
+
 	utilwebhook "github.com/kubermatic/kubecarrier/pkg/internal/util/webhook"
+
+	certv1alpha2 "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
 
 	fakev1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/fake/v1alpha1"
 	"github.com/kubermatic/kubecarrier/pkg/fakeoperator/internal/controllers"
@@ -43,6 +48,19 @@ type flags struct {
 	enableLeaderElection bool
 	verbosity            int8
 	healthAddr           string
+	certDir              string
+}
+
+var (
+	scheme = runtime.NewScheme()
+)
+
+func init() {
+	utilruntime.Must(clientgoscheme.AddToScheme(scheme))
+	utilruntime.Must(apiextensionsv1.AddToScheme(scheme))
+	utilruntime.Must(corev1alpha1.AddToScheme(scheme))
+	utilruntime.Must(fakev1alpha1.AddToScheme(scheme))
+	utilruntime.Must(certv1alpha2.AddToScheme(scheme))
 }
 
 func NewFakeOperator() *cobra.Command {
@@ -59,6 +77,7 @@ func NewFakeOperator() *cobra.Command {
 		"Enable leader election for controller manager. Enabling this will ensure there is only one active controller manager.")
 	cmd.Flags().StringVar(&flags.healthAddr, "health-addr", ":9440", "The address the health endpoint binds to.")
 	cmd.Flags().Int8VarP(&flags.verbosity, "verbosity", "v", 4, "log level version")
+	cmd.Flags().StringVar(&flags.certDir, "cert-dir", "/tmp/k8s-webhook-server/serving-certs", "The webhook TLS certificates directory")
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
 		return run(flags, ctrl.Log.WithName("setup"))
 	}
@@ -66,13 +85,6 @@ func NewFakeOperator() *cobra.Command {
 }
 
 func run(flags flags, log logr.Logger) error {
-	var (
-		scheme = runtime.NewScheme()
-	)
-
-	_ = fakev1alpha1.AddToScheme(scheme)
-	_ = corescheme.AddToScheme(scheme)
-	_ = v1beta1.AddToScheme(scheme)
 
 	ctrl.SetLogger(zap.New(func(o *zap.Options) {
 		o.Development = true

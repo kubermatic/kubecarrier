@@ -221,7 +221,9 @@
           kubecarrier.io/role: manager
       spec:
         containers:
-        - env:
+        - args:
+          - --cert-dir=$(CERT_DIR)
+          env:
           - name: CERT_DIR
             value: /tmp/k8s-webhook-server/serving-certs
           image: quay.io/kubecarrier/fake-operator:was not build properly
@@ -258,7 +260,7 @@
         - name: cert
           secret:
             defaultMode: 420
-            secretName: webhook-server-cert
+            secretName: e2e-operator-webhook-service-webhook-service-cert
 - apiVersion: admissionregistration.k8s.io/v1beta1
   kind: ValidatingWebhookConfiguration
   metadata:
