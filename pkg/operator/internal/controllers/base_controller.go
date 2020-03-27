@@ -189,15 +189,22 @@ func (r *BaseReconciler) reconcileOwnedObjects(ctx context.Context, obj Componen
 			return false, err
 		}
 
-		switch restMapping.Scope.Name() {
-		case meta.RESTScopeNameNamespace:
+		if obj.GetNamespace() == "" {
+			// The owner is cluster-scoped, like KubeCarrier.
 			if err := controllerutil.SetControllerReference(obj, &object, r.Scheme); err != nil {
 				return false, err
 			}
-		case meta.RESTScopeNameRoot:
-			owner.SetOwnerReference(obj, &object, r.Scheme)
-		default:
-			return false, fmt.Errorf("unknown REST scope: %s", restMapping.Scope.Name())
+		} else {
+			switch restMapping.Scope.Name() {
+			case meta.RESTScopeNameNamespace:
+				if err := controllerutil.SetControllerReference(obj, &object, r.Scheme); err != nil {
+					return false, err
+				}
+			case meta.RESTScopeNameRoot:
+				owner.SetOwnerReference(obj, &object, r.Scheme)
+			default:
+				return false, fmt.Errorf("unknown REST scope: %s", restMapping.Scope.Name())
+			}
 		}
 		curObj, err := reconcile.Unstructured(ctx, r.Log, r.Client, &object)
 		if err != nil {

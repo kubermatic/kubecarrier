@@ -26,6 +26,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
 	operatorv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/operator/v1alpha1"
+	"github.com/kubermatic/kubecarrier/pkg/internal/constants"
 )
 
 // KubeCarrierWebhookHandler handles validating of KubeCarrier objects.
@@ -66,7 +67,7 @@ func (r *KubeCarrierWebhookHandler) InjectDecoder(d *admission.Decoder) error {
 
 func (r *KubeCarrierWebhookHandler) validateCreate(kubeCarrier *operatorv1alpha1.KubeCarrier) error {
 	r.Log.Info("validate create", "name", kubeCarrier.Name)
-	if kubeCarrier.Name != "kubecarrier" {
+	if kubeCarrier.Name != constants.KubeCarrierDefaultName {
 		return fmt.Errorf("KubeCarrier object name should be 'kubecarrier', found: %s", kubeCarrier.Name)
 	}
 	return nil

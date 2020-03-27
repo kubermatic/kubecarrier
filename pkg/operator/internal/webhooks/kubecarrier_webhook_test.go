@@ -41,8 +41,7 @@ func TestKubeCarrierValidatingCreate(t *testing.T) {
 			name: "invalid KubeCarrier name",
 			object: &operatorv1alpha1.KubeCarrier{
 				ObjectMeta: metav1.ObjectMeta{
-					Name:      "test-kubecarrier",
-					Namespace: "test-kubecarrier-namespace",
+					Name: "test-kubecarrier",
 				},
 			},
 			expectedError: fmt.Errorf("KubeCarrier object name should be 'kubecarrier', found: test-kubecarrier"),
@@ -51,8 +50,7 @@ func TestKubeCarrierValidatingCreate(t *testing.T) {
 			name: "can pass validate create",
 			object: &operatorv1alpha1.KubeCarrier{
 				ObjectMeta: metav1.ObjectMeta{
-					Name:      "kubecarrier",
-					Namespace: "test-kubecarrier-namespace",
+					Name: "kubecarrier",
 				},
 			},
 			expectedError: nil,

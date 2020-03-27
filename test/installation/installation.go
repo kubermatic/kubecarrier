@@ -55,8 +55,7 @@ func NewInstallationSuite(f *testutil.Framework) func(t *testing.T) {
 		require.NoError(t, err, "creating management client")
 
 		kubeCarrier := &operatorv1alpha1.KubeCarrier{ObjectMeta: metav1.ObjectMeta{
-			Name:      "kubecarrier",
-			Namespace: kubecarrierSystem,
+			Name: "kubecarrier",
 		}}
 		require.NoError(t, testutil.WaitUntilReady(ctx, managementClient, kubeCarrier))
 
