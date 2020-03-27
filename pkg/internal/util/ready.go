@@ -19,6 +19,7 @@ package util
 import (
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
+	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 )
 
 // DeploymentIsAvailable checks if a deployment is available.
@@ -30,6 +31,16 @@ func DeploymentIsAvailable(deployment *appsv1.Deployment) bool {
 		if condition.Type == appsv1.DeploymentAvailable &&
 			condition.Status == corev1.ConditionTrue &&
 			deployment.Status.ReadyReplicas == deployment.Status.Replicas {
+			return true
+		}
+	}
+	return false
+}
+
+func CRDIsEstablished(crd *apiextensionsv1.CustomResourceDefinition) bool {
+	for _, condition := range crd.Status.Conditions {
+		if condition.Type == apiextensionsv1.Established &&
+			condition.Status == apiextensionsv1.ConditionTrue {
 			return true
 		}
 	}
