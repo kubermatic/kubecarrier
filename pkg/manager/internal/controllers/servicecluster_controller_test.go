@@ -115,4 +115,23 @@ func TestServiceClusterReconciler(t *testing.T) {
 	}) {
 		t.FailNow()
 	}
+
+	if !t.Run("monitor grace period", func(t *testing.T) {
+		minuteAgo := metav1.Time{Time: time.Now().Add(-time.Minute)}
+		serviceCluster.Status.SetCondition(corev1alpha1.ServiceClusterCondition{
+			Type:               corev1alpha1.ServiceClusterReachable,
+			Status:             corev1alpha1.ConditionTrue,
+			Reason:             "ServiceClusterReachable",
+			Message:            "service cluster is posting ready status",
+			LastHeartbeatTime:  minuteAgo,
+			LastTransitionTime: minuteAgo,
+		})
+		require.NoError(t, scc.Client.Status().Update(ctx, serviceCluster))
+		reconcileLoop()
+		cond, ok := serviceCluster.Status.GetCondition(corev1alpha1.ServiceClusterReachable)
+		require.True(t, ok)
+		assert.Equal(t, corev1alpha1.ConditionUnknown, cond.Status)
+	}) {
+		t.FailNow()
+	}
 }
