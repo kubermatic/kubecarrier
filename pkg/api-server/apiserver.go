@@ -19,15 +19,18 @@ package apiserver
 import (
 	"context"
 	"fmt"
+	"io"
 	"net"
 	"net/http"
 	"strings"
 
 	"github.com/go-logr/logr"
 	"github.com/gorilla/mux"
-	grpcgatewayruntime "github.com/grpc-ecosystem/grpc-gateway/runtime"
+	gwruntime "github.com/grpc-ecosystem/grpc-gateway/runtime"
 	"github.com/spf13/cobra"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
@@ -75,7 +78,27 @@ func runE(flags *flags, log logr.Logger) error {
 		return err
 	}
 	grpcServer := grpc.NewServer()
-	grpcGatewayMux := grpcgatewayruntime.NewServeMux()
+	grpcGatewayMux := gwruntime.NewServeMux(
+		gwruntime.WithProtoErrorHandler(func(ctx context.Context, serveMux *gwruntime.ServeMux, marshaler gwruntime.Marshaler, writer http.ResponseWriter, request *http.Request, err error) {
+			const fallback = `{"error": "failed to marshal error message"}`
+			writer.Header().Del("Trailer")
+			writer.Header().Set("Content-Type", marshaler.ContentType())
+			s, ok := status.FromError(err)
+			if !ok {
+				s = status.New(codes.Unknown, err.Error())
+			}
+			buf, marshalerr := marshaler.Marshal(s.Proto())
+			if marshalerr != nil {
+				writer.WriteHeader(http.StatusInternalServerError)
+				_, _ = io.WriteString(writer, fallback)
+				return
+			}
+
+			st := gwruntime.HTTPStatusFromCode(s.Code())
+			writer.WriteHeader(st)
+			_, _ = writer.Write(buf)
+		}),
+	)
 	apiserverv1alpha1.RegisterVersionServiceServer(grpcServer, &versionHandler{})
 	err = apiserverv1alpha1.RegisterVersionServiceHandlerServer(context.Background(), grpcGatewayMux, &versionHandler{})
 	if err != nil {
