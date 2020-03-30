@@ -39,11 +39,16 @@ fi
 
 function statik-gen {
   local component=$1
+  local package=${1//-/}
   local src=$2
   if [ -z "$(git status --porcelain ${src})" ] && [[ -z ${FORCE_STATIK:-} ]]; then
     echo ${component}: statik up-to-date
   else
-    statik -src=${src} -p ${component} -dest pkg/internal/resources -f -c ''
+    statik -src=${src} -p "${package}" -dest pkg/internal/resources -f -c ''
+    if [[ "${component}" != "${package}" ]]; then
+      mv pkg/internal/resources/${package}/statik.go pkg/internal/resources/${component}/statik.go
+      rmdir pkg/internal/resources/${package}
+    fi
     cat hack/boilerplate/boilerplate.generatego.txt | sed s/YEAR/$(date +%Y)/ | cat - pkg/internal/resources/${component}/statik.go > pkg/internal/resources/${component}/statik.go.tmp
     mv pkg/internal/resources/${component}/statik.go.tmp pkg/internal/resources/${component}/statik.go
     echo ${component}: statik regenerated
@@ -133,6 +138,17 @@ ed config/internal/tower/rbac/role.yaml <<EOF || true
 w
 EOF
 statik-gen tower config/internal/tower
+
+# API server
+# -------
+# RBAC
+$CONTROLLER_GEN rbac:roleName=manager paths="./pkg/api-server/..." output:rbac:artifacts:config=config/internal/api-server/rbac
+# The `|| true` is because the `,s/ClusterRole/Role/g` will error out if there is no match of `ClusterRole` (eg., the file is empty) in the file.
+ed config/internal/api-server/rbac/role.yaml <<EOF || true
+,s/ClusterRole/Role/g
+w
+EOF
+statik-gen api-server config/internal/api-server
 
 #Service cluster RBAC
 serviceClusterDir=tmp

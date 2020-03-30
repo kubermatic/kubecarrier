@@ -122,7 +122,6 @@ func run(flags *flags, log logr.Logger) error {
 		"elevator.kubecarrier.io/controller").SetupWithManager(mgr); err != nil {
 		return fmt.Errorf("creating Elevator controller: %w", err)
 	}
-
 	if err := controllers.NewBaseReconciler(
 		&controllers.TowerStrategy{},
 		mgr.GetClient(),
@@ -132,6 +131,16 @@ func run(flags *flags, log logr.Logger) error {
 		"Tower",
 		"tower.kubecarrier.io/controller").SetupWithManager(mgr); err != nil {
 		return fmt.Errorf("creating Tower controller: %w", err)
+	}
+	if err := controllers.NewBaseReconciler(
+		&controllers.APIServerStrategy{},
+		mgr.GetClient(),
+		mgr.GetScheme(),
+		mgr.GetRESTMapper(),
+		log.WithName("controllers").WithName("API-server"),
+		"APIServer",
+		"api-server.kubecarrier.io/controller").SetupWithManager(mgr); err != nil {
+		return fmt.Errorf("creating API Server controller: %w", err)
 	}
 
 	log.Info("starting operator")
