@@ -33,7 +33,7 @@ import (
 
 const finalizer = "fake.kubecarrier.io/controller"
 
-// DBReconciler reconciles a Joke object
+// DBReconciler reconciles a DB object
 type DBReconciler struct {
 	client.Client
 	Log logr.Logger
@@ -98,8 +98,8 @@ func (r *DBReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 			if err := r.Status().Update(ctx, db); err != nil {
 				return ctrl.Result{}, fmt.Errorf("cannot update db: %w", err)
 			}
-			return ctrl.Result{}, nil
 		}
+		return ctrl.Result{}, nil
 	}
 
 	// DB is not ready and waiting for timeout

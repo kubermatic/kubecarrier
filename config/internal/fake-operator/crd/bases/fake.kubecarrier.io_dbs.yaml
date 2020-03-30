@@ -29,7 +29,7 @@ spec:
     name: v1alpha1
     schema:
       openAPIV3Schema:
-        description: DB is core element in joke generation operator
+        description: DB is core element in e2e operator
         properties:
           apiVersion:
             description: 'APIVersion defines the versioned schema of this representation
@@ -50,8 +50,12 @@ spec:
                 description: E2E tests params
                 properties:
                   deletionAfterSeconds:
+                    description: DeletionAfterSeconds represents timeout after which
+                      operator will remove finalizer
                     type: integer
                   readyAfterSeconds:
+                    description: ReadyAfterSeconds represents timeout after which
+                      operator will mark DB as Ready
                     type: integer
                 type: object
               databaseName:

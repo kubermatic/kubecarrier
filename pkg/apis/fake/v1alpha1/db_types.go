@@ -42,7 +42,9 @@ type DBSpec struct {
 
 // Config defines the e2e tests params
 type Config struct {
-	ReadyAfterSeconds    int `json:"readyAfterSeconds,omitempty"`
+	// ReadyAfterSeconds represents timeout after which operator will mark DB as Ready
+	ReadyAfterSeconds int `json:"readyAfterSeconds,omitempty"`
+	// DeletionAfterSeconds represents timeout after which operator will remove finalizer
 	DeletionAfterSeconds int `json:"deletionAfterSeconds,omitempty"`
 }
 
@@ -179,7 +181,7 @@ func (s *DBStatus) SetCondition(condition DBCondition) {
 	s.Conditions = append(s.Conditions, condition)
 }
 
-// DB is core element in joke generation operator
+// DB is core element in e2e operator
 // +kubebuilder:object:root=true
 // +kubebuilder:subresource:status
 // +kubebuilder:printcolumn:name="Status",type="string",JSONPath=".status.phase"

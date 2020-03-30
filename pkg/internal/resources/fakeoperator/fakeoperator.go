@@ -31,8 +31,6 @@ import (
 type Config struct {
 	// Namespace the e2e operator should be deployed into.
 	Namespace string
-	// Name of this e2e operator object
-	Name string
 }
 
 var k = kustomize.NewDefaultKustomize()

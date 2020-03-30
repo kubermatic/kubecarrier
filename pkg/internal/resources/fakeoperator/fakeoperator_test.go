@@ -34,7 +34,6 @@ func TestManifests(t *testing.T) {
 	)
 	c := Config{
 		Namespace: "test3000",
-		Name:      "e2e-test",
 	}
 
 	manifests, err := Manifests(c)
