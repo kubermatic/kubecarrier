@@ -37,8 +37,7 @@ message VersionRequest {}
 service Kubecarrier {
   rpc Version(VersionRequest) returns (APIVersion) {
     option (google.api.http) = {
-    post: "/version"
-    body: "*"
+    get: "/version"
     };
   };
 }

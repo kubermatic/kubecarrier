@@ -20,9 +20,9 @@ set -eu
 
 # As per official docs
 # https://grpc-ecosystem.github.io/grpc-gateway/docs/usage.html
-[[ -z $(whcih protoc-gen-grpc-gateway) ]] || go get -u github.com/grpc-ecosystem/grpc-gateway/protoc-gen-grpc-gateway
-[[ -z $(whcih protoc-gen-swagger) ]] || go get -u github.com/grpc-ecosystem/grpc-gateway/protoc-gen-swagger
-[[ -z $(whcih protoc-gen-go) ]] || go get -u github.com/golang/protobuf/protoc-gen-go
+[[ ! -z $(which protoc-gen-grpc-gateway) ]] || go get -u github.com/grpc-ecosystem/grpc-gateway/protoc-gen-grpc-gateway
+[[ ! -z $(which protoc-gen-swagger) ]] || go get -u github.com/grpc-ecosystem/grpc-gateway/protoc-gen-swagger
+[[ ! -z $(which protoc-gen-go) ]] || go get -u github.com/golang/protobuf/protoc-gen-go
 
 # Add protoc and protoc-gen-go tools to PATH
 export PATH=$PWD/bin:$PATH

@@ -50,14 +50,6 @@ func request_Kubecarrier_Version_0(ctx context.Context, marshaler runtime.Marsha
 	var protoReq VersionRequest
 	var metadata runtime.ServerMetadata
 
-	newReader, berr := utilities.IOReaderFactory(req.Body)
-	if berr != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", berr)
-	}
-	if err := marshaler.NewDecoder(newReader()).Decode(&protoReq); err != nil && err != io.EOF {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
-	}
-
 	msg, err := client.Version(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
 	return msg, metadata, err
 
@@ -66,14 +58,6 @@ func request_Kubecarrier_Version_0(ctx context.Context, marshaler runtime.Marsha
 func local_request_Kubecarrier_Version_0(ctx context.Context, marshaler runtime.Marshaler, server KubecarrierServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
 	var protoReq VersionRequest
 	var metadata runtime.ServerMetadata
-
-	newReader, berr := utilities.IOReaderFactory(req.Body)
-	if berr != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", berr)
-	}
-	if err := marshaler.NewDecoder(newReader()).Decode(&protoReq); err != nil && err != io.EOF {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
-	}
 
 	msg, err := server.Version(ctx, &protoReq)
 	return msg, metadata, err
@@ -85,7 +69,7 @@ func local_request_Kubecarrier_Version_0(ctx context.Context, marshaler runtime.
 // StreamingRPC :currently unsupported pending https://github.com/grpc/grpc-go/issues/906.
 func RegisterKubecarrierHandlerServer(ctx context.Context, mux *runtime.ServeMux, server KubecarrierServer) error {
 
-	mux.Handle("POST", pattern_Kubecarrier_Version_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle("GET", pattern_Kubecarrier_Version_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
@@ -146,7 +130,7 @@ func RegisterKubecarrierHandler(ctx context.Context, mux *runtime.ServeMux, conn
 // "KubecarrierClient" to call the correct interceptors.
 func RegisterKubecarrierHandlerClient(ctx context.Context, mux *runtime.ServeMux, client KubecarrierClient) error {
 
-	mux.Handle("POST", pattern_Kubecarrier_Version_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle("GET", pattern_Kubecarrier_Version_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)

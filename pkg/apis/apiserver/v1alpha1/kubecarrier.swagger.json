@@ -57,10 +57,6 @@
       },
       "title": "Types",
       "type": "object"
-    },
-    "v1VersionRequest": {
-      "title": "Requests/Responses",
-      "type": "object"
     }
   },
   "info": {
@@ -69,18 +65,8 @@
   },
   "paths": {
     "/version": {
-      "post": {
+      "get": {
         "operationId": "Version",
-        "parameters": [
-          {
-            "in": "body",
-            "name": "body",
-            "required": true,
-            "schema": {
-              "$ref": "#/definitions/v1VersionRequest"
-            }
-          }
-        ],
         "responses": {
           "200": {
             "description": "A successful response.",
