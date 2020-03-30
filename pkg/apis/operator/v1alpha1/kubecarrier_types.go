@@ -22,6 +22,9 @@ import (
 
 // KubeCarrierSpec defines the desired state of KubeCarrier
 type KubeCarrierSpec struct {
+	// Master is the flag to mark if this KubeCarrier installation is the master of the multi-region deployments.
+	// If the flag is true, an API server and a multi-region microservice (Tower) will be deployed.
+	Master bool `json:"master,omitempty"`
 }
 
 // KubeCarrierStatus defines the observed state of KubeCarrier
