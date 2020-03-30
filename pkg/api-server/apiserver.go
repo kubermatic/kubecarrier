@@ -18,9 +18,7 @@ package apiserver
 
 import (
 	"context"
-	"fmt"
 	"io"
-	"net"
 	"net/http"
 	"strings"
 
@@ -49,7 +47,9 @@ func init() {
 }
 
 type flags struct {
-	port int
+	addr              string
+	TLSCertFile       string
+	TLSPrivateKeyFile string
 }
 
 func NewAPIServer() *cobra.Command {
@@ -63,16 +63,13 @@ func NewAPIServer() *cobra.Command {
 			return runE(flags, log)
 		},
 	}
-	cmd.Flags().IntVar(&flags.port, "port", 8080, "port to serve this API server at")
+	cmd.Flags().StringVar(&flags.addr, "addr", ":8080", "port to serve this API server at")
+	cmd.Flags().StringVar(&flags.TLSCertFile, "tls-cert-file", "", "File containing the default x509 Certificate for HTTPS. If not provided no TLS security shall be enabled")
+	cmd.Flags().StringVar(&flags.TLSPrivateKeyFile, "tls-private-key-file", "", "File containing the default x509 private key matching --tls-cert-file.")
 	return util.CmdLogMixin(cmd)
 }
 
 func runE(flags *flags, log logr.Logger) error {
-	log.Info("booting serving API-server", "port", flags.port)
-	lis, err := net.Listen("tcp", fmt.Sprintf(":%d", flags.port))
-	if err != nil {
-		return err
-	}
 	grpcServer := grpc.NewServer()
 	grpcGatewayMux := gwruntime.NewServeMux(
 		gwruntime.WithProtoErrorHandler(func(ctx context.Context, serveMux *gwruntime.ServeMux, marshaler gwruntime.Marshaler, writer http.ResponseWriter, request *http.Request, err error) {
@@ -96,8 +93,7 @@ func runE(flags *flags, log logr.Logger) error {
 		}),
 	)
 	apiserverv1alpha1.RegisterKubecarrierServer(grpcServer, &kubecarrierHandler{})
-	err = apiserverv1alpha1.RegisterKubecarrierHandlerServer(context.Background(), grpcGatewayMux, &kubecarrierHandler{})
-	if err != nil {
+	if err := apiserverv1alpha1.RegisterKubecarrierHandlerServer(context.Background(), grpcGatewayMux, &kubecarrierHandler{}); err != nil {
 		return err
 	}
 
@@ -111,5 +107,17 @@ func runE(flags *flags, log logr.Logger) error {
 		}
 	}
 	router.PathPrefix("/v1alpha1").Handler(http.StripPrefix("/v1alpha1", v1alpha1))
-	return http.Serve(lis, router)
+
+	server := http.Server{
+		Handler: router,
+		Addr:    flags.addr,
+	}
+
+	log.Info("booting serving API-server", "addr", flags.addr)
+	if flags.TLSCertFile == "" {
+		log.V(4).Info("No TLS cert file defined, skipping TLS setup")
+		return server.ListenAndServe()
+	} else {
+		return server.ListenAndServeTLS(flags.TLSCertFile, flags.TLSPrivateKeyFile)
+	}
 }
