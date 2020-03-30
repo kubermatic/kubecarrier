@@ -65,8 +65,12 @@ clean: e2e-test-clean
 	rm -rf bin/$*
 .PHONEY: clean
 
+gen-proto:
+	@hack/proto-codegen.sh
+.PHONY: gen-proto
+
 # Generate code
-generate: docs
+generate: docs gen-proto
 	@hack/codegen.sh
 	# regenerate golden files to update tests
 	FIX_GOLDEN=1 go test ./pkg/internal/resources/...

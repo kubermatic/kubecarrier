@@ -17,17 +17,23 @@ limitations under the License.
 package apiserver
 
 import (
+	"context"
 	"fmt"
-	"io/ioutil"
+	"net"
 	"net/http"
+	"strings"
 
 	"github.com/go-logr/logr"
+	"github.com/gorilla/mux"
+	grpcgatewayruntime "github.com/grpc-ecosystem/grpc-gateway/runtime"
 	"github.com/spf13/cobra"
+	"google.golang.org/grpc"
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	ctrl "sigs.k8s.io/controller-runtime"
 
+	apiserverv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/apiserver/v1alpha1"
 	"github.com/kubermatic/kubecarrier/pkg/internal/util"
 )
 
@@ -64,15 +70,27 @@ func NewAPIServer() *cobra.Command {
 
 func runE(flags *flags, log logr.Logger) error {
 	log.Info("booting serving API-server", "port", flags.port)
-	http.HandleFunc("/", func(writer http.ResponseWriter, request *http.Request) {
-		body, err := ioutil.ReadAll(request.Body)
-		if err != nil {
-			writer.WriteHeader(http.StatusInternalServerError)
-			fmt.Fprintln(writer, err.Error())
-			return
+	lis, err := net.Listen("tcp", fmt.Sprintf(":%d", flags.port))
+	if err != nil {
+		return err
+	}
+	grpcServer := grpc.NewServer()
+	grpcGatewayMux := grpcgatewayruntime.NewServeMux()
+	apiserverv1alpha1.RegisterVersionServiceServer(grpcServer, &versionHandler{})
+	err = apiserverv1alpha1.RegisterVersionServiceHandlerServer(context.Background(), grpcGatewayMux, &versionHandler{})
+	if err != nil {
+		return err
+	}
+
+	router := mux.NewRouter()
+	var v1alpha1 http.HandlerFunc = func(writer http.ResponseWriter, request *http.Request) {
+		log.Info("got request for", "path", request.URL.Path)
+		if strings.Contains(request.Header.Get("Content-Type"), "application/grpc") {
+			grpcServer.ServeHTTP(writer, request)
+		} else {
+			grpcGatewayMux.ServeHTTP(writer, request)
 		}
-		log.Info("new request", "body", string(body), "method", request.Method, "host", request.Host, "path", request.URL.Path)
-		fmt.Fprintln(writer, "hello world!")
-	})
-	return http.ListenAndServe(fmt.Sprintf(":%d", flags.port), nil)
+	}
+	router.PathPrefix("/v1alpha1").Handler(http.StripPrefix("/v1alpha1", v1alpha1))
+	return http.Serve(lis, router)
 }

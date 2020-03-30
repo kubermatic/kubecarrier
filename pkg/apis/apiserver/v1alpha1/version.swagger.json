@@ -1,0 +1,108 @@
+{
+  "consumes": [
+    "application/json"
+  ],
+  "definitions": {
+    "protobufAny": {
+      "properties": {
+        "type_url": {
+          "type": "string"
+        },
+        "value": {
+          "format": "byte",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "runtimeError": {
+      "properties": {
+        "code": {
+          "format": "int32",
+          "type": "integer"
+        },
+        "details": {
+          "items": {
+            "$ref": "#/definitions/protobufAny"
+          },
+          "type": "array"
+        },
+        "error": {
+          "type": "string"
+        },
+        "message": {
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "v1APIVersion": {
+      "properties": {
+        "branch": {
+          "type": "string"
+        },
+        "buildDate": {
+          "format": "date-time",
+          "type": "string"
+        },
+        "goVersion": {
+          "type": "string"
+        },
+        "platform": {
+          "type": "string"
+        },
+        "version": {
+          "type": "string"
+        }
+      },
+      "title": "Types",
+      "type": "object"
+    },
+    "v1VersionRequest": {
+      "title": "Requests/Responses",
+      "type": "object"
+    }
+  },
+  "info": {
+    "title": "version.proto",
+    "version": "version not set"
+  },
+  "paths": {
+    "/version": {
+      "post": {
+        "operationId": "Version",
+        "parameters": [
+          {
+            "in": "body",
+            "name": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/v1VersionRequest"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1APIVersion"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response",
+            "schema": {
+              "$ref": "#/definitions/runtimeError"
+            }
+          }
+        },
+        "tags": [
+          "VersionService"
+        ]
+      }
+    }
+  },
+  "produces": [
+    "application/json"
+  ],
+  "swagger": "2.0"
+}
