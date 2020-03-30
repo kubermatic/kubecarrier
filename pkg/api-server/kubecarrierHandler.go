@@ -25,9 +25,9 @@ import (
 	"github.com/kubermatic/kubecarrier/pkg/internal/version"
 )
 
-type versionHandler struct{}
+type kubecarrierHandler struct{}
 
-func (v versionHandler) Version(context.Context, *v1alpha1.VersionRequest) (*v1alpha1.APIVersion, error) {
+func (v kubecarrierHandler) Version(context.Context, *v1alpha1.VersionRequest) (*v1alpha1.APIVersion, error) {
 	versionInfo := version.Get()
 	return &v1alpha1.APIVersion{
 		Version: versionInfo.Version,
@@ -41,4 +41,4 @@ func (v versionHandler) Version(context.Context, *v1alpha1.VersionRequest) (*v1a
 	}, nil
 }
 
-var _ v1alpha1.VersionServiceServer = (*versionHandler)(nil)
+var _ v1alpha1.KubecarrierServer = (*kubecarrierHandler)(nil)

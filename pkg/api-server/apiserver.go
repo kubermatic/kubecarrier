@@ -99,8 +99,8 @@ func runE(flags *flags, log logr.Logger) error {
 			_, _ = writer.Write(buf)
 		}),
 	)
-	apiserverv1alpha1.RegisterVersionServiceServer(grpcServer, &versionHandler{})
-	err = apiserverv1alpha1.RegisterVersionServiceHandlerServer(context.Background(), grpcGatewayMux, &versionHandler{})
+	apiserverv1alpha1.RegisterKubecarrierServer(grpcServer, &kubecarrierHandler{})
+	err = apiserverv1alpha1.RegisterKubecarrierHandlerServer(context.Background(), grpcGatewayMux, &kubecarrierHandler{})
 	if err != nil {
 		return err
 	}

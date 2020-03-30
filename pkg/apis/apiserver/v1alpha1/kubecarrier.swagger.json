@@ -64,7 +64,7 @@
     }
   },
   "info": {
-    "title": "version.proto",
+    "title": "kubecarrier.proto",
     "version": "version not set"
   },
   "paths": {
@@ -96,7 +96,7 @@
           }
         },
         "tags": [
-          "VersionService"
+          "Kubecarrier"
         ]
       }
     }
