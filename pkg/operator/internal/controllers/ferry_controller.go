@@ -25,16 +25,12 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
 	operatorv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/operator/v1alpha1"
-	"github.com/kubermatic/kubecarrier/pkg/internal/reconcile"
 	resourceferry "github.com/kubermatic/kubecarrier/pkg/internal/resources/ferry"
-	"github.com/kubermatic/kubecarrier/pkg/internal/util"
 )
 
 // FerryReconciler reconciles a Ferry object
@@ -110,25 +106,6 @@ func (r *FerryReconciler) handleDeletion(ctx context.Context, ferry *operatorv1a
 		}
 	}
 	return nil
-}
-
-func (r *FerryReconciler) reconcileOwnedObjects(ctx context.Context, log logr.Logger, ferry *operatorv1alpha1.Ferry, objects []unstructured.Unstructured) (bool, error) {
-	var deploymentIsReady bool
-	for _, object := range objects {
-		if err := controllerutil.SetControllerReference(ferry, &object, r.Scheme); err != nil {
-			return false, err
-		}
-		curObj, err := reconcile.Unstructured(ctx, log, r.Client, &object)
-		if err != nil {
-			return false, fmt.Errorf("reconcile kind: %s, err: %w", object.GroupVersionKind().Kind, err)
-		}
-
-		switch ctr := curObj.(type) {
-		case *appsv1.Deployment:
-			deploymentIsReady = util.DeploymentIsAvailable(ctr)
-		}
-	}
-	return deploymentIsReady, nil
 }
 
 func (r *FerryReconciler) updateStatus(ctx context.Context, ferry *operatorv1alpha1.Ferry, deploymentIsReady bool) error {
