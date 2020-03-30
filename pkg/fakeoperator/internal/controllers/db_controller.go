@@ -58,7 +58,7 @@ func (r *DBReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 			}
 		}
 		cond, _ := db.Status.GetCondition(fakev1alpha1.DBReady)
-		if time.Now().UTC().Sub(cond.LastTransitionTime.Time).Seconds() < float64(db.Spec.Config.DeletionAfterSeconds) {
+		if time.Now().Sub(cond.LastTransitionTime.Time) < db.Spec.Config.DeletionAfterSeconds * time.Second {
 			return ctrl.Result{RequeueAfter: time.Second * time.Duration(db.Spec.Config.DeletionAfterSeconds)}, nil
 		}
 		if util.RemoveFinalizer(db, finalizer) {
