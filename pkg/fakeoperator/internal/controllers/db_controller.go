@@ -58,7 +58,7 @@ func (r *DBReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 			}
 		}
 		cond, _ := db.Status.GetCondition(fakev1alpha1.DBReady)
-		if time.Now().Sub(cond.LastTransitionTime.Time) < db.Spec.Config.DeletionAfterSeconds * time.Second {
+		if time.Now().Sub(cond.LastTransitionTime.Time) < time.Duration(db.Spec.Config.DeletionAfterSeconds)*time.Second {
 			return ctrl.Result{RequeueAfter: time.Second * time.Duration(db.Spec.Config.DeletionAfterSeconds)}, nil
 		}
 		if util.RemoveFinalizer(db, finalizer) {
@@ -103,7 +103,7 @@ func (r *DBReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	}
 
 	// DB is not ready and waiting for timeout
-	if time.Now().UTC().Sub(cond.LastTransitionTime.Time).Seconds() < float64(db.Spec.Config.ReadyAfterSeconds) {
+	if time.Now().Sub(cond.LastTransitionTime.Time) < time.Duration(db.Spec.Config.ReadyAfterSeconds)*time.Second {
 		return ctrl.Result{RequeueAfter: time.Second * time.Duration(db.Spec.Config.ReadyAfterSeconds)}, nil
 	}
 
