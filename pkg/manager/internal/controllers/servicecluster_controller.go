@@ -179,12 +179,15 @@ func (r *ServiceClusterReconciler) updateStatus(
 		corev1alpha1.ServiceClusterReachable)
 	timenow := metav1.Now()
 	if timenow.Sub(serviceClusterReachable.LastHeartbeatTime.Time) > r.MonitorGracePeriod {
-		serviceClusterReachable.Type = corev1alpha1.ServiceClusterReachable
-		serviceClusterReachable.LastTransitionTime = timenow
-		serviceClusterReachable.Status = corev1alpha1.ConditionUnknown
-		serviceClusterReachable.Message = fmt.Sprintf("cluster stopped posting heartbeats for at least %v", r.MonitorGracePeriod)
-		serviceClusterReachable.Reason = "GracePeriodTimeout"
-		serviceCluster.Status.SetCondition(serviceClusterReachable)
+		serviceCluster.Status.SetCondition(corev1alpha1.ServiceClusterCondition{
+			LastTransitionTime: timenow,
+			Message:            fmt.Sprintf("cluster stopped posting heartbeats for at least %v", r.MonitorGracePeriod),
+			Reason:             "GracePeriodTimeout",
+			Status:             corev1alpha1.ConditionUnknown,
+			Type:               corev1alpha1.ServiceClusterReachable,
+		})
+		// reload
+		serviceClusterReachable, _ = serviceCluster.Status.GetCondition(corev1alpha1.ServiceClusterReachable)
 	}
 
 	if controllerReady.True() && serviceClusterReachable.True() {
