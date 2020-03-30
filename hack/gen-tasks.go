@@ -55,6 +55,15 @@ func main() {
 	fmt.Printf("service-cluster-name=%s [use flag or env %s to configure]\n", *serviceClusterName, ServiceClusterENV)
 	var tasks = []ide.Task{
 		{
+			Name:    "API Server",
+			Program: "cmd/api-server",
+			LDFlags: *ldFlags,
+			Args:    nil,
+			Env: map[string]string{
+				"KUBECONFIG": managementKubeconfigPath,
+			},
+		},
+		{
 			Name:    "Kubecarrier version",
 			Program: "cmd/kubectl-kubecarrier",
 			LDFlags: *ldFlags,
