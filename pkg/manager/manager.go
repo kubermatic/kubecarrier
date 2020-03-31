@@ -19,6 +19,7 @@ package manager
 import (
 	"fmt"
 	"os"
+	"time"
 
 	"github.com/go-logr/logr"
 	"github.com/spf13/cobra"
@@ -42,11 +43,12 @@ import (
 )
 
 type flags struct {
-	kubeCarrierSystemNamespace string
-	metricsAddr                string
-	healthAddr                 string
-	enableLeaderElection       bool
-	certDir                    string
+	kubeCarrierSystemNamespace       string
+	metricsAddr                      string
+	healthAddr                       string
+	enableLeaderElection             bool
+	certDir                          string
+	ServiceClusterMonitorGracePeriod time.Duration
 }
 
 var (
@@ -82,6 +84,7 @@ func NewManagerCommand() *cobra.Command {
 		"Enable leader election for controller manager. Enabling this will ensure there is only one active controller manager.")
 	cmd.Flags().StringVar(&flags.kubeCarrierSystemNamespace, "kubecarrier-system-namespace", os.Getenv("KUBECARRIER_NAMESPACE"), "The namespace that KubeCarrier controller manager deploys to.")
 	cmd.Flags().StringVar(&flags.certDir, "cert-dir", "/tmp/k8s-webhook-server/serving-certs", "The webhook TLS certificates directory")
+	cmd.Flags().DurationVar(&flags.ServiceClusterMonitorGracePeriod, "service-cluster-monitor-grace-period", 40*time.Second, "Amount of time which we allow a running ServiceCluster to be unresponsive before marking it unhealthy. Must be N times more than ferry's serviceClusterStatusUpdatePeriod, where N means number of retries allowed for ferry to post cluster status.")
 	return util.CmdLogMixin(cmd)
 }
 
@@ -193,9 +196,10 @@ func run(flags *flags, log logr.Logger) error {
 	}
 
 	if err = (&controllers.ServiceClusterReconciler{
-		Client: mgr.GetClient(),
-		Log:    log.WithName("controllers").WithName("ServiceCluster"),
-		Scheme: mgr.GetScheme(),
+		Client:             mgr.GetClient(),
+		Log:                log.WithName("controllers").WithName("ServiceCluster"),
+		Scheme:             mgr.GetScheme(),
+		MonitorGracePeriod: flags.ServiceClusterMonitorGracePeriod,
 	}).SetupWithManager(mgr); err != nil {
 		return fmt.Errorf("creating ServiceCluster controller: %w", err)
 	}
