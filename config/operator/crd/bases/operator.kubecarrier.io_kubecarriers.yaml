@@ -14,7 +14,7 @@ spec:
     listKind: KubeCarrierList
     plural: kubecarriers
     singular: kubecarrier
-  scope: Namespaced
+  scope: Cluster
   versions:
   - additionalPrinterColumns:
     - jsonPath: .status.phase
