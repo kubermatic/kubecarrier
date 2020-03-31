@@ -103,7 +103,7 @@ func (r *BaseReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	}
 
 	if !obj.GetDeletionTimestamp().IsZero() {
-		if err := r.handleDeletion(ctx, obj, r.Controller.GetDeletionObjectTypes()); err != nil {
+		if err := r.HandleDeletion(ctx, obj, r.Controller.GetDeletionObjectTypes()); err != nil {
 			return ctrl.Result{}, fmt.Errorf("handle deletion: %w", err)
 		}
 		return ctrl.Result{}, nil
@@ -122,20 +122,20 @@ func (r *BaseReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 		return ctrl.Result{}, fmt.Errorf("creating %s manifests: %w", r.Name, err)
 	}
 
-	deploymentIsReady, err := r.reconcileOwnedObjects(ctx, obj, objects)
+	deploymentIsReady, err := r.ReconcileOwnedObjects(ctx, obj, objects)
 	if err != nil {
 		return ctrl.Result{}, err
 	}
 
-	if err := r.updateStatus(ctx, obj, deploymentIsReady); err != nil {
+	if err := r.UpdateStatus(ctx, obj, deploymentIsReady); err != nil {
 		return ctrl.Result{}, err
 	}
 
 	return ctrl.Result{}, nil
 }
 
-// handleDeletion - handle the deletion of the object (Remove the objects that the object owns, and remove the finalizer).
-func (r *BaseReconciler) handleDeletion(ctx context.Context, c Component, ownObjectsTypes []runtime.Object) error {
+// HandleDeletion - handle the deletion of the object (Remove the objects that the object owns, and remove the finalizer).
+func (r *BaseReconciler) HandleDeletion(ctx context.Context, c Component, ownObjectsTypes []runtime.Object) error {
 	// Update the object Status to Terminating.
 	if c.SetTerminatingCondition() {
 		if err := r.Client.Status().Update(ctx, c); err != nil {
@@ -155,8 +155,8 @@ func (r *BaseReconciler) handleDeletion(ctx context.Context, c Component, ownObj
 	return nil
 }
 
-// updateStatus - update the status of the object
-func (r *BaseReconciler) updateStatus(ctx context.Context, c Component, deploymentIsReady bool) error {
+// UpdateStatus - update the status of the object
+func (r *BaseReconciler) UpdateStatus(ctx context.Context, c Component, deploymentIsReady bool) error {
 	var statusChanged bool
 
 	if deploymentIsReady {
@@ -174,7 +174,7 @@ func (r *BaseReconciler) updateStatus(ctx context.Context, c Component, deployme
 }
 
 // ReconcileOwnedObjects - reconcile the objects that owned by obj
-func (r *BaseReconciler) reconcileOwnedObjects(ctx context.Context, obj Component, objects []unstructured.Unstructured) (bool, error) {
+func (r *BaseReconciler) ReconcileOwnedObjects(ctx context.Context, obj Component, objects []unstructured.Unstructured) (bool, error) {
 	var deploymentIsReady bool
 	for _, object := range objects {
 		gvk, err := apiutil.GVKForObject(&object, r.Scheme)

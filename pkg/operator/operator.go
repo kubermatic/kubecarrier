@@ -122,15 +122,14 @@ func run(flags *flags, log logr.Logger) error {
 		"elevator.kubecarrier.io/controller").SetupWithManager(mgr); err != nil {
 		return fmt.Errorf("creating Elevator controller: %w", err)
 	}
-
-	if err := controllers.NewBaseReconciler(
-		&controllers.TowerStrategy{},
+	if err := controllers.NewTowerReconciler(
 		mgr.GetClient(),
 		mgr.GetScheme(),
 		mgr.GetRESTMapper(),
 		log.WithName("controllers").WithName("Tower"),
 		"Tower",
-		"tower.kubecarrier.io/controller").SetupWithManager(mgr); err != nil {
+		"tower.kubecarrier.io/controller",
+	).SetupWithManager(mgr); err != nil {
 		return fmt.Errorf("creating Tower controller: %w", err)
 	}
 

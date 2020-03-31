@@ -23,9 +23,14 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
+	"k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
+	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/builder"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+
+	"github.com/go-logr/logr"
 
 	operatorv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/operator/v1alpha1"
 	resourcetower "github.com/kubermatic/kubecarrier/pkg/internal/resources/tower"
@@ -39,6 +44,30 @@ import (
 // +kubebuilder:rbac:groups=rbac.authorization.k8s.io,resources=rolebindings,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=apps,resources=deployments,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups="",resources=serviceaccounts,verbs=get;list;watch;create;update;patch;delete
+
+type TowerReconciler struct {
+	Log            logr.Logger
+	Scheme         *runtime.Scheme
+	RESTMapper     meta.RESTMapper
+	BaseReconciler *BaseReconciler
+}
+
+func NewTowerReconciler(c client.Client, scheme *runtime.Scheme, RESTMapper meta.RESTMapper, log logr.Logger, name, finalizer string) *TowerReconciler {
+	return &TowerReconciler{
+		Scheme:         scheme,
+		RESTMapper:     RESTMapper,
+		Log:            log,
+		BaseReconciler: NewBaseReconciler(&TowerStrategy{}, c, scheme, RESTMapper, log, name, finalizer),
+	}
+}
+
+func (r *TowerReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
+	return r.BaseReconciler.Reconcile(req)
+}
+
+func (r *TowerReconciler) SetupWithManager(mgr ctrl.Manager) error {
+	return r.BaseReconciler.SetupWithManager(mgr)
+}
 
 type TowerStrategy struct {
 }
