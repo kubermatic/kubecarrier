@@ -14,7 +14,7 @@ spec:
     listKind: ManagementClusterList
     plural: managementclusters
     singular: managementcluster
-  scope: Namespaced
+  scope: Cluster
   versions:
   - additionalPrinterColumns:
     - jsonPath: .status.phase
