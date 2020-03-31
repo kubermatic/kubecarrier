@@ -219,7 +219,7 @@ func (r *DerivedCustomResourceReconciler) Reconcile(req ctrl.Request) (ctrl.Resu
 	}
 
 	// check derived CRD conditions
-	if !isCRDReady(currentDerivedCR) {
+	if !util.CRDIsEstablished(currentDerivedCR) {
 		// waiting for CRD to be ready
 		if err = r.updateStatus(ctx, dcr, catalogv1alpha1.DerivedCustomResourceCondition{
 			Type:    catalogv1alpha1.DerivedCustomResourceEstablished,
@@ -315,16 +315,6 @@ func (r *DerivedCustomResourceReconciler) Reconcile(req ctrl.Request) (ctrl.Resu
 		return result, fmt.Errorf("updating status: %w", err)
 	}
 	return result, nil
-}
-
-func isCRDReady(crd *apiextensionsv1.CustomResourceDefinition) bool {
-	for _, condition := range crd.Status.Conditions {
-		if condition.Type == apiextensionsv1.Established &&
-			condition.Status == apiextensionsv1.ConditionTrue {
-			return true
-		}
-	}
-	return false
 }
 
 func (r *DerivedCustomResourceReconciler) SetupWithManager(mgr ctrl.Manager) error {

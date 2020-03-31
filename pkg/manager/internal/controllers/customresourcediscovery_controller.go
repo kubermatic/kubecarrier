@@ -92,7 +92,7 @@ func (r *CustomResourceDiscoveryReconciler) Reconcile(req ctrl.Request) (ctrl.Re
 	}
 
 	// Report Status
-	if !isCRDReady(currentCRD) {
+	if !util.CRDIsEstablished(currentCRD) {
 		if err = r.updateStatus(ctx, crDiscovery, corev1alpha1.CustomResourceDiscoveryCondition{
 			Type:    corev1alpha1.CustomResourceDiscoveryEstablished,
 			Status:  corev1alpha1.ConditionFalse,

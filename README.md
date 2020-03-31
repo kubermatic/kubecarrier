@@ -21,7 +21,6 @@ KubeCarrier is an open source system for managing applications and services acro
 - [Contributing](#contributing)
   - [Before you start](#before-you-start)
   - [Pull Requests](#pull-requests)
-  - [Developer Documentation](developer-documentation)
 - [FAQ](#faq)
 - [Changelog](#changelog)
 
@@ -89,7 +88,7 @@ kind-kubecarrier
 
 ``` bash
 # deploy cert-manager
-$ kubectl apply -f https://github.com/jetstack/cert-manager/releases/download/v0.13.0/cert-manager.yaml
+$ kubectl apply -f https://github.com/jetstack/cert-manager/releases/download/v0.14.0/cert-manager.yaml
 # wait for it to be ready (optional)
 $ kubectl wait --for=condition=available deployment/cert-manager -n cert-manager --timeout=120s
 $ kubectl wait --for=condition=available deployment/cert-manager-cainjector -n cert-manager --timeout=120s
