@@ -32,7 +32,7 @@ IMAGE_ORG?=quay.io/kubecarrier
 MODULE=github.com/kubermatic/kubecarrier
 LD_FLAGS=-X $(MODULE)/pkg/internal/version.Version=$(VERSION) -X $(MODULE)/pkg/internal/version.Branch=$(BRANCH) -X $(MODULE)/pkg/internal/version.Commit=$(SHORT_SHA) -X $(MODULE)/pkg/internal/version.BuildDate=$(BUILD_DATE)
 KIND_CLUSTER?=kubecarrier
-COMPONENTS = operator manager ferry catapult elevator
+COMPONENTS = operator manager ferry catapult elevator tower
 
 # every makefile operation should have explicit kubeconfig
 undefine KUBECONFIG
@@ -136,7 +136,8 @@ e2e-test-clean:
 	@kind delete cluster --name=${SVC_KIND_CLUSTER} "--kubeconfig=${HOME}/.kube/kind-config-${SVC_KIND_CLUSTER}" || true
 .PHONY: e2e-test-clean
 
-lint:
+lint: generate
+	@hack/validate-directory-clean.sh
 	pre-commit run -a
 	golangci-lint run ./... --deadline=15m
 
@@ -192,7 +193,7 @@ install-git-hooks:
 
 # Install cert-manager in the configured Kubernetes cluster
 cert-manager:
-	kubectl apply -f https://github.com/jetstack/cert-manager/releases/download/v0.13.0/cert-manager.yaml
+	kubectl apply -f https://github.com/jetstack/cert-manager/releases/download/v0.14.0/cert-manager.yaml
 	kubectl wait --for=condition=available deployment/cert-manager -n cert-manager --timeout=120s
 	kubectl wait --for=condition=available deployment/cert-manager-cainjector -n cert-manager --timeout=120s
 	kubectl wait --for=condition=available deployment/cert-manager-webhook -n cert-manager --timeout=120s
