@@ -32,7 +32,7 @@ IMAGE_ORG?=quay.io/kubecarrier
 MODULE=github.com/kubermatic/kubecarrier
 LD_FLAGS=-X $(MODULE)/pkg/internal/version.Version=$(VERSION) -X $(MODULE)/pkg/internal/version.Branch=$(BRANCH) -X $(MODULE)/pkg/internal/version.Commit=$(SHORT_SHA) -X $(MODULE)/pkg/internal/version.BuildDate=$(BUILD_DATE)
 KIND_CLUSTER?=kubecarrier
-COMPONENTS = operator manager ferry catapult elevator tower api-server
+COMPONENTS = operator manager ferry catapult elevator tower
 
 # every makefile operation should have explicit kubeconfig
 undefine KUBECONFIG
@@ -65,12 +65,8 @@ clean: e2e-test-clean
 	rm -rf bin/$*
 .PHONEY: clean
 
-gen-proto:
-	@hack/proto-codegen.sh
-.PHONY: gen-proto
-
 # Generate code
-generate: docs gen-proto
+generate: docs
 	@hack/codegen.sh
 	# regenerate golden files to update tests
 	FIX_GOLDEN=1 go test ./pkg/internal/resources/...

@@ -6,11 +6,11 @@ namespace: kubecarrier-system
 # "wordpress" becomes "alices-wordpress".
 # Note that it should also match with the prefix (text before '-') of the namespace
 # field above.
-namePrefix: kubecarrier-tower-
+namePrefix: kubecarrier-api-server-
 
 # Labels to add to all resources and selectors.
 commonLabels:
-  kubecarrier.io/role: tower
+  kubecarrier.io/role: api-server
 
 bases:
 #- ../crd
