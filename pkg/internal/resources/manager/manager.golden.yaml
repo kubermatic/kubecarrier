@@ -416,8 +416,8 @@
                       type: string
                     plural:
                       type: string
-                    serviceCluster:
-                      description: ServiceCluster references a Region of this CRD.
+                    region:
+                      description: Region references a Region of this CRD.
                       properties:
                         name:
                           minLength: 1
@@ -446,7 +446,7 @@
                   - kind
                   - name
                   - plural
-                  - serviceCluster
+                  - region
                   - versions
                   type: object
                 tenantCRD:
@@ -461,8 +461,8 @@
                       type: string
                     plural:
                       type: string
-                    serviceCluster:
-                      description: ServiceCluster references a Region of this CRD.
+                    region:
+                      description: Region references a Region of this CRD.
                       properties:
                         name:
                           minLength: 1
@@ -491,7 +491,7 @@
                   - kind
                   - name
                   - plural
-                  - serviceCluster
+                  - region
                   - versions
                   type: object
               type: object
@@ -1277,8 +1277,8 @@
                       type: string
                     plural:
                       type: string
-                    serviceCluster:
-                      description: ServiceCluster references a Region of this CRD.
+                    region:
+                      description: Region references a Region of this CRD.
                       properties:
                         name:
                           minLength: 1
@@ -1307,7 +1307,7 @@
                   - kind
                   - name
                   - plural
-                  - serviceCluster
+                  - region
                   - versions
                   type: object
                 metadata:

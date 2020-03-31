@@ -124,14 +124,14 @@ func TestCatalogReconciler(t *testing.T) {
 			TenantCRD: &catalogv1alpha1.CRDInformation{
 				APIGroup: "tenant.apigroup",
 				Plural:   "tenant.plural",
-				ServiceCluster: catalogv1alpha1.ObjectReference{
+				Region: catalogv1alpha1.ObjectReference{
 					Name: "test-service-cluster",
 				},
 			},
 			ProviderCRD: &catalogv1alpha1.CRDInformation{
 				APIGroup: "provider.apigroup",
 				Plural:   "provider.plural",
-				ServiceCluster: catalogv1alpha1.ObjectReference{
+				Region: catalogv1alpha1.ObjectReference{
 					Name: "test-service-cluster",
 				},
 			},

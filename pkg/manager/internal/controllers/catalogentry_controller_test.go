@@ -221,13 +221,13 @@ func TestCatalogEntryReconciler(t *testing.T) {
 		// Check CatalogEntry Status
 		assert.Equal(t, catalogEntry.Status.TenantCRD.Kind, derivedCRD.Spec.Names.Kind, "CRD Kind is wrong")
 		assert.Equal(t, catalogEntry.Status.TenantCRD.Name, derivedCRD.Name, "CRD Name is wrong")
-		assert.Equal(t, catalogEntry.Status.TenantCRD.ServiceCluster.Name, derivedCRD.Labels[ServiceClusterLabel], "CRD ServiceCluster is wrong")
+		assert.Equal(t, catalogEntry.Status.TenantCRD.Region.Name, derivedCRD.Labels[ServiceClusterLabel], "CRD Region is wrong")
 		assert.Equal(t, catalogEntry.Status.TenantCRD.APIGroup, derivedCRD.Spec.Group, "CRD APIGroup is wrong")
 		assert.Equal(t, catalogEntry.Status.TenantCRD.Plural, derivedCRD.Spec.Names.Plural, "CRD Plural is wrong")
 
 		assert.Equal(t, catalogEntry.Status.ProviderCRD.Kind, baseCRD.Spec.Names.Kind, "CRD Kind is wrong")
 		assert.Equal(t, catalogEntry.Status.ProviderCRD.Name, baseCRD.Name, "CRD Name is wrong")
-		assert.Equal(t, catalogEntry.Status.ProviderCRD.ServiceCluster.Name, baseCRD.Labels[ServiceClusterLabel], "CRD ServiceCluster is wrong")
+		assert.Equal(t, catalogEntry.Status.ProviderCRD.Region.Name, baseCRD.Labels[ServiceClusterLabel], "CRD Region is wrong")
 		assert.Equal(t, catalogEntry.Status.ProviderCRD.APIGroup, baseCRD.Spec.Group, "CRD APIGroup is wrong")
 		assert.Equal(t, catalogEntry.Status.ProviderCRD.Plural, baseCRD.Spec.Names.Plural, "CRD Plural is wrong")
 

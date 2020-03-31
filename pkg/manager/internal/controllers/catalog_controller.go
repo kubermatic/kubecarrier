@@ -401,7 +401,7 @@ func (r *CatalogReconciler) buildDesiredRegionsAndAssignments(
 	var desiredServiceClusterAssignments []corev1alpha1.ServiceClusterAssignment
 	serviceClusterNames := map[string]struct{}{}
 	for _, catalogEntry := range catalogEntries {
-		serviceClusterNames[catalogEntry.Status.TenantCRD.ServiceCluster.Name] = struct{}{}
+		serviceClusterNames[catalogEntry.Status.TenantCRD.Region.Name] = struct{}{}
 	}
 	for serviceClusterName := range serviceClusterNames {
 		serviceCluster := &corev1alpha1.ServiceCluster{}

@@ -832,7 +832,7 @@ CRDInformation contains type information about the CRD.
 | kind |  | string | true |
 | plural |  | string | true |
 | versions |  | []catalog.kubecarrier.io/v1alpha1.CRDVersion | true |
-| serviceCluster | ServiceCluster references a Region of this CRD. | catalog.kubecarrier.io/v1alpha1.ObjectReference | true |
+| region | Region references a Region of this CRD. | catalog.kubecarrier.io/v1alpha1.ObjectReference | true |
 
 [Back to Group](#catalog)
 
