@@ -65,11 +65,8 @@ clean: e2e-test-clean
 	rm -rf bin/$*
 .PHONEY: clean
 
-.goreleaser.yaml:  ./hack/gen-goreleaser/gen-goreleaser.go
-	@go run ./hack/gen-goreleaser > .goreleaser.yaml
-
 # Generate code
-generate: docs .goreleaser.yaml
+generate: docs
 	@hack/codegen.sh
 	# regenerate golden files to update tests
 	FIX_GOLDEN=1 go test ./pkg/internal/resources/...
@@ -86,12 +83,12 @@ test:
 	CGO_ENABLED=1 go test -race -v ./...
 .PHONY: test
 
-release: .goreleaser.yaml
+release:
 	goreleaser release --rm-dist
 	go run ./hack/krew-manifest -version=$(shell git describe --tags --abbrev=0) > dist/krew.yaml
 .PHONY: release
 
-krew-install: .goreleaser.yaml
+krew-install:
 	@goreleaser release --snapshot  --rm-dist
 	@go run ./hack/krew-manifest -version=$(shell git describe --tags --abbrev=0)-SNAPSHOT-$(shell git rev-parse --short HEAD) > dist/krew.yaml
 	@kubectl krew uninstall kubecarrier || true
@@ -195,7 +192,7 @@ install-git-hooks:
 
 # Install cert-manager in the configured Kubernetes cluster
 cert-manager:
-	kubectl apply -f https://github.com/jetstack/cert-manager/releases/download/v0.14.0/cert-manager.yaml
+	kubectl apply -f https://github.com/jetstack/cert-manager/releases/download/v0.13.0/cert-manager.yaml
 	kubectl wait --for=condition=available deployment/cert-manager -n cert-manager --timeout=120s
 	kubectl wait --for=condition=available deployment/cert-manager-cainjector -n cert-manager --timeout=120s
 	kubectl wait --for=condition=available deployment/cert-manager-webhook -n cert-manager --timeout=120s
