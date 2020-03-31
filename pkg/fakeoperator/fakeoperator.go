@@ -37,7 +37,6 @@ import (
 type flags struct {
 	metricsAddr          string
 	enableLeaderElection bool
-	verbosity            int8
 	healthAddr           string
 }
 
