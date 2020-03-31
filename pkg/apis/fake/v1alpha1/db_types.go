@@ -42,9 +42,9 @@ type DBSpec struct {
 
 // Config defines the e2e tests params
 type Config struct {
-	// ReadyAfterSeconds represents timeout after which operator will mark DB as Ready
+	// ReadyAfterSeconds represents duration after which operator will mark DB as Ready
 	ReadyAfterSeconds int `json:"readyAfterSeconds,omitempty"`
-	// DeletionAfterSeconds represents timeout after which operator will remove finalizer
+	// DeletionAfterSeconds represents duration after which operator will remove finalizer
 	DeletionAfterSeconds int `json:"deletionAfterSeconds,omitempty"`
 }
 

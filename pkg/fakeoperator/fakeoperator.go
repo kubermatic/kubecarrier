@@ -53,21 +53,16 @@ func init() {
 
 func NewFakeOperator() *cobra.Command {
 	flags := flags{}
-
+	log := ctrl.Log.WithName("manager")
 	cmd := &cobra.Command{
 		Args:  cobra.NoArgs,
 		Use:   "e2e-operator",
 		Short: "e2e-operator runs the operator for e2e testing purposes",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return run(flags, log)
+		},
 	}
-
-	cmd.Flags().StringVar(&flags.metricsAddr, "metrics-addr", ":8080", "The address the metric endpoint binds to.")
-	cmd.Flags().BoolVar(&flags.enableLeaderElection, "enable-leader-election", false,
-		"Enable leader election for controller manager. Enabling this will ensure there is only one active controller manager.")
 	cmd.Flags().StringVar(&flags.healthAddr, "health-addr", ":9440", "The address the health endpoint binds to.")
-	cmd.Flags().Int8VarP(&flags.verbosity, "verbosity", "v", 4, "log level version")
-	cmd.RunE = func(cmd *cobra.Command, args []string) error {
-		return run(flags, ctrl.Log.WithName("setup"))
-	}
 	return util.CmdLogMixin(cmd)
 }
 

@@ -50,11 +50,11 @@ spec:
                 description: E2E tests params
                 properties:
                   deletionAfterSeconds:
-                    description: DeletionAfterSeconds represents timeout after which
+                    description: DeletionAfterSeconds represents duration after which
                       operator will remove finalizer
                     type: integer
                   readyAfterSeconds:
-                    description: ReadyAfterSeconds represents timeout after which
+                    description: ReadyAfterSeconds represents duration after which
                       operator will mark DB as Ready
                     type: integer
                 type: object
