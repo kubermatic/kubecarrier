@@ -81,16 +81,15 @@ func run(flags *flags, log logr.Logger) error {
 		return fmt.Errorf("starting manager: %w", err)
 	}
 
-	if err := controllers.NewBaseReconciler(
-		&controllers.KubeCarrierStrategy{},
-		mgr.GetClient(),
-		mgr.GetScheme(),
-		mgr.GetRESTMapper(),
-		log.WithName("controllers").WithName("KubeCarrier"),
-		"KubeCarrier",
-		"kubecarrier.kubecarrier.io/controller").SetupWithManager(mgr); err != nil {
+	if err = (&controllers.KubeCarrierReconciler{
+		Client:     mgr.GetClient(),
+		Log:        log.WithName("controllers").WithName("KubeCarrier"),
+		Scheme:     mgr.GetScheme(),
+		RESTMapper: mgr.GetRESTMapper(),
+	}).SetupWithManager(mgr); err != nil {
 		return fmt.Errorf("creating KubeCarrier controller: %w", err)
 	}
+
 	if err := controllers.NewBaseReconciler(
 		&controllers.FerryStrategy{},
 		mgr.GetClient(),

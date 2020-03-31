@@ -26,6 +26,7 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 
 	"github.com/kubermatic/kubecarrier/pkg/internal/util"
+	"github.com/kubermatic/kubecarrier/pkg/tower/internal/controllers"
 )
 
 type flags struct {
@@ -71,6 +72,14 @@ func run(flags *flags, log logr.Logger) error {
 	})
 	if err != nil {
 		return fmt.Errorf("starting manager: %w", err)
+	}
+
+	if err = (&controllers.ManagementClusterReconciler{
+		Client: mgr.GetClient(),
+		Log:    log.WithName("controllers").WithName("ManagementClusterReconciler"),
+		Scheme: mgr.GetScheme(),
+	}).SetupWithManager(mgr); err != nil {
+		return fmt.Errorf("creating ManagementCluster controller: %w", err)
 	}
 
 	log.Info("starting manager")

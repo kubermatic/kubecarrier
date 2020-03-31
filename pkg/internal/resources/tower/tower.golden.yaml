@@ -122,9 +122,26 @@
       app.kubernetes.io/name: tower
       app.kubernetes.io/version: was not build properly
       kubecarrier.io/role: tower
-    name: kubecarrier-tower-manager-role
+    name: kubecarrier-tower-manager
     namespace: test3000
-  rules: []
+  rules:
+  - apiGroups:
+    - master.kubecarrier.io
+    resources:
+    - managementclusters
+    verbs:
+    - get
+    - list
+    - update
+    - watch
+  - apiGroups:
+    - master.kubecarrier.io
+    resources:
+    - managementclusters/status
+    verbs:
+    - get
+    - patch
+    - update
 - apiVersion: v1
   kind: ServiceAccount
   metadata:
