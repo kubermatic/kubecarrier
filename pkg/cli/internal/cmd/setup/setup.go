@@ -193,6 +193,9 @@ func deployKubeCarrier(ctx context.Context, kubeCarrierNamespace *corev1.Namespa
 				Name:      "kubecarrier",
 				Namespace: kubeCarrierNamespace.Name,
 			},
+			Spec: operatorv1alpha1.KubeCarrierSpec{
+				Master: true,
+			},
 		}
 		w, err := util.NewClientWatcher(conf, scheme, ctrl.Log)
 		if err != nil {

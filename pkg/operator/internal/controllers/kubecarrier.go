@@ -26,6 +26,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/builder"
@@ -34,6 +35,7 @@ import (
 	"github.com/kubermatic/kubecarrier/pkg/internal/resources/manager"
 )
 
+// +kubebuilder:rbac:groups=operator.kubecarrier.io,resources=towers,verbs=create
 // +kubebuilder:rbac:groups=operator.kubecarrier.io,resources=kubecarriers,verbs=get;list;watch;update;patch
 // +kubebuilder:rbac:groups=operator.kubecarrier.io,resources=kubecarriers/status,verbs=get;update;patch
 // +kubebuilder:rbac:groups=rbac.authorization.k8s.io,resources=clusterrolebindings,verbs=get;list;watch;create;update;patch;delete
@@ -71,11 +73,32 @@ func (c *KubeCarrierStrategy) GetManifests(ctx context.Context, component Compon
 	if !ok {
 		return nil, fmt.Errorf("can't assert to KubeCarrier: %v", component)
 	}
-	return manager.Manifests(
+	objects, err := manager.Manifests(
 		manager.Config{
 			Name:      kubeCarrier.Name,
 			Namespace: kubeCarrier.Namespace,
 		})
+	if err != nil {
+		return nil, err
+	}
+	if kubeCarrier.Spec.Master {
+		tower := &operatorv1alpha1.Tower{
+			TypeMeta: metav1.TypeMeta{
+				APIVersion: "operator.kubecarrier.io/v1alpha1",
+				Kind:       "Tower",
+			},
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      kubeCarrier.Name,
+				Namespace: kubeCarrier.Namespace,
+			},
+		}
+		towerUnstructured, err := runtime.DefaultUnstructuredConverter.ToUnstructured(tower)
+		if err != nil {
+			return nil, fmt.Errorf("convert Tower object to unstructured: %w", err)
+		}
+		objects = append(objects, unstructured.Unstructured{Object: towerUnstructured})
+	}
+	return objects, nil
 }
 
 func (c *KubeCarrierStrategy) AddWatches(builder *builder.Builder, scheme *runtime.Scheme) *builder.Builder {

@@ -32,6 +32,8 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+
+	operatorv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/operator/v1alpha1"
 )
 
 // Unstructured reconciles a unstructured.Unstructured object,
@@ -126,6 +128,13 @@ var unstructuredReconcilers = map[schema.GroupVersionKind]unstructuredReconcileF
 		Version: "v1alpha2",
 		Kind:    "Certificate",
 	}: unstructuredReconcileFn(unstructuredCertificate),
+
+	// "operator.kubecarrier.io" group
+	schema.GroupVersionKind{
+		Group:   "operator.kubecarrier.io",
+		Version: "v1alpha1",
+		Kind:    "Tower",
+	}: unstructuredReconcileFn(unstructuredTower),
 }
 
 type unstructuredReconcileFn func(
@@ -318,4 +327,18 @@ func unstructuredCertificate(
 		return current, fmt.Errorf("convert from unstructured: %w", err)
 	}
 	return Certificate(ctx, log, c, obj)
+}
+
+func unstructuredTower(
+	ctx context.Context,
+	log logr.Logger,
+	c client.Client,
+	desiredObj *unstructured.Unstructured,
+) (current metav1.Object, err error) {
+	// convert to proper type
+	obj := &operatorv1alpha1.Tower{}
+	if err = runtime.DefaultUnstructuredConverter.FromUnstructured(desiredObj.Object, obj); err != nil {
+		return current, fmt.Errorf("convert from unstructured: %w", err)
+	}
+	return Tower(ctx, log, c, obj)
 }
