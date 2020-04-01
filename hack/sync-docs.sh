@@ -37,6 +37,7 @@ if [[ -n ${CI:-} ]]; then
   echo "running CI setup"
   git config --global user.email "dev@loodse.com"
   git config --global user.name "Prow CI Robot"
+  git config --global core.sshCommand 'ssh -o CheckHostIP=no -i /ssh/id_rsa'
   ensure_github_host_pubkey
 fi
 
