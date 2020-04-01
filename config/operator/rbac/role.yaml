@@ -179,7 +179,6 @@ rules:
   resources:
   - towers
   verbs:
-  - create
   - get
   - list
   - patch

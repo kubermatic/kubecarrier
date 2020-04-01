@@ -180,34 +180,6 @@ func (s *KubeCarrier) IsReady() bool {
 	return false
 }
 
-func (s *KubeCarrier) SetReadyCondition() bool {
-	if !s.IsReady() {
-		s.Status.ObservedGeneration = s.Generation
-		s.Status.SetCondition(KubeCarrierCondition{
-			Type:    KubeCarrierReady,
-			Status:  ConditionTrue,
-			Reason:  "DeploymentReady",
-			Message: "the deployment of the KubeCarrier controller manager is ready",
-		})
-		return true
-	}
-	return false
-}
-func (s *KubeCarrier) SetUnReadyCondition() bool {
-	readyCondition, _ := s.Status.GetCondition(KubeCarrierReady)
-	if readyCondition.Status != ConditionFalse {
-		s.Status.ObservedGeneration = s.Generation
-		s.Status.SetCondition(KubeCarrierCondition{
-			Type:    KubeCarrierReady,
-			Status:  ConditionFalse,
-			Reason:  "DeploymentUnready",
-			Message: "the deployment of the KubeCarrier controller manager is not ready",
-		})
-		return true
-	}
-	return false
-}
-
 func (s *KubeCarrier) SetTerminatingCondition() bool {
 	readyCondition, _ := s.Status.GetCondition(KubeCarrierReady)
 	if readyCondition.Status != ConditionFalse ||
