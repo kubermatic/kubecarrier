@@ -41,6 +41,9 @@ if [[ -n ${CI:-} ]]; then
   ensure_github_host_pubkey
 fi
 
+# what is the version of the code we're pushing to the ${TARGET_BRANCH}
+# e.g. master, v0.1.0, etc
+#
 VERSION=${1:-$(git rev-parse --abbrev-ref HEAD)-$(git rev-parse --short HEAD)}
 echo "current code version ${VERSION}"
 REPO=${REPO:-git@github.com:loodse/docs.git}
@@ -48,6 +51,9 @@ if [[ -z ${WORKDIR:-} ]]; then
   WORKDIR=$(mktemp --directory)
 fi
 PROJECT=$(git rev-parse --show-toplevel)
+
+# Which branch in the ${REPO} are we going to push are changes to?
+# The diff is calculated from the master branch
 TARGET_BRANCH=${TARGET_BRANCH:-${VERSION}}
 
 cd ${WORKDIR}

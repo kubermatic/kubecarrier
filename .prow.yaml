@@ -144,24 +144,6 @@ presubmits:
           requests:
             cpu: 3000m
             memory: 4Gi
-- name: post-kubecarrier-loodse-docs
-  # TODO -- convert to post-submit after properly debugged
-  always_run: true
-  decorate: true
-  max_concurrency: 1
-  clone_uri: ssh://git@github.com/kubermatic/kubecarrier.git
-  labels:
-    preset-repo-ssh: "true"
-  spec:
-    containers:
-      - image: quay.io/kubecarrier/test
-        imagePullPolicy: Always
-        command:
-          - make
-          - sync-loodse-docs
-        resources:
-          requests:
-            cpu: 500m
 postsubmits:
   - name: post-kubecarrier-test-image
     decorate: true
@@ -197,3 +179,25 @@ postsubmits:
             requests:
               cpu: 800m
               memory: 2Gi
+  - name: post-kubecarrier-loodse-docs
+    always_run: true
+    decorate: true
+    max_concurrency: 1
+    clone_uri: ssh://git@github.com/kubermatic/kubecarrier.git
+    labels:
+      preset-repo-ssh: "true"
+    spec:
+      containers:
+        - image: quay.io/kubecarrier/test
+          imagePullPolicy: Always
+          command:
+            - make
+            - sync-loodse-docs
+          env:
+            - name: VERSION
+              value: "master"
+            - name: TARGET_BRANCH
+              value: "master"
+          resources:
+            requests:
+              cpu: 500m
