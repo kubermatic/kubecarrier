@@ -68,7 +68,7 @@ rsync -rh --delete ${PROJECT}/docs/ ${WORKDIR}/content/kubecarrier/${VERSION}/
 set +x
 echo "================"
 
-git switch --force-create ${TARGET_BRANCH}
+git checkout -fb ${TARGET_BRANCH}
 git add .
 if ! git diff --cached --stat --exit-code; then
   git commit -a -m "updated kubecarrier docs to version ${VERSION}"
