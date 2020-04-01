@@ -160,6 +160,8 @@ presubmits:
           - sync-loodse-docs
         - name: GITHUB_TOKEN
           value: "TODO"
+        - name: VERSION
+          value: "master"
         resources:
           requests:
             cpu: 500m

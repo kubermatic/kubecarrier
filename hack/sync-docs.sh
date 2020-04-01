@@ -54,11 +54,9 @@ REPO=${REPO:-git@github.com:loodse/docs.git}
 if [[ -z ${WORKDIR:-} ]]; then
   WORKDIR=$(mktemp --directory)
 fi
-cd ${WORKDIR}
-
 PROJECT=$(git rev-parse --show-toplevel)
 
-
+cd ${WORKDIR}
 if [[ ! -d ${WORKDIR}/.git ]]; then
   git clone ${REPO} ${WORKDIR}
   git checkout master
@@ -69,14 +67,15 @@ else
 fi
 
 echo "================"
-echo "syncing docs e.g. rsync"
-echo "TODO fill this in!!!"
-echo "$(date -Iseconds) ${VERSION}" > ${WORKDIR}/kubecarrier-docs-version
+echo "syncing docs"
+mkdir -p ${WORKDIR}/content/kubecarrier/${VERSION}
+set -x
+rsync -rh --delete ${PROJECT}/docs/ ${WORKDIR}/content/kubecarrier/${VERSION}/
+set +x
 echo "================"
 
 git switch --force-create ${VERSION}
 git add .
-# TODO fix this!
 if ! git diff --cached --stat --exit-code; then
   echo "creating PR"
   git commit -a -m "updated kubecarrier docs to version ${VERSION}"
