@@ -79,11 +79,13 @@ func NewInstallationSuite(f *testutil.Framework) func(t *testing.T) {
 			Name:      kubeCarrier.Name,
 			Namespace: kubecarrierSystem,
 		}, tower), "getting the Tower object error")
+		assert.True(t, tower.IsReady(), "tower is not ready")
 
 		localManagementCluster := &masterv1alpha1.ManagementCluster{}
 		assert.NoError(t, managementClient.Get(ctx, types.NamespacedName{
 			Name: localManagementClusterName,
 		}, localManagementCluster), "getting the local ManagementCluster object error")
+		assert.True(t, localManagementCluster.IsReady(), "local ManagementCluster is not ready")
 
 		operatorDeployment := &appsv1.Deployment{}
 		assert.NoError(t, managementClient.Get(ctx, types.NamespacedName{
