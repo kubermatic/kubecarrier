@@ -239,7 +239,7 @@ func (r *KubeCarrierReconciler) reconcileTower(ctx context.Context, log logr.Log
 	}
 
 	if err := controllerutil.SetControllerReference(kubeCarrier, desiredTower, r.Scheme); err != nil {
-		return false, fmt.Errorf("set controller reference for Tower object: %W", err)
+		return false, fmt.Errorf("set controller reference for Tower object: %w", err)
 	}
 
 	currentTower := &operatorv1alpha1.Tower{}
