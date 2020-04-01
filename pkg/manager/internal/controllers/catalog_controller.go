@@ -54,7 +54,7 @@ type CatalogReconciler struct {
 // +kubebuilder:rbac:groups=catalog.kubecarrier.io,resources=catalogs/status,verbs=get;update;patch
 // +kubebuilder:rbac:groups=catalog.kubecarrier.io,resources=catalogentries,verbs=list;watch
 // +kubebuilder:rbac:groups=catalog.kubecarrier.io,resources=offerings,verbs=get;list;watch;create;update;delete
-// +kubebuilder:rbac:groups=catalog.kubecarrier.io,resources=serviceclusterreferences,verbs=get;list;watch;create;update;delete
+// +kubebuilder:rbac:groups=catalog.kubecarrier.io,resources=regions,verbs=get;list;watch;create;update;delete
 // +kubebuilder:rbac:groups=catalog.kubecarrier.io,resources=providers,verbs=get;list;watch;create;update;delete
 // +kubebuilder:rbac:groups=kubecarrier.io,resources=serviceclusters,verbs=get;list;watch
 // +kubebuilder:rbac:groups=kubecarrier.io,resources=serviceclusterassignments,verbs=get;list;watch;create;update;delete
@@ -136,7 +136,7 @@ func (r *CatalogReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	var (
 		desiredProviders                 []catalogv1alpha1.Provider
 		desiredOfferings                 []catalogv1alpha1.Offering
-		desiredServiceClusterReferences  []catalogv1alpha1.ServiceClusterReference
+		desiredRegions                   []catalogv1alpha1.Region
 		desiredServiceClusterAssignments []corev1alpha1.ServiceClusterAssignment
 		desiredRoles                     []rbacv1.Role
 		desiredRoleBindings              []rbacv1.RoleBinding
@@ -154,11 +154,11 @@ func (r *CatalogReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 
 		desiredProviders = append(desiredProviders, r.buildDesiredProvider(provider, tenant))
 		desiredOfferings = append(desiredOfferings, r.buildDesiredOfferings(provider, tenant, readyCatalogEntries)...)
-		desiredServiceClusterReferencesForTenant, desiredServiceClusterAssignmentsForTenant, err := r.buildDesiredServiceClusterReferencesAndAssignments(ctx, log, provider, tenant, readyCatalogEntries)
+		desiredRegionsForTenant, desiredServiceClusterAssignmentsForTenant, err := r.buildDesiredRegionsAndAssignments(ctx, log, provider, tenant, readyCatalogEntries)
 		if err != nil {
-			return ctrl.Result{}, fmt.Errorf("building ServiceClusterReferenceAndAssignment: %w", err)
+			return ctrl.Result{}, fmt.Errorf("building RegionAndAssignment: %w", err)
 		}
-		desiredServiceClusterReferences = append(desiredServiceClusterReferences, desiredServiceClusterReferencesForTenant...)
+		desiredRegions = append(desiredRegions, desiredRegionsForTenant...)
 		desiredServiceClusterAssignments = append(desiredServiceClusterAssignments, desiredServiceClusterAssignmentsForTenant...)
 	}
 
@@ -170,8 +170,8 @@ func (r *CatalogReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 		return ctrl.Result{}, fmt.Errorf("reconcliing Offerings: %w", err)
 	}
 
-	if err := r.reconcileServiceClusterReferences(ctx, log, catalog, desiredServiceClusterReferences); err != nil {
-		return ctrl.Result{}, fmt.Errorf("reconcliing ServiceClusterReferences: %w", err)
+	if err := r.reconcileRegions(ctx, log, catalog, desiredRegions); err != nil {
+		return ctrl.Result{}, fmt.Errorf("reconcliing Regions: %w", err)
 	}
 
 	if err := r.reconcileServiceClusterAssignments(ctx, log, catalog, desiredServiceClusterAssignments); err != nil {
@@ -226,7 +226,7 @@ func (r *CatalogReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		Watches(&source.Kind{Type: &corev1alpha1.ServiceCluster{}}, enqueueAllCatalogsInNamespace).
 		Watches(&source.Kind{Type: &catalogv1alpha1.Offering{}}, enqueuerForOwner).
 		Watches(&source.Kind{Type: &catalogv1alpha1.Provider{}}, enqueuerForOwner).
-		Watches(&source.Kind{Type: &catalogv1alpha1.ServiceClusterReference{}}, enqueuerForOwner).
+		Watches(&source.Kind{Type: &catalogv1alpha1.Region{}}, enqueuerForOwner).
 		Watches(&source.Kind{Type: &corev1alpha1.ServiceClusterAssignment{}}, enqueuerForOwner).
 		Watches(&source.Kind{Type: &rbacv1.Role{}}, enqueuerForOwner).
 		Watches(&source.Kind{Type: &rbacv1.RoleBinding{}}, enqueuerForOwner).
@@ -256,13 +256,13 @@ func (r *CatalogReconciler) handleDeletion(ctx context.Context, log logr.Logger,
 	if err != nil {
 		return fmt.Errorf("cleaning up Providers: %w", err)
 	}
-	deletedServiceClusterReferencesCounter, err := r.cleanupServiceClusterReferences(ctx, log, catalog, nil)
+	deletedRegionsCounter, err := r.cleanupRegions(ctx, log, catalog, nil)
 	if err != nil {
-		return fmt.Errorf("cleaning up ServiceClusterReferences: %w", err)
+		return fmt.Errorf("cleaning up Regions: %w", err)
 	}
 	deletedServiceClusterAssignmentsCounter, err := r.cleanupServiceClusterAssignments(ctx, log, catalog, nil)
 	if err != nil {
-		return fmt.Errorf("cleaning up ServiceClusterReferences: %w", err)
+		return fmt.Errorf("cleaning up Regions: %w", err)
 	}
 	deletedRolesCounter, err := r.cleanupRoles(ctx, log, catalog, nil)
 	if err != nil {
@@ -275,7 +275,7 @@ func (r *CatalogReconciler) handleDeletion(ctx context.Context, log logr.Logger,
 
 	if deletedOfferingsCounter != 0 ||
 		deletedProvidersCounter != 0 ||
-		deletedServiceClusterReferencesCounter != 0 ||
+		deletedRegionsCounter != 0 ||
 		deletedServiceClusterAssignmentsCounter != 0 ||
 		deletedRolesCounter != 0 ||
 		deletedRoleBindingsCounter != 0 {
@@ -391,17 +391,17 @@ func (r *CatalogReconciler) buildDesiredProvider(
 	}
 }
 
-func (r *CatalogReconciler) buildDesiredServiceClusterReferencesAndAssignments(
+func (r *CatalogReconciler) buildDesiredRegionsAndAssignments(
 	ctx context.Context, log logr.Logger,
 	provider *catalogv1alpha1.Account,
 	tenant *catalogv1alpha1.Account,
 	catalogEntries []catalogv1alpha1.CatalogEntry,
-) ([]catalogv1alpha1.ServiceClusterReference, []corev1alpha1.ServiceClusterAssignment, error) {
-	var desiredServiceClusterReferences []catalogv1alpha1.ServiceClusterReference
+) ([]catalogv1alpha1.Region, []corev1alpha1.ServiceClusterAssignment, error) {
+	var desiredRegions []catalogv1alpha1.Region
 	var desiredServiceClusterAssignments []corev1alpha1.ServiceClusterAssignment
 	serviceClusterNames := map[string]struct{}{}
 	for _, catalogEntry := range catalogEntries {
-		serviceClusterNames[catalogEntry.Status.TenantCRD.ServiceCluster.Name] = struct{}{}
+		serviceClusterNames[catalogEntry.Status.TenantCRD.Region.Name] = struct{}{}
 	}
 	for serviceClusterName := range serviceClusterNames {
 		serviceCluster := &corev1alpha1.ServiceCluster{}
@@ -411,12 +411,12 @@ func (r *CatalogReconciler) buildDesiredServiceClusterReferencesAndAssignments(
 		}, serviceCluster); err != nil {
 			return nil, nil, fmt.Errorf("getting ServiceCluster: %w", err)
 		}
-		desiredServiceClusterReferences = append(desiredServiceClusterReferences, catalogv1alpha1.ServiceClusterReference{
+		desiredRegions = append(desiredRegions, catalogv1alpha1.Region{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      serviceClusterName + "." + provider.Name,
 				Namespace: tenant.Status.Namespace.Name,
 			},
-			Spec: catalogv1alpha1.ServiceClusterReferenceSpec{
+			Spec: catalogv1alpha1.RegionSpec{
 				Metadata: serviceCluster.Spec.Metadata,
 				Provider: catalogv1alpha1.ObjectReference{
 					Name: provider.Name,
@@ -439,7 +439,7 @@ func (r *CatalogReconciler) buildDesiredServiceClusterReferencesAndAssignments(
 			},
 		})
 	}
-	return desiredServiceClusterReferences, desiredServiceClusterAssignments, nil
+	return desiredRegions, desiredServiceClusterAssignments, nil
 }
 
 func (r *CatalogReconciler) buildDesiredTenantRolesAndRoleBindings(
@@ -610,44 +610,44 @@ func (r *CatalogReconciler) reconcileProviders(
 	return nil
 }
 
-func (r *CatalogReconciler) reconcileServiceClusterReferences(
+func (r *CatalogReconciler) reconcileRegions(
 	ctx context.Context, log logr.Logger,
 	catalog *catalogv1alpha1.Catalog,
-	desiredServiceClusterReferences []catalogv1alpha1.ServiceClusterReference,
+	desiredRegions []catalogv1alpha1.Region,
 ) error {
-	if _, err := r.cleanupServiceClusterReferences(ctx, log, catalog, desiredServiceClusterReferences); err != nil {
-		return fmt.Errorf("cleanup ServiceClusterReference: %w", err)
+	if _, err := r.cleanupRegions(ctx, log, catalog, desiredRegions); err != nil {
+		return fmt.Errorf("cleanup Region: %w", err)
 	}
 
-	for _, desiredServiceClusterReference := range desiredServiceClusterReferences {
-		if _, err := multiowner.InsertOwnerReference(catalog, &desiredServiceClusterReference, r.Scheme); err != nil {
+	for _, desiredRegion := range desiredRegions {
+		if _, err := multiowner.InsertOwnerReference(catalog, &desiredRegion, r.Scheme); err != nil {
 			return fmt.Errorf("inserting OwnerReference: %w", err)
 		}
 
-		foundServiceClusterReference := &catalogv1alpha1.ServiceClusterReference{}
+		foundRegion := &catalogv1alpha1.Region{}
 		err := r.Get(ctx, types.NamespacedName{
-			Name:      desiredServiceClusterReference.Name,
-			Namespace: desiredServiceClusterReference.Namespace,
-		}, foundServiceClusterReference)
+			Name:      desiredRegion.Name,
+			Namespace: desiredRegion.Namespace,
+		}, foundRegion)
 		if err != nil && !errors.IsNotFound(err) {
-			return fmt.Errorf("getting ServiceClusterReference: %w", err)
+			return fmt.Errorf("getting Region: %w", err)
 		}
 		if errors.IsNotFound(err) {
-			// Create the ServiceClusterReference.
-			if err := r.Create(ctx, &desiredServiceClusterReference); err != nil {
-				return fmt.Errorf("creating ServiceClusterReference: %w", err)
+			// Create the Region.
+			if err := r.Create(ctx, &desiredRegion); err != nil {
+				return fmt.Errorf("creating Region: %w", err)
 			}
-			foundServiceClusterReference = &desiredServiceClusterReference
+			foundRegion = &desiredRegion
 		}
 
-		ownerChanged, err := multiowner.InsertOwnerReference(catalog, foundServiceClusterReference, r.Scheme)
+		ownerChanged, err := multiowner.InsertOwnerReference(catalog, foundRegion, r.Scheme)
 		if err != nil {
 			return fmt.Errorf("inserting OwnerReference: %w", err)
 		}
-		if !reflect.DeepEqual(desiredServiceClusterReference.Spec, foundServiceClusterReference.Spec) || ownerChanged {
-			foundServiceClusterReference.Spec = desiredServiceClusterReference.Spec
-			if err := r.Update(ctx, foundServiceClusterReference); err != nil {
-				return fmt.Errorf("updaing ServiceClusterReference: %w", err)
+		if !reflect.DeepEqual(desiredRegion.Spec, foundRegion.Spec) || ownerChanged {
+			foundRegion.Spec = desiredRegion.Spec
+			if err := r.Update(ctx, foundRegion); err != nil {
+				return fmt.Errorf("updaing Region: %w", err)
 			}
 		}
 	}
@@ -849,20 +849,20 @@ func (r *CatalogReconciler) cleanupProviders(
 		providersToObjectArray(desiredProviders))
 }
 
-func (r *CatalogReconciler) cleanupServiceClusterReferences(
+func (r *CatalogReconciler) cleanupRegions(
 	ctx context.Context, log logr.Logger,
 	catalog *catalogv1alpha1.Catalog,
-	desiredServiceClusterReferences []catalogv1alpha1.ServiceClusterReference,
-) (deletedServiceClusterReferenceCounter int, err error) {
-	// Fetch existing ServiceClusterReferences.
-	foundServiceClusterReferenceList := &catalogv1alpha1.ServiceClusterReferenceList{}
-	if err := r.List(ctx, foundServiceClusterReferenceList, multiowner.OwnedBy(catalog, r.Scheme)); err != nil {
-		return 0, fmt.Errorf("listing ServiceClusterReferences: %w", err)
+	desiredRegions []catalogv1alpha1.Region,
+) (deletedRegionCounter int, err error) {
+	// Fetch existing Regions.
+	foundRegionList := &catalogv1alpha1.RegionList{}
+	if err := r.List(ctx, foundRegionList, multiowner.OwnedBy(catalog, r.Scheme)); err != nil {
+		return 0, fmt.Errorf("listing Regions: %w", err)
 	}
 	return r.cleanupOutdatedReferences(ctx, log,
 		catalog,
-		serviceClusterReferencesToObjectArray(foundServiceClusterReferenceList.Items),
-		serviceClusterReferencesToObjectArray(desiredServiceClusterReferences))
+		regionsToObjectArray(foundRegionList.Items),
+		regionsToObjectArray(desiredRegions))
 }
 
 func (r *CatalogReconciler) cleanupServiceClusterAssignments(
@@ -929,10 +929,10 @@ func providersToObjectArray(providers []catalogv1alpha1.Provider) []object {
 	return out
 }
 
-func serviceClusterReferencesToObjectArray(serviceClusterReferences []catalogv1alpha1.ServiceClusterReference) []object {
-	out := make([]object, len(serviceClusterReferences))
-	for i := range serviceClusterReferences {
-		out[i] = &serviceClusterReferences[i]
+func regionsToObjectArray(regions []catalogv1alpha1.Region) []object {
+	out := make([]object, len(regions))
+	for i := range regions {
+		out[i] = &regions[i]
 	}
 	return out
 }

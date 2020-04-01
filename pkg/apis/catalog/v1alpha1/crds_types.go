@@ -28,8 +28,8 @@ type CRDInformation struct {
 	Plural   string       `json:"plural"`
 	Versions []CRDVersion `json:"versions"`
 
-	// ServiceCluster references a ServiceClusterReference of this CRD.
-	ServiceCluster ObjectReference `json:"serviceCluster"`
+	// Region references a Region of this CRD.
+	Region ObjectReference `json:"region"`
 }
 
 // CRDVersion holds CRD version specific details.

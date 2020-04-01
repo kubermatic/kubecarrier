@@ -463,8 +463,8 @@ $ kubectl get offering -n team-b --as=team-b-member
 NAME                        DISPLAY NAME   PROVIDER   AGE
 couchdbs.eu-west-1.team-a   CouchDB        team-a     3m15s
 
-# ServiceClusterReference exposes information about the underlying Clusters.
-$ kubectl get serviceclusterreference -n team-b --as=team-b-member
+# Region exposes information about the underlying Clusters.
+$ kubectl get region -n team-b --as=team-b-member
 NAME               PROVIDER   DISPLAY NAME   AGE
 eu-west-1.team-a   team-a     EU West 1      5m14s
 

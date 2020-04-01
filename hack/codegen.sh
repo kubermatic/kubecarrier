@@ -58,7 +58,9 @@ CRD_VERSION="v1"
 # Operator
 # --------
 # CRDs/Webhooks
-$CONTROLLER_GEN crd:crdVersions=${CRD_VERSION} webhook paths="./pkg/apis/operator/..." output:crd:artifacts:config=config/operator/crd/bases output:webhook:artifacts:config=config/operator/webhook
+$CONTROLLER_GEN crd:crdVersions=${CRD_VERSION} paths="./pkg/apis/operator/..." output:crd:artifacts:config=config/operator/crd/bases
+# Webhooks
+$CONTROLLER_GEN webhook paths="./pkg/operator/internal/webhooks/..." output:webhook:artifacts:config=config/operator/webhook
 # RBAC
 $CONTROLLER_GEN rbac:roleName=manager-role paths="./pkg/operator/..." output:rbac:artifacts:config=config/operator/rbac
 statik-gen operator config/operator

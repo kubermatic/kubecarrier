@@ -28,26 +28,26 @@ import (
 	catalogv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/catalog/v1alpha1"
 )
 
-// ServiceClusterReferenceWebhookHandler handles mutating/validating of ServiceClusterReferences.
-type ServiceClusterReferenceWebhookHandler struct {
+// RegionWebhookHandler handles mutating/validating of Regions.
+type RegionWebhookHandler struct {
 	decoder *admission.Decoder
 	Log     logr.Logger
 }
 
-var _ admission.Handler = (*ServiceClusterReferenceWebhookHandler)(nil)
+var _ admission.Handler = (*RegionWebhookHandler)(nil)
 
-// +kubebuilder:webhook:path=/validate-catalog-kubecarrier-io-v1alpha1-serviceclusterreference,mutating=false,failurePolicy=fail,groups=catalog.kubecarrier.io,resources=serviceclusterreferences,verbs=update,versions=v1alpha1,name=vserviceclusterreference.kubecarrier.io
+// +kubebuilder:webhook:path=/validate-catalog-kubecarrier-io-v1alpha1-region,mutating=false,failurePolicy=fail,groups=catalog.kubecarrier.io,resources=regions,verbs=update,versions=v1alpha1,name=vregion.kubecarrier.io
 
-// Handle is the function to handle create/update requests of ServiceClusterReferences.
-func (r *ServiceClusterReferenceWebhookHandler) Handle(ctx context.Context, req admission.Request) admission.Response {
-	obj := &catalogv1alpha1.ServiceClusterReference{}
+// Handle is the function to handle create/update requests of Regions.
+func (r *RegionWebhookHandler) Handle(ctx context.Context, req admission.Request) admission.Response {
+	obj := &catalogv1alpha1.Region{}
 	if err := r.decoder.Decode(req, obj); err != nil {
 		return admission.Errored(http.StatusBadRequest, err)
 	}
 
 	switch req.Operation {
 	case adminv1beta1.Update:
-		oldObj := &catalogv1alpha1.ServiceClusterReference{}
+		oldObj := &catalogv1alpha1.Region{}
 		if err := r.decoder.DecodeRaw(req.OldObject, oldObj); err != nil {
 			return admission.Errored(http.StatusBadRequest, err)
 		}
@@ -59,19 +59,19 @@ func (r *ServiceClusterReferenceWebhookHandler) Handle(ctx context.Context, req 
 
 }
 
-// ServiceClusterReferenceWebhookHandler implements admission.DecoderInjector.
+// RegionWebhookHandler implements admission.DecoderInjector.
 // A decoder will be automatically injected.
 
 // InjectDecoder injects the decoder.
-func (r *ServiceClusterReferenceWebhookHandler) InjectDecoder(d *admission.Decoder) error {
+func (r *RegionWebhookHandler) InjectDecoder(d *admission.Decoder) error {
 	r.decoder = d
 	return nil
 }
 
-func (r *ServiceClusterReferenceWebhookHandler) validateUpdate(oldObj, newObj *catalogv1alpha1.ServiceClusterReference) error {
+func (r *RegionWebhookHandler) validateUpdate(oldObj, newObj *catalogv1alpha1.Region) error {
 	r.Log.Info("validate update", "name", newObj.Name)
 	if newObj.Spec.Provider.Name != oldObj.Spec.Provider.Name {
-		return fmt.Errorf("the Provider of ServiceClusterReference is immutable")
+		return fmt.Errorf("the Provider of Region is immutable")
 	}
 	return nil
 }

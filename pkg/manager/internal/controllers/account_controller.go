@@ -300,7 +300,7 @@ func (r *AccountReconciler) reconcileRolesAndRoleBindings(ctx context.Context, l
 					APIGroups: []string{"catalog.kubecarrier.io"},
 					Resources: []string{
 						"providers",
-						"serviceclusterreferences",
+						"regions",
 						"offerings",
 					},
 					Verbs: []string{"get", "list", "watch"},

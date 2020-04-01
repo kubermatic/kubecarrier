@@ -32,6 +32,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/builder"
 
 	operatorv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/operator/v1alpha1"
+	"github.com/kubermatic/kubecarrier/pkg/internal/constants"
 	"github.com/kubermatic/kubecarrier/pkg/internal/resources/manager"
 )
 
@@ -59,13 +60,7 @@ func (c *KubeCarrierStrategy) GetObj() Component {
 }
 
 func (c *KubeCarrierStrategy) GetDeletionObjectTypes() []runtime.Object {
-	return []runtime.Object{
-		&rbacv1.ClusterRole{},
-		&rbacv1.ClusterRoleBinding{},
-		&apiextensionsv1.CustomResourceDefinition{},
-		&adminv1beta1.MutatingWebhookConfiguration{},
-		&adminv1beta1.ValidatingWebhookConfiguration{},
-	}
+	return []runtime.Object{}
 }
 
 func (c *KubeCarrierStrategy) GetManifests(ctx context.Context, component Component) ([]unstructured.Unstructured, error) {
@@ -76,7 +71,7 @@ func (c *KubeCarrierStrategy) GetManifests(ctx context.Context, component Compon
 	objects, err := manager.Manifests(
 		manager.Config{
 			Name:      kubeCarrier.Name,
-			Namespace: kubeCarrier.Namespace,
+			Namespace: constants.KubeCarrierDefaultNamespace,
 		})
 	if err != nil {
 		return nil, err
@@ -109,5 +104,10 @@ func (c *KubeCarrierStrategy) AddWatches(builder *builder.Builder, scheme *runti
 		Owns(&rbacv1.Role{}).
 		Owns(&rbacv1.RoleBinding{}).
 		Owns(&certv1alpha2.Issuer{}).
-		Owns(&certv1alpha2.Certificate{})
+		Owns(&certv1alpha2.Certificate{}).
+		Owns(&rbacv1.ClusterRole{}).
+		Owns(&rbacv1.ClusterRoleBinding{}).
+		Owns(&apiextensionsv1.CustomResourceDefinition{}).
+		Owns(&adminv1beta1.MutatingWebhookConfiguration{}).
+		Owns(&adminv1beta1.ValidatingWebhookConfiguration{})
 }
