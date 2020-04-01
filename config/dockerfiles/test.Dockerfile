@@ -39,6 +39,10 @@ ENV PATH=${PATH}:/usr/local/go/bin:/root/go/bin
 ENV LC_ALL=C.UTF-8
 # Allowed to use path@version syntax to install controller-gen
 ENV GO111MODULE=on
+RUN curl -sL --output /tmp/protoc.zip https://github.com/google/protobuf/releases/download/v3.11.4/protoc-3.11.4-linux-x86_64.zip  && unzip /tmp/protoc.zip -d /usr && rm /tmp/protoc.zip
+RUN go get -u github.com/grpc-ecosystem/grpc-gateway/protoc-gen-grpc-gateway@v1.14.3
+RUN go get -u github.com/grpc-ecosystem/grpc-gateway/protoc-gen-swagger@v1.14.3
+RUN go get -u github.com/golang/protobuf/protoc-gen-go@v1.3.5
 RUN go env
 
 # binary will be $(go env GOPATH)/bin/golangci-lint

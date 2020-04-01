@@ -99,6 +99,10 @@ krew-install:
 	@kubectl krew install --manifest=dist/krew.yaml --archive=dist/kubecarrier_$(shell go env GOOS)_$(shell go env GOARCH).tar.gz
 .PHONY: krew-install
 
+install-build-deps:
+	@hack/install-deps.sh $(shell pwd)
+.PHONY: install-build-deps
+
 install:
 	@go install -ldflags "-w $(LD_FLAGS)" ./cmd/kubectl-kubecarrier
 .PHONY: install

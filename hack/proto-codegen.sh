@@ -20,12 +20,9 @@ set -eu
 
 # As per official docs
 # https://grpc-ecosystem.github.io/grpc-gateway/docs/usage.html
-[[ ! -z $(which protoc-gen-grpc-gateway) ]] || go get -u github.com/grpc-ecosystem/grpc-gateway/protoc-gen-grpc-gateway
-[[ ! -z $(which protoc-gen-swagger) ]] || go get -u github.com/grpc-ecosystem/grpc-gateway/protoc-gen-swagger
-[[ ! -z $(which protoc-gen-go) ]] || go get -u github.com/golang/protobuf/protoc-gen-go
 
 # Add protoc and protoc-gen-go tools to PATH
-export PATH=$PWD/bin:$PATH
+export PATH=${PWD}/bin:$PATH
 PROJECT=$PWD
 GOPATH=$(go env GOPATH)
 
@@ -41,6 +38,7 @@ for pkg in ${PBUFS} ; do
     --go_out=plugins=grpc:${abs_path}  \
     --grpc-gateway_out=logtostderr=true:${abs_path} \
     --swagger_out=logtostderr=true:${abs_path} \
+    -I${PROJECT}/bin/protoc-bin/include \
     -I${GOPATH}/src \
     -I${GOPATH}/src/github.com/grpc-ecosystem/grpc-gateway/third_party/googleapis \
     -I=${abs_path} \

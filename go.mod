@@ -23,7 +23,7 @@ require (
 	github.com/stretchr/testify v1.4.0
 	go.uber.org/zap v1.10.0
 	golang.org/x/crypto v0.0.0-20191206172530-e9b2fee46413
-	google.golang.org/genproto v0.0.0-20200330113809-af700f360a68
+	google.golang.org/genproto v0.0.0-20200331122359-1ee6d9798940
 	google.golang.org/grpc v1.28.0
 	k8s.io/api v0.17.3
 	k8s.io/apiextensions-apiserver v0.17.3
