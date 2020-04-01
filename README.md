@@ -19,12 +19,12 @@ KubeCarrier is an open source system for managing applications and services acro
 
 ---
 
-- [What is KubeCarrier](./docs/what_is_kubecarrier.md)
-- [Getting Started](./docs/getting_started.md)
-- [Glossary](./docs/glossary.md)
-- [API Reference](./docs/api_reference.md)
-- [Architecture](./docs/architecture.md)
-- [Repository Organization](./docs/repository_organization.md)
+- [What is KubeCarrier](./docs/_index.en.md)
+- [Getting Started](./docs/getting_started/_index.en.md)
+- [Glossary](./docs/glossary/_index.en.md)
+- [API Reference](./docs/api_reference/_index.en.md)
+- [Architecture](./docs/architecture/_index.en.md)
+- [Repository Organization](./docs/repository_organization/_index.en.md)
 
 ## Project Status
 
