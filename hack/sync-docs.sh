@@ -75,8 +75,10 @@ echo "$(date -Iseconds) ${VERSION}" > ${WORKDIR}/kubecarrier-docs-version
 echo "================"
 
 git switch --force-create ${VERSION}
+git add .
+# TODO fix this!
 if ! git diff --cached --stat --exit-code; then
-  git add .
+  echo "creating PR"
   git commit -a -m "updated kubecarrier docs to version ${VERSION}"
   git push --force-with-lease
   if [[ ! -f ${HOME}/.config/gh/config.yml ]]; then

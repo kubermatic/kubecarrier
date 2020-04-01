@@ -145,6 +145,7 @@ presubmits:
             cpu: 3000m
             memory: 4Gi
 - name: post-kubecarrier-loodse-docs
+  # TODO
   always_run: true
   decorate: true
   clone_uri: ssh://git@github.com/kubermatic/kubecarrier.git
