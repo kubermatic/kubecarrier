@@ -33,14 +33,6 @@ ensure_github_host_pubkey() {
   fi
 }
 
-gh_login() {
-  mkdir -p ${HOME}/.config/gh
-  cat << EOF > ${HOME}/.config/gh/config.yml
-github.com:
-  - oauth_token: ${GITHUB_TOKEN}
-EOF
-}
-
 if [[ -n ${CI:-} ]]; then
   echo "running CI setup"
   git config --global user.email "dev@loodse.com"
@@ -55,6 +47,7 @@ if [[ -z ${WORKDIR:-} ]]; then
   WORKDIR=$(mktemp --directory)
 fi
 PROJECT=$(git rev-parse --show-toplevel)
+TARGET_BRANCH=${TARGET_BRANCH:-${VERSION}}
 
 cd ${WORKDIR}
 if [[ ! -d ${WORKDIR}/.git ]]; then
@@ -74,15 +67,9 @@ rsync -rh --delete ${PROJECT}/docs/ ${WORKDIR}/content/kubecarrier/${VERSION}/
 set +x
 echo "================"
 
-git switch --force-create ${VERSION}
+git switch --force-create ${TARGET_BRANCH}
 git add .
 if ! git diff --cached --stat --exit-code; then
-  echo "creating PR"
   git commit -a -m "updated kubecarrier docs to version ${VERSION}"
   git push --force-with-lease
-  if [[ ! -f ${HOME}/.config/gh/config.yml ]]; then
-    echo "gh config not properly setup; creating. The GITHUB_TOKEN env should be setup"
-    gh_login
-  fi
-  gh pr create --fill
 fi
