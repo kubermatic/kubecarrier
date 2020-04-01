@@ -140,7 +140,7 @@ func (cw *ClientWatcher) WaitUntil(ctx context.Context, obj runtime.Object, cond
 		}
 		return true, nil
 	}); err != nil {
-		return fmt.Errorf("%s: %w", MustLogLine(obj, cw.scheme), err)
+		return fmt.Errorf("%s: %w", MustLogLine(obj, cw.scheme, cfg.timeout), err)
 	}
 	return nil
 }
@@ -191,7 +191,7 @@ func (cw *ClientWatcher) WaitUntilNotFound(ctx context.Context, obj runtime.Obje
 		return event.Type == watch.Deleted, nil
 	})
 	if err != nil {
-		return fmt.Errorf("%s: %w", MustLogLine(obj, cw.scheme), err)
+		return fmt.Errorf("%s: %w", MustLogLine(obj, cw.scheme, cfg.timeout), err)
 	}
 	return nil
 }

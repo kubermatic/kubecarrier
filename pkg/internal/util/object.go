@@ -20,6 +20,7 @@ import (
 	"context"
 	"fmt"
 	"strings"
+	"time"
 
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
@@ -124,7 +125,7 @@ func DeleteObjects(ctx context.Context, cl client.Client, scheme *runtime.Scheme
 	return cleanedUp, nil
 }
 
-func MustLogLine(obj runtime.Object, scheme *runtime.Scheme) string {
+func MustLogLine(obj runtime.Object, scheme *runtime.Scheme, timeout time.Duration) string {
 	objGVK, err := apiutil.GVKForObject(obj, scheme)
 	if err != nil {
 		panic(err)
@@ -133,5 +134,5 @@ func MustLogLine(obj runtime.Object, scheme *runtime.Scheme) string {
 	if err != nil {
 		panic(err)
 	}
-	return fmt.Sprintf("%s.%s: %s", objGVK.Kind, objGVK.Group, objNN.String())
+	return fmt.Sprintf("%s.%s: %s (after %v)", objGVK.Kind, objGVK.Group, objNN.String(), timeout)
 }
