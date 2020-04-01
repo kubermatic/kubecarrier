@@ -1,4 +1,7 @@
-# Repository Organization
+---
+title: Repository Organization
+weight: 100
+---
 
 ## Overview
 Here is an overview of the KubeCarrier repository organization:
