@@ -27,6 +27,7 @@ RUN apt-get -qq update && apt-get -qqy install \
   gnupg2 \
   jq \
   python3-pip \
+  rsync \
   software-properties-common \
   zip \
   && rm -rf /var/lib/apt/lists/*
