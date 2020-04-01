@@ -27,28 +27,23 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
-	"k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/source"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
 	operatorv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/operator/v1alpha1"
-	"github.com/kubermatic/kubecarrier/pkg/internal/owner"
+	"github.com/kubermatic/kubecarrier/pkg/internal/constants"
+	"github.com/kubermatic/kubecarrier/pkg/internal/reconcile"
 	"github.com/kubermatic/kubecarrier/pkg/internal/resources/manager"
 	"github.com/kubermatic/kubecarrier/pkg/internal/util"
-)
-
-const (
-	kubeCarrierControllerFinalizer = "kubecarrier.kubecarrier.io/controller"
 )
 
 // KubeCarrierReconciler reconciles a KubeCarrier object
 type KubeCarrierReconciler struct {
 	client.Client
-	Log        logr.Logger
-	Scheme     *runtime.Scheme
-	RESTMapper meta.RESTMapper
+	Log    logr.Logger
+	Scheme *runtime.Scheme
 }
 
 // +kubebuilder:rbac:groups=operator.kubecarrier.io,resources=kubecarriers,verbs=get;list;watch;update;patch
@@ -61,7 +56,6 @@ type KubeCarrierReconciler struct {
 // +kubebuilder:rbac:groups="",resources=services,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups="",resources=serviceaccounts,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=apiextensions.k8s.io,resources=customresourcedefinitions,verbs=get;list;watch;create;update;patch;delete
-// +kubebuilder:rbac:groups=admissionregistration.k8s.io,resources=mutatingwebhookconfigurations,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=admissionregistration.k8s.io,resources=validatingwebhookconfigurations,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=cert-manager.io,resources=issuers,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=cert-manager.io,resources=certificates,verbs=get;list;watch;create;update;patch;delete
@@ -82,24 +76,29 @@ func (r *KubeCarrierReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error)
 		return ctrl.Result{}, nil
 	}
 
-	if util.AddFinalizer(kubeCarrier, kubeCarrierControllerFinalizer) {
-		if err := r.Update(ctx, kubeCarrier); err != nil {
-			return ctrl.Result{}, fmt.Errorf("updating KubeCarrier finalizers: %w", err)
-		}
-	}
-
 	objects, err := manager.Manifests(
 		manager.Config{
 			Name:      kubeCarrier.Name,
-			Namespace: kubeCarrier.Namespace,
+			Namespace: constants.KubeCarrierDefaultNamespace,
 		})
 	if err != nil {
 		return ctrl.Result{}, fmt.Errorf("creating manager manifests: %w", err)
 	}
 
-	deploymentIsReady, err := reconcileOwnedObjectsForNamespacedOwner(ctx, log, r.Scheme, r.RESTMapper, r.Client, kubeCarrier, objects)
-	if err != nil {
-		return ctrl.Result{}, err
+	var deploymentIsReady bool
+	for _, object := range objects {
+		if err := controllerutil.SetControllerReference(kubeCarrier, &object, r.Scheme); err != nil {
+			return ctrl.Result{}, err
+		}
+		curObj, err := reconcile.Unstructured(ctx, log, r.Client, &object)
+		if err != nil {
+			return ctrl.Result{}, fmt.Errorf("reconcile kind: %s, err: %w", object.GroupVersionKind().Kind, err)
+		}
+		switch ctr := curObj.(type) {
+		case *appsv1.Deployment:
+			deploymentIsReady = util.DeploymentIsAvailable(ctr)
+		}
+
 	}
 
 	if err := r.updateStatus(ctx, kubeCarrier, deploymentIsReady); err != nil {
@@ -110,8 +109,6 @@ func (r *KubeCarrierReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error)
 }
 
 func (r *KubeCarrierReconciler) SetupWithManager(mgr ctrl.Manager) error {
-	enqueuer := owner.EnqueueRequestForOwner(&operatorv1alpha1.KubeCarrier{}, r.Scheme)
-
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&operatorv1alpha1.KubeCarrier{}).
 		Owns(&appsv1.Deployment{}).
@@ -121,11 +118,10 @@ func (r *KubeCarrierReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		Owns(&rbacv1.RoleBinding{}).
 		Owns(&certv1alpha2.Issuer{}).
 		Owns(&certv1alpha2.Certificate{}).
-		Watches(&source.Kind{Type: &rbacv1.ClusterRole{}}, enqueuer).
-		Watches(&source.Kind{Type: &rbacv1.ClusterRoleBinding{}}, enqueuer).
-		Watches(&source.Kind{Type: &apiextensionsv1.CustomResourceDefinition{}}, enqueuer).
-		Watches(&source.Kind{Type: &adminv1beta1.MutatingWebhookConfiguration{}}, enqueuer).
-		Watches(&source.Kind{Type: &adminv1beta1.ValidatingWebhookConfiguration{}}, enqueuer).
+		Owns(&rbacv1.ClusterRole{}).
+		Owns(&rbacv1.ClusterRoleBinding{}).
+		Owns(&apiextensionsv1.CustomResourceDefinition{}).
+		Owns(&adminv1beta1.ValidatingWebhookConfiguration{}).
 		Complete(r)
 }
 
@@ -134,23 +130,6 @@ func (r *KubeCarrierReconciler) handleDeletion(ctx context.Context, kubeCarrier 
 	if kubeCarrier.SetTerminatingCondition() {
 		if err := r.Client.Status().Update(ctx, kubeCarrier); err != nil {
 			return fmt.Errorf("updating %s status: %w", kubeCarrier.Name, err)
-		}
-	}
-
-	cleanedUp, err := util.DeleteObjects(ctx, r.Client, r.Scheme, []runtime.Object{
-		&rbacv1.ClusterRole{},
-		&rbacv1.ClusterRoleBinding{},
-		&apiextensionsv1.CustomResourceDefinition{},
-		&adminv1beta1.MutatingWebhookConfiguration{},
-		&adminv1beta1.ValidatingWebhookConfiguration{},
-	}, owner.OwnedBy(kubeCarrier, r.Scheme))
-	if err != nil {
-		return fmt.Errorf("DeleteObjects: %w", err)
-	}
-
-	if cleanedUp && util.RemoveFinalizer(kubeCarrier, kubeCarrierControllerFinalizer) {
-		if err := r.Update(ctx, kubeCarrier); err != nil {
-			return fmt.Errorf("updating KubeCarrier finalizers: %w", err)
 		}
 	}
 	return nil

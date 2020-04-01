@@ -209,16 +209,16 @@ func newCatalogSuite(
 		assert.Equal(t, providerFound.Spec.Metadata.DisplayName, provider.Spec.Metadata.DisplayName)
 		assert.Equal(t, providerFound.Spec.Metadata.Description, provider.Spec.Metadata.Description)
 
-		// Check the ServiceClusterReference object is created.
-		serviceClusterReferenceFound := &catalogv1alpha1.ServiceClusterReference{
+		// Check the Region object is created.
+		regionFound := &catalogv1alpha1.Region{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      fmt.Sprintf("%s.%s", serviceCluster.Name, provider.Name),
 				Namespace: tenantAccount.Status.Namespace.Name,
 			},
 		}
-		require.NoError(t, testutil.WaitUntilFound(ctx, managementClient, serviceClusterReferenceFound), "getting the ServiceClusterReference error")
-		assert.Equal(t, serviceClusterReferenceFound.Spec.Provider.Name, provider.Name)
-		assert.Equal(t, serviceClusterReferenceFound.Spec.Metadata.Description, serviceCluster.Spec.Metadata.Description)
+		require.NoError(t, testutil.WaitUntilFound(ctx, managementClient, regionFound), "getting the Region error")
+		assert.Equal(t, regionFound.Spec.Provider.Name, provider.Name)
+		assert.Equal(t, regionFound.Spec.Metadata.Description, serviceCluster.Spec.Metadata.Description)
 
 		// Check the ServiceClusterAssignment object is created.
 		serviceClusterAssignmentFound := &corev1alpha1.ServiceClusterAssignment{
@@ -331,12 +331,12 @@ func newCatalogSuite(
 			Namespace: providerFound.Namespace,
 		}, providerCheck)), "provider object should also be deleted.")
 
-		// ServiceClusterReference object should also be removed
-		serviceClusterReferenceCheck := &catalogv1alpha1.ServiceClusterReference{}
+		// Region object should also be removed
+		regionCheck := &catalogv1alpha1.Region{}
 		assert.True(t, errors.IsNotFound(managementClient.Get(ctx, types.NamespacedName{
-			Name:      serviceClusterReferenceFound.Name,
-			Namespace: serviceClusterReferenceFound.Namespace,
-		}, serviceClusterReferenceCheck)), "serviceClusterReference object should also be deleted.")
+			Name:      regionFound.Name,
+			Namespace: regionFound.Namespace,
+		}, regionCheck)), "region object should also be deleted.")
 
 		// ServiceClusterAssignment object should also be removed
 		serviceClusterAssignmentCheck := &corev1alpha1.ServiceClusterAssignment{}

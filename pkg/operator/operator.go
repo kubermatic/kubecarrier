@@ -27,15 +27,19 @@ import (
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/healthz"
+	"sigs.k8s.io/controller-runtime/pkg/webhook"
 
 	operatorv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/operator/v1alpha1"
 	"github.com/kubermatic/kubecarrier/pkg/internal/util"
+	utilwebhook "github.com/kubermatic/kubecarrier/pkg/internal/util/webhook"
 	"github.com/kubermatic/kubecarrier/pkg/operator/internal/controllers"
+	"github.com/kubermatic/kubecarrier/pkg/operator/internal/webhooks"
 )
 
 type flags struct {
-	metricsAddr          string
-	enableLeaderElection bool
+	metricsAddr, healthAddr string
+	enableLeaderElection    bool
 }
 
 var (
@@ -65,6 +69,7 @@ func NewOperatorCommand() *cobra.Command {
 		},
 	}
 	cmd.Flags().StringVar(&flags.metricsAddr, "metrics-addr", ":8080", "The address the metric endpoint binds to.")
+	cmd.Flags().StringVar(&flags.healthAddr, "health-addr", ":9440", "The address the health endpoint binds to.")
 	cmd.Flags().BoolVar(&flags.enableLeaderElection, "enable-leader-election", false,
 		"Enable leader election for operator. Enabling this will ensure there is only one active controller manager.")
 	return util.CmdLogMixin(cmd)
@@ -72,10 +77,11 @@ func NewOperatorCommand() *cobra.Command {
 
 func run(flags *flags, log logr.Logger) error {
 	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
-		Scheme:             scheme,
-		MetricsBindAddress: flags.metricsAddr,
-		LeaderElection:     flags.enableLeaderElection,
-		Port:               9443,
+		Scheme:                 scheme,
+		MetricsBindAddress:     flags.metricsAddr,
+		LeaderElection:         flags.enableLeaderElection,
+		Port:                   9443,
+		HealthProbeBindAddress: flags.healthAddr,
 	})
 	if err != nil {
 		return fmt.Errorf("starting manager: %w", err)
@@ -109,10 +115,9 @@ func run(flags *flags, log logr.Logger) error {
 	}
 
 	if err = (&controllers.KubeCarrierReconciler{
-		Client:     mgr.GetClient(),
-		Log:        log.WithName("controllers").WithName("KubeCarrier"),
-		Scheme:     mgr.GetScheme(),
-		RESTMapper: mgr.GetRESTMapper(),
+		Client: mgr.GetClient(),
+		Log:    log.WithName("controllers").WithName("KubeCarrier"),
+		Scheme: mgr.GetScheme(),
 	}).SetupWithManager(mgr); err != nil {
 		return fmt.Errorf("creating KubeCarrier controller: %w", err)
 	}
@@ -124,6 +129,23 @@ func run(flags *flags, log logr.Logger) error {
 		RESTMapper: mgr.GetRESTMapper(),
 	}).SetupWithManager(mgr); err != nil {
 		return fmt.Errorf("creating Tower controller: %w", err)
+	}
+
+	// Register webhooks as handlers
+	wbh := mgr.GetWebhookServer()
+
+	// validating webhooks
+	wbh.Register(utilwebhook.GenerateValidateWebhookPath(&operatorv1alpha1.KubeCarrier{}, mgr.GetScheme()),
+		&webhook.Admission{Handler: &webhooks.KubeCarrierWebhookHandler{
+			Log: log.WithName("validating webhooks").WithName("KubeCarrier"),
+		}})
+
+	if err := mgr.AddReadyzCheck("ping", healthz.Ping); err != nil {
+		return fmt.Errorf("adding readyz checker: %w", err)
+	}
+
+	if err := mgr.AddHealthzCheck("ping", healthz.Ping); err != nil {
+		return fmt.Errorf("adding healthz checker: %w", err)
 	}
 
 	log.Info("starting operator")

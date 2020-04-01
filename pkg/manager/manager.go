@@ -120,9 +120,9 @@ func run(flags *flags, log logr.Logger) error {
 		return fmt.Errorf("registering Provider owner field index: %w", err)
 	}
 	if err := multiowner.AddOwnerReverseFieldIndex(
-		mgr.GetFieldIndexer(), fieldIndexerLog.WithName("ServiceClusterReference"), &catalogv1alpha1.ServiceClusterReference{},
+		mgr.GetFieldIndexer(), fieldIndexerLog.WithName("Region"), &catalogv1alpha1.Region{},
 	); err != nil {
-		return fmt.Errorf("registering ServiceClusterReference owner field index: %w", err)
+		return fmt.Errorf("registering Region owner field index: %w", err)
 	}
 	if err := multiowner.AddOwnerReverseFieldIndex(
 		mgr.GetFieldIndexer(), fieldIndexerLog.WithName("ServiceClusterAssignment"), &corev1alpha1.ServiceClusterAssignment{},
@@ -233,9 +233,9 @@ func run(flags *flags, log logr.Logger) error {
 		&webhook.Admission{Handler: &webhooks.ProviderWebhookHandler{
 			Log: log.WithName("validating webhooks").WithName("Provider"),
 		}})
-	wbh.Register(utilwebhook.GenerateValidateWebhookPath(&catalogv1alpha1.ServiceClusterReference{}, mgr.GetScheme()),
-		&webhook.Admission{Handler: &webhooks.ServiceClusterReferenceWebhookHandler{
-			Log: log.WithName("validating webhooks").WithName("ServiceClusterReference"),
+	wbh.Register(utilwebhook.GenerateValidateWebhookPath(&catalogv1alpha1.Region{}, mgr.GetScheme()),
+		&webhook.Admission{Handler: &webhooks.RegionWebhookHandler{
+			Log: log.WithName("validating webhooks").WithName("Region"),
 		}})
 	wbh.Register(utilwebhook.GenerateValidateWebhookPath(&catalogv1alpha1.Tenant{}, mgr.GetScheme()),
 		&webhook.Admission{Handler: &webhooks.TenantWebhookHandler{
