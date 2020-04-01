@@ -204,5 +204,5 @@ docs: bin/docgen
 .PHONEY: docs
 
 sync-loodse-docs:
-	@hack/sync-docs.sh $(VERSION)
+	@hack/sync-docs.sh
 .PHONY: sync-loodse-docs

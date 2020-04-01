@@ -44,7 +44,7 @@ fi
 # what is the version of the code we're pushing to the ${TARGET_BRANCH}
 # e.g. master, v0.1.0, etc
 #
-VERSION=${1:-$(git rev-parse --abbrev-ref HEAD)-$(git rev-parse --short HEAD)}
+VERSION=${VERSION:-$(git rev-parse --abbrev-ref HEAD)-$(git rev-parse --short HEAD)}
 echo "current code version ${VERSION}"
 REPO=${REPO:-git@github.com:loodse/docs.git}
 if [[ -z ${WORKDIR:-} ]]; then
