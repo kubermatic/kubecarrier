@@ -41,6 +41,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
+	masterv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/master/v1alpha1"
 	operatorv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/operator/v1alpha1"
 	"github.com/kubermatic/kubecarrier/pkg/cli/internal/cmd/preflight/checkers"
 	"github.com/kubermatic/kubecarrier/pkg/cli/internal/spinner"
@@ -58,11 +59,13 @@ func init() {
 	utilruntime.Must(clientgoscheme.AddToScheme(scheme))
 	utilruntime.Must(apiextensionsv1.AddToScheme(scheme))
 	utilruntime.Must(operatorv1alpha1.AddToScheme(scheme))
+	utilruntime.Must(masterv1alpha1.AddToScheme(scheme))
 	utilruntime.Must(certv1alpha2.AddToScheme(scheme))
 }
 
 func NewCommand(log logr.Logger) *cobra.Command {
 	var skipPreflight bool
+	var isMasterCluster bool
 	flags := genericclioptions.NewConfigFlags(false)
 	cmd := &cobra.Command{
 		Args:  cobra.NoArgs,
@@ -78,15 +81,16 @@ $ kubectl kubecarrier setup --kubeconfig=<kubeconfig path>
 			if err != nil {
 				return err
 			}
-			return runE(cfg, log, cmd, skipPreflight)
+			return runE(cfg, log, cmd, skipPreflight, isMasterCluster)
 		},
 	}
 	cmd.Flags().BoolVar(&skipPreflight, "skip-preflight-checks", false, "If true, preflight checks will be skipped")
+	cmd.Flags().BoolVar(&isMasterCluster, "master", false, "If true, KubeCarrier will be installed as the master management cluster for multi-region support")
 	flags.AddFlags(cmd.Flags())
 	return cmd
 }
 
-func runE(conf *rest.Config, log logr.Logger, cmd *cobra.Command, skipPreflight bool) error {
+func runE(conf *rest.Config, log logr.Logger, cmd *cobra.Command, skipPreflight, isMasterCluster bool) error {
 	stopCh := ctrl.SetupSignalHandler()
 	ctx, cancelContext := context.WithTimeout(context.Background(), 60*time.Second)
 	go func() {
@@ -121,8 +125,23 @@ func runE(conf *rest.Config, log logr.Logger, cmd *cobra.Command, skipPreflight 
 		return fmt.Errorf("deploying KubeCarrier operator: %w", err)
 	}
 
-	if err := spinner.AttachSpinnerTo(s, startTime, "Deploy KubeCarrier", deployKubeCarrier(ctx, conf)); err != nil {
+	kubeCarrier := &operatorv1alpha1.KubeCarrier{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: constants.KubeCarrierDefaultName,
+		},
+		Spec: operatorv1alpha1.KubeCarrierSpec{
+			Master: isMasterCluster,
+		},
+	}
+
+	if err := spinner.AttachSpinnerTo(s, startTime, "Deploy KubeCarrier", deployKubeCarrier(ctx, conf, kubeCarrier)); err != nil {
 		return fmt.Errorf("deploying KubeCarrier controller manager: %w", err)
+	}
+
+	if isMasterCluster {
+		if err := spinner.AttachSpinnerTo(s, startTime, "Create Local ManagementCluster", createLocalManagementCluster(ctx, c, kubeCarrier)); err != nil {
+			return fmt.Errorf("deploying KubeCarrier controller manager: %w", err)
+		}
 	}
 
 	return nil
@@ -179,7 +198,7 @@ func reconcileOperator(ctx context.Context, log logr.Logger, c *util.ClientWatch
 }
 
 // deployKubeCarrier deploys the KubeCarrier Object in a kubernetes cluster.
-func deployKubeCarrier(ctx context.Context, conf *rest.Config) func() error {
+func deployKubeCarrier(ctx context.Context, conf *rest.Config, kubeCarrier *operatorv1alpha1.KubeCarrier) func() error {
 	return func() error {
 		// Create another client due to some issues about the restmapper.
 		// The issue is that if you use the client that created before, and here try to create the kubeCarrier,
@@ -187,14 +206,6 @@ func deployKubeCarrier(ctx context.Context, conf *rest.Config) func() error {
 		// but actually, the scheme is already added to the runtime scheme.
 		// And in the following, reinitializing the client solves the issue.
 
-		kubeCarrier := &operatorv1alpha1.KubeCarrier{
-			ObjectMeta: metav1.ObjectMeta{
-				Name: constants.KubeCarrierDefaultName,
-			},
-			Spec: operatorv1alpha1.KubeCarrierSpec{
-				Master: true,
-			},
-		}
 		w, err := util.NewClientWatcher(conf, scheme, ctrl.Log)
 		if err != nil {
 			return err
@@ -206,6 +217,31 @@ func deployKubeCarrier(ctx context.Context, conf *rest.Config) func() error {
 		}
 		return w.WaitUntil(ctx, kubeCarrier, func() (done bool, err error) {
 			return kubeCarrier.IsReady(), nil
+		})
+	}
+}
+
+func createLocalManagementCluster(ctx context.Context, c *util.ClientWatcher, kubeCarrier *operatorv1alpha1.KubeCarrier) func() error {
+	return func() error {
+		localManagementCluster := &masterv1alpha1.ManagementCluster{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: constants.LocalManagementClusterName,
+			},
+		}
+
+		if err := controllerutil.SetControllerReference(kubeCarrier, localManagementCluster, scheme); err != nil {
+			return fmt.Errorf("set controller reference: %w", err)
+		}
+		if _, err := ctrl.CreateOrUpdate(ctx, c, localManagementCluster, func() error {
+			if err := controllerutil.SetControllerReference(kubeCarrier, localManagementCluster, scheme); err != nil {
+				return fmt.Errorf("set controller reference on local ManagementCluster object: %w", err)
+			}
+			return nil
+		}); err != nil {
+			return fmt.Errorf("cannot create or update local ManagementCluster object: %w", err)
+		}
+		return c.WaitUntil(ctx, localManagementCluster, func() (done bool, err error) {
+			return localManagementCluster.IsReady(), nil
 		})
 	}
 }

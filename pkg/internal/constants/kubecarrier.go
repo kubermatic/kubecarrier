@@ -20,4 +20,6 @@ const (
 	KubeCarrierDefaultName = "kubecarrier"
 
 	KubeCarrierDefaultNamespace = "kubecarrier-system"
+
+	LocalManagementClusterName = "local"
 )

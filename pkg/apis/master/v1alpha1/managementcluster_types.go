@@ -175,6 +175,22 @@ func (s *ManagementCluster) IsReady() bool {
 	return false
 }
 
+func (s *ManagementCluster) SetTerminatingCondition() bool {
+	readyCondition, _ := s.Status.GetCondition(ManagementClusterReady)
+	if readyCondition.Status != ConditionFalse ||
+		readyCondition.Status == ConditionFalse && readyCondition.Reason != ManagementClusterTerminatingReason {
+		s.Status.ObservedGeneration = s.Generation
+		s.Status.SetCondition(ManagementClusterCondition{
+			Type:    ManagementClusterReady,
+			Status:  ConditionFalse,
+			Reason:  ManagementClusterTerminatingReason,
+			Message: "ManagementCluster is being deleted",
+		})
+		return true
+	}
+	return false
+}
+
 // ManagementClusterList contains a list of ManagementCluster.
 // +kubebuilder:object:root=true
 type ManagementClusterList struct {

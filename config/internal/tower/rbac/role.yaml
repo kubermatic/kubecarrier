@@ -1,10 +1,10 @@
 
 ---
 apiVersion: rbac.authorization.k8s.io/v1
-kind: Role
+kind: ClusterRole
 metadata:
   creationTimestamp: null
-  name: manager
+  name: manager-role
 rules:
 - apiGroups:
   - master.kubecarrier.io

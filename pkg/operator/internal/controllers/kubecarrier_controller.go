@@ -27,29 +27,26 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
-	"k8s.io/apimachinery/pkg/api/meta"
+	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/types"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/source"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
 	operatorv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/operator/v1alpha1"
-	"github.com/kubermatic/kubecarrier/pkg/internal/owner"
+	"github.com/kubermatic/kubecarrier/pkg/internal/constants"
+	"github.com/kubermatic/kubecarrier/pkg/internal/reconcile"
 	"github.com/kubermatic/kubecarrier/pkg/internal/resources/manager"
 	"github.com/kubermatic/kubecarrier/pkg/internal/util"
-)
-
-const (
-	kubeCarrierControllerFinalizer = "kubecarrier.kubecarrier.io/controller"
 )
 
 // KubeCarrierReconciler reconciles a KubeCarrier object
 type KubeCarrierReconciler struct {
 	client.Client
-	Log        logr.Logger
-	Scheme     *runtime.Scheme
-	RESTMapper meta.RESTMapper
+	Log    logr.Logger
+	Scheme *runtime.Scheme
 }
 
 // +kubebuilder:rbac:groups=operator.kubecarrier.io,resources=kubecarriers,verbs=get;list;watch;update;patch
@@ -62,7 +59,6 @@ type KubeCarrierReconciler struct {
 // +kubebuilder:rbac:groups="",resources=services,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups="",resources=serviceaccounts,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=apiextensions.k8s.io,resources=customresourcedefinitions,verbs=get;list;watch;create;update;patch;delete
-// +kubebuilder:rbac:groups=admissionregistration.k8s.io,resources=mutatingwebhookconfigurations,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=admissionregistration.k8s.io,resources=validatingwebhookconfigurations,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=cert-manager.io,resources=issuers,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=cert-manager.io,resources=certificates,verbs=get;list;watch;create;update;patch;delete
@@ -83,41 +79,83 @@ func (r *KubeCarrierReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error)
 		return ctrl.Result{}, nil
 	}
 
-	if util.AddFinalizer(kubeCarrier, kubeCarrierControllerFinalizer) {
-		if err := r.Update(ctx, kubeCarrier); err != nil {
-			return ctrl.Result{}, fmt.Errorf("updating KubeCarrier finalizers: %w", err)
-		}
-	}
-
 	objects, err := manager.Manifests(
 		manager.Config{
 			Name:      kubeCarrier.Name,
-			Namespace: kubeCarrier.Namespace,
+			Namespace: constants.KubeCarrierDefaultNamespace,
 		})
 	if err != nil {
 		return ctrl.Result{}, fmt.Errorf("creating manager manifests: %w", err)
 	}
 
-	deploymentIsReady, err := reconcileOwnedObjectsForNamespacedOwner(ctx, log, r.Scheme, r.RESTMapper, r.Client, kubeCarrier, objects)
-	if err != nil {
+	var deploymentIsReady bool
+	for _, object := range objects {
+		if err := controllerutil.SetControllerReference(kubeCarrier, &object, r.Scheme); err != nil {
+			return ctrl.Result{}, err
+		}
+		curObj, err := reconcile.Unstructured(ctx, log, r.Client, &object)
+		if err != nil {
+			return ctrl.Result{}, fmt.Errorf("reconcile kind: %s, err: %w", object.GroupVersionKind().Kind, err)
+		}
+		switch ctr := curObj.(type) {
+		case *appsv1.Deployment:
+			deploymentIsReady = util.DeploymentIsAvailable(ctr)
+		}
+	}
+
+	if !deploymentIsReady {
+		if err := r.updateStatus(ctx, kubeCarrier, operatorv1alpha1.KubeCarrierCondition{
+			Type:    operatorv1alpha1.KubeCarrierDeploymentReady,
+			Status:  operatorv1alpha1.ConditionFalse,
+			Reason:  "DeploymentUnReady",
+			Message: "the deployment of KubeCarrier is not ready",
+		}); err != nil {
+			return ctrl.Result{}, err
+		}
+		return ctrl.Result{}, nil
+	}
+
+	if err := r.updateStatus(ctx, kubeCarrier, operatorv1alpha1.KubeCarrierCondition{
+		Type:    operatorv1alpha1.KubeCarrierDeploymentReady,
+		Status:  operatorv1alpha1.ConditionTrue,
+		Reason:  "DeploymentReady",
+		Message: "the deployment of KubeCarrier is ready",
+	}); err != nil {
 		return ctrl.Result{}, err
 	}
 
-	towerIsReady, err := r.reconcileTower(ctx, log, kubeCarrier)
-	if err != nil {
-		return ctrl.Result{}, err
-	}
+	if kubeCarrier.Spec.Master {
+		towerIsReady, err := r.reconcileTower(ctx, log, kubeCarrier)
+		if err != nil {
+			return ctrl.Result{}, fmt.Errorf("reconcile Tower: %w", err)
+		}
 
-	if err := r.updateStatus(ctx, kubeCarrier, deploymentIsReady, towerIsReady); err != nil {
-		return ctrl.Result{}, err
+		if !towerIsReady {
+			if err := r.updateStatus(ctx, kubeCarrier, operatorv1alpha1.KubeCarrierCondition{
+				Type:    operatorv1alpha1.KubeCarrierTowerReady,
+				Status:  operatorv1alpha1.ConditionFalse,
+				Reason:  "TowerUnReady",
+				Message: "Tower is not ready",
+			}); err != nil {
+				return ctrl.Result{}, err
+			}
+			return ctrl.Result{}, nil
+		}
+
+		if err := r.updateStatus(ctx, kubeCarrier, operatorv1alpha1.KubeCarrierCondition{
+			Type:    operatorv1alpha1.KubeCarrierTowerReady,
+			Status:  operatorv1alpha1.ConditionTrue,
+			Reason:  "TowerReady",
+			Message: "Tower is ready",
+		}); err != nil {
+			return ctrl.Result{}, err
+		}
 	}
 
 	return ctrl.Result{}, nil
 }
 
 func (r *KubeCarrierReconciler) SetupWithManager(mgr ctrl.Manager) error {
-	enqueuer := owner.EnqueueRequestForOwner(&operatorv1alpha1.KubeCarrier{}, r.Scheme)
-
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&operatorv1alpha1.KubeCarrier{}).
 		Owns(&appsv1.Deployment{}).
@@ -127,11 +165,11 @@ func (r *KubeCarrierReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		Owns(&rbacv1.RoleBinding{}).
 		Owns(&certv1alpha2.Issuer{}).
 		Owns(&certv1alpha2.Certificate{}).
-		Watches(&source.Kind{Type: &rbacv1.ClusterRole{}}, enqueuer).
-		Watches(&source.Kind{Type: &rbacv1.ClusterRoleBinding{}}, enqueuer).
-		Watches(&source.Kind{Type: &apiextensionsv1.CustomResourceDefinition{}}, enqueuer).
-		Watches(&source.Kind{Type: &adminv1beta1.MutatingWebhookConfiguration{}}, enqueuer).
-		Watches(&source.Kind{Type: &adminv1beta1.ValidatingWebhookConfiguration{}}, enqueuer).
+		Owns(&rbacv1.ClusterRole{}).
+		Owns(&rbacv1.ClusterRoleBinding{}).
+		Owns(&apiextensionsv1.CustomResourceDefinition{}).
+		Owns(&adminv1beta1.ValidatingWebhookConfiguration{}).
+		Owns(&operatorv1alpha1.Tower{}).
 		Complete(r)
 }
 
@@ -142,58 +180,86 @@ func (r *KubeCarrierReconciler) handleDeletion(ctx context.Context, kubeCarrier 
 			return fmt.Errorf("updating %s status: %w", kubeCarrier.Name, err)
 		}
 	}
-
-	cleanedUp, err := util.DeleteObjects(ctx, r.Client, r.Scheme, []runtime.Object{
-		&rbacv1.ClusterRole{},
-		&rbacv1.ClusterRoleBinding{},
-		&apiextensionsv1.CustomResourceDefinition{},
-		&adminv1beta1.MutatingWebhookConfiguration{},
-		&adminv1beta1.ValidatingWebhookConfiguration{},
-		&operatorv1alpha1.Tower{},
-	}, owner.OwnedBy(kubeCarrier, r.Scheme))
-	if err != nil {
-		return fmt.Errorf("DeleteObjects: %w", err)
-	}
-
-	if cleanedUp && util.RemoveFinalizer(kubeCarrier, kubeCarrierControllerFinalizer) {
-		if err := r.Update(ctx, kubeCarrier); err != nil {
-			return fmt.Errorf("updating KubeCarrier finalizers: %w", err)
-		}
-	}
 	return nil
 }
 
 // updateStatus - update the status of the object
-func (r *KubeCarrierReconciler) updateStatus(ctx context.Context, kubeCarrier *operatorv1alpha1.KubeCarrier, deploymentIsReady, towerIsReady bool) error {
-	var statusChanged bool
+func (r *KubeCarrierReconciler) updateStatus(ctx context.Context, kubeCarrier *operatorv1alpha1.KubeCarrier, condition operatorv1alpha1.KubeCarrierCondition) error {
+	kubeCarrier.Status.ObservedGeneration = kubeCarrier.Generation
+	kubeCarrier.Status.SetCondition(condition)
+	kubeCarrierDeploymentReady, _ := kubeCarrier.Status.GetCondition(operatorv1alpha1.KubeCarrierDeploymentReady)
+	if kubeCarrier.Spec.Master {
+		towerReady, _ := kubeCarrier.Status.GetCondition(operatorv1alpha1.KubeCarrierTowerReady)
 
-	if deploymentIsReady && towerIsReady {
-		statusChanged = kubeCarrier.SetReadyCondition()
-	} else {
-		statusChanged = kubeCarrier.SetUnReadyCondition()
-	}
-
-	if statusChanged {
-		if err := r.Client.Status().Update(ctx, kubeCarrier); err != nil {
-			return fmt.Errorf("updating %s status: %w", kubeCarrier.Name, err)
+		if kubeCarrierDeploymentReady.True() && towerReady.True() {
+			kubeCarrier.Status.SetCondition(operatorv1alpha1.KubeCarrierCondition{
+				Type:    operatorv1alpha1.KubeCarrierReady,
+				Status:  operatorv1alpha1.ConditionTrue,
+				Reason:  "KubeCarrierAndTowerReady",
+				Message: "the deployment of KubeCarrier and Tower are ready.",
+			})
+		} else if !kubeCarrierDeploymentReady.True() {
+			kubeCarrier.Status.SetCondition(operatorv1alpha1.KubeCarrierCondition{
+				Type:    operatorv1alpha1.KubeCarrierReady,
+				Status:  operatorv1alpha1.ConditionFalse,
+				Reason:  "KubeCarrierDeploymentUnReady",
+				Message: "the deployment of KubeCarrier is not ready.",
+			})
+		} else if !towerReady.True() {
+			kubeCarrier.Status.SetCondition(operatorv1alpha1.KubeCarrierCondition{
+				Type:    operatorv1alpha1.KubeCarrierReady,
+				Status:  operatorv1alpha1.ConditionFalse,
+				Reason:  "TowerUnReady",
+				Message: "Tower is not ready.",
+			})
 		}
+
+	} else {
+		if kubeCarrierDeploymentReady.True() {
+			kubeCarrier.Status.SetCondition(operatorv1alpha1.KubeCarrierCondition{
+				Type:    operatorv1alpha1.KubeCarrierReady,
+				Status:  operatorv1alpha1.ConditionTrue,
+				Reason:  "KubeCarrierReady",
+				Message: "KubeCarrier is ready.",
+			})
+		}
+	}
+	if err := r.Client.Status().Update(ctx, kubeCarrier); err != nil {
+		return fmt.Errorf("updating %s status: %w", kubeCarrier.Name, err)
 	}
 	return nil
 }
 
 func (r *KubeCarrierReconciler) reconcileTower(ctx context.Context, log logr.Logger, kubeCarrier *operatorv1alpha1.KubeCarrier) (towerIsReady bool, err error) {
-	if kubeCarrier.Spec.Master {
-		tower := &operatorv1alpha1.Tower{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      kubeCarrier.Name,
-				Namespace: kubeCarrier.Namespace,
-			},
-		}
-
-		if _, err := owner.ReconcileOwnedObjects(ctx, r.Client, log, r.Scheme, kubeCarrier, []runtime.Object{tower}, &operatorv1alpha1.Tower{}, nil); err != nil {
-			return false, fmt.Errorf("cannot reconcile Tower object: %w", err)
-		}
-		return tower.IsReady(), nil
+	desiredTower := &operatorv1alpha1.Tower{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      kubeCarrier.Name,
+			Namespace: constants.KubeCarrierDefaultNamespace,
+		},
 	}
-	return true, nil
+
+	if err := controllerutil.SetControllerReference(kubeCarrier, desiredTower, r.Scheme); err != nil {
+		return false, fmt.Errorf("set controller reference for Tower object: %W", err)
+	}
+
+	currentTower := &operatorv1alpha1.Tower{}
+	err = r.Get(ctx, types.NamespacedName{
+		Name:      desiredTower.Name,
+		Namespace: desiredTower.Namespace,
+	}, currentTower)
+	if err != nil && !errors.IsNotFound(err) {
+		return false, fmt.Errorf("getting Tower: %w", err)
+	}
+	if errors.IsNotFound(err) {
+		if err = r.Create(ctx, desiredTower); err != nil {
+			return false, fmt.Errorf("creating Tower: %w", err)
+		}
+		return false, nil
+	}
+	// Update Elevator
+	currentTower.Spec = desiredTower.Spec
+	if err = r.Update(ctx, currentTower); err != nil {
+		return false, fmt.Errorf("updating Elevator: %w", err)
+	}
+	return currentTower.IsReady(), nil
 }

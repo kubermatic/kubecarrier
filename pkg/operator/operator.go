@@ -88,10 +88,9 @@ func run(flags *flags, log logr.Logger) error {
 	}
 
 	if err = (&controllers.KubeCarrierReconciler{
-		Client:     mgr.GetClient(),
-		Log:        log.WithName("controllers").WithName("KubeCarrier"),
-		Scheme:     mgr.GetScheme(),
-		RESTMapper: mgr.GetRESTMapper(),
+		Client: mgr.GetClient(),
+		Log:    log.WithName("controllers").WithName("KubeCarrier"),
+		Scheme: mgr.GetScheme(),
 	}).SetupWithManager(mgr); err != nil {
 		return fmt.Errorf("creating KubeCarrier controller: %w", err)
 	}

@@ -130,12 +130,7 @@ statik-gen elevator config/internal/elevator
 # CRDs
 $CONTROLLER_GEN crd:crdVersions=${CRD_VERSION} paths="./pkg/apis/master/..." output:crd:artifacts:config=config/internal/tower/crd/bases
 # RBAC
-$CONTROLLER_GEN rbac:roleName=manager paths="./pkg/tower/..." output:rbac:artifacts:config=config/internal/tower/rbac
-# The `|| true` is because the `,s/ClusterRole/Role/g` will error out if there is no match of `ClusterRole` (eg., the file is empty) in the file.
-ed config/internal/tower/rbac/role.yaml <<EOF || true
-,s/ClusterRole/Role/g
-w
-EOF
+$CONTROLLER_GEN rbac:roleName=manager-role paths="./pkg/tower/..." output:rbac:artifacts:config=config/internal/tower/rbac
 statik-gen tower config/internal/tower
 
 #Service cluster RBAC

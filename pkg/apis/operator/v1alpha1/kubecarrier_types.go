@@ -88,7 +88,9 @@ type KubeCarrierConditionType string
 
 const (
 	// KubeCarrierReady represents a KubeCarrier condition is in ready state.
-	KubeCarrierReady KubeCarrierConditionType = "Ready"
+	KubeCarrierReady           KubeCarrierConditionType = "Ready"
+	KubeCarrierDeploymentReady KubeCarrierConditionType = "DeploymentReady"
+	KubeCarrierTowerReady      KubeCarrierConditionType = "TowerReady"
 )
 
 // KubeCarrierCondition contains details for the current condition of this KubeCarrier.
