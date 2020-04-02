@@ -40,14 +40,9 @@ fi
 function statik-gen {
   local component=$1
   local src=$2
-  if [ -z "$(git status --porcelain ${src})" ] && [[ -z ${FORCE_STATIK:-} ]]; then
-    echo ${component}: statik up-to-date
-  else
-    statik -src=${src} -p ${component} -dest pkg/internal/resources -f -c ''
-    cat hack/boilerplate/boilerplate.generatego.txt | sed s/YEAR/$(date +%Y)/ | cat - pkg/internal/resources/${component}/statik.go > pkg/internal/resources/${component}/statik.go.tmp
-    mv pkg/internal/resources/${component}/statik.go.tmp pkg/internal/resources/${component}/statik.go
-    echo ${component}: statik regenerated
-  fi
+  statik -m -src=${src} -p ${component} -dest pkg/internal/resources -f -c ''
+  cat hack/boilerplate/boilerplate.generatego.txt | sed s/YEAR/$(date +%Y)/ | cat - pkg/internal/resources/${component}/statik.go > pkg/internal/resources/${component}/statik.go.tmp
+  mv pkg/internal/resources/${component}/statik.go.tmp pkg/internal/resources/${component}/statik.go
 }
 
 # DeepCopy functions
@@ -100,7 +95,6 @@ ed config/internal/ferry/rbac/role.yaml <<EOF || true
 ,s/ClusterRole/Role/g
 w
 EOF
-# Statik (run only when file CONTENT has changed)
 statik-gen ferry config/internal/ferry
 
 # Catapult
