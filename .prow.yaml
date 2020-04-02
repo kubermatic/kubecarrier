@@ -186,6 +186,9 @@ postsubmits:
     clone_uri: ssh://git@github.com/kubermatic/kubecarrier.git
     labels:
       preset-repo-ssh: "true"
+    branches:
+    - ^master$
+    - ^release-.*$
     spec:
       containers:
         - image: quay.io/kubecarrier/test
@@ -193,11 +196,6 @@ postsubmits:
           command:
             - make
             - sync-loodse-docs
-          env:
-            - name: VERSION
-              value: "master"
-            - name: TARGET_BRANCH
-              value: "master"
           resources:
             requests:
               cpu: 500m
