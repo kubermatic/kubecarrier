@@ -1,6 +1,6 @@
 ---
 title: Architecture
-weight: 30
+weight: 20
 ---
 
 KubeCarrier consists of multiple components that are installed on a single Kubernetes Cluster, referred to as *Management Cluster*.
