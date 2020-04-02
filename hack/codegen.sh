@@ -40,7 +40,7 @@ fi
 function statik-gen {
   local component=$1
   local src=$2
-  statik -m -src=${src} -p ${component} -dest pkg/internal/resources -f -c ''
+  statik -Z -m -src=${src} -p ${component} -dest pkg/internal/resources -f -c ''
   cat hack/boilerplate/boilerplate.generatego.txt | sed s/YEAR/$(date +%Y)/ | cat - pkg/internal/resources/${component}/statik.go > pkg/internal/resources/${component}/statik.go.tmp
   mv pkg/internal/resources/${component}/statik.go.tmp pkg/internal/resources/${component}/statik.go
 }
