@@ -50,4 +50,4 @@ Team A is offering the `CouchDB` service from their Kubernetes cluster `eu-west-
 
 Because Team A decided to hide the `.spec.version` property it's absent from the CRD that tenants of Team A have access to. While the internal CRD retains that field, so the provider can use it to orchestrate their workload.
 
-[CRDS]: ./img/crds.svg
+![CRDS](../../img/crds.png)

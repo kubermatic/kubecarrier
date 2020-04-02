@@ -88,6 +88,8 @@ couchdbs.eu-west-1.team-a           2020-03-09T10:28:52Z
 
 The `couchdbinternals.eu-west-1.team-a` object is just a copy of the CRD present in the `ServiceCluster`, while `couchdbs.eu-west-1.team-a` is a "slimed-down" version, only containing fields specified in the `CatalogEntrySet`. Both CRDs are "namespaced" by their API group.
 
+![Catapult](../../img/catapult.png)
+
 ## Catalogs
 
 Now that we have successfully registered a `CustomResourceDefinition` from another cluster, attached metadata to it and created a "public" interface for other people, we can go ahead and actually offer this `CouchDB` object to other users.
