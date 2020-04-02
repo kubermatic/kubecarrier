@@ -26,7 +26,7 @@ endif
 
 BRANCH=$(shell git rev-parse --abbrev-ref HEAD)
 SHORT_SHA=$(shell git rev-parse --short HEAD)
-VERSION?=${BRANCH}-${SHORT_SHA}
+VERSION?=$(shell ./hack/git-version.sh)
 BUILD_DATE=$(shell date +%s)
 IMAGE_ORG?=quay.io/kubecarrier
 MODULE=github.com/kubermatic/kubecarrier
@@ -82,6 +82,10 @@ vet:
 test:
 	CGO_ENABLED=1 go test -race -v ./...
 .PHONY: test
+
+version:
+	@echo $(VERSION)
+.PHONY: version
 
 release:
 	goreleaser release --rm-dist
