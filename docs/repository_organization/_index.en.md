@@ -1,6 +1,6 @@
 ---
 title: Repository Organization
-weight: 100
+weight: 3
 ---
 
 ## Overview

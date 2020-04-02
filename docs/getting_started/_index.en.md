@@ -1,6 +1,6 @@
 ---
 title: Getting Started
-weight: 100
+weight: 1
 ---
 
 ## 0. Requirements

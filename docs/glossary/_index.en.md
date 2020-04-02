@@ -1,6 +1,6 @@
 ---
 title: Glossary
-weight: 100
+weight: 4
 ---
 
 A glossary of terms used throughout this documentation.
