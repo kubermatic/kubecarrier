@@ -24,7 +24,7 @@ ifdef CI
 	export PATH:=${PATH}:${GOPATH}/bin
 endif
 
-BRANCH=$(shell git rev-parse --abbrev-ref HEAD)
+BRANCH=$(shell git rev-parse --abbrev-ref HEAD | sed 's/\//-/')
 SHORT_SHA=$(shell git rev-parse --short HEAD)
 VERSION?=${BRANCH}-${SHORT_SHA}
 BUILD_DATE=$(shell date +%s)
@@ -82,6 +82,10 @@ vet:
 test:
 	CGO_ENABLED=1 go test -race -v ./...
 .PHONY: test
+
+version:
+	@echo $(VERSION)
+.PHONY: version
 
 release:
 	goreleaser release --rm-dist
