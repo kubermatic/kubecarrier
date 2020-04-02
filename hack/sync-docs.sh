@@ -44,8 +44,11 @@ fi
 # what is the version of the code we're pushing to the ${TARGET_BRANCH}
 # e.g. master, v0.1.0, etc
 #
-VERSION=${VERSION:-$(git rev-parse --abbrev-ref HEAD)-$(git rev-parse --short HEAD)}
-echo "current code version ${VERSION}"
+DEFAULT_VERSION=$(git rev-parse --abbrev-ref HEAD)
+DEFAULT_VERSION=${DEFAULT_VERSION/release-/}
+KUBECARRIER_VERSION=${KUBECARRIER_VERSION:-${DEFAULT_VERSION}}
+COMMIT_SHA=$(git rev-parse HEAD)
+COMMIT_MESSAGE=$(git show -s --format=%s)
 REPO=${REPO:-git@github.com:loodse/docs.git}
 if [[ -z ${WORKDIR:-} ]]; then
   WORKDIR=$(mktemp --directory)
@@ -54,7 +57,15 @@ PROJECT=$(git rev-parse --show-toplevel)
 
 # Which branch in the ${REPO} are we going to push are changes to?
 # The diff is calculated from the master branch
-TARGET_BRANCH=${TARGET_BRANCH:-${VERSION}}
+TARGET_BRANCH=${TARGET_BRANCH:-master}
+
+echo "========================"
+echo "KUBECARRIER_VERSION = ${KUBECARRIER_VERSION}  # For which version of the docs to upsert"
+echo "REPO                = ${REPO} # Which repo to publish the docs"
+echo "WORKDIR             = ${WORKDIR}  # Where ${REPO} shall be cloned and operated on"
+echo "TARGET_BRANCH       = ${TARGET_BRANCH}  # Which branch in ${REPO} to push changes to (it's branched from master)"
+echo "syncing kubecarrier version ${KUBECARRIER_VERSION} to ${REPO} branch ${TARGET_BRANCH}"
+echo "========================"
 
 cd ${WORKDIR}
 if [[ ! -d ${WORKDIR}/.git ]]; then
@@ -66,15 +77,15 @@ else
   git pull
 fi
 
-echo "================"
-echo "syncing docs"
-mkdir -p ${WORKDIR}/content/kubecarrier/${VERSION}
-rsync -rh --delete ${PROJECT}/docs/ ${WORKDIR}/content/kubecarrier/${VERSION}/
-echo "================"
+mkdir -p ${WORKDIR}/content/kubecarrier/${KUBECARRIER_VERSION}
+rsync -rh --delete ${PROJECT}/docs/ ${WORKDIR}/content/kubecarrier/${KUBECARRIER_VERSION}/
 
-git checkout -fb ${TARGET_BRANCH}
+echo "dd"
+git branch -D ${TARGET_BRANCH} || true
+git checkout -b ${TARGET_BRANCH}
+echo "aa"
 git add .
 if ! git diff --cached --stat --exit-code; then
-  git commit -a -m "updated kubecarrier docs to version ${VERSION}"
+  git commit -a -m "updated kubecarrier docs for version ${KUBECARRIER_VERSION} to commit ${COMMIT_SHA}"
   git push --force-with-lease --set-upstream origin ${TARGET_BRANCH}
 fi
