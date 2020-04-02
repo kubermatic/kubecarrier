@@ -1,6 +1,6 @@
 ---
 title: API Reference
-weight: 5
+weight: 50
 ---
 
 The KubeCarrier API is implemented as a extension of the [Kubernetes API](https://kubernetes.io/docs/reference/using-api/api-overview/) as `CustomResourceDefinitions`.
