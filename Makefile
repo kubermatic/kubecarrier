@@ -201,4 +201,9 @@ cert-manager:
 docs: bin/docgen
 	@hack/docgen.sh
 
-.PHONEY: docs
+.PHONY: docs
+
+preview-docs:
+	@hack/preview-docs.sh
+
+.PHONY: preview-docs
