@@ -77,14 +77,16 @@ else
   git pull
 fi
 
+# switch to right branch
+git checkout ${TARGET_BRANCH} || git checkout -b ${TARGET_BRANCH}
+git reset --hard origin/master
+
+# sync stuff
 mkdir -p ${WORKDIR}/content/kubecarrier/${KUBECARRIER_VERSION}
 rsync -rh --delete ${PROJECT}/docs/ ${WORKDIR}/content/kubecarrier/${KUBECARRIER_VERSION}/
-
-echo "dd"
-git branch -D ${TARGET_BRANCH} || true
-git checkout -b ${TARGET_BRANCH}
-echo "aa"
 git add .
+
+# update if there are changes
 if ! git diff --cached --stat --exit-code; then
   git commit -a -m "updated kubecarrier docs for version ${KUBECARRIER_VERSION} to commit ${COMMIT_SHA}"
   git push --force-with-lease --set-upstream origin ${TARGET_BRANCH}
