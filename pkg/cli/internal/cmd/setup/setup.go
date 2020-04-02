@@ -24,6 +24,7 @@ import (
 	"github.com/gernest/wow"
 	"github.com/gernest/wow/spin"
 	"github.com/go-logr/logr"
+	certv1alpha2 "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
 	"github.com/spf13/cobra"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -43,6 +44,7 @@ import (
 	operatorv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/operator/v1alpha1"
 	"github.com/kubermatic/kubecarrier/pkg/cli/internal/cmd/preflight/checkers"
 	"github.com/kubermatic/kubecarrier/pkg/cli/internal/spinner"
+	"github.com/kubermatic/kubecarrier/pkg/internal/constants"
 	"github.com/kubermatic/kubecarrier/pkg/internal/reconcile"
 	"github.com/kubermatic/kubecarrier/pkg/internal/resources/operator"
 	"github.com/kubermatic/kubecarrier/pkg/internal/util"
@@ -52,14 +54,11 @@ var (
 	scheme = runtime.NewScheme()
 )
 
-const (
-	kubecarrierNamespaceName = "kubecarrier-system"
-)
-
 func init() {
 	utilruntime.Must(clientgoscheme.AddToScheme(scheme))
 	utilruntime.Must(apiextensionsv1.AddToScheme(scheme))
 	utilruntime.Must(operatorv1alpha1.AddToScheme(scheme))
+	utilruntime.Must(certv1alpha2.AddToScheme(scheme))
 }
 
 func NewCommand(log logr.Logger) *cobra.Command {
@@ -111,10 +110,10 @@ func runE(conf *rest.Config, log logr.Logger, cmd *cobra.Command, skipPreflight 
 
 	ns := &corev1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: kubecarrierNamespaceName,
+			Name: constants.KubeCarrierDefaultNamespace,
 		},
 	}
-	if err := spinner.AttachSpinnerTo(s, startTime, fmt.Sprintf("Create %q Namespace", kubecarrierNamespaceName), createNamespace(ctx, c, ns)); err != nil {
+	if err := spinner.AttachSpinnerTo(s, startTime, fmt.Sprintf("Create %q Namespace", ns.Name), createNamespace(ctx, c, ns)); err != nil {
 		return fmt.Errorf("creating KubeCarrier system namespace: %w", err)
 	}
 
@@ -122,7 +121,7 @@ func runE(conf *rest.Config, log logr.Logger, cmd *cobra.Command, skipPreflight 
 		return fmt.Errorf("deploying KubeCarrier operator: %w", err)
 	}
 
-	if err := spinner.AttachSpinnerTo(s, startTime, "Deploy KubeCarrier", deployKubeCarrier(ctx, ns, conf)); err != nil {
+	if err := spinner.AttachSpinnerTo(s, startTime, "Deploy KubeCarrier", deployKubeCarrier(ctx, conf)); err != nil {
 		return fmt.Errorf("deploying KubeCarrier controller manager: %w", err)
 	}
 
@@ -169,7 +168,7 @@ func reconcileOperator(ctx context.Context, log logr.Logger, c *util.ClientWatch
 		deployment := &appsv1.Deployment{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "kubecarrier-operator-manager",
-				Namespace: kubecarrierNamespaceName,
+				Namespace: constants.KubeCarrierDefaultNamespace,
 			},
 		}
 		return c.WaitUntil(ctx, deployment, func() (done bool, err error) {
@@ -180,7 +179,7 @@ func reconcileOperator(ctx context.Context, log logr.Logger, c *util.ClientWatch
 }
 
 // deployKubeCarrier deploys the KubeCarrier Object in a kubernetes cluster.
-func deployKubeCarrier(ctx context.Context, kubeCarrierNamespace *corev1.Namespace, conf *rest.Config) func() error {
+func deployKubeCarrier(ctx context.Context, conf *rest.Config) func() error {
 	return func() error {
 		// Create another client due to some issues about the restmapper.
 		// The issue is that if you use the client that created before, and here try to create the kubeCarrier,
@@ -190,8 +189,7 @@ func deployKubeCarrier(ctx context.Context, kubeCarrierNamespace *corev1.Namespa
 
 		kubeCarrier := &operatorv1alpha1.KubeCarrier{
 			ObjectMeta: metav1.ObjectMeta{
-				Name:      "kubecarrier",
-				Namespace: kubeCarrierNamespace.Name,
+				Name: constants.KubeCarrierDefaultName,
 			},
 		}
 		w, err := util.NewClientWatcher(conf, scheme, ctrl.Log)
