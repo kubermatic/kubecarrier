@@ -24,7 +24,7 @@ ifdef CI
 	export PATH:=${PATH}:${GOPATH}/bin
 endif
 
-BRANCH=$(shell git rev-parse --abbrev-ref HEAD | sed 's/\//-/')
+BRANCH=$(shell git rev-parse --abbrev-ref HEAD)
 SHORT_SHA=$(shell git rev-parse --short HEAD)
 VERSION?=$(shell ./hack/git-version.sh)
 BUILD_DATE=$(shell date +%s)
