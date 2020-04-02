@@ -26,7 +26,7 @@ endif
 
 BRANCH=$(shell git rev-parse --abbrev-ref HEAD | sed 's/\//-/')
 SHORT_SHA=$(shell git rev-parse --short HEAD)
-VERSION?=${BRANCH}-${SHORT_SHA}
+VERSION?=$(shell ./hack/git-version.sh)
 BUILD_DATE=$(shell date +%s)
 IMAGE_ORG?=quay.io/kubecarrier
 MODULE=github.com/kubermatic/kubecarrier
