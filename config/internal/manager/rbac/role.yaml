@@ -143,7 +143,7 @@ rules:
 - apiGroups:
   - catalog.kubecarrier.io
   resources:
-  - serviceclusterreferences
+  - regions
   verbs:
   - create
   - delete

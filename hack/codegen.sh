@@ -40,14 +40,10 @@ fi
 function statik-gen {
   local component=$1
   local src=$2
-  if [ -z "$(git status --porcelain ${src})" ] && [[ -z ${FORCE_STATIK:-} ]]; then
-    echo ${component}: statik up-to-date
-  else
-    statik -src=${src} -p ${component} -dest pkg/internal/resources -f -c ''
-    cat hack/boilerplate/boilerplate.generatego.txt | sed s/YEAR/$(date +%Y)/ | cat - pkg/internal/resources/${component}/statik.go > pkg/internal/resources/${component}/statik.go.tmp
-    mv pkg/internal/resources/${component}/statik.go.tmp pkg/internal/resources/${component}/statik.go
-    echo ${component}: statik regenerated
-  fi
+  statik -m -src=${src} -p ${component} -dest pkg/internal/resources -f -c ''
+  cat hack/boilerplate/boilerplate.generatego.txt | sed s/YEAR/$(date +%Y)/ | cat - pkg/internal/resources/${component}/statik.go > pkg/internal/resources/${component}/statik.go.tmp
+  mv pkg/internal/resources/${component}/statik.go.tmp pkg/internal/resources/${component}/statik.go
+  go fmt pkg/internal/resources/${component}/statik.go
 }
 
 # DeepCopy functions
@@ -58,7 +54,9 @@ CRD_VERSION="v1"
 # Operator
 # --------
 # CRDs/Webhooks
-$CONTROLLER_GEN crd:crdVersions=${CRD_VERSION} webhook paths="./pkg/apis/operator/..." output:crd:artifacts:config=config/operator/crd/bases output:webhook:artifacts:config=config/operator/webhook
+$CONTROLLER_GEN crd:crdVersions=${CRD_VERSION} paths="./pkg/apis/operator/..." output:crd:artifacts:config=config/operator/crd/bases
+# Webhooks
+$CONTROLLER_GEN webhook paths="./pkg/operator/internal/webhooks/..." output:webhook:artifacts:config=config/operator/webhook
 # RBAC
 $CONTROLLER_GEN rbac:roleName=manager-role paths="./pkg/operator/..." output:rbac:artifacts:config=config/operator/rbac
 statik-gen operator config/operator
@@ -107,7 +105,6 @@ ed config/internal/ferry/rbac/role.yaml <<EOF || true
 ,s/ClusterRole/Role/g
 w
 EOF
-# Statik (run only when file CONTENT has changed)
 statik-gen ferry config/internal/ferry
 
 # Catapult

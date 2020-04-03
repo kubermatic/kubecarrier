@@ -19,6 +19,7 @@ package controllers
 import (
 	"context"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -40,9 +41,10 @@ func TestServiceClusterReconciler(t *testing.T) {
 		},
 	}
 	scc := &ServiceClusterReconciler{
-		Log:    testutil.NewLogger(t),
-		Client: fakeclient.NewFakeClientWithScheme(testScheme, serviceCluster),
-		Scheme: testScheme,
+		Log:                testutil.NewLogger(t),
+		Client:             fakeclient.NewFakeClientWithScheme(testScheme, serviceCluster),
+		Scheme:             testScheme,
+		MonitorGracePeriod: 40 * time.Second,
 	}
 
 	ctx := context.Background()
@@ -110,6 +112,25 @@ func TestServiceClusterReconciler(t *testing.T) {
 		if assert.True(t, present, "service cluster ready condition missing") {
 			assert.Equal(t, corev1alpha1.ConditionTrue, cond.Status)
 		}
+	}) {
+		t.FailNow()
+	}
+
+	if !t.Run("monitor grace period", func(t *testing.T) {
+		minuteAgo := metav1.Time{Time: time.Now().Add(-time.Minute)}
+		serviceCluster.Status.SetCondition(corev1alpha1.ServiceClusterCondition{
+			Type:               corev1alpha1.ServiceClusterReachable,
+			Status:             corev1alpha1.ConditionTrue,
+			Reason:             "ServiceClusterReachable",
+			Message:            "service cluster is posting ready status",
+			LastHeartbeatTime:  minuteAgo,
+			LastTransitionTime: minuteAgo,
+		})
+		require.NoError(t, scc.Client.Status().Update(ctx, serviceCluster))
+		reconcileLoop()
+		cond, ok := serviceCluster.Status.GetCondition(corev1alpha1.ServiceClusterReachable)
+		require.True(t, ok)
+		assert.Equal(t, corev1alpha1.ConditionUnknown, cond.Status)
 	}) {
 		t.FailNow()
 	}

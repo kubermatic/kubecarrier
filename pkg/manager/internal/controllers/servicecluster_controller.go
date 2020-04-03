@@ -19,6 +19,7 @@ package controllers
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/go-logr/logr"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -35,8 +36,9 @@ import (
 
 type ServiceClusterReconciler struct {
 	client.Client
-	Log    logr.Logger
-	Scheme *runtime.Scheme
+	Log                logr.Logger
+	Scheme             *runtime.Scheme
+	MonitorGracePeriod time.Duration
 }
 
 // +kubebuilder:rbac:groups=kubecarrier.io,resources=serviceclusters,verbs=get;list;watch;update
@@ -89,7 +91,9 @@ func (r *ServiceClusterReconciler) Reconcile(req ctrl.Request) (ctrl.Result, err
 		return ctrl.Result{}, fmt.Errorf("updating status: %w", err)
 	}
 
-	return ctrl.Result{}, nil
+	// added extra seconds to requeue to ensure previous MonitorGracePeriod
+	// expires if no new heartbeats arrive
+	return ctrl.Result{RequeueAfter: r.MonitorGracePeriod + time.Second}, nil
 }
 
 func (r *ServiceClusterReconciler) SetupWithManager(mgr ctrl.Manager) error {
@@ -173,6 +177,18 @@ func (r *ServiceClusterReconciler) updateStatus(
 		corev1alpha1.ServiceClusterControllerReady)
 	serviceClusterReachable, _ := serviceCluster.Status.GetCondition(
 		corev1alpha1.ServiceClusterReachable)
+	timenow := metav1.Now()
+	if timenow.Sub(serviceClusterReachable.LastHeartbeatTime.Time) > r.MonitorGracePeriod {
+		serviceCluster.Status.SetCondition(corev1alpha1.ServiceClusterCondition{
+			LastTransitionTime: timenow,
+			Message:            fmt.Sprintf("cluster stopped posting heartbeats for at least %v", r.MonitorGracePeriod),
+			Reason:             "GracePeriodTimeout",
+			Status:             corev1alpha1.ConditionUnknown,
+			Type:               corev1alpha1.ServiceClusterReachable,
+		})
+		// reload
+		serviceClusterReachable, _ = serviceCluster.Status.GetCondition(corev1alpha1.ServiceClusterReachable)
+	}
 
 	if controllerReady.True() && serviceClusterReachable.True() {
 		serviceCluster.Status.SetCondition(corev1alpha1.ServiceClusterCondition{
