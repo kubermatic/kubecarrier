@@ -476,7 +476,7 @@ team-a   The A Team     6m11s
 
 ### 6. Internal and External CRD
 
-In [4. Catalog Entries](4-catalog-entries), we created two CRDs. A public one, that users can interact with and an internal one.
+In [4. Catalog Entries](#4-catalog-entries), we created two CRDs. A public one, that users can interact with and an internal one.
 This split allows the Provider to override user properties or hide settings and status information from their users.
 
 Now we will create a `CouchDB` instance and see how we work with those objects in KubeCarrier:
