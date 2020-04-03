@@ -122,7 +122,6 @@ e2e-setup: install require-docker
 	@echo "Loading the images"
 	@$(MAKE) KIND_CLUSTER=${MANAGEMENT_KIND_CLUSTER} kind-load -j 5
 	@$(MAKE) KIND_CLUSTER=${SVC_KIND_CLUSTER} kind-load-fake-operator -j 5
-	@kubectl kubecarrier e2e-test --kubeconfig "${HOME}/.kube/kind-config-${SVC_KIND_CLUSTER}" setup-e2e-operator
 
 # soft-reinstall reinstall kubecarrier in the e2e cluster. It's intended for usage during development
 soft-reinstall: e2e-setup install
@@ -198,7 +197,7 @@ install-git-hooks:
 
 # Install cert-manager in the configured Kubernetes cluster
 cert-manager:
-	kubectl apply -f https://github.com/jetstack/cert-manager/releases/download/v0.14.0/cert-manager.yaml
+	kubectl apply -f ../cert-manager/cert-manager.yaml
 	kubectl wait --for=condition=available deployment/cert-manager -n cert-manager --timeout=120s
 	kubectl wait --for=condition=available deployment/cert-manager-cainjector -n cert-manager --timeout=120s
 	kubectl wait --for=condition=available deployment/cert-manager-webhook -n cert-manager --timeout=120s
