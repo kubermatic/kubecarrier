@@ -364,7 +364,7 @@ func getCRDInformation(crd *apiextensionsv1.CustomResourceDefinition) (catalogv1
 		return catalogv1alpha1.CRDInformation{}, fmt.Errorf("getting ServiceCluster of the BaseCRD error: BaseCRD should have an annotation to indicate the ServiceCluster")
 	}
 
-	crdInfo.ServiceCluster = catalogv1alpha1.ObjectReference{
+	crdInfo.Region = catalogv1alpha1.ObjectReference{
 		Name: serviceCluster,
 	}
 

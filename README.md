@@ -463,8 +463,8 @@ $ kubectl get offering -n team-b --as=team-b-member
 NAME                        DISPLAY NAME   PROVIDER   AGE
 couchdbs.eu-west-1.team-a   CouchDB        team-a     3m15s
 
-# ServiceClusterReference exposes information about the underlying Clusters.
-$ kubectl get serviceclusterreference -n team-b --as=team-b-member
+# Region exposes information about the underlying Clusters.
+$ kubectl get region -n team-b --as=team-b-member
 NAME               PROVIDER   DISPLAY NAME   AGE
 eu-west-1.team-a   team-a     EU West 1      5m14s
 
@@ -476,7 +476,7 @@ team-a   The A Team     6m11s
 
 ### 6. Internal and External CRD
 
-In [4. Catalog Entries](4-catalog-entries), we created two CRDs. A public one, that users can interact with and an internal one.
+In [4. Catalog Entries](#4-catalog-entries), we created two CRDs. A public one, that users can interact with and an internal one.
 This split allows the Provider to override user properties or hide settings and status information from their users.
 
 Now we will create a `CouchDB` instance and see how we work with those objects in KubeCarrier:

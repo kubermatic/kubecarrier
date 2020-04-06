@@ -17,9 +17,9 @@ metadata:
 spec:
   # $(SERVICE_NAME) and $(SERVICE_NAMESPACE) will be substituted by kustomize
   dnsNames:
-  - $(SERVICE_NAME).$(SERVICE_NAMESPACE).svc
-  - $(SERVICE_NAME).$(SERVICE_NAMESPACE).svc.cluster.local
+    - $(SERVICE_NAME).$(SERVICE_NAMESPACE).svc
+    - $(SERVICE_NAME).$(SERVICE_NAMESPACE).svc.cluster.local
   issuerRef:
     kind: Issuer
     name: selfsigned-issuer
-  secretName: webhook-server-cert # this secret will not be prefixed, since it's not managed by kustomize
+  secretName: $(SECRET_NAME)-webhook-service-cert # this secret will not be prefixed, since it's not managed by kustomize

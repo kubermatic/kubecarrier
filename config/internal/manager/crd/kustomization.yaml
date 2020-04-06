@@ -9,7 +9,7 @@ resources:
 - bases/catalog.kubecarrier.io_derivedcustomresources.yaml
 - bases/catalog.kubecarrier.io_offerings.yaml
 - bases/catalog.kubecarrier.io_providers.yaml
-- bases/catalog.kubecarrier.io_serviceclusterreferences.yaml
+- bases/catalog.kubecarrier.io_regions.yaml
 - bases/catalog.kubecarrier.io_tenants.yaml
 - bases/kubecarrier.io_customresourcediscoveries.yaml
 - bases/kubecarrier.io_customresourcediscoverysets.yaml
@@ -30,7 +30,7 @@ patchesStrategicMerge:
 - patches/cainjection_in_derivedcustomresources.yaml
 - patches/cainjection_in_offerings.yaml
 - patches/cainjection_in_providers.yaml
-- patches/cainjection_in_serviceclusterreferences.yaml
+- patches/cainjection_in_regions.yaml
 - patches/cainjection_in_tenants.yaml
 - patches/cainjection_in_customresourcediscoveries.yaml
 - patches/cainjection_in_serviceclusters.yaml

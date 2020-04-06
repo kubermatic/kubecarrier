@@ -576,6 +576,7 @@
   kind: CustomResourceDefinition
   metadata:
     annotations:
+      cert-manager.io/inject-ca-from: test3000/kubecarrier-operator-serving-cert
       controller-gen.kubebuilder.io/version: v0.2.8
     creationTimestamp: null
     labels:
@@ -588,7 +589,7 @@
       listKind: KubeCarrierList
       plural: kubecarriers
       singular: kubecarrier
-    scope: Namespaced
+    scope: Cluster
     versions:
     - additionalPrinterColumns:
       - jsonPath: .status.phase
@@ -1148,7 +1149,22 @@
       spec:
         containers:
         - image: quay.io/kubecarrier/operator:was not build properly
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: readiness-port
           name: manager
+          ports:
+            - containerPort: 9443
+              name: webhook-server
+              protocol: TCP
+            - containerPort: 9440
+              name: readiness-port
+              protocol: TCP
+          readinessProbe:
+            httpGet:
+              path: /readyz
+              port: readiness-port
           resources:
             limits:
               cpu: 100m
@@ -1156,5 +1172,79 @@
             requests:
               cpu: 100m
               memory: 100Mi
+          volumeMounts:
+            - mountPath: /tmp/k8s-webhook-server/serving-certs
+              name: cert
+              readOnly: true
         serviceAccountName: kubecarrier-operator-sa
         terminationGracePeriodSeconds: 10
+        volumes:
+          - name: cert
+            secret:
+              defaultMode: 420
+              secretName: kubecarrier-operator-webhook-service-webhook-service-cert
+- apiVersion: admissionregistration.k8s.io/v1beta1
+  kind: ValidatingWebhookConfiguration
+  metadata:
+    annotations:
+      cert-manager.io/inject-ca-from: test3000/kubecarrier-operator-serving-cert
+    creationTimestamp: null
+    labels:
+      kubecarrier.io/role: operator
+    name: kubecarrier-operator-validating-webhook-configuration
+  webhooks:
+    - clientConfig:
+        caBundle: Cg==
+        service:
+          name: kubecarrier-operator-webhook-service
+          namespace: test3000
+          path: /validate-operator-kubecarrier-io-v1alpha1-kubecarrier
+      failurePolicy: Fail
+      name: vkubecarrier.kubecarrier.io
+      rules:
+        - apiGroups:
+            - operator.kubecarrier.io
+          apiVersions:
+            - v1alpha1
+          operations:
+            - CREATE
+          resources:
+            - kubecarriers
+- apiVersion: v1
+  kind: Service
+  metadata:
+    labels:
+      kubecarrier.io/role: operator
+    name: kubecarrier-operator-webhook-service
+    namespace: test3000
+  spec:
+    ports:
+      - port: 443
+        targetPort: 9443
+    selector:
+      control-plane: operator
+      kubecarrier.io/role: operator
+- apiVersion: cert-manager.io/v1alpha2
+  kind: Issuer
+  metadata:
+    labels:
+      kubecarrier.io/role: operator
+    name: kubecarrier-operator-selfsigned-issuer
+    namespace: test3000
+  spec:
+    selfSigned: {}
+- apiVersion: cert-manager.io/v1alpha2
+  kind: Certificate
+  metadata:
+    labels:
+      kubecarrier.io/role: operator
+    name: kubecarrier-operator-serving-cert
+    namespace: test3000
+  spec:
+    dnsNames:
+      - kubecarrier-operator-webhook-service.test3000.svc
+      - kubecarrier-operator-webhook-service.test3000.svc.cluster.local
+    issuerRef:
+      kind: Issuer
+      name: kubecarrier-operator-selfsigned-issuer
+    secretName: kubecarrier-operator-webhook-service-webhook-service-cert

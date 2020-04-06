@@ -419,9 +419,9 @@ The `catalog.kubecarrier.io` API group contains all objects that are used to set
 * [Provider.catalog.kubecarrier.io/v1alpha1](#provider.catalog.kubecarrier.io/v1alpha1)
 * [ProviderList.catalog.kubecarrier.io/v1alpha1](#providerlist.catalog.kubecarrier.io/v1alpha1)
 * [ProviderSpec.catalog.kubecarrier.io/v1alpha1](#providerspec.catalog.kubecarrier.io/v1alpha1)
-* [ServiceClusterReference.catalog.kubecarrier.io/v1alpha1](#serviceclusterreference.catalog.kubecarrier.io/v1alpha1)
-* [ServiceClusterReferenceList.catalog.kubecarrier.io/v1alpha1](#serviceclusterreferencelist.catalog.kubecarrier.io/v1alpha1)
-* [ServiceClusterReferenceSpec.catalog.kubecarrier.io/v1alpha1](#serviceclusterreferencespec.catalog.kubecarrier.io/v1alpha1)
+* [Region.catalog.kubecarrier.io/v1alpha1](#region.catalog.kubecarrier.io/v1alpha1)
+* [RegionList.catalog.kubecarrier.io/v1alpha1](#regionlist.catalog.kubecarrier.io/v1alpha1)
+* [RegionSpec.catalog.kubecarrier.io/v1alpha1](#regionspec.catalog.kubecarrier.io/v1alpha1)
 * [Tenant.catalog.kubecarrier.io/v1alpha1](#tenant.catalog.kubecarrier.io/v1alpha1)
 * [TenantList.catalog.kubecarrier.io/v1alpha1](#tenantlist.catalog.kubecarrier.io/v1alpha1)
 * [TenantSpec.catalog.kubecarrier.io/v1alpha1](#tenantspec.catalog.kubecarrier.io/v1alpha1)
@@ -832,7 +832,7 @@ CRDInformation contains type information about the CRD.
 | kind |  | string | true |
 | plural |  | string | true |
 | versions |  | []catalog.kubecarrier.io/v1alpha1.CRDVersion | true |
-| serviceCluster | ServiceCluster references a ServiceClusterReference of this CRD. | catalog.kubecarrier.io/v1alpha1.ObjectReference | true |
+| region | Region references a Region of this CRD. | catalog.kubecarrier.io/v1alpha1.ObjectReference | true |
 
 [Back to Group](#catalog)
 
@@ -1011,33 +1011,33 @@ ProviderSpec defines the desired state of Provider
 
 [Back to Group](#catalog)
 
-### ServiceClusterReference.catalog.kubecarrier.io/v1alpha1
+### Region.catalog.kubecarrier.io/v1alpha1
 
-ServiceClusterReference exposes information about a Providers Cluster.
+Region exposes information about a Providers Cluster.
 
-ServiceClusterReference objects are created automatically by KubeCarrier in Account namespaces, that have a service offered to them via a Catalog.
+Region objects are created automatically by KubeCarrier in Account namespaces, that have a service offered to them via a Catalog.
 
 | Field | Description | Scheme | Required |
 | ----- | ----------- | ------ | -------- |
 | metadata |  | [metav1.ObjectMeta](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.14/#objectmeta-v1-meta) | false |
-| spec |  | catalog.kubecarrier.io/v1alpha1.ServiceClusterReferenceSpec | false |
+| spec |  | catalog.kubecarrier.io/v1alpha1.RegionSpec | false |
 
 [Back to Group](#catalog)
 
-### ServiceClusterReferenceList.catalog.kubecarrier.io/v1alpha1
+### RegionList.catalog.kubecarrier.io/v1alpha1
 
-ServiceClusterReferenceList contains a list of ServiceClusterReference.
+RegionList contains a list of Region.
 
 | Field | Description | Scheme | Required |
 | ----- | ----------- | ------ | -------- |
 | metadata |  | [metav1.ListMeta](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.14/#listmeta-v1-meta) | false |
-| items |  | []catalog.kubecarrier.io/v1alpha1.ServiceClusterReference | true |
+| items |  | []catalog.kubecarrier.io/v1alpha1.Region | true |
 
 [Back to Group](#catalog)
 
-### ServiceClusterReferenceSpec.catalog.kubecarrier.io/v1alpha1
+### RegionSpec.catalog.kubecarrier.io/v1alpha1
 
-ServiceClusterReferenceSpec defines the desired state of ServiceClusterReference
+RegionSpec defines the desired state of Region
 
 | Field | Description | Scheme | Required |
 | ----- | ----------- | ------ | -------- |

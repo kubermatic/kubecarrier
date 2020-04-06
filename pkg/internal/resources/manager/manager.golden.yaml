@@ -416,15 +416,14 @@
                       type: string
                     plural:
                       type: string
-                    serviceCluster:
-                      description: ServiceCluster references a ServiceClusterReference
-                        of this CRD.
+                    region:
+                      description: Region references a Region of this CRD.
                       properties:
                         name:
                           minLength: 1
                           type: string
                       required:
-                      - name
+                        - name
                       type: object
                     versions:
                       items:
@@ -447,7 +446,7 @@
                   - kind
                   - name
                   - plural
-                  - serviceCluster
+                  - region
                   - versions
                   type: object
                 tenantCRD:
@@ -462,15 +461,14 @@
                       type: string
                     plural:
                       type: string
-                    serviceCluster:
-                      description: ServiceCluster references a ServiceClusterReference
-                        of this CRD.
+                    region:
+                      description: Region references a Region of this CRD.
                       properties:
                         name:
                           minLength: 1
                           type: string
                       required:
-                      - name
+                        - name
                       type: object
                     versions:
                       items:
@@ -493,7 +491,7 @@
                   - kind
                   - name
                   - plural
-                  - serviceCluster
+                  - region
                   - versions
                   type: object
               type: object
@@ -1279,15 +1277,14 @@
                       type: string
                     plural:
                       type: string
-                    serviceCluster:
-                      description: ServiceCluster references a ServiceClusterReference
-                        of this CRD.
+                    region:
+                      description: Region references a Region of this CRD.
                       properties:
                         name:
                           minLength: 1
                           type: string
                       required:
-                      - name
+                        - name
                       type: object
                     versions:
                       items:
@@ -1310,7 +1307,7 @@
                   - kind
                   - name
                   - plural
-                  - serviceCluster
+                  - region
                   - versions
                   type: object
                 metadata:
@@ -1452,18 +1449,18 @@
       app.kubernetes.io/name: kubecarrier-controller-manager
       app.kubernetes.io/version: was not build properly
       kubecarrier.io/role: manager
-    name: serviceclusterreferences.catalog.kubecarrier.io
+    name: regions.catalog.kubecarrier.io
   spec:
     group: catalog.kubecarrier.io
     names:
       categories:
-      - kubecarrier-tenant
-      kind: ServiceClusterReference
-      listKind: ServiceClusterReferenceList
-      plural: serviceclusterreferences
+        - kubecarrier-tenant
+      kind: Region
+      listKind: RegionList
+      plural: regions
       shortNames:
-      - scr
-      singular: serviceclusterreference
+        - scr
+      singular: region
     scope: Namespaced
     versions:
     - additionalPrinterColumns:
@@ -1479,10 +1476,9 @@
       name: v1alpha1
       schema:
         openAPIV3Schema:
-          description: "ServiceClusterReference exposes information about a Providers
-            Cluster. \n ServiceClusterReference objects are created automatically
-            by KubeCarrier in Account namespaces, that have a service offered to them
-            via a Catalog."
+          description: "Region exposes information about a Providers Cluster. \n Region
+            objects are created automatically by KubeCarrier in Account namespaces,
+            that have a service offered to them via a Catalog."
           properties:
             apiVersion:
               description: 'APIVersion defines the versioned schema of this representation
@@ -1498,8 +1494,7 @@
             metadata:
               type: object
             spec:
-              description: ServiceClusterReferenceSpec defines the desired state of
-                ServiceClusterReference
+              description: RegionSpec defines the desired state of Region
               properties:
                 metadata:
                   description: Metadata contains the metadata (display name, description,
@@ -2507,7 +2502,7 @@
   - apiGroups:
     - catalog.kubecarrier.io
     resources:
-    - serviceclusterreferences
+      - regions
     verbs:
     - create
     - delete
@@ -3011,9 +3006,9 @@
       service:
         name: kubecarrier-manager-webhook-service
         namespace: test3000
-        path: /validate-catalog-kubecarrier-io-v1alpha1-serviceclusterreference
+        path: /validate-catalog-kubecarrier-io-v1alpha1-region
     failurePolicy: Fail
-    name: vserviceclusterreference.kubecarrier.io
+    name: vregion.kubecarrier.io
     rules:
     - apiGroups:
       - catalog.kubecarrier.io
@@ -3022,7 +3017,7 @@
       operations:
       - UPDATE
       resources:
-      - serviceclusterreferences
+        - regions
   - clientConfig:
       caBundle: Cg==
       service:
