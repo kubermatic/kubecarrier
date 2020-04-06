@@ -31,14 +31,10 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
-	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/types"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
-	"k8s.io/apimachinery/pkg/util/wait"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/config"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
@@ -93,11 +89,12 @@ func setupE2EOperator(log logr.Logger, kubeconfig string, namespaceName string, 
 	if err != nil {
 		return fmt.Errorf("getting Kubernetes cluster config: %w", err)
 	}
-
-	c, err := client.New(cfg, client.Options{Scheme: scheme})
+	// Get a client from the configuration of the kubernetes cluster.
+	c, err := util.NewClientWatcher(cfg, scheme, log)
 	if err != nil {
 		return fmt.Errorf("creating Kubernetes client: %w", err)
 	}
+
 	s := wow.New(output, spin.Get(spin.Dots), "spinner text")
 
 	startTime := time.Now()
@@ -142,27 +139,14 @@ func setupE2EOperator(log logr.Logger, kubeconfig string, namespaceName string, 
 				"version", object.GroupVersionKind().Version,
 			)
 		}
-		return nil
-	}); err != nil {
-		return err
-	}
-
-	if err := spinner.AttachSpinnerTo(s, startTime, "waiting for available deployment", func() error {
-		log.Info("querying deployment")
-		return wait.Poll(time.Second, 60*time.Second, func() (done bool, err error) {
-			deployment := &appsv1.Deployment{}
-			err = c.Get(ctx, types.NamespacedName{
+		deployment := &appsv1.Deployment{
+			ObjectMeta: metav1.ObjectMeta{
 				Name:      "e2e-operator-manager",
 				Namespace: namespace.Name,
-			}, deployment)
-			switch {
-			case errors.IsNotFound(err):
-				return false, nil
-			case err != nil:
-				return false, err
-			default:
-				return util.DeploymentIsAvailable(deployment), nil
-			}
+			},
+		}
+		return c.WaitUntil(ctx, deployment, func() (done bool, err error) {
+			return util.DeploymentIsAvailable(deployment), nil
 		})
 	}); err != nil {
 		return err
