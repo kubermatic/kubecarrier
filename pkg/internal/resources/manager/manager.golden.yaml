@@ -423,7 +423,7 @@
                           minLength: 1
                           type: string
                       required:
-                        - name
+                      - name
                       type: object
                     versions:
                       items:
@@ -468,7 +468,7 @@
                           minLength: 1
                           type: string
                       required:
-                        - name
+                      - name
                       type: object
                     versions:
                       items:
@@ -1284,7 +1284,7 @@
                           minLength: 1
                           type: string
                       required:
-                        - name
+                      - name
                       type: object
                     versions:
                       items:
@@ -1454,12 +1454,12 @@
     group: catalog.kubecarrier.io
     names:
       categories:
-        - kubecarrier-tenant
+      - kubecarrier-tenant
       kind: Region
       listKind: RegionList
       plural: regions
       shortNames:
-        - scr
+      - scr
       singular: region
     scope: Namespaced
     versions:
@@ -2502,7 +2502,7 @@
   - apiGroups:
     - catalog.kubecarrier.io
     resources:
-      - regions
+    - regions
     verbs:
     - create
     - delete
@@ -3017,7 +3017,7 @@
       operations:
       - UPDATE
       resources:
-        - regions
+      - regions
   - clientConfig:
       caBundle: Cg==
       service:

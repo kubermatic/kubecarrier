@@ -16,7 +16,7 @@ spec:
     listKind: RegionList
     plural: regions
     shortNames:
-      - scr
+    - scr
     singular: region
   scope: Namespaced
   versions:
