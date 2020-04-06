@@ -55,9 +55,21 @@ func NewInstallationSuite(f *testutil.Framework) func(t *testing.T) {
 		require.NoError(t, err, "creating management client")
 
 		kubeCarrier := &operatorv1alpha1.KubeCarrier{ObjectMeta: metav1.ObjectMeta{
-			Name:      "kubecarrier",
-			Namespace: kubecarrierSystem,
+			Name: "kubecarrier1",
 		}}
+
+		err = managementClient.Create(ctx, kubeCarrier)
+		if assert.Error(t, err,
+			"KubeCarrier object with name other than 'kubecarrier' should not be allowed to be created",
+		) {
+			assert.Contains(
+				t,
+				err.Error(),
+				"KubeCarrier object name should be 'kubecarrier', found: kubecarrier1",
+				"KubeCarrier creation webhook should error out on incorrect KubeCarrier object name",
+			)
+		}
+		kubeCarrier.Name = "kubecarrier"
 		require.NoError(t, testutil.WaitUntilReady(ctx, managementClient, kubeCarrier))
 
 		operatorDeployment := &appsv1.Deployment{}
