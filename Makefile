@@ -121,7 +121,7 @@ e2e-setup: install require-docker
 	@echo "service cluster service account created"
 	@echo "Loading the images"
 	@$(MAKE) KIND_CLUSTER=${MANAGEMENT_KIND_CLUSTER} kind-load -j 5
-	@$(MAKE) KIND_CLUSTER=${SVC_KIND_CLUSTER} kind-load-fake-operator -j 5
+	@$(MAKE) KIND_CLUSTER=${SVC_KIND_CLUSTER} kind-load-fake-operator
 
 # soft-reinstall reinstall kubecarrier in the e2e cluster. It's intended for usage during development
 soft-reinstall: e2e-setup install

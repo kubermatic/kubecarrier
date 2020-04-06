@@ -23,9 +23,6 @@ import (
 	"os"
 	"time"
 
-	"github.com/kubermatic/kubecarrier/pkg/cli/internal/spinner"
-	"github.com/kubermatic/kubecarrier/pkg/internal/resources/fakeoperator"
-
 	"github.com/gernest/wow"
 	"github.com/gernest/wow/spin"
 	"github.com/ghodss/yaml"
@@ -46,10 +43,10 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
 	operatorv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/operator/v1alpha1"
-
-	"github.com/kubermatic/kubecarrier/pkg/internal/util"
-
+	"github.com/kubermatic/kubecarrier/pkg/cli/internal/spinner"
 	"github.com/kubermatic/kubecarrier/pkg/internal/reconcile"
+	"github.com/kubermatic/kubecarrier/pkg/internal/resources/fakeoperator"
+	"github.com/kubermatic/kubecarrier/pkg/internal/util"
 )
 
 var (

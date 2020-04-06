@@ -19,7 +19,6 @@ package controllers
 import (
 	"context"
 	"fmt"
-	"math/rand"
 	"time"
 
 	"github.com/go-logr/logr"
@@ -125,8 +124,4 @@ func (r *DBReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&fakev1alpha1.DB{}).
 		Complete(r)
-}
-
-func init() {
-	rand.Seed(time.Now().UnixNano())
 }

@@ -50,11 +50,18 @@ type Config struct {
 
 // DBStatus defines the observed state of DB
 type DBStatus struct {
-	// The most recent generation observed by the controller.
-	ObservedGeneration int64         `json:"observedGeneration,omitempty"`
-	Conditions         []DBCondition `json:"conditions,omitempty"`
-	Phase              DBPhaseType   `json:"phase,omitempty"`
-	Connection         *Connection   `json:"connection,omitempty"`
+	// ObservedGeneration is the most recent generation observed for this FakeDB by the controller.
+	ObservedGeneration int64 `json:"observedGeneration,omitempty"`
+	// Conditions represents the latest available observations of a FakeDB's current state.
+	Conditions []DBCondition `json:"conditions,omitempty"`
+	// DEPRECATED.
+	// Phase represents the current lifecycle state of this object.
+	// Consider this field DEPRECATED, it will be removed as soon as there
+	// is a mechanism to map conditions to strings when printing the property.
+	// This is only for display purpose, for everything else use conditions.
+	Phase DBPhaseType `json:"phase,omitempty"`
+	// Connection is the connection string for FakeDB
+	Connection *Connection `json:"connection,omitempty"`
 }
 
 // Connection defines necessary endpoints and credential for DB usage
