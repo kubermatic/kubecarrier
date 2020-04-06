@@ -75,19 +75,9 @@ func (r *DBReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 		}
 	}
 
-	cond, ok := db.Status.GetCondition(fakev1alpha1.DBReady)
-	// mark as unready
-	if !ok {
-		if db.SetUnReadyCondition() {
-			if err := r.Status().Update(ctx, db); err != nil {
-				return ctrl.Result{}, fmt.Errorf("cannot update db: %w", err)
-			}
-		}
-		return ctrl.Result{}, nil
-	}
-
-	// DB is in ready state
-	if db.IsReady() {
+	readyTime := db.GetCreationTimestamp().Time.Add(time.Duration(db.Spec.Config.ReadyAfterSeconds) * time.Second)
+	now := time.Now()
+	if readyTime.Before(now) {
 		if db.SetReadyCondition() {
 			db.Status.Connection = &fakev1alpha1.Connection{
 				Endpoint: "fake endpoint",
@@ -101,23 +91,10 @@ func (r *DBReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 		return ctrl.Result{}, nil
 	}
 
-	// DB is not ready and waiting for timeout
-	if time.Since(cond.LastTransitionTime.Time) < time.Duration(db.Spec.Config.ReadyAfterSeconds)*time.Second {
-		return ctrl.Result{RequeueAfter: time.Second * time.Duration(db.Spec.Config.ReadyAfterSeconds)}, nil
-	}
-
-	// mark as ready after delay
-	if db.SetReadyCondition() {
-		db.Status.Connection = &fakev1alpha1.Connection{
-			Endpoint: "fake endpoint",
-			Name:     db.Spec.DatabaseName,
-			Username: db.Spec.DatabaseUser,
-		}
-		if err := r.Status().Update(ctx, db); err != nil {
-			return ctrl.Result{}, fmt.Errorf("cannot update db: %w", err)
-		}
-	}
-	return ctrl.Result{}, nil
+	return ctrl.Result{
+		// requeue with a bit of wiggle room (10ms)
+		RequeueAfter: readyTime.Sub(now) + 10*time.Millisecond,
+	}, nil
 }
 
 func (r *DBReconciler) SetupWithManager(mgr ctrl.Manager) error {
