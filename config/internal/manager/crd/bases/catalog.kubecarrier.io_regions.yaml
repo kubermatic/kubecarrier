@@ -11,7 +11,7 @@ spec:
   group: catalog.kubecarrier.io
   names:
     categories:
-      - kubecarrier-tenant
+    - kubecarrier-tenant
     kind: Region
     listKind: RegionList
     plural: regions

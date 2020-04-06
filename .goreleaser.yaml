@@ -64,61 +64,61 @@ checksum:
   name_template: "{{ .ProjectName }}_checksums.txt"
   algorithm: sha256
 dockers:
-  - &docker
-    goos: linux
-    goarch: amd64
-    binaries:
-      - manager
-    builds:
-      - manager
-    image_templates:
-      - "quay.io/kubecarrier/manager:latest"
-      - "quay.io/kubecarrier/manager:{{ .Tag }}"
-      - "quay.io/kubecarrier/manager:v{{ .Major }}"
-    dockerfile: config/dockerfiles/manager.Dockerfile
-    build_flag_templates:
-      - "--pull"
-      - "--label=org.opencontainers.image.created={{.Date}}"
-      - "--label=org.opencontainers.image.name={{.ProjectName}}"
-      - "--label=org.opencontainers.image.revision={{.FullCommit}}"
-      - "--label=org.opencontainers.image.version={{.Version}}"
-  - <<: *docker
-    binaries:
-      - operator
-    builds:
-      - operator
-    image_templates:
-      - "quay.io/kubecarrier/operator:latest"
-      - "quay.io/kubecarrier/operator:{{ .Tag }}"
-      - "quay.io/kubecarrier/operator:v{{ .Major }}"
-    dockerfile: config/dockerfiles/operator.Dockerfile
-  - <<: *docker
-    binaries:
-      - catapult
-    builds:
-      - catapult
-    image_templates:
-      - "quay.io/kubecarrier/catapult:latest"
-      - "quay.io/kubecarrier/catapult:{{ .Tag }}"
-      - "quay.io/kubecarrier/catapult:v{{ .Major }}"
-    dockerfile: config/dockerfiles/catapult.Dockerfile
-  - <<: *docker
-    binaries:
-      - ferry
-    builds:
-      - ferry
-    image_templates:
-      - "quay.io/kubecarrier/ferry:latest"
-      - "quay.io/kubecarrier/ferry:{{ .Tag }}"
-      - "quay.io/kubecarrier/ferry:v{{ .Major }}"
-    dockerfile: config/dockerfiles/ferry.Dockerfile
-  - <<: *docker
-    binaries:
-      - elevator
-    builds:
-      - elevator
-    image_templates:
-      - "quay.io/kubecarrier/elevator:latest"
-      - "quay.io/kubecarrier/elevator:{{ .Tag }}"
-      - "quay.io/kubecarrier/elevator:v{{ .Major }}"
-    dockerfile: config/dockerfiles/elevator.Dockerfile
+- &docker
+  goos: linux
+  goarch: amd64
+  binaries:
+    - manager
+  builds:
+    - manager
+  image_templates:
+    - "quay.io/kubecarrier/manager:latest"
+    - "quay.io/kubecarrier/manager:{{ .Tag }}"
+    - "quay.io/kubecarrier/manager:v{{ .Major }}"
+  dockerfile: config/dockerfiles/manager.Dockerfile
+  build_flag_templates:
+    - "--pull"
+    - "--label=org.opencontainers.image.created={{.Date}}"
+    - "--label=org.opencontainers.image.name={{.ProjectName}}"
+    - "--label=org.opencontainers.image.revision={{.FullCommit}}"
+    - "--label=org.opencontainers.image.version={{.Version}}"
+- <<: *docker
+  binaries:
+    - operator
+  builds:
+    - operator
+  image_templates:
+    - "quay.io/kubecarrier/operator:latest"
+    - "quay.io/kubecarrier/operator:{{ .Tag }}"
+    - "quay.io/kubecarrier/operator:v{{ .Major }}"
+  dockerfile: config/dockerfiles/operator.Dockerfile
+- <<: *docker
+  binaries:
+    - catapult
+  builds:
+    - catapult
+  image_templates:
+    - "quay.io/kubecarrier/catapult:latest"
+    - "quay.io/kubecarrier/catapult:{{ .Tag }}"
+    - "quay.io/kubecarrier/catapult:v{{ .Major }}"
+  dockerfile: config/dockerfiles/catapult.Dockerfile
+- <<: *docker
+  binaries:
+    - ferry
+  builds:
+    - ferry
+  image_templates:
+    - "quay.io/kubecarrier/ferry:latest"
+    - "quay.io/kubecarrier/ferry:{{ .Tag }}"
+    - "quay.io/kubecarrier/ferry:v{{ .Major }}"
+  dockerfile: config/dockerfiles/ferry.Dockerfile
+- <<: *docker
+  binaries:
+    - elevator
+  builds:
+    - elevator
+  image_templates:
+    - "quay.io/kubecarrier/elevator:latest"
+    - "quay.io/kubecarrier/elevator:{{ .Tag }}"
+    - "quay.io/kubecarrier/elevator:v{{ .Major }}"
+  dockerfile: config/dockerfiles/elevator.Dockerfile
