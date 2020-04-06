@@ -38,7 +38,7 @@ func newFakeDB(f *testutil.Framework) func(t *testing.T) {
 		t.Cleanup(serviceClient.CleanUpFunc(ctx))
 
 		testName := strings.Replace(strings.ToLower(t.Name()), "/", "-", -1)
-		testNamespace := testName + "derived-crd-test-namespace"
+		testNamespace := testName + "-namespace"
 		someNamespace := &corev1.Namespace{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: testNamespace,
@@ -47,7 +47,10 @@ func newFakeDB(f *testutil.Framework) func(t *testing.T) {
 		require.NoError(
 			t, serviceClient.Create(ctx, someNamespace), "creating a Namespace")
 		fakeDB := f.NewFakeDB(testName, testNamespace)
+		t.Log("adding fakeDB")
 		require.NoError(t, serviceClient.Create(ctx, fakeDB), "creating FakeDB")
 		require.NoError(t, testutil.WaitUntilReady(ctx, serviceClient, fakeDB))
+		t.Log("deleting fakeDB")
+		require.NoError(t, testutil.DeleteAndWaitUntilNotFound(ctx, serviceClient, fakeDB))
 	}
 }

@@ -208,7 +208,7 @@ func (f *Framework) NewTenantAccount(name string, subjects ...rbacv1.Subject) *c
 func (f *Framework) NewFakeDB(name, namespace string) *fakev1alpha1.DB {
 	return &fakev1alpha1.DB{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      name + "-fakedb",
+			Name:      name,
 			Namespace: namespace,
 		},
 		Spec: fakev1alpha1.DBSpec{},
