@@ -39,8 +39,8 @@ for pkg in ${PBUFS} ; do
     --grpc-gateway_out=logtostderr=true:${abs_path} \
     --swagger_out=logtostderr=true:${abs_path} \
     -I${PROJECT}/bin/protoc-bin/include \
-    -I${GOPATH}/src \
-    -I${GOPATH}/src/github.com/grpc-ecosystem/grpc-gateway/third_party/googleapis \
+    -I${GOPATH}/pkg/mod/github.com/grpc-ecosystem/grpc-gateway@v1.14.3/third_party/googleapis \
+    -I/usr/include \
     -I=${abs_path} \
     $(find ${abs_path} -type f -name '*.proto')
 
