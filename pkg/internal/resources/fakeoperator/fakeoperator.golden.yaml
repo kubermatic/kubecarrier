@@ -83,6 +83,8 @@
               description: DBStatus defines the observed state of DB
               properties:
                 conditions:
+                  description: Conditions represents the latest available observations
+                    of a FakeDB's current state.
                   items:
                     description: DBCondition contains details for the current condition
                       of this DB.
@@ -117,8 +119,7 @@
                     type: object
                   type: array
                 connection:
-                  description: Connection defines necessary endpoints and credential
-                    for DB usage
+                  description: Connection is the connection string for FakeDB
                   properties:
                     endpoint:
                       description: Endpoint for this database
@@ -135,12 +136,16 @@
                   - username
                   type: object
                 observedGeneration:
-                  description: The most recent generation observed by the controller.
+                  description: ObservedGeneration is the most recent generation observed
+                    for this FakeDB by the controller.
                   format: int64
                   type: integer
                 phase:
-                  description: DBPhaseType represents all conditions as a single string
-                    for printing by using kubectl commands.
+                  description: DEPRECATED. Phase represents the current lifecycle
+                    state of this object. Consider this field DEPRECATED, it will
+                    be removed as soon as there is a mechanism to map conditions to
+                    strings when printing the property. This is only for display purpose,
+                    for everything else use conditions.
                   type: string
               type: object
           type: object
