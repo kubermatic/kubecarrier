@@ -18,6 +18,7 @@ package apiserver
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"net/http"
 	"strings"
@@ -31,6 +32,7 @@ import (
 	"google.golang.org/grpc/status"
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
+	"k8s.io/apiserver/plugin/pkg/authenticator/token/oidc"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	ctrl "sigs.k8s.io/controller-runtime"
 
@@ -50,6 +52,7 @@ type flags struct {
 	addr              string
 	TLSCertFile       string
 	TLSPrivateKeyFile string
+	OIDCOptions       oidc.Options
 }
 
 func NewAPIServer() *cobra.Command {
@@ -66,6 +69,7 @@ func NewAPIServer() *cobra.Command {
 	cmd.Flags().StringVar(&flags.addr, "addr", ":8080", "port to serve this API server at")
 	cmd.Flags().StringVar(&flags.TLSCertFile, "tls-cert-file", "", "File containing the default x509 Certificate for HTTPS. If not provided no TLS security shall be enabled")
 	cmd.Flags().StringVar(&flags.TLSPrivateKeyFile, "tls-private-key-file", "", "File containing the default x509 private key matching --tls-cert-file.")
+	AddPFlags(&flags.OIDCOptions, cmd.Flags())
 	return util.CmdLogMixin(cmd)
 }
 
@@ -107,6 +111,11 @@ func runE(flags *flags, log logr.Logger) error {
 		}
 	}
 	router.PathPrefix("/v1alpha1").Handler(http.StripPrefix("/v1alpha1", v1alpha1))
+	oidcMiddleware, err := NewOIDCMiddleware(log, flags.OIDCOptions)
+	if err != nil {
+		return fmt.Errorf("init OIDC Middleware: %w", err)
+	}
+	router.Use(oidcMiddleware)
 
 	server := http.Server{
 		Handler: router,

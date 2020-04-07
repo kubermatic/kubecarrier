@@ -28,8 +28,10 @@ require (
 	k8s.io/api v0.17.3
 	k8s.io/apiextensions-apiserver v0.17.3
 	k8s.io/apimachinery v0.17.3
+	k8s.io/apiserver v0.17.3
 	k8s.io/cli-runtime v0.17.3
 	k8s.io/client-go v11.0.0+incompatible
+	k8s.io/component-base v0.17.3
 	sigs.k8s.io/controller-runtime v0.5.0
 	sigs.k8s.io/krew v0.3.4
 	sigs.k8s.io/kustomize/v3 v3.3.1
