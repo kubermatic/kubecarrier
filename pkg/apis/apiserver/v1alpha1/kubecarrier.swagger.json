@@ -57,6 +57,20 @@
       },
       "title": "Types",
       "type": "object"
+    },
+    "v1UserInfo": {
+      "properties": {
+        "Groups": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "User": {
+          "type": "string"
+        }
+      },
+      "type": "object"
     }
   },
   "info": {
@@ -72,6 +86,28 @@
             "description": "A successful response.",
             "schema": {
               "$ref": "#/definitions/v1APIVersion"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response",
+            "schema": {
+              "$ref": "#/definitions/runtimeError"
+            }
+          }
+        },
+        "tags": [
+          "Kubecarrier"
+        ]
+      }
+    },
+    "/whoami": {
+      "get": {
+        "operationId": "WhoAmI",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1UserInfo"
             }
           },
           "default": {

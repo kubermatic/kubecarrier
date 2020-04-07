@@ -19,6 +19,7 @@ package kubecarrier.api.v1;
 option go_package = "v1alpha1";
 
 import "google/protobuf/timestamp.proto";
+import "google/protobuf/empty.proto";
 import "google/api/annotations.proto";
 
 // Types
@@ -32,6 +33,10 @@ message APIVersion {
 
 // Requests/Responses
 message VersionRequest {}
+message UserInfo {
+  string User = 1;
+  repeated string Groups = 2;
+}
 
 // Service
 service Kubecarrier {
@@ -40,4 +45,9 @@ service Kubecarrier {
     get: "/version"
     };
   };
+  rpc WhoAmI(google.protobuf.Empty) returns(UserInfo) {
+    option (google.api.http) = {
+      get: "/whoami"
+    };
+  }
 }

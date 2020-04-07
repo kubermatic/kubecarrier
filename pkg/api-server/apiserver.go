@@ -57,7 +57,13 @@ type flags struct {
 
 func NewAPIServer() *cobra.Command {
 	log := ctrl.Log.WithName("api-server")
-	flags := &flags{}
+	flags := &flags{
+		OIDCOptions: oidc.Options{
+			// bake in defaults
+			IssuerURL: "https://dev.kubermatic.io/dex",
+			ClientID:  "kubermatic",
+		},
+	}
 	cmd := &cobra.Command{
 		Args:  cobra.NoArgs,
 		Use:   "api-server",

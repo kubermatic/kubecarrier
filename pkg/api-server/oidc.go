@@ -123,9 +123,15 @@ func NewOIDCMiddleware(log logr.Logger, opts oidc.Options) (mux.MiddlewareFunc, 
 					)
 					return
 				}
-				if present {
-					request = request.WithContext(context.WithValue(ctx, oidcContextKey, resp))
+				if !present {
+					writer.WriteHeader(http.StatusUnauthorized)
+					log.Error(
+						fmt.Errorf("Unauthorized"),
+						fmt.Sprintf("AuthenticateToken"),
+					)
+					return
 				}
+				request = request.WithContext(context.WithValue(ctx, oidcContextKey, resp))
 				next.ServeHTTP(writer, request)
 			},
 		)

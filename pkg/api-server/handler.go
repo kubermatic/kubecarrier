@@ -18,7 +18,9 @@ package apiserver
 
 import (
 	"context"
+	"fmt"
 
+	"github.com/golang/protobuf/ptypes/empty"
 	"github.com/golang/protobuf/ptypes/timestamp"
 
 	"github.com/kubermatic/kubecarrier/pkg/apis/apiserver/v1alpha1"
@@ -26,6 +28,17 @@ import (
 )
 
 type kubecarrierHandler struct{}
+
+func (v kubecarrierHandler) WhoAmI(ctx context.Context, _ *empty.Empty) (*v1alpha1.UserInfo, error) {
+	user, present := ExtractUserInfo(ctx)
+	if !present {
+		return nil, fmt.Errorf("Unauthorized")
+	}
+	return &v1alpha1.UserInfo{
+		User:   user.User.GetName(),
+		Groups: user.User.GetGroups(),
+	}, nil
+}
 
 var _ v1alpha1.KubecarrierServer = (*kubecarrierHandler)(nil)
 

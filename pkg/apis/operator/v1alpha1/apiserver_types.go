@@ -18,10 +18,74 @@ package v1alpha1
 
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apiserver/pkg/authentication/authenticator"
 )
 
 // APIServerSpec defines the desired state of APIServer
 type APIServerSpec struct {
+
+	// IssuerURL is the URL the provider signs ID Tokens as. This will be the "iss"
+	// field of all tokens produced by the provider and is used for configuration
+	// discovery.
+	//
+	// The URL is usually the provider's URL without a path, for example
+	// "https://accounts.google.com" or "https://login.salesforce.com".
+	//
+	// The provider must implement configuration discovery.
+	// See: https://openid.net/specs/openid-connect-discovery-1_0.html#ProviderConfig
+	// +kubebuilder:validation:Required
+	IssuerURL string `json:"issuerURL"`
+
+	// ClientID the JWT must be issued for, the "sub" field. This plugin only trusts a single
+	// client to ensure the plugin can be used with public providers.
+	//
+	// The plugin supports the "authorized party" OpenID Connect claim, which allows
+	// specialized providers to issue tokens to a client for a different client.
+	// See: https://openid.net/specs/openid-connect-core-1_0.html#IDToken
+	// +kubebuilder:validation:Required
+	ClientID string `json:"clientID"`
+
+	// APIAudiences are the audiences that the API server identitifes as. The
+	// (API audiences unioned with the ClientIDs) should have a non-empty
+	// intersection with the request's target audience. This preserves the
+	// behavior of the OIDC authenticator pre-introduction of API audiences.
+	APIAudiences authenticator.Audiences `json:"apiAudiences"`
+
+	// Path to a PEM encoded root certificate of the provider.
+	CAFile string `json:"caFile"`
+
+	// UsernameClaim is the JWT field to use as the user's username.
+	// +kubebuilder:default=sub
+	UsernameClaim string `json:"usernameClaim"`
+
+	// UsernamePrefix, if specified, causes claims mapping to username to be prefix with
+	// the provided value. A value "oidc:" would result in usernames like "oidc:john".
+	UsernamePrefix string `json:"usernamePrefix"`
+
+	// GroupsClaim, if specified, causes the OIDCAuthenticator to try to populate the user's
+	// groups with an ID Token field. If the GroupsClaim field is present in an ID Token the value
+	// must be a string or list of strings.
+	GroupsClaim string `json:"groupsClaim"`
+
+	// GroupsPrefix, if specified, causes claims mapping to group names to be prefixed with the
+	// value. A value "oidc:" would result in groups like "oidc:engineering" and "oidc:marketing".
+	GroupsPrefix string `json:"groupsPrefix"`
+
+	// SupportedSigningAlgs sets the accepted set of JOSE signing algorithms that
+	// can be used by the provider to sign tokens.
+	//
+	// https://tools.ietf.org/html/rfc7518#section-3.1
+	//
+	// This value defaults to RS256, the value recommended by the OpenID Connect
+	// spec:
+	//
+	// https://openid.net/specs/openid-connect-core-1_0.html#IDTokenValidation
+	// +kubebuilder:default=["RS256"]
+	SupportedSigningAlgs []string `json:"supportedSigningAlgs"`
+
+	// RequiredClaims, if specified, causes the OIDCAuthenticator to verify that all the
+	// required claims key value pairs are present in the ID Token.
+	RequiredClaims map[string]string `json:"requiredClaims"`
 }
 
 // APIServerStatus defines the observed state of APIServer
