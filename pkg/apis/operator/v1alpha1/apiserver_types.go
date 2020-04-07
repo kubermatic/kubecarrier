@@ -49,26 +49,32 @@ type APIServerSpec struct {
 	// (API audiences unioned with the ClientIDs) should have a non-empty
 	// intersection with the request's target audience. This preserves the
 	// behavior of the OIDC authenticator pre-introduction of API audiences.
+	// +optional
 	APIAudiences authenticator.Audiences `json:"apiAudiences"`
 
 	// Path to a PEM encoded root certificate of the provider.
+	// +optional
 	CAFile string `json:"caFile"`
 
 	// UsernameClaim is the JWT field to use as the user's username.
 	// +kubebuilder:default=sub
+	// +optional
 	UsernameClaim string `json:"usernameClaim"`
 
 	// UsernamePrefix, if specified, causes claims mapping to username to be prefix with
 	// the provided value. A value "oidc:" would result in usernames like "oidc:john".
+	// +optional
 	UsernamePrefix string `json:"usernamePrefix"`
 
 	// GroupsClaim, if specified, causes the OIDCAuthenticator to try to populate the user's
 	// groups with an ID Token field. If the GroupsClaim field is present in an ID Token the value
 	// must be a string or list of strings.
+	// +optional
 	GroupsClaim string `json:"groupsClaim"`
 
 	// GroupsPrefix, if specified, causes claims mapping to group names to be prefixed with the
 	// value. A value "oidc:" would result in groups like "oidc:engineering" and "oidc:marketing".
+	// +optional
 	GroupsPrefix string `json:"groupsPrefix"`
 
 	// SupportedSigningAlgs sets the accepted set of JOSE signing algorithms that
@@ -80,11 +86,12 @@ type APIServerSpec struct {
 	// spec:
 	//
 	// https://openid.net/specs/openid-connect-core-1_0.html#IDTokenValidation
-	// +kubebuilder:default=["RS256"]
+	// +kubebuilder:default=RS256;
 	SupportedSigningAlgs []string `json:"supportedSigningAlgs"`
 
 	// RequiredClaims, if specified, causes the OIDCAuthenticator to verify that all the
 	// required claims key value pairs are present in the ID Token.
+	// +optional
 	RequiredClaims map[string]string `json:"requiredClaims"`
 }
 

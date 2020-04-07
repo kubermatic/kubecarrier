@@ -91,7 +91,8 @@
                     in the ID Token.
                   type: object
                 supportedSigningAlgs:
-                  default: '["RS256"]'
+                  default:
+                    - RS256
                   description: "SupportedSigningAlgs sets the accepted set of JOSE
                     signing algorithms that can be used by the provider to sign tokens.
                     \n https://tools.ietf.org/html/rfc7518#section-3.1 \n This value
@@ -111,16 +112,9 @@
                     would result in usernames like "oidc:john".
                   type: string
               required:
-              - apiAudiences
-              - caFile
               - clientID
-              - groupsClaim
-              - groupsPrefix
               - issuerURL
-              - requiredClaims
               - supportedSigningAlgs
-              - usernameClaim
-              - usernamePrefix
               type: object
             status:
               description: APIServerStatus defines the observed state of APIServer
