@@ -23,7 +23,11 @@ import (
 
 // APIServerSpec defines the desired state of APIServer
 type APIServerSpec struct {
+	// OIDC specifies OpenID Connect configuration for API Server authentication
+	OIDC APIServerOIDCConfig `json:"oidc"`
+}
 
+type APIServerOIDCConfig struct {
 	// IssuerURL is the URL the provider signs ID Tokens as. This will be the "iss"
 	// field of all tokens produced by the provider and is used for configuration
 	// discovery.
@@ -50,11 +54,11 @@ type APIServerSpec struct {
 	// intersection with the request's target audience. This preserves the
 	// behavior of the OIDC authenticator pre-introduction of API audiences.
 	// +optional
-	APIAudiences authenticator.Audiences `json:"apiAudiences"`
+	APIAudiences authenticator.Audiences `json:"apiAudiences,omitempty"`
 
 	// Path to a PEM encoded root certificate of the provider.
 	// +optional
-	CAFile string `json:"caFile"`
+	CAFile string `json:"caFile,omitempty"`
 
 	// UsernameClaim is the JWT field to use as the user's username.
 	// +kubebuilder:default=sub
@@ -64,18 +68,18 @@ type APIServerSpec struct {
 	// UsernamePrefix, if specified, causes claims mapping to username to be prefix with
 	// the provided value. A value "oidc:" would result in usernames like "oidc:john".
 	// +optional
-	UsernamePrefix string `json:"usernamePrefix"`
+	UsernamePrefix string `json:"usernamePrefix,omitempty"`
 
 	// GroupsClaim, if specified, causes the OIDCAuthenticator to try to populate the user's
 	// groups with an ID Token field. If the GroupsClaim field is present in an ID Token the value
 	// must be a string or list of strings.
 	// +optional
-	GroupsClaim string `json:"groupsClaim"`
+	GroupsClaim string `json:"groupsClaim,omitempty"`
 
 	// GroupsPrefix, if specified, causes claims mapping to group names to be prefixed with the
 	// value. A value "oidc:" would result in groups like "oidc:engineering" and "oidc:marketing".
 	// +optional
-	GroupsPrefix string `json:"groupsPrefix"`
+	GroupsPrefix string `json:"groupsPrefix,omitempty"`
 
 	// SupportedSigningAlgs sets the accepted set of JOSE signing algorithms that
 	// can be used by the provider to sign tokens.
@@ -87,12 +91,12 @@ type APIServerSpec struct {
 	//
 	// https://openid.net/specs/openid-connect-core-1_0.html#IDTokenValidation
 	// +kubebuilder:default=RS256;
-	SupportedSigningAlgs []string `json:"supportedSigningAlgs"`
+	SupportedSigningAlgs []string `json:"supportedSigningAlgs,omitempty"`
 
 	// RequiredClaims, if specified, causes the OIDCAuthenticator to verify that all the
 	// required claims key value pairs are present in the ID Token.
 	// +optional
-	RequiredClaims map[string]string `json:"requiredClaims"`
+	RequiredClaims map[string]string `json:"requiredClaims,omitempty"`
 }
 
 // APIServerStatus defines the observed state of APIServer

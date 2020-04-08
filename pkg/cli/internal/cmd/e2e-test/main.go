@@ -20,6 +20,7 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/spf13/cobra"
 
+	"github.com/kubermatic/kubecarrier/pkg/cli/internal/cmd/e2e-test/oidc"
 	"github.com/kubermatic/kubecarrier/pkg/testutil"
 )
 
@@ -30,11 +31,22 @@ func NewCommand(log logr.Logger) *cobra.Command {
 		Short: "end2end testing utilities",
 		PersistentPreRun: func(cmd *cobra.Command, args []string) {
 			cfg.Default()
+			for p := cmd.Parent(); p != nil; p = p.Parent() {
+				if p.PersistentPreRun != nil {
+					p.PersistentPreRun(p, args)
+				}
+				if p.PersistentPreRunE != nil {
+					if err := p.PersistentPreRunE(p, args); err != nil {
+						panic(err)
+					}
+				}
+			}
 		},
 	}
 
 	cmd.AddCommand(
 		newRunCommand(log, cfg),
+		oidc.NewOIDCCommand(log),
 	)
 
 	cmd.PersistentFlags().StringVar(&cfg.TestID, "test-id", "", "unique e2e test id")
