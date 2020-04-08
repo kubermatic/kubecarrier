@@ -56,9 +56,8 @@ type APIServerOIDCConfig struct {
 	// +optional
 	APIAudiences authenticator.Audiences `json:"apiAudiences,omitempty"`
 
-	// Path to a PEM encoded root certificate of the provider.
-	// +optional
-	CAFile string `json:"caFile,omitempty"`
+	// CertificateAuthority references the secret containing issuer's CA in a PEM encoded root certificate of the provider.
+	CertificateAuthority ObjectReference `json:"certificateAuthority"`
 
 	// UsernameClaim is the JWT field to use as the user's username.
 	// +kubebuilder:default=sub

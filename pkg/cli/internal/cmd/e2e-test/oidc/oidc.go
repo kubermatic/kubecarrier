@@ -18,13 +18,9 @@ package oidc
 
 import (
 	"context"
-	"encoding/base64"
-	"fmt"
-	"os/exec"
 
 	"github.com/go-logr/logr"
 	"github.com/spf13/cobra"
-	"k8s.io/apimachinery/pkg/util/json"
 )
 
 func NewOIDCCommand(log logr.Logger) *cobra.Command {
@@ -36,43 +32,36 @@ func NewOIDCCommand(log logr.Logger) *cobra.Command {
 		Use:   "oidc",
 		Short: "oidc helper to get the right barer token for account",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			vCmd := exec.Command("vault", "kv", "get", "-format=json", vaultKey)
-			out, err := vCmd.CombinedOutput()
-			if err != nil {
-				log.Error(err, string(out))
-				return err
-			}
-			data := make(map[string]interface{})
-			if err := json.Unmarshal(out, &data); err != nil {
-				return fmt.Errorf("cannot unmarshall: %w", err)
-			}
-			creds := data["data"].(map[string]interface{})["data"].(map[string]interface{})
-			caCert, err := base64.StdEncoding.DecodeString(creds["caCert"].(string))
-			if err != nil {
-				return err
-			}
-			clientCert, err := base64.StdEncoding.DecodeString(creds["clientCert"].(string))
-			if err != nil {
-				return err
-			}
-			clientKey, err := base64.StdEncoding.DecodeString(creds["clientKey"].(string))
-			if err != nil {
-				return err
-			}
-			username := creds["username"].(string)
-			password := creds["password"].(string)
+			//vCmd := exec.Command("vault", "kv", "get", "-format=json", vaultKey)
+			//out, err := vCmd.CombinedOutput()
+			//if err != nil {
+			//	log.Error(err, string(out))
+			//	return err
+			//}
+			//data := make(map[string]interface{})
+			//if err := json.Unmarshal(out, &data); err != nil {
+			//	return fmt.Errorf("cannot unmarshall: %w", err)
+			//}
+			//creds := data["data"].(map[string]interface{})["data"].(map[string]interface{})
+			//
+			//username := creds["username"].(string)
+			//password := creds["password"].(string)
+			username := "admin@example.com"
+			password := "password"
+			redirectURI := "http://192.168.42.219:31850/oauth2/callback"
+			providerURL := "http://127.0.0.1:8080/auth"
+			clientID := "e2e-client-id"
 
-			_ = caCert
-			_ = clientCert
-			_ = clientKey
-			_ = username
-			_ = password
+			// found these constants by digging through kubermatic repo
+			// api/hack/ci/testdata/oauth_values.yaml
+			// redirectURI :=  "http://localhost:8080"
+			// providerURL := "https://dev.kubermatic.io/dex/auth"
+			// clientID := kubermatic
+
 			ctx := context.Background()
 
 			log.Info("successfully fetched data from vault", "username", username)
-			// found these constants by digging through kubermatic repo
-			// api/hack/ci/testdata/oauth_values.yaml
-			cl := NewClient("kubermatic", "http://localhost:8000", "https://dev.kubermatic.io/dex/auth", log)
+			cl := NewClient(clientID, redirectURI, providerURL, log)
 			token, err := cl.Login(ctx, username, password)
 			if err != nil {
 				return err

@@ -24,6 +24,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/kubermatic/kubecarrier/pkg/apis/operator/v1alpha1"
 	"github.com/kubermatic/kubecarrier/pkg/testutil"
@@ -44,9 +45,22 @@ func newAPIServer(f *testutil.Framework) func(t *testing.T) {
 		ns.Name = testName
 		require.NoError(t, managementClient.Create(ctx, ns))
 
-		apiServer := &v1alpha1.APIServer{}
-		apiServer.Name = "foo"
-		apiServer.Namespace = ns.GetName()
+		apiServer := &v1alpha1.APIServer{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "foo",
+				Namespace: ns.GetName(),
+			},
+			Spec: v1alpha1.APIServerSpec{
+				OIDC: v1alpha1.APIServerOIDCConfig{
+					// from test/testdata/dex_values.yaml
+					IssuerURL: "https://dex.kubecarrier-system.svc",
+					ClientID:  "e2e-client-id",
+					CertificateAuthority: v1alpha1.ObjectReference{
+						Name: "dex-web-server-ca",
+					},
+				},
+			},
+		}
 		require.NoError(t, managementClient.Create(ctx, apiServer))
 		assert.NoError(t, testutil.WaitUntilReady(ctx, managementClient, apiServer))
 	}

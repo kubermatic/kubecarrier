@@ -19,6 +19,8 @@ package oidc
 import (
 	"bytes"
 	"context"
+	cryptorand "crypto/rand"
+	"encoding/base64"
 	"fmt"
 	"mime/multipart"
 	"net/http"
@@ -121,7 +123,13 @@ func (c *Client) fetchLoginURL(ctx context.Context) (*url.URL, error) {
 	params.Set("redirect_uri", c.redirectURI)
 	params.Set("response_type", "id_token")
 	params.Set("scope", "openid profile email")
-	params.Set("nonce", "not-actually-a-nonce")
+
+	nonce := make([]byte, 64)
+	_, err = cryptorand.Read(nonce)
+	if err != nil {
+		return nil, err
+	}
+	params.Set("nonce", base64.StdEncoding.EncodeToString(nonce))
 	// make sure we are redirected and not greeted with a "choose your login method page"
 	params.Set("connector_id", "local")
 	loginURL.RawQuery = params.Encode()

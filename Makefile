@@ -34,9 +34,6 @@ LD_FLAGS=-X $(MODULE)/pkg/internal/version.Version=$(VERSION) -X $(MODULE)/pkg/i
 KIND_CLUSTER?=kubecarrier
 COMPONENTS = operator manager ferry catapult elevator tower api-server
 
-# every makefile operation should have explicit kubeconfig
-undefine KUBECONFIG
-
 # https://github.com/kubernetes-sigs/kind/releases/tag/v0.7.0
 # There are different node image types for newer kind v0.7.0+ version
 KIND_NODE_IMAGE?=kindest/node:v1.17.0@sha256:9512edae126da271b66b990b6fff768fbb7cd786c7d39e86bdf55906352fdf62
@@ -118,6 +115,7 @@ e2e-setup: install require-docker
 	@echo "Deploy cert-manger in management cluster"
 	# Deploy cert-manager right after the creation of the management cluster, since the deployments of cert-manger take some time to get ready.
 	@$(MAKE) KUBECONFIG=${HOME}/.kube/kind-config-${MANAGEMENT_KIND_CLUSTER} cert-manager
+	@$(MAKE) KUBECONFIG=${HOME}/.kube/kind-config-${MANAGEMENT_KIND_CLUSTER} dex
 	@kind get kubeconfig --internal --name=${SVC_KIND_CLUSTER} > "${HOME}/.kube/internal-kind-config-${SVC_KIND_CLUSTER}"
 	@kind get kubeconfig --name=${SVC_KIND_CLUSTER} > "${HOME}/.kube/kind-config-${SVC_KIND_CLUSTER}"
 	@echo "kind clusters created"
@@ -205,6 +203,10 @@ cert-manager:
 	kubectl wait --for=condition=available deployment/cert-manager -n cert-manager --timeout=120s
 	kubectl wait --for=condition=available deployment/cert-manager-cainjector -n cert-manager --timeout=120s
 	kubectl wait --for=condition=available deployment/cert-manager-webhook -n cert-manager --timeout=120s
+
+dex:
+	kubectl create namespace kubecarrier-system || true
+	helm upgrade --install --namespace kubecarrier-system dex stable/dex --values ./test/testdata/dex_values.yaml
 
 docs: bin/docgen
 	@hack/docgen.sh
