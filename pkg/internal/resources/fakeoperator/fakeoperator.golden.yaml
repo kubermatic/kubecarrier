@@ -51,16 +51,16 @@
                 config:
                   description: Config is E2E tests params
                   properties:
-                    createEnabled:
-                      default: true
+                    create:
+                      default: enabled
                       description: CreateEnable control whether create operation enabled
                         or not
-                      type: boolean
-                    deleteEnabled:
-                      default: true
+                      type: string
+                    delete:
+                      default: enabled
                       description: DeleteEnable control whether delete operation enabled
                         or not
-                      type: boolean
+                      type: string
                     deletionAfterSeconds:
                       default: 0
                       description: DeletionAfterSeconds represents duration after
@@ -71,11 +71,11 @@
                       description: ReadyAfterSeconds represents duration after which
                         operator will mark DB as Ready
                       type: integer
-                    updateEnabled:
-                      default: true
+                    update:
+                      default: enabled
                       description: UpdateEnable control whether update operation enabled
                         or not
-                      type: boolean
+                      type: string
                   type: object
                 databaseName:
                   description: DatabaseName of the created database at start up

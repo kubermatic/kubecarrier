@@ -41,6 +41,19 @@ type DBSpec struct {
 	Config Config `json:"config,omitempty"`
 }
 
+// OperationFlagType represents a enable/disable flag
+type OperationFlagType string
+
+func (o OperationFlagType) Enabled() bool {
+	return o == OperationFlagEnabled
+}
+
+// Values of OperationFlagType.
+const (
+	OperationFlagEnabled  OperationFlagType = "enabled"
+	OperationFlagDisabled OperationFlagType = "disabled"
+)
+
 // Config defines the e2e tests params
 type Config struct {
 	// ReadyAfterSeconds represents duration after which operator will mark DB as Ready
@@ -50,14 +63,14 @@ type Config struct {
 	// +kubebuilder:default:=0
 	DeletionAfterSeconds int `json:"deletionAfterSeconds,omitempty"`
 	// CreateEnable control whether create operation enabled or not
-	// +kubebuilder:default:=true
-	CreateEnabled bool `json:"createEnabled,omitempty"`
+	// +kubebuilder:default:=enabled
+	Create OperationFlagType `json:"create,omitempty"`
 	// UpdateEnable control whether update operation enabled or not
-	// +kubebuilder:default:=true
-	UpdateEnabled bool `json:"updateEnabled,omitempty"`
+	// +kubebuilder:default:=enabled
+	Update OperationFlagType `json:"update,omitempty"`
 	// DeleteEnable control whether delete operation enabled or not
-	// +kubebuilder:default:=true
-	DeleteEnabled bool `json:"deleteEnabled,omitempty"`
+	// +kubebuilder:default:=enabled
+	Delete OperationFlagType `json:"delete,omitempty"`
 }
 
 // DBStatus defines the observed state of DB

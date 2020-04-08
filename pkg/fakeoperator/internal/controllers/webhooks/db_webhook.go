@@ -110,7 +110,7 @@ func (r *DBWebhookHandler) InjectDecoder(d *admission.Decoder) error {
 
 func (r *DBWebhookHandler) validateCreate(ctx context.Context, db *fakev1alpha1.DB) error {
 	r.Log.Info("mutate create", "name", db.Name)
-	if !db.Spec.Config.CreateEnabled {
+	if !db.Spec.Config.Create.Enabled() {
 		return fmt.Errorf("create operation disabled for %s", db.Name)
 	}
 	if !webhook.IsDNS1123Label(db.Name) {
@@ -121,7 +121,7 @@ func (r *DBWebhookHandler) validateCreate(ctx context.Context, db *fakev1alpha1.
 
 func (r *DBWebhookHandler) validateUpdate(oldObj, newObj *fakev1alpha1.DB) error {
 	r.Log.Info("mutate update", "name", newObj.Name)
-	if !oldObj.Spec.Config.UpdateEnabled && !newObj.Spec.Config.UpdateEnabled {
+	if !oldObj.Spec.Config.Update.Enabled() && !newObj.Spec.Config.Update.Enabled() {
 		return fmt.Errorf("update operation disabled for %s", oldObj.Name)
 	}
 	if newObj.Spec.DatabaseName != oldObj.Spec.DatabaseName {
@@ -132,7 +132,7 @@ func (r *DBWebhookHandler) validateUpdate(oldObj, newObj *fakev1alpha1.DB) error
 
 // +kubebuilder:rbac:groups=fake.kubecarrier.io,resources=dbs,verbs=get;list;watch
 func (r *DBWebhookHandler) validateDelete(ctx context.Context, db *fakev1alpha1.DB) error {
-	if !db.Spec.Config.DeleteEnabled {
+	if !db.Spec.Config.Delete.Enabled() {
 		return fmt.Errorf("delete operation disabled for %s", db.Name)
 	}
 	return nil
