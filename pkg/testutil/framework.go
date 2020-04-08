@@ -210,7 +210,7 @@ func (f *Framework) NewFakeDB(name, namespace string) *fakev1alpha1.DB {
 			Name:      name,
 			Namespace: namespace,
 		},
-		Spec: fakev1alpha1.DBSpec{},
+		Spec: fakev1alpha1.DBSpec{DatabaseName: "fakeDB"},
 	}
 }
 
