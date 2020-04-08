@@ -2,6 +2,7 @@
   kind: CustomResourceDefinition
   metadata:
     annotations:
+      cert-manager.io/inject-ca-from: test3000/e2e-operator-serving-cert
       controller-gen.kubebuilder.io/version: v0.2.8
     creationTimestamp: null
     labels:
@@ -48,19 +49,37 @@
               description: DBSpec defines the desired state of DB
               properties:
                 config:
-                  description: E2E tests params
+                  description: Config is E2E tests params
                   properties:
+                    createEnabled:
+                      default: true
+                      description: CreateEnable control whether create operation enabled
+                        or not
+                      type: boolean
+                    deleteEnabled:
+                      default: true
+                      description: DeleteEnable control whether delete operation enabled
+                        or not
+                      type: boolean
                     deletionAfterSeconds:
+                      default: 0
                       description: DeletionAfterSeconds represents duration after
                         which operator will remove finalizer
                       type: integer
                     readyAfterSeconds:
+                      default: 0
                       description: ReadyAfterSeconds represents duration after which
                         operator will mark DB as Ready
                       type: integer
+                    updateEnabled:
+                      default: true
+                      description: UpdateEnable control whether update operation enabled
+                        or not
+                      type: boolean
                   type: object
                 databaseName:
                   description: DatabaseName of the created database at start up
+                  minLength: 1
                   type: string
                 databasePassword:
                   description: DatabasePassword for the created database. Leave blank
@@ -75,9 +94,7 @@
                   type: string
               required:
               - databaseName
-              - databasePassword
               - databaseUser
-              - rootPassword
               type: object
             status:
               description: DBStatus defines the observed state of DB
@@ -212,7 +229,7 @@
   kind: Deployment
   metadata:
     labels:
-      control-plane: manager
+      control-plane: e2e-operator
       kubecarrier.io/role: manager
     name: e2e-operator-manager
     namespace: test3000
@@ -220,16 +237,18 @@
     replicas: 1
     selector:
       matchLabels:
-        control-plane: manager
+        control-plane: e2e-operator
         kubecarrier.io/role: manager
     template:
       metadata:
         labels:
-          control-plane: manager
+          control-plane: e2e-operator
           kubecarrier.io/role: manager
       spec:
         containers:
-        - env:
+        - args:
+          - --cert-dir=$(CERT_DIR)
+          env:
           - name: CERT_DIR
             value: /tmp/k8s-webhook-server/serving-certs
           image: quay.io/kubecarrier/fake-operator:was not build properly
@@ -239,6 +258,9 @@
               port: readiness-port
           name: manager
           ports:
+          - containerPort: 9443
+            name: webhook-server
+            protocol: TCP
           - containerPort: 9440
             name: readiness-port
             protocol: TCP
@@ -253,5 +275,81 @@
             requests:
               cpu: 100m
               memory: 100Mi
+          volumeMounts:
+          - mountPath: /tmp/k8s-webhook-server/serving-certs
+            name: cert
+            readOnly: true
         serviceAccountName: e2e-operator-sa
         terminationGracePeriodSeconds: 10
+        volumes:
+        - name: cert
+          secret:
+            defaultMode: 420
+            secretName: e2e-operator-webhook-service-webhook-service-cert
+- apiVersion: admissionregistration.k8s.io/v1beta1
+  kind: MutatingWebhookConfiguration
+  metadata:
+    annotations:
+      cert-manager.io/inject-ca-from: test3000/e2e-operator-serving-cert
+    creationTimestamp: null
+    labels:
+      kubecarrier.io/role: manager
+    name: e2e-operator-mutating-webhook-configuration
+  webhooks:
+  - clientConfig:
+      caBundle: Cg==
+      service:
+        name: e2e-operator-webhook-service
+        namespace: test3000
+        path: /mutate-fake-kubecarrier-io-v1alpha1-db
+    failurePolicy: Fail
+    name: mdb.kubecarrier.io
+    rules:
+    - apiGroups:
+      - fake.kubecarrier.io
+      apiVersions:
+      - v1alpha1
+      operations:
+      - CREATE
+      - UPDATE
+      - DELETE
+      resources:
+      - dbs
+- apiVersion: v1
+  kind: Service
+  metadata:
+    labels:
+      kubecarrier.io/role: manager
+    name: e2e-operator-webhook-service
+    namespace: test3000
+  spec:
+    ports:
+    - port: 443
+      targetPort: 9443
+    selector:
+      control-plane: e2e-operator
+      kubecarrier.io/role: manager
+- apiVersion: cert-manager.io/v1alpha2
+  kind: Issuer
+  metadata:
+    labels:
+      kubecarrier.io/role: manager
+    name: e2e-operator-selfsigned-issuer
+    namespace: test3000
+  spec:
+    selfSigned: {}
+- apiVersion: cert-manager.io/v1alpha2
+  kind: Certificate
+  metadata:
+    labels:
+      kubecarrier.io/role: manager
+    name: e2e-operator-serving-cert
+    namespace: test3000
+  spec:
+    dnsNames:
+    - e2e-operator-webhook-service.test3000.svc
+    - e2e-operator-webhook-service.test3000.svc.cluster.local
+    issuerRef:
+      kind: Issuer
+      name: e2e-operator-selfsigned-issuer
+    secretName: e2e-operator-webhook-service-webhook-service-cert

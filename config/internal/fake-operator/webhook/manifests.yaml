@@ -1,0 +1,27 @@
+
+---
+apiVersion: admissionregistration.k8s.io/v1beta1
+kind: MutatingWebhookConfiguration
+metadata:
+  creationTimestamp: null
+  name: mutating-webhook-configuration
+webhooks:
+- clientConfig:
+    caBundle: Cg==
+    service:
+      name: webhook-service
+      namespace: system
+      path: /mutate-fake-kubecarrier-io-v1alpha1-db
+  failurePolicy: Fail
+  name: mdb.kubecarrier.io
+  rules:
+  - apiGroups:
+    - fake.kubecarrier.io
+    apiVersions:
+    - v1alpha1
+    operations:
+    - CREATE
+    - UPDATE
+    - DELETE
+    resources:
+    - dbs

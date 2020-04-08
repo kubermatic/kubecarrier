@@ -47,19 +47,37 @@ spec:
             description: DBSpec defines the desired state of DB
             properties:
               config:
-                description: E2E tests params
+                description: Config is E2E tests params
                 properties:
+                  createEnabled:
+                    default: true
+                    description: CreateEnable control whether create operation enabled
+                      or not
+                    type: boolean
+                  deleteEnabled:
+                    default: true
+                    description: DeleteEnable control whether delete operation enabled
+                      or not
+                    type: boolean
                   deletionAfterSeconds:
+                    default: 0
                     description: DeletionAfterSeconds represents duration after which
                       operator will remove finalizer
                     type: integer
                   readyAfterSeconds:
+                    default: 0
                     description: ReadyAfterSeconds represents duration after which
                       operator will mark DB as Ready
                     type: integer
+                  updateEnabled:
+                    default: true
+                    description: UpdateEnable control whether update operation enabled
+                      or not
+                    type: boolean
                 type: object
               databaseName:
                 description: DatabaseName of the created database at start up
+                minLength: 1
                 type: string
               databasePassword:
                 description: DatabasePassword for the created database. Leave blank
@@ -74,9 +92,7 @@ spec:
                 type: string
             required:
             - databaseName
-            - databasePassword
             - databaseUser
-            - rootPassword
             type: object
           status:
             description: DBStatus defines the observed state of DB

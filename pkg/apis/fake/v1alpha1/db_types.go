@@ -25,27 +25,39 @@ import (
 // DBSpec defines the desired state of DB
 type DBSpec struct {
 	// RootPassword is root account password for this data. Leave blank for auto-generation
-	RootPassword string `json:"rootPassword"`
+	RootPassword string `json:"rootPassword,omitempty"`
 
 	// DatabaseName of the created database at start up
+	// +kubebuilder:validation:MinLength=1
 	DatabaseName string `json:"databaseName"`
 
 	// DatabaseUser for created database
 	DatabaseUser string `json:"databaseUser"`
 
 	// DatabasePassword for the created database. Leave blank for auto-generation
-	DatabasePassword string `json:"databasePassword"`
+	DatabasePassword string `json:"databasePassword,omitempty"`
 
-	// E2E tests params
+	// Config is E2E tests params
 	Config Config `json:"config,omitempty"`
 }
 
 // Config defines the e2e tests params
 type Config struct {
 	// ReadyAfterSeconds represents duration after which operator will mark DB as Ready
+	// +kubebuilder:default:=0
 	ReadyAfterSeconds int `json:"readyAfterSeconds,omitempty"`
 	// DeletionAfterSeconds represents duration after which operator will remove finalizer
+	// +kubebuilder:default:=0
 	DeletionAfterSeconds int `json:"deletionAfterSeconds,omitempty"`
+	// CreateEnable control whether create operation enabled or not
+	// +kubebuilder:default:=true
+	CreateEnabled bool `json:"createEnabled,omitempty"`
+	// UpdateEnable control whether update operation enabled or not
+	// +kubebuilder:default:=true
+	UpdateEnabled bool `json:"updateEnabled,omitempty"`
+	// DeleteEnable control whether delete operation enabled or not
+	// +kubebuilder:default:=true
+	DeleteEnabled bool `json:"deleteEnabled,omitempty"`
 }
 
 // DBStatus defines the observed state of DB
