@@ -205,7 +205,7 @@ cert-manager:
 	kubectl wait --for=condition=available deployment/cert-manager-webhook -n cert-manager --timeout=120s
 
 dex:
-	kubectl create namespace kubecarrier-system || true
+	kubectl apply -f ./test/testdata/00_prereq.yaml
 	helm upgrade --install --namespace kubecarrier-system dex stable/dex --values ./test/testdata/dex_values.yaml
 
 docs: bin/docgen

@@ -6,8 +6,10 @@ ports:
     servicePort: 443
 certs:
   web:
-    altNames:
-    - dex.kubecarrier-system.svc
+    create: false
+    secret:
+      tlsName: dex-web-server
+      caName: dex-web-server
 config:
   issuer: "https://dex.kubecarrier-system.svc"
   oauth2:
