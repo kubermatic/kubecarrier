@@ -65,7 +65,7 @@
                         name:
                           type: string
                       required:
-                        - name
+                      - name
                       type: object
                     clientID:
                       description: "ClientID the JWT must be issued for, the \"sub\"
@@ -124,12 +124,22 @@
                         "oidc:" would result in usernames like "oidc:john".
                       type: string
                   required:
-                    - certificateAuthority
+                  - certificateAuthority
                   - clientID
                   - issuerURL
                   type: object
+                tlsSecretRef:
+                  description: TLSSecretRef referencing the TLS serving credentials
+                    for the API server
+                  properties:
+                    name:
+                      type: string
+                  required:
+                  - name
+                  type: object
               required:
               - oidc
+              - tlsSecretRef
               type: object
             status:
               description: APIServerStatus defines the observed state of APIServer

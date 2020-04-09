@@ -21,6 +21,8 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/spf13/cobra"
+
+	"github.com/kubermatic/kubecarrier/pkg/testutil"
 )
 
 func NewOIDCCommand(log logr.Logger) *cobra.Command {
@@ -32,37 +34,12 @@ func NewOIDCCommand(log logr.Logger) *cobra.Command {
 		Use:   "oidc",
 		Short: "oidc helper to get the right barer token for account",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			//vCmd := exec.Command("vault", "kv", "get", "-format=json", vaultKey)
-			//out, err := vCmd.CombinedOutput()
-			//if err != nil {
-			//	log.Error(err, string(out))
-			//	return err
-			//}
-			//data := make(map[string]interface{})
-			//if err := json.Unmarshal(out, &data); err != nil {
-			//	return fmt.Errorf("cannot unmarshall: %w", err)
-			//}
-			//creds := data["data"].(map[string]interface{})["data"].(map[string]interface{})
-			//
-			//username := creds["username"].(string)
-			//password := creds["password"].(string)
 			username := "admin@example.com"
 			password := "password"
-			redirectURI := "http://192.168.42.219:31850/oauth2/callback"
 			providerURL := "http://127.0.0.1:8080/auth"
-			clientID := "e2e-client-id"
-
-			// found these constants by digging through kubermatic repo
-			// api/hack/ci/testdata/oauth_values.yaml
-			// redirectURI :=  "http://localhost:8080"
-			// providerURL := "https://dev.kubermatic.io/dex/auth"
-			// clientID := kubermatic
-
 			ctx := context.Background()
-
 			log.Info("successfully fetched data from vault", "username", username)
-			cl := NewClient(clientID, redirectURI, providerURL, log)
-			token, err := cl.Login(ctx, username, password)
+			token, err := testutil.DexFakeClientCredentialsGrant(ctx, log, providerURL, username, password)
 			if err != nil {
 				return err
 			}

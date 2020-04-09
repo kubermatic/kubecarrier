@@ -36,7 +36,7 @@
       },
       "type": "object"
     },
-    "v1APIVersion": {
+    "v1alpha1APIVersion": {
       "properties": {
         "branch": {
           "type": "string"
@@ -58,7 +58,7 @@
       "title": "Types",
       "type": "object"
     },
-    "v1UserInfo": {
+    "v1alpha1UserInfo": {
       "properties": {
         "Groups": {
           "items": {
@@ -78,14 +78,14 @@
     "version": "version not set"
   },
   "paths": {
-    "/version": {
+    "/v1alpha1/version": {
       "get": {
         "operationId": "Version",
         "responses": {
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/v1APIVersion"
+              "$ref": "#/definitions/v1alpha1APIVersion"
             }
           },
           "default": {
@@ -107,7 +107,7 @@
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/v1UserInfo"
+              "$ref": "#/definitions/v1alpha1UserInfo"
             }
           },
           "default": {

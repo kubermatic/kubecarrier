@@ -19,6 +19,7 @@ package apiserver
 import (
 	"fmt"
 
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"sigs.k8s.io/kustomize/v3/pkg/image"
 	"sigs.k8s.io/kustomize/v3/pkg/types"
@@ -80,12 +81,44 @@ func Manifests(c Config) ([]unstructured.Unstructured, error) {
 				"spec": map[string]interface{}{
 					"containers": []map[string]interface{}{
 						{
-							"name":         "manager",
-							"args":         []string{},
-							"volumeMounts": []map[string]interface{}{},
+							"name": "manager",
+							"args": []string{
+								"--addr=$(API_SERVER_ADDR)",
+								"--tls-cert-file=$(API_SERVER_TLS_CERT_FILE)",
+								"--tls-private-key-file=$(API_SERVER_TLS_PRIVATE_KEY_FILE)",
+							},
+							"env": []map[string]interface{}{
+								{
+									"name":  "API_SERVER_ADDR",
+									"value": ":8443",
+								},
+								{
+									"name":  "API_SERVER_TLS_CERT_FILE",
+									"value": "/run/serving-certs/tls.crt",
+								},
+								{
+									"name":  "API_SERVER_TLS_PRIVATE_KEY_FILE",
+									"value": "/run/serving-certs/tls.key",
+								},
+							},
+							"ports": []corev1.ContainerPort{{
+								Name:          "https",
+								ContainerPort: 8443,
+								Protocol:      "TCP",
+							}},
+							"volumeMounts": []map[string]interface{}{{
+								"mountPath": "/run/serving-certs",
+								"readyOnly": true,
+								"name":      "serving-cert",
+							}},
 						},
 					},
-					"volumes": []map[string]interface{}{},
+					"volumes": []map[string]interface{}{{
+						"name": "serving-cert",
+						"secret": map[string]interface{}{
+							"secretName": c.Spec.TLSSecretRef.Name,
+						},
+					}},
 				},
 			},
 		},

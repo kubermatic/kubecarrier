@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package oidc
+package testutil
 
 import (
 	"bytes"
@@ -31,8 +31,25 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 )
 
-// Client is a Dex client that uses Dex' web UI to acquire an ID token.
-type Client struct {
+func DexFakeClientCredentialsGrant(ctx context.Context, log logr.Logger, providerURI, username, password string) (token string, err error) {
+	// from test/testdata/dex_values.yaml
+	clientID := "e2e-client-id"
+	redirectURI := "http://192.168.42.219:31850/oauth2/callback"
+
+	cl := &dexClient{
+		clientID:    clientID,
+		redirectURI: redirectURI,
+		providerURI: providerURI,
+		client:      &http.Client{Timeout: 5 * time.Second},
+		log:         log.WithValues("client-id", clientID, "provider-uri", providerURI),
+	}
+	return cl.Login(ctx, username, password)
+}
+
+// This code is mostly c/p from kubermatic with some minor adaptations
+
+// dexClient is a Dex client that uses Dex' web UI to acquire an ID token.
+type dexClient struct {
 	// clientID is the OIDC client ID.
 	clientID string
 
@@ -53,21 +70,7 @@ type Client struct {
 	log logr.Logger
 }
 
-// NewClient creates a new OIDC client. See the Client struct for definitions on the parameters.
-func NewClient(clientID string, redirectURI string, providerURI string, log logr.Logger) *Client {
-	httpClient := &http.Client{}
-	httpClient.Timeout = 5 * time.Second
-
-	return &Client{
-		clientID:    clientID,
-		redirectURI: redirectURI,
-		providerURI: providerURI,
-		client:      httpClient,
-		log:         log.WithValues("client-id", clientID, "provider-uri", providerURI),
-	}
-}
-
-func (c *Client) Login(ctx context.Context, login string, password string) (string, error) {
+func (c *dexClient) Login(ctx context.Context, login string, password string) (string, error) {
 	var (
 		accessToken string
 		err         error
@@ -89,7 +92,7 @@ func (c *Client) Login(ctx context.Context, login string, password string) (stri
 	return accessToken, nil
 }
 
-func (c *Client) tryLogin(ctx context.Context, login string, password string) (string, error) {
+func (c *dexClient) tryLogin(ctx context.Context, login string, password string) (string, error) {
 	c.log.V(6).Info("Attempting login")
 
 	// fetch login page and acquire the nonce
@@ -111,7 +114,7 @@ func (c *Client) tryLogin(ctx context.Context, login string, password string) (s
 	return token, nil
 }
 
-func (c *Client) fetchLoginURL(ctx context.Context) (*url.URL, error) {
+func (c *dexClient) fetchLoginURL(ctx context.Context) (*url.URL, error) {
 	// quick&dirty URL clone, so we don't change the u argument
 	loginURL, err := url.Parse(c.providerURI)
 	if err != nil {
@@ -165,7 +168,7 @@ func (c *Client) fetchLoginURL(ctx context.Context) (*url.URL, error) {
 	return loginURL.ResolveReference(location), nil
 }
 
-func (c *Client) authenticate(ctx context.Context, loginURL *url.URL, login string, password string) (string, error) {
+func (c *dexClient) authenticate(ctx context.Context, loginURL *url.URL, login string, password string) (string, error) {
 	buf := new(bytes.Buffer)
 	writer := multipart.NewWriter(buf)
 
@@ -234,7 +237,7 @@ func (c *Client) authenticate(ctx context.Context, loginURL *url.URL, login stri
 	return token, nil
 }
 
-func (c *Client) getLocation(response *http.Response) (*url.URL, error) {
+func (c *dexClient) getLocation(response *http.Response) (*url.URL, error) {
 	// evaluate location header
 	if response.StatusCode < 300 || response.StatusCode >= 400 {
 		return nil, fmt.Errorf("expected a redirect response, but got status code %d", response.StatusCode)

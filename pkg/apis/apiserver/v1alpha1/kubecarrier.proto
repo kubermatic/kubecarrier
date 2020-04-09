@@ -15,7 +15,7 @@ limitations under the License.
 */
 
 syntax = "proto3";
-package kubecarrier.api.v1;
+package kubecarrier.api.v1alpha1;
 option go_package = "v1alpha1";
 
 import "google/protobuf/timestamp.proto";
@@ -42,7 +42,7 @@ message UserInfo {
 service Kubecarrier {
   rpc Version(VersionRequest) returns (APIVersion) {
     option (google.api.http) = {
-    get: "/version"
+      get: "/v1alpha1/version"
     };
   };
   rpc WhoAmI(google.protobuf.Empty) returns(UserInfo) {

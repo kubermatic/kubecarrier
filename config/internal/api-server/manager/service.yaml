@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: manager
+  namespace: system
+  labels:
+    control-plane: api-server
+spec:
+  type: "ClusterIP"
+  selector:
+    control-plane: api-server
+  ports:
+    - protocol: TCP
+      port: 443
+      targetPort: https
+      name: "https"

@@ -23,6 +23,8 @@ import (
 
 // APIServerSpec defines the desired state of APIServer
 type APIServerSpec struct {
+	// TLSSecretRef referencing the TLS serving credentials for the API server
+	TLSSecretRef ObjectReference `json:"tlsSecretRef"`
 	// OIDC specifies OpenID Connect configuration for API Server authentication
 	OIDC APIServerOIDCConfig `json:"oidc"`
 }

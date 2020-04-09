@@ -24,7 +24,6 @@ import (
 	"strings"
 
 	"github.com/go-logr/logr"
-	"github.com/gorilla/mux"
 	gwruntime "github.com/grpc-ecosystem/grpc-gateway/runtime"
 	"github.com/spf13/cobra"
 	"google.golang.org/grpc"
@@ -57,13 +56,7 @@ type flags struct {
 
 func NewAPIServer() *cobra.Command {
 	log := ctrl.Log.WithName("api-server")
-	flags := &flags{
-		OIDCOptions: oidc.Options{
-			// bake in defaults
-			IssuerURL: "https://dev.kubermatic.io/dex",
-			ClientID:  "kubermatic",
-		},
-	}
+	flags := &flags{}
 	cmd := &cobra.Command{
 		Args:  cobra.NoArgs,
 		Use:   "api-server",
@@ -102,13 +95,14 @@ func runE(flags *flags, log logr.Logger) error {
 			_, _ = writer.Write(buf)
 		}),
 	)
+
+	// v1alpha1 registration
 	apiserverv1alpha1.RegisterKubecarrierServer(grpcServer, &kubecarrierHandler{})
 	if err := apiserverv1alpha1.RegisterKubecarrierHandlerServer(context.Background(), grpcGatewayMux, &kubecarrierHandler{}); err != nil {
 		return err
 	}
 
-	router := mux.NewRouter()
-	var v1alpha1 http.HandlerFunc = func(writer http.ResponseWriter, request *http.Request) {
+	var handlerFunc http.HandlerFunc = func(writer http.ResponseWriter, request *http.Request) {
 		log.Info("got request for", "path", request.URL.Path)
 		if strings.Contains(request.Header.Get("Content-Type"), "application/grpc") {
 			grpcServer.ServeHTTP(writer, request)
@@ -116,15 +110,14 @@ func runE(flags *flags, log logr.Logger) error {
 			grpcGatewayMux.ServeHTTP(writer, request)
 		}
 	}
-	router.PathPrefix("/v1alpha1").Handler(http.StripPrefix("/v1alpha1", v1alpha1))
 	oidcMiddleware, err := NewOIDCMiddleware(log, flags.OIDCOptions)
 	if err != nil {
 		return fmt.Errorf("init OIDC Middleware: %w", err)
 	}
-	router.Use(oidcMiddleware)
+	handlerFunc = oidcMiddleware(handlerFunc)
 
 	server := http.Server{
-		Handler: router,
+		Handler: handlerFunc,
 		Addr:    flags.addr,
 	}
 
@@ -133,6 +126,7 @@ func runE(flags *flags, log logr.Logger) error {
 		log.V(4).Info("No TLS cert file defined, skipping TLS setup")
 		return server.ListenAndServe()
 	} else {
+		log.Info("using provided TLS cert/key")
 		return server.ListenAndServeTLS(flags.TLSCertFile, flags.TLSPrivateKeyFile)
 	}
 }
