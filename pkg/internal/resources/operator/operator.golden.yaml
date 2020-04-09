@@ -44,6 +44,18 @@
               type: object
             spec:
               description: APIServerSpec defines the desired state of APIServer
+              properties:
+                tlsSecretRef:
+                  description: TLSSecretRef referencing the TLS serving credentials
+                    for the API server
+                  properties:
+                    name:
+                      type: string
+                  required:
+                  - name
+                  type: object
+              required:
+              - tlsSecretRef
               type: object
             status:
               description: APIServerStatus defines the observed state of APIServer

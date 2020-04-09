@@ -24,6 +24,7 @@ import (
 	"sync"
 	"testing"
 
+	certmanagerv1alpha3 "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha3"
 	"github.com/stretchr/testify/require"
 	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
@@ -110,6 +111,9 @@ func New(c FrameworkConfig) (f *Framework, err error) {
 	}
 	if err = corev1alpha1.AddToScheme(f.ManagementScheme); err != nil {
 		return nil, fmt.Errorf("adding corev1alpha1 scheme to management scheme: %w", err)
+	}
+	if err = certmanagerv1alpha3.AddToScheme(f.ManagementScheme); err != nil {
+		return nil, fmt.Errorf("adding certmanagerv1alpha3 scheme to management scheme: %w", err)
 	}
 
 	f.managementConfig, err = clientcmd.BuildConfigFromFlags("", f.config.ManagementExternalKubeconfigPath)

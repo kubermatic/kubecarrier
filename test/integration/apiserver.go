@@ -21,11 +21,14 @@ import (
 	"strings"
 	"testing"
 
+	certmanagerv1alpha3 "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha3"
+	v1 "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/kubermatic/kubecarrier/pkg/apis/operator/v1alpha1"
+	operatorv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/operator/v1alpha1"
 	"github.com/kubermatic/kubecarrier/pkg/testutil"
 )
 
@@ -44,9 +47,57 @@ func newAPIServer(f *testutil.Framework) func(t *testing.T) {
 		ns.Name = testName
 		require.NoError(t, managementClient.Create(ctx, ns))
 
-		apiServer := &v1alpha1.APIServer{}
-		apiServer.Name = "foo"
-		apiServer.Namespace = ns.GetName()
+		servingTLSSecret := &corev1.Secret{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "foo-tls",
+				Namespace: ns.GetName(),
+			},
+		}
+
+		issuer := &certmanagerv1alpha3.Issuer{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "foo",
+				Namespace: ns.GetName(),
+			},
+			Spec: certmanagerv1alpha3.IssuerSpec{
+				IssuerConfig: certmanagerv1alpha3.IssuerConfig{
+					SelfSigned: &certmanagerv1alpha3.SelfSignedIssuer{},
+				},
+			},
+		}
+		cert := &certmanagerv1alpha3.Certificate{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "foo",
+				Namespace: ns.GetName(),
+			},
+			Spec: certmanagerv1alpha3.CertificateSpec{
+				SecretName: servingTLSSecret.GetName(),
+				DNSNames: []string{
+					strings.Join([]string{"foo", servingTLSSecret.GetNamespace(), "svc"}, "."),
+				},
+				IssuerRef: v1.ObjectReference{
+					Name: issuer.GetName(),
+				},
+			},
+		}
+		require.NoError(t, managementClient.Create(ctx, issuer))
+		require.NoError(t, managementClient.Create(ctx, cert))
+		require.NoError(t, testutil.WaitUntilReady(ctx, managementClient, cert), "cert not ready")
+		require.NoError(t, managementClient.WaitUntil(ctx, servingTLSSecret, func() (done bool, err error) {
+			data, ok := servingTLSSecret.Data[corev1.TLSCertKey]
+			return ok && len(data) > 0, nil
+		}))
+
+		apiServer := &operatorv1alpha1.APIServer{ObjectMeta: metav1.ObjectMeta{
+			Name:      "foo",
+			Namespace: ns.GetName(),
+		},
+			Spec: operatorv1alpha1.APIServerSpec{
+				TLSSecretRef: operatorv1alpha1.ObjectReference{
+					Name: servingTLSSecret.GetName(),
+				},
+			},
+		}
 		require.NoError(t, managementClient.Create(ctx, apiServer))
 		assert.NoError(t, testutil.WaitUntilReady(ctx, managementClient, apiServer))
 	}

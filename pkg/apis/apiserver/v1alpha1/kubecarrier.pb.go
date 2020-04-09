@@ -27,8 +27,6 @@ import (
 	timestamp "github.com/golang/protobuf/ptypes/timestamp"
 	_ "google.golang.org/genproto/googleapis/api/annotations"
 	grpc "google.golang.org/grpc"
-	codes "google.golang.org/grpc/codes"
-	status "google.golang.org/grpc/status"
 )
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -151,9 +149,7 @@ func init() {
 	proto.RegisterType((*VersionRequest)(nil), "kubecarrier.api.v1.VersionRequest")
 }
 
-func init() {
-	proto.RegisterFile("kubecarrier.proto", fileDescriptor_046afb50055b7632)
-}
+func init() { proto.RegisterFile("kubecarrier.proto", fileDescriptor_046afb50055b7632) }
 
 var fileDescriptor_046afb50055b7632 = []byte{
 	// 282 bytes of a gzipped FileDescriptorProto
@@ -179,11 +175,11 @@ var fileDescriptor_046afb50055b7632 = []byte{
 
 // Reference imports to suppress errors if they are not otherwise used.
 var _ context.Context
-var _ grpc.ClientConnInterface
+var _ grpc.ClientConn
 
 // This is a compile-time assertion to ensure that this generated file
 // is compatible with the grpc package it is being compiled against.
-const _ = grpc.SupportPackageIsVersion6
+const _ = grpc.SupportPackageIsVersion4
 
 // KubecarrierClient is the client API for Kubecarrier service.
 //
@@ -193,10 +189,10 @@ type KubecarrierClient interface {
 }
 
 type kubecarrierClient struct {
-	cc grpc.ClientConnInterface
+	cc *grpc.ClientConn
 }
 
-func NewKubecarrierClient(cc grpc.ClientConnInterface) KubecarrierClient {
+func NewKubecarrierClient(cc *grpc.ClientConn) KubecarrierClient {
 	return &kubecarrierClient{cc}
 }
 
@@ -212,14 +208,6 @@ func (c *kubecarrierClient) Version(ctx context.Context, in *VersionRequest, opt
 // KubecarrierServer is the server API for Kubecarrier service.
 type KubecarrierServer interface {
 	Version(context.Context, *VersionRequest) (*APIVersion, error)
-}
-
-// UnimplementedKubecarrierServer can be embedded to have forward compatible implementations.
-type UnimplementedKubecarrierServer struct {
-}
-
-func (*UnimplementedKubecarrierServer) Version(ctx context.Context, req *VersionRequest) (*APIVersion, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method Version not implemented")
 }
 
 func RegisterKubecarrierServer(s *grpc.Server, srv KubecarrierServer) {

@@ -22,7 +22,9 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"sigs.k8s.io/kustomize/v3/pkg/image"
 	"sigs.k8s.io/kustomize/v3/pkg/types"
+	"sigs.k8s.io/yaml"
 
+	operatorv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/operator/v1alpha1"
 	"github.com/kubermatic/kubecarrier/pkg/internal/kustomize"
 	"github.com/kubermatic/kubecarrier/pkg/internal/resources/constants"
 	"github.com/kubermatic/kubecarrier/pkg/internal/version"
@@ -34,6 +36,9 @@ type Config struct {
 	Namespace string
 	// Name of this Tower object.
 	Name string
+
+	// Spec of the APIServer
+	Spec operatorv1alpha1.APIServerSpec
 }
 
 var k = kustomize.NewDefaultKustomize()
@@ -50,9 +55,74 @@ func Manifests(c Config) ([]unstructured.Unstructured, error) {
 				NewTag: v.Version,
 			},
 		},
+		PatchesStrategicMerge: []types.PatchStrategicMerge{
+			"manager_env_patch.yaml",
+		},
 		Resources: []string{"../default"},
 	}); err != nil {
 		return nil, fmt.Errorf("cannot mkdir: %w", err)
+	}
+
+	// Patch environment
+	// Note:
+	// we are not using *appsv1.Deployment here,
+	// because some fields will be defaulted to empty and
+	// interfere with the strategic merge patch of kustomize.
+	managerEnv := map[string]interface{}{
+		"apiVersion": "apps/v1",
+		"kind":       "Deployment",
+		"metadata": map[string]string{
+			"name":      "manager",
+			"namespace": "system",
+		},
+		"spec": map[string]interface{}{
+			"template": map[string]interface{}{
+				"spec": map[string]interface{}{
+					"containers": []map[string]interface{}{
+						{
+							"name": "manager",
+							"args": []string{
+								"--addr=$(API_SERVER_ADDR)",
+								"--tls-cert-file=$(API_SERVER_TLS_CERT_FILE)",
+								"--tls-private-key-file=$(API_SERVER_TLS_PRIVATE_KEY_FILE)",
+							},
+							"env": []map[string]interface{}{
+								{
+									"name":  "API_SERVER_ADDR",
+									"value": ":8443",
+								},
+								{
+									"name":  "API_SERVER_TLS_CERT_FILE",
+									"value": "/run/serving-certs/tls.crt",
+								},
+								{
+									"name":  "API_SERVER_TLS_PRIVATE_KEY_FILE",
+									"value": "/run/serving-certs/tls.key",
+								},
+							},
+							"volumeMounts": []map[string]interface{}{{
+								"mountPath": "/run/serving-certs",
+								"readyOnly": true,
+								"name":      "serving-cert",
+							}},
+						},
+					},
+					"volumes": []map[string]interface{}{{
+						"name": "serving-cert",
+						"secret": map[string]interface{}{
+							"secretName": c.Spec.TLSSecretRef.Name,
+						},
+					}},
+				},
+			},
+		},
+	}
+	managerEnvBytes, err := yaml.Marshal(managerEnv)
+	if err != nil {
+		return nil, fmt.Errorf("marshalling manager env patch: %w", err)
+	}
+	if err = kc.WriteFile("/man/manager_env_patch.yaml", managerEnvBytes); err != nil {
+		return nil, fmt.Errorf("writing manager_env_patch.yaml: %w", err)
 	}
 
 	// execute kustomize

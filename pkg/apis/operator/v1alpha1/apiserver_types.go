@@ -22,6 +22,8 @@ import (
 
 // APIServerSpec defines the desired state of APIServer
 type APIServerSpec struct {
+	// TLSSecretRef referencing the TLS serving credentials for the API server
+	TLSSecretRef ObjectReference `json:"tlsSecretRef"`
 }
 
 // APIServerStatus defines the observed state of APIServer
