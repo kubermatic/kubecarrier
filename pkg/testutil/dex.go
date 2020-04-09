@@ -28,7 +28,6 @@ import (
 	"time"
 
 	"github.com/go-logr/logr"
-	"k8s.io/apimachinery/pkg/util/wait"
 )
 
 func DexFakeClientCredentialsGrant(ctx context.Context, log logr.Logger, client *http.Client, providerURI, username, password string) (token string, err error) {
@@ -43,7 +42,17 @@ func DexFakeClientCredentialsGrant(ctx context.Context, log logr.Logger, client 
 		client:      client,
 		log:         log.WithValues("client-id", clientID, "provider-uri", providerURI),
 	}
-	return cl.Login(ctx, username, password)
+	for i := 0; ; i++ {
+		token, err := cl.login(ctx, username, password)
+		if err == nil {
+			return token, nil
+		}
+		// last loop iteration
+		if i == 2 {
+			return "", err
+		}
+		time.Sleep(time.Duration(2*i+1) * time.Second)
+	}
 }
 
 // This code is mostly c/p from kubermatic with some minor adaptations
@@ -70,29 +79,7 @@ type dexClient struct {
 	log logr.Logger
 }
 
-func (c *dexClient) Login(ctx context.Context, login string, password string) (string, error) {
-	var (
-		accessToken string
-		err         error
-	)
-
-	if err := wait.PollImmediate(3*time.Second, 1*time.Minute, func() (bool, error) {
-		c.log.Info("trying to login", "username", login)
-		accessToken, err = c.tryLogin(ctx, login, password)
-		if err != nil {
-			c.log.Error(err, "Failed to login")
-			return false, nil
-		}
-
-		return true, nil
-	}); err != nil {
-		return "", err
-	}
-
-	return accessToken, nil
-}
-
-func (c *dexClient) tryLogin(ctx context.Context, login string, password string) (string, error) {
+func (c *dexClient) login(ctx context.Context, login string, password string) (string, error) {
 	c.log.V(6).Info("Attempting login")
 
 	// fetch login page and acquire the nonce
