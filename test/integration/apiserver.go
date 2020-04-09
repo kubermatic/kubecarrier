@@ -142,9 +142,10 @@ func newAPIServer(f *testutil.Framework) func(t *testing.T) {
 			),
 		)
 		client := apiserverv1alpha1.NewKubecarrierClient(conn)
-		ctx, cancel = context.WithTimeout(ctx, 30*time.Second)
+		versionCtx, cancel := context.WithTimeout(ctx, 30*time.Second)
+		t.Cleanup(cancel)
 		require.NoError(t, wait.PollUntil(time.Second, func() (done bool, err error) {
-			version, err := client.Version(ctx, &apiserverv1alpha1.VersionRequest{})
+			version, err := client.Version(versionCtx, &apiserverv1alpha1.VersionRequest{})
 			if err == nil {
 				assert.NotEmpty(t, version.Version)
 				assert.NotEmpty(t, version.Branch)
@@ -161,7 +162,7 @@ func newAPIServer(f *testutil.Framework) func(t *testing.T) {
 				}
 			}
 			return false, err
-		}, ctx.Done()), "client version gRPC call")
+		}, versionCtx.Done()), "client version gRPC call")
 	}
 }
 
