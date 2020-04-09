@@ -21,6 +21,7 @@ spec:
   dnsNames:
     - dex.kubecarrier-system.svc
     - localhost
+  isCA: true
   issuerRef:
     kind: Issuer
     name: dex

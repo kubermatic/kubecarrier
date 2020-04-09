@@ -146,7 +146,7 @@
           - name: API_SERVER_OIDC_CLIENT_ID
             value: ""
           - name: API_SERVER_OIDC_CA_FILE
-            value: /run/oidc/ca.crt
+            value: /run/oidc-certs/ca.crt
           - name: API_SERVER_OIDC_USERNAME_CLAIM
             value: ""
           - name: API_SERVER_OIDC_USERNAME_PREFIX

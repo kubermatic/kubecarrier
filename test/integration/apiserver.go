@@ -91,9 +91,11 @@ func newAPIServer(f *testutil.Framework) func(t *testing.T) {
 			Spec: certmanagerv1alpha3.CertificateSpec{
 				SecretName: servingTLSSecret.GetName(),
 				DNSNames: []string{
-					strings.Join([]string{"foo", servingTLSSecret.GetNamespace(), "svc"}, "."),
+					strings.Join([]string{"kubecarrier-api-server-manager", servingTLSSecret.GetNamespace(), "svc"}, "."),
+					"kubecarrier-api-server-manager",
 					"localhost",
 				},
+				IsCA: true,
 				IssuerRef: v1.ObjectReference{
 					Name: issuer.GetName(),
 				},
@@ -117,9 +119,9 @@ func newAPIServer(f *testutil.Framework) func(t *testing.T) {
 				},
 				OIDC: operatorv1alpha1.APIServerOIDCConfig{
 					// from test/testdata/dex_values.yaml
-					IssuerURL: "https://dex.kubecarrier-system.svc",
-					ClientID:  "e2e-client-id",
-					// UsernameClaim: "name",
+					IssuerURL:     "https://dex.kubecarrier-system.svc",
+					ClientID:      "e2e-client-id",
+					UsernameClaim: "name",
 					CertificateAuthority: operatorv1alpha1.ObjectReference{
 						Name: "dex-web-server",
 					},
@@ -127,7 +129,7 @@ func newAPIServer(f *testutil.Framework) func(t *testing.T) {
 			},
 		}
 		require.NoError(t, managementClient.Create(ctx, apiServer))
-		assert.NoError(t, testutil.WaitUntilReady(ctx, managementClient, apiServer))
+		require.NoError(t, testutil.WaitUntilReady(ctx, managementClient, apiServer))
 
 		ctx, cancel = context.WithCancel(ctx)
 		t.Cleanup(cancel)
@@ -216,7 +218,7 @@ func fetchUserToken(ctx context.Context, t *testing.T, managementClient *testuti
 					RootCAs:    certPool,
 					ServerName: "dex.kubecarrier-system.svc",
 					// TODO: see what's with this stuff....aaagh
-					InsecureSkipVerify: true,
+					//InsecureSkipVerify: true,
 				},
 			},
 			Timeout: 5 * time.Second,

@@ -128,7 +128,7 @@ func Manifests(c Config) ([]unstructured.Unstructured, error) {
 								},
 								{
 									"name":  "API_SERVER_OIDC_CA_FILE",
-									"value": "/run/oidc/ca.crt",
+									"value": "/run/oidc-certs/ca.crt",
 								},
 								{
 									"name":  "API_SERVER_OIDC_USERNAME_CLAIM",
