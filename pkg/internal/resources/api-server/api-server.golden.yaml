@@ -135,6 +135,10 @@
             value: /run/serving-certs/tls.key
           image: quay.io/kubecarrier/api-server:was not build properly
           name: manager
+          ports:
+          - containerPort: 8443
+            name: https
+            protocol: TCP
           resources:
             limits:
               cpu: 100m
@@ -152,3 +156,25 @@
         - name: serving-cert
           secret:
             secretName: serving-tls-secret
+- apiVersion: v1
+  kind: Service
+  metadata:
+    labels:
+      app.kubernetes.io/instance: foo
+      app.kubernetes.io/managed-by: kubecarrier-operator
+      app.kubernetes.io/name: api-server
+      app.kubernetes.io/version: was not build properly
+      control-plane: api-server
+      kubecarrier.io/role: api-server
+    name: kubecarrier-api-server-manager
+    namespace: kubecarrier-system-10
+  spec:
+    ports:
+    - name: https
+      port: 443
+      protocol: TCP
+      targetPort: https
+    selector:
+      control-plane: api-server
+      kubecarrier.io/role: api-server
+    type: ClusterIP

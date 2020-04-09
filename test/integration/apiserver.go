@@ -18,6 +18,10 @@ package integration
 
 import (
 	"context"
+	"crypto/x509"
+	"fmt"
+	"os"
+	"os/exec"
 	"strings"
 	"testing"
 
@@ -25,9 +29,12 @@ import (
 	v1 "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	apiserverv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/apiserver/v1alpha1"
 	operatorv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/operator/v1alpha1"
 	"github.com/kubermatic/kubecarrier/pkg/testutil"
 )
@@ -46,6 +53,7 @@ func newAPIServer(f *testutil.Framework) func(t *testing.T) {
 		ns := &corev1.Namespace{}
 		ns.Name = testName
 		require.NoError(t, managementClient.Create(ctx, ns))
+		const localPort = 9443
 
 		servingTLSSecret := &corev1.Secret{
 			ObjectMeta: metav1.ObjectMeta{
@@ -74,6 +82,7 @@ func newAPIServer(f *testutil.Framework) func(t *testing.T) {
 				SecretName: servingTLSSecret.GetName(),
 				DNSNames: []string{
 					strings.Join([]string{"foo", servingTLSSecret.GetNamespace(), "svc"}, "."),
+					fmt.Sprintf("localhost:%d", localPort),
 				},
 				IssuerRef: v1.ObjectReference{
 					Name: issuer.GetName(),
@@ -100,5 +109,34 @@ func newAPIServer(f *testutil.Framework) func(t *testing.T) {
 		}
 		require.NoError(t, managementClient.Create(ctx, apiServer))
 		assert.NoError(t, testutil.WaitUntilReady(ctx, managementClient, apiServer))
+
+		pfCmd := exec.CommandContext(ctx,
+			"kubectl",
+			"--kubeconfig", f.Config().ManagementExternalKubeconfigPath,
+			"--namespace", apiServer.GetNamespace(),
+			"port-forward",
+			"service/"+apiServer.GetName(),
+			fmt.Sprintf("%d:443", localPort),
+		)
+		pfCmd.Stdout = os.Stdout
+		pfCmd.Stderr = os.Stderr
+		require.NoError(t, pfCmd.Start())
+
+		certPool := x509.NewCertPool()
+		require.True(t, certPool.AppendCertsFromPEM(servingTLSSecret.Data[corev1.TLSCertKey]))
+		require.True(t, certPool.AppendCertsFromPEM(servingTLSSecret.Data["ca.crt"]))
+
+		conn, err := grpc.DialContext(
+			ctx,
+			fmt.Sprintf("localhost:%d", localPort),
+			grpc.WithTransportCredentials(
+				credentials.NewClientTLSFromCert(certPool, ""),
+			),
+		)
+		client := apiserverv1alpha1.NewKubecarrierClient(conn)
+		version, err := client.Version(ctx, &apiserverv1alpha1.VersionRequest{})
+		if assert.NoError(t, err, "grpc version") {
+			t.Log("API Server version", version.Version)
+		}
 	}
 }

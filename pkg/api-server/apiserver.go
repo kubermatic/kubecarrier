@@ -118,6 +118,7 @@ func runE(flags *flags, log logr.Logger) error {
 		log.V(4).Info("No TLS cert file defined, skipping TLS setup")
 		return server.ListenAndServe()
 	} else {
+		log.Info("using provided TLS cert/key")
 		return server.ListenAndServeTLS(flags.TLSCertFile, flags.TLSPrivateKeyFile)
 	}
 }

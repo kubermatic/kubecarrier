@@ -19,6 +19,7 @@ package apiserver
 import (
 	"fmt"
 
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"sigs.k8s.io/kustomize/v3/pkg/image"
 	"sigs.k8s.io/kustomize/v3/pkg/types"
@@ -100,6 +101,11 @@ func Manifests(c Config) ([]unstructured.Unstructured, error) {
 									"value": "/run/serving-certs/tls.key",
 								},
 							},
+							"ports": []corev1.ContainerPort{{
+								Name:          "https",
+								ContainerPort: 8443,
+								Protocol:      "TCP",
+							}},
 							"volumeMounts": []map[string]interface{}{{
 								"mountPath": "/run/serving-certs",
 								"readyOnly": true,
