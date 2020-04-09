@@ -18,6 +18,7 @@ package apiserver
 
 import (
 	"fmt"
+	"strings"
 
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -86,6 +87,15 @@ func Manifests(c Config) ([]unstructured.Unstructured, error) {
 								"--addr=$(API_SERVER_ADDR)",
 								"--tls-cert-file=$(API_SERVER_TLS_CERT_FILE)",
 								"--tls-private-key-file=$(API_SERVER_TLS_PRIVATE_KEY_FILE)",
+								"--oidc-issuer-url=$(API_SERVER_OIDC_ISSUER_URL)",
+								"--oidc-client-id=$(API_SERVER_OIDC_CLIENT_ID)",
+								"--oidc-ca-file=$(API_SERVER_OIDC_CA_FILE)",
+								"--oidc-username-claim=$(API_SERVER_OIDC_USERNAME_CLAIM)",
+								"--oidc-username-prefix=$(API_SERVER_OIDC_USERNAME_PREFIX)",
+								"--oidc-groups-claim=$(API_SERVER_OIDC_GROUPS_CLAIM)",
+								"--oidc-groups-prefix=$(API_SERVER_OIDC_GROUPS_PREFIX)",
+								"--oidc-signing-algs=$(API_SERVER_OIDC_SIGNING_ALGS)",
+								"--oidc-required-claim=$(API_SERVER_OIDC_REQUIRED_CLAIMS)",
 							},
 							"env": []map[string]interface{}{
 								{
@@ -100,6 +110,44 @@ func Manifests(c Config) ([]unstructured.Unstructured, error) {
 									"name":  "API_SERVER_TLS_PRIVATE_KEY_FILE",
 									"value": "/run/serving-certs/tls.key",
 								},
+								{
+									"name":  "API_SERVER_OIDC_ISSUER_URL",
+									"value": c.Spec.OIDC.IssuerURL,
+								},
+								{
+									"name":  "API_SERVER_OIDC_CLIENT_ID",
+									"value": c.Spec.OIDC.ClientID,
+								},
+								{
+									"name":  "API_SERVER_OIDC_CA_FILE",
+									"value": "/run/oidc/ca.crt",
+								},
+								{
+									"name":  "API_SERVER_OIDC_USERNAME_CLAIM",
+									"value": c.Spec.OIDC.UsernameClaim,
+								},
+								{
+									"name":  "API_SERVER_OIDC_USERNAME_PREFIX",
+									"value": c.Spec.OIDC.UsernamePrefix,
+								},
+								{
+									"name":  "API_SERVER_OIDC_GROUPS_CLAIM",
+									"value": c.Spec.OIDC.GroupsClaim,
+								},
+								{
+									"name":  "API_SERVER_OIDC_GROUPS_PREFIX",
+									"value": c.Spec.OIDC.GroupsPrefix,
+								},
+								{
+									"name":  "API_SERVER_OIDC_SIGNING_ALGS",
+									"value": strings.Join(c.Spec.OIDC.SupportedSigningAlgs, ","),
+								},
+								{
+									// TODO: make this nice and working
+									"name":  "API_SERVER_OIDC_REQUIRED_CLAIMS",
+									"value": "",
+									// "value": c.Spec.OIDC.RequiredClaims,
+								},
 							},
 							"ports": []corev1.ContainerPort{{
 								Name:          "https",
@@ -110,6 +158,10 @@ func Manifests(c Config) ([]unstructured.Unstructured, error) {
 								"mountPath": "/run/serving-certs",
 								"readyOnly": true,
 								"name":      "serving-cert",
+							}, {
+								"mountPath": "/run/oidc-certs",
+								"readyOnly": true,
+								"name":      "oidc-cert",
 							}},
 						},
 					},
@@ -117,6 +169,11 @@ func Manifests(c Config) ([]unstructured.Unstructured, error) {
 						"name": "serving-cert",
 						"secret": map[string]interface{}{
 							"secretName": c.Spec.TLSSecretRef.Name,
+						},
+					}, {
+						"name": "oidc-cert",
+						"secret": map[string]interface{}{
+							"secretName": c.Spec.OIDC.CertificateAuthority.Name,
 						},
 					}},
 				},

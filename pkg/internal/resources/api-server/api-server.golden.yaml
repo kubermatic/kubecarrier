@@ -126,6 +126,15 @@
           - --addr=$(API_SERVER_ADDR)
           - --tls-cert-file=$(API_SERVER_TLS_CERT_FILE)
           - --tls-private-key-file=$(API_SERVER_TLS_PRIVATE_KEY_FILE)
+          - --oidc-issuer-url=$(API_SERVER_OIDC_ISSUER_URL)
+          - --oidc-client-id=$(API_SERVER_OIDC_CLIENT_ID)
+          - --oidc-ca-file=$(API_SERVER_OIDC_CA_FILE)
+          - --oidc-username-claim=$(API_SERVER_OIDC_USERNAME_CLAIM)
+          - --oidc-username-prefix=$(API_SERVER_OIDC_USERNAME_PREFIX)
+          - --oidc-groups-claim=$(API_SERVER_OIDC_GROUPS_CLAIM)
+          - --oidc-groups-prefix=$(API_SERVER_OIDC_GROUPS_PREFIX)
+          - --oidc-signing-algs=$(API_SERVER_OIDC_SIGNING_ALGS)
+          - --oidc-required-claim=$(API_SERVER_OIDC_REQUIRED_CLAIMS)
           env:
           - name: API_SERVER_ADDR
             value: :8443
@@ -133,6 +142,24 @@
             value: /run/serving-certs/tls.crt
           - name: API_SERVER_TLS_PRIVATE_KEY_FILE
             value: /run/serving-certs/tls.key
+          - name: API_SERVER_OIDC_ISSUER_URL
+            value: ""
+          - name: API_SERVER_OIDC_CLIENT_ID
+            value: ""
+          - name: API_SERVER_OIDC_CA_FILE
+            value: /run/oidc/ca.crt
+          - name: API_SERVER_OIDC_USERNAME_CLAIM
+            value: ""
+          - name: API_SERVER_OIDC_USERNAME_PREFIX
+            value: ""
+          - name: API_SERVER_OIDC_GROUPS_CLAIM
+            value: ""
+          - name: API_SERVER_OIDC_GROUPS_PREFIX
+            value: ""
+          - name: API_SERVER_OIDC_SIGNING_ALGS
+            value: ""
+          - name: API_SERVER_OIDC_REQUIRED_CLAIMS
+            value: ""
           image: quay.io/kubecarrier/api-server:was not build properly
           name: manager
           ports:
@@ -150,12 +177,18 @@
           - mountPath: /run/serving-certs
             name: serving-cert
             readyOnly: true
+          - mountPath: /run/oidc-certs
+            name: oidc-cert
+            readyOnly: true
         serviceAccountName: kubecarrier-api-server-sa
         terminationGracePeriodSeconds: 10
         volumes:
         - name: serving-cert
           secret:
             secretName: serving-tls-secret
+        - name: oidc-cert
+          secret:
+            secretName: ""
 - apiVersion: v1
   kind: Service
   metadata:

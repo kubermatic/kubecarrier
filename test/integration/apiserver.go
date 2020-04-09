@@ -28,6 +28,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/golang/protobuf/ptypes/empty"
 	certmanagerv1alpha3 "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha3"
 	v1 "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
 	"github.com/stretchr/testify/assert"
@@ -119,8 +120,9 @@ func newAPIServer(f *testutil.Framework) func(t *testing.T) {
 					// from test/testdata/dex_values.yaml
 					IssuerURL: "https://dex.kubecarrier-system.svc",
 					ClientID:  "e2e-client-id",
+					// UsernameClaim: "name",
 					CertificateAuthority: operatorv1alpha1.ObjectReference{
-						Name: "dex-web-server-ca",
+						Name: "dex-web-server",
 					},
 				},
 			},
@@ -178,6 +180,12 @@ func newAPIServer(f *testutil.Framework) func(t *testing.T) {
 			}
 			return false, err
 		}, versionCtx.Done()), "client version gRPC call")
+
+		userinfo, err := client.WhoAmI(ctx, &empty.Empty{})
+		if assert.NoError(t, err, "whoami gRPC") {
+			t.Log("User info:")
+			testutil.LogObject(t, userinfo)
+		}
 	}
 }
 
