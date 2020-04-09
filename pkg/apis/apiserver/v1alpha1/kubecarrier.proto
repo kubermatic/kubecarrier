@@ -34,10 +34,10 @@ message APIVersion {
 message VersionRequest {}
 
 // Service
-service Kubecarrier {
+service KubecarrierV1Alpha1 {
   rpc Version(VersionRequest) returns (APIVersion) {
     option (google.api.http) = {
-    get: "/version"
+      get: "/v1alpha1/version"
     };
   };
 }

@@ -82,7 +82,7 @@ func newAPIServer(f *testutil.Framework) func(t *testing.T) {
 				SecretName: servingTLSSecret.GetName(),
 				DNSNames: []string{
 					strings.Join([]string{"foo", servingTLSSecret.GetNamespace(), "svc"}, "."),
-					fmt.Sprintf("localhost:%d", localPort),
+					"localhost",
 				},
 				IssuerRef: v1.ObjectReference{
 					Name: issuer.GetName(),
@@ -115,8 +115,8 @@ func newAPIServer(f *testutil.Framework) func(t *testing.T) {
 			"--kubeconfig", f.Config().ManagementExternalKubeconfigPath,
 			"--namespace", apiServer.GetNamespace(),
 			"port-forward",
-			"service/"+apiServer.GetName(),
-			fmt.Sprintf("%d:443", localPort),
+			"service/"+"kubecarrier-api-server-manager", //+apiServer.GetName(),
+			fmt.Sprintf("%d:https", localPort),
 		)
 		pfCmd.Stdout = os.Stdout
 		pfCmd.Stderr = os.Stderr
@@ -124,16 +124,16 @@ func newAPIServer(f *testutil.Framework) func(t *testing.T) {
 
 		certPool := x509.NewCertPool()
 		require.True(t, certPool.AppendCertsFromPEM(servingTLSSecret.Data["ca.crt"]))
-		assert.True(t, certPool.AppendCertsFromPEM(servingTLSSecret.Data[corev1.TLSCertKey]))
+		require.True(t, certPool.AppendCertsFromPEM(servingTLSSecret.Data[corev1.TLSCertKey]))
 
 		conn, err := grpc.DialContext(
 			ctx,
-			fmt.Sprintf("localhost:%d", localPort),
+			fmt.Sprintf("localhost:%d/v1alpha1", localPort),
 			grpc.WithTransportCredentials(
 				credentials.NewClientTLSFromCert(certPool, ""),
 			),
 		)
-		client := apiserverv1alpha1.NewKubecarrierClient(conn)
+		client := apiserverv1alpha1.NewKubecarrierV1Alpha1Client(conn)
 		version, err := client.Version(ctx, &apiserverv1alpha1.VersionRequest{})
 		if assert.NoError(t, err, "grpc version") {
 			t.Log("API Server version", version.Version)

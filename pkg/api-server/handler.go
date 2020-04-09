@@ -27,7 +27,7 @@ import (
 
 type kubecarrierHandler struct{}
 
-var _ v1alpha1.KubecarrierServer = (*kubecarrierHandler)(nil)
+var _ v1alpha1.KubecarrierV1Alpha1Server = (*kubecarrierHandler)(nil)
 
 func (v kubecarrierHandler) Version(context.Context, *v1alpha1.VersionRequest) (*v1alpha1.APIVersion, error) {
 	versionInfo := version.Get()
