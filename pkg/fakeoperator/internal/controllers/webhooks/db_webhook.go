@@ -114,7 +114,7 @@ func (r *DBWebhookHandler) validateCreate(ctx context.Context, db *fakev1alpha1.
 		return fmt.Errorf("create operation disabled for %s", db.Name)
 	}
 	if !webhook.IsDNS1123Label(db.Name) {
-		return fmt.Errorf("provider name: %s is not a valid DNS 1123 Label, %s", db.Name, webhook.DNS1123LabelDescription)
+		return fmt.Errorf("DB name: %s is not a valid DNS 1123 Label, %s", db.Name, webhook.DNS1123LabelDescription)
 	}
 	return nil
 }
