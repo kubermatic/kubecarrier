@@ -123,8 +123,8 @@ func newAPIServer(f *testutil.Framework) func(t *testing.T) {
 		require.NoError(t, pfCmd.Start())
 
 		certPool := x509.NewCertPool()
-		require.True(t, certPool.AppendCertsFromPEM(servingTLSSecret.Data[corev1.TLSCertKey]))
 		require.True(t, certPool.AppendCertsFromPEM(servingTLSSecret.Data["ca.crt"]))
+		assert.True(t, certPool.AppendCertsFromPEM(servingTLSSecret.Data[corev1.TLSCertKey]))
 
 		conn, err := grpc.DialContext(
 			ctx,
