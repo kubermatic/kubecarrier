@@ -157,7 +157,7 @@ func newAPIServer(f *testutil.Framework) func(t *testing.T) {
 			grpc.WithTransportCredentials(
 				credentials.NewClientTLSFromCert(certPool, ""),
 			),
-			grpc.WithPerRPCCredentials(gRPCWithAuthToken{token: "token"}),
+			grpc.WithPerRPCCredentials(gRPCWithAuthToken{token: token}),
 		)
 		client := apiserverv1alpha1.NewKubecarrierClient(conn)
 		versionCtx, cancel := context.WithTimeout(ctx, 30*time.Second)
@@ -217,8 +217,6 @@ func fetchUserToken(ctx context.Context, t *testing.T, managementClient *testuti
 				TLSClientConfig: &tls.Config{
 					RootCAs:    certPool,
 					ServerName: "dex.kubecarrier-system.svc",
-					// TODO: see what's with this stuff....aaagh
-					//InsecureSkipVerify: true,
 				},
 			},
 			Timeout: 5 * time.Second,
