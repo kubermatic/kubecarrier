@@ -134,7 +134,6 @@
           - --oidc-groups-claim=$(API_SERVER_OIDC_GROUPS_CLAIM)
           - --oidc-groups-prefix=$(API_SERVER_OIDC_GROUPS_PREFIX)
           - --oidc-signing-algs=$(API_SERVER_OIDC_SIGNING_ALGS)
-          - --oidc-required-claim=$(API_SERVER_OIDC_REQUIRED_CLAIMS)
           env:
           - name: API_SERVER_ADDR
             value: :8443
@@ -157,8 +156,6 @@
           - name: API_SERVER_OIDC_GROUPS_PREFIX
             value: ""
           - name: API_SERVER_OIDC_SIGNING_ALGS
-            value: ""
-          - name: API_SERVER_OIDC_REQUIRED_CLAIMS
             value: ""
           image: quay.io/kubecarrier/api-server:was not build properly
           name: manager

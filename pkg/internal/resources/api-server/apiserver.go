@@ -65,6 +65,15 @@ func Manifests(c Config) ([]unstructured.Unstructured, error) {
 		return nil, fmt.Errorf("cannot mkdir: %w", err)
 	}
 
+	extraArgs := make([]string, 0)
+	if len(c.Spec.OIDC.RequiredClaims) > 0 {
+		rclaims := make([]string, 0)
+		for k, v := range c.Spec.OIDC.RequiredClaims {
+			rclaims = append(rclaims, fmt.Sprintf("%s=%s", k, v))
+		}
+		extraArgs = append(extraArgs, "--oidc-required-claim="+strings.Join(rclaims, ","))
+	}
+
 	// Patch environment
 	// Note:
 	// we are not using *appsv1.Deployment here,
@@ -83,7 +92,7 @@ func Manifests(c Config) ([]unstructured.Unstructured, error) {
 					"containers": []map[string]interface{}{
 						{
 							"name": "manager",
-							"args": []string{
+							"args": append([]string{
 								"--addr=$(API_SERVER_ADDR)",
 								"--tls-cert-file=$(API_SERVER_TLS_CERT_FILE)",
 								"--tls-private-key-file=$(API_SERVER_TLS_PRIVATE_KEY_FILE)",
@@ -95,8 +104,7 @@ func Manifests(c Config) ([]unstructured.Unstructured, error) {
 								"--oidc-groups-claim=$(API_SERVER_OIDC_GROUPS_CLAIM)",
 								"--oidc-groups-prefix=$(API_SERVER_OIDC_GROUPS_PREFIX)",
 								"--oidc-signing-algs=$(API_SERVER_OIDC_SIGNING_ALGS)",
-								"--oidc-required-claim=$(API_SERVER_OIDC_REQUIRED_CLAIMS)",
-							},
+							}, extraArgs...),
 							"env": []map[string]interface{}{
 								{
 									"name":  "API_SERVER_ADDR",
@@ -141,12 +149,6 @@ func Manifests(c Config) ([]unstructured.Unstructured, error) {
 								{
 									"name":  "API_SERVER_OIDC_SIGNING_ALGS",
 									"value": strings.Join(c.Spec.OIDC.SupportedSigningAlgs, ","),
-								},
-								{
-									// TODO: make this nice and working
-									"name":  "API_SERVER_OIDC_REQUIRED_CLAIMS",
-									"value": "",
-									// "value": c.Spec.OIDC.RequiredClaims,
 								},
 							},
 							"ports": []corev1.ContainerPort{{

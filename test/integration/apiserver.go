@@ -56,11 +56,10 @@ func newAPIServer(f *testutil.Framework) func(t *testing.T) {
 		require.NoError(t, err, "creating management client")
 		t.Cleanup(managementClient.CleanUpFunc(ctx))
 
-		testName := strings.Replace(strings.ToLower(t.Name()), "/", "-", -1)
-
+		// testName := strings.Replace(strings.ToLower(t.Name()), "/", "-", -1)
 		ns := &corev1.Namespace{}
-		ns.Name = testName
-		require.NoError(t, managementClient.Create(ctx, ns))
+		ns.Name = "kubecarrier-system"
+		// require.NoError(t, managementClient.Create(ctx, ns))
 		const localAPIServerPort = 9443
 
 		token := fetchUserToken(ctx, t, managementClient, f.Config().ManagementExternalKubeconfigPath)
