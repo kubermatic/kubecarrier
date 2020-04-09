@@ -122,7 +122,8 @@ func newAPIServer(f *testutil.Framework) func(t *testing.T) {
 			"--kubeconfig", f.Config().ManagementExternalKubeconfigPath,
 			"--namespace", apiServer.GetNamespace(),
 			"port-forward",
-			"service/"+"kubecarrier-api-server-manager", //+apiServer.GetName(),
+			// well known service name since it's assumed only one API server shall be deployed
+			"service/kubecarrier-api-server-manager",
 			fmt.Sprintf("%d:https", localPort),
 		)
 		pfCmd.Stdout = os.Stdout
