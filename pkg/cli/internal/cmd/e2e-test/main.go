@@ -20,7 +20,6 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/spf13/cobra"
 
-	"github.com/kubermatic/kubecarrier/pkg/cli/internal/cmd/e2e-test/oidc"
 	"github.com/kubermatic/kubecarrier/pkg/testutil"
 )
 
@@ -46,7 +45,6 @@ func NewCommand(log logr.Logger) *cobra.Command {
 
 	cmd.AddCommand(
 		newRunCommand(log, cfg),
-		oidc.NewOIDCCommand(log),
 	)
 
 	cmd.PersistentFlags().StringVar(&cfg.TestID, "test-id", "", "unique e2e test id")

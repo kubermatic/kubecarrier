@@ -31,16 +31,16 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 )
 
-func DexFakeClientCredentialsGrant(ctx context.Context, log logr.Logger, providerURI, username, password string) (token string, err error) {
+func DexFakeClientCredentialsGrant(ctx context.Context, log logr.Logger, client *http.Client, providerURI, username, password string) (token string, err error) {
 	// from test/testdata/dex_values.yaml
 	clientID := "e2e-client-id"
-	redirectURI := "http://192.168.42.219:31850/oauth2/callback"
+	redirectURI := "http://dummy.svc/oauth2/callback"
 
 	cl := &dexClient{
 		clientID:    clientID,
 		redirectURI: redirectURI,
 		providerURI: providerURI,
-		client:      &http.Client{Timeout: 5 * time.Second},
+		client:      client,
 		log:         log.WithValues("client-id", clientID, "provider-uri", providerURI),
 	}
 	return cl.Login(ctx, username, password)

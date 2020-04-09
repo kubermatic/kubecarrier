@@ -20,6 +20,7 @@ metadata:
 spec:
   dnsNames:
     - dex.kubecarrier-system.svc
+    - localhost
   issuerRef:
     kind: Issuer
     name: dex

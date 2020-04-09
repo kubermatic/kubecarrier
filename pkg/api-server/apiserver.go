@@ -102,22 +102,28 @@ func runE(flags *flags, log logr.Logger) error {
 		return err
 	}
 
-	var handlerFunc http.HandlerFunc = func(writer http.ResponseWriter, request *http.Request) {
+	var handler http.Handler = http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 		log.Info("got request for", "path", request.URL.Path)
 		if strings.Contains(request.Header.Get("Content-Type"), "application/grpc") {
 			grpcServer.ServeHTTP(writer, request)
 		} else {
 			grpcGatewayMux.ServeHTTP(writer, request)
 		}
+	})
+
+	if flags.OIDCOptions.IssuerURL != "" {
+		log.Info("setting up OIDC auth middleware", "iss", flags.OIDCOptions.IssuerURL)
+		oidcMiddleware, err := NewOIDCMiddleware(log, flags.OIDCOptions)
+		if err != nil {
+			return fmt.Errorf("init OIDC Middleware: %w", err)
+		}
+		handler = oidcMiddleware(handler)
+	} else {
+		log.Info("skipping OIDC setup")
 	}
-	oidcMiddleware, err := NewOIDCMiddleware(log, flags.OIDCOptions)
-	if err != nil {
-		return fmt.Errorf("init OIDC Middleware: %w", err)
-	}
-	handlerFunc = oidcMiddleware(handlerFunc)
 
 	server := http.Server{
-		Handler: handlerFunc,
+		Handler: handler,
 		Addr:    flags.addr,
 	}
 
