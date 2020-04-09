@@ -24,15 +24,19 @@ import (
 	"os/exec"
 	"strings"
 	"testing"
+	"time"
 
 	certmanagerv1alpha3 "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha3"
 	v1 "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials"
+	"google.golang.org/grpc/status"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/wait"
 
 	apiserverv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/apiserver/v1alpha1"
 	operatorv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/operator/v1alpha1"
@@ -110,6 +114,9 @@ func newAPIServer(f *testutil.Framework) func(t *testing.T) {
 		require.NoError(t, managementClient.Create(ctx, apiServer))
 		assert.NoError(t, testutil.WaitUntilReady(ctx, managementClient, apiServer))
 
+		ctx, cancel = context.WithCancel(ctx)
+		t.Cleanup(cancel)
+
 		pfCmd := exec.CommandContext(ctx,
 			"kubectl",
 			"--kubeconfig", f.Config().ManagementExternalKubeconfigPath,
@@ -128,15 +135,35 @@ func newAPIServer(f *testutil.Framework) func(t *testing.T) {
 
 		conn, err := grpc.DialContext(
 			ctx,
-			fmt.Sprintf("localhost:%d/v1alpha1", localPort),
+			fmt.Sprintf("localhost:%d", localPort),
 			grpc.WithTransportCredentials(
 				credentials.NewClientTLSFromCert(certPool, ""),
 			),
 		)
 		client := apiserverv1alpha1.NewKubecarrierClient(conn)
-		version, err := client.Version(ctx, &apiserverv1alpha1.VersionRequest{})
-		if assert.NoError(t, err, "grpc version") {
-			t.Log("API Server version", version.Version)
-		}
+		ctx, cancel = context.WithTimeout(ctx, 30*time.Second)
+		require.NoError(t, wait.PollUntil(time.Second, func() (done bool, err error) {
+			version, err := client.Version(ctx, &apiserverv1alpha1.VersionRequest{})
+			if err == nil {
+				assert.NotEmpty(t, version.Version)
+				assert.NotEmpty(t, version.Branch)
+				assert.NotEmpty(t, version.BuildDate)
+				assert.NotEmpty(t, version.GoVersion)
+				t.Log("got response for gRPC server version")
+				testutil.LogObject(t, version)
+				return true, nil
+			}
+			if grpcStatus, ok := err.(ToGRPCStatus); ok {
+				if grpcStatus.GRPCStatus().Code() == codes.Unavailable {
+					t.Log("gRPC server temporary unavailable, retrying")
+					return false, nil
+				}
+			}
+			return false, err
+		}, ctx.Done()), "client version gRPC call")
 	}
+}
+
+type ToGRPCStatus interface {
+	GRPCStatus() *status.Status
 }
