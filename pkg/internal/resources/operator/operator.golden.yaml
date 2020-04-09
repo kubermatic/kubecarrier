@@ -58,9 +58,15 @@
                       items:
                         type: string
                       type: array
-                    caFile:
-                      description: Path to a PEM encoded root certificate of the provider.
-                      type: string
+                    certificateAuthority:
+                      description: CertificateAuthority references the secret containing
+                        issuer's CA in a PEM encoded root certificate of the provider.
+                      properties:
+                        name:
+                          type: string
+                      required:
+                        - name
+                      type: object
                     clientID:
                       description: "ClientID the JWT must be issued for, the \"sub\"
                         field. This plugin only trusts a single client to ensure the
@@ -118,6 +124,7 @@
                         "oidc:" would result in usernames like "oidc:john".
                       type: string
                   required:
+                    - certificateAuthority
                   - clientID
                   - issuerURL
                   type: object

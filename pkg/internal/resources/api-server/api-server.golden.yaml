@@ -122,14 +122,17 @@
           kubecarrier.io/role: api-server
       spec:
         containers:
-        - image: quay.io/kubecarrier/api-server:was not build properly
-          name: manager
-          resources:
-            limits:
-              cpu: 100m
-              memory: 100Mi
-            requests:
-              cpu: 100m
-              memory: 100Mi
+          - args: []
+            image: quay.io/kubecarrier/api-server:was not build properly
+            name: manager
+            resources:
+              limits:
+                cpu: 100m
+                memory: 100Mi
+              requests:
+                cpu: 100m
+                memory: 100Mi
+            volumeMounts: []
         serviceAccountName: kubecarrier-api-server-sa
         terminationGracePeriodSeconds: 10
+        volumes: []

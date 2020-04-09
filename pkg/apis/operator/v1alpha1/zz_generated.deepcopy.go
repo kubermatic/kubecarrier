@@ -108,6 +108,7 @@ func (in *APIServerOIDCConfig) DeepCopyInto(out *APIServerOIDCConfig) {
 		*out = make(authenticator.Audiences, len(*in))
 		copy(*out, *in)
 	}
+	out.CertificateAuthority = in.CertificateAuthority
 	if in.SupportedSigningAlgs != nil {
 		in, out := &in.SupportedSigningAlgs, &out.SupportedSigningAlgs
 		*out = make([]string, len(*in))
