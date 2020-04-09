@@ -49,6 +49,6 @@ for pkg in ${PBUFS} ; do
     cat hack/boilerplate/boilerplate.generatego.txt | sed s/YEAR/$(date +%Y)/ | cat - $x > $x.tmp
     mv $x.tmp $x
     goimports -local github.com/kubermatic -w $x
-    pre-commit run -a pretty-format-json || true
   done
+  pre-commit run -a pretty-format-json || true
 done
