@@ -91,8 +91,10 @@ func runE(flags *flags, log logr.Logger) error {
 			_, _ = writer.Write(buf)
 		}),
 	)
-	apiserverv1alpha1.RegisterKubecarrierV1Alpha1Server(grpcServer, &kubecarrierHandler{})
-	if err := apiserverv1alpha1.RegisterKubecarrierV1Alpha1HandlerServer(context.Background(), grpcGatewayMux, &kubecarrierHandler{}); err != nil {
+
+	// v1alpha1 registration
+	apiserverv1alpha1.RegisterKubecarrierServer(grpcServer, &kubecarrierHandler{})
+	if err := apiserverv1alpha1.RegisterKubecarrierHandlerServer(context.Background(), grpcGatewayMux, &kubecarrierHandler{}); err != nil {
 		return err
 	}
 

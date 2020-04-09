@@ -133,7 +133,7 @@ func newAPIServer(f *testutil.Framework) func(t *testing.T) {
 				credentials.NewClientTLSFromCert(certPool, ""),
 			),
 		)
-		client := apiserverv1alpha1.NewKubecarrierV1Alpha1Client(conn)
+		client := apiserverv1alpha1.NewKubecarrierClient(conn)
 		version, err := client.Version(ctx, &apiserverv1alpha1.VersionRequest{})
 		if assert.NoError(t, err, "grpc version") {
 			t.Log("API Server version", version.Version)
