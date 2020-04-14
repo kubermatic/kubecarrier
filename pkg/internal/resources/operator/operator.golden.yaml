@@ -26,8 +26,8 @@
       name: v1alpha1
       schema:
         openAPIV3Schema:
-          description: APIServer manages the deployment of the KubeCarrier master
-            controller manager.
+          description: APIServer manages the deployment of the KubeCarrier central
+            API server.
           properties:
             apiVersion:
               description: 'APIVersion defines the versioned schema of this representation

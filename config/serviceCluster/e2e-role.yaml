@@ -7,6 +7,7 @@ metadata:
 rules:
 - apiGroups:
   - "test.kubecarrier.io"
+  - "fake.kubecarrier.io"
   - "scenarios-simple.test.kubecarrier.io"
   resources:
   - '*'

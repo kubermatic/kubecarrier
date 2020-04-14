@@ -6,14 +6,14 @@ metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.2.8
   creationTimestamp: null
-  name: apiservers.operator.kubecarrier.io
+  name: dbs.fake.kubecarrier.io
 spec:
-  group: operator.kubecarrier.io
+  group: fake.kubecarrier.io
   names:
-    kind: APIServer
-    listKind: APIServerList
-    plural: apiservers
-    singular: apiserver
+    kind: DB
+    listKind: DBList
+    plural: dbs
+    singular: db
   scope: Namespaced
   versions:
   - additionalPrinterColumns:
@@ -23,11 +23,13 @@ spec:
     - jsonPath: .metadata.creationTimestamp
       name: Age
       type: date
+    - jsonPath: .status.connection
+      name: Connection
+      type: string
     name: v1alpha1
     schema:
       openAPIV3Schema:
-        description: APIServer manages the deployment of the KubeCarrier central API
-          server.
+        description: DB is core element in e2e operator
         properties:
           apiVersion:
             description: 'APIVersion defines the versioned schema of this representation
@@ -42,29 +44,49 @@ spec:
           metadata:
             type: object
           spec:
-            description: APIServerSpec defines the desired state of APIServer
+            description: DBSpec defines the desired state of DB
             properties:
-              tlsSecretRef:
-                description: TLSSecretRef referencing the TLS serving credentials
-                  for the API server
+              config:
+                description: E2E tests params
                 properties:
-                  name:
-                    type: string
-                required:
-                - name
+                  deletionAfterSeconds:
+                    description: DeletionAfterSeconds represents duration after which
+                      operator will remove finalizer
+                    type: integer
+                  readyAfterSeconds:
+                    description: ReadyAfterSeconds represents duration after which
+                      operator will mark DB as Ready
+                    type: integer
                 type: object
+              databaseName:
+                description: DatabaseName of the created database at start up
+                type: string
+              databasePassword:
+                description: DatabasePassword for the created database. Leave blank
+                  for auto-generation
+                type: string
+              databaseUser:
+                description: DatabaseUser for created database
+                type: string
+              rootPassword:
+                description: RootPassword is root account password for this data.
+                  Leave blank for auto-generation
+                type: string
             required:
-            - tlsSecretRef
+            - databaseName
+            - databasePassword
+            - databaseUser
+            - rootPassword
             type: object
           status:
-            description: APIServerStatus defines the observed state of APIServer
+            description: DBStatus defines the observed state of DB
             properties:
               conditions:
                 description: Conditions represents the latest available observations
-                  of a APIServer's current state.
+                  of a FakeDB's current state.
                 items:
-                  description: APIServerCondition contains details for the current
-                    condition of this APIServer.
+                  description: DBCondition contains details for the current condition
+                    of this DB.
                   properties:
                     lastTransitionTime:
                       description: LastTransitionTime is the last time the condition
@@ -84,7 +106,7 @@ spec:
                         'False', 'Unknown').
                       type: string
                     type:
-                      description: Type is the type of the APIServer condition, currently
+                      description: Type is the type of the DB condition, currently
                         ('Ready').
                       type: string
                   required:
@@ -95,9 +117,26 @@ spec:
                   - type
                   type: object
                 type: array
+              connection:
+                description: Connection is the connection string for FakeDB
+                properties:
+                  endpoint:
+                    description: Endpoint for this database
+                    type: string
+                  name:
+                    description: Database name
+                    type: string
+                  username:
+                    description: Username for this database
+                    type: string
+                required:
+                - endpoint
+                - name
+                - username
+                type: object
               observedGeneration:
                 description: ObservedGeneration is the most recent generation observed
-                  for this APIServer by the controller.
+                  for this FakeDB by the controller.
                 format: int64
                 type: integer
               phase:

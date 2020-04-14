@@ -1127,7 +1127,7 @@ The `operator.kubecarrier.io` API group contains objects to interact with the Ku
 
 ### APIServer.operator.kubecarrier.io/v1alpha1
 
-APIServer manages the deployment of the KubeCarrier master controller manager.
+APIServer manages the deployment of the KubeCarrier central API server.
 
 | Field | Description | Scheme | Required |
 | ----- | ----------- | ------ | -------- |
@@ -1168,6 +1168,7 @@ APIServerSpec defines the desired state of APIServer
 
 | Field | Description | Scheme | Required |
 | ----- | ----------- | ------ | -------- |
+| tlsSecretRef | TLSSecretRef referencing the TLS serving credentials for the API server | operator.kubecarrier.io/v1alpha1.ObjectReference | true |
 
 [Back to Group](#operator)
 

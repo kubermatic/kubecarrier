@@ -1,0 +1,28 @@
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  creationTimestamp: null
+  name: manager-role
+rules:
+- apiGroups:
+  - fake.kubecarrier.io
+  resources:
+  - dbs
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - fake.kubecarrier.io
+  resources:
+  - dbs/status
+  verbs:
+  - get
+  - patch
+  - update
