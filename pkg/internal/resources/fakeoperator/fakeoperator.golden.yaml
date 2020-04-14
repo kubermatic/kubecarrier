@@ -52,27 +52,25 @@
                   description: Config is E2E tests params
                   properties:
                     create:
-                      default: enabled
+                      default: Enabled
                       description: CreateEnable control whether create operation enabled
                         or not
                       type: string
                     delete:
-                      default: enabled
+                      default: Enabled
                       description: DeleteEnable control whether delete operation enabled
                         or not
                       type: string
                     deletionAfterSeconds:
-                      default: 0
                       description: DeletionAfterSeconds represents duration after
                         which operator will remove finalizer
                       type: integer
                     readyAfterSeconds:
-                      default: 0
                       description: ReadyAfterSeconds represents duration after which
                         operator will mark DB as Ready
                       type: integer
                     update:
-                      default: enabled
+                      default: Enabled
                       description: UpdateEnable control whether update operation enabled
                         or not
                       type: string

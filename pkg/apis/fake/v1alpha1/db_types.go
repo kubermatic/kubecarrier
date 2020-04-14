@@ -50,26 +50,24 @@ func (o OperationFlagType) Enabled() bool {
 
 // Values of OperationFlagType.
 const (
-	OperationFlagEnabled  OperationFlagType = "enabled"
-	OperationFlagDisabled OperationFlagType = "disabled"
+	OperationFlagEnabled  OperationFlagType = "Enabled"
+	OperationFlagDisabled OperationFlagType = "Disabled"
 )
 
 // Config defines the e2e tests params
 type Config struct {
 	// ReadyAfterSeconds represents duration after which operator will mark DB as Ready
-	// +kubebuilder:default:=0
 	ReadyAfterSeconds int `json:"readyAfterSeconds,omitempty"`
 	// DeletionAfterSeconds represents duration after which operator will remove finalizer
-	// +kubebuilder:default:=0
 	DeletionAfterSeconds int `json:"deletionAfterSeconds,omitempty"`
 	// CreateEnable control whether create operation enabled or not
-	// +kubebuilder:default:=enabled
+	// +kubebuilder:default:=Enabled
 	Create OperationFlagType `json:"create,omitempty"`
 	// UpdateEnable control whether update operation enabled or not
-	// +kubebuilder:default:=enabled
+	// +kubebuilder:default:=Enabled
 	Update OperationFlagType `json:"update,omitempty"`
 	// DeleteEnable control whether delete operation enabled or not
-	// +kubebuilder:default:=enabled
+	// +kubebuilder:default:=Enabled
 	Delete OperationFlagType `json:"delete,omitempty"`
 }
 

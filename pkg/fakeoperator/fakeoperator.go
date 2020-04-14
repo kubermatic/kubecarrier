@@ -20,7 +20,6 @@ import (
 	"fmt"
 
 	"github.com/go-logr/logr"
-	certv1alpha2 "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
 	"github.com/spf13/cobra"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -32,7 +31,7 @@ import (
 
 	fakev1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/fake/v1alpha1"
 	"github.com/kubermatic/kubecarrier/pkg/fakeoperator/internal/controllers"
-	"github.com/kubermatic/kubecarrier/pkg/fakeoperator/internal/controllers/webhooks"
+	"github.com/kubermatic/kubecarrier/pkg/fakeoperator/internal/webhooks"
 	"github.com/kubermatic/kubecarrier/pkg/internal/util"
 	utilwebhook "github.com/kubermatic/kubecarrier/pkg/internal/util/webhook"
 )
@@ -52,7 +51,6 @@ func init() {
 	utilruntime.Must(apiextensionsv1.AddToScheme(scheme))
 	utilruntime.Must(fakev1alpha1.AddToScheme(scheme))
 	utilruntime.Must(clientgoscheme.AddToScheme(scheme))
-	utilruntime.Must(certv1alpha2.AddToScheme(scheme))
 }
 
 func NewFakeOperator() *cobra.Command {
