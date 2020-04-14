@@ -222,7 +222,7 @@ func (s *APIServerStatus) SetCondition(condition APIServerCondition) {
 	s.Conditions = append(s.Conditions, condition)
 }
 
-// APIServer manages the deployment of the KubeCarrier master controller manager.
+// APIServer manages the deployment of the KubeCarrier central API server.
 // +kubebuilder:object:root=true
 // +kubebuilder:subresource:status
 // +kubebuilder:printcolumn:name="Status",type="string",JSONPath=".status.phase"

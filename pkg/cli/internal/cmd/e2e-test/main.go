@@ -45,6 +45,7 @@ func NewCommand(log logr.Logger) *cobra.Command {
 
 	cmd.AddCommand(
 		newRunCommand(log, cfg),
+		newSetupE2EOperator(log),
 	)
 
 	cmd.PersistentFlags().StringVar(&cfg.TestID, "test-id", "", "unique e2e test id")

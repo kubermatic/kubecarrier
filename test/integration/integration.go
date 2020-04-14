@@ -33,6 +33,7 @@ func NewIntegrationSuite(f *testutil.Framework) func(t *testing.T) {
 			"catalog":        newCatalogSuite,
 			"account":        newAccount,
 			"cli":            newCLI,
+			"fakeDB":         newFakeDB,
 		} {
 			name := name
 			testFn := testFn
