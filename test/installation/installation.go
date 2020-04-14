@@ -134,5 +134,10 @@ func NewInstallationSuite(f *testutil.Framework) func(t *testing.T) {
 		assert.NoError(t, managementClient.Get(ctx, types.NamespacedName{
 			Name: "accounts.catalog.kubecarrier.io",
 		}, crd), "get the CRD that owned by KubeCarrier object")
+
+		c = exec.CommandContext(ctx, "kubectl", "kubecarrier", "e2e-test", "--kubeconfig", f.Config().ServiceExternalKubeconfigPath, "setup-e2e-operator")
+		out, err = c.CombinedOutput()
+		t.Log(string(out))
+		require.NoError(t, err)
 	}
 }
