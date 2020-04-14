@@ -1127,7 +1127,7 @@ The `operator.kubecarrier.io` API group contains objects to interact with the Ku
 
 ### APIServer.operator.kubecarrier.io/v1alpha1
 
-APIServer manages the deployment of the KubeCarrier master controller manager.
+APIServer manages the deployment of the KubeCarrier central API server.
 
 | Field | Description | Scheme | Required |
 | ----- | ----------- | ------ | -------- |

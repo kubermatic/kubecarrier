@@ -39,10 +39,6 @@ func init() {
 	utilruntime.Must(clientgoscheme.AddToScheme(scheme))
 }
 
-const (
-	componentTower = "Tower"
-)
-
 type flags struct {
 	port int
 }
@@ -52,8 +48,8 @@ func NewAPIServer() *cobra.Command {
 	flags := &flags{}
 	cmd := &cobra.Command{
 		Args:  cobra.NoArgs,
-		Use:   componentTower,
-		Short: "KubeCarrier Tower",
+		Use:   "api-server",
+		Short: "KubeCarrier API server",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return runE(flags, log)
 		},

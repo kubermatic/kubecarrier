@@ -28,7 +28,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/builder"
 
 	operatorv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/operator/v1alpha1"
-	resourcetower "github.com/kubermatic/kubecarrier/pkg/internal/resources/tower"
+	apiserver "github.com/kubermatic/kubecarrier/pkg/internal/resources/api-server"
 )
 
 // +kubebuilder:rbac:groups=operator.kubecarrier.io,resources=apiservers,verbs=get;list;watch;update;patch
@@ -55,14 +55,14 @@ func (c *APIServerStrategy) GetDeletionObjectTypes() []runtime.Object {
 }
 
 func (c *APIServerStrategy) GetManifests(ctx context.Context, component Component) ([]unstructured.Unstructured, error) {
-	tower, ok := component.(*operatorv1alpha1.APIServer)
+	apiServer, ok := component.(*operatorv1alpha1.APIServer)
 	if !ok {
 		return nil, fmt.Errorf("can't assert to APIServer: %v", component)
 	}
-	return resourcetower.Manifests(
-		resourcetower.Config{
-			Name:      tower.Name,
-			Namespace: tower.Namespace,
+	return apiserver.Manifests(
+		apiserver.Config{
+			Name:      apiServer.Name,
+			Namespace: apiServer.Namespace,
 		})
 }
 
