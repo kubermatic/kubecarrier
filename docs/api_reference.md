@@ -1112,11 +1112,6 @@ The `operator.kubecarrier.io` API group contains objects to interact with the Ku
 * [KubeCarrierList.operator.kubecarrier.io/v1alpha1](#kubecarrierlist.operator.kubecarrier.io/v1alpha1)
 * [KubeCarrierSpec.operator.kubecarrier.io/v1alpha1](#kubecarrierspec.operator.kubecarrier.io/v1alpha1)
 * [KubeCarrierStatus.operator.kubecarrier.io/v1alpha1](#kubecarrierstatus.operator.kubecarrier.io/v1alpha1)
-* [Tower.operator.kubecarrier.io/v1alpha1](#tower.operator.kubecarrier.io/v1alpha1)
-* [TowerCondition.operator.kubecarrier.io/v1alpha1](#towercondition.operator.kubecarrier.io/v1alpha1)
-* [TowerList.operator.kubecarrier.io/v1alpha1](#towerlist.operator.kubecarrier.io/v1alpha1)
-* [TowerSpec.operator.kubecarrier.io/v1alpha1](#towerspec.operator.kubecarrier.io/v1alpha1)
-* [TowerStatus.operator.kubecarrier.io/v1alpha1](#towerstatus.operator.kubecarrier.io/v1alpha1)
 * [CRDReference.operator.kubecarrier.io/v1alpha1](#crdreference.operator.kubecarrier.io/v1alpha1)
 * [ObjectReference.operator.kubecarrier.io/v1alpha1](#objectreference.operator.kubecarrier.io/v1alpha1)
 
@@ -1372,64 +1367,6 @@ KubeCarrierStatus defines the observed state of KubeCarrier
 | observedGeneration | ObservedGeneration is the most recent generation observed for this KubeCarrier by the controller. | operator.kubecarrier.io/v1alpha1.int64 | false |
 | conditions | Conditions represents the latest available observations of a KubeCarrier's current state. | []operator.kubecarrier.io/v1alpha1.KubeCarrierCondition | false |
 | phase | DEPRECATED. Phase represents the current lifecycle state of this object. Consider this field DEPRECATED, it will be removed as soon as there is a mechanism to map conditions to strings when printing the property. This is only for display purpose, for everything else use conditions. | operator.kubecarrier.io/v1alpha1.KubeCarrierPhaseType | false |
-
-[Back to Group](#operator)
-
-### Tower.operator.kubecarrier.io/v1alpha1
-
-Tower manages the deployment of the KubeCarrier master controller manager.
-
-| Field | Description | Scheme | Required |
-| ----- | ----------- | ------ | -------- |
-| metadata |  | [metav1.ObjectMeta](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.14/#objectmeta-v1-meta) | false |
-| spec |  | operator.kubecarrier.io/v1alpha1.TowerSpec | false |
-| status |  | operator.kubecarrier.io/v1alpha1.TowerStatus | false |
-
-[Back to Group](#operator)
-
-### TowerCondition.operator.kubecarrier.io/v1alpha1
-
-TowerCondition contains details for the current condition of this Tower.
-
-| Field | Description | Scheme | Required |
-| ----- | ----------- | ------ | -------- |
-| type | Type is the type of the Tower condition, currently ('Ready'). | operator.kubecarrier.io/v1alpha1.TowerConditionType | true |
-| status | Status is the status of the condition, one of ('True', 'False', 'Unknown'). | operator.kubecarrier.io/v1alpha1.ConditionStatus | true |
-| lastTransitionTime | LastTransitionTime is the last time the condition transits from one status to another. | metav1.Time | true |
-| reason | Reason is the (brief) reason for the condition's last transition. | string | true |
-| message | Message is the human readable message indicating details about last transition. | string | true |
-
-[Back to Group](#operator)
-
-### TowerList.operator.kubecarrier.io/v1alpha1
-
-TowerList contains a list of Tower
-
-| Field | Description | Scheme | Required |
-| ----- | ----------- | ------ | -------- |
-| metadata |  | [metav1.ListMeta](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.14/#listmeta-v1-meta) | false |
-| items |  | []operator.kubecarrier.io/v1alpha1.Tower | true |
-
-[Back to Group](#operator)
-
-### TowerSpec.operator.kubecarrier.io/v1alpha1
-
-TowerSpec defines the desired state of Tower
-
-| Field | Description | Scheme | Required |
-| ----- | ----------- | ------ | -------- |
-
-[Back to Group](#operator)
-
-### TowerStatus.operator.kubecarrier.io/v1alpha1
-
-TowerStatus defines the observed state of Tower
-
-| Field | Description | Scheme | Required |
-| ----- | ----------- | ------ | -------- |
-| observedGeneration | ObservedGeneration is the most recent generation observed for this Tower by the controller. | operator.kubecarrier.io/v1alpha1.int64 | false |
-| conditions | Conditions represents the latest available observations of a Tower's current state. | []operator.kubecarrier.io/v1alpha1.TowerCondition | false |
-| phase | DEPRECATED. Phase represents the current lifecycle state of this object. Consider this field DEPRECATED, it will be removed as soon as there is a mechanism to map conditions to strings when printing the property. This is only for display purpose, for everything else use conditions. | operator.kubecarrier.io/v1alpha1.TowerPhaseType | false |
 
 [Back to Group](#operator)
 
