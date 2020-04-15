@@ -44,6 +44,20 @@ type DBWebhookHandler struct {
 
 var _ admission.Handler = (*DBWebhookHandler)(nil)
 
+func (r *DBWebhookHandler) defaultObject(obj *fakev1alpha1.DB) (*fakev1alpha1.DB, bool) {
+	newObj := obj.DeepCopy()
+	changed := false
+	if obj.Spec.DatabasePassword == "" {
+		newObj.Spec.DatabasePassword = defaultPassword
+		changed = true
+	}
+	if obj.Spec.RootPassword == "" {
+		newObj.Spec.RootPassword = defaultPassword
+		changed = true
+	}
+	return newObj, changed
+}
+
 // +kubebuilder:webhook:path=/mutate-fake-kubecarrier-io-v1alpha1-db,mutating=true,failurePolicy=fail,groups=fake.kubecarrier.io,resources=dbs,verbs=create;update;delete,versions=v1alpha1,name=mdb.kubecarrier.io
 
 // Handle is the function to handle create/update requests of DBs.
@@ -57,17 +71,7 @@ func (r *DBWebhookHandler) Handle(ctx context.Context, req admission.Request) ad
 		if err := r.validateCreate(ctx, obj); err != nil {
 			return admission.Denied(err.Error())
 		}
-		changed := false
-		if obj.Spec.DatabasePassword == "" {
-			obj.Spec.DatabasePassword = defaultPassword
-			changed = true
-		}
-		if obj.Spec.RootPassword == "" {
-			obj.Spec.RootPassword = defaultPassword
-			changed = true
-		}
-		if changed {
-			newObj := obj.DeepCopy()
+		if newObj, changed := r.defaultObject(obj); changed {
 			marshalledObj, err := json.Marshal(newObj)
 			if err != nil {
 				return admission.Errored(http.StatusInternalServerError, err)
