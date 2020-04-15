@@ -35,6 +35,7 @@ for pkg in ${PBUFS} ; do
   abs_path=${PROJECT}/${pkg}
   ts_root=${PROJECT}/pkg/web
   echo Generating from '*.proto' in $abs_path
+  # web files due to node_modules dependency resolution should be
   protoc \
     --go_out=plugins=grpc:${abs_path}  \
     --grpc-gateway_out=logtostderr=true:${abs_path} \
@@ -56,6 +57,7 @@ for pkg in ${PBUFS} ; do
 
   for ts in $(find "${ts_root}" -type f -name '*.ts' -or -name '*.js' -maxdepth 1); do
   echo "fixing ${ts}"
+# It's not used within ts/js and it's hell to import properly...
 ed "${ts}" <<EOF || true
 g/google_api_annotations/d
 w
