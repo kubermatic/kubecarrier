@@ -25,20 +25,34 @@ import (
 // DBSpec defines the desired state of DB
 type DBSpec struct {
 	// RootPassword is root account password for this data. Leave blank for auto-generation
-	RootPassword string `json:"rootPassword"`
+	RootPassword string `json:"rootPassword,omitempty"`
 
 	// DatabaseName of the created database at start up
+	// +kubebuilder:validation:MinLength=1
 	DatabaseName string `json:"databaseName"`
 
 	// DatabaseUser for created database
 	DatabaseUser string `json:"databaseUser"`
 
 	// DatabasePassword for the created database. Leave blank for auto-generation
-	DatabasePassword string `json:"databasePassword"`
+	DatabasePassword string `json:"databasePassword,omitempty"`
 
-	// E2E tests params
+	// Config is E2E tests params
 	Config Config `json:"config,omitempty"`
 }
+
+// OperationFlagType represents a enable/disable flag
+type OperationFlagType string
+
+func (o OperationFlagType) Enabled() bool {
+	return o == OperationFlagEnabled
+}
+
+// Values of OperationFlagType.
+const (
+	OperationFlagEnabled  OperationFlagType = "Enabled"
+	OperationFlagDisabled OperationFlagType = "Disabled"
+)
 
 // Config defines the e2e tests params
 type Config struct {
@@ -46,6 +60,15 @@ type Config struct {
 	ReadyAfterSeconds int `json:"readyAfterSeconds,omitempty"`
 	// DeletionAfterSeconds represents duration after which operator will remove finalizer
 	DeletionAfterSeconds int `json:"deletionAfterSeconds,omitempty"`
+	// CreateEnable control whether create operation enabled or not
+	// +kubebuilder:default:=Enabled
+	Create OperationFlagType `json:"create,omitempty"`
+	// UpdateEnable control whether update operation enabled or not
+	// +kubebuilder:default:=Enabled
+	Update OperationFlagType `json:"update,omitempty"`
+	// DeleteEnable control whether delete operation enabled or not
+	// +kubebuilder:default:=Enabled
+	Delete OperationFlagType `json:"delete,omitempty"`
 }
 
 // DBStatus defines the observed state of DB

@@ -214,7 +214,10 @@ func (f *Framework) NewFakeDB(name, namespace string) *fakev1alpha1.DB {
 			Name:      name,
 			Namespace: namespace,
 		},
-		Spec: fakev1alpha1.DBSpec{},
+		Spec: fakev1alpha1.DBSpec{DatabaseName: "fakeDB",
+			Config: fakev1alpha1.Config{
+				Create: fakev1alpha1.OperationFlagEnabled,
+			}},
 	}
 }
 
