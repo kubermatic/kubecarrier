@@ -24,6 +24,7 @@ import (
 	"strings"
 
 	"github.com/go-logr/logr"
+	"github.com/gorilla/handlers"
 	gwruntime "github.com/grpc-ecosystem/grpc-gateway/runtime"
 	"github.com/improbable-eng/grpc-web/go/grpcweb"
 	"github.com/spf13/cobra"
@@ -105,7 +106,7 @@ func runE(flags *flags, log logr.Logger) error {
 	}
 
 	var handler http.Handler = http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
-		log.Info("got request for", "path", request.URL.Path, "content-type", request.Header.Get("Content-Type"))
+		log.Info("got request for", "path", request.URL.Path, "Content-Type", request.Header.Get("Content-Type"), "method", request.Method)
 		if strings.Contains(request.Header.Get("Content-Type"), "application/grpc") {
 			wrapperGRPCServer.ServeHTTP(writer, request)
 		} else {
@@ -123,6 +124,18 @@ func runE(flags *flags, log logr.Logger) error {
 	} else {
 		log.Info("skipping OIDC setup")
 	}
+
+	handler = handlers.CORS(
+		handlers.AllowedHeaders([]string{
+			"X-Requested-With",
+			"Content-Type",
+			"Authorization",
+			"X-grpc-web",
+			"X-user-agent",
+		}),
+		handlers.AllowedMethods([]string{"GET", "POST"}),
+		handlers.AllowedOrigins([]string{"*"}),
+	)(handler)
 
 	server := http.Server{
 		Handler: handler,

@@ -1,8 +1,9 @@
 {
-  "devDependencies": {
+  "dependencies": {
     "@grpc/proto-loader": "^0.3.0",
+    "@types/google-protobuf": "^3.7.2",
     "async": "^1.5.2",
-    "google-protobuf": "^3.6.1",
+    "google-protobuf": "^3.11.4",
     "grpc": "^1.15.0",
     "grpc-web": "^1.0.0",
     "lodash": "^4.6.1",
@@ -15,7 +16,7 @@
   "name": "web",
   "scripts": {
     "build": "webpack",
-    "start": "webpack-dev-server --open",
+    "start": "webpack-dev-server --watch",
     "watch": "webpack --watch"
   },
   "version": "1.0.0"
