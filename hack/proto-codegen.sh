@@ -38,6 +38,8 @@ for pkg in ${PBUFS} ; do
     --go_out=plugins=grpc:${abs_path}  \
     --grpc-gateway_out=logtostderr=true:${abs_path} \
     --swagger_out=logtostderr=true:${abs_path} \
+    --js_out=import_style=commonjs:${abs_path} \
+    --grpc-web_out=import_style=typescript,mode=grpcwebtext:${abs_path} \
     -I${PROJECT}/bin/protoc-bin/include \
     -I${GOPATH}/pkg/mod/github.com/grpc-ecosystem/grpc-gateway@v1.14.3/third_party/googleapis \
     -I/usr/include \
