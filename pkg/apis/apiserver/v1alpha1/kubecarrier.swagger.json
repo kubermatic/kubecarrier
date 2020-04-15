@@ -36,6 +36,31 @@
       },
       "type": "object"
     },
+    "runtimeStreamError": {
+      "properties": {
+        "details": {
+          "items": {
+            "$ref": "#/definitions/protobufAny"
+          },
+          "type": "array"
+        },
+        "grpc_code": {
+          "format": "int32",
+          "type": "integer"
+        },
+        "http_code": {
+          "format": "int32",
+          "type": "integer"
+        },
+        "http_status": {
+          "type": "string"
+        },
+        "message": {
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
     "v1alpha1APIVersion": {
       "properties": {
         "branch": {

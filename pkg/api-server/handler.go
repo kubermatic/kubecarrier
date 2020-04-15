@@ -19,6 +19,7 @@ package apiserver
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/golang/protobuf/ptypes/empty"
 	"github.com/golang/protobuf/ptypes/timestamp"
@@ -28,6 +29,21 @@ import (
 )
 
 type kubecarrierHandler struct{}
+
+func (v kubecarrierHandler) VersionSteam(e *empty.Empty, server v1alpha1.Kubecarrier_VersionSteamServer) error {
+	ctx := context.Background()
+	for i := 0; i < 10; i++ {
+		apiVersion, err := v.Version(ctx, &v1alpha1.VersionRequest{})
+		if err != nil {
+			return err
+		}
+		if err := server.Send(apiVersion); err != nil {
+			return err
+		}
+		time.Sleep(100 * time.Millisecond)
+	}
+	return nil
+}
 
 func (v kubecarrierHandler) WhoAmI(ctx context.Context, _ *empty.Empty) (*v1alpha1.UserInfo, error) {
 	user, present := ExtractUserInfo(ctx)

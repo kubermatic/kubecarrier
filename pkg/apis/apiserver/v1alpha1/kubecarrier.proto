@@ -50,4 +50,5 @@ service Kubecarrier {
       get: "/whoami"
     };
   }
+  rpc VersionSteam(google.protobuf.Empty) returns (stream APIVersion);
 }

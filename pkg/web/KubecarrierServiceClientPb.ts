@@ -80,4 +80,23 @@ export class KubecarrierClient {
       callback);
   }
 
+  methodInfoVersionSteam = new grpcWeb.AbstractClientBase.MethodInfo(
+    APIVersion,
+    (request: google_protobuf_empty_pb.Empty) => {
+      return request.serializeBinary();
+    },
+    APIVersion.deserializeBinary
+  );
+
+  versionSteam(
+    request: google_protobuf_empty_pb.Empty,
+    metadata?: grpcWeb.Metadata) {
+    return this.client_.serverStreaming(
+      this.hostname_ +
+        '/kubecarrier.api.v1alpha1.Kubecarrier/VersionSteam',
+      request,
+      metadata || {},
+      this.methodInfoVersionSteam);
+  }
+
 }
