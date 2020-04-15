@@ -4,16 +4,16 @@ metadata:
   name: manager
   namespace: system
   labels:
-    control-plane: manager
+    control-plane: e2e-operator
 spec:
   selector:
     matchLabels:
-      control-plane: manager
+      control-plane: e2e-operator
   replicas: 1
   template:
     metadata:
       labels:
-        control-plane: manager
+        control-plane: e2e-operator
     spec:
       serviceAccountName: sa
       containers:
@@ -22,6 +22,8 @@ spec:
         env:
           - name: CERT_DIR
             value: "/tmp/k8s-webhook-server/serving-certs"
+        args:
+          - "--cert-dir=$(CERT_DIR)"
         resources:
           limits:
             cpu: 100m

@@ -122,15 +122,6 @@ func run(flags *flags, log logr.Logger) error {
 		return fmt.Errorf("creating KubeCarrier controller: %w", err)
 	}
 
-	if err = (&controllers.TowerReconciler{
-		Client:     mgr.GetClient(),
-		Log:        log.WithName("controllers").WithName("Tower"),
-		Scheme:     mgr.GetScheme(),
-		RESTMapper: mgr.GetRESTMapper(),
-	}).SetupWithManager(mgr); err != nil {
-		return fmt.Errorf("creating Tower controller: %w", err)
-	}
-
 	// Register webhooks as handlers
 	wbh := mgr.GetWebhookServer()
 

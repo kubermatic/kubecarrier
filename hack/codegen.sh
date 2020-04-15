@@ -64,9 +64,11 @@ statik-gen operator config/operator
 # Fake
 # -------
 # CRDs/Webhooks
-$CONTROLLER_GEN crd:crdVersions=${CRD_VERSION} webhook paths="./pkg/apis/fake/..." output:crd:artifacts:config=config/internal/fake-operator/crd/bases output:webhook:artifacts:config=config/internal/fake-operator/webhook
+$CONTROLLER_GEN crd:crdVersions=${CRD_VERSION} paths="./pkg/apis/fake/..." output:crd:artifacts:config=config/internal/fake-operator/crd/bases
 # RBAC
 $CONTROLLER_GEN rbac:roleName=manager-role paths="./pkg/fakeoperator/..." output:rbac:artifacts:config=config/internal/fake-operator/rbac
+# Webhooks
+$CONTROLLER_GEN webhook paths="./pkg/fakeoperator/internal/webhooks/..." output:webhook:artifacts:config=config/internal/fake-operator/webhook
 # Statik (run only when file CONTENT has changed)
 statik-gen fakeoperator config/internal/fake-operator
 
@@ -128,17 +130,6 @@ ed config/internal/elevator/rbac/role.yaml <<EOF || true
 w
 EOF
 statik-gen elevator config/internal/elevator
-
-# Tower
-# -------
-# RBAC
-$CONTROLLER_GEN rbac:roleName=manager paths="./pkg/tower/..." output:rbac:artifacts:config=config/internal/tower/rbac
-# The `|| true` is because the `,s/ClusterRole/Role/g` will error out if there is no match of `ClusterRole` (eg., the file is empty) in the file.
-ed config/internal/tower/rbac/role.yaml <<EOF || true
-,s/ClusterRole/Role/g
-w
-EOF
-statik-gen tower config/internal/tower
 
 #Service cluster RBAC
 serviceClusterDir=tmp
