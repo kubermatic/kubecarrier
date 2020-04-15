@@ -32,13 +32,13 @@ import (
 type Config struct {
 	// Namespace is the KubeCarrier master controller manager should be deployed into.
 	Namespace string
-	// Name of this Tower object.
+	// Name of this Kubecarrier API object.
 	Name string
 }
 
 var k = kustomize.NewDefaultKustomize()
 
-// Manifests generate all required manifests for the Tower
+// Manifests generate all required manifests for the API Server
 func Manifests(c Config) ([]unstructured.Unstructured, error) {
 	v := version.Get()
 	kc := k.ForHTTP(vfs)
