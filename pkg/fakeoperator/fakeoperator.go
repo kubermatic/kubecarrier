@@ -27,16 +27,20 @@ import (
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
+	"sigs.k8s.io/controller-runtime/pkg/webhook"
 
 	fakev1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/fake/v1alpha1"
 	"github.com/kubermatic/kubecarrier/pkg/fakeoperator/internal/controllers"
+	"github.com/kubermatic/kubecarrier/pkg/fakeoperator/internal/webhooks"
 	"github.com/kubermatic/kubecarrier/pkg/internal/util"
+	utilwebhook "github.com/kubermatic/kubecarrier/pkg/internal/util/webhook"
 )
 
 type flags struct {
 	metricsAddr          string
 	healthAddr           string
 	enableLeaderElection bool
+	certDir              string
 }
 
 var (
@@ -61,6 +65,7 @@ func NewFakeOperator() *cobra.Command {
 		},
 	}
 	cmd.Flags().StringVar(&flags.healthAddr, "health-addr", ":9440", "The address the health endpoint binds to.")
+	cmd.Flags().StringVar(&flags.certDir, "cert-dir", "/tmp/k8s-webhook-server/serving-certs", "The webhook TLS certificates directory")
 	return util.CmdLogMixin(cmd)
 }
 
@@ -83,6 +88,15 @@ func run(flags flags, log logr.Logger) error {
 	}).SetupWithManager(mgr); err != nil {
 		return fmt.Errorf("setup e2e controller: %w", err)
 	}
+
+	// Register webhooks as handlers
+	wbh := mgr.GetWebhookServer()
+	wbh.Register(utilwebhook.GenerateMutateWebhookPath(&fakev1alpha1.DB{}, mgr.GetScheme()),
+		&webhook.Admission{Handler: &webhooks.DBWebhookHandler{
+			Client: mgr.GetClient(),
+			Scheme: mgr.GetScheme(),
+			Log:    log.WithName("mutating webhooks").WithName("DB"),
+		}})
 
 	if err := mgr.AddReadyzCheck("ping", healthz.Ping); err != nil {
 		return fmt.Errorf("adding readyz checker: %w", err)
