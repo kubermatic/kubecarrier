@@ -33,19 +33,19 @@ PBUFS=(
 # change into each protobuf directory
 for pkg in ${PBUFS} ; do
   abs_path=${PROJECT}/${pkg}
+  ts_root=${PROJECT}/pkg/web
   echo Generating from '*.proto' in $abs_path
   protoc \
     --go_out=plugins=grpc:${abs_path}  \
     --grpc-gateway_out=logtostderr=true:${abs_path} \
     --swagger_out=logtostderr=true:${abs_path} \
-    --js_out=import_style=commonjs:${abs_path} \
-    --grpc-web_out=import_style=typescript,mode=grpcwebtext:${abs_path} \
+    --js_out=import_style=commonjs:${ts_root} \
+    --grpc-web_out=import_style=typescript,mode=grpcwebtext:${ts_root} \
     -I${PROJECT}/bin/protoc-bin/include \
     -I${GOPATH}/pkg/mod/github.com/grpc-ecosystem/grpc-gateway@v1.14.3/third_party/googleapis \
     -I/usr/include \
     -I=${abs_path} \
     $(find ${abs_path} -type f -name '*.proto')
-
   for x in $(find ${abs_path} -type f -name '*pb*.go'); do
     echo $x
     cat hack/boilerplate/boilerplate.generatego.txt | sed s/YEAR/$(date +%Y)/ | cat - $x > $x.tmp
@@ -53,4 +53,12 @@ for pkg in ${PBUFS} ; do
     goimports -local github.com/kubermatic -w $x
   done
   pre-commit run -a pretty-format-json || true
+
+  for ts in $(find "${ts_root}" -type f -name '*.ts' -or -name '*.js' -maxdepth 1); do
+  echo "fixing ${ts}"
+ed "${ts}" <<EOF || true
+g/google_api_annotations/d
+w
+EOF
+  done
 done
