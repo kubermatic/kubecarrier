@@ -25,6 +25,7 @@ import (
 
 	"github.com/go-logr/logr"
 	gwruntime "github.com/grpc-ecosystem/grpc-gateway/runtime"
+	"github.com/improbable-eng/grpc-web/go/grpcweb"
 	"github.com/spf13/cobra"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -98,14 +99,15 @@ func runE(flags *flags, log logr.Logger) error {
 
 	// v1alpha1 registration
 	apiserverv1alpha1.RegisterKubecarrierServer(grpcServer, &kubecarrierHandler{})
+	wrapperGRPCServer := grpcweb.WrapServer(grpcServer)
 	if err := apiserverv1alpha1.RegisterKubecarrierHandlerServer(context.Background(), grpcGatewayMux, &kubecarrierHandler{}); err != nil {
 		return err
 	}
 
 	var handler http.Handler = http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
-		log.Info("got request for", "path", request.URL.Path)
+		log.Info("got request for", "path", request.URL.Path, "content-type", request.Header.Get("Content-Type"))
 		if strings.Contains(request.Header.Get("Content-Type"), "application/grpc") {
-			grpcServer.ServeHTTP(writer, request)
+			wrapperGRPCServer.ServeHTTP(writer, request)
 		} else {
 			grpcGatewayMux.ServeHTTP(writer, request)
 		}

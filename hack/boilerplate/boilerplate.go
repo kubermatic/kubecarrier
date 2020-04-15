@@ -80,6 +80,7 @@ var (
 		"_output":               {},
 		"hack/boilerplate/test": {},
 		"hack/docgen/main.go":   {},
+		"pkg/web/node_modules":  {},
 	}
 
 	// list all the files contain 'DO NOT EDIT', but are not generated
