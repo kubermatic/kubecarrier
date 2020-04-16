@@ -20,83 +20,78 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// KubeCarrierSpec defines the desired state of KubeCarrier
-type KubeCarrierSpec struct {
-	// Master is the flag to mark if this KubeCarrier installation is the master of the multi-region deployments.
-	// If the flag is true, an API server and a multi-region microservice (Tower) will be deployed.
-	Master bool `json:"master,omitempty"`
+// ManagementClusterSpec defines the desired state of ManagementCluster.
+type ManagementClusterSpec struct {
 }
 
-// KubeCarrierStatus defines the observed state of KubeCarrier
-type KubeCarrierStatus struct {
-	// ObservedGeneration is the most recent generation observed for this KubeCarrier by the controller.
+// ManagementClusterStatus defines the observed state of ManagementCluster.
+type ManagementClusterStatus struct {
+	// ObservedGeneration is the most recent generation observed for this ManagementCluster by the controller.
 	ObservedGeneration int64 `json:"observedGeneration,omitempty"`
-	// Conditions represents the latest available observations of a KubeCarrier's current state.
-	Conditions []KubeCarrierCondition `json:"conditions,omitempty"`
+	// Conditions represents the latest available observations of a ManagementCluster's current state.
+	Conditions []ManagementClusterCondition `json:"conditions,omitempty"`
 	// DEPRECATED.
 	// Phase represents the current lifecycle state of this object.
 	// Consider this field DEPRECATED, it will be removed as soon as there
 	// is a mechanism to map conditions to strings when printing the property.
 	// This is only for display purpose, for everything else use conditions.
-	Phase KubeCarrierPhaseType `json:"phase,omitempty"`
+	Phase ManagementClusterPhaseType `json:"phase,omitempty"`
 }
 
-// KubeCarrierPhaseType represents all conditions as a single string for printing by using kubectl commands.
-type KubeCarrierPhaseType string
+// ManagementClusterPhaseType represents all conditions as a single string for printing by using kubectl commands.
+type ManagementClusterPhaseType string
 
-// Values of KubeCarrierPhaseType.
+// Values of ManagementClusterPhaseType.
 const (
-	KubeCarrierPhaseReady       KubeCarrierPhaseType = "Ready"
-	KubeCarrierPhaseNotReady    KubeCarrierPhaseType = "NotReady"
-	KubeCarrierPhaseUnknown     KubeCarrierPhaseType = "Unknown"
-	KubeCarrierPhaseTerminating KubeCarrierPhaseType = "Terminating"
+	ManagementClusterPhaseReady       ManagementClusterPhaseType = "Ready"
+	ManagementClusterPhaseNotReady    ManagementClusterPhaseType = "NotReady"
+	ManagementClusterPhaseUnknown     ManagementClusterPhaseType = "Unknown"
+	ManagementClusterPhaseTerminating ManagementClusterPhaseType = "Terminating"
 )
 
 const (
-	KubeCarrierTerminatingReason = "Deleting"
+	ManagementClusterTerminatingReason = "Deleting"
 )
 
-// updatePhase updates the phase property based on the current conditions
+// updatePhase updates the phase property based on the current conditions.
 // this method should be called every time the conditions are updated.
-func (s *KubeCarrierStatus) updatePhase() {
+func (s *ManagementClusterStatus) updatePhase() {
 
 	for _, condition := range s.Conditions {
-		if condition.Type != KubeCarrierReady {
+		if condition.Type != ManagementClusterReady {
 			continue
 		}
 
 		switch condition.Status {
 		case ConditionTrue:
-			s.Phase = KubeCarrierPhaseReady
+			s.Phase = ManagementClusterPhaseReady
 		case ConditionFalse:
-			if condition.Reason == KubeCarrierTerminatingReason {
-				s.Phase = KubeCarrierPhaseTerminating
+			if condition.Reason == ManagementClusterTerminatingReason {
+				s.Phase = ManagementClusterPhaseTerminating
 			} else {
-				s.Phase = KubeCarrierPhaseNotReady
+				s.Phase = ManagementClusterPhaseNotReady
 			}
 		case ConditionUnknown:
-			s.Phase = KubeCarrierPhaseUnknown
+			s.Phase = ManagementClusterPhaseUnknown
 		}
 		return
 	}
 
-	s.Phase = KubeCarrierPhaseUnknown
+	s.Phase = ManagementClusterPhaseUnknown
 }
 
-// KubeCarrierConditionType represents a KubeCarrierCondition value.
-type KubeCarrierConditionType string
+// ManagementClusterConditionType represents a ManagementClusterCondition value.
+type ManagementClusterConditionType string
 
 const (
-	// KubeCarrierReady represents a KubeCarrier condition is in ready state.
-	KubeCarrierReady           KubeCarrierConditionType = "Ready"
-	KubeCarrierDeploymentReady KubeCarrierConditionType = "DeploymentReady"
-	KubeCarrierTowerReady      KubeCarrierConditionType = "TowerReady"
+	// ManagementClusterReady represents a ManagementCluster condition is in ready state.
+	ManagementClusterReady ManagementClusterConditionType = "Ready"
 )
 
-// KubeCarrierCondition contains details for the current condition of this KubeCarrier.
-type KubeCarrierCondition struct {
-	// Type is the type of the KubeCarrier condition, currently ('Ready').
-	Type KubeCarrierConditionType `json:"type"`
+// ManagementClusterCondition contains details for the current condition of this ManagementCluster.
+type ManagementClusterCondition struct {
+	// Type is the type of the ManagementCluster condition, currently ('Ready').
+	Type ManagementClusterConditionType `json:"type"`
 	// Status is the status of the condition, one of ('True', 'False', 'Unknown').
 	Status ConditionStatus `json:"status"`
 	// LastTransitionTime is the last time the condition transits from one status to another.
@@ -108,12 +103,12 @@ type KubeCarrierCondition struct {
 }
 
 // True returns whether .Status == "True"
-func (c KubeCarrierCondition) True() bool {
+func (c ManagementClusterCondition) True() bool {
 	return c.Status == ConditionTrue
 }
 
 // GetCondition returns the Condition of the given condition type, if it exists.
-func (s *KubeCarrierStatus) GetCondition(t KubeCarrierConditionType) (condition KubeCarrierCondition, exists bool) {
+func (s *ManagementClusterStatus) GetCondition(t ManagementClusterConditionType) (condition ManagementClusterCondition, exists bool) {
 	for _, cond := range s.Conditions {
 		if cond.Type == t {
 			condition = cond
@@ -125,7 +120,7 @@ func (s *KubeCarrierStatus) GetCondition(t KubeCarrierConditionType) (condition 
 }
 
 // SetCondition replaces or adds the given condition.
-func (s *KubeCarrierStatus) SetCondition(condition KubeCarrierCondition) {
+func (s *ManagementClusterStatus) SetCondition(condition ManagementClusterCondition) {
 	defer s.updatePhase()
 
 	if condition.LastTransitionTime.IsZero() {
@@ -151,28 +146,28 @@ func (s *KubeCarrierStatus) SetCondition(condition KubeCarrierCondition) {
 	s.Conditions = append(s.Conditions, condition)
 }
 
-// KubeCarrier manages the deployment of the KubeCarrier controller manager.
+// ManagementCluster represents a management cluster which has KubeCarrier installation running on it.
 // +kubebuilder:object:root=true
 // +kubebuilder:subresource:status
 // +kubebuilder:printcolumn:name="Status",type="string",JSONPath=".status.phase"
 // +kubebuilder:printcolumn:name="Age",type="date",JSONPath=".metadata.creationTimestamp"
 // +kubebuilder:resource:scope=Cluster
-type KubeCarrier struct {
+type ManagementCluster struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec   KubeCarrierSpec   `json:"spec,omitempty"`
-	Status KubeCarrierStatus `json:"status,omitempty"`
+	Spec   ManagementClusterSpec   `json:"spec,omitempty"`
+	Status ManagementClusterStatus `json:"status,omitempty"`
 }
 
-// IsReady returns if the KubeCarrier is ready.
-func (s *KubeCarrier) IsReady() bool {
+// IsReady returns if the ManagementCluster is ready.
+func (s *ManagementCluster) IsReady() bool {
 	if s.Generation != s.Status.ObservedGeneration {
 		return false
 	}
 
 	for _, condition := range s.Status.Conditions {
-		if condition.Type == KubeCarrierReady &&
+		if condition.Type == ManagementClusterReady &&
 			condition.Status == ConditionTrue {
 			return true
 		}
@@ -180,31 +175,30 @@ func (s *KubeCarrier) IsReady() bool {
 	return false
 }
 
-func (s *KubeCarrier) SetTerminatingCondition() bool {
-	readyCondition, _ := s.Status.GetCondition(KubeCarrierReady)
+func (s *ManagementCluster) SetTerminatingCondition() bool {
+	readyCondition, _ := s.Status.GetCondition(ManagementClusterReady)
 	if readyCondition.Status != ConditionFalse ||
-		readyCondition.Status == ConditionFalse && readyCondition.Reason != KubeCarrierTerminatingReason {
+		readyCondition.Status == ConditionFalse && readyCondition.Reason != ManagementClusterTerminatingReason {
 		s.Status.ObservedGeneration = s.Generation
-		s.Status.SetCondition(KubeCarrierCondition{
-			Type:    KubeCarrierReady,
+		s.Status.SetCondition(ManagementClusterCondition{
+			Type:    ManagementClusterReady,
 			Status:  ConditionFalse,
-			Reason:  KubeCarrierTerminatingReason,
-			Message: "KubeCarrier is being deleted",
+			Reason:  ManagementClusterTerminatingReason,
+			Message: "ManagementCluster is being deleted",
 		})
 		return true
 	}
 	return false
 }
 
+// ManagementClusterList contains a list of ManagementCluster.
 // +kubebuilder:object:root=true
-
-// KubeCarrierList contains a list of KubeCarrier
-type KubeCarrierList struct {
+type ManagementClusterList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
-	Items           []KubeCarrier `json:"items"`
+	Items           []ManagementCluster `json:"items"`
 }
 
 func init() {
-	SchemeBuilder.Register(&KubeCarrier{}, &KubeCarrierList{})
+	SchemeBuilder.Register(&ManagementCluster{}, &ManagementClusterList{})
 }

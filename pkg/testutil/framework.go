@@ -41,6 +41,7 @@ import (
 	catalogv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/catalog/v1alpha1"
 	corev1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/core/v1alpha1"
 	fakev1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/fake/v1alpha1"
+	masterv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/master/v1alpha1"
 	operatorv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/operator/v1alpha1"
 	"github.com/kubermatic/kubecarrier/pkg/internal/util"
 )
@@ -112,6 +113,9 @@ func New(c FrameworkConfig) (f *Framework, err error) {
 	}
 	if err = corev1alpha1.AddToScheme(f.ManagementScheme); err != nil {
 		return nil, fmt.Errorf("adding corev1alpha1 scheme to management scheme: %w", err)
+	}
+	if err = masterv1alpha1.AddToScheme(f.ManagementScheme); err != nil {
+		return nil, fmt.Errorf("adding masterv1alpha1 scheme to management scheme: %w", err)
 	}
 
 	f.managementConfig, err = clientcmd.BuildConfigFromFlags("", f.config.ManagementExternalKubeconfigPath)
