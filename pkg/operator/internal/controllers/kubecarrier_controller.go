@@ -27,7 +27,10 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
+	"k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/types"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
@@ -46,6 +49,7 @@ type KubeCarrierReconciler struct {
 	Scheme *runtime.Scheme
 }
 
+// +kubebuilder:rbac:groups=operator.kubecarrier.io,resources=towers,verbs=get;list;watch;create;update;patch
 // +kubebuilder:rbac:groups=operator.kubecarrier.io,resources=kubecarriers,verbs=get;list;watch;update;patch
 // +kubebuilder:rbac:groups=operator.kubecarrier.io,resources=kubecarriers/status,verbs=get;update;patch
 // +kubebuilder:rbac:groups=rbac.authorization.k8s.io,resources=clusterrolebindings,verbs=get;list;watch;create;update;patch;delete
@@ -98,11 +102,55 @@ func (r *KubeCarrierReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error)
 		case *appsv1.Deployment:
 			deploymentIsReady = util.DeploymentIsAvailable(ctr)
 		}
-
 	}
 
-	if err := r.updateStatus(ctx, kubeCarrier, deploymentIsReady); err != nil {
+	if !deploymentIsReady {
+		if err := r.updateStatus(ctx, kubeCarrier, operatorv1alpha1.KubeCarrierCondition{
+			Type:    operatorv1alpha1.KubeCarrierDeploymentReady,
+			Status:  operatorv1alpha1.ConditionFalse,
+			Reason:  "DeploymentUnReady",
+			Message: "the deployment of KubeCarrier is not ready",
+		}); err != nil {
+			return ctrl.Result{}, err
+		}
+		return ctrl.Result{}, nil
+	}
+
+	if err := r.updateStatus(ctx, kubeCarrier, operatorv1alpha1.KubeCarrierCondition{
+		Type:    operatorv1alpha1.KubeCarrierDeploymentReady,
+		Status:  operatorv1alpha1.ConditionTrue,
+		Reason:  "DeploymentReady",
+		Message: "the deployment of KubeCarrier is ready",
+	}); err != nil {
 		return ctrl.Result{}, err
+	}
+
+	if kubeCarrier.Spec.Master {
+		towerIsReady, err := r.reconcileTower(ctx, log, kubeCarrier)
+		if err != nil {
+			return ctrl.Result{}, fmt.Errorf("reconcile Tower: %w", err)
+		}
+
+		if !towerIsReady {
+			if err := r.updateStatus(ctx, kubeCarrier, operatorv1alpha1.KubeCarrierCondition{
+				Type:    operatorv1alpha1.KubeCarrierTowerReady,
+				Status:  operatorv1alpha1.ConditionFalse,
+				Reason:  "TowerUnReady",
+				Message: "Tower is not ready",
+			}); err != nil {
+				return ctrl.Result{}, err
+			}
+			return ctrl.Result{}, nil
+		}
+
+		if err := r.updateStatus(ctx, kubeCarrier, operatorv1alpha1.KubeCarrierCondition{
+			Type:    operatorv1alpha1.KubeCarrierTowerReady,
+			Status:  operatorv1alpha1.ConditionTrue,
+			Reason:  "TowerReady",
+			Message: "Tower is ready",
+		}); err != nil {
+			return ctrl.Result{}, err
+		}
 	}
 
 	return ctrl.Result{}, nil
@@ -122,6 +170,7 @@ func (r *KubeCarrierReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		Owns(&rbacv1.ClusterRoleBinding{}).
 		Owns(&apiextensionsv1.CustomResourceDefinition{}).
 		Owns(&adminv1beta1.ValidatingWebhookConfiguration{}).
+		Owns(&operatorv1alpha1.Tower{}).
 		Complete(r)
 }
 
@@ -136,19 +185,82 @@ func (r *KubeCarrierReconciler) handleDeletion(ctx context.Context, kubeCarrier 
 }
 
 // updateStatus - update the status of the object
-func (r *KubeCarrierReconciler) updateStatus(ctx context.Context, kubeCarrier *operatorv1alpha1.KubeCarrier, deploymentIsReady bool) error {
-	var statusChanged bool
+func (r *KubeCarrierReconciler) updateStatus(ctx context.Context, kubeCarrier *operatorv1alpha1.KubeCarrier, condition operatorv1alpha1.KubeCarrierCondition) error {
+	kubeCarrier.Status.ObservedGeneration = kubeCarrier.Generation
+	kubeCarrier.Status.SetCondition(condition)
+	kubeCarrierDeploymentReady, _ := kubeCarrier.Status.GetCondition(operatorv1alpha1.KubeCarrierDeploymentReady)
+	if kubeCarrier.Spec.Master {
+		towerReady, _ := kubeCarrier.Status.GetCondition(operatorv1alpha1.KubeCarrierTowerReady)
 
-	if deploymentIsReady {
-		statusChanged = kubeCarrier.SetReadyCondition()
+		if kubeCarrierDeploymentReady.True() && towerReady.True() {
+			kubeCarrier.Status.SetCondition(operatorv1alpha1.KubeCarrierCondition{
+				Type:    operatorv1alpha1.KubeCarrierReady,
+				Status:  operatorv1alpha1.ConditionTrue,
+				Reason:  "KubeCarrierAndTowerReady",
+				Message: "the deployment of KubeCarrier and Tower are ready.",
+			})
+		} else if !kubeCarrierDeploymentReady.True() {
+			kubeCarrier.Status.SetCondition(operatorv1alpha1.KubeCarrierCondition{
+				Type:    operatorv1alpha1.KubeCarrierReady,
+				Status:  operatorv1alpha1.ConditionFalse,
+				Reason:  "KubeCarrierDeploymentUnReady",
+				Message: "the deployment of KubeCarrier is not ready.",
+			})
+		} else if !towerReady.True() {
+			kubeCarrier.Status.SetCondition(operatorv1alpha1.KubeCarrierCondition{
+				Type:    operatorv1alpha1.KubeCarrierReady,
+				Status:  operatorv1alpha1.ConditionFalse,
+				Reason:  "TowerUnReady",
+				Message: "Tower is not ready.",
+			})
+		}
+
 	} else {
-		statusChanged = kubeCarrier.SetUnReadyCondition()
-	}
-
-	if statusChanged {
-		if err := r.Client.Status().Update(ctx, kubeCarrier); err != nil {
-			return fmt.Errorf("updating %s status: %w", kubeCarrier.Name, err)
+		if kubeCarrierDeploymentReady.True() {
+			kubeCarrier.Status.SetCondition(operatorv1alpha1.KubeCarrierCondition{
+				Type:    operatorv1alpha1.KubeCarrierReady,
+				Status:  operatorv1alpha1.ConditionTrue,
+				Reason:  "KubeCarrierReady",
+				Message: "KubeCarrier is ready.",
+			})
 		}
 	}
+	if err := r.Client.Status().Update(ctx, kubeCarrier); err != nil {
+		return fmt.Errorf("updating %s status: %w", kubeCarrier.Name, err)
+	}
 	return nil
+}
+
+func (r *KubeCarrierReconciler) reconcileTower(ctx context.Context, log logr.Logger, kubeCarrier *operatorv1alpha1.KubeCarrier) (towerIsReady bool, err error) {
+	desiredTower := &operatorv1alpha1.Tower{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      kubeCarrier.Name,
+			Namespace: constants.KubeCarrierDefaultNamespace,
+		},
+	}
+
+	if err := controllerutil.SetControllerReference(kubeCarrier, desiredTower, r.Scheme); err != nil {
+		return false, fmt.Errorf("set controller reference for Tower object: %w", err)
+	}
+
+	currentTower := &operatorv1alpha1.Tower{}
+	err = r.Get(ctx, types.NamespacedName{
+		Name:      desiredTower.Name,
+		Namespace: desiredTower.Namespace,
+	}, currentTower)
+	if err != nil && !errors.IsNotFound(err) {
+		return false, fmt.Errorf("getting Tower: %w", err)
+	}
+	if errors.IsNotFound(err) {
+		if err = r.Create(ctx, desiredTower); err != nil {
+			return false, fmt.Errorf("creating Tower: %w", err)
+		}
+		return false, nil
+	}
+	// Update Tower
+	currentTower.Spec = desiredTower.Spec
+	if err = r.Update(ctx, currentTower); err != nil {
+		return false, fmt.Errorf("updating Tower: %w", err)
+	}
+	return currentTower.IsReady(), nil
 }

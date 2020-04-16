@@ -1364,6 +1364,7 @@ KubeCarrierSpec defines the desired state of KubeCarrier
 
 | Field | Description | Scheme | Required |
 | ----- | ----------- | ------ | -------- |
+| master | Master is the flag to mark if this KubeCarrier installation is the master of the multi-region deployments. If the flag is true, an API server and a multi-region microservice (Tower) will be deployed. | operator.kubecarrier.io/v1alpha1.bool | false |
 
 [Back to Group](#operator)
 

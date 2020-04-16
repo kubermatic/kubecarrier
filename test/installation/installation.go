@@ -32,13 +32,15 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 
+	masterv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/master/v1alpha1"
 	operatorv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/operator/v1alpha1"
 	"github.com/kubermatic/kubecarrier/pkg/testutil"
 )
 
 const (
-	kubecarrierSystem = "kubecarrier-system"
-	prefix            = "kubecarrier-manager"
+	kubecarrierSystem          = "kubecarrier-system"
+	prefix                     = "kubecarrier-manager"
+	localManagementClusterName = "local"
 )
 
 func NewInstallationSuite(f *testutil.Framework) func(t *testing.T) {
@@ -46,7 +48,7 @@ func NewInstallationSuite(f *testutil.Framework) func(t *testing.T) {
 		ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 		t.Cleanup(cancel)
 
-		c := exec.CommandContext(ctx, "kubectl", "kubecarrier", "setup", "--kubeconfig", f.Config().ManagementExternalKubeconfigPath)
+		c := exec.CommandContext(ctx, "kubectl", "kubecarrier", "setup", "--kubeconfig", f.Config().ManagementExternalKubeconfigPath, "--master")
 		out, err := c.CombinedOutput()
 		t.Log(string(out))
 		require.NoError(t, err)
@@ -71,6 +73,19 @@ func NewInstallationSuite(f *testutil.Framework) func(t *testing.T) {
 		}
 		kubeCarrier.Name = "kubecarrier"
 		require.NoError(t, testutil.WaitUntilReady(ctx, managementClient, kubeCarrier))
+
+		tower := &operatorv1alpha1.Tower{}
+		assert.NoError(t, managementClient.Get(ctx, types.NamespacedName{
+			Name:      kubeCarrier.Name,
+			Namespace: kubecarrierSystem,
+		}, tower), "getting the Tower object error")
+		assert.True(t, tower.IsReady(), "tower is not ready")
+
+		localManagementCluster := &masterv1alpha1.ManagementCluster{}
+		assert.NoError(t, managementClient.Get(ctx, types.NamespacedName{
+			Name: localManagementClusterName,
+		}, localManagementCluster), "getting the local ManagementCluster object error")
+		assert.True(t, localManagementCluster.IsReady(), "local ManagementCluster is not ready")
 
 		operatorDeployment := &appsv1.Deployment{}
 		assert.NoError(t, managementClient.Get(ctx, types.NamespacedName{
