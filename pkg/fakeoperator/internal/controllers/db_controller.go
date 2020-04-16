@@ -40,6 +40,7 @@ type DBReconciler struct {
 
 // +kubebuilder:rbac:groups=fake.kubecarrier.io,resources=dbs,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=fake.kubecarrier.io,resources=dbs/status,verbs=get;update;patch
+
 func (r *DBReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	ctx := context.Background()
 	db := &fakev1alpha1.DB{}
