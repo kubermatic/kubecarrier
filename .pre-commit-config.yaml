@@ -37,3 +37,9 @@ repos:
     language: system
     exclude: ".*"
     always_run: true
+  - id: dart-lint
+    name: dart-lint
+    entry: dartanalyzer --options pkg/web/dart/analysis_options.yaml pkg/web/dart
+    language: system
+    exclude: ".*"
+    always_run: true
