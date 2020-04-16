@@ -33,7 +33,7 @@ PBUFS=(
 # change into each protobuf directory
 for pkg in ${PBUFS} ; do
   abs_path=${PROJECT}/${pkg}
-  ts_root=${PROJECT}/pkg/web
+  ts_root=${PROJECT}/pkg/web/typescript
   echo Generating from '*.proto' in $abs_path
   # web files due to node_modules dependency resolution should be
   protoc \
