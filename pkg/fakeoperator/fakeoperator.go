@@ -29,6 +29,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
 
+	fakev1 "github.com/kubermatic/kubecarrier/pkg/apis/fake/v1"
 	fakev1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/fake/v1alpha1"
 	"github.com/kubermatic/kubecarrier/pkg/fakeoperator/internal/controllers"
 	"github.com/kubermatic/kubecarrier/pkg/fakeoperator/internal/webhooks"
@@ -50,6 +51,7 @@ var (
 func init() {
 	utilruntime.Must(apiextensionsv1.AddToScheme(scheme))
 	utilruntime.Must(fakev1alpha1.AddToScheme(scheme))
+	utilruntime.Must(fakev1.AddToScheme(scheme))
 	utilruntime.Must(clientgoscheme.AddToScheme(scheme))
 }
 
@@ -89,6 +91,9 @@ func run(flags flags, log logr.Logger) error {
 		return fmt.Errorf("setup e2e controller: %w", err)
 	}
 
+	if err := ctrl.NewWebhookManagedBy(mgr).For(&fakev1alpha1.DB{}).Complete(); err != nil {
+		return err
+	}
 	// Register webhooks as handlers
 	wbh := mgr.GetWebhookServer()
 	wbh.Register(utilwebhook.GenerateMutateWebhookPath(&fakev1alpha1.DB{}, mgr.GetScheme()),
