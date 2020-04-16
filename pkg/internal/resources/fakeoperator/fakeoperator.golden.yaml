@@ -20,7 +20,7 @@
             path: /convert
         conversionReviewVersions:
         - v1
-        - v1alpha1
+        - v1beta1
     group: fake.kubecarrier.io
     names:
       kind: DB
