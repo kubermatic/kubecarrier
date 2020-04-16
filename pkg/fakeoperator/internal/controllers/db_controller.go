@@ -59,7 +59,7 @@ func (r *DBReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 		}
 		cond, _ := db.Status.GetCondition(fakev1alpha1.DBReady)
 		if time.Since(cond.LastTransitionTime.Time) < time.Duration(db.Spec.Config.DeletionAfterSeconds)*time.Second {
-			return ctrl.Result{RequeueAfter: time.Second*time.Duration(db.Spec.Config.DeletionAfterSeconds) + 10*time.Millisecond}, nil
+			return ctrl.Result{RequeueAfter: time.Second * time.Duration(db.Spec.Config.DeletionAfterSeconds)}, nil
 		}
 		if util.RemoveFinalizer(db, finalizer) {
 			if err := r.Client.Update(ctx, db); err != nil {
