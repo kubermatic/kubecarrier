@@ -25,6 +25,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
+	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
@@ -41,6 +42,7 @@ import (
 	corev1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/core/v1alpha1"
 	fakev1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/fake/v1alpha1"
 	operatorv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/operator/v1alpha1"
+	"github.com/kubermatic/kubecarrier/pkg/internal/constants"
 	"github.com/kubermatic/kubecarrier/pkg/internal/util"
 )
 
@@ -210,7 +212,8 @@ func (f *Framework) NewFakeDB(name, namespace string) *fakev1alpha1.DB {
 			Name:      name,
 			Namespace: namespace,
 		},
-		Spec: fakev1alpha1.DBSpec{DatabaseName: "fakeDB",
+		Spec: fakev1alpha1.DBSpec{
+			DatabaseName: "fakeDB",
 			Config: fakev1alpha1.Config{
 				Create: fakev1alpha1.OperationFlagEnabled,
 			}},
@@ -304,6 +307,182 @@ func (f *Framework) SetupServiceCluster(ctx context.Context, cl *RecordingClient
 	require.NoError(t, WaitUntilReady(ctx, cl, serviceCluster))
 	t.Logf("service cluster %s successfully created for provider %s", name, account.Name)
 	return serviceCluster
+}
+
+func (f *Framework) KubeCarrierOperatorCheck(
+	ctx context.Context,
+	t *testing.T,
+	managementClient *RecordingClient,
+	managementScheme *runtime.Scheme,
+) {
+	namePrefix := constants.KubeCarrierDefaultName + "-operator"
+	namespaceName := constants.KubeCarrierDefaultNamespace
+
+	f.componentCheck(ctx, managementClient, managementScheme, t, namePrefix, []runtime.Object{
+		&corev1.Namespace{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: namespaceName,
+			},
+		},
+		&appsv1.Deployment{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      fmt.Sprintf("%s-manager", namePrefix),
+				Namespace: namespaceName,
+			},
+		},
+		// Webhook Service
+		&corev1.Service{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      fmt.Sprintf("%s-webhook-service", namePrefix),
+				Namespace: namespaceName,
+			},
+		},
+		// ClusterRoleBinding
+		&rbacv1.ClusterRoleBinding{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: fmt.Sprintf("%s-manager-rolebinding", namePrefix),
+			},
+		},
+		// ClusterRole
+		&rbacv1.ClusterRole{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: fmt.Sprintf("%s-manager-role", namePrefix),
+			},
+		},
+		// RoleBinding
+		&rbacv1.RoleBinding{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      fmt.Sprintf("%s-leader-election-rolebinding", namePrefix),
+				Namespace: namespaceName,
+			},
+		},
+		// Role
+		&rbacv1.Role{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      fmt.Sprintf("%s-leader-election-role", namePrefix),
+				Namespace: namespaceName,
+			},
+		},
+		&apiextensionsv1.CustomResourceDefinition{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: "accounts.catalog.kubecarrier.io",
+			},
+		},
+	})
+}
+
+func (f *Framework) E2EOperatorCheck(
+	ctx context.Context,
+	t *testing.T,
+	serviceClient *RecordingClient,
+	serviceScheme *runtime.Scheme,
+) {
+	namePrefix := "e2e-operator"
+	namespaceName := "kubecarrier-e2e-operator"
+
+	f.componentCheck(ctx, serviceClient, serviceScheme, t, namePrefix, []runtime.Object{
+		&corev1.Namespace{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: namespaceName,
+			},
+		},
+		&appsv1.Deployment{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      fmt.Sprintf("%s-manager", namePrefix),
+				Namespace: namespaceName,
+			},
+		},
+		// ClusterRoleBinding
+		&rbacv1.ClusterRoleBinding{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: fmt.Sprintf("%s-manager-rolebinding", namePrefix),
+			},
+		},
+		// ClusterRole
+		&rbacv1.ClusterRole{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: fmt.Sprintf("%s-manager-role", namePrefix),
+			},
+		},
+		&apiextensionsv1.CustomResourceDefinition{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: "dbs.fake.kubecarrier.io",
+			},
+		},
+	})
+}
+
+func (f *Framework) KubeCarrierCheck(
+	ctx context.Context,
+	t *testing.T,
+	managementClient *RecordingClient,
+	managementScheme *runtime.Scheme,
+) {
+	namePrefix := constants.KubeCarrierDefaultName + "-manager"
+	namespaceName := constants.KubeCarrierDefaultNamespace
+
+	f.componentCheck(ctx, managementClient, managementScheme, t, namePrefix, []runtime.Object{
+		&corev1.Namespace{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: namespaceName,
+			},
+		},
+		&appsv1.Deployment{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      fmt.Sprintf("%s-controller-manager", namePrefix),
+				Namespace: namespaceName,
+			},
+		},
+		// Webhook Service
+		&corev1.Service{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      fmt.Sprintf("%s-webhook-service", namePrefix),
+				Namespace: namespaceName,
+			},
+		},
+		// ClusterRoleBinding
+		&rbacv1.ClusterRoleBinding{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: fmt.Sprintf("%s-manager-rolebinding", namePrefix),
+			},
+		},
+		// ClusterRole
+		&rbacv1.ClusterRole{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: fmt.Sprintf("%s-manager-role", namePrefix),
+			},
+		},
+		// RoleBinding
+		&rbacv1.RoleBinding{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      fmt.Sprintf("%s-leader-election-rolebinding", namePrefix),
+				Namespace: namespaceName,
+			},
+		},
+		// Role
+		&rbacv1.Role{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      fmt.Sprintf("%s-leader-election-role", namePrefix),
+				Namespace: namespaceName,
+			},
+		},
+	})
+}
+
+func (f *Framework) componentCheck(
+	ctx context.Context,
+	cli *RecordingClient,
+	scheme *runtime.Scheme,
+	t *testing.T,
+	componentName string,
+	ownedObjects []runtime.Object,
+) {
+	for _, ownedObject := range ownedObjects {
+		gvk, err := apiutil.GVKForObject(ownedObject, scheme)
+		require.NoError(t, err, fmt.Sprintf("cannot get GVK for %T", ownedObject))
+		require.NoError(t, WaitUntilFound(ctx, cli, ownedObject), fmt.Sprintf("%s: getting %s failed", componentName, gvk.Kind))
+	}
+	t.Logf(fmt.Sprintf("%s is ready", componentName))
 }
 
 func (f *Framework) Config() FrameworkConfig {
