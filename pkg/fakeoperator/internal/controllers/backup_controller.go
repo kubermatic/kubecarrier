@@ -41,6 +41,7 @@ type BackupReconciler struct {
 
 // +kubebuilder:rbac:groups=fake.kubecarrier.io,resources=backups,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=fake.kubecarrier.io,resources=backups/status,verbs=get;update;patch
+
 func (r *BackupReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	ctx := context.Background()
 	backup := &fakev1alpha1.Backup{}

@@ -565,6 +565,26 @@
   - apiGroups:
     - fake.kubecarrier.io
     resources:
+    - backups
+    verbs:
+    - create
+    - delete
+    - get
+    - list
+    - patch
+    - update
+    - watch
+  - apiGroups:
+    - fake.kubecarrier.io
+    resources:
+    - backups/status
+    verbs:
+    - get
+    - patch
+    - update
+  - apiGroups:
+    - fake.kubecarrier.io
+    resources:
     - dbs
     verbs:
     - create
@@ -578,6 +598,26 @@
     - fake.kubecarrier.io
     resources:
     - dbs/status
+    verbs:
+    - get
+    - patch
+    - update
+  - apiGroups:
+    - fake.kubecarrier.io
+    resources:
+    - snapshots
+    verbs:
+    - create
+    - delete
+    - get
+    - list
+    - patch
+    - update
+    - watch
+  - apiGroups:
+    - fake.kubecarrier.io
+    resources:
+    - snapshots/status
     verbs:
     - get
     - patch

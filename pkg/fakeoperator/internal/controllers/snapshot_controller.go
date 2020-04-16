@@ -37,6 +37,7 @@ type SnapshotReconciler struct {
 
 // +kubebuilder:rbac:groups=fake.kubecarrier.io,resources=snapshots,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=fake.kubecarrier.io,resources=snapshots/status,verbs=get;update;patch
+
 func (r *SnapshotReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	ctx := context.Background()
 	s := &fakev1alpha1.Snapshot{}
