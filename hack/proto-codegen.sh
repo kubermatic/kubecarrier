@@ -34,6 +34,8 @@ PBUFS=(
 for pkg in ${PBUFS} ; do
   abs_path=${PROJECT}/${pkg}
   ts_root=${PROJECT}/pkg/web/typescript
+  dart_out=${PROJECT}/pkg/web/dart/lib/src/generated
+  mkdir -p ${dart_out}
   echo Generating from '*.proto' in $abs_path
   # web files due to node_modules dependency resolution should be
   protoc \
@@ -42,6 +44,7 @@ for pkg in ${PBUFS} ; do
     --swagger_out=logtostderr=true:${abs_path} \
     --js_out=import_style=commonjs:${ts_root} \
     --grpc-web_out=import_style=typescript,mode=grpcwebtext:${ts_root} \
+    --dart_out=grpc:${dart_out} \
     -I${PROJECT}/bin/protoc-bin/include \
     -I${GOPATH}/pkg/mod/github.com/grpc-ecosystem/grpc-gateway@v1.14.3/third_party/googleapis \
     -I/usr/include \
@@ -55,10 +58,24 @@ for pkg in ${PBUFS} ; do
   done
   pre-commit run -a pretty-format-json || true
 
+  well_known_protos=$(find /usr/include/google/protobuf -name '*.proto')
+  for x in ${well_known_protos}; do
+    echo "generating code for known google protos ${x}"
+  done
+  protoc \
+  --dart_out=grpc:${dart_out} \
+  -I${PROJECT}/bin/protoc-bin/include \
+  -I${GOPATH}/pkg/mod/github.com/grpc-ecosystem/grpc-gateway@v1.14.3/third_party/googleapis \
+  -I/usr/include \
+  -I=${abs_path} \
+  ${well_known_protos}
+
+  dartfmt -w ${dart_out}
+
   for ts in $(find "${ts_root}" -type f -name '*.ts' -or -name '*.js' -maxdepth 1); do
   echo "fixing ${ts}"
 # It's not used within ts/js and it's hell to import properly...
-ed "${ts}" <<EOF || true
+ed "${ts}" <<EOF > /dev/null || true
 g/google_api_annotations/d
 w
 EOF

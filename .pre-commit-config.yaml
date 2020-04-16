@@ -37,6 +37,12 @@ repos:
     language: system
     exclude: ".*"
     always_run: true
+  - id: dart-fmt
+    name: dart-fmt
+    entry: dartfmt -w
+    language: system
+    types: [file]
+    files: \.dart$
   - id: dart-lint
     name: dart-lint
     entry: dartanalyzer --options pkg/web/dart/analysis_options.yaml
