@@ -3,7 +3,7 @@
   metadata:
     annotations:
       cert-manager.io/inject-ca-from: test3000/e2e-operator-serving-cert
-      controller-gen.kubebuilder.io/version: v0.2.8
+      controller-gen.kubebuilder.io/version: v0.2.9-0.20200414181213-645d44dca7c0
     creationTimestamp: null
     labels:
       kubecarrier.io/role: manager
@@ -462,6 +462,7 @@
       - DELETE
       resources:
       - dbs
+    sideEffects: NoneOnDryRun
 - apiVersion: v1
   kind: Service
   metadata:

@@ -25,3 +25,4 @@ webhooks:
     - DELETE
     resources:
     - dbs
+  sideEffects: NoneOnDryRun
