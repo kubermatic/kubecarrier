@@ -26,7 +26,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	fakeclient "sigs.k8s.io/controller-runtime/pkg/client/fake"
 
-	fakev1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/fake/v1alpha1"
+	fakev1 "github.com/kubermatic/kubecarrier/pkg/apis/fake/v1"
 	"github.com/kubermatic/kubecarrier/pkg/testutil"
 )
 
@@ -34,19 +34,19 @@ func TestDBValidatingCreate(t *testing.T) {
 
 	tests := []struct {
 		name            string
-		object          *fakev1alpha1.DB
+		object          *fakev1.DB
 		existingObjects []runtime.Object
 		expectedError   error
 	}{
 		{
 			name: "invalid db name",
-			object: &fakev1alpha1.DB{
+			object: &fakev1.DB{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "test.db",
 				},
-				Spec: fakev1alpha1.DBSpec{
-					Config: fakev1alpha1.Config{
-						Create: fakev1alpha1.OperationFlagEnabled,
+				Spec: fakev1.DBSpec{
+					Config: fakev1.Config{
+						Create: fakev1.OperationFlagEnabled,
 					},
 				},
 			},
@@ -54,13 +54,13 @@ func TestDBValidatingCreate(t *testing.T) {
 		},
 		{
 			name: "create operation disabled",
-			object: &fakev1alpha1.DB{
+			object: &fakev1.DB{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "testdb",
 				},
-				Spec: fakev1alpha1.DBSpec{
-					Config: fakev1alpha1.Config{
-						Create: fakev1alpha1.OperationFlagDisabled,
+				Spec: fakev1.DBSpec{
+					Config: fakev1.Config{
+						Create: fakev1.OperationFlagDisabled,
 					},
 				},
 			},
@@ -68,13 +68,13 @@ func TestDBValidatingCreate(t *testing.T) {
 		},
 		{
 			name: "create operation enabled",
-			object: &fakev1alpha1.DB{
+			object: &fakev1.DB{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "testdb",
 				},
-				Spec: fakev1alpha1.DBSpec{
-					Config: fakev1alpha1.Config{
-						Create: fakev1alpha1.OperationFlagEnabled,
+				Spec: fakev1.DBSpec{
+					Config: fakev1.Config{
+						Create: fakev1.OperationFlagEnabled,
 					},
 				},
 			},
@@ -105,19 +105,19 @@ func TestDBValidatingDelete(t *testing.T) {
 
 	tests := []struct {
 		name            string
-		object          *fakev1alpha1.DB
+		object          *fakev1.DB
 		existingObjects []runtime.Object
 		expectedError   error
 	}{
 		{
 			name: "delete operation disabled",
-			object: &fakev1alpha1.DB{
+			object: &fakev1.DB{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "testdb",
 				},
-				Spec: fakev1alpha1.DBSpec{
-					Config: fakev1alpha1.Config{
-						Delete: fakev1alpha1.OperationFlagDisabled,
+				Spec: fakev1.DBSpec{
+					Config: fakev1.Config{
+						Delete: fakev1.OperationFlagDisabled,
 					},
 				},
 			},
@@ -125,13 +125,13 @@ func TestDBValidatingDelete(t *testing.T) {
 		},
 		{
 			name: "delete operation enabled",
-			object: &fakev1alpha1.DB{
+			object: &fakev1.DB{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "testdb",
 				},
-				Spec: fakev1alpha1.DBSpec{
-					Config: fakev1alpha1.Config{
-						Delete: fakev1alpha1.OperationFlagEnabled,
+				Spec: fakev1.DBSpec{
+					Config: fakev1.Config{
+						Delete: fakev1.OperationFlagEnabled,
 					},
 				},
 			},
@@ -160,43 +160,43 @@ func TestDBValidatingDelete(t *testing.T) {
 
 func TestDBValidatingUpdate(t *testing.T) {
 
-	oldObj := &fakev1alpha1.DB{
+	oldObj := &fakev1.DB{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "testdb",
 		},
-		Spec: fakev1alpha1.DBSpec{
+		Spec: fakev1.DBSpec{
 			DatabaseName: "dbname",
-			Config: fakev1alpha1.Config{
-				Update: fakev1alpha1.OperationFlagEnabled,
+			Config: fakev1.Config{
+				Update: fakev1.OperationFlagEnabled,
 			},
 		},
 	}
 
 	tests := []struct {
 		name            string
-		oldObj          *fakev1alpha1.DB
-		object          *fakev1alpha1.DB
+		oldObj          *fakev1.DB
+		object          *fakev1.DB
 		existingObjects []runtime.Object
 		expectedError   error
 	}{
 		{
 			name: "update operation disabled",
-			oldObj: &fakev1alpha1.DB{
+			oldObj: &fakev1.DB{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "testdb",
 				},
-				Spec: fakev1alpha1.DBSpec{
-					Config: fakev1alpha1.Config{
-						Update: fakev1alpha1.OperationFlagDisabled,
+				Spec: fakev1.DBSpec{
+					Config: fakev1.Config{
+						Update: fakev1.OperationFlagDisabled,
 					},
 				},
 			},
-			object: &fakev1alpha1.DB{
+			object: &fakev1.DB{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "testdb",
 				},
-				Spec: fakev1alpha1.DBSpec{
-					Config: fakev1alpha1.Config{},
+				Spec: fakev1.DBSpec{
+					Config: fakev1.Config{},
 				},
 			},
 			expectedError: fmt.Errorf("update operation disabled for %s", "testdb"),
@@ -204,14 +204,14 @@ func TestDBValidatingUpdate(t *testing.T) {
 		{
 			name:   "update operation enabled in oldObj",
 			oldObj: oldObj,
-			object: &fakev1alpha1.DB{
+			object: &fakev1.DB{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "testdb",
 				},
-				Spec: fakev1alpha1.DBSpec{
+				Spec: fakev1.DBSpec{
 					DatabaseName: "dbname",
-					Config: fakev1alpha1.Config{
-						Update: fakev1alpha1.OperationFlagDisabled,
+					Config: fakev1.Config{
+						Update: fakev1.OperationFlagDisabled,
 					},
 				},
 			},
@@ -219,23 +219,23 @@ func TestDBValidatingUpdate(t *testing.T) {
 		},
 		{
 			name: "update operation enabled in newObj",
-			oldObj: &fakev1alpha1.DB{
+			oldObj: &fakev1.DB{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "testdb",
 				},
-				Spec: fakev1alpha1.DBSpec{
-					Config: fakev1alpha1.Config{
-						Update: fakev1alpha1.OperationFlagDisabled,
+				Spec: fakev1.DBSpec{
+					Config: fakev1.Config{
+						Update: fakev1.OperationFlagDisabled,
 					},
 				},
 			},
-			object: &fakev1alpha1.DB{
+			object: &fakev1.DB{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "testdb",
 				},
-				Spec: fakev1alpha1.DBSpec{
-					Config: fakev1alpha1.Config{
-						Update: fakev1alpha1.OperationFlagEnabled,
+				Spec: fakev1.DBSpec{
+					Config: fakev1.Config{
+						Update: fakev1.OperationFlagEnabled,
 					},
 				},
 			},
@@ -244,13 +244,13 @@ func TestDBValidatingUpdate(t *testing.T) {
 		{
 			name:   "change Database name",
 			oldObj: oldObj,
-			object: &fakev1alpha1.DB{
+			object: &fakev1.DB{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "testdb2",
 				},
-				Spec: fakev1alpha1.DBSpec{
+				Spec: fakev1.DBSpec{
 					DatabaseName: "new dbname",
-					Config:       fakev1alpha1.Config{},
+					Config:       fakev1.Config{},
 				},
 			},
 			expectedError: fmt.Errorf("the Database name is immutable"),

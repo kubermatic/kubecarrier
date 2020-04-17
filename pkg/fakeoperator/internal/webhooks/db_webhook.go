@@ -28,7 +28,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
-	fakev1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/fake/v1alpha1"
+	fakev1 "github.com/kubermatic/kubecarrier/pkg/apis/fake/v1"
 	"github.com/kubermatic/kubecarrier/pkg/internal/util/webhook"
 )
 
@@ -44,7 +44,7 @@ type DBWebhookHandler struct {
 
 var _ admission.Handler = (*DBWebhookHandler)(nil)
 
-func (r *DBWebhookHandler) defaultObject(obj *fakev1alpha1.DB) (*fakev1alpha1.DB, bool) {
+func (r *DBWebhookHandler) defaultObject(obj *fakev1.DB) (*fakev1.DB, bool) {
 	newObj := obj.DeepCopy()
 	changed := false
 	if obj.Spec.DatabasePassword == "" {
@@ -58,13 +58,13 @@ func (r *DBWebhookHandler) defaultObject(obj *fakev1alpha1.DB) (*fakev1alpha1.DB
 	return newObj, changed
 }
 
-// +kubebuilder:webhook:path=/mutate-fake-kubecarrier-io-v1alpha1-db,mutating=true,failurePolicy=fail,sideEffects=NoneOnDryRun,groups=fake.kubecarrier.io,resources=dbs,verbs=create;update;delete,versions=v1alpha1,name=mdb.kubecarrier.io
+// +kubebuilder:webhook:path=/mutate-fake-kubecarrier-io-v1-db,mutating=true,failurePolicy=fail,groups=fake.kubecarrier.io,resources=dbs,verbs=create;update;delete,versions=v1,name=mdb.kubecarrier.io,matchPolicy=Equivalent,sideEffects=NoneOnDryRun
 
 // Handle is the function to handle create/update requests of DBs.
 func (r *DBWebhookHandler) Handle(ctx context.Context, req admission.Request) admission.Response {
 	switch req.Operation {
 	case adminv1beta1.Create:
-		obj := &fakev1alpha1.DB{}
+		obj := &fakev1.DB{}
 		if err := r.decoder.Decode(req, obj); err != nil {
 			return admission.Errored(http.StatusBadRequest, err)
 		}
@@ -80,11 +80,11 @@ func (r *DBWebhookHandler) Handle(ctx context.Context, req admission.Request) ad
 			return admission.PatchResponseFromRaw(req.Object.Raw, marshalledObj)
 		}
 	case adminv1beta1.Update:
-		obj := &fakev1alpha1.DB{}
+		obj := &fakev1.DB{}
 		if err := r.decoder.Decode(req, obj); err != nil {
 			return admission.Errored(http.StatusBadRequest, err)
 		}
-		oldObj := &fakev1alpha1.DB{}
+		oldObj := &fakev1.DB{}
 		if err := r.decoder.DecodeRaw(req.OldObject, oldObj); err != nil {
 			return admission.Errored(http.StatusBadRequest, err)
 		}
@@ -92,7 +92,7 @@ func (r *DBWebhookHandler) Handle(ctx context.Context, req admission.Request) ad
 			return admission.Denied(err.Error())
 		}
 	case adminv1beta1.Delete:
-		oldObj := &fakev1alpha1.DB{}
+		oldObj := &fakev1.DB{}
 		if err := r.decoder.DecodeRaw(req.OldObject, oldObj); err != nil {
 			return admission.Errored(http.StatusBadRequest, err)
 		}
@@ -112,7 +112,7 @@ func (r *DBWebhookHandler) InjectDecoder(d *admission.Decoder) error {
 	return nil
 }
 
-func (r *DBWebhookHandler) validateCreate(ctx context.Context, db *fakev1alpha1.DB) error {
+func (r *DBWebhookHandler) validateCreate(ctx context.Context, db *fakev1.DB) error {
 	r.Log.Info("mutate create", "name", db.Name)
 	if !db.Spec.Config.Create.Enabled() {
 		return fmt.Errorf("create operation disabled for %s", db.Name)
@@ -123,7 +123,7 @@ func (r *DBWebhookHandler) validateCreate(ctx context.Context, db *fakev1alpha1.
 	return nil
 }
 
-func (r *DBWebhookHandler) validateUpdate(oldObj, newObj *fakev1alpha1.DB) error {
+func (r *DBWebhookHandler) validateUpdate(oldObj, newObj *fakev1.DB) error {
 	r.Log.Info("mutate update", "name", newObj.Name)
 	if !oldObj.Spec.Config.Update.Enabled() && !newObj.Spec.Config.Update.Enabled() {
 		return fmt.Errorf("update operation disabled for %s", oldObj.Name)
@@ -135,7 +135,7 @@ func (r *DBWebhookHandler) validateUpdate(oldObj, newObj *fakev1alpha1.DB) error
 }
 
 // +kubebuilder:rbac:groups=fake.kubecarrier.io,resources=dbs,verbs=get;list;watch
-func (r *DBWebhookHandler) validateDelete(ctx context.Context, db *fakev1alpha1.DB) error {
+func (r *DBWebhookHandler) validateDelete(ctx context.Context, db *fakev1.DB) error {
 	if !db.Spec.Config.Delete.Enabled() {
 		return fmt.Errorf("delete operation disabled for %s", db.Name)
 	}
