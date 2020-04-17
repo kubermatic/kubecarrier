@@ -26,7 +26,7 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	fakev1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/fake/v1alpha1"
+	fakev1 "github.com/kubermatic/kubecarrier/pkg/apis/fake/v1"
 	"github.com/kubermatic/kubecarrier/pkg/internal/util"
 )
 
@@ -43,7 +43,7 @@ type DBReconciler struct {
 
 func (r *DBReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	ctx := context.Background()
-	db := &fakev1alpha1.DB{}
+	db := &fakev1.DB{}
 	if err := r.Get(ctx, req.NamespacedName, db); err != nil {
 		if errors.IsNotFound(err) {
 			return ctrl.Result{}, nil
@@ -57,7 +57,7 @@ func (r *DBReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 				return ctrl.Result{}, fmt.Errorf("updating %s status: %w", "FakeDB controller", err)
 			}
 		}
-		cond, _ := db.Status.GetCondition(fakev1alpha1.DBReady)
+		cond, _ := db.Status.GetCondition(fakev1.DBReady)
 		if time.Since(cond.LastTransitionTime.Time) < time.Duration(db.Spec.Config.DeletionAfterSeconds)*time.Second {
 			return ctrl.Result{RequeueAfter: time.Second * time.Duration(db.Spec.Config.DeletionAfterSeconds)}, nil
 		}
@@ -80,11 +80,7 @@ func (r *DBReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	now := time.Now()
 	if readyTime.Before(now) {
 		if db.SetReadyCondition() {
-			db.Status.Connection = &fakev1alpha1.Connection{
-				Endpoint: "fake endpoint",
-				Name:     db.Spec.DatabaseName,
-				Username: db.Spec.DatabaseUser,
-			}
+			db.Status.Connection = fmt.Sprintf("fake endpoint:%s:%s", db.Spec.DatabaseName, db.Spec.DatabaseUser)
 			if err := r.Status().Update(ctx, db); err != nil {
 				return ctrl.Result{}, fmt.Errorf("cannot update db: %w", err)
 			}
@@ -100,6 +96,6 @@ func (r *DBReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 
 func (r *DBReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
-		For(&fakev1alpha1.DB{}).
+		For(&fakev1.DB{}).
 		Complete(r)
 }
