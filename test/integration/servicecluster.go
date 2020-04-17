@@ -102,7 +102,7 @@ func newServiceClusterSuite(
 		// Test CatalogEntrySet
 		catalogEntrySet := &catalogv1alpha1.CatalogEntrySet{
 			ObjectMeta: metav1.ObjectMeta{
-				Name:      "db",
+				Name:      testName,
 				Namespace: provider.Status.Namespace.Name,
 			},
 			Spec: catalogv1alpha1.CatalogEntrySetSpec{
@@ -142,7 +142,7 @@ func newServiceClusterSuite(
 		// Check the CatalogEntry Object
 		catalogEntry := &catalogv1alpha1.CatalogEntry{}
 		require.NoError(t, managementClient.Get(ctx, types.NamespacedName{
-			Name:      "db." + serviceCluster.Name,
+			Name:      catalogEntrySet.Name + "." + serviceCluster.Name,
 			Namespace: catalogEntrySet.Namespace,
 		}, catalogEntry), "getting CatalogEntry")
 
@@ -159,10 +159,10 @@ func newServiceClusterSuite(
 		if assert.Error(t, err, "dirty provider %s deletion should error out", provider.Name) {
 			assert.Equal(t,
 				fmt.Sprintf(`admission webhook "vaccount.kubecarrier.io" denied the request: deletion blocking objects found:
-CustomResourceDiscovery.kubecarrier.io/v1alpha1: db.eu-west-1
-CustomResourceDiscoverySet.kubecarrier.io/v1alpha1: db
+CustomResourceDiscovery.kubecarrier.io/v1alpha1: %s.eu-west-1
+CustomResourceDiscoverySet.kubecarrier.io/v1alpha1: %s
 ServiceClusterAssignment.kubecarrier.io/v1alpha1: %s.eu-west-1
-`, serviceNamespace.Name),
+`, catalogEntrySet.Name, catalogEntrySet.Name, serviceNamespace.Name),
 				err.Error(),
 				"deleting dirty provider %s", provider.Name)
 		}

@@ -35,6 +35,7 @@ import (
 
 	catalogv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/catalog/v1alpha1"
 	corev1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/core/v1alpha1"
+	fakev1 "github.com/kubermatic/kubecarrier/pkg/apis/fake/v1"
 	"github.com/kubermatic/kubecarrier/pkg/testutil"
 )
 
@@ -89,31 +90,37 @@ func newSimpleScenario(f *testutil.Framework) func(t *testing.T) {
 		t.Log("===== creating service cluster =====")
 		serviceCluster := f.SetupServiceCluster(ctx, managementClient, t, "eu-east-1", provider)
 
-		t.Log("===== creating CRD on the service cluster =====")
-		baseCRD := f.NewFakeCouchDBCRD(testName + ".test.kubecarrier.io")
-		require.NoError(t, serviceClient.Create(ctx, baseCRD))
+		baseCRD := &apiextensionsv1.CustomResourceDefinition{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: "dbs.fake.kubecarrier.io",
+			},
+		}
+		require.NoError(t, serviceClient.Get(ctx, types.NamespacedName{
+			Name: baseCRD.Name,
+		}, baseCRD), "getting fake DB crd in service cluster")
 
 		catalogEntrySet := &catalogv1alpha1.CatalogEntrySet{
 			ObjectMeta: metav1.ObjectMeta{
-				Name:      "couchdb",
+				Name:      testName,
 				Namespace: provider.Status.Namespace.Name,
 			},
 			Spec: catalogv1alpha1.CatalogEntrySetSpec{
 				Metadata: catalogv1alpha1.CatalogEntrySetMetadata{
-					DisplayName: "CouchDB",
+					DisplayName: "FakeDB",
 					Description: "small database living near Tegel airport",
 				},
 				Derive: &catalogv1alpha1.DerivedConfig{
-					KindOverride: "CouchDB",
+					KindOverride: "DB",
 					Expose: []catalogv1alpha1.VersionExposeConfig{
 						{
 							Versions: []string{
-								"v1alpha1",
+								"v1",
 							},
 							Fields: []catalogv1alpha1.FieldPath{
-								{JSONPath: ".spec.prop1"},
+								{JSONPath: ".spec.databaseName"},
+								{JSONPath: ".spec.databaseUser"},
+								{JSONPath: ".spec.config.create"},
 								{JSONPath: ".status.observedGeneration"},
-								{JSONPath: ".status.prop1"},
 							},
 						},
 					},
@@ -123,7 +130,8 @@ func newSimpleScenario(f *testutil.Framework) func(t *testing.T) {
 						Name: baseCRD.Name,
 					},
 					ServiceClusterSelector: metav1.LabelSelector{},
-					KindOverride:           "CouchDBInternal",
+					KindOverride:           "DBInternal",
+					WebhookStrategy:        corev1alpha1.WebhookStrategyTypeServiceCluster,
 				},
 			},
 		}
@@ -132,11 +140,11 @@ func newSimpleScenario(f *testutil.Framework) func(t *testing.T) {
 
 		internalCRD := &apiextensionsv1.CustomResourceDefinition{}
 		require.NoError(t, managementClient.Get(ctx, types.NamespacedName{
-			Name: strings.Join([]string{"couchdbinternals", serviceCluster.Name, provider.Name}, "."),
+			Name: strings.Join([]string{"dbinternals", serviceCluster.Name, provider.Name}, "."),
 		}, internalCRD))
 		externalCRD := &apiextensionsv1.CustomResourceDefinition{}
 		require.NoError(t, managementClient.Get(ctx, types.NamespacedName{
-			Name: strings.Join([]string{"couchdbs", serviceCluster.Name, provider.Name}, "."),
+			Name: strings.Join([]string{"dbs", serviceCluster.Name, provider.Name}, "."),
 		}, externalCRD))
 
 		catalog := &catalogv1alpha1.Catalog{
@@ -179,7 +187,7 @@ func newSimpleScenario(f *testutil.Framework) func(t *testing.T) {
 			offering := &catalogv1alpha1.Offering{}
 			if assert.NoError(t, tenantClient.Get(ctx, types.NamespacedName{
 				Namespace: tenantAccount.Status.Namespace.Name,
-				Name:      strings.Join([]string{"couchdbs", serviceCluster.Name, provider.Name}, "."),
+				Name:      strings.Join([]string{"dbs", serviceCluster.Name, provider.Name}, "."),
 			}, offering), "tenant %s doesn't have the required offering", tenantAccount.Name) {
 				assert.Equal(t, externalCRD.Name, offering.Spec.CRD.Name)
 				externalObj := &unstructured.Unstructured{}
@@ -191,7 +199,11 @@ func newSimpleScenario(f *testutil.Framework) func(t *testing.T) {
 				externalObj.SetNamespace(tenantAccount.Status.Namespace.Name)
 				externalObj.SetName("db1")
 				externalObj.Object["spec"] = map[string]interface{}{
-					"prop1": "dummy value",
+					"databaseName": "fakeDB",
+					"databaseUser": "user",
+					"config": map[string]interface{}{
+						"create": "Enabled",
+					},
 				}
 				require.NoError(t, tenantClient.Create(ctx, externalObj))
 
@@ -215,21 +227,15 @@ func newSimpleScenario(f *testutil.Framework) func(t *testing.T) {
 					Name:      tenantAccount.Name + "." + serviceCluster.Name,
 				}, sca))
 
-				t.Log("checking internal object")
-				svcObj := &unstructured.Unstructured{}
-				svcObj.SetGroupVersionKind(schema.GroupVersionKind{
-					Group:   baseCRD.Spec.Group,
-					Version: baseCRD.Spec.Versions[0].Name,
-					Kind:    baseCRD.Spec.Names.Kind,
-				})
-				svcObj.SetName(externalObj.GetName())
-				svcObj.SetNamespace(sca.Status.ServiceClusterNamespace.Name)
-
 				t.Log("checking service cluster object")
-				assert.NoError(t,
-					testutil.WaitUntilFound(ctx, serviceClient, svcObj, testutil.WithTimeout(15*time.Second)),
-					"cannot find the CRD on the service cluster within the time limit",
-				)
+				// a object on the service cluster should have been created
+				svcObj := &fakev1.DB{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      externalObj.GetName(),
+						Namespace: sca.Status.ServiceClusterNamespace.Name,
+					},
+				}
+				require.NoError(t, testutil.WaitUntilFound(ctx, serviceClient, svcObj), "cannot find the CRD on the service cluster within the time limit")
 				assert.NoError(t, testutil.DeleteAndWaitUntilNotFound(ctx, tenantClient, externalObj))
 				assert.NoError(t, testutil.WaitUntilNotFound(ctx, serviceClient, svcObj))
 			}
