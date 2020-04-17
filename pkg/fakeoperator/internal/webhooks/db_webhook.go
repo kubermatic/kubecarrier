@@ -58,7 +58,7 @@ func (r *DBWebhookHandler) defaultObject(obj *fakev1.DB) (*fakev1.DB, bool) {
 	return newObj, changed
 }
 
-// +kubebuilder:webhook:path=/mutate-fake-kubecarrier-io-v1-db,mutating=true,failurePolicy=fail,groups=fake.kubecarrier.io,resources=dbs,verbs=create;update;delete,versions=v1,name=mdb.kubecarrier.io,matchPolicy=Equivalent
+// +kubebuilder:webhook:path=/mutate-fake-kubecarrier-io-v1-db,mutating=true,failurePolicy=fail,groups=fake.kubecarrier.io,resources=dbs,verbs=create;update;delete,versions=v1,name=mdb.kubecarrier.io,matchPolicy=Equivalent,sideEffects=NoneOnDryRun
 
 // Handle is the function to handle create/update requests of DBs.
 func (r *DBWebhookHandler) Handle(ctx context.Context, req admission.Request) admission.Response {
