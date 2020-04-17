@@ -3,7 +3,7 @@
   metadata:
     annotations:
       cert-manager.io/inject-ca-from: test3000/kubecarrier-operator-serving-cert
-      controller-gen.kubebuilder.io/version: v0.2.8
+      controller-gen.kubebuilder.io/version: v0.2.9
     creationTimestamp: null
     labels:
       kubecarrier.io/role: operator
@@ -113,7 +113,7 @@
   kind: CustomResourceDefinition
   metadata:
     annotations:
-      controller-gen.kubebuilder.io/version: v0.2.8
+      controller-gen.kubebuilder.io/version: v0.2.9
     creationTimestamp: null
     labels:
       kubecarrier.io/role: operator
@@ -243,7 +243,7 @@
   kind: CustomResourceDefinition
   metadata:
     annotations:
-      controller-gen.kubebuilder.io/version: v0.2.8
+      controller-gen.kubebuilder.io/version: v0.2.9
     creationTimestamp: null
     labels:
       kubecarrier.io/role: operator
@@ -416,7 +416,7 @@
   kind: CustomResourceDefinition
   metadata:
     annotations:
-      controller-gen.kubebuilder.io/version: v0.2.8
+      controller-gen.kubebuilder.io/version: v0.2.9
     creationTimestamp: null
     labels:
       kubecarrier.io/role: operator
