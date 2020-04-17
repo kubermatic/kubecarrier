@@ -448,14 +448,15 @@
       service:
         name: e2e-operator-webhook-service
         namespace: test3000
-        path: /mutate-fake-kubecarrier-io-v1alpha1-db
+        path: /mutate-fake-kubecarrier-io-v1-db
     failurePolicy: Fail
+    matchPolicy: Equivalent
     name: mdb.kubecarrier.io
     rules:
     - apiGroups:
       - fake.kubecarrier.io
       apiVersions:
-      - v1alpha1
+      - v1
       operations:
       - CREATE
       - UPDATE
