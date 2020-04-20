@@ -20,20 +20,36 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/go-logr/logr"
 	certv1alpha2 "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
 	adminv1beta1 "k8s.io/api/admissionregistration/v1beta1"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
-	"sigs.k8s.io/controller-runtime/pkg/builder"
+	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/source"
 
 	operatorv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/operator/v1alpha1"
+	"github.com/kubermatic/kubecarrier/pkg/internal/owner"
 	resourcescatapult "github.com/kubermatic/kubecarrier/pkg/internal/resources/catapult"
+	"github.com/kubermatic/kubecarrier/pkg/internal/util"
 )
+
+const (
+	catapultControllerFinalizer = "catapult.kubecarrier.io/controller"
+)
+
+// CatapultReconciler reconciles a Catapult object
+type CatapultReconciler struct {
+	client.Client
+	Log        logr.Logger
+	Scheme     *runtime.Scheme
+	RESTMapper meta.RESTMapper
+}
 
 // +kubebuilder:rbac:groups=operator.kubecarrier.io,resources=catapults,verbs=get;list;watch;update;patch
 // +kubebuilder:rbac:groups=operator.kubecarrier.io,resources=catapults/status,verbs=get;update;patch
@@ -49,38 +65,38 @@ import (
 // +kubebuilder:rbac:groups=cert-manager.io,resources=issuers,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=cert-manager.io,resources=certificates,verbs=get;list;watch;create;update;patch;delete
 
-type CatapultStrategy struct {
-	Client client.Client
-}
+func (r *CatapultReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
+	ctx := context.Background()
+	log := r.Log.WithValues("catapult", req.NamespacedName)
 
-func (c *CatapultStrategy) GetObj() Component {
-	return &operatorv1alpha1.Catapult{}
-}
-
-func (c *CatapultStrategy) GetDeletionObjectTypes() []runtime.Object {
-	return []runtime.Object{
-		&rbacv1.ClusterRole{},
-		&rbacv1.ClusterRoleBinding{},
-		&adminv1beta1.MutatingWebhookConfiguration{},
+	catapult := &operatorv1alpha1.Catapult{}
+	if err := r.Get(ctx, req.NamespacedName, catapult); err != nil {
+		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
-}
 
-func (c *CatapultStrategy) GetManifests(ctx context.Context, component Component) ([]unstructured.Unstructured, error) {
+	if !catapult.DeletionTimestamp.IsZero() {
+		if err := r.handleDeletion(ctx, catapult); err != nil {
+			return ctrl.Result{}, fmt.Errorf("handle deletion: %w", err)
+		}
+		return ctrl.Result{}, nil
+	}
 
-	catapult, ok := component.(*operatorv1alpha1.Catapult)
-	if !ok {
-		return nil, fmt.Errorf("can't assert to Catapult: %v", component)
+	if util.AddFinalizer(catapult, catapultControllerFinalizer) {
+		if err := r.Update(ctx, catapult); err != nil {
+			return ctrl.Result{}, fmt.Errorf("updating Catapult finalizers: %w", err)
+		}
 	}
 
 	// Lookup Ferry to get name of secret.
 	ferry := &operatorv1alpha1.Ferry{}
-	if err := c.Client.Get(ctx, types.NamespacedName{
+	if err := r.Client.Get(ctx, types.NamespacedName{
 		Name:      catapult.Spec.ServiceCluster.Name,
 		Namespace: catapult.Namespace,
 	}, ferry); err != nil {
-		return nil, fmt.Errorf("getting Ferry: %w", err)
+		return ctrl.Result{}, fmt.Errorf("getting Ferry: %w", err)
 	}
-	return resourcescatapult.Manifests(
+
+	objects, err := resourcescatapult.Manifests(
 		resourcescatapult.Config{
 			Name:      catapult.Name,
 			Namespace: catapult.Namespace,
@@ -99,15 +115,78 @@ func (c *CatapultStrategy) GetManifests(ctx context.Context, component Component
 			ServiceClusterSecret: ferry.Spec.KubeconfigSecret.Name,
 			WebhookStrategy:      string(catapult.Spec.WebhookStrategy),
 		})
+	if err != nil {
+		return ctrl.Result{}, fmt.Errorf("creating Catapult manifests: %w", err)
+	}
+
+	deploymentIsReady, err := reconcileOwnedObjectsForNamespacedOwner(ctx, log, r.Scheme, r.RESTMapper, r.Client, catapult, objects)
+	if err != nil {
+		return ctrl.Result{}, err
+	}
+
+	// 4. Update the status of the Catapult object.
+	if err := r.updateStatus(ctx, catapult, deploymentIsReady); err != nil {
+		return ctrl.Result{}, err
+	}
+
+	return ctrl.Result{}, nil
 }
 
-func (c *CatapultStrategy) AddWatches(builder *builder.Builder, scheme *runtime.Scheme) *builder.Builder {
-	return builder.
+func (r *CatapultReconciler) SetupWithManager(mgr ctrl.Manager) error {
+	enqueuer := owner.EnqueueRequestForOwner(&operatorv1alpha1.Catapult{}, r.Scheme)
+
+	return ctrl.NewControllerManagedBy(mgr).
+		For(&operatorv1alpha1.Catapult{}).
 		Owns(&appsv1.Deployment{}).
 		Owns(&corev1.Service{}).
 		Owns(&corev1.ServiceAccount{}).
 		Owns(&rbacv1.Role{}).
 		Owns(&rbacv1.RoleBinding{}).
 		Owns(&certv1alpha2.Issuer{}).
-		Owns(&certv1alpha2.Certificate{})
+		Owns(&certv1alpha2.Certificate{}).
+		Watches(&source.Kind{Type: &rbacv1.ClusterRole{}}, enqueuer).
+		Watches(&source.Kind{Type: &rbacv1.ClusterRoleBinding{}}, enqueuer).
+		Watches(&source.Kind{Type: &adminv1beta1.MutatingWebhookConfiguration{}}, enqueuer).
+		Complete(r)
+}
+
+func (r *CatapultReconciler) handleDeletion(ctx context.Context, catapult *operatorv1alpha1.Catapult) error {
+	if catapult.SetTerminatingCondition() {
+		if err := r.Client.Status().Update(ctx, catapult); err != nil {
+			return fmt.Errorf("updating %s status: %w", catapult.Name, err)
+		}
+	}
+
+	cleanedUp, err := util.DeleteObjects(ctx, r.Client, r.Scheme, []runtime.Object{
+		&rbacv1.ClusterRole{},
+		&rbacv1.ClusterRoleBinding{},
+		&adminv1beta1.MutatingWebhookConfiguration{},
+	}, owner.OwnedBy(catapult, r.Scheme))
+	if err != nil {
+		return fmt.Errorf("DeleteObjects: %w", err)
+	}
+
+	if cleanedUp && util.RemoveFinalizer(catapult, catapultControllerFinalizer) {
+		if err := r.Update(ctx, catapult); err != nil {
+			return fmt.Errorf("updating Catapult finalizers: %w", err)
+		}
+	}
+	return nil
+}
+
+func (r *CatapultReconciler) updateStatus(ctx context.Context, catapult *operatorv1alpha1.Catapult, deploymentIsReady bool) error {
+	var statusChanged bool
+
+	if deploymentIsReady {
+		statusChanged = catapult.SetReadyCondition()
+	} else {
+		statusChanged = catapult.SetUnReadyCondition()
+	}
+
+	if statusChanged {
+		if err := r.Client.Status().Update(ctx, catapult); err != nil {
+			return fmt.Errorf("updating %s status: %w", catapult.Name, err)
+		}
+	}
+	return nil
 }
