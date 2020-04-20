@@ -23,6 +23,7 @@ import (
 	"os"
 	"sync"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/require"
 	appsv1 "k8s.io/api/apps/v1"
@@ -309,7 +310,7 @@ func (f *Framework) SetupServiceCluster(ctx context.Context, cl *RecordingClient
 
 	require.NoError(t, cl.Create(ctx, serviceClusterSecret))
 	require.NoError(t, cl.Create(ctx, serviceCluster))
-	require.NoError(t, WaitUntilReady(ctx, cl, serviceCluster))
+	require.NoError(t, WaitUntilReady(ctx, cl, serviceCluster, WithTimeout(60*time.Second)))
 	t.Logf("service cluster %s successfully created for provider %s", name, account.Name)
 	return serviceCluster
 }
