@@ -17,31 +17,23 @@ limitations under the License.
 package installation
 
 import (
+	"context"
+	"os/exec"
 	"testing"
+	"time"
+
+	"github.com/stretchr/testify/require"
 
 	"github.com/kubermatic/kubecarrier/pkg/testutil"
 )
 
-const (
-	kubecarrierSystem          = "kubecarrier-system"
-	kubeCarrierName            = "kubecarrier"
-	prefix                     = "kubecarrier-manager"
-	localManagementClusterName = "local"
-)
-
-func NewInstallationSuite(f *testutil.Framework) func(t *testing.T) {
+func newServiceCluster(f *testutil.Framework) func(t *testing.T) {
 	return func(t *testing.T) {
-		for name, testFn := range map[string]func(f *testutil.Framework) func(t *testing.T){
-			"MasterCluster":     newMasterCluster,
-			"ManagementCluster": newManagementCluster,
-			"ServiceCluster":    newServiceCluster,
-		} {
-			name := name
-			testFn := testFn
-
-			t.Run(name, func(t *testing.T) {
-				testFn(f)(t)
-			})
-		}
+		ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
+		t.Cleanup(cancel)
+		c := exec.CommandContext(ctx, "kubectl", "kubecarrier", "e2e-test", "--kubeconfig", f.Config().ServiceExternalKubeconfigPath, "setup-e2e-operator")
+		out, err := c.CombinedOutput()
+		t.Log(string(out))
+		require.NoError(t, err)
 	}
 }
