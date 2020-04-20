@@ -43,6 +43,17 @@ spec:
             type: object
           spec:
             description: ManagementClusterSpec defines the desired state of ManagementCluster.
+            properties:
+              kubeconfigSecret:
+                description: KubeconfigSecret specifies the Kubeconfig to use when
+                  connecting to the Management Cluster.
+                properties:
+                  name:
+                    minLength: 1
+                    type: string
+                required:
+                - name
+                type: object
             type: object
           status:
             description: ManagementClusterStatus defines the observed state of ManagementCluster.
@@ -54,6 +65,11 @@ spec:
                   description: ManagementClusterCondition contains details for the
                     current condition of this ManagementCluster.
                   properties:
+                    lastHeartbeatTime:
+                      description: LastHeartbeatTime is the timestamp corresponding
+                        to the last update of this condition.
+                      format: date-time
+                      type: string
                     lastTransitionTime:
                       description: LastTransitionTime is the last time the condition
                         transits from one status to another.
@@ -76,6 +92,7 @@ spec:
                         currently ('Ready').
                       type: string
                   required:
+                  - lastHeartbeatTime
                   - lastTransitionTime
                   - message
                   - reason

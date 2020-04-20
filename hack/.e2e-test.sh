@@ -19,15 +19,17 @@ set -euo pipefail
 
 function cleanup() {
   local workdir=$(mktemp -d)
+  mkdir -p ${workdir}/master
   mkdir -p ${workdir}/management
   mkdir -p ${workdir}/svc
+  kind export logs --name ${MASTER_KIND_CLUSTER} ${workdir}/master
   kind export logs --name ${MANAGEMENT_KIND_CLUSTER} ${workdir}/management
   kind export logs --name ${SVC_KIND_CLUSTER} ${workdir}/svc
 
   # https://github.com/kubernetes/test-infra/blob/master/prow/jobs.md#job-environment-variables
   local JOB_LOG=${PULL_NUMBER:-}-${JOB_NAME:-}-${BUILD_ID:-}
   if [[ "${JOB_LOG}" != "--" ]]; then
-    zip -r "${workdir}/${JOB_LOG}.zip" "${workdir}/management" "${workdir}/svc"
+    zip -r "${workdir}/${JOB_LOG}.zip" "${workdir}/master" "${workdir}/management" "${workdir}/svc"
     aws s3 cp "${workdir}/${JOB_LOG}.zip" "s3://e2elogs.kubecarrier.io/${JOB_LOG}.zip"
   fi
 }

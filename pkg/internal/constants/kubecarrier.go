@@ -22,4 +22,5 @@ const (
 	KubeCarrierDefaultNamespace = "kubecarrier-system"
 
 	LocalManagementClusterName = "local"
+	KubeconfigSecretKey        = "kubeconfig"
 )

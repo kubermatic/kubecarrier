@@ -48,6 +48,17 @@
               type: object
             spec:
               description: ManagementClusterSpec defines the desired state of ManagementCluster.
+              properties:
+                kubeconfigSecret:
+                  description: KubeconfigSecret specifies the Kubeconfig to use when
+                    connecting to the Management Cluster.
+                  properties:
+                    name:
+                      minLength: 1
+                      type: string
+                  required:
+                  - name
+                  type: object
               type: object
             status:
               description: ManagementClusterStatus defines the observed state of ManagementCluster.
@@ -59,6 +70,11 @@
                     description: ManagementClusterCondition contains details for the
                       current condition of this ManagementCluster.
                     properties:
+                      lastHeartbeatTime:
+                        description: LastHeartbeatTime is the timestamp corresponding
+                          to the last update of this condition.
+                        format: date-time
+                        type: string
                       lastTransitionTime:
                         description: LastTransitionTime is the last time the condition
                           transits from one status to another.
@@ -81,6 +97,7 @@
                           currently ('Ready').
                         type: string
                     required:
+                    - lastHeartbeatTime
                     - lastTransitionTime
                     - message
                     - reason
@@ -124,6 +141,14 @@
       kubecarrier.io/role: tower
     name: kubecarrier-tower-manager-role
   rules:
+  - apiGroups:
+    - ""
+    resources:
+    - secrets
+    verbs:
+    - get
+    - list
+    - watch
   - apiGroups:
     - master.kubecarrier.io
     resources:
@@ -253,7 +278,22 @@
       spec:
         containers:
         - image: quay.io/kubecarrier/tower:was not build properly
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: readiness-port
           name: manager
+          ports:
+          - containerPort: 9443
+            name: webhook-server
+            protocol: TCP
+          - containerPort: 9440
+            name: readiness-port
+            protocol: TCP
+          readinessProbe:
+            httpGet:
+              path: /readyz
+              port: readiness-port
           resources:
             limits:
               cpu: 100m
@@ -261,5 +301,95 @@
             requests:
               cpu: 100m
               memory: 100Mi
+          volumeMounts:
+          - mountPath: /tmp/k8s-webhook-server/serving-certs
+            name: cert
+            readOnly: true
         serviceAccountName: kubecarrier-tower-sa
         terminationGracePeriodSeconds: 10
+        volumes:
+        - name: cert
+          secret:
+            defaultMode: 420
+            secretName: kubecarrier-tower-webhook-service-webhook-service-cert
+- apiVersion: admissionregistration.k8s.io/v1beta1
+  kind: ValidatingWebhookConfiguration
+  metadata:
+    annotations:
+      cert-manager.io/inject-ca-from: test3000/kubecarrier-tower-serving-cert
+    creationTimestamp: null
+    labels:
+      app.kubernetes.io/instance: test3000
+      app.kubernetes.io/managed-by: kubecarrier-operator
+      app.kubernetes.io/name: tower
+      app.kubernetes.io/version: was not build properly
+      kubecarrier.io/role: tower
+    name: kubecarrier-tower-validating-webhook-configuration
+  webhooks:
+  - clientConfig:
+      caBundle: Cg==
+      service:
+        name: kubecarrier-tower-webhook-service
+        namespace: test3000
+        path: /validate-master-kubecarrier-io-v1alpha1-managementcluster
+    failurePolicy: Fail
+    name: vmanagementcluster.kubecarrier.io
+    rules:
+    - apiGroups:
+      - master.kubecarrier.io
+      apiVersions:
+      - v1alpha1
+      operations:
+      - CREATE
+      resources:
+      - managementclusters
+- apiVersion: v1
+  kind: Service
+  metadata:
+    labels:
+      app.kubernetes.io/instance: test3000
+      app.kubernetes.io/managed-by: kubecarrier-operator
+      app.kubernetes.io/name: tower
+      app.kubernetes.io/version: was not build properly
+      kubecarrier.io/role: tower
+    name: kubecarrier-tower-webhook-service
+    namespace: test3000
+  spec:
+    ports:
+    - port: 443
+      targetPort: 9443
+    selector:
+      control-plane: tower
+      kubecarrier.io/role: tower
+- apiVersion: cert-manager.io/v1alpha2
+  kind: Issuer
+  metadata:
+    labels:
+      app.kubernetes.io/instance: test3000
+      app.kubernetes.io/managed-by: kubecarrier-operator
+      app.kubernetes.io/name: tower
+      app.kubernetes.io/version: was not build properly
+      kubecarrier.io/role: tower
+    name: kubecarrier-tower-selfsigned-issuer
+    namespace: test3000
+  spec:
+    selfSigned: {}
+- apiVersion: cert-manager.io/v1alpha2
+  kind: Certificate
+  metadata:
+    labels:
+      app.kubernetes.io/instance: test3000
+      app.kubernetes.io/managed-by: kubecarrier-operator
+      app.kubernetes.io/name: tower
+      app.kubernetes.io/version: was not build properly
+      kubecarrier.io/role: tower
+    name: kubecarrier-tower-serving-cert
+    namespace: test3000
+  spec:
+    dnsNames:
+    - kubecarrier-tower-webhook-service.test3000.svc
+    - kubecarrier-tower-webhook-service.test3000.svc.cluster.local
+    issuerRef:
+      kind: Issuer
+      name: kubecarrier-tower-selfsigned-issuer
+    secretName: kubecarrier-tower-webhook-service-webhook-service-cert

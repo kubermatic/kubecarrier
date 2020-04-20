@@ -43,12 +43,15 @@ import (
 	fakev1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/fake/v1alpha1"
 	masterv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/master/v1alpha1"
 	operatorv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/operator/v1alpha1"
+	"github.com/kubermatic/kubecarrier/pkg/internal/constants"
 	"github.com/kubermatic/kubecarrier/pkg/internal/util"
 )
 
 type FrameworkConfig struct {
 	TestID string
 
+	MasterExternalKubeconfigPath     string
+	MasterInternalKubeconfigPath     string
 	ManagementExternalKubeconfigPath string
 	ManagementInternalKubeconfigPath string
 	ServiceExternalKubeconfigPath    string
@@ -56,8 +59,12 @@ type FrameworkConfig struct {
 	CleanUpStrategy                  CleanUpStrategy
 }
 
+func (c *FrameworkConfig) MasterClusterName() string {
+	return "kubecarrier-master-" + c.TestID
+}
+
 func (c *FrameworkConfig) ManagementClusterName() string {
-	return "kubecarrier-" + c.TestID
+	return "kubecarrier-management-" + c.TestID
 }
 
 func (c *FrameworkConfig) ServiceClusterName() string {
@@ -65,6 +72,13 @@ func (c *FrameworkConfig) ServiceClusterName() string {
 }
 
 func (c *FrameworkConfig) Default() {
+	// Master Cluster
+	if c.MasterInternalKubeconfigPath == "" {
+		c.MasterInternalKubeconfigPath = os.ExpandEnv("${HOME}/.kube/internal-kind-config-" + c.MasterClusterName())
+	}
+	if c.MasterExternalKubeconfigPath == "" {
+		c.MasterExternalKubeconfigPath = os.ExpandEnv("${HOME}/.kube/kind-config-" + c.MasterClusterName())
+	}
 	// Management Cluster
 	if c.ManagementInternalKubeconfigPath == "" {
 		c.ManagementInternalKubeconfigPath = os.ExpandEnv("${HOME}/.kube/internal-kind-config-" + c.ManagementClusterName())
@@ -83,6 +97,8 @@ func (c *FrameworkConfig) Default() {
 }
 
 type Framework struct {
+	MasterScheme     *runtime.Scheme
+	masterConfig     *restclient.Config
 	ManagementScheme *runtime.Scheme
 	managementConfig *restclient.Config
 	ServiceScheme    *runtime.Scheme
@@ -96,6 +112,31 @@ func New(c FrameworkConfig) (f *Framework, err error) {
 	}
 
 	f = &Framework{config: c}
+
+	// Master Cluster Setup
+	f.MasterScheme = runtime.NewScheme()
+	if err = clientgoscheme.AddToScheme(f.MasterScheme); err != nil {
+		return nil, fmt.Errorf("adding clientgo scheme to master scheme: %w", err)
+	}
+	if err = apiextensionsv1.AddToScheme(f.MasterScheme); err != nil {
+		return nil, fmt.Errorf("adding apiextensionsv1 scheme to master scheme: %w", err)
+	}
+	if err = operatorv1alpha1.AddToScheme(f.MasterScheme); err != nil {
+		return nil, fmt.Errorf("adding operatorv1alpha1 scheme to master scheme: %w", err)
+	}
+	if err = catalogv1alpha1.AddToScheme(f.MasterScheme); err != nil {
+		return nil, fmt.Errorf("adding catalogv1alpha1 scheme to master scheme: %w", err)
+	}
+	if err = corev1alpha1.AddToScheme(f.MasterScheme); err != nil {
+		return nil, fmt.Errorf("adding corev1alpha1 scheme to master scheme: %w", err)
+	}
+	if err = masterv1alpha1.AddToScheme(f.MasterScheme); err != nil {
+		return nil, fmt.Errorf("adding masterv1alpha1 scheme to master scheme: %w", err)
+	}
+	f.masterConfig, err = clientcmd.BuildConfigFromFlags("", f.config.MasterExternalKubeconfigPath)
+	if err != nil {
+		return nil, fmt.Errorf("build restconfig for master: %w", err)
+	}
 
 	// Management Setup
 	f.ManagementScheme = runtime.NewScheme()
@@ -140,6 +181,20 @@ func New(c FrameworkConfig) (f *Framework, err error) {
 	}
 
 	return
+}
+
+func (f *Framework) MasterClient(t *testing.T, options ...func(config *restclient.Config) error) (*RecordingClient, error) {
+	cfg := *f.masterConfig
+	for _, f := range options {
+		if err := f(&cfg); err != nil {
+			return nil, err
+		}
+	}
+	c, err := util.NewClientWatcher(&cfg, f.MasterScheme, NewLogger(t))
+	if err != nil {
+		return nil, err
+	}
+	return recordingClient(c, f.MasterScheme, t, f.config.CleanUpStrategy), nil
 }
 
 func (f *Framework) ManagementClient(t *testing.T, options ...func(config *restclient.Config) error) (*RecordingClient, error) {
@@ -271,6 +326,38 @@ func (f *Framework) NewFakeCouchDBCRD(group string) *apiextensionsv1.CustomResou
 			Scope: apiextensionsv1.NamespaceScoped,
 		},
 	}
+}
+
+func (f *Framework) SetupManagementCluster(ctx context.Context, cl *RecordingClient, t *testing.T, name string) *masterv1alpha1.ManagementCluster {
+	managementClusterConfig, err := ioutil.ReadFile(f.Config().ManagementInternalKubeconfigPath)
+	require.NoError(t, err, "cannot read management cluster internal kubeconfig")
+
+	managementClusterSecret := &corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      name,
+			Namespace: constants.KubeCarrierDefaultNamespace,
+		},
+		Data: map[string][]byte{
+			"kubeconfig": managementClusterConfig,
+		},
+	}
+
+	managementCluster := &masterv1alpha1.ManagementCluster{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: name,
+		},
+		Spec: masterv1alpha1.ManagementClusterSpec{
+			KubeconfigSecret: &masterv1alpha1.ObjectReference{
+				Name: managementClusterSecret.Name,
+			},
+		},
+	}
+
+	require.NoError(t, cl.Create(ctx, managementClusterSecret))
+	require.NoError(t, cl.Create(ctx, managementCluster))
+	t.Logf("management cluster %s successfully created", managementCluster.Name)
+	return managementCluster
+
 }
 
 func (f *Framework) SetupServiceCluster(ctx context.Context, cl *RecordingClient, t *testing.T, name string, account *catalogv1alpha1.Account) *corev1alpha1.ServiceCluster {

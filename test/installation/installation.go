@@ -39,6 +39,7 @@ import (
 
 const (
 	kubecarrierSystem          = "kubecarrier-system"
+	kubeCarrierName            = "kubecarrier"
 	prefix                     = "kubecarrier-manager"
 	localManagementClusterName = "local"
 )
@@ -48,8 +49,34 @@ func NewInstallationSuite(f *testutil.Framework) func(t *testing.T) {
 		ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 		t.Cleanup(cancel)
 
-		c := exec.CommandContext(ctx, "kubectl", "kubecarrier", "setup", "--kubeconfig", f.Config().ManagementExternalKubeconfigPath, "--master")
+		// Install KubeCarrier in the master cluster
+		c := exec.CommandContext(ctx, "kubectl", "kubecarrier", "setup", "--kubeconfig", f.Config().MasterExternalKubeconfigPath, "--master")
 		out, err := c.CombinedOutput()
+		t.Log(string(out))
+		require.NoError(t, err)
+
+		masterClient, err := f.MasterClient(t)
+		require.NoError(t, err, "creating master client")
+
+		tower := &operatorv1alpha1.Tower{}
+		assert.NoError(t, masterClient.Get(ctx, types.NamespacedName{
+			Name:      kubeCarrierName,
+			Namespace: kubecarrierSystem,
+		}, tower), "getting the Tower object error")
+		require.True(t, tower.IsReady(), "tower is not ready")
+
+		localManagementCluster := &masterv1alpha1.ManagementCluster{}
+		assert.NoError(t, masterClient.Get(ctx, types.NamespacedName{
+			Name: localManagementClusterName,
+		}, localManagementCluster), "getting the local ManagementCluster object error")
+		assert.True(t, localManagementCluster.IsReady(), "local ManagementCluster is not ready")
+
+		managementCluster := f.SetupManagementCluster(ctx, masterClient, t, "kubecarrier-1")
+		assert.False(t, managementCluster.IsReady(), "management cluster should not become ready since the KubeCarrier haven't been installed in the management cluster")
+
+		// Install KubeCarrier in the management cluster
+		c = exec.CommandContext(ctx, "kubectl", "kubecarrier", "setup", "--kubeconfig", f.Config().ManagementExternalKubeconfigPath)
+		out, err = c.CombinedOutput()
 		t.Log(string(out))
 		require.NoError(t, err)
 
@@ -71,21 +98,11 @@ func NewInstallationSuite(f *testutil.Framework) func(t *testing.T) {
 				"KubeCarrier creation webhook should error out on incorrect KubeCarrier object name",
 			)
 		}
-		kubeCarrier.Name = "kubecarrier"
+		kubeCarrier.Name = kubeCarrierName
 		require.NoError(t, testutil.WaitUntilReady(ctx, managementClient, kubeCarrier))
 
-		tower := &operatorv1alpha1.Tower{}
-		assert.NoError(t, managementClient.Get(ctx, types.NamespacedName{
-			Name:      kubeCarrier.Name,
-			Namespace: kubecarrierSystem,
-		}, tower), "getting the Tower object error")
-		assert.True(t, tower.IsReady(), "tower is not ready")
-
-		localManagementCluster := &masterv1alpha1.ManagementCluster{}
-		assert.NoError(t, managementClient.Get(ctx, types.NamespacedName{
-			Name: localManagementClusterName,
-		}, localManagementCluster), "getting the local ManagementCluster object error")
-		assert.True(t, localManagementCluster.IsReady(), "local ManagementCluster is not ready")
+		// Check ManagementCluster in the master cluster is ready
+		require.NoError(t, testutil.WaitUntilReady(ctx, masterClient, managementCluster))
 
 		operatorDeployment := &appsv1.Deployment{}
 		assert.NoError(t, managementClient.Get(ctx, types.NamespacedName{

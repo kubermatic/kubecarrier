@@ -22,6 +22,8 @@ import (
 
 // ManagementClusterSpec defines the desired state of ManagementCluster.
 type ManagementClusterSpec struct {
+	// KubeconfigSecret specifies the Kubeconfig to use when connecting to the Management Cluster.
+	KubeconfigSecret *ObjectReference `json:"kubeconfigSecret,omitempty"`
 }
 
 // ManagementClusterStatus defines the observed state of ManagementCluster.
@@ -96,6 +98,8 @@ type ManagementClusterCondition struct {
 	Status ConditionStatus `json:"status"`
 	// LastTransitionTime is the last time the condition transits from one status to another.
 	LastTransitionTime metav1.Time `json:"lastTransitionTime"`
+	// LastHeartbeatTime is the timestamp corresponding to the last update of this condition.
+	LastHeartbeatTime metav1.Time `json:"lastHeartbeatTime"`
 	// Reason is the (brief) reason for the condition's last transition.
 	Reason string `json:"reason"`
 	// Message is the human readable message indicating details about last transition.
@@ -123,8 +127,18 @@ func (s *ManagementClusterStatus) GetCondition(t ManagementClusterConditionType)
 func (s *ManagementClusterStatus) SetCondition(condition ManagementClusterCondition) {
 	defer s.updatePhase()
 
-	if condition.LastTransitionTime.IsZero() {
-		condition.LastTransitionTime = metav1.Now()
+	if condition.LastTransitionTime.IsZero() ||
+		condition.LastHeartbeatTime.IsZero() {
+		n := metav1.Now()
+		// LastTransitionTime should always be set
+		if condition.LastTransitionTime.IsZero() {
+			condition.LastTransitionTime = n
+		}
+
+		// LastHeartbeatTime should always be set
+		if condition.LastHeartbeatTime.IsZero() {
+			condition.LastHeartbeatTime = n
+		}
 	}
 
 	for i := range s.Conditions {
@@ -138,6 +152,7 @@ func (s *ManagementClusterStatus) SetCondition(condition ManagementClusterCondit
 			s.Conditions[i].Status = condition.Status
 			s.Conditions[i].Reason = condition.Reason
 			s.Conditions[i].Message = condition.Message
+			s.Conditions[i].LastHeartbeatTime = condition.LastHeartbeatTime
 
 			return
 		}

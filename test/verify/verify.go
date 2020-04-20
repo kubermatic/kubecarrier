@@ -35,6 +35,9 @@ import (
 func NewVerifySuite(f *testutil.Framework) func(t *testing.T) {
 	return func(t *testing.T) {
 		// Setup
+		masterClient, err := f.MasterClient(t)
+		require.NoError(t, err)
+
 		managementClient, err := f.ManagementClient(t)
 		require.NoError(t, err)
 
@@ -43,6 +46,14 @@ func NewVerifySuite(f *testutil.Framework) func(t *testing.T) {
 
 		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 		t.Cleanup(cancel)
+		t.Run("validate master cluster connection", func(t *testing.T) {
+			cm := &corev1.ConfigMap{}
+			require.NoError(t, masterClient.Get(ctx, types.NamespacedName{
+				Name:      "cluster-info",
+				Namespace: "kube-public",
+			}, cm), "cannot fetch cluster-info")
+		})
+
 		t.Run("validate management cluster connection", func(t *testing.T) {
 			cm := &corev1.ConfigMap{}
 			require.NoError(t, managementClient.Get(ctx, types.NamespacedName{

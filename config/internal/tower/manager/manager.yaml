@@ -26,4 +26,16 @@ spec:
           requests:
             cpu: 100m
             memory: 100Mi
+        ports:
+          - name: readiness-port
+            containerPort: 9440
+            protocol: TCP
+        readinessProbe:
+          httpGet:
+            path: /readyz
+            port: readiness-port
+        livenessProbe:
+          httpGet:
+            path: /healthz
+            port: readiness-port
       terminationGracePeriodSeconds: 10

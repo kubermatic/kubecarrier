@@ -135,6 +135,8 @@ statik-gen elevator config/internal/elevator
 # -------
 # CRDs
 $CONTROLLER_GEN crd:crdVersions=${CRD_VERSION} paths="./pkg/apis/master/..." output:crd:artifacts:config=config/internal/tower/crd/bases
+# Webhooks
+$CONTROLLER_GEN webhook paths="./pkg/tower/internal/webhooks/..." output:webhook:artifacts:config=config/internal/tower/webhook
 # RBAC
 $CONTROLLER_GEN rbac:roleName=manager-role paths="./pkg/tower/..." output:rbac:artifacts:config=config/internal/tower/rbac
 statik-gen tower config/internal/tower
