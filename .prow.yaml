@@ -36,6 +36,7 @@ presubmits:
         resources:
           requests:
             cpu: 4
+            memory: 6Gi
 - name: pull-kubecarrier-lint
   always_run: true
   decorate: true
@@ -53,6 +54,7 @@ presubmits:
         resources:
           requests:
             cpu: 4
+            memory: 6Gi
 - name: pull-kubecarrier-e2e-v1.17.0
   always_run: true
   decorate: true
@@ -97,6 +99,7 @@ presubmits:
         resources:
           requests:
             cpu: 5
+            memory: 6Gi
 - name: pull-kubecarrier-e2e-v1.16.4
   always_run: true
   decorate: true
@@ -141,6 +144,7 @@ presubmits:
         resources:
           requests:
             cpu: 5
+            memory: 6Gi
 postsubmits:
   - name: post-kubecarrier-test-image
     decorate: true
