@@ -11,14 +11,15 @@ webhooks:
     service:
       name: webhook-service
       namespace: system
-      path: /mutate-fake-kubecarrier-io-v1alpha1-db
+      path: /mutate-fake-kubecarrier-io-v1-db
   failurePolicy: Fail
+  matchPolicy: Equivalent
   name: mdb.kubecarrier.io
   rules:
   - apiGroups:
     - fake.kubecarrier.io
     apiVersions:
-    - v1alpha1
+    - v1
     operations:
     - CREATE
     - UPDATE

@@ -54,7 +54,7 @@ RUN go get golang.org/x/tools/cmd/goimports
 RUN go get github.com/rakyll/statik
 # Install controller-gen in the dockerfile, otherwise it will be installed during `make generate` which will modify the go.mod
 # and go.sum files, and make the directory dirty.
-RUN go get sigs.k8s.io/controller-tools/cmd/controller-gen@v0.2.8
+RUN go get sigs.k8s.io/controller-tools/cmd/controller-gen@v0.2.9
 RUN pip3 install pre-commit awscli yq
 
 WORKDIR /src

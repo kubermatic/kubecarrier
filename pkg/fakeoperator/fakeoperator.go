@@ -111,7 +111,7 @@ func run(flags flags, log logr.Logger) error {
 	}
 	// Register webhooks as handlers
 	wbh := mgr.GetWebhookServer()
-	wbh.Register(utilwebhook.GenerateMutateWebhookPath(&fakev1alpha1.DB{}, mgr.GetScheme()),
+	wbh.Register(utilwebhook.GenerateMutateWebhookPath(&fakev1.DB{}, mgr.GetScheme()),
 		&webhook.Admission{Handler: &webhooks.DBWebhookHandler{
 			Client: mgr.GetClient(),
 			Scheme: mgr.GetScheme(),
