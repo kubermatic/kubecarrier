@@ -26,16 +26,22 @@ SUFFIX=''
 DETAIL=''
 
 if [ -z "$TAG" ]; then
-  # Use the last tag as base and create a new "dynamic" version from it.
+  # Use the last tag as base
   TAG=$(git describe --abbrev=0)
+  if [ -z "$TAG" ]; then
+    # if tag is still empty default to v0.0.0
+    # this will happen in CI/CD often
+    TAG="v0.0.0"
+  fi
+
   COMMIT_COUNT=$(git --no-pager log ${TAG}..HEAD --oneline | wc -l)
   COMMIT_COUNT_PADDED=$(printf %03d $COMMIT_COUNT)
-  SHORT_COMMIT_ID=$(git rev-parse --short HEAD)
+  COMMIT_SHORT_SHA=$(git rev-parse --short HEAD)
   BRANCH=$(git rev-parse --abbrev-ref HEAD | sed 's/\//-/')
 
   # development version
   SUFFIX="-${BRANCH}"
-  DETAIL=".${COMMIT_COUNT_PADDED}.${SHORT_COMMIT_ID}"
+  DETAIL=".${COMMIT_COUNT_PADDED}.${COMMIT_SHORT_SHA}"
 else
   VERSION=$TAG
 fi

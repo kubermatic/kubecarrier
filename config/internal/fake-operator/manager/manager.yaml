@@ -1,0 +1,47 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: manager
+  namespace: system
+  labels:
+    control-plane: e2e-operator
+spec:
+  selector:
+    matchLabels:
+      control-plane: e2e-operator
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        control-plane: e2e-operator
+    spec:
+      serviceAccountName: sa
+      containers:
+      - image: quay.io/kubecarrier/fake-operator:latest
+        name: manager
+        env:
+          - name: CERT_DIR
+            value: "/tmp/k8s-webhook-server/serving-certs"
+        args:
+          - "--cert-dir=$(CERT_DIR)"
+        resources:
+          limits:
+            cpu: 100m
+            memory: 100Mi
+          requests:
+            cpu: 100m
+            memory: 100Mi
+        ports:
+        - name: readiness-port
+          containerPort: 9440
+          protocol: TCP
+        readinessProbe:
+          httpGet:
+            path: /readyz
+            port: readiness-port
+        livenessProbe:
+          httpGet:
+            path: /healthz
+            port: readiness-port
+
+      terminationGracePeriodSeconds: 10

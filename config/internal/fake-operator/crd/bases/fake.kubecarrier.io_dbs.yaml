@@ -1,0 +1,310 @@
+
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.2.9
+  creationTimestamp: null
+  name: dbs.fake.kubecarrier.io
+spec:
+  group: fake.kubecarrier.io
+  names:
+    kind: DB
+    listKind: DBList
+    plural: dbs
+    singular: db
+  scope: Namespaced
+  versions:
+  - additionalPrinterColumns:
+    - jsonPath: .status.phase
+      name: Status
+      type: string
+    - jsonPath: .metadata.creationTimestamp
+      name: Age
+      type: date
+    - jsonPath: .status.connection
+      name: Connection
+      type: string
+    name: v1
+    schema:
+      openAPIV3Schema:
+        description: DB is core element in e2e operator
+        properties:
+          apiVersion:
+            description: 'APIVersion defines the versioned schema of this representation
+              of an object. Servers should convert recognized schemas to the latest
+              internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+            type: string
+          kind:
+            description: 'Kind is a string value representing the REST resource this
+              object represents. Servers may infer this from the endpoint the client
+              submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+            type: string
+          metadata:
+            type: object
+          spec:
+            description: DBSpec defines the desired state of DB
+            properties:
+              config:
+                description: Config is E2E tests params
+                properties:
+                  create:
+                    default: Enabled
+                    description: CreateEnable control whether create operation enabled
+                      or not
+                    type: string
+                  delete:
+                    default: Enabled
+                    description: DeleteEnable control whether delete operation enabled
+                      or not
+                    type: string
+                  deletionAfterSeconds:
+                    description: DeletionAfterSeconds represents duration after which
+                      operator will remove finalizer
+                    type: integer
+                  readyAfterSeconds:
+                    description: ReadyAfterSeconds represents duration after which
+                      operator will mark DB as Ready
+                    type: integer
+                  update:
+                    default: Enabled
+                    description: UpdateEnable control whether update operation enabled
+                      or not
+                    type: string
+                type: object
+              databaseName:
+                description: DatabaseName of the created database at start up
+                minLength: 1
+                type: string
+              databasePassword:
+                description: DatabasePassword for the created database. Leave blank
+                  for auto-generation
+                type: string
+              databaseUser:
+                description: DatabaseUser for created database
+                type: string
+              rootPassword:
+                description: RootPassword is root account password for this data.
+                  Leave blank for auto-generation
+                type: string
+            required:
+            - databaseName
+            - databaseUser
+            type: object
+          status:
+            description: DBStatus defines the observed state of DB
+            properties:
+              conditions:
+                description: Conditions represents the latest available observations
+                  of a FakeDB's current state.
+                items:
+                  description: DBCondition contains details for the current condition
+                    of this DB.
+                  properties:
+                    lastTransitionTime:
+                      description: LastTransitionTime is the last time the condition
+                        transits from one status to another.
+                      format: date-time
+                      type: string
+                    message:
+                      description: Message is the human readable message indicating
+                        details about last transition.
+                      type: string
+                    reason:
+                      description: Reason is the (brief) reason for the condition's
+                        last transition.
+                      type: string
+                    status:
+                      description: Status is the status of the condition, one of ('True',
+                        'False', 'Unknown').
+                      type: string
+                    type:
+                      description: Type is the type of the DB condition, currently
+                        ('Ready').
+                      type: string
+                  required:
+                  - lastTransitionTime
+                  - message
+                  - reason
+                  - status
+                  - type
+                  type: object
+                type: array
+              connection:
+                description: Connection is the connection string for FakeDB
+                type: string
+              observedGeneration:
+                description: ObservedGeneration is the most recent generation observed
+                  for this FakeDB by the controller.
+                format: int64
+                type: integer
+              phase:
+                description: DEPRECATED. Phase represents the current lifecycle state
+                  of this object. Consider this field DEPRECATED, it will be removed
+                  as soon as there is a mechanism to map conditions to strings when
+                  printing the property. This is only for display purpose, for everything
+                  else use conditions.
+                type: string
+            type: object
+        type: object
+    served: true
+    storage: true
+    subresources:
+      status: {}
+  - additionalPrinterColumns:
+    - jsonPath: .status.phase
+      name: Status
+      type: string
+    - jsonPath: .metadata.creationTimestamp
+      name: Age
+      type: date
+    - jsonPath: .status.connection
+      name: Connection
+      type: string
+    name: v1alpha1
+    schema:
+      openAPIV3Schema:
+        description: DB is core element in e2e operator
+        properties:
+          apiVersion:
+            description: 'APIVersion defines the versioned schema of this representation
+              of an object. Servers should convert recognized schemas to the latest
+              internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+            type: string
+          kind:
+            description: 'Kind is a string value representing the REST resource this
+              object represents. Servers may infer this from the endpoint the client
+              submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+            type: string
+          metadata:
+            type: object
+          spec:
+            description: DBSpec defines the desired state of DB
+            properties:
+              config:
+                description: Config is E2E tests params
+                properties:
+                  create:
+                    default: Enabled
+                    description: CreateEnable control whether create operation enabled
+                      or not
+                    type: string
+                  delete:
+                    default: Enabled
+                    description: DeleteEnable control whether delete operation enabled
+                      or not
+                    type: string
+                  deletionAfterSeconds:
+                    description: DeletionAfterSeconds represents duration after which
+                      operator will remove finalizer
+                    type: integer
+                  readyAfterSeconds:
+                    description: ReadyAfterSeconds represents duration after which
+                      operator will mark DB as Ready
+                    type: integer
+                  update:
+                    default: Enabled
+                    description: UpdateEnable control whether update operation enabled
+                      or not
+                    type: string
+                type: object
+              databaseName:
+                description: DatabaseName of the created database at start up
+                minLength: 1
+                type: string
+              databasePassword:
+                description: DatabasePassword for the created database. Leave blank
+                  for auto-generation
+                type: string
+              databaseUser:
+                description: DatabaseUser for created database
+                type: string
+              rootPassword:
+                description: RootPassword is root account password for this data.
+                  Leave blank for auto-generation
+                type: string
+            required:
+            - databaseName
+            - databaseUser
+            type: object
+          status:
+            description: DBStatus defines the observed state of DB
+            properties:
+              conditions:
+                description: Conditions represents the latest available observations
+                  of a FakeDB's current state.
+                items:
+                  description: DBCondition contains details for the current condition
+                    of this DB.
+                  properties:
+                    lastTransitionTime:
+                      description: LastTransitionTime is the last time the condition
+                        transits from one status to another.
+                      format: date-time
+                      type: string
+                    message:
+                      description: Message is the human readable message indicating
+                        details about last transition.
+                      type: string
+                    reason:
+                      description: Reason is the (brief) reason for the condition's
+                        last transition.
+                      type: string
+                    status:
+                      description: Status is the status of the condition, one of ('True',
+                        'False', 'Unknown').
+                      type: string
+                    type:
+                      description: Type is the type of the DB condition, currently
+                        ('Ready').
+                      type: string
+                  required:
+                  - lastTransitionTime
+                  - message
+                  - reason
+                  - status
+                  - type
+                  type: object
+                type: array
+              connection:
+                description: Connection is the connection string for FakeDB
+                properties:
+                  endpoint:
+                    description: Endpoint for this database
+                    type: string
+                  name:
+                    description: Database name
+                    type: string
+                  username:
+                    description: Username for this database
+                    type: string
+                required:
+                - endpoint
+                - name
+                - username
+                type: object
+              observedGeneration:
+                description: ObservedGeneration is the most recent generation observed
+                  for this FakeDB by the controller.
+                format: int64
+                type: integer
+              phase:
+                description: DEPRECATED. Phase represents the current lifecycle state
+                  of this object. Consider this field DEPRECATED, it will be removed
+                  as soon as there is a mechanism to map conditions to strings when
+                  printing the property. This is only for display purpose, for everything
+                  else use conditions.
+                type: string
+            type: object
+        type: object
+    served: true
+    storage: false
+    subresources:
+      status: {}
+status:
+  acceptedNames:
+    kind: ""
+    plural: ""
+  conditions: []
+  storedVersions: []

@@ -77,6 +77,7 @@ var (
 		".git":                  {},
 		"vendor":                {},
 		"_gopath":               {},
+		"loodse-docs":           {},
 		"_output":               {},
 		"hack/boilerplate/test": {},
 		"hack/docgen/main.go":   {},
