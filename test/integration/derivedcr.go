@@ -225,6 +225,6 @@ type: object
 				},
 			},
 		}
-		require.NoError(t, testutil.WaitUntilFound(ctx, managementClient, tenantObj2))
+		require.NoError(t, testutil.WaitUntilFound(ctx, managementClient, tenantObj2, testutil.WithTimeout(60*time.Second)))
 	}
 }

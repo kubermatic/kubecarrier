@@ -92,7 +92,7 @@ $ kubectl kubecarrier setup --kubeconfig=<kubeconfig path>
 
 func runE(conf *rest.Config, log logr.Logger, cmd *cobra.Command, skipPreflight, isMasterCluster bool) error {
 	stopCh := ctrl.SetupSignalHandler()
-	ctx, cancelContext := context.WithTimeout(context.Background(), 60*time.Second)
+	ctx, cancelContext := context.WithTimeout(context.Background(), 2*time.Minute)
 	go func() {
 		<-stopCh
 		cancelContext()
@@ -217,7 +217,7 @@ func deployKubeCarrier(ctx context.Context, conf *rest.Config, kubeCarrier *oper
 		}
 		return w.WaitUntil(ctx, kubeCarrier, func() (done bool, err error) {
 			return kubeCarrier.IsReady(), nil
-		})
+		}, util.WithClientWatcherTimeout(60*time.Second))
 	}
 }
 
