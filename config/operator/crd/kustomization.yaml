@@ -7,7 +7,6 @@ resources:
 - bases/operator.kubecarrier.io_elevators.yaml
 - bases/operator.kubecarrier.io_ferries.yaml
 - bases/operator.kubecarrier.io_kubecarriers.yaml
-- bases/operator.kubecarrier.io_towers.yaml
 # +kubebuilder:scaffold:crdkustomizeresource
 
 patchesStrategicMerge:

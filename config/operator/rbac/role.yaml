@@ -105,24 +105,6 @@ rules:
 - apiGroups:
   - operator.kubecarrier.io
   resources:
-  - apiservers
-  verbs:
-  - get
-  - list
-  - patch
-  - update
-  - watch
-- apiGroups:
-  - operator.kubecarrier.io
-  resources:
-  - apiservers/status
-  verbs:
-  - get
-  - patch
-  - update
-- apiGroups:
-  - operator.kubecarrier.io
-  resources:
   - catapults
   verbs:
   - get
@@ -188,24 +170,6 @@ rules:
   - operator.kubecarrier.io
   resources:
   - kubecarriers/status
-  verbs:
-  - get
-  - patch
-  - update
-- apiGroups:
-  - operator.kubecarrier.io
-  resources:
-  - towers
-  verbs:
-  - get
-  - list
-  - patch
-  - update
-  - watch
-- apiGroups:
-  - operator.kubecarrier.io
-  resources:
-  - towers/status
   verbs:
   - get
   - patch

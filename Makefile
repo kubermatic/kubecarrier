@@ -32,7 +32,7 @@ IMAGE_ORG?=quay.io/kubecarrier
 MODULE=github.com/kubermatic/kubecarrier
 LD_FLAGS=-X $(MODULE)/pkg/internal/version.Version=$(VERSION) -X $(MODULE)/pkg/internal/version.Branch=$(BRANCH) -X $(MODULE)/pkg/internal/version.Commit=$(SHORT_SHA) -X $(MODULE)/pkg/internal/version.BuildDate=$(BUILD_DATE)
 KIND_CLUSTER?=kubecarrier
-COMPONENTS = operator manager ferry catapult elevator tower api-server
+COMPONENTS = operator manager ferry catapult elevator api-server
 E2E_COMPONENTS = fake-operator
 
 # every makefile operation should have explicit kubeconfig
@@ -113,6 +113,7 @@ e2e-setup: install require-docker
 	@$(MAKE) KUBECONFIG=${HOME}/.kube/kind-config-${MANAGEMENT_KIND_CLUSTER} cert-manager
 	@kind get kubeconfig --internal --name=${SVC_KIND_CLUSTER} > "${HOME}/.kube/internal-kind-config-${SVC_KIND_CLUSTER}"
 	@kind get kubeconfig --name=${SVC_KIND_CLUSTER} > "${HOME}/.kube/kind-config-${SVC_KIND_CLUSTER}"
+	@$(MAKE) KUBECONFIG=${HOME}/.kube/kind-config-${SVC_KIND_CLUSTER} cert-manager
 	@echo "kind clusters created"
 	@kubectl --kubeconfig=${HOME}/.kube/kind-config-${SVC_KIND_CLUSTER} apply -n default -f ./config/serviceCluster
 	@kubectl create serviceaccount kubecarrier -n default --dry-run -o yaml | kubectl apply --kubeconfig=${HOME}/.kube/kind-config-${SVC_KIND_CLUSTER} -f -
