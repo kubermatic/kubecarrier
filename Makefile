@@ -116,7 +116,7 @@ e2e-setup: install require-docker
 	@$(MAKE) KUBECONFIG=${HOME}/.kube/kind-config-${SVC_KIND_CLUSTER} cert-manager
 	@echo "kind clusters created"
 	@kubectl --kubeconfig=${HOME}/.kube/kind-config-${SVC_KIND_CLUSTER} apply -n default -f ./config/serviceCluster
-	@kubectl --kubeconfig=${HOME}/.kube/kind-config-${SVC_KIND_CLUSTER} create serviceaccount kubecarrier -n default --dry-run=client -o yaml | kubectl apply --kubeconfig=${HOME}/.kube/kind-config-${SVC_KIND_CLUSTER} -f -
+	@kubectl --kubeconfig=${HOME}/.kube/kind-config-${SVC_KIND_CLUSTER} create serviceaccount kubecarrier -n default --dry-run -o yaml | kubectl apply --kubeconfig=${HOME}/.kube/kind-config-${SVC_KIND_CLUSTER} -f -
 	@kubectl --kubeconfig=${HOME}/.kube/kind-config-${SVC_KIND_CLUSTER} create clusterrolebinding kubecarrier --serviceaccount=default:kubecarrier --clusterrole kubecarrier:service-cluster-admin --dry-run -o yaml |  kubectl apply --kubeconfig=${HOME}/.kube/kind-config-${SVC_KIND_CLUSTER} -f -
 	@go run ./hack/impersonate --kubeconfig "${HOME}/.kube/internal-kind-config-${SVC_KIND_CLUSTER}" --as "system:serviceaccount:default:kubecarrier"
 	@echo "service cluster service account created"
