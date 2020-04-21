@@ -55,6 +55,7 @@ type APIServerReconciler struct {
 // +kubebuilder:rbac:groups=rbac.authorization.k8s.io,resources=rolebindings,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=apps,resources=deployments,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups="",resources=serviceaccounts,verbs=get;list;watch;create;update;patch;delete
+
 func (r *APIServerReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	ctx := context.Background()
 	log := r.Log.WithValues("api-server", req.NamespacedName)
@@ -98,13 +99,6 @@ func (r *APIServerReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 
 	return ctrl.Result{}, nil
 
-}
-
-func (r *APIServerReconciler) GetDeletionObjectTypes() []runtime.Object {
-	return []runtime.Object{
-		&rbacv1.ClusterRole{},
-		&rbacv1.ClusterRoleBinding{},
-	}
 }
 
 func (r *APIServerReconciler) updateStatus(ctx context.Context, apiServer *operatorv1alpha1.APIServer, deploymentIsReady bool) error {

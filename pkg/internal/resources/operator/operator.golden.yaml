@@ -780,25 +780,43 @@
     resources:
     - issuers
     verbs:
-    - create
-    - delete
-    - get
-    - list
-    - patch
-    - update
-    - watch
+      - create
+      - delete
+      - get
+      - list
+      - patch
+      - update
+      - watch
   - apiGroups:
-    - operator.kubecarrier.io
+      - operator.kubecarrier.io
     resources:
-    - catapults
+      - apiservers
     verbs:
-    - get
-    - list
-    - patch
-    - update
-    - watch
+      - get
+      - list
+      - patch
+      - update
+      - watch
   - apiGroups:
-    - operator.kubecarrier.io
+      - operator.kubecarrier.io
+    resources:
+      - apiservers/status
+    verbs:
+      - get
+      - patch
+      - update
+  - apiGroups:
+      - operator.kubecarrier.io
+    resources:
+      - catapults
+    verbs:
+      - get
+      - list
+      - patch
+      - update
+      - watch
+  - apiGroups:
+      - operator.kubecarrier.io
     resources:
     - catapults/status
     verbs:
