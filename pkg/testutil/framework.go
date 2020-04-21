@@ -23,6 +23,7 @@ import (
 	"os"
 	"sync"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/require"
 	corev1 "k8s.io/api/core/v1"
@@ -39,6 +40,7 @@ import (
 
 	catalogv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/catalog/v1alpha1"
 	corev1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/core/v1alpha1"
+	fakev1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/fake/v1alpha1"
 	operatorv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/operator/v1alpha1"
 	"github.com/kubermatic/kubecarrier/pkg/internal/util"
 )
@@ -125,6 +127,9 @@ func New(c FrameworkConfig) (f *Framework, err error) {
 	if err = apiextensionsv1.AddToScheme(f.ServiceScheme); err != nil {
 		return nil, fmt.Errorf("adding apiextensionsv1 scheme to service scheme: %w", err)
 	}
+	if err = fakev1alpha1.AddToScheme(f.ServiceScheme); err != nil {
+		return nil, fmt.Errorf("adding fakev1alpha1 scheme to service scheme: %w", err)
+	}
 	f.serviceConfig, err = clientcmd.BuildConfigFromFlags("", f.config.ServiceExternalKubeconfigPath)
 	if err != nil {
 		return nil, fmt.Errorf("build restconfig for service: %w", err)
@@ -197,6 +202,19 @@ func (f *Framework) NewTenantAccount(name string, subjects ...rbacv1.Subject) *c
 			},
 			Subjects: subjects,
 		},
+	}
+}
+
+func (f *Framework) NewFakeDB(name, namespace string) *fakev1alpha1.DB {
+	return &fakev1alpha1.DB{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      name,
+			Namespace: namespace,
+		},
+		Spec: fakev1alpha1.DBSpec{DatabaseName: "fakeDB",
+			Config: fakev1alpha1.Config{
+				Create: fakev1alpha1.OperationFlagEnabled,
+			}},
 	}
 }
 
@@ -284,7 +302,7 @@ func (f *Framework) SetupServiceCluster(ctx context.Context, cl *RecordingClient
 
 	require.NoError(t, cl.Create(ctx, serviceClusterSecret))
 	require.NoError(t, cl.Create(ctx, serviceCluster))
-	require.NoError(t, WaitUntilReady(ctx, cl, serviceCluster))
+	require.NoError(t, WaitUntilReady(ctx, cl, serviceCluster, WithTimeout(60*time.Second)))
 	t.Logf("service cluster %s successfully created for provider %s", name, account.Name)
 	return serviceCluster
 }

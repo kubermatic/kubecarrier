@@ -23,14 +23,14 @@ GOBIN=$(go env GOBIN)
 fi
 
 if [ -z $(which controller-gen) ]; then
-	go get sigs.k8s.io/controller-tools/cmd/controller-gen@v0.2.8
+	go get sigs.k8s.io/controller-tools/cmd/controller-gen@v0.2.9
   CONTROLLER_GEN=$GOBIN/controller-gen
 else
   CONTROLLER_GEN=$(which controller-gen)
 fi
 
 CONTROLLER_GEN_VERSION=$(${CONTROLLER_GEN} --version)
-CONTROLLER_GEN_WANT_VERSION="Version: v0.2.8"
+CONTROLLER_GEN_WANT_VERSION="Version: v0.2.9"
 
 if [[  ${CONTROLLER_GEN_VERSION} != ${CONTROLLER_GEN_WANT_VERSION} ]]; then
   echo "Wrong controller-gen version. Wants ${CONTROLLER_GEN_WANT_VERSION} found ${CONTROLLER_GEN_VERSION}"
@@ -40,14 +40,10 @@ fi
 function statik-gen {
   local component=$1
   local src=$2
-  if [ -z "$(git status --porcelain ${src})" ] && [[ -z ${FORCE_STATIK:-} ]]; then
-    echo ${component}: statik up-to-date
-  else
-    statik -src=${src} -p ${component} -dest pkg/internal/resources -f -c ''
-    cat hack/boilerplate/boilerplate.generatego.txt | sed s/YEAR/$(date +%Y)/ | cat - pkg/internal/resources/${component}/statik.go > pkg/internal/resources/${component}/statik.go.tmp
-    mv pkg/internal/resources/${component}/statik.go.tmp pkg/internal/resources/${component}/statik.go
-    echo ${component}: statik regenerated
-  fi
+  statik -m -src=${src} -p ${component} -dest pkg/internal/resources -f -c ''
+  cat hack/boilerplate/boilerplate.generatego.txt | sed s/YEAR/$(date +%Y)/ | cat - pkg/internal/resources/${component}/statik.go > pkg/internal/resources/${component}/statik.go.tmp
+  mv pkg/internal/resources/${component}/statik.go.tmp pkg/internal/resources/${component}/statik.go
+  go fmt pkg/internal/resources/${component}/statik.go
 }
 
 # DeepCopy functions
@@ -64,6 +60,17 @@ $CONTROLLER_GEN webhook paths="./pkg/operator/internal/webhooks/..." output:webh
 # RBAC
 $CONTROLLER_GEN rbac:roleName=manager-role paths="./pkg/operator/..." output:rbac:artifacts:config=config/operator/rbac
 statik-gen operator config/operator
+
+# Fake
+# -------
+# CRDs/Webhooks
+$CONTROLLER_GEN crd:crdVersions=${CRD_VERSION} paths="./pkg/apis/fake/..." output:crd:artifacts:config=config/internal/fake-operator/crd/bases
+# RBAC
+$CONTROLLER_GEN rbac:roleName=manager-role paths="./pkg/fakeoperator/..." output:rbac:artifacts:config=config/internal/fake-operator/rbac
+# Webhooks
+$CONTROLLER_GEN webhook paths="./pkg/fakeoperator/internal/webhooks/..." output:webhook:artifacts:config=config/internal/fake-operator/webhook
+# Statik (run only when file CONTENT has changed)
+statik-gen fakeoperator config/internal/fake-operator
 
 # Manager
 # -------
@@ -100,7 +107,6 @@ ed config/internal/ferry/rbac/role.yaml <<EOF || true
 ,s/ClusterRole/Role/g
 w
 EOF
-# Statik (run only when file CONTENT has changed)
 statik-gen ferry config/internal/ferry
 
 # Catapult
@@ -124,17 +130,6 @@ ed config/internal/elevator/rbac/role.yaml <<EOF || true
 w
 EOF
 statik-gen elevator config/internal/elevator
-
-# Tower
-# -------
-# RBAC
-$CONTROLLER_GEN rbac:roleName=manager paths="./pkg/tower/..." output:rbac:artifacts:config=config/internal/tower/rbac
-# The `|| true` is because the `,s/ClusterRole/Role/g` will error out if there is no match of `ClusterRole` (eg., the file is empty) in the file.
-ed config/internal/tower/rbac/role.yaml <<EOF || true
-,s/ClusterRole/Role/g
-w
-EOF
-statik-gen tower config/internal/tower
 
 #Service cluster RBAC
 serviceClusterDir=tmp

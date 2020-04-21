@@ -32,7 +32,8 @@ IMAGE_ORG?=quay.io/kubecarrier
 MODULE=github.com/kubermatic/kubecarrier
 LD_FLAGS=-X $(MODULE)/pkg/internal/version.Version=$(VERSION) -X $(MODULE)/pkg/internal/version.Branch=$(BRANCH) -X $(MODULE)/pkg/internal/version.Commit=$(SHORT_SHA) -X $(MODULE)/pkg/internal/version.BuildDate=$(BUILD_DATE)
 KIND_CLUSTER?=kubecarrier
-COMPONENTS = operator manager ferry catapult elevator tower
+COMPONENTS = operator manager ferry catapult elevator
+E2E_COMPONENTS = fake-operator
 
 # every makefile operation should have explicit kubeconfig
 undefine KUBECONFIG
@@ -116,6 +117,7 @@ e2e-setup: install require-docker
 	@$(MAKE) KUBECONFIG=${HOME}/.kube/kind-config-${MANAGEMENT_KIND_CLUSTER} cert-manager
 	@kind get kubeconfig --internal --name=${SVC_KIND_CLUSTER} > "${HOME}/.kube/internal-kind-config-${SVC_KIND_CLUSTER}"
 	@kind get kubeconfig --name=${SVC_KIND_CLUSTER} > "${HOME}/.kube/kind-config-${SVC_KIND_CLUSTER}"
+	@$(MAKE) KUBECONFIG=${HOME}/.kube/kind-config-${SVC_KIND_CLUSTER} cert-manager
 	@echo "kind clusters created"
 	@kubectl --kubeconfig=${HOME}/.kube/kind-config-${SVC_KIND_CLUSTER} apply -n default -f ./config/serviceCluster
 	@kubectl create serviceaccount kubecarrier -n default --dry-run -o yaml | kubectl apply --kubeconfig=${HOME}/.kube/kind-config-${SVC_KIND_CLUSTER} -f -
@@ -124,6 +126,7 @@ e2e-setup: install require-docker
 	@echo "service cluster service account created"
 	@echo "Loading the images"
 	@$(MAKE) KIND_CLUSTER=${MANAGEMENT_KIND_CLUSTER} kind-load -j 5
+	@$(MAKE) KIND_CLUSTER=${SVC_KIND_CLUSTER} kind-load-fake-operator
 
 # soft-reinstall reinstall kubecarrier in the e2e cluster. It's intended for usage during development
 soft-reinstall: e2e-setup install
@@ -154,6 +157,8 @@ push-images: $(addprefix push-image-, $(COMPONENTS))
 build-images: $(addprefix build-image-, $(COMPONENTS))
 
 kind-load: $(addprefix kind-load-, $(COMPONENTS))
+
+kind-load-fake-operator: $(addprefix kind-load-, $(E2E_COMPONENTS))
 
 build-image-test: require-docker
 	@mkdir -p bin/image/test
