@@ -3,6 +3,8 @@
 # It should be run by config/default
 resources:
 - bases/fake.kubecarrier.io_dbs.yaml
+- bases/fake.kubecarrier.io_snapshots.yaml
+- bases/fake.kubecarrier.io_backups.yaml
 # +kubebuilder:scaffold:crdkustomizeresource
 
 patchesStrategicMerge:
