@@ -31,16 +31,25 @@ const (
 
 func NewInstallationSuite(f *testutil.Framework) func(t *testing.T) {
 	return func(t *testing.T) {
-		for name, testFn := range map[string]func(f *testutil.Framework) func(t *testing.T){
-			"MasterCluster":     newMasterCluster,
-			"ManagementCluster": newManagementCluster,
-			"ServiceCluster":    newServiceCluster,
+		for _, test := range []struct {
+			name   string
+			testFn func(t *testutil.Framework) func(t *testing.T)
+		}{
+			{
+				name:   "MasterCluster",
+				testFn: newMasterCluster,
+			},
+			{
+				name:   "ManagementCluster",
+				testFn: newManagementCluster,
+			},
+			{
+				name:   "ServiceCluster",
+				testFn: newServiceCluster,
+			},
 		} {
-			name := name
-			testFn := testFn
-
-			t.Run(name, func(t *testing.T) {
-				testFn(f)(t)
+			t.Run(test.name, func(t *testing.T) {
+				test.testFn(f)(t)
 			})
 		}
 	}
