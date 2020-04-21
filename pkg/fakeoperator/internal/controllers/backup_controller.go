@@ -29,7 +29,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
-	fakev1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/fake/v1alpha1"
+	fakev1 "github.com/kubermatic/kubecarrier/pkg/apis/fake/v1"
 )
 
 // BackupReconciler reconciles a Backup object
@@ -44,7 +44,7 @@ type BackupReconciler struct {
 
 func (r *BackupReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	ctx := context.Background()
-	backup := &fakev1alpha1.Backup{}
+	backup := &fakev1.Backup{}
 	if err := r.Get(ctx, req.NamespacedName, backup); err != nil {
 		if errors.IsNotFound(err) {
 			return ctrl.Result{}, nil
@@ -83,13 +83,13 @@ func (r *BackupReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	return ctrl.Result{}, nil
 }
 
-func (r *BackupReconciler) reconcileSnapshot(ctx context.Context, backup *fakev1alpha1.Backup) (*fakev1alpha1.Snapshot, error) {
-	desiredSnapshot := &fakev1alpha1.Snapshot{
+func (r *BackupReconciler) reconcileSnapshot(ctx context.Context, backup *fakev1.Backup) (*fakev1.Snapshot, error) {
+	desiredSnapshot := &fakev1.Snapshot{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      backup.Name,
 			Namespace: backup.Namespace,
 		},
-		Spec: fakev1alpha1.SnapshotSpec{
+		Spec: fakev1.SnapshotSpec{
 			DBName: backup.Spec.DBName,
 		},
 	}
@@ -97,7 +97,7 @@ func (r *BackupReconciler) reconcileSnapshot(ctx context.Context, backup *fakev1
 		backup, desiredSnapshot, r.Scheme); err != nil {
 		return nil, fmt.Errorf("set controller reference: %w", err)
 	}
-	currentSnapshot := &fakev1alpha1.Snapshot{}
+	currentSnapshot := &fakev1.Snapshot{}
 	err := r.Get(ctx, types.NamespacedName{
 		Name:      desiredSnapshot.Name,
 		Namespace: desiredSnapshot.Namespace,
@@ -123,6 +123,6 @@ func (r *BackupReconciler) reconcileSnapshot(ctx context.Context, backup *fakev1
 }
 func (r *BackupReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
-		For(&fakev1alpha1.Backup{}).
+		For(&fakev1.Backup{}).
 		Complete(r)
 }

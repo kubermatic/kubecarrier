@@ -348,7 +348,7 @@
       - jsonPath: .metadata.creationTimestamp
         name: Age
         type: date
-      name: v1alpha1
+      name: v1
       schema:
         openAPIV3Schema:
           description: Snapshot is snapshot of the DB element for e2e operator
@@ -465,7 +465,7 @@
       - jsonPath: .metadata.creationTimestamp
         name: Age
         type: date
-      name: v1alpha1
+      name: v1
       schema:
         openAPIV3Schema:
           description: Backup is backup of the DB element for e2e operator

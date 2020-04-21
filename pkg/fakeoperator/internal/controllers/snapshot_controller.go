@@ -26,7 +26,7 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	fakev1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/fake/v1alpha1"
+	fakev1 "github.com/kubermatic/kubecarrier/pkg/apis/fake/v1"
 )
 
 // SnapshotReconciler reconciles a Snapshot object
@@ -40,7 +40,7 @@ type SnapshotReconciler struct {
 
 func (r *SnapshotReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	ctx := context.Background()
-	s := &fakev1alpha1.Snapshot{}
+	s := &fakev1.Snapshot{}
 	if err := r.Get(ctx, req.NamespacedName, s); err != nil {
 		if errors.IsNotFound(err) {
 			return ctrl.Result{}, nil
@@ -69,6 +69,6 @@ func (r *SnapshotReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 
 func (r *SnapshotReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
-		For(&fakev1alpha1.Snapshot{}).
+		For(&fakev1.Snapshot{}).
 		Complete(r)
 }

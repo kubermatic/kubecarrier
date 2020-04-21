@@ -14,61 +14,56 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package v1alpha1
+package v1
 
-import (
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-)
+import metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-// SnapshotSpec defines the desired state of Snapshot
-type SnapshotSpec struct {
-	//DBName is the name of the source DB
-	DBName string `json:"dbName,omitempty"`
+// BackupSpec defines the desired state of Backup
+type BackupSpec struct {
+	DBName string `json:"dbName"`
 }
 
-// SnapshotStatus defines the observed state of Snapshot
-type SnapshotStatus struct {
-	// ObservedGeneration is the most recent generation observed for this Snapshot by the controller.
+// BackupStatus defines the observed state of Backup
+type BackupStatus struct {
+	// ObservedGeneration is the most recent generation observed for this Backup by the controller.
 	ObservedGeneration int64 `json:"observedGeneration,omitempty"`
-	// Conditions represents the latest available observations of a Snapshot's current state.
-	Conditions []SnapshotCondition `json:"conditions,omitempty"`
+	// Conditions represents the latest available observations of a Backup's current state.
+	Conditions []BackupCondition `json:"conditions,omitempty"`
 	// DEPRECATED.
 	// Phase represents the current lifecycle state of this object.
 	// Consider this field DEPRECATED, it will be removed as soon as there
 	// is a mechanism to map conditions to strings when printing the property.
 	// This is only for display purpose, for everything else use conditions.
-	Phase SnapshotPhaseType `json:"phase,omitempty"`
-	// Date when snapshot was taken
-	Date metav1.Time `json:"date,omitempty"`
+	Phase BackupPhaseType `json:"phase,omitempty"`
 }
 
-// SnapshotPhaseType represents all conditions as a single string for printing by using kubectl commands.
-type SnapshotPhaseType string
+// BackupPhaseType represents all conditions as a single string for printing by using kubectl commands.
+type BackupPhaseType string
 
-// Values of SnapshotPhaseType.
+// Values of BackupPhaseType.
 const (
-	SnapshotPhaseReady       SnapshotPhaseType = "Ready"
-	SnapshotPhaseNotReady    SnapshotPhaseType = "NotReady"
-	SnapshotPhaseUnknown     SnapshotPhaseType = "Unknown"
-	SnapshotPhaseTerminating SnapshotPhaseType = "Terminating"
+	BackupPhaseReady       BackupPhaseType = "Ready"
+	BackupPhaseNotReady    BackupPhaseType = "NotReady"
+	BackupPhaseUnknown     BackupPhaseType = "Unknown"
+	BackupPhaseTerminating BackupPhaseType = "Terminating"
 )
 
 const (
-	SnapshotTerminatingReason = "Deleting"
+	BackupTerminatingReason = "Deleting"
 )
 
-// SnapshotConditionType represents a SnapshotCondition value.
-type SnapshotConditionType string
+// BackupConditionType represents a BackupCondition value.
+type BackupConditionType string
 
 const (
-	// SnapshotReady represents a Snapshot condition is in ready state.
-	SnapshotReady SnapshotConditionType = "Ready"
+	// BackupReady represents a Backup condition is in ready state.
+	BackupReady BackupConditionType = "Ready"
 )
 
-// SnapshotCondition contains details for the current condition of this Snapshot.
-type SnapshotCondition struct {
-	// Type is the type of the Snapshot condition, currently ('Ready').
-	Type SnapshotConditionType `json:"type"`
+// BackupCondition contains details for the current condition of this Backup.
+type BackupCondition struct {
+	// Type is the type of the Backup condition, currently ('Ready').
+	Type BackupConditionType `json:"type"`
 	// Status is the status of the condition, one of ('True', 'False', 'Unknown').
 	Status ConditionStatus `json:"status"`
 	// LastTransitionTime is the last time the condition transits from one status to another.
@@ -80,39 +75,39 @@ type SnapshotCondition struct {
 }
 
 // True returns whether .Status == "True"
-func (c SnapshotCondition) True() bool {
+func (c BackupCondition) True() bool {
 	return c.Status == ConditionTrue
 }
 
 // updatePhase updates the phase property based on the current conditions.
 // this method should be called every time the conditions are updated.
-func (s *SnapshotStatus) updatePhase() {
+func (s *BackupStatus) updatePhase() {
 
 	for _, condition := range s.Conditions {
-		if condition.Type != SnapshotReady {
+		if condition.Type != BackupReady {
 			continue
 		}
 
 		switch condition.Status {
 		case ConditionTrue:
-			s.Phase = SnapshotPhaseReady
+			s.Phase = BackupPhaseReady
 		case ConditionFalse:
-			if condition.Reason == SnapshotTerminatingReason {
-				s.Phase = SnapshotPhaseTerminating
+			if condition.Reason == BackupTerminatingReason {
+				s.Phase = BackupPhaseTerminating
 			} else {
-				s.Phase = SnapshotPhaseNotReady
+				s.Phase = BackupPhaseNotReady
 			}
 		case ConditionUnknown:
-			s.Phase = SnapshotPhaseUnknown
+			s.Phase = BackupPhaseUnknown
 		}
 		return
 	}
 
-	s.Phase = SnapshotPhaseUnknown
+	s.Phase = BackupPhaseUnknown
 }
 
 // GetCondition returns the Condition of the given condition type, if it exists.
-func (s *SnapshotStatus) GetCondition(t SnapshotConditionType) (condition SnapshotCondition, exists bool) {
+func (s *BackupStatus) GetCondition(t BackupConditionType) (condition BackupCondition, exists bool) {
 	for _, cond := range s.Conditions {
 		if cond.Type == t {
 			condition = cond
@@ -124,7 +119,7 @@ func (s *SnapshotStatus) GetCondition(t SnapshotConditionType) (condition Snapsh
 }
 
 // SetCondition replaces or adds the given condition.
-func (s *SnapshotStatus) SetCondition(condition SnapshotCondition) {
+func (s *BackupStatus) SetCondition(condition BackupCondition) {
 	defer s.updatePhase()
 
 	if condition.LastTransitionTime.IsZero() {
@@ -150,35 +145,35 @@ func (s *SnapshotStatus) SetCondition(condition SnapshotCondition) {
 	s.Conditions = append(s.Conditions, condition)
 }
 
-// Snapshot is snapshot of the DB element for e2e operator
+// Backup is backup of the DB element for e2e operator
 // +kubebuilder:object:root=true
 // +kubebuilder:subresource:status
 // +kubebuilder:printcolumn:name="Status",type="string",JSONPath=".status.phase"
 // +kubebuilder:printcolumn:name="Age",type="date",JSONPath=".metadata.creationTimestamp"
-type Snapshot struct {
+type Backup struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec   SnapshotSpec   `json:"spec,omitempty"`
-	Status SnapshotStatus `json:"status,omitempty"`
+	Spec   BackupSpec   `json:"spec,omitempty"`
+	Status BackupStatus `json:"status,omitempty"`
 }
 
 // +kubebuilder:object:root=true
-// SnapshotList contains a list of Snapshot
-type SnapshotList struct {
+// BackupList contains a list of Backup
+type BackupList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
-	Items           []Snapshot `json:"items"`
+	Items           []Backup `json:"items"`
 }
 
-// IsReady returns if the Snapshot is ready.
-func (s *Snapshot) IsReady() bool {
+// IsReady returns if the Backup is ready.
+func (s *Backup) IsReady() bool {
 	if s.Generation != s.Status.ObservedGeneration {
 		return false
 	}
 
 	for _, condition := range s.Status.Conditions {
-		if condition.Type == SnapshotReady &&
+		if condition.Type == BackupReady &&
 			condition.Status == ConditionTrue {
 			return true
 		}
@@ -186,44 +181,44 @@ func (s *Snapshot) IsReady() bool {
 	return false
 }
 
-func (s *Snapshot) SetReadyCondition() bool {
+func (s *Backup) SetReadyCondition() bool {
 	if !s.IsReady() {
 		s.Status.ObservedGeneration = s.Generation
-		s.Status.SetCondition(SnapshotCondition{
-			Type:    SnapshotReady,
+		s.Status.SetCondition(BackupCondition{
+			Type:    BackupReady,
 			Status:  ConditionTrue,
 			Reason:  "DeploymentReady",
-			Message: "the Snapshot is ready",
+			Message: "the Backup is ready",
 		})
 		return true
 	}
 	return false
 }
-func (s *Snapshot) SetUnReadyCondition() bool {
-	readyCondition, _ := s.Status.GetCondition(SnapshotReady)
+func (s *Backup) SetUnReadyCondition() bool {
+	readyCondition, _ := s.Status.GetCondition(BackupReady)
 	if readyCondition.Status != ConditionFalse {
 		s.Status.ObservedGeneration = s.Generation
-		s.Status.SetCondition(SnapshotCondition{
-			Type:    SnapshotReady,
+		s.Status.SetCondition(BackupCondition{
+			Type:    BackupReady,
 			Status:  ConditionFalse,
-			Reason:  "SnapshotUnready",
-			Message: "the Snapshot is not ready",
+			Reason:  "BackupUnready",
+			Message: "the Backup is not ready",
 		})
 		return true
 	}
 	return false
 }
 
-func (s *Snapshot) SetTerminatingCondition() bool {
-	readyCondition, _ := s.Status.GetCondition(SnapshotReady)
+func (s *Backup) SetTerminatingCondition() bool {
+	readyCondition, _ := s.Status.GetCondition(BackupReady)
 	if readyCondition.Status != ConditionFalse ||
-		readyCondition.Status == ConditionFalse && readyCondition.Reason != SnapshotTerminatingReason {
+		readyCondition.Status == ConditionFalse && readyCondition.Reason != BackupTerminatingReason {
 		s.Status.ObservedGeneration = s.Generation
-		s.Status.SetCondition(SnapshotCondition{
-			Type:    SnapshotReady,
+		s.Status.SetCondition(BackupCondition{
+			Type:    BackupReady,
 			Status:  ConditionFalse,
-			Reason:  SnapshotTerminatingReason,
-			Message: "Snapshot is being deleted",
+			Reason:  BackupTerminatingReason,
+			Message: "Backup is being deleted",
 		})
 		return true
 	}
@@ -231,5 +226,5 @@ func (s *Snapshot) SetTerminatingCondition() bool {
 }
 
 func init() {
-	SchemeBuilder.Register(&Snapshot{}, &SnapshotList{})
+	SchemeBuilder.Register(&Backup{}, &BackupList{})
 }
