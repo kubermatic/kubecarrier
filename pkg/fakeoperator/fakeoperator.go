@@ -91,6 +91,21 @@ func run(flags flags, log logr.Logger) error {
 		return fmt.Errorf("setup e2e controller: %w", err)
 	}
 
+	if err = (&controllers.SnapshotReconciler{
+		Client: mgr.GetClient(),
+		Log:    ctrl.Log.WithName("controllers").WithName("e2e snapshot"),
+	}).SetupWithManager(mgr); err != nil {
+		return fmt.Errorf("setup e2e snapshot controller: %w", err)
+	}
+
+	if err = (&controllers.BackupReconciler{
+		Client: mgr.GetClient(),
+		Log:    ctrl.Log.WithName("controllers").WithName("e2e backup"),
+		Scheme: mgr.GetScheme(),
+	}).SetupWithManager(mgr); err != nil {
+		return fmt.Errorf("setup e2e backup controller: %w", err)
+	}
+
 	if err := ctrl.NewWebhookManagedBy(mgr).For(&fakev1alpha1.DB{}).Complete(); err != nil {
 		return err
 	}
