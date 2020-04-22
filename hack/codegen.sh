@@ -39,8 +39,13 @@ fi
 
 function statik-gen {
   local component=$1
+  local package=${1//-/}
   local src=$2
-  statik -m -src=${src} -p ${component} -dest pkg/internal/resources -f -c ''
+  statik -m -src=${src} -p "${package}" -dest pkg/internal/resources -f -c ''
+  if [[ "${component}" != "${package}" ]]; then
+    mv pkg/internal/resources/${package}/statik.go pkg/internal/resources/${component}/statik.go
+    rmdir pkg/internal/resources/${package}
+  fi
   cat hack/boilerplate/boilerplate.generatego.txt | sed s/YEAR/$(date +%Y)/ | cat - pkg/internal/resources/${component}/statik.go > pkg/internal/resources/${component}/statik.go.tmp
   mv pkg/internal/resources/${component}/statik.go.tmp pkg/internal/resources/${component}/statik.go
   go fmt pkg/internal/resources/${component}/statik.go
@@ -130,6 +135,17 @@ ed config/internal/elevator/rbac/role.yaml <<EOF || true
 w
 EOF
 statik-gen elevator config/internal/elevator
+
+# API server
+# -------
+# RBAC
+$CONTROLLER_GEN rbac:roleName=manager paths="./pkg/api-server/..." output:rbac:artifacts:config=config/internal/api-server/rbac
+# The `|| true` is because the `,s/ClusterRole/Role/g` will error out if there is no match of `ClusterRole` (eg., the file is empty) in the file.
+ed config/internal/api-server/rbac/role.yaml <<EOF || true
+,s/ClusterRole/Role/g
+w
+EOF
+statik-gen api-server config/internal/api-server
 
 #Service cluster RBAC
 serviceClusterDir=tmp

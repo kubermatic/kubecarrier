@@ -51,6 +51,10 @@ builds:
     id: elevator
     binary: elevator
     main: cmd/elevator/main.go
+  - <<: *build
+    id: api-server
+    binary: api-server
+    main: cmd/api-server/main.go
 archives:
   - id: kubecarrier
     builds:
@@ -122,3 +126,13 @@ dockers:
     - "quay.io/kubecarrier/elevator:{{ .Tag }}"
     - "quay.io/kubecarrier/elevator:v{{ .Major }}"
   dockerfile: config/dockerfiles/elevator.Dockerfile
+- <<: *docker
+  binaries:
+    - api-server
+  builds:
+    - api-server
+  image_templates:
+    - "quay.io/kubecarrier/api-server:latest"
+    - "quay.io/kubecarrier/api-server:{{ .Tag }}"
+    - "quay.io/kubecarrier/api-server:v{{ .Major }}"
+  dockerfile: config/dockerfiles/api-server.Dockerfile
