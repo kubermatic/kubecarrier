@@ -131,15 +131,16 @@ func main() {
 	for _, test := range []string{
 		"",
 		"InstallationSuite",
-		"VerifySuite",
 		"Integration",
+		"Integration/account",
+		"Integration/api-server",
+		"Integration/catalog",
+		"Integration/cli",
 		"Integration/derivedCR",
 		"Integration/serviceCluster",
-		"Integration/catalog",
-		"Integration/account",
-		"Integration/cli",
 		"Scenarios",
 		"Scenarios/simple",
+		"VerifySuite",
 	} {
 		tasks = append(tasks, ide.Task{
 			Name:    "e2e:" + test,

@@ -2,20 +2,19 @@
   kind: CustomResourceDefinition
   metadata:
     annotations:
-      cert-manager.io/inject-ca-from: test3000/kubecarrier-operator-serving-cert
       controller-gen.kubebuilder.io/version: v0.2.9
     creationTimestamp: null
     labels:
       kubecarrier.io/role: operator
-    name: kubecarriers.operator.kubecarrier.io
+    name: apiservers.operator.kubecarrier.io
   spec:
     group: operator.kubecarrier.io
     names:
-      kind: KubeCarrier
-      listKind: KubeCarrierList
-      plural: kubecarriers
-      singular: kubecarrier
-    scope: Cluster
+      kind: APIServer
+      listKind: APIServerList
+      plural: apiservers
+      singular: apiserver
+    scope: Namespaced
     versions:
     - additionalPrinterColumns:
       - jsonPath: .status.phase
@@ -27,8 +26,8 @@
       name: v1alpha1
       schema:
         openAPIV3Schema:
-          description: KubeCarrier manages the deployment of the KubeCarrier controller
-            manager.
+          description: APIServer manages the deployment of the KubeCarrier central
+            API server.
           properties:
             apiVersion:
               description: 'APIVersion defines the versioned schema of this representation
@@ -44,17 +43,17 @@
             metadata:
               type: object
             spec:
-              description: KubeCarrierSpec defines the desired state of KubeCarrier
+              description: APIServerSpec defines the desired state of APIServer
               type: object
             status:
-              description: KubeCarrierStatus defines the observed state of KubeCarrier
+              description: APIServerStatus defines the observed state of APIServer
               properties:
                 conditions:
                   description: Conditions represents the latest available observations
-                    of a KubeCarrier's current state.
+                    of a APIServer's current state.
                   items:
-                    description: KubeCarrierCondition contains details for the current
-                      condition of this KubeCarrier.
+                    description: APIServerCondition contains details for the current
+                      condition of this APIServer.
                     properties:
                       lastTransitionTime:
                         description: LastTransitionTime is the last time the condition
@@ -74,7 +73,7 @@
                           ('True', 'False', 'Unknown').
                         type: string
                       type:
-                        description: Type is the type of the KubeCarrier condition,
+                        description: Type is the type of the APIServer condition,
                           currently ('Ready').
                         type: string
                     required:
@@ -87,137 +86,7 @@
                   type: array
                 observedGeneration:
                   description: ObservedGeneration is the most recent generation observed
-                    for this KubeCarrier by the controller.
-                  format: int64
-                  type: integer
-                phase:
-                  description: DEPRECATED. Phase represents the current lifecycle
-                    state of this object. Consider this field DEPRECATED, it will
-                    be removed as soon as there is a mechanism to map conditions to
-                    strings when printing the property. This is only for display purpose,
-                    for everything else use conditions.
-                  type: string
-              type: object
-          type: object
-      served: true
-      storage: true
-      subresources:
-        status: {}
-  status:
-    acceptedNames:
-      kind: ""
-      plural: ""
-    conditions: []
-    storedVersions: []
-- apiVersion: apiextensions.k8s.io/v1
-  kind: CustomResourceDefinition
-  metadata:
-    annotations:
-      controller-gen.kubebuilder.io/version: v0.2.9
-    creationTimestamp: null
-    labels:
-      kubecarrier.io/role: operator
-    name: ferries.operator.kubecarrier.io
-  spec:
-    group: operator.kubecarrier.io
-    names:
-      kind: Ferry
-      listKind: FerryList
-      plural: ferries
-      singular: ferry
-    scope: Namespaced
-    versions:
-    - additionalPrinterColumns:
-      - jsonPath: .status.phase
-        name: Status
-        type: string
-      - jsonPath: .metadata.creationTimestamp
-        name: Age
-        type: date
-      name: v1alpha1
-      schema:
-        openAPIV3Schema:
-          description: "Ferry manages the deployment of the Ferry controller manager.
-            \n Ferry lives in the Provider Namespace. For each ferry the KubeCarrier
-            operator spins up the ferry controller deployment, necessary roles, service
-            accounts, and role bindings. \n The reason for ferry controller deployment
-            are multiples: * security --> KubeCarrier operator has greater privileges
-            then ferry controller * resource isolation --> each ferry controller pod
-            operates only on a single service cluster, \t\tthus resource allocation
-            and monitoring is separate per ferry. This allows finer grade \t\tresource
-            tuning and monitoring * flexibility --> If needed different ferries could
-            have different deployments depending on \t\ttheir specific need (e.g.
-            KubeCarrier image version for gradual rolling upgrade, different resource
-            allocation, etc),"
-          properties:
-            apiVersion:
-              description: 'APIVersion defines the versioned schema of this representation
-                of an object. Servers should convert recognized schemas to the latest
-                internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
-              type: string
-            kind:
-              description: 'Kind is a string value representing the REST resource
-                this object represents. Servers may infer this from the endpoint the
-                client submits requests to. Cannot be updated. In CamelCase. More
-                info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
-              type: string
-            metadata:
-              type: object
-            spec:
-              description: FerrySpec defines the desired state of Ferry.
-              properties:
-                kubeconfigSecret:
-                  description: KubeconfigSecret specifies the Kubeconfig to use when
-                    connecting to the ServiceCluster.
-                  properties:
-                    name:
-                      type: string
-                  required:
-                  - name
-                  type: object
-              required:
-              - kubeconfigSecret
-              type: object
-            status:
-              description: FerryStatus defines the observed state of Ferry.
-              properties:
-                conditions:
-                  description: Conditions is a list of all conditions this Ferry is
-                    in.
-                  items:
-                    description: FerryCondition contains details for the current condition
-                      of this Ferry.
-                    properties:
-                      lastTransitionTime:
-                        description: LastTransitionTime is the last time the condition
-                          transit from one status to another.
-                        format: date-time
-                        type: string
-                      message:
-                        description: Message is the human readable message indicating
-                          details about last transition.
-                        type: string
-                      reason:
-                        description: Reason is the (brief) reason for the condition's
-                          last transition.
-                        type: string
-                      status:
-                        description: Status of the condition, one of ('True', 'False',
-                          'Unknown').
-                        type: string
-                      type:
-                        description: Type of the condition, currently ('Ready').
-                        type: string
-                    required:
-                    - lastTransitionTime
-                    - message
-                    - reason
-                    - status
-                    - type
-                    type: object
-                  type: array
-                observedGeneration:
-                  description: The most recent generation observed by the controller.
+                    for this APIServer by the controller.
                   format: int64
                   type: integer
                 phase:
@@ -573,6 +442,247 @@
       plural: ""
     conditions: []
     storedVersions: []
+- apiVersion: apiextensions.k8s.io/v1
+  kind: CustomResourceDefinition
+  metadata:
+    annotations:
+      controller-gen.kubebuilder.io/version: v0.2.9
+    creationTimestamp: null
+    labels:
+      kubecarrier.io/role: operator
+    name: ferries.operator.kubecarrier.io
+  spec:
+    group: operator.kubecarrier.io
+    names:
+      kind: Ferry
+      listKind: FerryList
+      plural: ferries
+      singular: ferry
+    scope: Namespaced
+    versions:
+    - additionalPrinterColumns:
+      - jsonPath: .status.phase
+        name: Status
+        type: string
+      - jsonPath: .metadata.creationTimestamp
+        name: Age
+        type: date
+      name: v1alpha1
+      schema:
+        openAPIV3Schema:
+          description: "Ferry manages the deployment of the Ferry controller manager.
+            \n Ferry lives in the Provider Namespace. For each ferry the KubeCarrier
+            operator spins up the ferry controller deployment, necessary roles, service
+            accounts, and role bindings. \n The reason for ferry controller deployment
+            are multiples: * security --> KubeCarrier operator has greater privileges
+            then ferry controller * resource isolation --> each ferry controller pod
+            operates only on a single service cluster, \t\tthus resource allocation
+            and monitoring is separate per ferry. This allows finer grade \t\tresource
+            tuning and monitoring * flexibility --> If needed different ferries could
+            have different deployments depending on \t\ttheir specific need (e.g.
+            KubeCarrier image version for gradual rolling upgrade, different resource
+            allocation, etc),"
+          properties:
+            apiVersion:
+              description: 'APIVersion defines the versioned schema of this representation
+                of an object. Servers should convert recognized schemas to the latest
+                internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+              type: string
+            kind:
+              description: 'Kind is a string value representing the REST resource
+                this object represents. Servers may infer this from the endpoint the
+                client submits requests to. Cannot be updated. In CamelCase. More
+                info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+              type: string
+            metadata:
+              type: object
+            spec:
+              description: FerrySpec defines the desired state of Ferry.
+              properties:
+                kubeconfigSecret:
+                  description: KubeconfigSecret specifies the Kubeconfig to use when
+                    connecting to the ServiceCluster.
+                  properties:
+                    name:
+                      type: string
+                  required:
+                  - name
+                  type: object
+              required:
+              - kubeconfigSecret
+              type: object
+            status:
+              description: FerryStatus defines the observed state of Ferry.
+              properties:
+                conditions:
+                  description: Conditions is a list of all conditions this Ferry is
+                    in.
+                  items:
+                    description: FerryCondition contains details for the current condition
+                      of this Ferry.
+                    properties:
+                      lastTransitionTime:
+                        description: LastTransitionTime is the last time the condition
+                          transit from one status to another.
+                        format: date-time
+                        type: string
+                      message:
+                        description: Message is the human readable message indicating
+                          details about last transition.
+                        type: string
+                      reason:
+                        description: Reason is the (brief) reason for the condition's
+                          last transition.
+                        type: string
+                      status:
+                        description: Status of the condition, one of ('True', 'False',
+                          'Unknown').
+                        type: string
+                      type:
+                        description: Type of the condition, currently ('Ready').
+                        type: string
+                    required:
+                    - lastTransitionTime
+                    - message
+                    - reason
+                    - status
+                    - type
+                    type: object
+                  type: array
+                observedGeneration:
+                  description: The most recent generation observed by the controller.
+                  format: int64
+                  type: integer
+                phase:
+                  description: DEPRECATED. Phase represents the current lifecycle
+                    state of this object. Consider this field DEPRECATED, it will
+                    be removed as soon as there is a mechanism to map conditions to
+                    strings when printing the property. This is only for display purpose,
+                    for everything else use conditions.
+                  type: string
+              type: object
+          type: object
+      served: true
+      storage: true
+      subresources:
+        status: {}
+  status:
+    acceptedNames:
+      kind: ""
+      plural: ""
+    conditions: []
+    storedVersions: []
+- apiVersion: apiextensions.k8s.io/v1
+  kind: CustomResourceDefinition
+  metadata:
+    annotations:
+      cert-manager.io/inject-ca-from: test3000/kubecarrier-operator-serving-cert
+      controller-gen.kubebuilder.io/version: v0.2.9
+    creationTimestamp: null
+    labels:
+      kubecarrier.io/role: operator
+    name: kubecarriers.operator.kubecarrier.io
+  spec:
+    group: operator.kubecarrier.io
+    names:
+      kind: KubeCarrier
+      listKind: KubeCarrierList
+      plural: kubecarriers
+      singular: kubecarrier
+    scope: Cluster
+    versions:
+    - additionalPrinterColumns:
+      - jsonPath: .status.phase
+        name: Status
+        type: string
+      - jsonPath: .metadata.creationTimestamp
+        name: Age
+        type: date
+      name: v1alpha1
+      schema:
+        openAPIV3Schema:
+          description: KubeCarrier manages the deployment of the KubeCarrier controller
+            manager.
+          properties:
+            apiVersion:
+              description: 'APIVersion defines the versioned schema of this representation
+                of an object. Servers should convert recognized schemas to the latest
+                internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+              type: string
+            kind:
+              description: 'Kind is a string value representing the REST resource
+                this object represents. Servers may infer this from the endpoint the
+                client submits requests to. Cannot be updated. In CamelCase. More
+                info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+              type: string
+            metadata:
+              type: object
+            spec:
+              description: KubeCarrierSpec defines the desired state of KubeCarrier
+              type: object
+            status:
+              description: KubeCarrierStatus defines the observed state of KubeCarrier
+              properties:
+                conditions:
+                  description: Conditions represents the latest available observations
+                    of a KubeCarrier's current state.
+                  items:
+                    description: KubeCarrierCondition contains details for the current
+                      condition of this KubeCarrier.
+                    properties:
+                      lastTransitionTime:
+                        description: LastTransitionTime is the last time the condition
+                          transits from one status to another.
+                        format: date-time
+                        type: string
+                      message:
+                        description: Message is the human readable message indicating
+                          details about last transition.
+                        type: string
+                      reason:
+                        description: Reason is the (brief) reason for the condition's
+                          last transition.
+                        type: string
+                      status:
+                        description: Status is the status of the condition, one of
+                          ('True', 'False', 'Unknown').
+                        type: string
+                      type:
+                        description: Type is the type of the KubeCarrier condition,
+                          currently ('Ready').
+                        type: string
+                    required:
+                    - lastTransitionTime
+                    - message
+                    - reason
+                    - status
+                    - type
+                    type: object
+                  type: array
+                observedGeneration:
+                  description: ObservedGeneration is the most recent generation observed
+                    for this KubeCarrier by the controller.
+                  format: int64
+                  type: integer
+                phase:
+                  description: DEPRECATED. Phase represents the current lifecycle
+                    state of this object. Consider this field DEPRECATED, it will
+                    be removed as soon as there is a mechanism to map conditions to
+                    strings when printing the property. This is only for display purpose,
+                    for everything else use conditions.
+                  type: string
+              type: object
+          type: object
+      served: true
+      storage: true
+      subresources:
+        status: {}
+  status:
+    acceptedNames:
+      kind: ""
+      plural: ""
+    conditions: []
+    storedVersions: []
 - apiVersion: rbac.authorization.k8s.io/v1
   kind: ClusterRole
   metadata:
@@ -677,6 +787,24 @@
     - patch
     - update
     - watch
+  - apiGroups:
+    - operator.kubecarrier.io
+    resources:
+    - apiservers
+    verbs:
+    - get
+    - list
+    - patch
+    - update
+    - watch
+  - apiGroups:
+    - operator.kubecarrier.io
+    resources:
+    - apiservers/status
+    verbs:
+    - get
+    - patch
+    - update
   - apiGroups:
     - operator.kubecarrier.io
     resources:
