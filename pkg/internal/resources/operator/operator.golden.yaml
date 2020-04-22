@@ -2,7 +2,7 @@
   kind: CustomResourceDefinition
   metadata:
     annotations:
-      controller-gen.kubebuilder.io/version: v0.2.8
+      controller-gen.kubebuilder.io/version: v0.2.9
     creationTimestamp: null
     labels:
       kubecarrier.io/role: operator
@@ -124,7 +124,7 @@
   kind: CustomResourceDefinition
   metadata:
     annotations:
-      controller-gen.kubebuilder.io/version: v0.2.8
+      controller-gen.kubebuilder.io/version: v0.2.9
     creationTimestamp: null
     labels:
       kubecarrier.io/role: operator
@@ -297,7 +297,7 @@
   kind: CustomResourceDefinition
   metadata:
     annotations:
-      controller-gen.kubebuilder.io/version: v0.2.8
+      controller-gen.kubebuilder.io/version: v0.2.9
     creationTimestamp: null
     labels:
       kubecarrier.io/role: operator
@@ -458,7 +458,7 @@
   kind: CustomResourceDefinition
   metadata:
     annotations:
-      controller-gen.kubebuilder.io/version: v0.2.8
+      controller-gen.kubebuilder.io/version: v0.2.9
     creationTimestamp: null
     labels:
       kubecarrier.io/role: operator
@@ -589,7 +589,7 @@
   metadata:
     annotations:
       cert-manager.io/inject-ca-from: test3000/kubecarrier-operator-serving-cert
-      controller-gen.kubebuilder.io/version: v0.2.8
+      controller-gen.kubebuilder.io/version: v0.2.9
     creationTimestamp: null
     labels:
       kubecarrier.io/role: operator
@@ -674,116 +674,6 @@
                 observedGeneration:
                   description: ObservedGeneration is the most recent generation observed
                     for this KubeCarrier by the controller.
-                  format: int64
-                  type: integer
-                phase:
-                  description: DEPRECATED. Phase represents the current lifecycle
-                    state of this object. Consider this field DEPRECATED, it will
-                    be removed as soon as there is a mechanism to map conditions to
-                    strings when printing the property. This is only for display purpose,
-                    for everything else use conditions.
-                  type: string
-              type: object
-          type: object
-      served: true
-      storage: true
-      subresources:
-        status: {}
-  status:
-    acceptedNames:
-      kind: ""
-      plural: ""
-    conditions: []
-    storedVersions: []
-- apiVersion: apiextensions.k8s.io/v1
-  kind: CustomResourceDefinition
-  metadata:
-    annotations:
-      controller-gen.kubebuilder.io/version: v0.2.8
-    creationTimestamp: null
-    labels:
-      kubecarrier.io/role: operator
-    name: towers.operator.kubecarrier.io
-  spec:
-    group: operator.kubecarrier.io
-    names:
-      kind: Tower
-      listKind: TowerList
-      plural: towers
-      singular: tower
-    scope: Namespaced
-    versions:
-    - additionalPrinterColumns:
-      - jsonPath: .status.phase
-        name: Status
-        type: string
-      - jsonPath: .metadata.creationTimestamp
-        name: Age
-        type: date
-      name: v1alpha1
-      schema:
-        openAPIV3Schema:
-          description: Tower manages the deployment of the KubeCarrier master controller
-            manager.
-          properties:
-            apiVersion:
-              description: 'APIVersion defines the versioned schema of this representation
-                of an object. Servers should convert recognized schemas to the latest
-                internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
-              type: string
-            kind:
-              description: 'Kind is a string value representing the REST resource
-                this object represents. Servers may infer this from the endpoint the
-                client submits requests to. Cannot be updated. In CamelCase. More
-                info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
-              type: string
-            metadata:
-              type: object
-            spec:
-              description: TowerSpec defines the desired state of Tower
-              type: object
-            status:
-              description: TowerStatus defines the observed state of Tower
-              properties:
-                conditions:
-                  description: Conditions represents the latest available observations
-                    of a Tower's current state.
-                  items:
-                    description: TowerCondition contains details for the current condition
-                      of this Tower.
-                    properties:
-                      lastTransitionTime:
-                        description: LastTransitionTime is the last time the condition
-                          transits from one status to another.
-                        format: date-time
-                        type: string
-                      message:
-                        description: Message is the human readable message indicating
-                          details about last transition.
-                        type: string
-                      reason:
-                        description: Reason is the (brief) reason for the condition's
-                          last transition.
-                        type: string
-                      status:
-                        description: Status is the status of the condition, one of
-                          ('True', 'False', 'Unknown').
-                        type: string
-                      type:
-                        description: Type is the type of the Tower condition, currently
-                          ('Ready').
-                        type: string
-                    required:
-                    - lastTransitionTime
-                    - message
-                    - reason
-                    - status
-                    - type
-                    type: object
-                  type: array
-                observedGeneration:
-                  description: ObservedGeneration is the most recent generation observed
-                    for this Tower by the controller.
                   format: int64
                   type: integer
                 phase:
@@ -995,24 +885,6 @@
     - operator.kubecarrier.io
     resources:
     - kubecarriers/status
-    verbs:
-    - get
-    - patch
-    - update
-  - apiGroups:
-    - operator.kubecarrier.io
-    resources:
-    - towers
-    verbs:
-    - get
-    - list
-    - patch
-    - update
-    - watch
-  - apiGroups:
-    - operator.kubecarrier.io
-    resources:
-    - towers/status
     verbs:
     - get
     - patch
