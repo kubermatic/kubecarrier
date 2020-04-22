@@ -23,6 +23,7 @@ import (
 	"os"
 	"sync"
 	"testing"
+	"time"
 
 	certmanagerv1alpha3 "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha3"
 	"github.com/stretchr/testify/require"
@@ -214,7 +215,10 @@ func (f *Framework) NewFakeDB(name, namespace string) *fakev1alpha1.DB {
 			Name:      name,
 			Namespace: namespace,
 		},
-		Spec: fakev1alpha1.DBSpec{},
+		Spec: fakev1alpha1.DBSpec{DatabaseName: "fakeDB",
+			Config: fakev1alpha1.Config{
+				Create: fakev1alpha1.OperationFlagEnabled,
+			}},
 	}
 }
 
@@ -302,7 +306,7 @@ func (f *Framework) SetupServiceCluster(ctx context.Context, cl *RecordingClient
 
 	require.NoError(t, cl.Create(ctx, serviceClusterSecret))
 	require.NoError(t, cl.Create(ctx, serviceCluster))
-	require.NoError(t, WaitUntilReady(ctx, cl, serviceCluster))
+	require.NoError(t, WaitUntilReady(ctx, cl, serviceCluster, WithTimeout(60*time.Second)))
 	t.Logf("service cluster %s successfully created for provider %s", name, account.Name)
 	return serviceCluster
 }

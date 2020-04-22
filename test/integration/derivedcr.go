@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -90,7 +91,7 @@ func newDerivedCR(
 		}
 
 		require.NoError(t, managementClient.Create(ctx, dcr))
-		require.NoError(t, testutil.WaitUntilReady(ctx, managementClient, dcr))
+		require.NoError(t, testutil.WaitUntilReady(ctx, managementClient, dcr, testutil.WithTimeout(60*time.Second)))
 
 		// Check the Elevator dynamic webhook service is deployed.
 		webhookService := &corev1.Service{}
