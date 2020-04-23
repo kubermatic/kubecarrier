@@ -141,6 +141,7 @@ func newAPIServer(f *testutil.Framework) func(t *testing.T) {
 				credentials.NewClientTLSFromCert(certPool, ""),
 			),
 		)
+		require.NoError(t, err)
 		client := apiserverv1alpha1.NewKubecarrierClient(conn)
 		versionCtx, cancel := context.WithTimeout(ctx, 30*time.Second)
 		t.Cleanup(cancel)
