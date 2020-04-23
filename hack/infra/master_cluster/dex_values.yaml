@@ -1,0 +1,20 @@
+grpc: false
+https: false
+
+ports:
+  web:
+    servicePort: 8080
+config:
+  issuer: "https://dex.lab.kubecarrier.io"
+  oauth2:
+    responseTypes: [ "code", "token", "id_token" ]
+  staticClients:
+    - id: local
+      redirectURIs:
+        - 'http://localhost:8080'
+      name: "e2e client"
+  staticPasswords:
+    - email: "admin@kubecarrier.io"
+      username: "admin@kubecarrier.io"
+      # bcrypt hash of the string "password"
+      hash: "$2a$10$2b2cU8CPhOTaGrs1HRQuAueS7JTT5ZHsHSzYiFPm1leZck7Mc8T4W"

@@ -4,3 +4,4 @@ configuration for kubecarrier testing & demo infrastructure. Here is the explana
 
 * kubermatic
     * terraform configuration for creating appropriate kubermatic user & generate required secrets
+* master_cluster
