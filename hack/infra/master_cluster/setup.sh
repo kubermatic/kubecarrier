@@ -81,3 +81,6 @@ echo "=== installing external -dns ==="
 
 kubectl create secret generic external-dns-route53-aws "--from-literal=credentials=${AWS_CREDENTIALS}" --dry-run=client -o yaml | kubectl apply -f -
 helm upgrade external-dns bitnami/external-dns --install --values ./external-dns_values.yaml
+
+echo "=== installing nginx-ingress controller"
+helm upgrade nginx-ingress stable/nginx-ingress --install --values ./nginx-ingress_values.yaml
