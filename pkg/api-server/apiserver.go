@@ -18,6 +18,7 @@ package apiserver
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"net/http"
 	"strings"
@@ -32,8 +33,14 @@ import (
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/client/apiutil"
+	"sigs.k8s.io/controller-runtime/pkg/client/config"
 
+	"github.com/kubermatic/kubecarrier/pkg/api/services"
+	apiv1alpha1 "github.com/kubermatic/kubecarrier/pkg/api/v1alpha1"
 	apiserverv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/apiserver/v1alpha1"
+	catalogv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/catalog/v1alpha1"
 	"github.com/kubermatic/kubecarrier/pkg/internal/util"
 )
 
@@ -43,6 +50,7 @@ var (
 
 func init() {
 	utilruntime.Must(clientgoscheme.AddToScheme(scheme))
+	utilruntime.Must(catalogv1alpha1.AddToScheme(scheme))
 }
 
 type flags struct {
@@ -92,9 +100,25 @@ func runE(flags *flags, log logr.Logger) error {
 		}),
 	)
 
+	// Create Kubernetes Client
+	cfg := config.GetConfigOrDie()
+	mapper, err := apiutil.NewDiscoveryRESTMapper(cfg)
+	if err != nil {
+		return fmt.Errorf("creating rest mapper: %w", err)
+	}
+	c, err := client.New(cfg, client.Options{
+		Scheme: scheme,
+		Mapper: mapper,
+	})
+
 	// v1alpha1 registration
 	apiserverv1alpha1.RegisterKubecarrierServer(grpcServer, &kubecarrierHandler{})
 	if err := apiserverv1alpha1.RegisterKubecarrierHandlerServer(context.Background(), grpcGatewayMux, &kubecarrierHandler{}); err != nil {
+		return err
+	}
+	offeringServer := services.NewOfferingServiceServer(c)
+	apiv1alpha1.RegisterOfferingServiceServer(grpcServer, offeringServer)
+	if err := apiv1alpha1.RegisterOfferingServiceHandlerServer(context.Background(), grpcGatewayMux, offeringServer); err != nil {
 		return err
 	}
 
@@ -114,7 +138,7 @@ func runE(flags *flags, log logr.Logger) error {
 
 	log.Info("booting serving API-server", "addr", flags.addr)
 	if flags.TLSCertFile == "" {
-		log.V(4).Info("No TLS cert file defined, skipping TLS setup")
+		log.Info("No TLS cert file defined, skipping TLS setup")
 		return server.ListenAndServe()
 	} else {
 		log.Info("using provided TLS cert/key")
