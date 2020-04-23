@@ -1,0 +1,8 @@
+sources:
+  - ingress
+provider: aws
+aws:
+  region: eu-central-1
+  zoneType: public
+  credentials:
+    secretName: "external-dns-route53-aws"

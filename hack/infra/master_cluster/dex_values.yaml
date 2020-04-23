@@ -13,6 +13,7 @@ config:
       redirectURIs:
         - 'http://localhost:8080'
       name: "e2e client"
+      secret: "local"
   staticPasswords:
     - email: "admin@kubecarrier.io"
       username: "admin@kubecarrier.io"
