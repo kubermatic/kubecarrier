@@ -5,13 +5,17 @@ ports:
   web:
     servicePort: 8080
 config:
-  issuer: "https://dex.lab.kubecarrier.io"
+#  issuer: "https://dex.lab.kubecarrier.io"
+  issuer: "http://localhost:5556"
+  web:
+    allowedOrigins: ['*']
   oauth2:
     responseTypes: [ "code", "token", "id_token" ]
   staticClients:
     - id: local
       redirectURIs:
-        - 'http://localhost:8080'
+        - 'http://localhost:8080/'
+        - 'http://localhost:53322/'
       name: "e2e client"
       secret: "local"
   staticPasswords:

@@ -17,7 +17,7 @@
 set -euo pipefail
 export VAULT_ADDR="https://vault.loodse.com"
 if [[ ${VAULT_TOKEN:-x} == 'x' ]]; then
-  echo "$$VAULT_TOKEN not set"
+  echo "\$VAULT_TOKEN not set"
   exit 1
 fi
 
@@ -38,14 +38,14 @@ aws_secret_access_key = ${AWS_SECRET_ACCESS_KEY}
 EOF
 )
 
-echo "=== creating required secrets ==="
-kubectl create secret generic -n cert-manager route53-aws "--from-literal=id=${AWS_ACCESS_KEY_ID}" "--from-literal=secret=${AWS_SECRET_ACCESS_KEY}" --dry-run=client -o yaml | kubectl apply -f -
-
 echo "=== installing cert-manager ==="
 kubectl apply -f https://github.com/jetstack/cert-manager/releases/download/v0.14.0/cert-manager.yaml
 kubectl wait --for=condition=available deployment/cert-manager -n cert-manager --timeout=120s
 kubectl wait --for=condition=available deployment/cert-manager-cainjector -n cert-manager --timeout=120s
 kubectl wait --for=condition=available deployment/cert-manager-webhook -n cert-manager --timeout=120s
+
+echo "=== creating required secrets ==="
+kubectl create secret generic -n cert-manager route53-aws "--from-literal=id=${AWS_ACCESS_KEY_ID}" "--from-literal=secret=${AWS_SECRET_ACCESS_KEY}" --dry-run=client -o yaml | kubectl apply -f -
 
 echo "=== creating ClusterIssuer ==="
 cat <<EOF | kubectl apply -f -
