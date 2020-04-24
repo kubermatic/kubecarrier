@@ -15,8 +15,8 @@ limitations under the License.
 */
 
 syntax = "proto3";
-package kubecarrier.api.v1alpha1;
-option go_package = "v1alpha1";
+package kubecarrier.api.v1;
+option go_package = "v1";
 
 import "google/protobuf/timestamp.proto";
 import "google/api/annotations.proto";
@@ -25,7 +25,7 @@ import "types.proto";
 
 message Offering {
   string name = 1;
-  string namespace = 2;
+  string tenant = 2;
   OfferingMetadata metadata = 3;
   ObjectReference provider = 4;
   CRDInformation crd = 5;
@@ -35,9 +35,16 @@ message OfferingList {
   repeated Offering items = 1;
 }
 
+message OfferingRequest {
+  string name = 1;
+  string tenant = 2;
+}
+
 message OfferingListRequest {
-  string selector = 1;
-  string namespace = 2;
+  string tenant = 1;
+  string selector = 2;
+  int64 limit = 3;
+  string continue = 4;
 }
 
 
@@ -49,12 +56,12 @@ message OfferingMetadata {
 service OfferingService {
   rpc List(OfferingListRequest) returns (OfferingList) {
     option (google.api.http) = {
-      get : "/v1alpha1/offerings"
+      get : "/v1/tenants/{tenant}/offerings"
     };
   };
-  rpc Get(Offering) returns (Offering) {
+  rpc Get(OfferingRequest) returns (Offering) {
     option (google.api.http) = {
-      get : "/v1alpha1/offerings/{name}"
+      get : "/v1/tenants/{tenant}/offerings/{name}"
     };
   };
 }

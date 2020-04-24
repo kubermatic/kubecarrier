@@ -37,8 +37,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client/apiutil"
 	"sigs.k8s.io/controller-runtime/pkg/client/config"
 
-	"github.com/kubermatic/kubecarrier/pkg/api/services"
-	apiv1alpha1 "github.com/kubermatic/kubecarrier/pkg/api/v1alpha1"
+	apiv1 "github.com/kubermatic/kubecarrier/pkg/api/v1"
+	apiservicev1 "github.com/kubermatic/kubecarrier/pkg/api/v1/services"
 	apiserverv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/apiserver/v1alpha1"
 	catalogv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/catalog/v1alpha1"
 	"github.com/kubermatic/kubecarrier/pkg/internal/util"
@@ -116,9 +116,9 @@ func runE(flags *flags, log logr.Logger) error {
 	if err := apiserverv1alpha1.RegisterKubecarrierHandlerServer(context.Background(), grpcGatewayMux, &kubecarrierHandler{}); err != nil {
 		return err
 	}
-	offeringServer := services.NewOfferingServiceServer(c)
-	apiv1alpha1.RegisterOfferingServiceServer(grpcServer, offeringServer)
-	if err := apiv1alpha1.RegisterOfferingServiceHandlerServer(context.Background(), grpcGatewayMux, offeringServer); err != nil {
+	offeringServer := apiservicev1.NewOfferingServiceServer(c)
+	apiv1.RegisterOfferingServiceServer(grpcServer, offeringServer)
+	if err := apiv1.RegisterOfferingServiceHandlerServer(context.Background(), grpcGatewayMux, offeringServer); err != nil {
 		return err
 	}
 

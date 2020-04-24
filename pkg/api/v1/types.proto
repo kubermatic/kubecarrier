@@ -15,8 +15,8 @@ limitations under the License.
 */
 
 syntax = "proto3";
-package kubecarrier.api.v1alpha1;
-option go_package = "v1alpha1";
+package kubecarrier.api.v1;
+option go_package = "v1";
 
 message ObjectReference {
   string name = 1;

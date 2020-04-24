@@ -139,7 +139,7 @@ statik-gen elevator config/internal/elevator
 # API server
 # -------
 # RBAC
-$CONTROLLER_GEN rbac:roleName=manager-role paths="./pkg/api/services/..." output:rbac:artifacts:config=config/internal/api-server/rbac
+$CONTROLLER_GEN rbac:roleName=manager-role paths="./pkg/api/v1/services/..." output:rbac:artifacts:config=config/internal/api-server/rbac
 statik-gen api-server config/internal/api-server
 
 #Service cluster RBAC

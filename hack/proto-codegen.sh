@@ -27,7 +27,7 @@ PROJECT=$PWD
 GOPATH=$(go env GOPATH)
 
 PBUFS=(
-  pkg/api/v1alpha1
+  pkg/api/v1
 )
 
 # change into each protobuf directory

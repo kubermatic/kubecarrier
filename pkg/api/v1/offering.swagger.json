@@ -36,7 +36,7 @@
       },
       "type": "object"
     },
-    "v1alpha1CRDInformation": {
+    "v1CRDInformation": {
       "properties": {
         "apiGroup": {
           "type": "string"
@@ -51,18 +51,18 @@
           "type": "string"
         },
         "region": {
-          "$ref": "#/definitions/v1alpha1ObjectReference"
+          "$ref": "#/definitions/v1ObjectReference"
         },
         "versions": {
           "items": {
-            "$ref": "#/definitions/v1alpha1CRDVersion"
+            "$ref": "#/definitions/v1CRDVersion"
           },
           "type": "array"
         }
       },
       "type": "object"
     },
-    "v1alpha1CRDVersion": {
+    "v1CRDVersion": {
       "properties": {
         "name": {
           "type": "string"
@@ -73,7 +73,7 @@
       },
       "type": "object"
     },
-    "v1alpha1ObjectReference": {
+    "v1ObjectReference": {
       "properties": {
         "name": {
           "type": "string"
@@ -81,38 +81,38 @@
       },
       "type": "object"
     },
-    "v1alpha1Offering": {
+    "v1Offering": {
       "properties": {
         "crd": {
-          "$ref": "#/definitions/v1alpha1CRDInformation"
+          "$ref": "#/definitions/v1CRDInformation"
         },
         "metadata": {
-          "$ref": "#/definitions/v1alpha1OfferingMetadata"
+          "$ref": "#/definitions/v1OfferingMetadata"
         },
         "name": {
-          "type": "string"
-        },
-        "namespace": {
           "type": "string"
         },
         "provider": {
-          "$ref": "#/definitions/v1alpha1ObjectReference"
+          "$ref": "#/definitions/v1ObjectReference"
+        },
+        "tenant": {
+          "type": "string"
         }
       },
       "type": "object"
     },
-    "v1alpha1OfferingList": {
+    "v1OfferingList": {
       "properties": {
         "items": {
           "items": {
-            "$ref": "#/definitions/v1alpha1Offering"
+            "$ref": "#/definitions/v1Offering"
           },
           "type": "array"
         }
       },
       "type": "object"
     },
-    "v1alpha1OfferingMetadata": {
+    "v1OfferingMetadata": {
       "properties": {
         "description": {
           "type": "string"
@@ -129,10 +129,16 @@
     "version": "version not set"
   },
   "paths": {
-    "/v1alpha1/offerings": {
+    "/v1/tenants/{tenant}/offerings": {
       "get": {
         "operationId": "List",
         "parameters": [
+          {
+            "in": "path",
+            "name": "tenant",
+            "required": true,
+            "type": "string"
+          },
           {
             "in": "query",
             "name": "selector",
@@ -140,8 +146,15 @@
             "type": "string"
           },
           {
+            "format": "int64",
             "in": "query",
-            "name": "namespace",
+            "name": "limit",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "in": "query",
+            "name": "continue",
             "required": false,
             "type": "string"
           }
@@ -150,7 +163,7 @@
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/v1alpha1OfferingList"
+              "$ref": "#/definitions/v1OfferingList"
             }
           },
           "default": {
@@ -165,68 +178,20 @@
         ]
       }
     },
-    "/v1alpha1/offerings/{name}": {
+    "/v1/tenants/{tenant}/offerings/{name}": {
       "get": {
         "operationId": "Get",
         "parameters": [
           {
             "in": "path",
-            "name": "name",
+            "name": "tenant",
             "required": true,
             "type": "string"
           },
           {
-            "in": "query",
-            "name": "namespace",
-            "required": false,
-            "type": "string"
-          },
-          {
-            "in": "query",
-            "name": "metadata.displayName",
-            "required": false,
-            "type": "string"
-          },
-          {
-            "in": "query",
-            "name": "metadata.description",
-            "required": false,
-            "type": "string"
-          },
-          {
-            "in": "query",
-            "name": "provider.name",
-            "required": false,
-            "type": "string"
-          },
-          {
-            "in": "query",
-            "name": "crd.name",
-            "required": false,
-            "type": "string"
-          },
-          {
-            "in": "query",
-            "name": "crd.apiGroup",
-            "required": false,
-            "type": "string"
-          },
-          {
-            "in": "query",
-            "name": "crd.kind",
-            "required": false,
-            "type": "string"
-          },
-          {
-            "in": "query",
-            "name": "crd.plural",
-            "required": false,
-            "type": "string"
-          },
-          {
-            "in": "query",
-            "name": "crd.region.name",
-            "required": false,
+            "in": "path",
+            "name": "name",
+            "required": true,
             "type": "string"
           }
         ],
@@ -234,7 +199,7 @@
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/v1alpha1Offering"
+              "$ref": "#/definitions/v1Offering"
             }
           },
           "default": {
