@@ -13,7 +13,7 @@ require (
 	github.com/go-logr/logr v0.1.0
 	github.com/gobuffalo/flect v0.2.0
 	github.com/golang/protobuf v1.3.5
-	github.com/google/go-cmp v0.3.1
+	github.com/google/go-cmp v0.4.0
 	github.com/grpc-ecosystem/grpc-gateway v1.14.3
 	github.com/huandu/xstrings v1.3.0 // indirect
 	github.com/jetstack/cert-manager v0.13.0
@@ -23,7 +23,7 @@ require (
 	github.com/stretchr/testify v1.4.0
 	go.uber.org/zap v1.10.0
 	golang.org/x/crypto v0.0.0-20191206172530-e9b2fee46413
-	google.golang.org/genproto v0.0.0-20200331122359-1ee6d9798940
+	google.golang.org/genproto v0.0.0-20200424135956-bca184e23272
 	google.golang.org/grpc v1.28.0
 	k8s.io/api v0.17.3
 	k8s.io/apiextensions-apiserver v0.17.3

@@ -177,4 +177,3 @@
     selector:
       control-plane: api-server
       kubecarrier.io/role: api-server
-    type: ClusterIP

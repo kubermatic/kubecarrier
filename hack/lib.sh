@@ -16,12 +16,6 @@
 
 set -euo pipefail
 
-DIR=$(dirname $(readlink -f $0))
-source ${DIR}/lib.sh
-
-command -v protoc >/dev/null || (
-  curl -sL --output /tmp/protoc.zip https://github.com/google/protobuf/releases/download/v${PROTOC_VERSION}/protoc-${PROTOC_VERSION}-linux-x86_64.zip && unzip /tmp/protoc.zip -d /usr && rm /tmp/protoc.zip
-)
-go get -u github.com/grpc-ecosystem/grpc-gateway/protoc-gen-grpc-gateway@v${PROTOC_GATEWAY_VERSION}
-go get -u github.com/grpc-ecosystem/grpc-gateway/protoc-gen-swagger@v${PROTOC_GATEWAY_VERSION}
-go get -u github.com/golang/protobuf/protoc-gen-go@v${PROTOC_GEN_GO_VERSION}
+PROTOC_VERSION="3.11.4"
+PROTOC_GATEWAY_VERSION="1.14.3"
+PROTOC_GEN_GO_VERSION="1.3.5"
