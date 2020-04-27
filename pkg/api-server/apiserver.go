@@ -24,7 +24,9 @@ import (
 	"strings"
 
 	"github.com/go-logr/logr"
+	"github.com/gorilla/handlers"
 	gwruntime "github.com/grpc-ecosystem/grpc-gateway/runtime"
+	"github.com/improbable-eng/grpc-web/go/grpcweb"
 	"github.com/spf13/cobra"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -98,14 +100,15 @@ func runE(flags *flags, log logr.Logger) error {
 
 	// v1alpha1 registration
 	apiserverv1alpha1.RegisterKubecarrierServer(grpcServer, &kubecarrierHandler{})
+	wrapperGRPCServer := grpcweb.WrapServer(grpcServer)
 	if err := apiserverv1alpha1.RegisterKubecarrierHandlerServer(context.Background(), grpcGatewayMux, &kubecarrierHandler{}); err != nil {
 		return err
 	}
 
 	var handler http.Handler = http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
-		log.Info("got request for", "path", request.URL.Path)
+		log.Info("got request for", "path", request.URL.Path, "Content-Type", request.Header.Get("Content-Type"), "method", request.Method)
 		if strings.Contains(request.Header.Get("Content-Type"), "application/grpc") {
-			grpcServer.ServeHTTP(writer, request)
+			wrapperGRPCServer.ServeHTTP(writer, request)
 		} else {
 			grpcGatewayMux.ServeHTTP(writer, request)
 		}
@@ -121,6 +124,18 @@ func runE(flags *flags, log logr.Logger) error {
 	} else {
 		log.Info("skipping OIDC setup")
 	}
+
+	handler = handlers.CORS(
+		handlers.AllowedHeaders([]string{
+			"X-Requested-With",
+			"Content-Type",
+			"Authorization",
+			"X-grpc-web",
+			"X-user-agent",
+		}),
+		handlers.AllowedMethods([]string{"GET", "POST"}),
+		handlers.AllowedOrigins([]string{"*"}),
+	)(handler)
 
 	server := http.Server{
 		Handler: handler,
