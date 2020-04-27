@@ -6,7 +6,6 @@ metadata:
   labels:
     control-plane: api-server
 spec:
-  type: "ClusterIP"
   selector:
     control-plane: api-server
   ports:
