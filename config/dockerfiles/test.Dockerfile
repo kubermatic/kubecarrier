@@ -33,12 +33,17 @@ RUN apt-get -qq update && apt-get -qqy install \
 
 RUN curl -fsSL https://get.docker.com | sh
 RUN curl -sL --output /usr/local/bin/kubectl https://storage.googleapis.com/kubernetes-release/release/v1.16.0/bin/linux/amd64/kubectl && chmod a+x /usr/local/bin/kubectl
+RUN curl -sL https://get.helm.sh/helm-v3.1.2-linux-amd64.tar.gz | tar -C /tmp -xz && mv /tmp/linux-amd64/helm /usr/bin/helm && rm -Rf /tmp/linux-amd64 && helm repo add stable https://kubernetes-charts.storage.googleapis.com/ && helm repo update
 RUN curl -sL https://dl.google.com/go/go1.14.linux-amd64.tar.gz | tar -C /usr/local -xz
 ENV PATH=${PATH}:/usr/local/go/bin:/root/go/bin
 # This LC_ALL is needed for yq. https://stackoverflow.com/questions/18649512/unicodedecodeerror-ascii-codec-cant-decode-byte-0xe2-in-position-13-ordinal
 ENV LC_ALL=C.UTF-8
 # Allowed to use path@version syntax to install controller-gen
 ENV GO111MODULE=on
+RUN curl -sL --output /tmp/protoc.zip https://github.com/google/protobuf/releases/download/v3.11.4/protoc-3.11.4-linux-x86_64.zip  && unzip /tmp/protoc.zip -d /usr && rm /tmp/protoc.zip
+RUN go get -u github.com/grpc-ecosystem/grpc-gateway/protoc-gen-grpc-gateway@v1.14.3
+RUN go get -u github.com/grpc-ecosystem/grpc-gateway/protoc-gen-swagger@v1.14.3
+RUN go get -u github.com/golang/protobuf/protoc-gen-go@v1.3.5
 RUN go env
 
 # binary will be $(go env GOPATH)/bin/golangci-lint
