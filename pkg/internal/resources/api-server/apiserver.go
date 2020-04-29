@@ -93,7 +93,7 @@ func Manifests(c Config) ([]unstructured.Unstructured, error) {
 						{
 							"name": "manager",
 							"args": append([]string{
-								"--addr=$(API_SERVER_ADDR)",
+								"--address=$(API_SERVER_ADDR)",
 								"--tls-cert-file=$(API_SERVER_TLS_CERT_FILE)",
 								"--tls-private-key-file=$(API_SERVER_TLS_PRIVATE_KEY_FILE)",
 								"--oidc-issuer-url=$(API_SERVER_OIDC_ISSUER_URL)",

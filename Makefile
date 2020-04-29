@@ -63,15 +63,23 @@ clean: e2e-test-clean
 	rm -rf bin/$*
 .PHONEY: clean
 
+ifdef CI
 gen-proto:
 	@hack/proto-codegen.sh
+else
+gen-proto:
+	docker run --rm -e CI=true -w /src -v $(PWD):/src  quay.io/kubecarrier/test make gen-proto
+	docker run --rm -e CI=true -w /src -v $(PWD):/src  quay.io/kubecarrier/test chown -R "$(shell id -u):$(shell id -g)" /src
+endif
 .PHONY: gen-proto
+
 
 # Generate code
 generate: docs gen-proto
 	@hack/codegen.sh
 	# regenerate golden files to update tests
 	FIX_GOLDEN=1 go test ./pkg/internal/resources/...
+.PHONY: generate
 
 # Run go fmt against code
 fmt:
@@ -96,10 +104,6 @@ krew-install:
 	@kubectl krew uninstall kubecarrier || true
 	@kubectl krew install --manifest=dist/krew.yaml --archive=dist/kubecarrier_$(shell go env GOOS)_$(shell go env GOARCH).tar.gz
 .PHONY: krew-install
-
-install-build-deps:
-	@hack/install-deps.sh $(shell pwd)
-.PHONY: install-build-deps
 
 install:
 	@go install -ldflags "-w $(LD_FLAGS)" ./cmd/kubectl-kubecarrier

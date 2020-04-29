@@ -129,8 +129,8 @@
                   - issuerURL
                   type: object
                 tlsSecretRef:
-                  description: TLSSecretRef referencing the TLS serving credentials
-                    for the API server
+                  description: TLSSecretRef references the TLS certificate and private
+                    key for serving the KubeCarrier API.
                   properties:
                     name:
                       type: string

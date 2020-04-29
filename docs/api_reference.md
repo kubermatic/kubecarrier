@@ -1183,7 +1183,7 @@ APIServerSpec defines the desired state of APIServer
 
 | Field | Description | Scheme | Required |
 | ----- | ----------- | ------ | -------- |
-| tlsSecretRef | TLSSecretRef referencing the TLS serving credentials for the API server | operator.kubecarrier.io/v1alpha1.ObjectReference | true |
+| tlsSecretRef | TLSSecretRef references the TLS certificate and private key for serving the KubeCarrier API. | operator.kubecarrier.io/v1alpha1.ObjectReference | true |
 | oidc | OIDC specifies OpenID Connect configuration for API Server authentication | operator.kubecarrier.io/v1alpha1.APIServerOIDCConfig | true |
 
 [Back to Group](#operator)

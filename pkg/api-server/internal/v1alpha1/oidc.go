@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package apiserver
+package v1alpha1
 
 import (
 	"context"
@@ -26,6 +26,7 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/spf13/pflag"
 	"k8s.io/apiserver/pkg/authentication/authenticator"
+	"k8s.io/apiserver/pkg/authentication/user"
 	"k8s.io/apiserver/plugin/pkg/authenticator/token/oidc"
 	cliflag "k8s.io/component-base/cli/flag"
 )
@@ -34,7 +35,7 @@ const (
 	oidcContextKey = "oidc.kubecarrier.io"
 )
 
-func AddPFlags(opts *oidc.Options, fs *pflag.FlagSet) {
+func AddOIDCPFlags(opts *oidc.Options, fs *pflag.FlagSet) {
 	fs.StringVar(&opts.IssuerURL, "oidc-issuer-url", opts.IssuerURL, ""+
 		"The URL of the OpenID issuer, only HTTPS scheme will be accepted. "+
 		"If set, it will be used to verify the OIDC JSON Web Token (JWT).")
@@ -138,7 +139,7 @@ func NewOIDCMiddleware(log logr.Logger, opts oidc.Options) (mux.MiddlewareFunc, 
 	}, nil
 }
 
-func ExtractUserInfo(ctx context.Context) (*authenticator.Response, bool) {
+func ExtractUserInfo(ctx context.Context) (user.Info, bool) {
 	u, ok := ctx.Value(oidcContextKey).(*authenticator.Response)
-	return u, ok
+	return u.User, ok
 }

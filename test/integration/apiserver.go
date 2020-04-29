@@ -42,7 +42,7 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/wait"
 
-	apiserverv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/apiserver/v1alpha1"
+	apiserverv1alpha1 "github.com/kubermatic/kubecarrier/pkg/api-server/api/v1alpha1"
 	operatorv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/operator/v1alpha1"
 	"github.com/kubermatic/kubecarrier/pkg/testutil"
 )
@@ -160,7 +160,7 @@ func newAPIServer(f *testutil.Framework) func(t *testing.T) {
 			grpc.WithPerRPCCredentials(gRPCWithAuthToken{token: token}),
 		)
 		require.NoError(t, err)
-		client := apiserverv1alpha1.NewKubecarrierClient(conn)
+		client := apiserverv1alpha1.NewKubeCarrierClient(conn)
 		versionCtx, cancel := context.WithTimeout(ctx, 30*time.Second)
 		t.Cleanup(cancel)
 		require.NoError(t, wait.PollUntil(time.Second, func() (done bool, err error) {
@@ -174,7 +174,7 @@ func newAPIServer(f *testutil.Framework) func(t *testing.T) {
 				testutil.LogObject(t, version)
 				return true, nil
 			}
-			if grpcStatus, ok := err.(ToGRPCStatus); ok {
+			if grpcStatus, ok := err.(toGRPCStatus); ok {
 				if grpcStatus.GRPCStatus().Code() == codes.Unavailable {
 					t.Log("gRPC server temporary unavailable, retrying")
 					return false, nil
@@ -230,7 +230,7 @@ func fetchUserToken(ctx context.Context, t *testing.T, managementClient *testuti
 	return token
 }
 
-type ToGRPCStatus interface {
+type toGRPCStatus interface {
 	GRPCStatus() *status.Status
 }
 
