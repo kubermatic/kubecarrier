@@ -14,7 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-#!/usr/bin/env bash
+# This file should be called from withing quay.io/kubecarrier/test image
 
 set -euo pipefail
 
