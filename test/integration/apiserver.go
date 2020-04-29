@@ -159,6 +159,7 @@ func newAPIServer(f *testutil.Framework) func(t *testing.T) {
 			),
 			grpc.WithPerRPCCredentials(gRPCWithAuthToken{token: token}),
 		)
+		require.NoError(t, err)
 		client := apiserverv1alpha1.NewKubecarrierClient(conn)
 		versionCtx, cancel := context.WithTimeout(ctx, 30*time.Second)
 		t.Cleanup(cancel)

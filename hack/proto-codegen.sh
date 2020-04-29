@@ -16,7 +16,10 @@
 
 #!/usr/bin/env bash
 
-set -eu
+set -euo pipefail
+
+DIR=$(dirname $(readlink -f $0))
+source ${DIR}/lib.sh
 
 # As per official docs
 # https://grpc-ecosystem.github.io/grpc-gateway/docs/usage.html
@@ -31,22 +34,21 @@ PBUFS=(
 )
 
 # change into each protobuf directory
-for pkg in ${PBUFS} ; do
+for pkg in ${PBUFS}; do
   abs_path=${PROJECT}/${pkg}
   echo Generating from '*.proto' in $abs_path
   protoc \
-    --go_out=plugins=grpc:${abs_path}  \
+    --go_out=plugins=grpc:${abs_path} \
     --grpc-gateway_out=logtostderr=true:${abs_path} \
     --swagger_out=logtostderr=true:${abs_path} \
-    -I${PROJECT}/bin/protoc-bin/include \
-    -I${GOPATH}/pkg/mod/github.com/grpc-ecosystem/grpc-gateway@v1.14.3/third_party/googleapis \
+    -I${GOPATH}/pkg/mod/github.com/grpc-ecosystem/grpc-gateway@v${PROTOC_GATEWAY_VERSION}/third_party/googleapis \
     -I/usr/include \
     -I=${abs_path} \
     $(find ${abs_path} -type f -name '*.proto')
 
   for x in $(find ${abs_path} -type f -name '*pb*.go'); do
     echo $x
-    cat hack/boilerplate/boilerplate.generatego.txt | sed s/YEAR/$(date +%Y)/ | cat - $x > $x.tmp
+    cat hack/boilerplate/boilerplate.generatego.txt | sed s/YEAR/$(date +%Y)/ | cat - $x >$x.tmp
     mv $x.tmp $x
     goimports -local github.com/kubermatic -w $x
   done
