@@ -179,6 +179,12 @@ func newAPIServer(f *testutil.Framework) func(t *testing.T) {
 					t.Log("gRPC server temporary unavailable, retrying")
 					return false, nil
 				}
+				t.Logf("gRPC server errored out, retrying : %d %v %v",
+					grpcStatus.GRPCStatus().Code(),
+					grpcStatus.GRPCStatus().Message(),
+					grpcStatus.GRPCStatus().Err(),
+				)
+				return false, nil
 			}
 			return false, err
 		}, versionCtx.Done()), "client version gRPC call")

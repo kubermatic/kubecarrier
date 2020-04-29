@@ -78,7 +78,7 @@ func AddOIDCPFlags(opts *oidc.Options, fs *pflag.FlagSet) {
 }
 
 func NewOIDCMiddleware(log logr.Logger, opts oidc.Options) (mux.MiddlewareFunc, error) {
-	auth, err := oidc.New(opts)
+	auth, err := newAuthenticator(log, opts)
 	if err != nil {
 		return nil, err
 	}

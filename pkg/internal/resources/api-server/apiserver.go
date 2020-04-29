@@ -79,6 +79,12 @@ func Manifests(c Config) ([]unstructured.Unstructured, error) {
 	// we are not using *appsv1.Deployment here,
 	// because some fields will be defaulted to empty and
 	// interfere with the strategic merge patch of kustomize.
+	probe := map[string]interface{}{
+		"tcpSocket": map[string]interface{}{
+			"port": 8443,
+		},
+	}
+
 	managerEnv := map[string]interface{}{
 		"apiVersion": "apps/v1",
 		"kind":       "Deployment",
@@ -105,6 +111,8 @@ func Manifests(c Config) ([]unstructured.Unstructured, error) {
 								"--oidc-groups-prefix=$(API_SERVER_OIDC_GROUPS_PREFIX)",
 								"--oidc-signing-algs=$(API_SERVER_OIDC_SIGNING_ALGS)",
 							}, extraArgs...),
+							"readinessProbe": probe,
+							"livenessProbe":  probe,
 							"env": []map[string]interface{}{
 								{
 									"name":  "API_SERVER_ADDR",
