@@ -113,18 +113,12 @@ func runE(flags *flags, log logr.Logger) error {
 			grpcGatewayMux.ServeHTTP(writer, request)
 		}
 	})
-
-	if flags.OIDCOptions.IssuerURL != "" {
-		log.Info("setting up OIDC auth middleware", "iss", flags.OIDCOptions.IssuerURL)
-		oidcMiddleware, err := NewOIDCMiddleware(log, flags.OIDCOptions)
-		if err != nil {
-			return fmt.Errorf("init OIDC Middleware: %w", err)
-		}
-		handler = oidcMiddleware(handler)
-	} else {
-		log.Info("skipping OIDC setup")
+	log.Info("setting up OIDC auth middleware", "iss", flags.OIDCOptions.IssuerURL)
+	oidcMiddleware, err := NewOIDCMiddleware(log, flags.OIDCOptions)
+	if err != nil {
+		return fmt.Errorf("init OIDC Middleware: %w", err)
 	}
-
+	handler = oidcMiddleware(handler)
 	handler = handlers.CORS(
 		handlers.AllowedHeaders([]string{
 			"X-Requested-With",
