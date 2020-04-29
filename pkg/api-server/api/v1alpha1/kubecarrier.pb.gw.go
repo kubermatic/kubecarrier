@@ -46,7 +46,7 @@ var _ = runtime.String
 var _ = utilities.NewDoubleArray
 var _ = descriptor.ForMessage
 
-func request_Kubecarrier_Version_0(ctx context.Context, marshaler runtime.Marshaler, client KubecarrierClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+func request_KubeCarrier_Version_0(ctx context.Context, marshaler runtime.Marshaler, client KubeCarrierClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
 	var protoReq VersionRequest
 	var metadata runtime.ServerMetadata
 
@@ -55,7 +55,7 @@ func request_Kubecarrier_Version_0(ctx context.Context, marshaler runtime.Marsha
 
 }
 
-func local_request_Kubecarrier_Version_0(ctx context.Context, marshaler runtime.Marshaler, server KubecarrierServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+func local_request_KubeCarrier_Version_0(ctx context.Context, marshaler runtime.Marshaler, server KubeCarrierServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
 	var protoReq VersionRequest
 	var metadata runtime.ServerMetadata
 
@@ -64,12 +64,12 @@ func local_request_Kubecarrier_Version_0(ctx context.Context, marshaler runtime.
 
 }
 
-// RegisterKubecarrierHandlerServer registers the http handlers for service Kubecarrier to "mux".
-// UnaryRPC     :call KubecarrierServer directly.
+// RegisterKubeCarrierHandlerServer registers the http handlers for service KubeCarrier to "mux".
+// UnaryRPC     :call KubeCarrierServer directly.
 // StreamingRPC :currently unsupported pending https://github.com/grpc/grpc-go/issues/906.
-func RegisterKubecarrierHandlerServer(ctx context.Context, mux *runtime.ServeMux, server KubecarrierServer) error {
+func RegisterKubeCarrierHandlerServer(ctx context.Context, mux *runtime.ServeMux, server KubeCarrierServer) error {
 
-	mux.Handle("GET", pattern_Kubecarrier_Version_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle("GET", pattern_KubeCarrier_Version_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
@@ -78,23 +78,23 @@ func RegisterKubecarrierHandlerServer(ctx context.Context, mux *runtime.ServeMux
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := local_request_Kubecarrier_Version_0(rctx, inboundMarshaler, server, req, pathParams)
+		resp, md, err := local_request_KubeCarrier_Version_0(rctx, inboundMarshaler, server, req, pathParams)
 		ctx = runtime.NewServerMetadataContext(ctx, md)
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
 
-		forward_Kubecarrier_Version_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+		forward_KubeCarrier_Version_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 
 	})
 
 	return nil
 }
 
-// RegisterKubecarrierHandlerFromEndpoint is same as RegisterKubecarrierHandler but
+// RegisterKubeCarrierHandlerFromEndpoint is same as RegisterKubeCarrierHandler but
 // automatically dials to "endpoint" and closes the connection when "ctx" gets done.
-func RegisterKubecarrierHandlerFromEndpoint(ctx context.Context, mux *runtime.ServeMux, endpoint string, opts []grpc.DialOption) (err error) {
+func RegisterKubeCarrierHandlerFromEndpoint(ctx context.Context, mux *runtime.ServeMux, endpoint string, opts []grpc.DialOption) (err error) {
 	conn, err := grpc.Dial(endpoint, opts...)
 	if err != nil {
 		return err
@@ -114,23 +114,23 @@ func RegisterKubecarrierHandlerFromEndpoint(ctx context.Context, mux *runtime.Se
 		}()
 	}()
 
-	return RegisterKubecarrierHandler(ctx, mux, conn)
+	return RegisterKubeCarrierHandler(ctx, mux, conn)
 }
 
-// RegisterKubecarrierHandler registers the http handlers for service Kubecarrier to "mux".
+// RegisterKubeCarrierHandler registers the http handlers for service KubeCarrier to "mux".
 // The handlers forward requests to the grpc endpoint over "conn".
-func RegisterKubecarrierHandler(ctx context.Context, mux *runtime.ServeMux, conn *grpc.ClientConn) error {
-	return RegisterKubecarrierHandlerClient(ctx, mux, NewKubecarrierClient(conn))
+func RegisterKubeCarrierHandler(ctx context.Context, mux *runtime.ServeMux, conn *grpc.ClientConn) error {
+	return RegisterKubeCarrierHandlerClient(ctx, mux, NewKubeCarrierClient(conn))
 }
 
-// RegisterKubecarrierHandlerClient registers the http handlers for service Kubecarrier
-// to "mux". The handlers forward requests to the grpc endpoint over the given implementation of "KubecarrierClient".
-// Note: the gRPC framework executes interceptors within the gRPC handler. If the passed in "KubecarrierClient"
+// RegisterKubeCarrierHandlerClient registers the http handlers for service KubeCarrier
+// to "mux". The handlers forward requests to the grpc endpoint over the given implementation of "KubeCarrierClient".
+// Note: the gRPC framework executes interceptors within the gRPC handler. If the passed in "KubeCarrierClient"
 // doesn't go through the normal gRPC flow (creating a gRPC client etc.) then it will be up to the passed in
-// "KubecarrierClient" to call the correct interceptors.
-func RegisterKubecarrierHandlerClient(ctx context.Context, mux *runtime.ServeMux, client KubecarrierClient) error {
+// "KubeCarrierClient" to call the correct interceptors.
+func RegisterKubeCarrierHandlerClient(ctx context.Context, mux *runtime.ServeMux, client KubeCarrierClient) error {
 
-	mux.Handle("GET", pattern_Kubecarrier_Version_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle("GET", pattern_KubeCarrier_Version_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
@@ -139,14 +139,14 @@ func RegisterKubecarrierHandlerClient(ctx context.Context, mux *runtime.ServeMux
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := request_Kubecarrier_Version_0(rctx, inboundMarshaler, client, req, pathParams)
+		resp, md, err := request_KubeCarrier_Version_0(rctx, inboundMarshaler, client, req, pathParams)
 		ctx = runtime.NewServerMetadataContext(ctx, md)
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
 
-		forward_Kubecarrier_Version_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+		forward_KubeCarrier_Version_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 
 	})
 
@@ -154,9 +154,9 @@ func RegisterKubecarrierHandlerClient(ctx context.Context, mux *runtime.ServeMux
 }
 
 var (
-	pattern_Kubecarrier_Version_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"v1alpha1", "version"}, "", runtime.AssumeColonVerbOpt(true)))
+	pattern_KubeCarrier_Version_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"v1alpha1", "version"}, "", runtime.AssumeColonVerbOpt(true)))
 )
 
 var (
-	forward_Kubecarrier_Version_0 = runtime.ForwardResponseMessage
+	forward_KubeCarrier_Version_0 = runtime.ForwardResponseMessage
 )

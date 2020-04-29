@@ -123,7 +123,7 @@
       spec:
         containers:
         - args:
-          - --addr=$(API_SERVER_ADDR)
+          - --address=$(API_SERVER_ADDR)
           - --tls-cert-file=$(API_SERVER_TLS_CERT_FILE)
           - --tls-private-key-file=$(API_SERVER_TLS_PRIVATE_KEY_FILE)
           env:

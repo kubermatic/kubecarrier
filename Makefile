@@ -66,15 +66,23 @@ clean: e2e-test-clean
 	rm -rf bin/$*
 .PHONEY: clean
 
+ifdef CI
 gen-proto:
 	@hack/proto-codegen.sh
+else
+gen-proto:
+	docker run --rm -e CI=true -w /src -v $(PWD):/src  quay.io/kubecarrier/test make gen-proto
+	docker run --rm -e CI=true -w /src -v $(PWD):/src  quay.io/kubecarrier/test chown -R "$(shell id -u):$(shell id -g)" /src
+endif
 .PHONY: gen-proto
+
 
 # Generate code
 generate: docs gen-proto
 	@hack/codegen.sh
 	# regenerate golden files to update tests
 	FIX_GOLDEN=1 go test ./pkg/internal/resources/...
+.PHONY: generate
 
 # Run go fmt against code
 fmt:

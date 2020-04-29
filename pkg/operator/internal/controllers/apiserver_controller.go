@@ -37,7 +37,7 @@ import (
 )
 
 const (
-	apiServerControllerFinalizer = "api-server.kubecarrier.io/controller"
+	apiServerControllerFinalizer = "apiserver.kubecarrier.io/controller"
 )
 
 type APIServerReconciler struct {
@@ -58,7 +58,7 @@ type APIServerReconciler struct {
 
 func (r *APIServerReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	ctx := context.Background()
-	log := r.Log.WithValues("api-server", req.NamespacedName)
+	log := r.Log.WithValues("apiserver", req.NamespacedName)
 
 	apiServer := &operatorv1alpha1.APIServer{}
 	if err := r.Get(ctx, req.NamespacedName, apiServer); err != nil {

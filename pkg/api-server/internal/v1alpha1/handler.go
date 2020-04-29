@@ -14,22 +14,22 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package apiserver
+package v1alpha1
 
 import (
 	"context"
 
 	"github.com/golang/protobuf/ptypes/timestamp"
 
-	"github.com/kubermatic/kubecarrier/pkg/apis/apiserver/v1alpha1"
+	"github.com/kubermatic/kubecarrier/pkg/api-server/api/v1alpha1"
 	"github.com/kubermatic/kubecarrier/pkg/internal/version"
 )
 
-type kubecarrierHandler struct{}
+type KubeCarrierServer struct{}
 
-var _ v1alpha1.KubecarrierServer = (*kubecarrierHandler)(nil)
+var _ v1alpha1.KubeCarrierServer = (*KubeCarrierServer)(nil)
 
-func (v kubecarrierHandler) Version(context.Context, *v1alpha1.VersionRequest) (*v1alpha1.APIVersion, error) {
+func (v KubeCarrierServer) Version(context.Context, *v1alpha1.VersionRequest) (*v1alpha1.APIVersion, error) {
 	versionInfo := version.Get()
 	return &v1alpha1.APIVersion{
 		Version: versionInfo.Version,

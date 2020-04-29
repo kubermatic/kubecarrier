@@ -33,7 +33,8 @@ import (
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	ctrl "sigs.k8s.io/controller-runtime"
 
-	apiserverv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/apiserver/v1alpha1"
+	apiserverv1alpha1 "github.com/kubermatic/kubecarrier/pkg/api-server/api/v1alpha1"
+	apiserverimplv1alpha1 "github.com/kubermatic/kubecarrier/pkg/api-server/internal/v1alpha1"
 	"github.com/kubermatic/kubecarrier/pkg/internal/util"
 )
 
@@ -52,17 +53,17 @@ type flags struct {
 }
 
 func NewAPIServer() *cobra.Command {
-	log := ctrl.Log.WithName("api-server")
+	log := ctrl.Log.WithName("apiserver")
 	flags := &flags{}
 	cmd := &cobra.Command{
 		Args:  cobra.NoArgs,
-		Use:   "api-server",
+		Use:   "apiserver",
 		Short: "KubeCarrier API server",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return runE(flags, log)
 		},
 	}
-	cmd.Flags().StringVar(&flags.addr, "addr", ":8080", "port to serve this API server at")
+	cmd.Flags().StringVar(&flags.addr, "address", "0.0.0.0:8080", "Address to bind this API server on.")
 	cmd.Flags().StringVar(&flags.TLSCertFile, "tls-cert-file", "", "File containing the default x509 Certificate for HTTPS. If not provided no TLS security shall be enabled")
 	cmd.Flags().StringVar(&flags.TLSPrivateKeyFile, "tls-private-key-file", "", "File containing the default x509 private key matching --tls-cert-file.")
 	return util.CmdLogMixin(cmd)
@@ -92,9 +93,9 @@ func runE(flags *flags, log logr.Logger) error {
 		}),
 	)
 
-	// v1alpha1 registration
-	apiserverv1alpha1.RegisterKubecarrierServer(grpcServer, &kubecarrierHandler{})
-	if err := apiserverv1alpha1.RegisterKubecarrierHandlerServer(context.Background(), grpcGatewayMux, &kubecarrierHandler{}); err != nil {
+	// apiserverimplv1alpha1 registration
+	apiserverv1alpha1.RegisterKubeCarrierServer(grpcServer, &apiserverimplv1alpha1.KubeCarrierServer{})
+	if err := apiserverv1alpha1.RegisterKubeCarrierHandlerServer(context.Background(), grpcGatewayMux, &apiserverimplv1alpha1.KubeCarrierServer{}); err != nil {
 		return err
 	}
 
@@ -112,7 +113,7 @@ func runE(flags *flags, log logr.Logger) error {
 		Addr:    flags.addr,
 	}
 
-	log.Info("booting serving API-server", "addr", flags.addr)
+	log.Info("serving serving API-server", "addr", flags.addr)
 	if flags.TLSCertFile == "" {
 		log.V(4).Info("No TLS cert file defined, skipping TLS setup")
 		return server.ListenAndServe()
