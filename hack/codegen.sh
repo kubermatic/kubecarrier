@@ -147,17 +147,6 @@ w
 EOF
 statik-gen api-server config/internal/api-server
 
-# API server
-# -------
-# RBAC
-$CONTROLLER_GEN rbac:roleName=manager paths="./pkg/api-server/..." output:rbac:artifacts:config=config/internal/api-server/rbac
-# The `|| true` is because the `,s/ClusterRole/Role/g` will error out if there is no match of `ClusterRole` (eg., the file is empty) in the file.
-ed config/internal/api-server/rbac/role.yaml <<EOF || true
-,s/ClusterRole/Role/g
-w
-EOF
-statik-gen api-server config/internal/api-server
-
 #Service cluster RBAC
 serviceClusterDir=tmp
 mkdir -p ${serviceClusterDir}
