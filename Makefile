@@ -94,9 +94,10 @@ endif
 .PHONY: protoc-gen-grpc-gateway
 
 ifdef CI
-generate-tools: protoc protoc-gen-grpc-gateway
-else
 generate-tools:
+	@echo "skip generate-tools setup in CI/CD system"
+else
+generate-tools: protoc protoc-gen-grpc-gateway
 endif
 .PHONY: generate-tools
 
