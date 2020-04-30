@@ -24,7 +24,6 @@ set -euo pipefail
 # Add protoc and protoc-gen-go tools to PATH
 export PATH=${PWD}/tools/bin:${PWD}/tools/protoc/bin:$PATH
 PROJECT=$PWD
-GOPATH=$(go env GOPATH)
 
 PBUFS=(
   pkg/api-server/api/v1

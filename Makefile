@@ -97,6 +97,9 @@ endif
 ifdef CI
 generate-tools:
 	@echo "skip generate-tools setup in CI/CD system"
+	@mkdir -p tools
+	@ln -s ${GOPATH}/pkg/mod/github.com/grpc-ecosystem/grpc-gateway@v${PROTOC_GATEWAY_VERSION}/third_party/googleapis \
+		tools/grpc-gateway-third_party
 else
 generate-tools: protoc protoc-gen-grpc-gateway
 endif
