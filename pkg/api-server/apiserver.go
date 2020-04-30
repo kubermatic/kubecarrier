@@ -18,12 +18,15 @@ package apiserver
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"net/http"
 	"strings"
 
 	"github.com/go-logr/logr"
 	gwruntime "github.com/grpc-ecosystem/grpc-gateway/runtime"
+	apiv1 "github.com/kubermatic/kubecarrier/pkg/api/v1"
+	apiservicev1 "github.com/kubermatic/kubecarrier/pkg/api/v1/services"
 	"github.com/spf13/cobra"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -32,9 +35,13 @@ import (
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/client/apiutil"
+	"sigs.k8s.io/controller-runtime/pkg/client/config"
 
 	apiserverv1alpha1 "github.com/kubermatic/kubecarrier/pkg/api-server/api/v1alpha1"
 	apiserverimplv1alpha1 "github.com/kubermatic/kubecarrier/pkg/api-server/internal/v1alpha1"
+	catalogv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/catalog/v1alpha1"
 	"github.com/kubermatic/kubecarrier/pkg/internal/util"
 )
 
@@ -44,6 +51,7 @@ var (
 
 func init() {
 	utilruntime.Must(clientgoscheme.AddToScheme(scheme))
+	utilruntime.Must(catalogv1alpha1.AddToScheme(scheme))
 }
 
 type flags struct {
@@ -53,17 +61,17 @@ type flags struct {
 }
 
 func NewAPIServer() *cobra.Command {
-	log := ctrl.Log.WithName("apiserver")
+	log := ctrl.Log.WithName("api-server")
 	flags := &flags{}
 	cmd := &cobra.Command{
 		Args:  cobra.NoArgs,
-		Use:   "apiserver",
+		Use:   "api-server",
 		Short: "KubeCarrier API server",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return runE(flags, log)
 		},
 	}
-	cmd.Flags().StringVar(&flags.addr, "address", "0.0.0.0:8080", "Address to bind this API server on.")
+	cmd.Flags().StringVar(&flags.addr, "addr", ":8080", "port to serve this API server at")
 	cmd.Flags().StringVar(&flags.TLSCertFile, "tls-cert-file", "", "File containing the default x509 Certificate for HTTPS. If not provided no TLS security shall be enabled")
 	cmd.Flags().StringVar(&flags.TLSPrivateKeyFile, "tls-private-key-file", "", "File containing the default x509 private key matching --tls-cert-file.")
 	return util.CmdLogMixin(cmd)
@@ -93,14 +101,30 @@ func runE(flags *flags, log logr.Logger) error {
 		}),
 	)
 
+	// Create Kubernetes Client
+	cfg := config.GetConfigOrDie()
+	mapper, err := apiutil.NewDiscoveryRESTMapper(cfg)
+	if err != nil {
+		return fmt.Errorf("creating rest mapper: %w", err)
+	}
+	c, err := client.New(cfg, client.Options{
+		Scheme: scheme,
+		Mapper: mapper,
+	})
+
 	// apiserverimplv1alpha1 registration
 	apiserverv1alpha1.RegisterKubeCarrierServer(grpcServer, &apiserverimplv1alpha1.KubeCarrierServer{})
 	if err := apiserverv1alpha1.RegisterKubeCarrierHandlerServer(context.Background(), grpcGatewayMux, &apiserverimplv1alpha1.KubeCarrierServer{}); err != nil {
 		return err
 	}
 
+	providerServer := apiservicev1.NewProviderServiceServer(c)
+	apiv1.RegisterProviderServiceServer(grpcServer, providerServer)
+	if err := apiv1.RegisterProviderServiceHandlerServer(context.Background(), grpcGatewayMux, providerServer); err != nil {
+		return err
+	}
+
 	var handlerFunc http.HandlerFunc = func(writer http.ResponseWriter, request *http.Request) {
-		log.Info("got request for", "path", request.URL.Path)
 		if strings.Contains(request.Header.Get("Content-Type"), "application/grpc") {
 			grpcServer.ServeHTTP(writer, request)
 		} else {
@@ -113,9 +137,9 @@ func runE(flags *flags, log logr.Logger) error {
 		Addr:    flags.addr,
 	}
 
-	log.Info("serving serving API-server", "addr", flags.addr)
+	log.Info("booting serving API-server", "addr", flags.addr)
 	if flags.TLSCertFile == "" {
-		log.V(4).Info("No TLS cert file defined, skipping TLS setup")
+		log.Info("No TLS cert file defined, skipping TLS setup")
 		return server.ListenAndServe()
 	} else {
 		log.Info("using provided TLS cert/key")

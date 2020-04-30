@@ -139,7 +139,7 @@ statik-gen elevator config/internal/elevator
 # API server
 # -------
 # RBAC
-$CONTROLLER_GEN rbac:roleName=manager paths="./pkg/api-server/..." output:rbac:artifacts:config=config/internal/api-server/rbac
+$CONTROLLER_GEN rbac:roleName=manager paths="./pkg/api/v1/services/..." output:rbac:artifacts:config=config/internal/api-server/rbac
 # The `|| true` is because the `,s/ClusterRole/Role/g` will error out if there is no match of `ClusterRole` (eg., the file is empty) in the file.
 ed config/internal/api-server/rbac/role.yaml <<EOF || true
 ,s/ClusterRole/Role/g
