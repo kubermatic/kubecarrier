@@ -45,8 +45,6 @@ ENV PATH=${PATH}:/usr/local/go/bin:/root/go/bin
 ENV LC_ALL=C.UTF-8
 # Allowed to use path@version syntax to install controller-gen
 ENV GO111MODULE=on
-COPY install-deps.sh .
-RUN ./install-deps.sh
 RUN go env
 
 # binary will be $(go env GOPATH)/bin/golangci-lint
@@ -57,11 +55,17 @@ RUN curl -sL https://github.com/kyoh86/richgo/releases/download/v0.3.3/richgo_0.
 
 RUN curl -sL https://go.kubebuilder.io/dl/${KUBEBUILDER_VERSION}/linux/amd64 | tar -xz -C /tmp/ && mv /tmp/kubebuilder_${KUBEBUILDER_VERSION}_linux_amd64 /usr/local/kubebuilder
 
-RUN go get golang.org/x/tools/cmd/goimports
-RUN go get github.com/rakyll/statik
+RUN curl -sL --output /tmp/protoc.zip https://github.com/google/protobuf/releases/download/v${PROTOC_VERSION}/protoc-${PROTOC_VERSION}-linux-x86_64.zip && unzip /tmp/protoc.zip -d /usr && rm /tmp/protoc.zip
+
+RUN go get golang.org/x/tools/cmd/goimports && \
+  go get -u github.com/rakyll/statik && \
+  go get -u sigs.k8s.io/controller-tools/cmd/controller-gen@v0.2.9 && \
+  go get -u github.com/grpc-ecosystem/grpc-gateway/protoc-gen-grpc-gateway@v${PROTOC_GATEWAY_VERSION} && \
+  go get -u github.com/grpc-ecosystem/grpc-gateway/protoc-gen-swagger@v${PROTOC_GATEWAY_VERSION} && \
+  go get -u github.com/golang/protobuf/protoc-gen-go@v${PROTOC_GEN_GO_VERSION}
+
 # Install controller-gen in the dockerfile, otherwise it will be installed during `make generate` which will modify the go.mod
 # and go.sum files, and make the directory dirty.
-RUN go get sigs.k8s.io/controller-tools/cmd/controller-gen@v0.2.9
 RUN pip3 install pre-commit awscli yq
 
 WORKDIR /src

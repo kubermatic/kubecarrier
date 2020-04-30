@@ -14,8 +14,23 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-set -euo pipefail
+# Get the 'protoc' protocol buffer compiler
+set -eu
 
-PROTOC_VERSION="3.11.4"
-PROTOC_GATEWAY_VERSION="1.14.3"
-PROTOC_GEN_GO_VERSION="1.3.5"
+DEST="tools/protoc"
+VERSION="3.11.4"
+
+OS=$(uname | tr A-Z a-z)
+if [[ $OS == 'darwin' ]]; then
+  OS=osx     # protoc names downloads with OSX, not darwin
+fi
+
+FILE="protoc-${VERSION}-${OS}-x86_64.zip"
+URL="https://github.com/google/protobuf/releases/download/v${VERSION}/${FILE}"
+
+mkdir -p $DEST
+curl --fail -L -# -o protoc.zip ${URL}
+unzip -d ${DEST} protoc.zip
+chmod +x ${DEST}/bin/protoc
+ln -s protoc-bin/bin/protoc ${DEST}/protoc
+rm -f protoc.zip

@@ -18,14 +18,11 @@
 
 set -euo pipefail
 
-DIR=$(dirname $(readlink -f $0))
-source ${DIR}/lib.sh
-
 # As per official docs
 # https://grpc-ecosystem.github.io/grpc-gateway/docs/usage.html
 
 # Add protoc and protoc-gen-go tools to PATH
-export PATH=${PWD}/bin:$PATH
+export PATH=${PWD}/tools/bin:${PWD}/tools/protoc/bin:$PATH
 PROJECT=$PWD
 GOPATH=$(go env GOPATH)
 
@@ -41,8 +38,8 @@ for pkg in ${PBUFS}; do
     --go_out=plugins=grpc:${abs_path} \
     --grpc-gateway_out=logtostderr=true:${abs_path} \
     --swagger_out=logtostderr=true:${abs_path} \
-    -I${GOPATH}/pkg/mod/github.com/grpc-ecosystem/grpc-gateway@v${PROTOC_GATEWAY_VERSION}/third_party/googleapis \
-    -I/usr/include \
+    -I${PROJECT}/tools/grpc-gateway-third_party \
+    -I${PROJECT}/tools/protoc/include \
     -I=${abs_path} \
     $(find ${abs_path} -type f -name '*.proto')
 

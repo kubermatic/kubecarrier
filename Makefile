@@ -36,11 +36,11 @@ COMPONENTS = operator manager ferry catapult elevator api-server
 E2E_COMPONENTS = fake-operator
 
 # Dependency Versions
-PROTOC_VERSION="3.11.4"
-PROTOC_GATEWAY_VERSION="1.14.3"
-PROTOC_GEN_GO_VERSION="1.3.5"
-KUBEBUILDER_VERSION="2.1.0"
-KIND_VERSION="v0.7.0"
+PROTOC_VERSION=3.11.4
+PROTOC_GATEWAY_VERSION=1.14.3
+PROTOC_GEN_GO_VERSION=1.3.5
+KUBEBUILDER_VERSION=2.1.0
+KIND_VERSION=v0.7.0
 
 # every makefile operation should have explicit kubeconfig
 undefine KUBECONFIG
@@ -71,21 +71,41 @@ bin/docgen: hack/docgen/main.go
 
 clean: e2e-test-clean
 	rm -rf bin/$*
-.PHONEY: clean
+.PHONY: clean
+
+# Dependencies
+# INSTALLED_PROTOC=$(shell ./tools/protoc/bin/protoc --version)
+# TEST_PROTOC="libprotoc $(PROTOC_VERSION)"
+protoc:
+ifeq ($(shell ./tools/protoc/bin/protoc --version), libprotoc $(PROTOC_VERSION))
+	@echo "./tools/protoc/bin/protoc up to date (${PROTOC_VERSION})"
+else
+	VERSION=${PROTOC_VERSION} ./hack/get-protoc.sh
+endif
+.PHONY: protoc
+
+protoc-gen-grpc-gateway:
+ifeq ($(shell ./tools/bin/protoc-gen-grpc-gateway --version | cut -d ',' -f1), Version $(PROTOC_GATEWAY_VERSION))
+	@echo "./tools/bin/protoc-gen-grpc-gateway up to date (${PROTOC_GATEWAY_VERSION})"
+	@echo "./tools/bin/protoc-gen-swagger ASSUMED to be up to date (${PROTOC_GATEWAY_VERSION})"
+else
+	VERSION=${PROTOC_GATEWAY_VERSION} ./hack/get-protoc-grpc-gateway.sh
+endif
+.PHONY: protoc-gen-grpc-gateway
 
 ifdef CI
-gen-proto:
-	@hack/proto-codegen.sh
+generate-tools: protoc protoc-gen-grpc-gateway
 else
-gen-proto:
-	docker run --rm -e CI=true -w /src -v $(PWD):/src  quay.io/kubecarrier/test make gen-proto
-	docker run --rm -e CI=true -w /src -v $(PWD):/src  quay.io/kubecarrier/test chown -R "$(shell id -u):$(shell id -g)" /src
+generate-tools:
 endif
+.PHONY: generate-tools
+
+generate-proto:
+	@hack/proto-codegen.sh
 .PHONY: gen-proto
 
-
 # Generate code
-generate: docs gen-proto
+generate: generate-tools docs generate-proto
 	@hack/codegen.sh
 	# regenerate golden files to update tests
 	FIX_GOLDEN=1 go test ./pkg/internal/resources/...
@@ -212,7 +232,7 @@ kind-load-%: build-image-$$*
 require-docker:
 	@docker ps > /dev/null 2>&1 || start-docker.sh || (echo "cannot find running docker daemon nor can start new one" && false)
 	@[[ -z "${QUAY_IO_USERNAME}" ]] || ( echo "logging in to ${QUAY_IO_USERNAME}" && docker login -u ${QUAY_IO_USERNAME} -p ${QUAY_IO_PASSWORD} quay.io )
-.PHONEY: require-docker
+.PHONY: require-docker
 
 generate-ide-tasks:
 	@go run ./hack/gen-tasks.go -ldflags "${LD_FLAGS}"
@@ -233,4 +253,4 @@ cert-manager:
 docs: bin/docgen
 	@hack/docgen.sh
 
-.PHONEY: docs
+.PHONY: docs
