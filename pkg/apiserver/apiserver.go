@@ -33,8 +33,8 @@ import (
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	ctrl "sigs.k8s.io/controller-runtime"
 
-	apiserverv1 "github.com/kubermatic/kubecarrier/pkg/api-server/api/v1"
-	apiserverimplv1 "github.com/kubermatic/kubecarrier/pkg/api-server/internal/v1"
+	apiserverv1 "github.com/kubermatic/kubecarrier/pkg/apiserver/api/v1"
+	"github.com/kubermatic/kubecarrier/pkg/apiserver/internal/v1/services"
 	"github.com/kubermatic/kubecarrier/pkg/internal/util"
 )
 
@@ -93,8 +93,8 @@ func runE(flags *flags, log logr.Logger) error {
 		}),
 	)
 
-	apiserverv1.RegisterKubeCarrierServer(grpcServer, &apiserverimplv1.KubeCarrierServer{})
-	if err := apiserverv1.RegisterKubeCarrierHandlerServer(context.Background(), grpcGatewayMux, &apiserverimplv1.KubeCarrierServer{}); err != nil {
+	apiserverv1.RegisterKubeCarrierServer(grpcServer, &services.KubeCarrierServer{})
+	if err := apiserverv1.RegisterKubeCarrierHandlerServer(context.Background(), grpcGatewayMux, &services.KubeCarrierServer{}); err != nil {
 		return err
 	}
 

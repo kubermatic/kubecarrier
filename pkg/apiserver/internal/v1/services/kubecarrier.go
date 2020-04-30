@@ -14,14 +14,14 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package v1
+package services
 
 import (
 	"context"
 
 	"github.com/golang/protobuf/ptypes/timestamp"
 
-	v1 "github.com/kubermatic/kubecarrier/pkg/api-server/api/v1"
+	v1 "github.com/kubermatic/kubecarrier/pkg/apiserver/api/v1"
 	"github.com/kubermatic/kubecarrier/pkg/internal/version"
 )
 
