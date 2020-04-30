@@ -41,6 +41,7 @@ PROTOC_GATEWAY_VERSION=1.14.3
 PROTOC_GEN_GO_VERSION=1.3.5
 KUBEBUILDER_VERSION=2.1.0
 KIND_VERSION=v0.7.0
+CONTROLLER_GEN_VERSION=v0.2.9
 
 # every makefile operation should have explicit kubeconfig
 undefine KUBECONFIG
@@ -107,7 +108,7 @@ generate-proto:
 
 # Generate code
 generate: generate-tools docs generate-proto
-	@hack/codegen.sh
+	@CONTROLLER_GEN_VERSION=${CONTROLLER_GEN_VERSION} hack/codegen.sh
 	# regenerate golden files to update tests
 	FIX_GOLDEN=1 go test ./pkg/internal/resources/...
 .PHONY: generate
@@ -209,6 +210,7 @@ build-image-test: require-docker
 		--build-arg PROTOC_GEN_GO_VERSION=${PROTOC_GEN_GO_VERSION} \
 		--build-arg KUBEBUILDER_VERSION=${KUBEBUILDER_VERSION} \
 		--build-arg KIND_VERSION=${KIND_VERSION} \
+		--build-arg testCONTROLLER_GEN_VERSION=${testCONTROLLER_GEN_VERSION} \
 		-t ${IMAGE_ORG}/test bin/image/test
 
 push-image-test: build-image-test require-docker

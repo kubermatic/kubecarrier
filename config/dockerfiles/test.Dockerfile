@@ -21,6 +21,7 @@ ARG PROTOC_GATEWAY_VERSION
 ARG PROTOC_GEN_GO_VERSION
 ARG KUBEBUILDER_VERSION
 ARG KIND_VERSION
+ARG CONTROLLER_GEN_VERSION
 
 RUN apt-get -qq update && apt-get -qqy install \
   apt-transport-https \
@@ -59,7 +60,7 @@ RUN curl -sL --output /tmp/protoc.zip https://github.com/google/protobuf/release
 
 RUN go get golang.org/x/tools/cmd/goimports && \
   go get -u github.com/rakyll/statik && \
-  go get -u sigs.k8s.io/controller-tools/cmd/controller-gen@v0.2.9 && \
+  go get -u sigs.k8s.io/controller-tools/cmd/controller-gen@${CONTROLLER_GEN_VERSION} && \
   go get -u github.com/grpc-ecosystem/grpc-gateway/protoc-gen-grpc-gateway@v${PROTOC_GATEWAY_VERSION} && \
   go get -u github.com/grpc-ecosystem/grpc-gateway/protoc-gen-swagger@v${PROTOC_GATEWAY_VERSION} && \
   go get -u github.com/golang/protobuf/protoc-gen-go@v${PROTOC_GEN_GO_VERSION}
