@@ -33,8 +33,8 @@ import (
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	ctrl "sigs.k8s.io/controller-runtime"
 
-	apiserverv1alpha1 "github.com/kubermatic/kubecarrier/pkg/api-server/api/v1alpha1"
-	apiserverimplv1alpha1 "github.com/kubermatic/kubecarrier/pkg/api-server/internal/v1alpha1"
+	apiserverv1 "github.com/kubermatic/kubecarrier/pkg/api-server/api/v1"
+	apiserverimplv1 "github.com/kubermatic/kubecarrier/pkg/api-server/internal/v1"
 	"github.com/kubermatic/kubecarrier/pkg/internal/util"
 )
 
@@ -47,7 +47,7 @@ func init() {
 }
 
 type flags struct {
-	addr              string
+	address           string
 	TLSCertFile       string
 	TLSPrivateKeyFile string
 }
@@ -63,7 +63,7 @@ func NewAPIServer() *cobra.Command {
 			return runE(flags, log)
 		},
 	}
-	cmd.Flags().StringVar(&flags.addr, "address", "0.0.0.0:8080", "Address to bind this API server on.")
+	cmd.Flags().StringVar(&flags.address, "address", "0.0.0.0:8080", "Address to bind this API server on.")
 	cmd.Flags().StringVar(&flags.TLSCertFile, "tls-cert-file", "", "File containing the default x509 Certificate for HTTPS. If not provided no TLS security shall be enabled")
 	cmd.Flags().StringVar(&flags.TLSPrivateKeyFile, "tls-private-key-file", "", "File containing the default x509 private key matching --tls-cert-file.")
 	return util.CmdLogMixin(cmd)
@@ -93,9 +93,8 @@ func runE(flags *flags, log logr.Logger) error {
 		}),
 	)
 
-	// apiserverimplv1alpha1 registration
-	apiserverv1alpha1.RegisterKubeCarrierServer(grpcServer, &apiserverimplv1alpha1.KubeCarrierServer{})
-	if err := apiserverv1alpha1.RegisterKubeCarrierHandlerServer(context.Background(), grpcGatewayMux, &apiserverimplv1alpha1.KubeCarrierServer{}); err != nil {
+	apiserverv1.RegisterKubeCarrierServer(grpcServer, &apiserverimplv1.KubeCarrierServer{})
+	if err := apiserverv1.RegisterKubeCarrierHandlerServer(context.Background(), grpcGatewayMux, &apiserverimplv1.KubeCarrierServer{}); err != nil {
 		return err
 	}
 
@@ -110,10 +109,10 @@ func runE(flags *flags, log logr.Logger) error {
 
 	server := http.Server{
 		Handler: handlerFunc,
-		Addr:    flags.addr,
+		Addr:    flags.address,
 	}
 
-	log.Info("serving serving API-server", "addr", flags.addr)
+	log.Info("serving serving API-server", "address", flags.address)
 	if flags.TLSCertFile == "" {
 		log.V(4).Info("No TLS cert file defined, skipping TLS setup")
 		return server.ListenAndServe()

@@ -64,7 +64,7 @@
     "version": "version not set"
   },
   "paths": {
-    "/v1alpha1/version": {
+    "/v1/version": {
       "get": {
         "operationId": "Version",
         "responses": {

@@ -15,4 +15,4 @@ limitations under the License.
 */
 
 // v1alpha1 API definitions for KubeCarrier
-package v1alpha1
+package v1

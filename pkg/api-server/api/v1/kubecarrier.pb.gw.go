@@ -17,11 +17,11 @@ limitations under the License.
 // source: kubecarrier.proto
 
 /*
-Package v1alpha1 is a reverse proxy.
+Package v1 is a reverse proxy.
 
 It translates gRPC into RESTful JSON APIs.
 */
-package v1alpha1
+package v1
 
 import (
 	"context"
@@ -154,7 +154,7 @@ func RegisterKubeCarrierHandlerClient(ctx context.Context, mux *runtime.ServeMux
 }
 
 var (
-	pattern_KubeCarrier_Version_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"v1alpha1", "version"}, "", runtime.AssumeColonVerbOpt(true)))
+	pattern_KubeCarrier_Version_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"v1", "version"}, "", runtime.AssumeColonVerbOpt(true)))
 )
 
 var (
