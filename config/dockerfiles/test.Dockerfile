@@ -16,6 +16,12 @@
 
 FROM ubuntu:18.04
 
+ARG PROTOC_VERSION
+ARG PROTOC_GATEWAY_VERSION
+ARG PROTOC_GEN_GO_VERSION
+ARG KUBEBUILDER_VERSION=2.1.0
+ARG KIND_VERSION=v0.7.0
+
 RUN apt-get -qq update && apt-get -qqy install \
   apt-transport-https \
   build-essential \
@@ -39,7 +45,6 @@ ENV PATH=${PATH}:/usr/local/go/bin:/root/go/bin
 ENV LC_ALL=C.UTF-8
 # Allowed to use path@version syntax to install controller-gen
 ENV GO111MODULE=on
-COPY lib.sh .
 COPY install-deps.sh .
 RUN ./install-deps.sh
 RUN go env
@@ -47,11 +52,10 @@ RUN go env
 # binary will be $(go env GOPATH)/bin/golangci-lint
 RUN curl -sfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh| sh -s -- -b $(go env GOPATH)/bin v1.24.0
 
-RUN curl -sL --output /usr/local/bin/kind https://github.com/kubernetes-sigs/kind/releases/download/v0.7.0/kind-linux-amd64 && chmod a+x /usr/local/bin/kind
+RUN curl -sL --output /usr/local/bin/kind https://github.com/kubernetes-sigs/kind/releases/download/${KIND_VERSION}/kind-linux-amd64 && chmod a+x /usr/local/bin/kind
 RUN curl -sL https://github.com/kyoh86/richgo/releases/download/v0.3.3/richgo_0.3.3_linux_amd64.tar.gz | tar -xz -C /tmp/ && mv /tmp/richgo /usr/local/bin
 
-ARG kubebuilder_version=2.1.0
-RUN curl -sL https://go.kubebuilder.io/dl/${kubebuilder_version}/linux/amd64 | tar -xz -C /tmp/ && mv /tmp/kubebuilder_${kubebuilder_version}_linux_amd64 /usr/local/kubebuilder
+RUN curl -sL https://go.kubebuilder.io/dl/${KUBEBUILDER_VERSION}/linux/amd64 | tar -xz -C /tmp/ && mv /tmp/kubebuilder_${KUBEBUILDER_VERSION}_linux_amd64 /usr/local/kubebuilder
 
 RUN go get golang.org/x/tools/cmd/goimports
 RUN go get github.com/rakyll/statik

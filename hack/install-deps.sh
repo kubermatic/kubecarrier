@@ -16,9 +16,6 @@
 
 set -euo pipefail
 
-DIR=$(dirname $(readlink -f $0))
-source ${DIR}/lib.sh
-
 command -v protoc >/dev/null || (
   curl -sL --output /tmp/protoc.zip https://github.com/google/protobuf/releases/download/v${PROTOC_VERSION}/protoc-${PROTOC_VERSION}-linux-x86_64.zip && unzip /tmp/protoc.zip -d /usr && rm /tmp/protoc.zip
 )

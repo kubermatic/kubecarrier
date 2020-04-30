@@ -35,6 +35,10 @@ KIND_CLUSTER?=kubecarrier
 COMPONENTS = operator manager ferry catapult elevator api-server
 E2E_COMPONENTS = fake-operator
 
+PROTOC_VERSION="3.11.4"
+PROTOC_GATEWAY_VERSION="1.14.3"
+PROTOC_GEN_GO_VERSION="1.3.5"
+
 # every makefile operation should have explicit kubeconfig
 undefine KUBECONFIG
 
@@ -173,9 +177,13 @@ build-image-test: require-docker
 	@cp -a config/dockerfiles/test.Dockerfile bin/image/test/Dockerfile
 	@cp -a .pre-commit-config.yaml bin/image/test
 	@cp -a hack/install-deps.sh bin/image/test
-	@cp -a hack/lib.sh bin/image/test
+	# @cp -a hack/lib.sh bin/image/test
 	@cp -a go.mod go.sum hack/start-docker.sh bin/image/test
-	@docker build -t ${IMAGE_ORG}/test bin/image/test
+	@docker build \
+		--build-arg PROTOC_VERSION=${PROTOC_VERSION} \
+		--build-arg PROTOC_GATEWAY_VERSION=${PROTOC_GATEWAY_VERSION} \
+		--build-arg PROTOC_GEN_GO_VERSION=${PROTOC_GEN_GO_VERSION} \
+		-t ${IMAGE_ORG}/test bin/image/test
 
 push-image-test: build-image-test require-docker
 	@docker push ${IMAGE_ORG}/test
