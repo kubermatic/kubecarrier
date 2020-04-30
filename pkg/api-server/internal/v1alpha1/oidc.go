@@ -31,8 +31,10 @@ import (
 	cliflag "k8s.io/component-base/cli/flag"
 )
 
+type contextKey string
+
 const (
-	oidcContextKey = "oidc.kubecarrier.io"
+	oidcContextKey contextKey = "oidc.kubecarrier.io"
 )
 
 func AddOIDCPFlags(opts *oidc.Options, fs *pflag.FlagSet) {
@@ -120,7 +122,7 @@ func NewOIDCMiddleware(log logr.Logger, opts oidc.Options) (mux.MiddlewareFunc, 
 					writer.WriteHeader(http.StatusUnauthorized)
 					log.Error(
 						err,
-						fmt.Sprintf("AuthenticateToken"),
+						"AuthenticateToken",
 					)
 					return
 				}
@@ -128,7 +130,7 @@ func NewOIDCMiddleware(log logr.Logger, opts oidc.Options) (mux.MiddlewareFunc, 
 					writer.WriteHeader(http.StatusUnauthorized)
 					log.Error(
 						fmt.Errorf("Unauthorized"),
-						fmt.Sprintf("AuthenticateToken"),
+						"AuthenticateToken",
 					)
 					return
 				}
