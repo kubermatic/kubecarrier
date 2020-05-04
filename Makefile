@@ -106,7 +106,8 @@ generate-tools:
 		/usr/local/protoc \
 		tools/protoc
 	@ls -la tools
-	@ls -la tools/protoc
+	@ls -la tools/protoc/include
+	@ls -la tools/grpc-gateway-third_party/googleapis
 else
 generate-tools: protoc protoc-gen-grpc-gateway
 endif
