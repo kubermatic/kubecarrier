@@ -16,13 +16,6 @@ SHELL=/bin/bash
 .SHELLFLAGS=-euo pipefail -c
 
 export CGO_ENABLED:=0
-ifdef CI
-	# prow sets up GOPATH really helpfully:
-	# https://github.com/kubernetes/test-infra/issues/9469
-	# https://github.com/kubernetes/test-infra/blob/895df89b7e4238125063157842c191dac6f7e58f/prow/pod-utils/decorate/podspec.go#L474
-	export GOPATH:=${HOME}/go
-	export PATH:=${PATH}:${GOPATH}/bin
-endif
 
 BRANCH=$(shell git rev-parse --abbrev-ref HEAD)
 SHORT_SHA=$(shell git rev-parse --short HEAD)
@@ -100,14 +93,11 @@ generate-tools:
 	@echo "skip generate-tools setup in CI/CD system"
 	@mkdir -p tools
 	@ln -s \
-		${GOPATH}/pkg/mod/github.com/grpc-ecosystem/grpc-gateway@v${PROTOC_GATEWAY_VERSION}/third_party/googleapis \
+		${GOPATH}/pkg/mod/github.com/grpc-ecosystem/grpc-gateway@v${PROTOC_GATEWAY_VERSION}/third_party \
 		tools/grpc-gateway-third_party
 	@ln -s \
 		/usr/local/protoc \
 		tools/protoc
-	@ls -la tools
-	@ls -la tools/protoc/include
-	@ls -la tools/grpc-gateway-third_party/googleapis
 else
 generate-tools: protoc protoc-gen-grpc-gateway
 endif
