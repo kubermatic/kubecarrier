@@ -42,6 +42,7 @@ PROTOC_GEN_GO_VERSION=1.3.5
 KUBEBUILDER_VERSION=2.1.0
 KIND_VERSION=v0.7.0
 CONTROLLER_GEN_VERSION=v0.2.9
+STATIK_VERSION=v0.1.7
 
 # every makefile operation should have explicit kubeconfig
 undefine KUBECONFIG
@@ -94,7 +95,20 @@ else
 endif
 .PHONY: protoc-gen-grpc-gateway
 
+ifdef CI
+generate-tools:
+	@echo "skip generate-tools setup in CI/CD system"
+	@mkdir -p tools/protoc
+	@ln -s \
+		${GOPATH}/pkg/mod/github.com/grpc-ecosystem/grpc-gateway@v${PROTOC_GATEWAY_VERSION}/third_party/googleapis \
+		tools/grpc-gateway-third_party
+	@ln -s \
+		/usr/local/protoc/include \
+		tools/protoc/include
+	@ls -la tools
+else
 generate-tools: protoc protoc-gen-grpc-gateway
+endif
 .PHONY: generate-tools
 
 generate-proto:
@@ -201,10 +215,12 @@ build-image-test: require-docker
 	@cp -a go.mod go.sum hack/start-docker.sh bin/image/test
 	@docker build \
 		--build-arg PROTOC_VERSION=${PROTOC_VERSION} \
+		--build-arg PROTOC_GATEWAY_VERSION=${PROTOC_GATEWAY_VERSION} \
 		--build-arg PROTOC_GEN_GO_VERSION=${PROTOC_GEN_GO_VERSION} \
 		--build-arg KUBEBUILDER_VERSION=${KUBEBUILDER_VERSION} \
 		--build-arg KIND_VERSION=${KIND_VERSION} \
 		--build-arg CONTROLLER_GEN_VERSION=${CONTROLLER_GEN_VERSION} \
+		--build-arg STATIK_VERSION=${STATIK_VERSION} \
 		-t ${IMAGE_ORG}/test bin/image/test
 
 push-image-test: build-image-test require-docker
