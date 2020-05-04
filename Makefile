@@ -204,8 +204,6 @@ build-image-test: require-docker
 	@mkdir -p bin/image/test
 	@cp -a config/dockerfiles/test.Dockerfile bin/image/test/Dockerfile
 	@cp -a .pre-commit-config.yaml bin/image/test
-	@cp -a hack/install-deps.sh bin/image/test
-	# @cp -a hack/lib.sh bin/image/test
 	@cp -a go.mod go.sum hack/start-docker.sh bin/image/test
 	@docker build \
 		--build-arg PROTOC_VERSION=${PROTOC_VERSION} \
@@ -213,7 +211,7 @@ build-image-test: require-docker
 		--build-arg PROTOC_GEN_GO_VERSION=${PROTOC_GEN_GO_VERSION} \
 		--build-arg KUBEBUILDER_VERSION=${KUBEBUILDER_VERSION} \
 		--build-arg KIND_VERSION=${KIND_VERSION} \
-		--build-arg testCONTROLLER_GEN_VERSION=${testCONTROLLER_GEN_VERSION} \
+		--build-arg CONTROLLER_GEN_VERSION=${CONTROLLER_GEN_VERSION} \
 		-t ${IMAGE_ORG}/test bin/image/test
 
 push-image-test: build-image-test require-docker

@@ -46,6 +46,8 @@ ENV PATH=${PATH}:/usr/local/go/bin:/root/go/bin
 ENV LC_ALL=C.UTF-8
 # Allowed to use path@version syntax to install controller-gen
 ENV GO111MODULE=on
+# This GOPATH is set by PROW
+ENV GOPATH=/home/prow/go
 RUN go env
 
 # binary will be $(go env GOPATH)/bin/golangci-lint
