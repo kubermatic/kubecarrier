@@ -29,6 +29,9 @@ PBUFS=(
   pkg/api-server/api/v1
 )
 
+env
+which protoc-gen-go
+
 # change into each protobuf directory
 for pkg in ${PBUFS}; do
   abs_path=${PROJECT}/${pkg}

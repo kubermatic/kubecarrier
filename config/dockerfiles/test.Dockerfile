@@ -48,7 +48,7 @@ ENV LC_ALL=C.UTF-8
 ENV GO111MODULE=on
 # This GOPATH is set by PROW
 ENV GOPATH=/home/prow/go
-ENV PATH=${PATH}:/usr/local/go/bin:${GOPATH}/bin:/usr/local/protoc/bin
+ENV PATH=${PATH}:/usr/local/go/bin:/home/prow/go/bin:/usr/local/protoc/bin
 RUN go env
 
 # binary will be $(go env GOPATH)/bin/golangci-lint
