@@ -31,10 +31,10 @@ SWAGGER_URL="https://github.com/grpc-ecosystem/grpc-gateway/releases/download/v$
 SOURCE_URL="https://github.com/grpc-ecosystem/grpc-gateway/archive/v${VERSION}.zip"
 
 mkdir -p $DEST/bin
-curl --fail -L -# -o ${DEST}/bin/protoc-gen-grpc-gateway ${GW_URL}
-curl --fail -L -# -o ${DEST}/bin/protoc-gen-swagger ${SWAGGER_URL}
-curl --fail -L -# -o /tmp/protoc-gen-grpc-gateway.zip ${SOURCE_URL}
-unzip -d /tmp/protoc-gen-grpc-gateway /tmp/protoc-gen-grpc-gateway.zip
+curl -s --fail -L -# -o ${DEST}/bin/protoc-gen-grpc-gateway ${GW_URL}
+curl -s --fail -L -# -o ${DEST}/bin/protoc-gen-swagger ${SWAGGER_URL}
+curl -s --fail -L -# -o /tmp/protoc-gen-grpc-gateway.zip ${SOURCE_URL}
+unzip -q -d /tmp/protoc-gen-grpc-gateway /tmp/protoc-gen-grpc-gateway.zip
 mv /tmp/protoc-gen-grpc-gateway/grpc-gateway-${VERSION}/third_party ${DEST}/grpc-gateway-third_party
 rm -rf /tmp/protoc-gen-grpc-gateway.zip /tmp/protoc-gen-grpc-gateway
 chmod +x ${DEST}/bin/protoc-gen-grpc-gateway ${DEST}/bin/protoc-gen-swagger

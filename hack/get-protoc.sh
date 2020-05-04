@@ -29,8 +29,8 @@ FILE="protoc-${VERSION}-${OS}-x86_64.zip"
 URL="https://github.com/google/protobuf/releases/download/v${VERSION}/${FILE}"
 
 mkdir -p $DEST
-curl --fail -L -# -o protoc.zip ${URL}
-unzip -d ${DEST} protoc.zip
+curl --fail -s -L -# -o protoc.zip ${URL}
+unzip -q -d ${DEST} protoc.zip
 chmod +x ${DEST}/bin/protoc
 ln -s protoc-bin/bin/protoc ${DEST}/protoc
 rm -f protoc.zip
