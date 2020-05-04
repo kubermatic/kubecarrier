@@ -95,11 +95,8 @@ endif
 .PHONY: protoc-gen-grpc-gateway
 
 ifdef CI
-generate-tools:
-	@echo "skip generate-tools setup in CI/CD system"
-	@mkdir -p tools
-	@ln -s ${GOPATH}/pkg/mod/github.com/grpc-ecosystem/grpc-gateway@v${PROTOC_GATEWAY_VERSION}/third_party/googleapis \
-		tools/grpc-gateway-third_party
+generate-tools: protoc-gen-grpc-gateway
+	@echo "skip protoc setup in CI/CD system"
 else
 generate-tools: protoc protoc-gen-grpc-gateway
 endif
@@ -187,9 +184,11 @@ lint: generate
 	@hack/validate-directory-clean.sh
 	pre-commit run -a
 	golangci-lint run ./... --deadline=15m
+.PHONY: lint
 
 tidy:
 	go mod tidy
+.PHONY: tidy
 
 push-images: $(addprefix push-image-, $(COMPONENTS))
 
@@ -207,7 +206,6 @@ build-image-test: require-docker
 	@cp -a go.mod go.sum hack/start-docker.sh bin/image/test
 	@docker build \
 		--build-arg PROTOC_VERSION=${PROTOC_VERSION} \
-		--build-arg PROTOC_GATEWAY_VERSION=${PROTOC_GATEWAY_VERSION} \
 		--build-arg PROTOC_GEN_GO_VERSION=${PROTOC_GEN_GO_VERSION} \
 		--build-arg KUBEBUILDER_VERSION=${KUBEBUILDER_VERSION} \
 		--build-arg KIND_VERSION=${KIND_VERSION} \

@@ -17,7 +17,6 @@
 FROM ubuntu:18.04
 
 ARG PROTOC_VERSION
-ARG PROTOC_GATEWAY_VERSION
 ARG PROTOC_GEN_GO_VERSION
 ARG KUBEBUILDER_VERSION
 ARG KIND_VERSION
@@ -63,8 +62,6 @@ RUN curl -sL --output /tmp/protoc.zip https://github.com/google/protobuf/release
 RUN go get golang.org/x/tools/cmd/goimports && \
   go get -u github.com/rakyll/statik && \
   go get -u sigs.k8s.io/controller-tools/cmd/controller-gen@${CONTROLLER_GEN_VERSION} && \
-  go get -u github.com/grpc-ecosystem/grpc-gateway/protoc-gen-grpc-gateway@v${PROTOC_GATEWAY_VERSION} && \
-  go get -u github.com/grpc-ecosystem/grpc-gateway/protoc-gen-swagger@v${PROTOC_GATEWAY_VERSION} && \
   go get -u github.com/golang/protobuf/protoc-gen-go@v${PROTOC_GEN_GO_VERSION}
 
 # Install controller-gen in the dockerfile, otherwise it will be installed during `make generate` which will modify the go.mod
