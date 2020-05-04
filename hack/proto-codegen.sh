@@ -22,7 +22,7 @@ set -euo pipefail
 # https://grpc-ecosystem.github.io/grpc-gateway/docs/usage.html
 
 # Add protoc and protoc-gen-go tools to PATH
-export PATH=${PWD}/tools/bin:/home/prow/go/bin:${PWD}/tools/protoc/bin:$PATH
+export PATH=${PWD}/tools/bin:${PWD}/tools/protoc/bin:$PATH
 PROJECT=$PWD
 
 PBUFS=(

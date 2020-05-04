@@ -46,9 +46,8 @@ RUN curl -sL https://dl.google.com/go/go1.14.linux-amd64.tar.gz | tar -C /usr/lo
 ENV LC_ALL=C.UTF-8
 # Allowed to use path@version syntax to install controller-gen
 ENV GO111MODULE=on
-# This GOPATH is set by PROW
-ENV GOPATH=/home/prow/go
-ENV PATH=${PATH}:/usr/local/go/bin:/home/prow/go/bin:/usr/local/protoc/bin
+ENV GOPATH=/home/root/go
+ENV PATH=${PATH}:/usr/local/go/bin:${GOPATH}/bin:/usr/local/protoc/bin
 RUN go env
 
 # binary will be $(go env GOPATH)/bin/golangci-lint
