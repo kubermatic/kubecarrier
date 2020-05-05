@@ -16,12 +16,7 @@
 
 set -euo pipefail
 
-# As per official docs
-# https://grpc-ecosystem.github.io/grpc-gateway/docs/usage.html
-
-# Add protoc and protoc-gen-go tools to PATH
 PROJECT=$PWD
-GOPATH=$(go env GOPATH)
 
 PBUFS=(
   pkg/apiserver/api/v1
@@ -35,7 +30,7 @@ for pkg in ${PBUFS}; do
     --go_out=plugins=grpc:${abs_path} \
     --grpc-gateway_out=logtostderr=true:${abs_path} \
     --swagger_out=logtostderr=true:${abs_path} \
-    -I${GOPATH}/pkg/mod/github.com/grpc-ecosystem/grpc-gateway@v${PROTOC_GRPC_GATEWAY_VERSION}/third_party/googleapis \
+    -I/go/pkg/mod/github.com/grpc-ecosystem/grpc-gateway@v${PROTOC_GRPC_GATEWAY_VERSION}/third_party/googleapis \
     -I/usr/local/protoc/include \
     -I=${abs_path} \
     $(find ${abs_path} -type f -name '*.proto')
