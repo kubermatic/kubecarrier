@@ -31,7 +31,7 @@ import (
 
 func TestManifests(t *testing.T) {
 	const (
-		goldenFile = "api-server.golden.yaml"
+		goldenFile = "apiserver.golden.yaml"
 	)
 	c := Config{
 		Namespace: "kubecarrier-system-10",

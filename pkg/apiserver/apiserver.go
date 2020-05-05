@@ -34,7 +34,7 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 
 	apiserverv1 "github.com/kubermatic/kubecarrier/pkg/apiserver/api/v1"
-	"github.com/kubermatic/kubecarrier/pkg/apiserver/internal/v1/services"
+	v1 "github.com/kubermatic/kubecarrier/pkg/apiserver/internal/v1"
 	"github.com/kubermatic/kubecarrier/pkg/internal/util"
 )
 
@@ -93,8 +93,8 @@ func runE(flags *flags, log logr.Logger) error {
 		}),
 	)
 
-	apiserverv1.RegisterKubeCarrierServer(grpcServer, &services.KubeCarrierServer{})
-	if err := apiserverv1.RegisterKubeCarrierHandlerServer(context.Background(), grpcGatewayMux, &services.KubeCarrierServer{}); err != nil {
+	apiserverv1.RegisterKubeCarrierServer(grpcServer, &v1.KubeCarrierServer{})
+	if err := apiserverv1.RegisterKubeCarrierHandlerServer(context.Background(), grpcGatewayMux, &v1.KubeCarrierServer{}); err != nil {
 		return err
 	}
 

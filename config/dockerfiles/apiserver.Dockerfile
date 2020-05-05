@@ -16,7 +16,7 @@
 # Refer to https://github.com/GoogleContainerTools/distroless for more details
 FROM gcr.io/distroless/static:nonroot
 WORKDIR /
-COPY api-server .
+COPY apiserver .
 USER nonroot:nonroot
 
-ENTRYPOINT ["/api-server"]
+ENTRYPOINT ["/apiserver"]

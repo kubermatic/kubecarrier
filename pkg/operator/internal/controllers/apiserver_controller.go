@@ -32,7 +32,7 @@ import (
 
 	operatorv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/operator/v1alpha1"
 	"github.com/kubermatic/kubecarrier/pkg/internal/owner"
-	apiserver "github.com/kubermatic/kubecarrier/pkg/internal/resources/api-server"
+	"github.com/kubermatic/kubecarrier/pkg/internal/resources/apiserver"
 	"github.com/kubermatic/kubecarrier/pkg/internal/util"
 )
 
