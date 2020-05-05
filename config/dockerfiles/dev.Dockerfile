@@ -15,16 +15,18 @@
 # Development Tooling Container
 # build by running `make build-image-dev`
 
-FROM golang:1.14.2-alpine3.11
+FROM golang:1.14.2
 
-RUN apk add --no-cache bash ed curl gettext zip python3 py3-pip git jq && \
+RUN apt-get -qq update && \
+  apt-get -qqy install ed curl gettext zip python3 python3-pip git jq make && \
+  rm -rf /var/lib/apt/lists/* && \
   pip3 install pre-commit yq
 
 
 # Allowed to use path@version
 ENV GO111MODULE=on
 ENV CGO_ENABLED=0
-ENV PATH=$PATH:$GOPATH/bin
+ENV PATH=$PATH:/usr/local/protoc/bin:$GOPATH/bin
 
 # versions without the `v` prefix
 ARG GOLANGCI_LINT_VERSION
