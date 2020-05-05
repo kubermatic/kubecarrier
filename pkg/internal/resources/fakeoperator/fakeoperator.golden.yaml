@@ -734,6 +734,7 @@
       - DELETE
       resources:
       - dbs
+    sideEffects: NoneOnDryRun
 - apiVersion: v1
   kind: Service
   metadata:

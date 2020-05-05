@@ -17,7 +17,7 @@ spec:
     spec:
       serviceAccountName: sa
       containers:
-      - image: quay.io/kubecarrier/apiserver:lastest
+      - image: quay.io/kubecarrier/api-server:lastest
         name: manager
         resources:
           limits:
