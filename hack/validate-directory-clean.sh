@@ -18,5 +18,6 @@ set -o pipefail
 
 if [[ -n "$(git status --porcelain)" ]]; then
   echo "Some files have changed after run make genreate, please make sure to run make genreate before commit changes";
+  git diff
   exit 1
 fi
