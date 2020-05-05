@@ -52,7 +52,7 @@ func Manifests(c Config) ([]unstructured.Unstructured, error) {
 		Namespace: c.Namespace,
 		Images: []image.Image{
 			{
-				Name:   "quay.io/kubecarrier/api-server",
+				Name:   "quay.io/kubecarrier/apiserver",
 				NewTag: v.Version,
 			},
 		},

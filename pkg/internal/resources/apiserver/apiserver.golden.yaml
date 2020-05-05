@@ -133,7 +133,7 @@
             value: /run/serving-certs/tls.crt
           - name: API_SERVER_TLS_PRIVATE_KEY_FILE
             value: /run/serving-certs/tls.key
-          image: quay.io/kubecarrier/api-server:was not build properly
+          image: quay.io/kubecarrier/api-server:lastest
           name: manager
           ports:
           - containerPort: 8443
