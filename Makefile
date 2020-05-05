@@ -28,6 +28,13 @@ KIND_CLUSTER?=kubecarrier
 COMPONENTS = operator manager ferry catapult elevator apiserver
 E2E_COMPONENTS = fake-operator
 
+ifdef CI
+	# prow sets up GOPATH and we want to make sure it's in the PATH
+	# https://github.com/kubernetes/test-infra/issues/9469
+	# https://github.com/kubernetes/test-infra/blob/895df89b7e4238125063157842c191dac6f7e58f/prow/pod-utils/decorate/podspec.go#L474
+	export PATH:=${PATH}:${GOPATH}/bin
+endif
+
 # Dev Image to use
 # Always bump this version, when changing ANY component version below.
 DEV_IMAGE_TAG=v1
