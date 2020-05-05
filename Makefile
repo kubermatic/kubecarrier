@@ -35,6 +35,18 @@ KIND_CLUSTER?=kubecarrier
 COMPONENTS = operator manager ferry catapult elevator apiserver
 E2E_COMPONENTS = fake-operator
 
+# Dev Image to use
+DEV_IMAGE_TAG=v1
+
+# Versions
+GOLANGCI_LINT_VERSION=1.26.0
+STATIK_VERSION=0.1.7
+CONTROLLER_GEN_VERSION=0.2.9
+PROTOC_VERSION=3.11.4
+PROTOC_GEN_GO_VERSION=1.3.5
+PROTOC_GRPC_GATEWAY_VERSION=1.14.3
+
+
 # every makefile operation should have explicit kubeconfig
 undefine KUBECONFIG
 
@@ -167,6 +179,17 @@ build-images: $(addprefix build-image-, $(COMPONENTS))
 kind-load: $(addprefix kind-load-, $(COMPONENTS))
 
 kind-load-fake-operator: $(addprefix kind-load-, $(E2E_COMPONENTS))
+
+build-image-dev: require-docker
+	@mkdir -p bin/image/dev
+	@cp -a config/dockerfiles/dev.Dockerfile bin/image/dev/Dockerfile
+	@docker build -t ${IMAGE_ORG}/dev bin/image/dev \
+		--build-arg GOLANGCI_LINT_VERSION=${GOLANGCI_LINT_VERSION} \
+		--build-arg STATIK_VERSION=${STATIK_VERSION} \
+		--build-arg CONTROLLER_GEN_VERSION=${CONTROLLER_GEN_VERSION} \
+		--build-arg PROTOC_VERSION=${PROTOC_VERSION} \
+		--build-arg PROTOC_GEN_GO_VERSION=${PROTOC_GEN_GO_VERSION} \
+		--build-arg PROTOC_GRPC_GATEWAY_VERSION=${PROTOC_GRPC_GATEWAY_VERSION}
 
 build-image-test: require-docker
 	@mkdir -p bin/image/test
