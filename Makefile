@@ -244,13 +244,17 @@ kind-load-fake-operator: $(addprefix kind-load-, $(E2E_COMPONENTS))
 build-image-dev: require-docker
 	@mkdir -p bin/image/dev
 	@cp -a config/dockerfiles/dev.Dockerfile bin/image/dev/Dockerfile
-	@docker build -t ${IMAGE_ORG}/dev${DEV_IMAGE_TAG} bin/image/dev \
+	@docker build -t ${IMAGE_ORG}/dev:${DEV_IMAGE_TAG} bin/image/dev \
 		--build-arg GOLANGCI_LINT_VERSION=${GOLANGCI_LINT_VERSION} \
 		--build-arg STATIK_VERSION=${STATIK_VERSION} \
 		--build-arg CONTROLLER_GEN_VERSION=${CONTROLLER_GEN_VERSION} \
 		--build-arg PROTOC_VERSION=${PROTOC_VERSION} \
 		--build-arg PROTOC_GEN_GO_VERSION=${PROTOC_GEN_GO_VERSION} \
 		--build-arg PROTOC_GRPC_GATEWAY_VERSION=${PROTOC_GRPC_GATEWAY_VERSION}
+
+push-image-dev: build-image-dev
+	@docker push ${IMAGE_ORG}/dev:${DEV_IMAGE_TAG}
+	@echo pushed ${IMAGE_ORG}/dev:${DEV_IMAGE_TAG}
 
 build-image-test: require-docker
 	@mkdir -p bin/image/test
