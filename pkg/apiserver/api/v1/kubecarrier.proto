@@ -15,7 +15,7 @@ limitations under the License.
 */
 
 syntax = "proto3";
-package kubecarrier.api.v1alpha1;
+package kubecarrier.api.v1;
 option go_package = "v1";
 
 import "google/protobuf/timestamp.proto";
