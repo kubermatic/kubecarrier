@@ -16,13 +16,6 @@ SHELL=/bin/bash
 .SHELLFLAGS=-euo pipefail -c
 
 export CGO_ENABLED:=0
-ifdef CI
-	# prow sets up GOPATH really helpfully:
-	# https://github.com/kubernetes/test-infra/issues/9469
-	# https://github.com/kubernetes/test-infra/blob/895df89b7e4238125063157842c191dac6f7e58f/prow/pod-utils/decorate/podspec.go#L474
-	export GOPATH:=${HOME}/go
-	export PATH:=${PATH}:${GOPATH}/bin
-endif
 
 BRANCH=$(shell git rev-parse --abbrev-ref HEAD)
 SHORT_SHA=$(shell git rev-parse --short HEAD)
@@ -35,6 +28,25 @@ KIND_CLUSTER?=kubecarrier
 COMPONENTS = operator manager ferry catapult elevator apiserver
 E2E_COMPONENTS = fake-operator
 
+ifdef CI
+	# prow sets up GOPATH and we want to make sure it's in the PATH
+	# https://github.com/kubernetes/test-infra/issues/9469
+	# https://github.com/kubernetes/test-infra/blob/895df89b7e4238125063157842c191dac6f7e58f/prow/pod-utils/decorate/podspec.go#L474
+	export PATH:=${PATH}:${GOPATH}/bin
+endif
+
+# Dev Image to use
+# Always bump this version, when changing ANY component version below.
+DEV_IMAGE_TAG=v1
+
+# Versions used to build DEV image:
+export GOLANGCI_LINT_VERSION=1.26.0
+export STATIK_VERSION=0.1.7
+export CONTROLLER_GEN_VERSION=0.2.9
+export PROTOC_VERSION=3.11.4
+export PROTOC_GEN_GO_VERSION=1.3.5
+export PROTOC_GRPC_GATEWAY_VERSION=1.14.3
+
 # every makefile operation should have explicit kubeconfig
 undefine KUBECONFIG
 
@@ -45,6 +57,9 @@ KIND_NODE_IMAGE?=kindest/node:v1.17.0@sha256:9512edae126da271b66b990b6fff768fbb7
 # KIND_NODE_IMAGE=kindest/node:v1.15.7@sha256:e2df133f80ef633c53c0200114fce2ed5e1f6947477dbc83261a6a921169488d
 # KIND_NODE_IMAGE=kindest/node:v1.14.10@sha256:81ae5a3237c779efc4dda43cc81c696f88a194abcc4f8fa34f86cf674aa14977
 
+# -----------------
+# Compile & Release
+# -----------------
 all: \
 	bin/linux_amd64/operator \
 	bin/linux_amd64/manager
@@ -59,48 +74,13 @@ bin/%: FORCE
 
 FORCE:
 
-bin/docgen: hack/docgen/main.go
-	$(GOARGS) go build -ldflags "-w $(LD_FLAGS)" -o bin/docgen ./hack/docgen
-
-clean: e2e-test-clean
-	rm -rf bin/$*
-.PHONEY: clean
-
-ifdef CI
-gen-proto:
-	@hack/proto-codegen.sh
-else
-gen-proto:
-	docker run --rm -e CI=true -w /src -v $(PWD):/src  quay.io/kubecarrier/test make gen-proto
-	docker run --rm -e CI=true -w /src -v $(PWD):/src  quay.io/kubecarrier/test chown -R "$(shell id -u):$(shell id -g)" /src
-endif
-.PHONY: gen-proto
-
-
-# Generate code
-generate: docs gen-proto
-	@hack/codegen.sh
-	# regenerate golden files to update tests
-	FIX_GOLDEN=1 go test ./pkg/internal/resources/...
-.PHONY: generate
-
-# Run go fmt against code
-fmt:
-	go fmt ./...
-
-# Run go vet against code
-vet:
-	go vet ./...
-
-test:
-	CGO_ENABLED=1 go test -race -v ./...
-.PHONY: test
-
+# Release!
 release:
 	goreleaser release --rm-dist
 	go run ./hack/krew-manifest -version=$(shell git describe --tags --abbrev=0) > dist/krew.yaml
 .PHONY: release
 
+# Install the KubeCarrier CLI via Krew
 krew-install:
 	@goreleaser release --snapshot  --rm-dist
 	@go run ./hack/krew-manifest -version=$(shell git describe --tags --abbrev=0)-SNAPSHOT-$(shell git rev-parse --short HEAD) > dist/krew.yaml
@@ -108,10 +88,84 @@ krew-install:
 	@kubectl krew install --manifest=dist/krew.yaml --archive=dist/kubecarrier_$(shell go env GOOS)_$(shell go env GOARCH).tar.gz
 .PHONY: krew-install
 
+# Install KubeCarrier CLI
 install:
 	@go install -ldflags "-w $(LD_FLAGS)" ./cmd/kubectl-kubecarrier
 .PHONY: install
 
+# -------
+# Cleanup
+# -------
+e2e-test-clean:
+	@kind delete cluster --name=${MANAGEMENT_KIND_CLUSTER} "--kubeconfig=${HOME}/.kube/kind-config-${MANAGEMENT_KIND_CLUSTER}" || true
+	@kind delete cluster --name=${SVC_KIND_CLUSTER} "--kubeconfig=${HOME}/.kube/kind-config-${SVC_KIND_CLUSTER}" || true
+.PHONY: e2e-test-clean
+
+clean: e2e-test-clean
+	rm -rf bin/$*
+.PHONEY: clean
+
+# ---------------
+# Code Generators
+# ---------------
+
+bin/docgen: hack/docgen/main.go
+	$(GOARGS) go build -ldflags "-w $(LD_FLAGS)" -o bin/docgen ./hack/docgen
+
+# Generates GRPC Files from API definitions
+generate-grpc:
+ifdef CI
+	@hack/proto-codegen.sh
+else
+	@docker run --rm -e CI=true -w /src -v $(PWD):/src \
+		quay.io/kubecarrier/dev:${DEV_IMAGE_TAG} \
+		make generate-grpc
+	@docker run --rm -e CI=true -w /src -v $(PWD):/src \
+		quay.io/kubecarrier/dev:${DEV_IMAGE_TAG} \
+		chown -R "$(shell id -u):$(shell id -g)" /src
+endif
+.PHONY: generate-grpc
+
+# Generates KubeCarrier Deployment files and CRDs
+generate-config:
+ifdef CI
+	@hack/codegen.sh
+	@FIX_GOLDEN=1 go test ./pkg/internal/resources/...
+else
+	@docker run --rm -e CI=true -w /src -v $(PWD):/src \
+		quay.io/kubecarrier/dev:${DEV_IMAGE_TAG} \
+		make generate-config
+	@docker run --rm -e CI=true -w /src -v $(PWD):/src \
+		quay.io/kubecarrier/dev:${DEV_IMAGE_TAG} \
+		chown -R "$(shell id -u):$(shell id -g)" /src
+endif
+.PHONY: generate-config
+
+# Runs all code generators
+generate: generate-grpc generate-config
+.PHONY: generate
+
+# Create API Reference docs
+docs: bin/docgen
+	@hack/docgen.sh
+.PHONEY: docs
+
+# ------------
+# Test Runners
+# ------------
+
+# run unittests
+test:
+	CGO_ENABLED=1 go test -race -v ./...
+.PHONY: test
+
+# check generated files for changes and lint project
+lint: generate
+	@hack/validate-directory-clean.sh
+	pre-commit run -a
+	golangci-lint run ./... --deadline=15m
+
+# End to end testing
 TEST_ID?=1
 MANAGEMENT_KIND_CLUSTER?=kubecarrier-${TEST_ID}
 SVC_KIND_CLUSTER?=kubecarrier-svc-${TEST_ID}
@@ -141,23 +195,49 @@ soft-reinstall: e2e-setup install
 	@kubectl kubecarrier setup --kubeconfig "${HOME}/.kube/kind-config-${MANAGEMENT_KIND_CLUSTER}"
 	@kubectl --kubeconfig "${HOME}/.kube/kind-config-${MANAGEMENT_KIND_CLUSTER}" delete pod --all -n kubecarrier-system
 
+# Run E2E test
 e2e-test: e2e-setup
 	@LD_FLAGS="$(LD_FLAGS)" TEST_ID=${TEST_ID} MANAGEMENT_KIND_CLUSTER=${MANAGEMENT_KIND_CLUSTER} SVC_KIND_CLUSTER=${SVC_KIND_CLUSTER} $(SHELL) ./hack/.e2e-test.sh
 
 .PHONY: e2e-test
 
-e2e-test-clean:
-	@kind delete cluster --name=${MANAGEMENT_KIND_CLUSTER} "--kubeconfig=${HOME}/.kube/kind-config-${MANAGEMENT_KIND_CLUSTER}" || true
-	@kind delete cluster --name=${SVC_KIND_CLUSTER} "--kubeconfig=${HOME}/.kube/kind-config-${SVC_KIND_CLUSTER}" || true
-.PHONY: e2e-test-clean
 
-lint: generate
-	@hack/validate-directory-clean.sh
-	pre-commit run -a
-	golangci-lint run ./... --deadline=15m
+# -------------
+# Util Commands
+# -------------
+fmt:
+	go fmt ./...
+
+vet:
+	go vet ./...
 
 tidy:
 	go mod tidy
+
+require-docker:
+	@docker ps > /dev/null 2>&1 || start-docker.sh || (echo "cannot find running docker daemon nor can start new one" && false)
+	@[[ -z "${QUAY_IO_USERNAME}" ]] || ( echo "logging in to ${QUAY_IO_USERNAME}" && docker login -u ${QUAY_IO_USERNAME} -p ${QUAY_IO_PASSWORD} quay.io )
+.PHONEY: require-docker
+
+generate-ide-tasks:
+	@go run ./hack/gen-tasks.go -ldflags "${LD_FLAGS}"
+
+install-git-hooks:
+	pre-commit install
+	printf "#!/bin/bash\\nmake generate-ide-tasks" > .git/hooks/post-commit && chmod +x .git/hooks/post-commit
+	cp .git/hooks/post-commit .git/hooks/post-checkout
+	cp .git/hooks/post-commit .git/hooks/post-merge
+
+# Install cert-manager in the configured Kubernetes cluster
+cert-manager:
+	kubectl apply -f https://github.com/jetstack/cert-manager/releases/download/v0.14.0/cert-manager.yaml
+	kubectl wait --for=condition=available deployment/cert-manager -n cert-manager --timeout=120s
+	kubectl wait --for=condition=available deployment/cert-manager-cainjector -n cert-manager --timeout=120s
+	kubectl wait --for=condition=available deployment/cert-manager-webhook -n cert-manager --timeout=120s
+
+# ----------------
+# Container Images
+# ----------------
 
 push-images: $(addprefix push-image-, $(COMPONENTS))
 
@@ -167,6 +247,21 @@ build-images: $(addprefix build-image-, $(COMPONENTS))
 kind-load: $(addprefix kind-load-, $(COMPONENTS))
 
 kind-load-fake-operator: $(addprefix kind-load-, $(E2E_COMPONENTS))
+
+build-image-dev: require-docker
+	@mkdir -p bin/image/dev
+	@cp -a config/dockerfiles/dev.Dockerfile bin/image/dev/Dockerfile
+	@docker build -t ${IMAGE_ORG}/dev:${DEV_IMAGE_TAG} bin/image/dev \
+		--build-arg GOLANGCI_LINT_VERSION=${GOLANGCI_LINT_VERSION} \
+		--build-arg STATIK_VERSION=${STATIK_VERSION} \
+		--build-arg CONTROLLER_GEN_VERSION=${CONTROLLER_GEN_VERSION} \
+		--build-arg PROTOC_VERSION=${PROTOC_VERSION} \
+		--build-arg PROTOC_GEN_GO_VERSION=${PROTOC_GEN_GO_VERSION} \
+		--build-arg PROTOC_GRPC_GATEWAY_VERSION=${PROTOC_GRPC_GATEWAY_VERSION}
+
+push-image-dev: build-image-dev
+	@docker push ${IMAGE_ORG}/dev:${DEV_IMAGE_TAG}
+	@echo pushed ${IMAGE_ORG}/dev:${DEV_IMAGE_TAG}
 
 build-image-test: require-docker
 	@mkdir -p bin/image/test
@@ -195,29 +290,3 @@ push-image-%: build-image-$$* require-docker
 
 kind-load-%: build-image-$$*
 	kind load docker-image ${IMAGE_ORG}/$*:${VERSION} --name=${KIND_CLUSTER}
-
-require-docker:
-	@docker ps > /dev/null 2>&1 || start-docker.sh || (echo "cannot find running docker daemon nor can start new one" && false)
-	@[[ -z "${QUAY_IO_USERNAME}" ]] || ( echo "logging in to ${QUAY_IO_USERNAME}" && docker login -u ${QUAY_IO_USERNAME} -p ${QUAY_IO_PASSWORD} quay.io )
-.PHONEY: require-docker
-
-generate-ide-tasks:
-	@go run ./hack/gen-tasks.go -ldflags "${LD_FLAGS}"
-
-install-git-hooks:
-	pre-commit install
-	printf "#!/bin/bash\\nmake generate-ide-tasks" > .git/hooks/post-commit && chmod +x .git/hooks/post-commit
-	cp .git/hooks/post-commit .git/hooks/post-checkout
-	cp .git/hooks/post-commit .git/hooks/post-merge
-
-# Install cert-manager in the configured Kubernetes cluster
-cert-manager:
-	kubectl apply -f https://github.com/jetstack/cert-manager/releases/download/v0.14.0/cert-manager.yaml
-	kubectl wait --for=condition=available deployment/cert-manager -n cert-manager --timeout=120s
-	kubectl wait --for=condition=available deployment/cert-manager-cainjector -n cert-manager --timeout=120s
-	kubectl wait --for=condition=available deployment/cert-manager-webhook -n cert-manager --timeout=120s
-
-docs: bin/docgen
-	@hack/docgen.sh
-
-.PHONEY: docs
