@@ -22,6 +22,8 @@ import (
 
 // APIServerSpec defines the desired state of APIServer
 type APIServerSpec struct {
+	// TLSSecretRef references the TLS certificate and private key for serving the KubeCarrier API.
+	TLSSecretRef ObjectReference `json:"tlsSecretRef"`
 }
 
 // APIServerStatus defines the observed state of APIServer

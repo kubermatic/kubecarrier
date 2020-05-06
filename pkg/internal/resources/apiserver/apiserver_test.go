@@ -25,16 +25,20 @@ import (
 	"github.com/stretchr/testify/require"
 	"sigs.k8s.io/yaml"
 
+	operatorv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/operator/v1alpha1"
 	"github.com/kubermatic/kubecarrier/pkg/testutil"
 )
 
 func TestManifests(t *testing.T) {
 	const (
-		goldenFile = "api-server.golden.yaml"
+		goldenFile = "apiserver.golden.yaml"
 	)
 	c := Config{
 		Namespace: "kubecarrier-system-10",
 		Name:      "foo",
+		Spec: operatorv1alpha1.APIServerSpec{
+			TLSSecretRef: operatorv1alpha1.ObjectReference{Name: "serving-tls-secret"},
+		},
 	}
 
 	manifests, err := Manifests(c)

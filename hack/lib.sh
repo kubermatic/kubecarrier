@@ -1,3 +1,5 @@
+#!/usr/bin/env bash
+
 # Copyright 2019 The KubeCarrier Authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,11 +14,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Use distroless as minimal base image to package the catapult binary
-# Refer to https://github.com/GoogleContainerTools/distroless for more details
-FROM gcr.io/distroless/static:nonroot
-WORKDIR /
-COPY api-server .
-USER nonroot:nonroot
+set -euo pipefail
 
-ENTRYPOINT ["/api-server"]
+PROTOC_VERSION="3.11.4"
+PROTOC_GATEWAY_VERSION="1.14.3"
+PROTOC_GEN_GO_VERSION="1.3.5"

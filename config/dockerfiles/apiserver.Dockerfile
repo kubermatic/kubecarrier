@@ -1,5 +1,3 @@
-#!/usr/bin/env bash
-
 # Copyright 2019 The KubeCarrier Authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -14,10 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-set -o pipefail
+# Use distroless as minimal base image to package the catapult binary
+# Refer to https://github.com/GoogleContainerTools/distroless for more details
+FROM gcr.io/distroless/static:nonroot
+WORKDIR /
+COPY apiserver .
+USER nonroot:nonroot
 
-if [[ -n "$(git status --porcelain)" ]]; then
-  echo "Some files have changed after run make genreate, please make sure to run make genreate before commit changes";
-  git diff
-  exit 1
-fi
+ENTRYPOINT ["/apiserver"]

@@ -32,12 +32,12 @@ import (
 
 	operatorv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/operator/v1alpha1"
 	"github.com/kubermatic/kubecarrier/pkg/internal/owner"
-	apiserver "github.com/kubermatic/kubecarrier/pkg/internal/resources/api-server"
+	"github.com/kubermatic/kubecarrier/pkg/internal/resources/apiserver"
 	"github.com/kubermatic/kubecarrier/pkg/internal/util"
 )
 
 const (
-	apiServerControllerFinalizer = "api-server.kubecarrier.io/controller"
+	apiServerControllerFinalizer = "apiserver.kubecarrier.io/controller"
 )
 
 type APIServerReconciler struct {
@@ -58,7 +58,7 @@ type APIServerReconciler struct {
 
 func (r *APIServerReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	ctx := context.Background()
-	log := r.Log.WithValues("api-server", req.NamespacedName)
+	log := r.Log.WithValues("apiserver", req.NamespacedName)
 
 	apiServer := &operatorv1alpha1.APIServer{}
 	if err := r.Get(ctx, req.NamespacedName, apiServer); err != nil {
@@ -82,6 +82,7 @@ func (r *APIServerReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 		apiserver.Config{
 			Name:      apiServer.Name,
 			Namespace: apiServer.Namespace,
+			Spec:      apiServer.Spec,
 		},
 	)
 	if err != nil {

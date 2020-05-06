@@ -1,0 +1,94 @@
+{
+  "consumes": [
+    "application/json"
+  ],
+  "definitions": {
+    "protobufAny": {
+      "properties": {
+        "type_url": {
+          "type": "string"
+        },
+        "value": {
+          "format": "byte",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "runtimeError": {
+      "properties": {
+        "code": {
+          "format": "int32",
+          "type": "integer"
+        },
+        "details": {
+          "items": {
+            "$ref": "#/definitions/protobufAny"
+          },
+          "type": "array"
+        },
+        "error": {
+          "type": "string"
+        },
+        "message": {
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "v1alpha1APIVersion": {
+      "properties": {
+        "branch": {
+          "type": "string"
+        },
+        "buildDate": {
+          "format": "date-time",
+          "type": "string"
+        },
+        "goVersion": {
+          "type": "string"
+        },
+        "platform": {
+          "type": "string"
+        },
+        "version": {
+          "type": "string"
+        }
+      },
+      "title": "Types",
+      "type": "object"
+    }
+  },
+  "info": {
+    "title": "kubecarrier.proto",
+    "version": "version not set"
+  },
+  "paths": {
+    "/v1/version": {
+      "get": {
+        "operationId": "Version",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1alpha1APIVersion"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response",
+            "schema": {
+              "$ref": "#/definitions/runtimeError"
+            }
+          }
+        },
+        "tags": [
+          "KubeCarrier"
+        ]
+      }
+    }
+  },
+  "produces": [
+    "application/json"
+  ],
+  "swagger": "2.0"
+}

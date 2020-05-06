@@ -122,8 +122,23 @@
           kubecarrier.io/role: api-server
       spec:
         containers:
-        - image: quay.io/kubecarrier/api-server:was not build properly
+        - args:
+          - --address=$(API_SERVER_ADDR)
+          - --tls-cert-file=$(API_SERVER_TLS_CERT_FILE)
+          - --tls-private-key-file=$(API_SERVER_TLS_PRIVATE_KEY_FILE)
+          env:
+          - name: API_SERVER_ADDR
+            value: :8443
+          - name: API_SERVER_TLS_CERT_FILE
+            value: /run/serving-certs/tls.crt
+          - name: API_SERVER_TLS_PRIVATE_KEY_FILE
+            value: /run/serving-certs/tls.key
+          image: quay.io/kubecarrier/apiserver:was not build properly
           name: manager
+          ports:
+          - containerPort: 8443
+            name: https
+            protocol: TCP
           resources:
             limits:
               cpu: 100m
@@ -131,5 +146,34 @@
             requests:
               cpu: 100m
               memory: 100Mi
+          volumeMounts:
+          - mountPath: /run/serving-certs
+            name: serving-cert
+            readyOnly: true
         serviceAccountName: kubecarrier-api-server-sa
         terminationGracePeriodSeconds: 10
+        volumes:
+        - name: serving-cert
+          secret:
+            secretName: serving-tls-secret
+- apiVersion: v1
+  kind: Service
+  metadata:
+    labels:
+      app.kubernetes.io/instance: foo
+      app.kubernetes.io/managed-by: kubecarrier-operator
+      app.kubernetes.io/name: api-server
+      app.kubernetes.io/version: was not build properly
+      control-plane: api-server
+      kubecarrier.io/role: api-server
+    name: kubecarrier-api-server-manager
+    namespace: kubecarrier-system-10
+  spec:
+    ports:
+    - name: https
+      port: 443
+      protocol: TCP
+      targetPort: https
+    selector:
+      control-plane: api-server
+      kubecarrier.io/role: api-server

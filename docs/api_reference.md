@@ -1163,6 +1163,7 @@ APIServerSpec defines the desired state of APIServer
 
 | Field | Description | Scheme | Required |
 | ----- | ----------- | ------ | -------- |
+| tlsSecretRef | TLSSecretRef references the TLS certificate and private key for serving the KubeCarrier API. | operator.kubecarrier.io/v1alpha1.ObjectReference | true |
 
 [Back to Group](#operator)
 
