@@ -569,8 +569,6 @@ github.com/stretchr/testify v1.3.0 h1:TivCn/peBQ7UY8ooIcPgZFpTNSz0Q2U6UrFlUfqbe0
 github.com/stretchr/testify v1.3.0/go.mod h1:M5WIy9Dh21IEIfnGCwXGc5bZfKNJtfHm1UVUgZn+9EI=
 github.com/stretchr/testify v1.4.0 h1:2E4SXV/wtOkTonXsotYi4li6zVWxYlZuYNCXe9XRJyk=
 github.com/stretchr/testify v1.4.0/go.mod h1:j7eGeouHqKxXV5pUuKE4zz7dFj8WfuZ+81PSLYec5m4=
-github.com/thetechnick/statik v0.1.8-0.20200506075735-42491a027bf0 h1:BuQgh8JX4w2b+jbiK6ZUy75LavE3tGdFpuWFpaC5dgQ=
-github.com/thetechnick/statik v0.1.8-0.20200506075735-42491a027bf0/go.mod h1:2t+SHG0B+B9pIPh5UCigPBkzcBEJhw7ifoegJRpwxJQ=
 github.com/thetechnick/statik v0.1.8 h1:99wZQks7sbkecb++BlzbXgU+5beti+ABDdA5wSteQe8=
 github.com/thetechnick/statik v0.1.8/go.mod h1:2t+SHG0B+B9pIPh5UCigPBkzcBEJhw7ifoegJRpwxJQ=
 github.com/tidwall/pretty v1.0.0/go.mod h1:XNkn88O1ChpSDQmQeStsy+sBenx6DDtFZJxhVysOjyk=
