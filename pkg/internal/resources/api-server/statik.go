@@ -18,7 +18,7 @@ limitations under the License.
 package apiserver
 
 import (
-	"github.com/rakyll/statik/fs"
+	"github.com/thetechnick/statik/fs"
 )
 
 func init() {

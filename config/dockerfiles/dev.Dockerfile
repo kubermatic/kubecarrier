@@ -26,7 +26,7 @@ RUN apt-get -qq update && \
 # Allowed to use path@version
 ENV GO111MODULE=on
 ENV CGO_ENABLED=0
-ENV PATH=$PATH:/usr/local/protoc/bin:$GOPATH/bin
+ENV PATH=${PATH}:/usr/local/go/bin:/usr/local/protoc/bin:${GOPATH}/bin
 
 # versions without the `v` prefix
 ARG GOLANGCI_LINT_VERSION
@@ -36,9 +36,9 @@ ARG PROTOC_VERSION
 ARG PROTOC_GEN_GO_VERSION
 ARG PROTOC_GRPC_GATEWAY_VERSION
 
-RUN go get github.com/golangci/golangci-lint/cmd/golangci-lint@v${GOLANGCI_LINT_VERSION} && \
+RUN echo $PATH && go get github.com/golangci/golangci-lint/cmd/golangci-lint@v${GOLANGCI_LINT_VERSION} && \
   go get golang.org/x/tools/cmd/goimports && \
-  go get github.com/rakyll/statik@v${STATIK_VERSION} && \
+  go get github.com/thetechnick/statik@master && \
   go get sigs.k8s.io/controller-tools/cmd/controller-gen@v${CONTROLLER_GEN_VERSION} && \
   go get -u github.com/golang/protobuf/protoc-gen-go@v${PROTOC_GEN_GO_VERSION} && \
   go get -u github.com/grpc-ecosystem/grpc-gateway/protoc-gen-swagger@v${PROTOC_GRPC_GATEWAY_VERSION} && \
