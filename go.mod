@@ -20,7 +20,7 @@ require (
 	github.com/spf13/cobra v0.0.5
 	github.com/spf13/pflag v1.0.5
 	github.com/stretchr/testify v1.4.0
-	github.com/thetechnick/statik v0.1.8-0.20200506075735-42491a027bf0
+	github.com/thetechnick/statik v0.1.8
 	go.uber.org/zap v1.10.0
 	golang.org/x/crypto v0.0.0-20191206172530-e9b2fee46413
 	google.golang.org/genproto v0.0.0-20200424135956-bca184e23272
