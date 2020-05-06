@@ -56,7 +56,7 @@ func main() {
 	var tasks = []ide.Task{
 		{
 			Name:    "API Server",
-			Program: "cmd/api-server",
+			Program: "cmd/apiserver",
 			LDFlags: *ldFlags,
 			Args:    nil,
 			Env: map[string]string{
