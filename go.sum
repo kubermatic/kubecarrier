@@ -571,6 +571,8 @@ github.com/stretchr/testify v1.4.0 h1:2E4SXV/wtOkTonXsotYi4li6zVWxYlZuYNCXe9XRJy
 github.com/stretchr/testify v1.4.0/go.mod h1:j7eGeouHqKxXV5pUuKE4zz7dFj8WfuZ+81PSLYec5m4=
 github.com/thetechnick/statik v0.1.8-0.20200506075735-42491a027bf0 h1:BuQgh8JX4w2b+jbiK6ZUy75LavE3tGdFpuWFpaC5dgQ=
 github.com/thetechnick/statik v0.1.8-0.20200506075735-42491a027bf0/go.mod h1:2t+SHG0B+B9pIPh5UCigPBkzcBEJhw7ifoegJRpwxJQ=
+github.com/thetechnick/statik v0.1.8 h1:99wZQks7sbkecb++BlzbXgU+5beti+ABDdA5wSteQe8=
+github.com/thetechnick/statik v0.1.8/go.mod h1:2t+SHG0B+B9pIPh5UCigPBkzcBEJhw7ifoegJRpwxJQ=
 github.com/tidwall/pretty v1.0.0/go.mod h1:XNkn88O1ChpSDQmQeStsy+sBenx6DDtFZJxhVysOjyk=
 github.com/timakin/bodyclose v0.0.0-20190721030226-87058b9bfcec/go.mod h1:Qimiffbc6q9tBWlVV6x0P9sat/ao1xEkREYPPj9hphk=
 github.com/tmc/grpc-websocket-proxy v0.0.0-20170815181823-89b8d40f7ca8/go.mod h1:ncp9v5uamzpCO7NfCPTXjqaC+bZgJeR0sMTm6dMHP7U=
