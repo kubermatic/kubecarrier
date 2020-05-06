@@ -120,9 +120,7 @@ else
 	@docker run --rm -e CI=true -w /src -v $(PWD):/src \
 		quay.io/kubecarrier/dev:${DEV_IMAGE_TAG} \
 		make generate-grpc
-	@docker run --rm -e CI=true -w /src -v $(PWD):/src \
-		quay.io/kubecarrier/dev:${DEV_IMAGE_TAG} \
-		chown -R "$(shell id -u):$(shell id -g)" /src
+	@sudo chown -R "$(shell id -u):$(shell id -g)" .
 endif
 .PHONY: generate-grpc
 
@@ -135,9 +133,7 @@ else
 	@docker run --rm -e CI=true -w /src -v $(PWD):/src \
 		quay.io/kubecarrier/dev:${DEV_IMAGE_TAG} \
 		make generate-config
-	@docker run --rm -e CI=true -w /src -v $(PWD):/src \
-		quay.io/kubecarrier/dev:${DEV_IMAGE_TAG} \
-		chown -R "$(shell id -u):$(shell id -g)" /src
+	@sudo chown -R "$(shell id -u):$(shell id -g)" .
 endif
 .PHONY: generate-config
 
