@@ -53,7 +53,7 @@ func (o offeringServer) List(ctx context.Context, req *v1.OfferingListRequest) (
 	}
 	offeringList := &catalogv1alpha1.OfferingList{}
 	if err := o.client.List(ctx, offeringList, listOptions...); err != nil {
-		return nil, status.Errorf(codes.Internal, fmt.Sprintf("listing offerings: %s", err.Error()))
+		return nil, err
 	}
 
 	res = &v1.OfferingList{}
@@ -73,7 +73,7 @@ func (o offeringServer) Get(ctx context.Context, req *v1.OfferingRequest) (res *
 		Name:      req.Name,
 		Namespace: req.Tenant,
 	}, offering); err != nil {
-		return nil, status.Errorf(codes.Internal, fmt.Sprintf("getting offering: %s", err.Error()))
+		return nil, err
 	}
 	return o.convertOffering(offering), nil
 

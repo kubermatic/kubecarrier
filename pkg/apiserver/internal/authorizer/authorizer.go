@@ -23,7 +23,9 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/gobuffalo/flect"
+	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
+	"google.golang.org/grpc/status"
 	authv1 "k8s.io/api/authorization/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -47,12 +49,15 @@ func (a AuthorizationClient) Get(ctx context.Context, key client.ObjectKey, obj 
 		Namespace: key.Namespace,
 	})
 	if err != nil {
-		return fmt.Errorf("authorizing request: %w", err)
+		return status.Errorf(codes.Internal, fmt.Sprintf("authorizing request: %s", err.Error()))
 	}
 	if decision != DecisionAllowed {
-		return fmt.Errorf("not allowed: %w", err)
+		return status.Errorf(codes.Unauthenticated, "authorizing request failed.")
 	}
-	return a.Client.Get(ctx, key, obj)
+	if err := a.Client.Get(ctx, key, obj); err != nil {
+		return status.Errorf(codes.Internal, fmt.Sprintf("getting %s: %s", obj.GetObjectKind().GroupVersionKind().Kind, err.Error()))
+	}
+	return nil
 }
 
 func (a AuthorizationClient) List(ctx context.Context, list runtime.Object, opts ...client.ListOption) error {
@@ -64,12 +69,15 @@ func (a AuthorizationClient) List(ctx context.Context, list runtime.Object, opts
 	}
 	decision, err := a.authorize(ctx, list, authOpt)
 	if err != nil {
-		return fmt.Errorf("authorizing request: %w", err)
+		return status.Errorf(codes.Internal, fmt.Sprintf("authorizing request: %s", err.Error()))
 	}
 	if decision != DecisionAllowed {
-		return fmt.Errorf("not allowed: %w", err)
+		return status.Errorf(codes.Unauthenticated, "authorizing request failed.")
 	}
-	return a.Client.List(ctx, list, opts...)
+	if err := a.Client.List(ctx, list, opts...); err != nil {
+		return status.Errorf(codes.Internal, fmt.Sprintf("listing %s: %s", list.GetObjectKind().GroupVersionKind().Kind, err.Error()))
+	}
+	return nil
 }
 
 type AuthorizationDecision string
