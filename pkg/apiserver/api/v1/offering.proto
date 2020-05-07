@@ -1,0 +1,65 @@
+/*
+Copyright 2019 The KubeCarrier Authors.
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+    http://www.apache.org/licenses/LICENSE-2.0
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
+syntax = "proto3";
+package kubecarrier.api.v1;
+option go_package = "v1";
+
+import "google/protobuf/timestamp.proto";
+import "google/api/annotations.proto";
+
+import "types.proto";
+
+message Offering {
+  string name = 1;
+  string tenant = 2;
+  OfferingMetadata metadata = 3;
+  ObjectReference provider = 4;
+  CRDInformation crd = 5;
+}
+
+message OfferingList {
+  repeated Offering items = 1;
+  string continue = 2;
+}
+
+message OfferingRequest {
+  string name = 1;
+  string tenant = 2;
+}
+
+message OfferingListRequest {
+  string tenant = 1;
+  string labelSelector = 2;
+  int64 limit = 3;
+  string continue = 4;
+}
+
+
+message OfferingMetadata {
+  string displayName = 1;
+  string description = 2;
+}
+
+service OfferingService {
+  rpc List(OfferingListRequest) returns (OfferingList) {
+    option (google.api.http) = {
+      get : "/v1/tenants/{tenant}/offerings"
+    };
+  };
+  rpc Get(OfferingRequest) returns (Offering) {
+    option (google.api.http) = {
+      get : "/v1/tenants/{tenant}/offerings/{name}"
+    };
+  };
+}
