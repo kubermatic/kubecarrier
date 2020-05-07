@@ -14,23 +14,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# This file should be called from withing quay.io/kubecarrier/test image
-
 set -euo pipefail
 
-DIR=$(dirname $(readlink -f $0))
-source ${DIR}/lib.sh
-
-# As per official docs
-# https://grpc-ecosystem.github.io/grpc-gateway/docs/usage.html
-
-# Add protoc and protoc-gen-go tools to PATH
-export PATH=${PWD}/bin:$PATH
 PROJECT=$PWD
-GOPATH=$(go env GOPATH)
 
 PBUFS=(
-  pkg/api/v1
+  pkg/apiserver/api/v1
 )
 
 # change into each protobuf directory
@@ -41,8 +30,8 @@ for pkg in ${PBUFS}; do
     --go_out=plugins=grpc:${abs_path} \
     --grpc-gateway_out=logtostderr=true:${abs_path} \
     --swagger_out=logtostderr=true:${abs_path} \
-    -I${GOPATH}/pkg/mod/github.com/grpc-ecosystem/grpc-gateway@v${PROTOC_GATEWAY_VERSION}/third_party/googleapis \
-    -I/usr/include \
+    -I/go/pkg/mod/github.com/grpc-ecosystem/grpc-gateway@v${PROTOC_GRPC_GATEWAY_VERSION}/third_party/googleapis \
+    -I/usr/local/protoc/include \
     -I=${abs_path} \
     $(find ${abs_path} -type f -name '*.proto')
 

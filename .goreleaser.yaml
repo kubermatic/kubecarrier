@@ -128,11 +128,11 @@ dockers:
   dockerfile: config/dockerfiles/elevator.Dockerfile
 - <<: *docker
   binaries:
-    - api-server
+    - apiserver
   builds:
-    - api-server
+    - apiserver
   image_templates:
-    - "quay.io/kubecarrier/api-server:latest"
-    - "quay.io/kubecarrier/api-server:{{ .Tag }}"
-    - "quay.io/kubecarrier/api-server:v{{ .Major }}"
-  dockerfile: config/dockerfiles/api-server.Dockerfile
+    - "quay.io/kubecarrier/apiserver:latest"
+    - "quay.io/kubecarrier/apiserver:{{ .Tag }}"
+    - "quay.io/kubecarrier/apiserver:v{{ .Major }}"
+  dockerfile: config/dockerfiles/apiserver.Dockerfile
