@@ -42,7 +42,7 @@ presubmits:
   clone_uri: ssh://git@github.com/kubermatic/kubecarrier.git
   spec:
     containers:
-      - image: quay.io/kubecarrier/dev:v1
+      - image: quay.io/kubecarrier/dev:v2
         imagePullPolicy: Always
         command:
           - make

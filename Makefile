@@ -37,11 +37,11 @@ endif
 
 # Dev Image to use
 # Always bump this version, when changing ANY component version below.
-DEV_IMAGE_TAG=v1
+DEV_IMAGE_TAG=v2
 
 # Versions used to build DEV image:
 export GOLANGCI_LINT_VERSION=1.26.0
-export STATIK_VERSION=0.1.7
+export STATIK_VERSION=0.1.8
 export CONTROLLER_GEN_VERSION=0.2.9
 export PROTOC_VERSION=3.11.4
 export PROTOC_GEN_GO_VERSION=1.3.5
@@ -120,9 +120,7 @@ else
 	@docker run --rm -e CI=true -w /src -v $(PWD):/src \
 		quay.io/kubecarrier/dev:${DEV_IMAGE_TAG} \
 		make generate-grpc
-	@docker run --rm -e CI=true -w /src -v $(PWD):/src \
-		quay.io/kubecarrier/dev:${DEV_IMAGE_TAG} \
-		chown -R "$(shell id -u):$(shell id -g)" /src
+	@sudo chown -R "$(shell id -u):$(shell id -g)" .
 endif
 .PHONY: generate-grpc
 
@@ -135,9 +133,7 @@ else
 	@docker run --rm -e CI=true -w /src -v $(PWD):/src \
 		quay.io/kubecarrier/dev:${DEV_IMAGE_TAG} \
 		make generate-config
-	@docker run --rm -e CI=true -w /src -v $(PWD):/src \
-		quay.io/kubecarrier/dev:${DEV_IMAGE_TAG} \
-		chown -R "$(shell id -u):$(shell id -g)" /src
+	@sudo chown -R "$(shell id -u):$(shell id -g)" .
 endif
 .PHONY: generate-config
 

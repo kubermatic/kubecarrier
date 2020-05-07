@@ -22,7 +22,7 @@ import (
 	"net/http"
 	"os"
 
-	statikfs "github.com/rakyll/statik/fs"
+	statikfs "github.com/thetechnick/statik/fs"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"sigs.k8s.io/kustomize/v3/k8sdeps/kunstruct"
 	"sigs.k8s.io/kustomize/v3/k8sdeps/transformer"

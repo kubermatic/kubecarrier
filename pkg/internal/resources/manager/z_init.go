@@ -19,7 +19,7 @@ package manager
 import (
 	"net/http"
 
-	statikfs "github.com/rakyll/statik/fs"
+	statikfs "github.com/thetechnick/statik/fs"
 )
 
 // vfs is a virtual file system to access the manager config.
