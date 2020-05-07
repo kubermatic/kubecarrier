@@ -1,5 +1,5 @@
 - apiVersion: rbac.authorization.k8s.io/v1
-  kind: Role
+  kind: ClusterRole
   metadata:
     creationTimestamp: null
     labels:
@@ -9,8 +9,14 @@
       app.kubernetes.io/version: was not build properly
       kubecarrier.io/role: api-server
     name: kubecarrier-api-server-manager-role
-    namespace: kubecarrier-system-10
-  rules: []
+  rules:
+  - apiGroups:
+    - catalog.kubecarrier.io
+    resources:
+    - regions
+    verbs:
+    - get
+    - list
 - apiVersion: v1
   kind: ServiceAccount
   metadata:
@@ -35,7 +41,7 @@
   roleRef:
     apiGroup: rbac.authorization.k8s.io
     kind: ClusterRole
-    name: manager-role
+    name: kubecarrier-api-server-manager-role
   subjects:
   - kind: ServiceAccount
     name: kubecarrier-api-server-sa
