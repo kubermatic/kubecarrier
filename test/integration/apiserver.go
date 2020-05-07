@@ -35,11 +35,13 @@ import (
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/status"
 	corev1 "k8s.io/api/core/v1"
+	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
 
+	catalogv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/catalog/v1alpha1"
 	operatorv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/operator/v1alpha1"
-	apiserverv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apiserver/api/v1"
+	apiserverv1 "github.com/kubermatic/kubecarrier/pkg/apiserver/api/v1"
 	"github.com/kubermatic/kubecarrier/pkg/testutil"
 )
 
@@ -142,11 +144,11 @@ func newAPIServer(f *testutil.Framework) func(t *testing.T) {
 			),
 		)
 		require.NoError(t, err)
-		client := apiserverv1alpha1.NewKubeCarrierClient(conn)
+		client := apiserverv1.NewKubeCarrierClient(conn)
 		versionCtx, cancel := context.WithTimeout(ctx, 30*time.Second)
 		t.Cleanup(cancel)
 		require.NoError(t, wait.PollUntil(time.Second, func() (done bool, err error) {
-			version, err := client.Version(versionCtx, &apiserverv1alpha1.VersionRequest{})
+			version, err := client.Version(versionCtx, &apiserverv1.VersionRequest{})
 			if err == nil {
 				assert.NotEmpty(t, version.Version)
 				assert.NotEmpty(t, version.Branch)
@@ -164,9 +166,179 @@ func newAPIServer(f *testutil.Framework) func(t *testing.T) {
 			}
 			return false, err
 		}, versionCtx.Done()), "client version gRPC call")
+
+		for name, testFn := range map[string]func(ctx context.Context, conn *grpc.ClientConn, managementClient *testutil.RecordingClient) func(t *testing.T){
+			"offering-service": offeringService,
+		} {
+			name := name
+			testFn := testFn
+
+			t.Run(name, func(t *testing.T) {
+				t.Parallel()
+				testFn(ctx, conn, managementClient)(t)
+			})
+		}
 	}
 }
 
 type toGRPCStatus interface {
 	GRPCStatus() *status.Status
+}
+
+func offeringService(ctx context.Context, conn *grpc.ClientConn, managementClient *testutil.RecordingClient) func(t *testing.T) {
+	return func(t *testing.T) {
+		testName := strings.Replace(strings.ToLower(t.Name()), "/", "-", -1)
+		ns := &corev1.Namespace{}
+		ns.Name = testName
+		require.NoError(t, managementClient.Create(ctx, ns))
+		// Create offering objects in the management cluster.
+		offering1 := &catalogv1alpha1.Offering{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "test-offering-1",
+				Namespace: testName,
+				Labels: map[string]string{
+					"test-label": "offering1",
+				},
+			},
+			Spec: catalogv1alpha1.OfferingSpec{
+				Metadata: catalogv1alpha1.OfferingMetadata{
+					Description: "Test Offering",
+					DisplayName: "Test Offering",
+				},
+				Provider: catalogv1alpha1.ObjectReference{
+					Name: "test-provider",
+				},
+				CRD: catalogv1alpha1.CRDInformation{
+					Name:     "test-crd",
+					APIGroup: "test-crd-group",
+					Kind:     "test-kind",
+					Plural:   "test-plural",
+					Versions: []catalogv1alpha1.CRDVersion{
+						{
+							Name: "test-version",
+							Schema: &apiextensionsv1.CustomResourceValidation{
+								OpenAPIV3Schema: &apiextensionsv1.JSONSchemaProps{
+									Properties: map[string]apiextensionsv1.JSONSchemaProps{
+										"apiVersion": {Type: "string"},
+									},
+									Type: "object",
+								},
+							},
+						},
+					},
+					Region: catalogv1alpha1.ObjectReference{
+						Name: "test-region",
+					},
+				},
+			},
+		}
+		offering2 := &catalogv1alpha1.Offering{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "test-offering-2",
+				Namespace: testName,
+				Labels: map[string]string{
+					"test-label": "offering2",
+				},
+			},
+			Spec: catalogv1alpha1.OfferingSpec{
+				Metadata: catalogv1alpha1.OfferingMetadata{
+					Description: "Test Offering",
+					DisplayName: "Test Offering",
+				},
+				Provider: catalogv1alpha1.ObjectReference{
+					Name: "test-provider",
+				},
+				CRD: catalogv1alpha1.CRDInformation{
+					Name:     "test-crd",
+					APIGroup: "test-crd-group",
+					Kind:     "test-kind",
+					Plural:   "test-plural",
+					Versions: []catalogv1alpha1.CRDVersion{
+						{
+							Name: "test-version",
+							Schema: &apiextensionsv1.CustomResourceValidation{
+								OpenAPIV3Schema: &apiextensionsv1.JSONSchemaProps{
+									Properties: map[string]apiextensionsv1.JSONSchemaProps{
+										"apiVersion": {Type: "string"},
+									},
+									Type: "object",
+								},
+							},
+						},
+					},
+					Region: catalogv1alpha1.ObjectReference{
+						Name: "test-region",
+					},
+				},
+			},
+		}
+		require.NoError(t, managementClient.Create(ctx, offering1))
+		require.NoError(t, managementClient.Create(ctx, offering2))
+
+		client := apiserverv1.NewOfferingServiceClient(conn)
+		offeringCtx, cancel := context.WithTimeout(ctx, 30*time.Second)
+		t.Cleanup(cancel)
+		// list offerings with limit and continuation token.
+		require.NoError(t, wait.PollUntil(time.Second, func() (done bool, err error) {
+			offerings, err := client.List(offeringCtx, &apiserverv1.OfferingListRequest{
+				Tenant: testName,
+				Limit:  1,
+			})
+			if err != nil {
+				return false, err
+			}
+			assert.Len(t, offerings.Items, 1)
+			testutil.LogObject(t, offerings)
+			offerings, err = client.List(offeringCtx, &apiserverv1.OfferingListRequest{
+				Tenant:   testName,
+				Limit:    1,
+				Continue: offerings.Continue,
+			})
+			if err != nil {
+				return false, err
+			}
+			assert.Len(t, offerings.Items, 1)
+			testutil.LogObject(t, offerings)
+			return true, nil
+		}, offeringCtx.Done()))
+
+		// get offering
+		require.NoError(t, wait.PollUntil(time.Second, func() (done bool, err error) {
+			offering, err := client.Get(offeringCtx, &apiserverv1.OfferingRequest{
+				Tenant: testName,
+				Name:   "test-offering-1",
+			})
+			if err != nil {
+				return false, err
+			}
+			expectedResult := &apiserverv1.Offering{
+				Name: "test-offering-1",
+				Metadata: &apiserverv1.OfferingMetadata{
+					Description: "Test Offering",
+					DisplayName: "Test Offering",
+				},
+				Provider: &apiserverv1.ObjectReference{
+					Name: "test-provider",
+				},
+				Crd: &apiserverv1.CRDInformation{
+					Name:     "test-crd",
+					ApiGroup: "test-crd-group",
+					Kind:     "test-kind",
+					Plural:   "test-plural",
+					Versions: []*apiserverv1.CRDVersion{
+						{
+							Name:   "test-version",
+							Schema: "{\"openAPIV3Schema\":{\"type\":\"object\",\"properties\":{\"apiVersion\":{\"type\":\"string\"}}}}",
+						},
+					},
+					Region: &apiserverv1.ObjectReference{
+						Name: "test-region",
+					},
+				},
+			}
+			assert.Equal(t, offering, expectedResult)
+			testutil.LogObject(t, offering)
+			return true, nil
+		}, offeringCtx.Done()))
+	}
 }

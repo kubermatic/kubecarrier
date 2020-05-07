@@ -16,6 +16,13 @@
     - subjectaccessreviews
     verbs:
     - create
+  - apiGroups:
+    - catalog.kubecarrier.io
+    resources:
+    - offerings
+    verbs:
+    - get
+    - list
 - apiVersion: v1
   kind: ServiceAccount
   metadata:

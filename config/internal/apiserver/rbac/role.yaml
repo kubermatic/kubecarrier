@@ -12,3 +12,10 @@ rules:
   - subjectaccessreviews
   verbs:
   - create
+- apiGroups:
+  - catalog.kubecarrier.io
+  resources:
+  - offerings
+  verbs:
+  - get
+  - list
