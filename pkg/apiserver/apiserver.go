@@ -108,6 +108,9 @@ func runE(flags *flags, log logr.Logger) error {
 		Scheme: scheme,
 		Mapper: mapper,
 	})
+	if err != nil {
+		return fmt.Errorf("creating client: %w", err)
+	}
 
 	apiserverv1.RegisterKubeCarrierServer(grpcServer, &v1.KubeCarrierServer{})
 	if err := apiserverv1.RegisterKubeCarrierHandlerServer(context.Background(), grpcGatewayMux, &v1.KubeCarrierServer{}); err != nil {
