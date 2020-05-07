@@ -18,6 +18,7 @@ package apiserver
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"net/http"
 	"strings"
@@ -70,6 +71,12 @@ func NewAPIServer() *cobra.Command {
 }
 
 func runE(flags *flags, log logr.Logger) error {
+	// Validation
+	if flags.TLSCertFile == "" || flags.TLSPrivateKeyFile == "" {
+		return fmt.Errorf("--tls-cert-file or --tls-private-key-file not specified, cannot start")
+	}
+
+	// Startup
 	grpcServer := grpc.NewServer()
 	grpcGatewayMux := gwruntime.NewServeMux(
 		gwruntime.WithProtoErrorHandler(func(ctx context.Context, serveMux *gwruntime.ServeMux, marshaler gwruntime.Marshaler, writer http.ResponseWriter, request *http.Request, err error) {
@@ -113,11 +120,5 @@ func runE(flags *flags, log logr.Logger) error {
 	}
 
 	log.Info("serving serving API-server", "address", flags.address)
-	if flags.TLSCertFile == "" {
-		log.V(4).Info("No TLS cert file defined, skipping TLS setup")
-		return server.ListenAndServe()
-	} else {
-		log.Info("using provided TLS cert/key")
-		return server.ListenAndServeTLS(flags.TLSCertFile, flags.TLSPrivateKeyFile)
-	}
+	return server.ListenAndServeTLS(flags.TLSCertFile, flags.TLSPrivateKeyFile)
 }
