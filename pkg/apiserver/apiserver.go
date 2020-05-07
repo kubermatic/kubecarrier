@@ -39,6 +39,7 @@ import (
 
 	catalogv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/catalog/v1alpha1"
 	apiserverv1 "github.com/kubermatic/kubecarrier/pkg/apiserver/api/v1"
+	"github.com/kubermatic/kubecarrier/pkg/apiserver/internal/authorizer"
 	v1 "github.com/kubermatic/kubecarrier/pkg/apiserver/internal/v1"
 	"github.com/kubermatic/kubecarrier/pkg/internal/util"
 )
@@ -120,11 +121,17 @@ func runE(flags *flags, log logr.Logger) error {
 
 	}
 
+	authClient := authorizer.AuthorizationClient{
+		Scheme: scheme,
+		Log:    log,
+		Client: c,
+	}
+
 	apiserverv1.RegisterKubeCarrierServer(grpcServer, &v1.KubeCarrierServer{})
 	if err := apiserverv1.RegisterKubeCarrierHandlerServer(context.Background(), grpcGatewayMux, &v1.KubeCarrierServer{}); err != nil {
 		return err
 	}
-	offeringServer := v1.NewOfferingServiceServer(c)
+	offeringServer := v1.NewOfferingServiceServer(authClient)
 	apiserverv1.RegisterOfferingServiceServer(grpcServer, offeringServer)
 	if err := apiserverv1.RegisterOfferingServiceHandlerServer(context.Background(), grpcGatewayMux, offeringServer); err != nil {
 		return err
