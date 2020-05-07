@@ -19,12 +19,15 @@ package setup
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/gernest/wow"
 	"github.com/gernest/wow/spin"
 	"github.com/go-logr/logr"
 	certv1alpha2 "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
+	certmanagerv1alpha3 "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha3"
+	certmetav1 "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
 	"github.com/spf13/cobra"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -59,6 +62,7 @@ func init() {
 	utilruntime.Must(apiextensionsv1.AddToScheme(scheme))
 	utilruntime.Must(operatorv1alpha1.AddToScheme(scheme))
 	utilruntime.Must(certv1alpha2.AddToScheme(scheme))
+	utilruntime.Must(certmanagerv1alpha3.AddToScheme(scheme))
 }
 
 func NewCommand(log logr.Logger) *cobra.Command {
@@ -123,6 +127,10 @@ func runE(conf *rest.Config, log logr.Logger, cmd *cobra.Command, skipPreflight 
 
 	if err := spinner.AttachSpinnerTo(s, startTime, "Deploy KubeCarrier", deployKubeCarrier(ctx, conf)); err != nil {
 		return fmt.Errorf("deploying KubeCarrier controller manager: %w", err)
+	}
+
+	if err := spinner.AttachSpinnerTo(s, startTime, "Deploy APIServer", deployAPIServer(ctx, conf)); err != nil {
+		return fmt.Errorf("deploying APIServer: %w", err)
 	}
 
 	return nil
@@ -203,6 +211,81 @@ func deployKubeCarrier(ctx context.Context, conf *rest.Config) func() error {
 		}
 		return w.WaitUntil(ctx, kubeCarrier, func() (done bool, err error) {
 			return kubeCarrier.IsReady(), nil
+		})
+	}
+}
+
+func deployAPIServer(ctx context.Context, conf *rest.Config) func() error {
+	return func() error {
+		w, err := util.NewClientWatcher(conf, scheme, ctrl.Log)
+		if err != nil {
+			return err
+		}
+		servingTLSSecret := &corev1.Secret{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "apiserver-tls",
+				Namespace: constants.KubeCarrierDefaultNamespace,
+			},
+		}
+		issuer := &certmanagerv1alpha3.Issuer{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "apiserver",
+				Namespace: constants.KubeCarrierDefaultNamespace,
+			},
+			Spec: certmanagerv1alpha3.IssuerSpec{
+				IssuerConfig: certmanagerv1alpha3.IssuerConfig{
+					SelfSigned: &certmanagerv1alpha3.SelfSignedIssuer{},
+				},
+			},
+		}
+		if _, err := ctrl.CreateOrUpdate(ctx, w, issuer, func() error {
+			return nil
+		}); err != nil {
+			return fmt.Errorf("cannot create or update apiserver issuer: %w", err)
+		}
+		cert := &certmanagerv1alpha3.Certificate{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "apiserver",
+				Namespace: constants.KubeCarrierDefaultNamespace,
+			},
+			Spec: certmanagerv1alpha3.CertificateSpec{
+				SecretName: servingTLSSecret.GetName(),
+				DNSNames: []string{
+					strings.Join([]string{"foo", servingTLSSecret.GetNamespace(), "svc"}, "."),
+					"localhost",
+				},
+				IssuerRef: certmetav1.ObjectReference{
+					Name: issuer.GetName(),
+				},
+			},
+		}
+		if _, err := ctrl.CreateOrUpdate(ctx, w, cert, func() error {
+			return nil
+		}); err != nil {
+			return fmt.Errorf("cannot create or update apiserver issuer: %w", err)
+		}
+		w.WaitUntil(ctx, servingTLSSecret, func() (done bool, err error) {
+			data, ok := servingTLSSecret.Data[corev1.TLSCertKey]
+			return ok && len(data) > 0, nil
+		})
+
+		apiServer := &operatorv1alpha1.APIServer{ObjectMeta: metav1.ObjectMeta{
+			Name:      "apiserver",
+			Namespace: constants.KubeCarrierDefaultNamespace,
+		},
+			Spec: operatorv1alpha1.APIServerSpec{
+				TLSSecretRef: operatorv1alpha1.ObjectReference{
+					Name: servingTLSSecret.GetName(),
+				},
+			},
+		}
+		if _, err := ctrl.CreateOrUpdate(ctx, w, apiServer, func() error {
+			return nil
+		}); err != nil {
+			return fmt.Errorf("cannot create or update APIServer: %w", err)
+		}
+		return w.WaitUntil(ctx, apiServer, func() (done bool, err error) {
+			return apiServer.IsReady(), nil
 		})
 	}
 }
