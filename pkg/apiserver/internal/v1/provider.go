@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package services
+package v1
 
 import (
 	"context"
@@ -24,8 +24,8 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	v1 "github.com/kubermatic/kubecarrier/pkg/api/v1"
 	catalogv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/catalog/v1alpha1"
+	v1 "github.com/kubermatic/kubecarrier/pkg/apiserver/api/v1"
 )
 
 type providerServer struct {
