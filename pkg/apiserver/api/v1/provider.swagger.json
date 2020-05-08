@@ -90,7 +90,7 @@
           },
           {
             "in": "query",
-            "name": "selector",
+            "name": "labelSelector",
             "required": false,
             "type": "string"
           },

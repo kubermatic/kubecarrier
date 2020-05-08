@@ -18,8 +18,11 @@ package v1
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -42,25 +45,40 @@ func NewProviderServiceServer(c client.Client) v1.ProviderServiceServer {
 	}
 }
 
-func (o providerServer) List(ctx context.Context, req *v1.ProviderListRequest) (res *v1.ProviderList, err error) {
-	var listOptions []client.ListOption
-	var selector labels.Selector
-	listOptions = append(listOptions, client.InNamespace(req.Tenant))
-	if req.Selector != "" {
-		selector, err = labels.Parse(req.Selector)
-		if err != nil {
-			return nil, fmt.Errorf("invalid selector: %w", err)
+func validateProviderListRequest(req *v1.ProviderListRequest) error {
+	if req.Tenant == "" {
+		return errors.New("missing tenant")
+	}
+	if req.Limit < 0 {
+		return errors.New("invalid limit: should not be negative number")
+	}
+	if req.LabelSelector != "" {
+		if _, err := labels.Parse(req.LabelSelector); err != nil {
+			return errors.New("invalid limit: should not be negative number")
 		}
-		listOptions = append(listOptions, client.MatchingLabelsSelector{
-			Selector: selector,
-		})
 	}
-	if req.Limit != 0 {
-		listOptions = append(listOptions, client.Limit(req.Limit))
+	return nil
+}
+
+func getProviderListOptions(req *v1.ProviderListRequest) ([]client.ListOption, error) {
+	if err := validateProviderListRequest(req); err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
-	if req.Continue != "" {
-		listOptions = append(listOptions, client.Continue(req.Continue))
+	listOptions := []client.ListOption{}
+	listOptions = append(listOptions, client.InNamespace(req.Tenant))
+	listOptions = append(listOptions, client.Limit(req.Limit))
+	if req.LabelSelector != "" {
+		labelSelector, err := labels.Parse(req.LabelSelector)
+		if err != nil {
+			return nil, status.Errorf(codes.InvalidArgument, "invalid LabelSelector: %w", err)
+		}
+		listOptions = append(listOptions, client.MatchingLabelsSelector{Selector: labelSelector})
 	}
+	return listOptions, nil
+}
+
+func (o providerServer) List(ctx context.Context, req *v1.ProviderListRequest) (res *v1.ProviderList, err error) {
+	listOptions, err := getProviderListOptions(req)
 	providerList := &catalogv1alpha1.ProviderList{}
 	if err := o.client.List(ctx, providerList, listOptions...); err != nil {
 		return nil, fmt.Errorf("listing provider: %w", err)
@@ -74,7 +92,20 @@ func (o providerServer) List(ctx context.Context, req *v1.ProviderListRequest) (
 	return
 }
 
+func validateProviderRequest(req *v1.ProviderRequest) error {
+	if req.Name == "" {
+		return errors.New("missing name")
+	}
+	if req.Tenant == "" {
+		return errors.New("missing tenant")
+	}
+	return nil
+}
+
 func (o providerServer) Get(ctx context.Context, req *v1.ProviderRequest) (res *v1.Provider, err error) {
+	if err := validateProviderRequest(req); err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
 	provider := &catalogv1alpha1.Provider{}
 	if err = o.client.Get(ctx, types.NamespacedName{
 		Name:      req.Name,

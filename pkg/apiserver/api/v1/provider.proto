@@ -40,7 +40,7 @@ message ProviderRequest {
 
 message ProviderListRequest {
   string tenant = 1;
-  string selector = 2;
+  string labelSelector = 2;
   int64 limit = 3;
   string continue = 4;
 }
