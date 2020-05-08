@@ -54,7 +54,7 @@ func (o providerServer) validateListRequest(req *v1.ProviderListRequest) error {
 	}
 	if req.LabelSelector != "" {
 		if _, err := labels.Parse(req.LabelSelector); err != nil {
-			return errors.New("invalid limit: should not be negative number")
+			return errors.New("invalid LabelSelector: unable to parse requirement: found '==', expected: identifier")
 		}
 	}
 	return nil
@@ -70,7 +70,7 @@ func (o providerServer) getListOptions(req *v1.ProviderListRequest) ([]client.Li
 	if req.LabelSelector != "" {
 		labelSelector, err := labels.Parse(req.LabelSelector)
 		if err != nil {
-			return nil, status.Errorf(codes.InvalidArgument, "invalid LabelSelector: %w", err)
+			return nil, status.Errorf(codes.InvalidArgument, fmt.Errorf("invalid LabelSelector: %w", err).Error())
 		}
 		listOptions = append(listOptions, client.MatchingLabelsSelector{Selector: labelSelector})
 	}
@@ -79,6 +79,9 @@ func (o providerServer) getListOptions(req *v1.ProviderListRequest) ([]client.Li
 
 func (o providerServer) List(ctx context.Context, req *v1.ProviderListRequest) (res *v1.ProviderList, err error) {
 	listOptions, err := o.getListOptions(req)
+	if err != nil {
+		return nil, err
+	}
 	providerList := &catalogv1alpha1.ProviderList{}
 	if err := o.client.List(ctx, providerList, listOptions...); err != nil {
 		return nil, fmt.Errorf("listing provider: %w", err)
