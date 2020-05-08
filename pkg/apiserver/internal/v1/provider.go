@@ -45,7 +45,7 @@ func NewProviderServiceServer(c client.Client) v1.ProviderServiceServer {
 	}
 }
 
-func validateProviderListRequest(req *v1.ProviderListRequest) error {
+func (o providerServer) validateListRequest(req *v1.ProviderListRequest) error {
 	if req.Tenant == "" {
 		return errors.New("missing tenant")
 	}
@@ -60,8 +60,8 @@ func validateProviderListRequest(req *v1.ProviderListRequest) error {
 	return nil
 }
 
-func getProviderListOptions(req *v1.ProviderListRequest) ([]client.ListOption, error) {
-	if err := validateProviderListRequest(req); err != nil {
+func (o providerServer) getListOptions(req *v1.ProviderListRequest) ([]client.ListOption, error) {
+	if err := o.validateListRequest(req); err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 	listOptions := []client.ListOption{}
@@ -78,7 +78,7 @@ func getProviderListOptions(req *v1.ProviderListRequest) ([]client.ListOption, e
 }
 
 func (o providerServer) List(ctx context.Context, req *v1.ProviderListRequest) (res *v1.ProviderList, err error) {
-	listOptions, err := getProviderListOptions(req)
+	listOptions, err := o.getListOptions(req)
 	providerList := &catalogv1alpha1.ProviderList{}
 	if err := o.client.List(ctx, providerList, listOptions...); err != nil {
 		return nil, fmt.Errorf("listing provider: %w", err)
@@ -89,6 +89,7 @@ func (o providerServer) List(ctx context.Context, req *v1.ProviderListRequest) (
 		res.Items = append(res.Items, o.convertProvider(&catalogProvider))
 
 	}
+	res.Continue = providerList.Continue
 	return
 }
 

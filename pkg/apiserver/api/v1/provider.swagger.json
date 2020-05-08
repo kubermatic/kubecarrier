@@ -63,6 +63,9 @@
     },
     "v1ProviderList": {
       "properties": {
+        "continue": {
+          "type": "string"
+        },
         "items": {
           "items": {
             "$ref": "#/definitions/v1Provider"

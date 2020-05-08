@@ -38,8 +38,9 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
 
+	catalogv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/catalog/v1alpha1"
 	operatorv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/operator/v1alpha1"
-	apiserverv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apiserver/api/v1"
+	apiserverv1 "github.com/kubermatic/kubecarrier/pkg/apiserver/api/v1"
 	"github.com/kubermatic/kubecarrier/pkg/testutil"
 )
 
@@ -142,11 +143,11 @@ func newAPIServer(f *testutil.Framework) func(t *testing.T) {
 			),
 		)
 		require.NoError(t, err)
-		client := apiserverv1alpha1.NewKubeCarrierClient(conn)
+		client := apiserverv1.NewKubeCarrierClient(conn)
 		versionCtx, cancel := context.WithTimeout(ctx, 30*time.Second)
 		t.Cleanup(cancel)
 		require.NoError(t, wait.PollUntil(time.Second, func() (done bool, err error) {
-			version, err := client.Version(versionCtx, &apiserverv1alpha1.VersionRequest{})
+			version, err := client.Version(versionCtx, &apiserverv1.VersionRequest{})
 			if err == nil {
 				assert.NotEmpty(t, version.Version)
 				assert.NotEmpty(t, version.Branch)
@@ -164,6 +165,108 @@ func newAPIServer(f *testutil.Framework) func(t *testing.T) {
 			}
 			return false, err
 		}, versionCtx.Done()), "client version gRPC call")
+		for name, testFn := range map[string]func(ctx context.Context, conn *grpc.ClientConn, managementClient *testutil.RecordingClient) func(t *testing.T){
+			"provider-service": providerService,
+		} {
+			name := name
+			testFn := testFn
+
+			t.Run(name, func(t *testing.T) {
+				t.Parallel()
+				testFn(ctx, conn, managementClient)(t)
+			})
+		}
+	}
+}
+
+func providerService(ctx context.Context, conn *grpc.ClientConn, managementClient *testutil.RecordingClient) func(t *testing.T) {
+	return func(t *testing.T) {
+		testName := strings.Replace(strings.ToLower(t.Name()), "/", "-", -1)
+		ns := &corev1.Namespace{}
+		fmt.Printf("creating namespace with name: %v\n", testName)
+		ns.Name = testName
+		require.NoError(t, managementClient.Create(ctx, ns))
+		// Create tenants objects in the management cluster.
+		provider1 := &catalogv1alpha1.Provider{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "test-provider-1",
+				Namespace: testName,
+				Labels: map[string]string{
+					"test-label": "provider1",
+				},
+			},
+			Spec: catalogv1alpha1.ProviderSpec{
+				Metadata: catalogv1alpha1.AccountMetadata{
+					Description: "Test Provider",
+					DisplayName: "Test Provider",
+				},
+			},
+		}
+		provider2 := &catalogv1alpha1.Provider{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "test-provider-2",
+				Namespace: testName,
+				Labels: map[string]string{
+					"test-label": "provider2",
+				},
+			},
+			Spec: catalogv1alpha1.ProviderSpec{
+				Metadata: catalogv1alpha1.AccountMetadata{
+					Description: "Test Provider",
+					DisplayName: "Test Provider",
+				},
+			},
+		}
+		require.NoError(t, managementClient.Create(ctx, provider1))
+		require.NoError(t, managementClient.Create(ctx, provider2))
+
+		client := apiserverv1.NewProviderServiceClient(conn)
+		providerCtx, cancel := context.WithTimeout(ctx, 30*time.Second)
+		t.Cleanup(cancel)
+		// list providers with limit and continuation token.
+		require.NoError(t, wait.PollUntil(time.Second, func() (done bool, err error) {
+			providers, err := client.List(providerCtx, &apiserverv1.ProviderListRequest{
+				Tenant: testName,
+				Limit:  1,
+			})
+			if err != nil {
+				return false, err
+			}
+			assert.Len(t, providers.Items, 1)
+			testutil.LogObject(t, providers)
+			providers, err = client.List(providerCtx, &apiserverv1.ProviderListRequest{
+				Tenant:   testName,
+				Limit:    1,
+				Continue: providers.Continue,
+			})
+			if err != nil {
+				return false, err
+			}
+			assert.Len(t, providers.Items, 1)
+			testutil.LogObject(t, providers)
+			return true, nil
+		}, providerCtx.Done()))
+
+		// get provider
+		require.NoError(t, wait.PollUntil(time.Second, func() (done bool, err error) {
+			provider, err := client.Get(providerCtx, &apiserverv1.ProviderRequest{
+				Tenant: testName,
+				Name:   "test-provider-1",
+			})
+			if err != nil {
+				return false, err
+			}
+			expectedResult := &apiserverv1.Provider{
+				Name: "test-provider-1",
+				Metadata: &apiserverv1.AccountMetadata{
+					Description: "Test Provider",
+					DisplayName: "Test Provider",
+				},
+			}
+			assert.EqualValues(t, provider, expectedResult)
+			testutil.LogObject(t, provider)
+			return true, nil
+		}, providerCtx.Done()))
 	}
 }
 
