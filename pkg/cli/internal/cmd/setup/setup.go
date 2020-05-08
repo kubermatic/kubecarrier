@@ -144,9 +144,8 @@ func createNamespace(ctx context.Context, c client.Client, ns *corev1.Namespace)
 					return fmt.Errorf("getting KubeCarrier system namespace: %w", err)
 				}
 				return nil
-			} else {
-				return fmt.Errorf("creating KubeCarrier system namespace: %w", err)
 			}
+			return fmt.Errorf("creating KubeCarrier system namespace: %w", err)
 		}
 		return nil
 	}
@@ -264,10 +263,12 @@ func deployAPIServer(ctx context.Context, conf *rest.Config) func() error {
 		}); err != nil {
 			return fmt.Errorf("cannot create or update apiserver issuer: %w", err)
 		}
-		w.WaitUntil(ctx, servingTLSSecret, func() (done bool, err error) {
+		if err := w.WaitUntil(ctx, servingTLSSecret, func() (done bool, err error) {
 			data, ok := servingTLSSecret.Data[corev1.TLSCertKey]
 			return ok && len(data) > 0, nil
-		})
+		}); err != nil {
+			return fmt.Errorf("timeout while waiting fot servingTLSSecret : %w", err)
+		}
 
 		apiServer := &operatorv1alpha1.APIServer{ObjectMeta: metav1.ObjectMeta{
 			Name:      "apiserver",
