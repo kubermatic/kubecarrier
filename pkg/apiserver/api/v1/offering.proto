@@ -18,7 +18,6 @@ syntax = "proto3";
 package kubecarrier.api.v1;
 option go_package = "v1";
 
-import "google/protobuf/timestamp.proto";
 import "google/api/annotations.proto";
 
 import "types.proto";
