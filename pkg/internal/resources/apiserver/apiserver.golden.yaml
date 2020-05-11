@@ -1,0 +1,215 @@
+- apiVersion: rbac.authorization.k8s.io/v1
+  kind: Role
+  metadata:
+    creationTimestamp: null
+    labels:
+      app.kubernetes.io/instance: foo
+      app.kubernetes.io/managed-by: kubecarrier-operator
+      app.kubernetes.io/name: apiserver
+      app.kubernetes.io/version: was not build properly
+      kubecarrier.io/role: api-server
+    name: kubecarrier-api-server-manager-role
+    namespace: kubecarrier-system-10
+  rules: []
+- apiVersion: v1
+  kind: ServiceAccount
+  metadata:
+    labels:
+      app.kubernetes.io/instance: foo
+      app.kubernetes.io/managed-by: kubecarrier-operator
+      app.kubernetes.io/name: apiserver
+      app.kubernetes.io/version: was not build properly
+      kubecarrier.io/role: api-server
+    name: kubecarrier-api-server-sa
+    namespace: kubecarrier-system-10
+- apiVersion: rbac.authorization.k8s.io/v1
+  kind: ClusterRoleBinding
+  metadata:
+    labels:
+      app.kubernetes.io/instance: foo
+      app.kubernetes.io/managed-by: kubecarrier-operator
+      app.kubernetes.io/name: apiserver
+      app.kubernetes.io/version: was not build properly
+      kubecarrier.io/role: api-server
+    name: kubecarrier-api-server-manager-rolebinding
+  roleRef:
+    apiGroup: rbac.authorization.k8s.io
+    kind: ClusterRole
+    name: manager-role
+  subjects:
+  - kind: ServiceAccount
+    name: kubecarrier-api-server-sa
+    namespace: kubecarrier-system-10
+- apiVersion: rbac.authorization.k8s.io/v1
+  kind: Role
+  metadata:
+    labels:
+      app.kubernetes.io/instance: foo
+      app.kubernetes.io/managed-by: kubecarrier-operator
+      app.kubernetes.io/name: apiserver
+      app.kubernetes.io/version: was not build properly
+      kubecarrier.io/role: api-server
+    name: kubecarrier-api-server-leader-election-role
+    namespace: kubecarrier-system-10
+  rules:
+  - apiGroups:
+    - ""
+    resources:
+    - configmaps
+    verbs:
+    - get
+    - list
+    - watch
+    - create
+    - update
+    - patch
+    - delete
+  - apiGroups:
+    - ""
+    resources:
+    - configmaps/status
+    verbs:
+    - get
+    - update
+    - patch
+  - apiGroups:
+    - ""
+    resources:
+    - events
+    verbs:
+    - create
+- apiVersion: rbac.authorization.k8s.io/v1
+  kind: RoleBinding
+  metadata:
+    labels:
+      app.kubernetes.io/instance: foo
+      app.kubernetes.io/managed-by: kubecarrier-operator
+      app.kubernetes.io/name: apiserver
+      app.kubernetes.io/version: was not build properly
+      kubecarrier.io/role: api-server
+    name: kubecarrier-api-server-leader-election-rolebinding
+    namespace: kubecarrier-system-10
+  roleRef:
+    apiGroup: rbac.authorization.k8s.io
+    kind: Role
+    name: kubecarrier-api-server-leader-election-role
+  subjects:
+  - kind: ServiceAccount
+    name: kubecarrier-api-server-sa
+    namespace: kubecarrier-system-10
+- apiVersion: apps/v1
+  kind: Deployment
+  metadata:
+    labels:
+      app.kubernetes.io/instance: foo
+      app.kubernetes.io/managed-by: kubecarrier-operator
+      app.kubernetes.io/name: apiserver
+      app.kubernetes.io/version: was not build properly
+      control-plane: api-server
+      kubecarrier.io/role: api-server
+    name: kubecarrier-api-server-manager
+    namespace: kubecarrier-system-10
+  spec:
+    replicas: 1
+    selector:
+      matchLabels:
+        control-plane: api-server
+        kubecarrier.io/role: api-server
+    template:
+      metadata:
+        labels:
+          control-plane: api-server
+          kubecarrier.io/role: api-server
+      spec:
+        containers:
+        - args:
+          - --address=$(API_SERVER_ADDR)
+          - --tls-cert-file=$(API_SERVER_TLS_CERT_FILE)
+          - --tls-private-key-file=$(API_SERVER_TLS_PRIVATE_KEY_FILE)
+          - --oidc-issuer-url=$(API_SERVER_OIDC_ISSUER_URL)
+          - --oidc-client-id=$(API_SERVER_OIDC_CLIENT_ID)
+          - --oidc-ca-file=$(API_SERVER_OIDC_CA_FILE)
+          - --oidc-username-claim=$(API_SERVER_OIDC_USERNAME_CLAIM)
+          - --oidc-username-prefix=$(API_SERVER_OIDC_USERNAME_PREFIX)
+          - --oidc-groups-claim=$(API_SERVER_OIDC_GROUPS_CLAIM)
+          - --oidc-groups-prefix=$(API_SERVER_OIDC_GROUPS_PREFIX)
+          - --oidc-signing-algs=$(API_SERVER_OIDC_SIGNING_ALGS)
+          env:
+          - name: API_SERVER_ADDR
+            value: :8443
+          - name: API_SERVER_TLS_CERT_FILE
+            value: /run/serving-certs/tls.crt
+          - name: API_SERVER_TLS_PRIVATE_KEY_FILE
+            value: /run/serving-certs/tls.key
+          - name: API_SERVER_OIDC_ISSUER_URL
+            value: ""
+          - name: API_SERVER_OIDC_CLIENT_ID
+            value: ""
+          - name: API_SERVER_OIDC_CA_FILE
+            value: /run/oidc-certs/ca.crt
+          - name: API_SERVER_OIDC_USERNAME_CLAIM
+            value: ""
+          - name: API_SERVER_OIDC_USERNAME_PREFIX
+            value: ""
+          - name: API_SERVER_OIDC_GROUPS_CLAIM
+            value: ""
+          - name: API_SERVER_OIDC_GROUPS_PREFIX
+            value: ""
+          - name: API_SERVER_OIDC_SIGNING_ALGS
+            value: ""
+          image: quay.io/kubecarrier/apiserver:was not build properly
+          livenessProbe:
+            tcpSocket:
+              port: 8443
+          name: manager
+          ports:
+          - containerPort: 8443
+            name: https
+            protocol: TCP
+          readinessProbe:
+            tcpSocket:
+              port: 8443
+          resources:
+            limits:
+              cpu: 100m
+              memory: 100Mi
+            requests:
+              cpu: 100m
+              memory: 100Mi
+          volumeMounts:
+          - mountPath: /run/serving-certs
+            name: serving-cert
+            readyOnly: true
+          - mountPath: /run/oidc-certs
+            name: oidc-cert
+            readyOnly: true
+        serviceAccountName: kubecarrier-api-server-sa
+        terminationGracePeriodSeconds: 10
+        volumes:
+        - name: serving-cert
+          secret:
+            secretName: serving-tls-secret
+        - name: oidc-cert
+          secret:
+            secretName: ""
+- apiVersion: v1
+  kind: Service
+  metadata:
+    labels:
+      app.kubernetes.io/instance: foo
+      app.kubernetes.io/managed-by: kubecarrier-operator
+      app.kubernetes.io/name: apiserver
+      app.kubernetes.io/version: was not build properly
+      control-plane: api-server
+      kubecarrier.io/role: api-server
+    name: kubecarrier-api-server-manager
+    namespace: kubecarrier-system-10
+  spec:
+    ports:
+    - name: https
+      port: 443
+      protocol: TCP
+      targetPort: https
+    selector:
+      control-plane: api-server
+      kubecarrier.io/role: api-server
