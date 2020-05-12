@@ -17,7 +17,6 @@ limitations under the License.
 package util
 
 import (
-	"fmt"
 	"os"
 
 	"github.com/spf13/cobra"
@@ -38,7 +37,6 @@ func CmdLogMixin(cmd *cobra.Command) *cobra.Command {
 		cmd.PersistentPreRunE = func(c *cobra.Command, args []string) error {
 			ctrl.SetLogger(corezap.New(func(options *corezap.Options) {
 				level := zap.NewAtomicLevelAt(zapcore.Level(-*v))
-				fmt.Println("setting logger at level", *v)
 				options.Level = &level
 				options.Development = *dev
 			}))

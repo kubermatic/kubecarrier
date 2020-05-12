@@ -37,7 +37,7 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 
 	apiserverv1 "github.com/kubermatic/kubecarrier/pkg/apiserver/api/v1"
-	v1 "github.com/kubermatic/kubecarrier/pkg/apiserver/internal/v1"
+	apiserverimplv1 "github.com/kubermatic/kubecarrier/pkg/apiserver/internal/v1"
 	"github.com/kubermatic/kubecarrier/pkg/internal/util"
 )
 
@@ -70,7 +70,7 @@ func NewAPIServer() *cobra.Command {
 	cmd.Flags().StringVar(&flags.address, "address", "0.0.0.0:8080", "Address to bind this API server on.")
 	cmd.Flags().StringVar(&flags.TLSCertFile, "tls-cert-file", "", "File containing the default x509 Certificate for HTTPS. If not provided no TLS security shall be enabled")
 	cmd.Flags().StringVar(&flags.TLSPrivateKeyFile, "tls-private-key-file", "", "File containing the default x509 private key matching --tls-cert-file.")
-	v1.AddOIDCPFlags(&flags.OIDCOptions, cmd.Flags())
+	apiserverimplv1.AddOIDCPFlags(&flags.OIDCOptions, cmd.Flags())
 	return util.CmdLogMixin(cmd)
 }
 
@@ -104,8 +104,8 @@ func runE(flags *flags, log logr.Logger) error {
 		}),
 	)
 
-	apiserverv1.RegisterKubeCarrierServer(grpcServer, &v1.KubeCarrierServer{})
-	if err := apiserverv1.RegisterKubeCarrierHandlerServer(context.Background(), grpcGatewayMux, &v1.KubeCarrierServer{}); err != nil {
+	apiserverv1.RegisterKubeCarrierServer(grpcServer, &apiserverimplv1.KubeCarrierServer{})
+	if err := apiserverv1.RegisterKubeCarrierHandlerServer(context.Background(), grpcGatewayMux, &apiserverimplv1.KubeCarrierServer{}); err != nil {
 		return err
 	}
 
@@ -119,7 +119,7 @@ func runE(flags *flags, log logr.Logger) error {
 	})
 
 	log.Info("setting up OIDC auth middleware", "iss", flags.OIDCOptions.IssuerURL)
-	oidcMiddleware, err := v1.NewOIDCMiddleware(log, flags.OIDCOptions)
+	oidcMiddleware, err := apiserverimplv1.NewOIDCMiddleware(log, flags.OIDCOptions)
 	if err != nil {
 		return fmt.Errorf("init OIDC Middleware: %w", err)
 	}
