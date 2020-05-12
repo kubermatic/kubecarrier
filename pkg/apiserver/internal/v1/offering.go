@@ -136,9 +136,10 @@ func (o offeringServer) convertOffering(in *catalogv1alpha1.Offering) (out *v1.O
 		return nil, err
 	}
 	out = &v1.Offering{
-		ObjectMeta: &v1.ObjectMeta{
+		Metadata: &v1.ObjectMeta{
 			Uid:               string(in.UID),
 			Name:              in.Name,
+			Account:           in.Namespace,
 			CreationTimestamp: creationTimestamp,
 			DeletionTimestamp: deletionTimestamp,
 			ResourceVersion:   in.ResourceVersion,
@@ -171,7 +172,7 @@ func (o offeringServer) convertOffering(in *catalogv1alpha1.Offering) (out *v1.O
 
 func (o offeringServer) convertOfferingList(in *catalogv1alpha1.OfferingList) (out *v1.OfferingList, err error) {
 	out = &v1.OfferingList{
-		ListMeta: &v1.ListMeta{
+		Metadata: &v1.ListMeta{
 			Continue:        in.Continue,
 			ResourceVersion: in.ResourceVersion,
 		},

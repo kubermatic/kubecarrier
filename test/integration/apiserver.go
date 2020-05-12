@@ -292,7 +292,7 @@ func offeringService(ctx context.Context, conn *grpc.ClientConn, managementClien
 			offerings, err = client.List(offeringCtx, &apiserverv1.OfferingListRequest{
 				Account:  testName,
 				Limit:    1,
-				Continue: offerings.ListMeta.Continue,
+				Continue: offerings.Metadata.Continue,
 			})
 			if err != nil {
 				return false, err
@@ -315,8 +315,9 @@ func offeringService(ctx context.Context, conn *grpc.ClientConn, managementClien
 				return true, err
 			}
 			expectedResult := &apiserverv1.Offering{
-				ObjectMeta: &apiserverv1.ObjectMeta{
-					Name: "test-offering-1",
+				Metadata: &apiserverv1.ObjectMeta{
+					Name:    "test-offering-1",
+					Account: testName,
 					Labels: map[string]string{
 						"test-label": "offering1",
 					},

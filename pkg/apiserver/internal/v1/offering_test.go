@@ -160,14 +160,15 @@ func TestListOffering(t *testing.T) {
 			},
 			expectedError: nil,
 			expectedResult: &v1.OfferingList{
-				ListMeta: &v1.ListMeta{
+				Metadata: &v1.ListMeta{
 					Continue:        "",
 					ResourceVersion: "",
 				},
 				Items: []*v1.Offering{
 					{
-						ObjectMeta: &v1.ObjectMeta{
-							Name: "test-offering-1",
+						Metadata: &v1.ObjectMeta{
+							Name:    "test-offering-1",
+							Account: "test-namespace",
 							Labels: map[string]string{
 								"test-label": "offering1",
 							},
@@ -198,8 +199,9 @@ func TestListOffering(t *testing.T) {
 						},
 					},
 					{
-						ObjectMeta: &v1.ObjectMeta{
-							Name: "test-offering-2",
+						Metadata: &v1.ObjectMeta{
+							Name:    "test-offering-2",
+							Account: "test-namespace",
 							Labels: map[string]string{
 								"test-label": "offering2",
 							},
@@ -240,14 +242,15 @@ func TestListOffering(t *testing.T) {
 			},
 			expectedError: nil,
 			expectedResult: &v1.OfferingList{
-				ListMeta: &v1.ListMeta{
+				Metadata: &v1.ListMeta{
 					Continue:        "",
 					ResourceVersion: "",
 				},
 				Items: []*v1.Offering{
 					{
-						ObjectMeta: &v1.ObjectMeta{
-							Name: "test-offering-1",
+						Metadata: &v1.ObjectMeta{
+							Name:    "test-offering-1",
+							Account: "test-namespace",
 							Labels: map[string]string{
 								"test-label": "offering1",
 							},
@@ -364,8 +367,9 @@ func TestGetOffering(t *testing.T) {
 			},
 			expectedError: nil,
 			expectedResult: &v1.Offering{
-				ObjectMeta: &v1.ObjectMeta{
-					Name: "test-offering",
+				Metadata: &v1.ObjectMeta{
+					Name:    "test-offering",
+					Account: "test-namespace",
 				},
 				Spec: &v1.OfferingSpec{
 					Metadata: &v1.OfferingMetadata{

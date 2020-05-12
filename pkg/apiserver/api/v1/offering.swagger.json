@@ -86,6 +86,9 @@
     },
     "v1ObjectMeta": {
       "properties": {
+        "account": {
+          "type": "string"
+        },
         "annotations": {
           "additionalProperties": {
             "type": "string"
@@ -132,7 +135,7 @@
     },
     "v1Offering": {
       "properties": {
-        "objectMeta": {
+        "metadata": {
           "$ref": "#/definitions/v1ObjectMeta"
         },
         "spec": {
@@ -149,7 +152,7 @@
           },
           "type": "array"
         },
-        "listMeta": {
+        "metadata": {
           "$ref": "#/definitions/v1ListMeta"
         }
       },

@@ -24,7 +24,7 @@ import "types.proto";
 import "meta.proto";
 
 message Offering {
-  ObjectMeta objectMeta = 1;
+  ObjectMeta metadata = 1;
   OfferingSpec spec = 2;
 }
 
@@ -40,7 +40,7 @@ message OfferingMetadata {
 }
 
 message OfferingList {
-  ListMeta listMeta = 1;
+  ListMeta metadata = 1;
   repeated Offering items = 2;
 }
 

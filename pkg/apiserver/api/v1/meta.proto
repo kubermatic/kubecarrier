@@ -23,12 +23,13 @@ import "google/protobuf/timestamp.proto";
 message ObjectMeta {
   string uid = 1;
   string name = 2;
-  google.protobuf.Timestamp creationTimestamp = 3;
-  google.protobuf.Timestamp deletionTimestamp = 4;
-  string resourceVersion = 5;
-  map<string, string> labels = 6;
-  map<string, string> annotations = 7;
-  int64 generation = 8;
+  string account = 3;
+  google.protobuf.Timestamp creationTimestamp = 4;
+  google.protobuf.Timestamp deletionTimestamp = 5;
+  string resourceVersion = 6;
+  map<string, string> labels = 7;
+  map<string, string> annotations = 8;
+  int64 generation = 9;
 }
 
 message ListMeta {
