@@ -21,47 +21,50 @@ option go_package = "v1";
 import "google/api/annotations.proto";
 
 import "types.proto";
+import "meta.proto";
 
 message Offering {
-  string name = 1;
-  string tenant = 2;
-  OfferingMetadata metadata = 3;
-  ObjectReference provider = 4;
-  CRDInformation crd = 5;
+  ObjectMeta objectMeta = 1;
+  OfferingSpec spec = 2;
 }
 
-message OfferingList {
-  repeated Offering items = 1;
-  string continue = 2;
+message OfferingSpec {
+  OfferingMetadata metadata = 1;
+  ObjectReference provider = 2;
+  CRDInformation crd = 3;
 }
-
-message OfferingRequest {
-  string name = 1;
-  string tenant = 2;
-}
-
-message OfferingListRequest {
-  string tenant = 1;
-  string labelSelector = 2;
-  int64 limit = 3;
-  string continue = 4;
-}
-
 
 message OfferingMetadata {
   string displayName = 1;
   string description = 2;
 }
 
+message OfferingList {
+  ListMeta listMeta = 1;
+  repeated Offering items = 2;
+}
+
+message OfferingGetRequest {
+  string name = 1;
+  string account = 2;
+}
+
+message OfferingListRequest {
+  string account = 1;
+  string labelSelector = 2;
+  int64 limit = 3;
+  string continue = 4;
+}
+
 service OfferingService {
   rpc List(OfferingListRequest) returns (OfferingList) {
     option (google.api.http) = {
-      get : "/v1/tenants/{tenant}/offerings"
+      get : "/v1/accounts/{account}/offerings"
     };
   };
-  rpc Get(OfferingRequest) returns (Offering) {
+  rpc Get(OfferingGetRequest) returns (Offering) {
     option (google.api.http) = {
-      get : "/v1/tenants/{tenant}/offerings/{name}"
+      get : "/v1/accounts/{account}/offerings/{name}"
     };
   };
 }

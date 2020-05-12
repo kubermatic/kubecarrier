@@ -29,6 +29,7 @@ import (
 
 	catalogv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/catalog/v1alpha1"
 	v1 "github.com/kubermatic/kubecarrier/pkg/apiserver/api/v1"
+	"github.com/kubermatic/kubecarrier/pkg/apiserver/internal/util"
 )
 
 type offeringServer struct {
@@ -56,35 +57,37 @@ func (o offeringServer) List(ctx context.Context, req *v1.OfferingListRequest) (
 		return nil, status.Errorf(codes.Internal, fmt.Sprintf("listing offerings: %s", err.Error()))
 	}
 
-	res = &v1.OfferingList{}
-	for _, catalogOffering := range offeringList.Items {
-		res.Items = append(res.Items, o.convertOffering(&catalogOffering))
+	res, err = o.convertOfferingList(offeringList)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, fmt.Sprintf("convering OfferingList: %s", err.Error()))
 	}
-	res.Continue = offeringList.Continue
 	return
 }
 
-func (o offeringServer) Get(ctx context.Context, req *v1.OfferingRequest) (res *v1.Offering, err error) {
+func (o offeringServer) Get(ctx context.Context, req *v1.OfferingGetRequest) (res *v1.Offering, err error) {
 	if err = o.validateGetRequest(req); err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
 	offering := &catalogv1alpha1.Offering{}
 	if err = o.client.Get(ctx, types.NamespacedName{
 		Name:      req.Name,
-		Namespace: req.Tenant,
+		Namespace: req.Account,
 	}, offering); err != nil {
 		return nil, status.Errorf(codes.Internal, fmt.Sprintf("getting offering: %s", err.Error()))
 	}
-	return o.convertOffering(offering), nil
-
+	res, err = o.convertOffering(offering)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, fmt.Sprintf("convering Offering: %s", err.Error()))
+	}
+	return
 }
 
 func (o offeringServer) validateListRequest(req *v1.OfferingListRequest) ([]client.ListOption, error) {
 	var listOptions []client.ListOption
-	if req.Tenant == "" {
+	if req.Account == "" {
 		return listOptions, fmt.Errorf("missing namespace")
 	}
-	listOptions = append(listOptions, client.InNamespace(req.Tenant))
+	listOptions = append(listOptions, client.InNamespace(req.Account))
 	if req.Limit < 0 {
 		return listOptions, fmt.Errorf("invalid limit: should not be negative number")
 	}
@@ -104,17 +107,17 @@ func (o offeringServer) validateListRequest(req *v1.OfferingListRequest) ([]clie
 	return listOptions, nil
 }
 
-func (o offeringServer) validateGetRequest(req *v1.OfferingRequest) error {
+func (o offeringServer) validateGetRequest(req *v1.OfferingGetRequest) error {
 	if req.Name == "" {
 		return fmt.Errorf("missing name")
 	}
-	if req.Tenant == "" {
+	if req.Account == "" {
 		return fmt.Errorf("missing namespace")
 	}
 	return nil
 }
 
-func (o offeringServer) convertOffering(in *catalogv1alpha1.Offering) (out *v1.Offering) {
+func (o offeringServer) convertOffering(in *catalogv1alpha1.Offering) (out *v1.Offering, err error) {
 	var versions []*v1.CRDVersion
 	for _, catalogCRDVersion := range in.Spec.CRD.Versions {
 		schemaBytes, _ := json.Marshal(catalogCRDVersion.Schema)
@@ -123,24 +126,62 @@ func (o offeringServer) convertOffering(in *catalogv1alpha1.Offering) (out *v1.O
 			Schema: string(schemaBytes),
 		})
 	}
-	return &v1.Offering{
-		Name: in.Name,
-		Metadata: &v1.OfferingMetadata{
-			DisplayName: in.Spec.Metadata.DisplayName,
-			Description: in.Spec.Metadata.Description,
+
+	creationTimestamp, err := util.TimestampProto(&in.ObjectMeta.CreationTimestamp)
+	if err != nil {
+		return nil, err
+	}
+	deletionTimestamp, err := util.TimestampProto(in.ObjectMeta.DeletionTimestamp)
+	if err != nil {
+		return nil, err
+	}
+	out = &v1.Offering{
+		ObjectMeta: &v1.ObjectMeta{
+			Uid:               string(in.UID),
+			Name:              in.Name,
+			CreationTimestamp: creationTimestamp,
+			DeletionTimestamp: deletionTimestamp,
+			ResourceVersion:   in.ResourceVersion,
+			Labels:            in.Labels,
+			Annotations:       in.Annotations,
+			Generation:        in.Generation,
 		},
-		Provider: &v1.ObjectReference{
-			Name: in.Spec.Provider.Name,
-		},
-		Crd: &v1.CRDInformation{
-			Name:     in.Spec.CRD.Name,
-			ApiGroup: in.Spec.CRD.APIGroup,
-			Kind:     in.Spec.CRD.Kind,
-			Plural:   in.Spec.CRD.Plural,
-			Versions: versions,
-			Region: &v1.ObjectReference{
-				Name: in.Spec.CRD.Region.Name,
+		Spec: &v1.OfferingSpec{
+			Metadata: &v1.OfferingMetadata{
+				DisplayName: in.Spec.Metadata.DisplayName,
+				Description: in.Spec.Metadata.Description,
+			},
+			Provider: &v1.ObjectReference{
+				Name: in.Spec.Provider.Name,
+			},
+			Crd: &v1.CRDInformation{
+				Name:     in.Spec.CRD.Name,
+				ApiGroup: in.Spec.CRD.APIGroup,
+				Kind:     in.Spec.CRD.Kind,
+				Plural:   in.Spec.CRD.Plural,
+				Versions: versions,
+				Region: &v1.ObjectReference{
+					Name: in.Spec.CRD.Region.Name,
+				},
 			},
 		},
 	}
+	return
+}
+
+func (o offeringServer) convertOfferingList(in *catalogv1alpha1.OfferingList) (out *v1.OfferingList, err error) {
+	out = &v1.OfferingList{
+		ListMeta: &v1.ListMeta{
+			Continue:        in.Continue,
+			ResourceVersion: in.ResourceVersion,
+		},
+	}
+	for _, inOffering := range in.Items {
+		offering, err := o.convertOffering(&inOffering)
+		if err != nil {
+			return nil, err
+		}
+		out.Items = append(out.Items, offering)
+	}
+	return
 }

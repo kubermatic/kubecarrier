@@ -73,6 +73,55 @@
       },
       "type": "object"
     },
+    "v1ListMeta": {
+      "properties": {
+        "continue": {
+          "type": "string"
+        },
+        "resourceVersion": {
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "v1ObjectMeta": {
+      "properties": {
+        "annotations": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "type": "object"
+        },
+        "creationTimestamp": {
+          "format": "date-time",
+          "type": "string"
+        },
+        "deletionTimestamp": {
+          "format": "date-time",
+          "type": "string"
+        },
+        "generation": {
+          "format": "int64",
+          "type": "string"
+        },
+        "labels": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "type": "object"
+        },
+        "name": {
+          "type": "string"
+        },
+        "resourceVersion": {
+          "type": "string"
+        },
+        "uid": {
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
     "v1ObjectReference": {
       "properties": {
         "name": {
@@ -83,34 +132,25 @@
     },
     "v1Offering": {
       "properties": {
-        "crd": {
-          "$ref": "#/definitions/v1CRDInformation"
+        "objectMeta": {
+          "$ref": "#/definitions/v1ObjectMeta"
         },
-        "metadata": {
-          "$ref": "#/definitions/v1OfferingMetadata"
-        },
-        "name": {
-          "type": "string"
-        },
-        "provider": {
-          "$ref": "#/definitions/v1ObjectReference"
-        },
-        "tenant": {
-          "type": "string"
+        "spec": {
+          "$ref": "#/definitions/v1OfferingSpec"
         }
       },
       "type": "object"
     },
     "v1OfferingList": {
       "properties": {
-        "continue": {
-          "type": "string"
-        },
         "items": {
           "items": {
             "$ref": "#/definitions/v1Offering"
           },
           "type": "array"
+        },
+        "listMeta": {
+          "$ref": "#/definitions/v1ListMeta"
         }
       },
       "type": "object"
@@ -125,6 +165,20 @@
         }
       },
       "type": "object"
+    },
+    "v1OfferingSpec": {
+      "properties": {
+        "crd": {
+          "$ref": "#/definitions/v1CRDInformation"
+        },
+        "metadata": {
+          "$ref": "#/definitions/v1OfferingMetadata"
+        },
+        "provider": {
+          "$ref": "#/definitions/v1ObjectReference"
+        }
+      },
+      "type": "object"
     }
   },
   "info": {
@@ -132,13 +186,13 @@
     "version": "version not set"
   },
   "paths": {
-    "/v1/tenants/{tenant}/offerings": {
+    "/v1/accounts/{account}/offerings": {
       "get": {
         "operationId": "List",
         "parameters": [
           {
             "in": "path",
-            "name": "tenant",
+            "name": "account",
             "required": true,
             "type": "string"
           },
@@ -181,13 +235,13 @@
         ]
       }
     },
-    "/v1/tenants/{tenant}/offerings/{name}": {
+    "/v1/accounts/{account}/offerings/{name}": {
       "get": {
         "operationId": "Get",
         "parameters": [
           {
             "in": "path",
-            "name": "tenant",
+            "name": "account",
             "required": true,
             "type": "string"
           },

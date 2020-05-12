@@ -26,6 +26,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/golang/protobuf/ptypes"
 	certmanagerv1alpha3 "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha3"
 	v1 "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
 	"github.com/stretchr/testify/assert"
@@ -281,63 +282,75 @@ func offeringService(ctx context.Context, conn *grpc.ClientConn, managementClien
 		// list offerings with limit and continuation token.
 		require.NoError(t, wait.PollUntil(time.Second, func() (done bool, err error) {
 			offerings, err := client.List(offeringCtx, &apiserverv1.OfferingListRequest{
-				Tenant: testName,
-				Limit:  1,
+				Account: testName,
+				Limit:   1,
 			})
 			if err != nil {
 				return false, err
 			}
 			assert.Len(t, offerings.Items, 1)
-			testutil.LogObject(t, offerings)
 			offerings, err = client.List(offeringCtx, &apiserverv1.OfferingListRequest{
-				Tenant:   testName,
+				Account:  testName,
 				Limit:    1,
-				Continue: offerings.Continue,
+				Continue: offerings.ListMeta.Continue,
 			})
 			if err != nil {
 				return false, err
 			}
 			assert.Len(t, offerings.Items, 1)
-			testutil.LogObject(t, offerings)
 			return true, nil
 		}, offeringCtx.Done()))
 
 		// get offering
 		require.NoError(t, wait.PollUntil(time.Second, func() (done bool, err error) {
-			offering, err := client.Get(offeringCtx, &apiserverv1.OfferingRequest{
-				Tenant: testName,
-				Name:   "test-offering-1",
+			offering, err := client.Get(offeringCtx, &apiserverv1.OfferingGetRequest{
+				Account: testName,
+				Name:    "test-offering-1",
 			})
 			if err != nil {
 				return false, err
 			}
+			creationTimestamp, err := ptypes.TimestampProto(offering1.CreationTimestamp.Time)
+			if err != nil {
+				return true, err
+			}
 			expectedResult := &apiserverv1.Offering{
-				Name: "test-offering-1",
-				Metadata: &apiserverv1.OfferingMetadata{
-					Description: "Test Offering",
-					DisplayName: "Test Offering",
-				},
-				Provider: &apiserverv1.ObjectReference{
-					Name: "test-provider",
-				},
-				Crd: &apiserverv1.CRDInformation{
-					Name:     "test-crd",
-					ApiGroup: "test-crd-group",
-					Kind:     "test-kind",
-					Plural:   "test-plural",
-					Versions: []*apiserverv1.CRDVersion{
-						{
-							Name:   "test-version",
-							Schema: "{\"openAPIV3Schema\":{\"type\":\"object\",\"properties\":{\"apiVersion\":{\"type\":\"string\"}}}}",
-						},
+				ObjectMeta: &apiserverv1.ObjectMeta{
+					Name: "test-offering-1",
+					Labels: map[string]string{
+						"test-label": "offering1",
 					},
-					Region: &apiserverv1.ObjectReference{
-						Name: "test-region",
+					Uid:               string(offering1.UID),
+					CreationTimestamp: creationTimestamp,
+					ResourceVersion:   offering1.ResourceVersion,
+					Generation:        offering1.Generation,
+				},
+				Spec: &apiserverv1.OfferingSpec{
+					Metadata: &apiserverv1.OfferingMetadata{
+						Description: "Test Offering",
+						DisplayName: "Test Offering",
+					},
+					Provider: &apiserverv1.ObjectReference{
+						Name: "test-provider",
+					},
+					Crd: &apiserverv1.CRDInformation{
+						Name:     "test-crd",
+						ApiGroup: "test-crd-group",
+						Kind:     "test-kind",
+						Plural:   "test-plural",
+						Versions: []*apiserverv1.CRDVersion{
+							{
+								Name:   "test-version",
+								Schema: `{"openAPIV3Schema":{"type":"object","properties":{"apiVersion":{"type":"string"}}}}`,
+							},
+						},
+						Region: &apiserverv1.ObjectReference{
+							Name: "test-region",
+						},
 					},
 				},
 			}
-			assert.Equal(t, offering, expectedResult)
-			testutil.LogObject(t, offering)
+			assert.Equal(t, expectedResult, offering)
 			return true, nil
 		}, offeringCtx.Done()))
 	}
