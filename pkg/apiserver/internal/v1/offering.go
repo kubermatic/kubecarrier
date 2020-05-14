@@ -120,7 +120,14 @@ func (o offeringServer) Watch(req *v1.OfferingWatchRequest, stream v1.OfferingSe
 		select {
 		case <-stream.Context().Done():
 			return status.Error(codes.Internal, stream.Context().Err().Error())
-		case event := <-watcher.ResultChan():
+		case event, ok := <-watcher.ResultChan():
+			if !ok {
+				return status.Error(codes.Internal, "watch event channel was closed")
+			}
+			if req.OperationType != "" &&
+				req.OperationType != string(event.Type) {
+				continue
+			}
 			catalogOffering := &catalogv1alpha1.Offering{}
 			if err := o.scheme.Convert(event.Object, catalogOffering, nil); err != nil {
 				return status.Errorf(codes.Internal, "converting event.Object to Offering: %s", err.Error())
@@ -133,14 +140,11 @@ func (o offeringServer) Watch(req *v1.OfferingWatchRequest, stream v1.OfferingSe
 			if err != nil {
 				return status.Errorf(codes.Internal, "marshalling Offering to Any: %s", err.Error())
 			}
-			if req.OperationType == "" ||
-				req.OperationType == string(event.Type) {
-				if err := stream.Send(&v1.Event{
-					Type:   string(event.Type),
-					Object: any,
-				}); err != nil {
-					return status.Errorf(codes.Internal, "sending Offering stream: %s", err.Error())
-				}
+			if err := stream.Send(&v1.Event{
+				Type:   string(event.Type),
+				Object: any,
+			}); err != nil {
+				return status.Errorf(codes.Internal, "sending Offering stream: %s", err.Error())
 			}
 		}
 	}
