@@ -91,7 +91,7 @@ func (o offeringServer) List(ctx context.Context, req *v1.OfferingListRequest) (
 
 func (o offeringServer) Get(ctx context.Context, req *v1.OfferingGetRequest) (res *v1.Offering, err error) {
 	if err = o.validateGetRequest(req); err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 	offering := &catalogv1alpha1.Offering{}
 	if err = o.client.Get(ctx, types.NamespacedName{
@@ -114,7 +114,7 @@ func (o offeringServer) Watch(req *v1.OfferingWatchRequest, stream v1.OfferingSe
 	}
 	watcher, err := o.dynamicClient.Resource(o.gvr).Namespace(req.Account).Watch(listOptions)
 	if err != nil {
-		return status.Errorf(codes.Internal, "watching Offerings: %s", err.Error())
+		return status.Errorf(codes.Internal, "watching offerings: %s", err.Error())
 	}
 	for {
 		select {
@@ -123,15 +123,15 @@ func (o offeringServer) Watch(req *v1.OfferingWatchRequest, stream v1.OfferingSe
 		case event := <-watcher.ResultChan():
 			catalogOffering := &catalogv1alpha1.Offering{}
 			if err := o.scheme.Convert(event.Object, catalogOffering, nil); err != nil {
-				return status.Error(codes.Internal, err.Error())
+				return status.Errorf(codes.Internal, "converting event.Object to Offering: %s", err.Error())
 			}
 			offering, err := o.convertOffering(catalogOffering)
 			if err != nil {
-				return status.Error(codes.Internal, err.Error())
+				return status.Errorf(codes.Internal, "converting Offering: %s", err.Error())
 			}
 			any, err := ptypes.MarshalAny(offering)
 			if err != nil {
-				return status.Error(codes.Internal, err.Error())
+				return status.Errorf(codes.Internal, "marshalling Offering to Any: %s", err.Error())
 			}
 			if req.OperationType == "" ||
 				req.OperationType == string(event.Type) {
@@ -139,7 +139,7 @@ func (o offeringServer) Watch(req *v1.OfferingWatchRequest, stream v1.OfferingSe
 					Type:   string(event.Type),
 					Object: any,
 				}); err != nil {
-					return status.Errorf(codes.Internal, "sending offering stream: %s", err.Error())
+					return status.Errorf(codes.Internal, "sending Offering stream: %s", err.Error())
 				}
 			}
 		}
