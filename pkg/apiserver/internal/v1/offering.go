@@ -75,16 +75,16 @@ func (o offeringServer) List(ctx context.Context, req *v1.OfferingListRequest) (
 	var listOptions []client.ListOption
 	listOptions, err = o.validateListRequest(req)
 	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 	offeringList := &catalogv1alpha1.OfferingList{}
 	if err := o.client.List(ctx, offeringList, listOptions...); err != nil {
-		return nil, status.Errorf(codes.Internal, fmt.Sprintf("listing offerings: %s", err.Error()))
+		return nil, status.Errorf(codes.Internal, "listing offerings: %s", err.Error())
 	}
 
 	res, err = o.convertOfferingList(offeringList)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, fmt.Sprintf("converting OfferingList: %s", err.Error()))
+		return nil, status.Errorf(codes.Internal, "converting OfferingList: %s", err.Error())
 	}
 	return
 }
@@ -98,11 +98,11 @@ func (o offeringServer) Get(ctx context.Context, req *v1.OfferingGetRequest) (re
 		Name:      req.Name,
 		Namespace: req.Account,
 	}, offering); err != nil {
-		return nil, status.Errorf(codes.Internal, fmt.Sprintf("getting offering: %s", err.Error()))
+		return nil, status.Errorf(codes.Internal, "getting Offering: %s", err.Error())
 	}
 	res, err = o.convertOffering(offering)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, fmt.Sprintf("converting Offering: %s", err.Error()))
+		return nil, status.Errorf(codes.Internal, "converting Offering: %s", err.Error())
 	}
 	return
 }
@@ -110,16 +110,16 @@ func (o offeringServer) Get(ctx context.Context, req *v1.OfferingGetRequest) (re
 func (o offeringServer) Watch(req *v1.OfferingWatchRequest, stream v1.OfferingService_WatchServer) error {
 	listOptions, err := o.validateWatchRequest(req)
 	if err != nil {
-		return status.Errorf(codes.InvalidArgument, err.Error())
+		return status.Error(codes.InvalidArgument, err.Error())
 	}
 	watcher, err := o.dynamicClient.Resource(o.gvr).Namespace(req.Account).Watch(listOptions)
 	if err != nil {
-		return status.Errorf(codes.Internal, err.Error())
+		return status.Errorf(codes.Internal, "watching Offerings: %s", err.Error())
 	}
 	for {
 		select {
 		case <-stream.Context().Done():
-			return status.Errorf(codes.Internal, "server is down")
+			return status.Error(codes.Internal, stream.Context().Err().Error())
 		case event := <-watcher.ResultChan():
 			catalogOffering := &catalogv1alpha1.Offering{}
 			if err := o.scheme.Convert(event.Object, catalogOffering, nil); err != nil {
@@ -139,7 +139,7 @@ func (o offeringServer) Watch(req *v1.OfferingWatchRequest, stream v1.OfferingSe
 					Type:   string(event.Type),
 					Object: any,
 				}); err != nil {
-					return status.Errorf(codes.Internal, err.Error())
+					return status.Errorf(codes.Internal, "sending offering stream: %s", err.Error())
 				}
 			}
 		}
