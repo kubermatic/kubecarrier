@@ -21,46 +21,49 @@ option go_package = "v1";
 import "google/api/annotations.proto";
 
 import "types.proto";
+import "meta.proto";
 
 message Region {
-  string name = 1;
-  string tenant = 2;
-  RegionMetadata metadata = 3;
-  ObjectReference provider = 4;
+  ObjectMeta metadata = 1;
+  RegionSpec spec = 2;
 }
 
-message RegionList {
-  repeated Region items = 1;
-  string continue = 2;
+message RegionSpec {
+  RegionMetadata metadata = 1;
+  ObjectReference provider = 2;
 }
-
-message RegionRequest {
-  string name = 1;
-  string tenant = 2;
-}
-
-message RegionListRequest {
-  string tenant = 1;
-  string labelSelector = 2;
-  int64 limit = 3;
-  string continue = 4;
-}
-
 
 message RegionMetadata {
   string displayName = 1;
   string description = 2;
 }
 
+message RegionList {
+  ListMeta metadata = 1;
+  repeated Region items = 2;
+}
+
+message RegionGetRequest {
+  string name = 1;
+  string account = 2;
+}
+
+message RegionListRequest {
+  string account = 1;
+  string labelSelector = 2;
+  int64 limit = 3;
+  string continue = 4;
+}
+
 service RegionService {
   rpc List(RegionListRequest) returns (RegionList) {
     option (google.api.http) = {
-      get : "/v1/tenants/{tenant}/regions"
+      get : "/v1/accounts/{account}/regions"
     };
   };
-  rpc Get(RegionRequest) returns (Region) {
+  rpc Get(RegionGetRequest) returns (Region) {
     option (google.api.http) = {
-      get : "/v1/tenants/{tenant}/regions/{name}"
+      get : "/v1/accounts/{account}/regions/{name}"
     };
   };
 }

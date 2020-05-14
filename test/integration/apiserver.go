@@ -411,48 +411,61 @@ func regionService(ctx context.Context, conn *grpc.ClientConn, managementClient 
 		// list regions with limit and continuation token.
 		require.NoError(t, wait.PollUntil(time.Second, func() (done bool, err error) {
 			regions, err := client.List(regionCtx, &apiserverv1.RegionListRequest{
-				Tenant: testName,
-				Limit:  1,
+				Account: testName,
+				Limit:   1,
 			})
 			if err != nil {
 				return false, err
 			}
 			assert.Len(t, regions.Items, 1)
-			testutil.LogObject(t, regions)
 			regions, err = client.List(regionCtx, &apiserverv1.RegionListRequest{
-				Tenant:   testName,
+				Account:  testName,
 				Limit:    1,
-				Continue: regions.Continue,
+				Continue: regions.Metadata.Continue,
 			})
 			if err != nil {
 				return false, err
 			}
 			assert.Len(t, regions.Items, 1)
-			testutil.LogObject(t, regions)
 			return true, nil
 		}, regionCtx.Done()))
 
 		// get region
 		require.NoError(t, wait.PollUntil(time.Second, func() (done bool, err error) {
-			region, err := client.Get(regionCtx, &apiserverv1.RegionRequest{
-				Tenant: testName,
-				Name:   "test-region-1",
+			region, err := client.Get(regionCtx, &apiserverv1.RegionGetRequest{
+				Account: testName,
+				Name:    "test-region-1",
 			})
 			if err != nil {
 				return false, err
 			}
+			creationTimestamp, err := ptypes.TimestampProto(region1.CreationTimestamp.Time)
+			if err != nil {
+				return true, err
+			}
 			expectedResult := &apiserverv1.Region{
-				Name: "test-region-1",
-				Metadata: &apiserverv1.RegionMetadata{
-					Description: "Test Region",
-					DisplayName: "Test Region",
+				Metadata: &apiserverv1.ObjectMeta{
+					Name:    "test-region-1",
+					Account: testName,
+					Labels: map[string]string{
+						"test-label": "region1",
+					},
+					Uid:               string(region1.UID),
+					CreationTimestamp: creationTimestamp,
+					ResourceVersion:   region1.ResourceVersion,
+					Generation:        region1.Generation,
 				},
-				Provider: &apiserverv1.ObjectReference{
-					Name: "test-provider",
+				Spec: &apiserverv1.RegionSpec{
+					Metadata: &apiserverv1.RegionMetadata{
+						Description: "Test Region",
+						DisplayName: "Test Region",
+					},
+					Provider: &apiserverv1.ObjectReference{
+						Name: "test-provider",
+					},
 				},
 			}
-			assert.Equal(t, region, expectedResult)
-			testutil.LogObject(t, region)
+			assert.Equal(t, expectedResult, region)
 			return true, nil
 		}, regionCtx.Done()))
 	}

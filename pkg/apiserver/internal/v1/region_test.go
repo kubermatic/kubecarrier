@@ -86,7 +86,7 @@ func TestListRegion(t *testing.T) {
 		{
 			name: "missing namespace",
 			req: &v1.RegionListRequest{
-				Tenant: "",
+				Account: "",
 			},
 			expectedError:  status.Errorf(codes.InvalidArgument, "missing namespace"),
 			expectedResult: nil,
@@ -94,8 +94,8 @@ func TestListRegion(t *testing.T) {
 		{
 			name: "invalid limit",
 			req: &v1.RegionListRequest{
-				Tenant: "test-namespace",
-				Limit:  -1,
+				Account: "test-namespace",
+				Limit:   -1,
 			},
 			expectedError:  status.Errorf(codes.InvalidArgument, "invalid limit: should not be negative number"),
 			expectedResult: nil,
@@ -103,7 +103,7 @@ func TestListRegion(t *testing.T) {
 		{
 			name: "invalid label selector",
 			req: &v1.RegionListRequest{
-				Tenant:        "test-namespace",
+				Account:       "test-namespace",
 				LabelSelector: "test-label=====region1",
 			},
 			expectedError:  status.Errorf(codes.InvalidArgument, "invalid LabelSelector: unable to parse requirement: found '==', expected: identifier"),
@@ -112,29 +112,49 @@ func TestListRegion(t *testing.T) {
 		{
 			name: "valid request",
 			req: &v1.RegionListRequest{
-				Tenant: "test-namespace",
+				Account: "test-namespace",
 			},
 			expectedError: nil,
 			expectedResult: &v1.RegionList{
+				Metadata: &v1.ListMeta{
+					Continue:        "",
+					ResourceVersion: "",
+				},
 				Items: []*v1.Region{
 					{
-						Name: "test-region-1",
-						Metadata: &v1.RegionMetadata{
-							Description: "Test Region",
-							DisplayName: "Test Region",
+						Metadata: &v1.ObjectMeta{
+							Name:    "test-region-1",
+							Account: "test-namespace",
+							Labels: map[string]string{
+								"test-label": "region1",
+							},
 						},
-						Provider: &v1.ObjectReference{
-							Name: "test-provider",
+						Spec: &v1.RegionSpec{
+							Metadata: &v1.RegionMetadata{
+								Description: "Test Region",
+								DisplayName: "Test Region",
+							},
+							Provider: &v1.ObjectReference{
+								Name: "test-provider",
+							},
 						},
 					},
 					{
-						Name: "test-region-2",
-						Metadata: &v1.RegionMetadata{
-							Description: "Test Region",
-							DisplayName: "Test Region",
+						Metadata: &v1.ObjectMeta{
+							Name:    "test-region-2",
+							Account: "test-namespace",
+							Labels: map[string]string{
+								"test-label": "region2",
+							},
 						},
-						Provider: &v1.ObjectReference{
-							Name: "test-provider",
+						Spec: &v1.RegionSpec{
+							Metadata: &v1.RegionMetadata{
+								Description: "Test Region",
+								DisplayName: "Test Region",
+							},
+							Provider: &v1.ObjectReference{
+								Name: "test-provider",
+							},
 						},
 					},
 				},
@@ -143,20 +163,32 @@ func TestListRegion(t *testing.T) {
 		{
 			name: "LabelSelector works",
 			req: &v1.RegionListRequest{
-				Tenant:        "test-namespace",
+				Account:       "test-namespace",
 				LabelSelector: "test-label=region1",
 			},
 			expectedError: nil,
 			expectedResult: &v1.RegionList{
+				Metadata: &v1.ListMeta{
+					Continue:        "",
+					ResourceVersion: "",
+				},
 				Items: []*v1.Region{
 					{
-						Name: "test-region-1",
-						Metadata: &v1.RegionMetadata{
-							Description: "Test Region",
-							DisplayName: "Test Region",
+						Metadata: &v1.ObjectMeta{
+							Name:    "test-region-1",
+							Account: "test-namespace",
+							Labels: map[string]string{
+								"test-label": "region1",
+							},
 						},
-						Provider: &v1.ObjectReference{
-							Name: "test-provider",
+						Spec: &v1.RegionSpec{
+							Metadata: &v1.RegionMetadata{
+								Description: "Test Region",
+								DisplayName: "Test Region",
+							},
+							Provider: &v1.ObjectReference{
+								Name: "test-provider",
+							},
 						},
 					},
 				},
@@ -195,42 +227,47 @@ func TestGetRegion(t *testing.T) {
 	ctx := context.Background()
 	tests := []struct {
 		name           string
-		req            *v1.RegionRequest
+		req            *v1.RegionGetRequest
 		expectedError  error
 		expectedResult *v1.Region
 	}{
 		{
 			name: "missing namespace",
-			req: &v1.RegionRequest{
-				Name:   "test-region",
-				Tenant: "",
+			req: &v1.RegionGetRequest{
+				Name:    "test-region",
+				Account: "",
 			},
 			expectedError:  status.Errorf(codes.InvalidArgument, "missing namespace"),
 			expectedResult: nil,
 		},
 		{
 			name: "missing name",
-			req: &v1.RegionRequest{
-				Tenant: "test-namespace",
+			req: &v1.RegionGetRequest{
+				Account: "test-namespace",
 			},
 			expectedError:  status.Errorf(codes.InvalidArgument, "missing name"),
 			expectedResult: nil,
 		},
 		{
 			name: "valid request",
-			req: &v1.RegionRequest{
-				Name:   "test-region",
-				Tenant: "test-namespace",
+			req: &v1.RegionGetRequest{
+				Name:    "test-region",
+				Account: "test-namespace",
 			},
 			expectedError: nil,
 			expectedResult: &v1.Region{
-				Name: "test-region",
-				Metadata: &v1.RegionMetadata{
-					Description: "Test Region",
-					DisplayName: "Test Region",
+				Metadata: &v1.ObjectMeta{
+					Name:    "test-region",
+					Account: "test-namespace",
 				},
-				Provider: &v1.ObjectReference{
-					Name: "test-provider",
+				Spec: &v1.RegionSpec{
+					Metadata: &v1.RegionMetadata{
+						Description: "Test Region",
+						DisplayName: "Test Region",
+					},
+					Provider: &v1.ObjectReference{
+						Name: "test-provider",
+					},
 				},
 			},
 		},

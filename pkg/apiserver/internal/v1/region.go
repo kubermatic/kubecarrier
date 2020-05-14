@@ -28,6 +28,7 @@ import (
 
 	catalogv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/catalog/v1alpha1"
 	v1 "github.com/kubermatic/kubecarrier/pkg/apiserver/api/v1"
+	"github.com/kubermatic/kubecarrier/pkg/apiserver/internal/util"
 )
 
 type regionServer struct {
@@ -55,35 +56,37 @@ func (o regionServer) List(ctx context.Context, req *v1.RegionListRequest) (res 
 		return nil, status.Errorf(codes.Internal, fmt.Sprintf("listing regions: %s", err.Error()))
 	}
 
-	res = &v1.RegionList{}
-	for _, catalogRegion := range regionList.Items {
-		res.Items = append(res.Items, o.convertRegion(&catalogRegion))
+	res, err = o.convertRegionList(regionList)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, fmt.Sprintf("converting RegionList: %s", err.Error()))
 	}
-	res.Continue = regionList.Continue
 	return
 }
 
-func (o regionServer) Get(ctx context.Context, req *v1.RegionRequest) (res *v1.Region, err error) {
+func (o regionServer) Get(ctx context.Context, req *v1.RegionGetRequest) (res *v1.Region, err error) {
 	if err = o.validateGetRequest(req); err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
 	region := &catalogv1alpha1.Region{}
 	if err = o.client.Get(ctx, types.NamespacedName{
 		Name:      req.Name,
-		Namespace: req.Tenant,
+		Namespace: req.Account,
 	}, region); err != nil {
 		return nil, status.Errorf(codes.Internal, fmt.Sprintf("getting region: %s", err.Error()))
 	}
-	return o.convertRegion(region), nil
-
+	res, err = o.convertRegion(region)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, fmt.Sprintf("converting Region: %s", err.Error()))
+	}
+	return
 }
 
 func (o regionServer) validateListRequest(req *v1.RegionListRequest) ([]client.ListOption, error) {
 	var listOptions []client.ListOption
-	if req.Tenant == "" {
+	if req.Account == "" {
 		return listOptions, fmt.Errorf("missing namespace")
 	}
-	listOptions = append(listOptions, client.InNamespace(req.Tenant))
+	listOptions = append(listOptions, client.InNamespace(req.Account))
 	if req.Limit < 0 {
 		return listOptions, fmt.Errorf("invalid limit: should not be negative number")
 	}
@@ -103,25 +106,63 @@ func (o regionServer) validateListRequest(req *v1.RegionListRequest) ([]client.L
 	return listOptions, nil
 }
 
-func (o regionServer) validateGetRequest(req *v1.RegionRequest) error {
+func (o regionServer) validateGetRequest(req *v1.RegionGetRequest) error {
 	if req.Name == "" {
 		return fmt.Errorf("missing name")
 	}
-	if req.Tenant == "" {
+	if req.Account == "" {
 		return fmt.Errorf("missing namespace")
 	}
 	return nil
 }
 
-func (o regionServer) convertRegion(in *catalogv1alpha1.Region) (out *v1.Region) {
-	return &v1.Region{
-		Name: in.Name,
-		Metadata: &v1.RegionMetadata{
-			DisplayName: in.Spec.Metadata.DisplayName,
-			Description: in.Spec.Metadata.Description,
+func (o regionServer) convertRegion(in *catalogv1alpha1.Region) (out *v1.Region, err error) {
+	creationTimestamp, err := util.TimestampProto(&in.ObjectMeta.CreationTimestamp)
+	if err != nil {
+		return nil, err
+	}
+	deletionTimestamp, err := util.TimestampProto(in.ObjectMeta.DeletionTimestamp)
+	if err != nil {
+		return nil, err
+	}
+	out = &v1.Region{
+		Metadata: &v1.ObjectMeta{
+			Uid:               string(in.UID),
+			Name:              in.Name,
+			Account:           in.Namespace,
+			CreationTimestamp: creationTimestamp,
+			DeletionTimestamp: deletionTimestamp,
+			ResourceVersion:   in.ResourceVersion,
+			Labels:            in.Labels,
+			Annotations:       in.Annotations,
+			Generation:        in.Generation,
 		},
-		Provider: &v1.ObjectReference{
-			Name: in.Spec.Provider.Name,
+		Spec: &v1.RegionSpec{
+			Metadata: &v1.RegionMetadata{
+				DisplayName: in.Spec.Metadata.DisplayName,
+				Description: in.Spec.Metadata.Description,
+			},
+			Provider: &v1.ObjectReference{
+				Name: in.Spec.Provider.Name,
+			},
 		},
 	}
+	return
+}
+
+func (o regionServer) convertRegionList(in *catalogv1alpha1.RegionList) (out *v1.RegionList, err error) {
+	out = &v1.RegionList{
+		Metadata: &v1.ListMeta{
+			Continue:        in.Continue,
+			ResourceVersion: in.ResourceVersion,
+		},
+	}
+	for _, inRegion := range in.Items {
+		region, err := o.convertRegion(&inRegion)
+		if err != nil {
+			return nil, err
+		}
+		out.Items = append(out.Items, region)
+	}
+	return
 }
