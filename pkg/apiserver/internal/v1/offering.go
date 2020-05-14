@@ -59,7 +59,7 @@ func (o offeringServer) List(ctx context.Context, req *v1.OfferingListRequest) (
 
 	res, err = o.convertOfferingList(offeringList)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, fmt.Sprintf("convering OfferingList: %s", err.Error()))
+		return nil, status.Errorf(codes.Internal, fmt.Sprintf("converting OfferingList: %s", err.Error()))
 	}
 	return
 }
@@ -77,7 +77,7 @@ func (o offeringServer) Get(ctx context.Context, req *v1.OfferingGetRequest) (re
 	}
 	res, err = o.convertOffering(offering)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, fmt.Sprintf("convering Offering: %s", err.Error()))
+		return nil, status.Errorf(codes.Internal, fmt.Sprintf("converting Offering: %s", err.Error()))
 	}
 	return
 }
