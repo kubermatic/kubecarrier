@@ -49,34 +49,34 @@ func (o regionServer) List(ctx context.Context, req *v1.RegionListRequest) (res 
 	var listOptions []client.ListOption
 	listOptions, err = o.validateListRequest(req)
 	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 	regionList := &catalogv1alpha1.RegionList{}
 	if err := o.client.List(ctx, regionList, listOptions...); err != nil {
-		return nil, status.Errorf(codes.Internal, fmt.Sprintf("listing regions: %s", err.Error()))
+		return nil, status.Errorf(codes.Internal, "listing regions: %s", err.Error())
 	}
 
 	res, err = o.convertRegionList(regionList)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, fmt.Sprintf("converting RegionList: %s", err.Error()))
+		return nil, status.Errorf(codes.Internal, "converting RegionList: %s", err.Error())
 	}
 	return
 }
 
 func (o regionServer) Get(ctx context.Context, req *v1.RegionGetRequest) (res *v1.Region, err error) {
 	if err = o.validateGetRequest(req); err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 	region := &catalogv1alpha1.Region{}
 	if err = o.client.Get(ctx, types.NamespacedName{
 		Name:      req.Name,
 		Namespace: req.Account,
 	}, region); err != nil {
-		return nil, status.Errorf(codes.Internal, fmt.Sprintf("getting region: %s", err.Error()))
+		return nil, status.Errorf(codes.Internal, "getting region: %s", err.Error())
 	}
 	res, err = o.convertRegion(region)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, fmt.Sprintf("converting Region: %s", err.Error()))
+		return nil, status.Errorf(codes.Internal, "converting Region: %s", err.Error())
 	}
 	return
 }
