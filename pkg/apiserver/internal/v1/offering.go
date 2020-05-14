@@ -21,11 +21,19 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/golang/protobuf/ptypes"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"k8s.io/apimachinery/pkg/api/meta"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/apimachinery/pkg/watch"
+	"k8s.io/client-go/dynamic"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/client/apiutil"
 
 	catalogv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/catalog/v1alpha1"
 	v1 "github.com/kubermatic/kubecarrier/pkg/apiserver/api/v1"
@@ -33,17 +41,35 @@ import (
 )
 
 type offeringServer struct {
-	client client.Client
+	client        client.Client
+	dynamicClient dynamic.Interface
+	restMapper    meta.RESTMapper
+	scheme        *runtime.Scheme
+
+	gvr schema.GroupVersionResource
 }
 
 var _ v1.OfferingServiceServer = (*offeringServer)(nil)
 
-// +kubebuilder:rbac:groups=catalog.kubecarrier.io,resources=offerings,verbs=get;list
+// +kubebuilder:rbac:groups=catalog.kubecarrier.io,resources=offerings,verbs=get;list;watch
 
-func NewOfferingServiceServer(c client.Client) v1.OfferingServiceServer {
-	return &offeringServer{
-		client: c,
+func NewOfferingServiceServer(c client.Client, dynamicClient dynamic.Interface, restMapper meta.RESTMapper, scheme *runtime.Scheme) (v1.OfferingServiceServer, error) {
+	offeringServer := &offeringServer{
+		client:        c,
+		dynamicClient: dynamicClient,
+		restMapper:    restMapper,
+		scheme:        scheme,
 	}
+	objGVK, err := apiutil.GVKForObject(&catalogv1alpha1.Offering{}, offeringServer.scheme)
+	if err != nil {
+		return nil, err
+	}
+	restMapping, err := offeringServer.restMapper.RESTMapping(objGVK.GroupKind(), objGVK.Version)
+	if err != nil {
+		return nil, err
+	}
+	offeringServer.gvr = restMapping.Resource
+	return offeringServer, nil
 }
 
 func (o offeringServer) List(ctx context.Context, req *v1.OfferingListRequest) (res *v1.OfferingList, err error) {
@@ -82,6 +108,40 @@ func (o offeringServer) Get(ctx context.Context, req *v1.OfferingGetRequest) (re
 	return
 }
 
+func (o offeringServer) Watch(req *v1.OfferingWatchRequest, stream v1.OfferingService_WatchServer) error {
+	listOptions, err := o.validateWatchRequest(req)
+	if err != nil {
+		return status.Errorf(codes.InvalidArgument, err.Error())
+	}
+	watcher, err := o.dynamicClient.Resource(o.gvr).Namespace(req.Account).Watch(listOptions)
+	if err != nil {
+		return status.Errorf(codes.Internal, err.Error())
+	}
+	for {
+		select {
+		case event := <-watcher.ResultChan():
+			catalogOffering := &catalogv1alpha1.Offering{}
+			if err := o.scheme.Convert(event.Object, catalogOffering, nil); err != nil {
+				return status.Error(codes.Internal, err.Error())
+			}
+			offering, err := o.convertOffering(catalogOffering)
+			if err != nil {
+				return status.Error(codes.Internal, err.Error())
+			}
+			any, err := ptypes.MarshalAny(offering)
+			if err != nil {
+				return status.Error(codes.Internal, err.Error())
+			}
+			if err := stream.Send(&v1.Event{
+				Type:   string(event.Type),
+				Object: any,
+			}); err != nil {
+				return status.Errorf(codes.Internal, err.Error())
+			}
+		}
+	}
+}
+
 func (o offeringServer) validateListRequest(req *v1.OfferingListRequest) ([]client.ListOption, error) {
 	var listOptions []client.ListOption
 	if req.Account == "" {
@@ -115,6 +175,29 @@ func (o offeringServer) validateGetRequest(req *v1.OfferingGetRequest) error {
 		return fmt.Errorf("missing namespace")
 	}
 	return nil
+}
+
+func (o offeringServer) validateWatchRequest(req *v1.OfferingWatchRequest) (metav1.ListOptions, error) {
+	var listOptions metav1.ListOptions
+	if req.Account == "" {
+		return listOptions, fmt.Errorf("missing namespace")
+	}
+	if req.OperationType != string(watch.Added) &&
+		req.OperationType != string(watch.Modified) &&
+		req.OperationType != string(watch.Deleted) &&
+		req.OperationType != string(watch.Bookmark) &&
+		req.OperationType != string(watch.Error) {
+		return listOptions, fmt.Errorf("invalid Operation")
+	}
+	if req.LabelSelector != "" {
+		_, err := labels.Parse(req.LabelSelector)
+		if err != nil {
+			return listOptions, fmt.Errorf("invalid LabelSelector: %w", err)
+		}
+		listOptions.LabelSelector = req.LabelSelector
+	}
+	listOptions.ResourceVersion = req.ResourceVersion
+	return listOptions, nil
 }
 
 func (o offeringServer) convertOffering(in *catalogv1alpha1.Offering) (out *v1.Offering, err error) {
