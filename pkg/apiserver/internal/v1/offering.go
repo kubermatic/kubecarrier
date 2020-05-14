@@ -30,7 +30,6 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
-	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/dynamic"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/apiutil"
@@ -119,6 +118,8 @@ func (o offeringServer) Watch(req *v1.OfferingWatchRequest, stream v1.OfferingSe
 	}
 	for {
 		select {
+		case <-stream.Context().Done():
+			return status.Errorf(codes.Internal, "server is down")
 		case event := <-watcher.ResultChan():
 			catalogOffering := &catalogv1alpha1.Offering{}
 			if err := o.scheme.Convert(event.Object, catalogOffering, nil); err != nil {
@@ -132,11 +133,14 @@ func (o offeringServer) Watch(req *v1.OfferingWatchRequest, stream v1.OfferingSe
 			if err != nil {
 				return status.Error(codes.Internal, err.Error())
 			}
-			if err := stream.Send(&v1.Event{
-				Type:   string(event.Type),
-				Object: any,
-			}); err != nil {
-				return status.Errorf(codes.Internal, err.Error())
+			if req.OperationType == "" ||
+				req.OperationType == string(event.Type) {
+				if err := stream.Send(&v1.Event{
+					Type:   string(event.Type),
+					Object: any,
+				}); err != nil {
+					return status.Errorf(codes.Internal, err.Error())
+				}
 			}
 		}
 	}
@@ -182,12 +186,8 @@ func (o offeringServer) validateWatchRequest(req *v1.OfferingWatchRequest) (meta
 	if req.Account == "" {
 		return listOptions, fmt.Errorf("missing namespace")
 	}
-	if req.OperationType != string(watch.Added) &&
-		req.OperationType != string(watch.Modified) &&
-		req.OperationType != string(watch.Deleted) &&
-		req.OperationType != string(watch.Bookmark) &&
-		req.OperationType != string(watch.Error) {
-		return listOptions, fmt.Errorf("invalid Operation")
+	if err := util.ValidateWatchOperation(req.OperationType); err != nil {
+		return listOptions, err
 	}
 	if req.LabelSelector != "" {
 		_, err := labels.Parse(req.LabelSelector)
