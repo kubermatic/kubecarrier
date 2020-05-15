@@ -39,6 +39,7 @@ import (
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
+	"k8s.io/apimachinery/pkg/watch"
 
 	catalogv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/catalog/v1alpha1"
 	operatorv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/operator/v1alpha1"
@@ -353,6 +354,31 @@ func offeringService(ctx context.Context, conn *grpc.ClientConn, managementClien
 			}
 			assert.Equal(t, expectedResult, offering)
 			return true, nil
+		}, offeringCtx.Done()))
+
+		// watch offerings
+		watchClient, err := client.Watch(offeringCtx, &apiserverv1.OfferingWatchRequest{
+			Account: testName,
+		})
+		require.NoError(t, err)
+		counter := 0
+		expectedEventNum := 2
+		assert.NoError(t, wait.PollUntil(time.Second, func() (done bool, err error) {
+			event, err := watchClient.Recv()
+			switch {
+			case counter == expectedEventNum && event == nil:
+				return true, nil
+			case counter > expectedEventNum:
+				fallthrough
+			case counter < expectedEventNum && event == nil:
+				return true, fmt.Errorf("received wrong number of watch event, expected: %d, received: %d", expectedEventNum, counter)
+			case err != nil:
+				return true, err
+			default:
+				assert.Equal(t, event.Type, string(watch.Added))
+				counter++
+				return false, nil
+			}
 		}, offeringCtx.Done()))
 	}
 }

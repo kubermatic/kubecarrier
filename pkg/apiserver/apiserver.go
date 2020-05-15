@@ -139,14 +139,14 @@ func runE(flags *flags, log logr.Logger) error {
 		InsecureSkipVerify: true,
 		RootCAs:            certPool,
 	}
-
+	// Create grpc client for watch api
 	grpcClient, err := grpc.DialContext(ctx, flags.address, grpc.WithTransportCredentials(credentials.NewTLS(grpcTLSConfig)))
 	if err != nil {
 		return err
 	}
 
 	apiserverv1.RegisterKubeCarrierServer(grpcServer, &v1.KubeCarrierServer{})
-	if err := apiserverv1.RegisterKubeCarrierHandlerServer(context.Background(), grpcGatewayMux, &v1.KubeCarrierServer{}); err != nil {
+	if err := apiserverv1.RegisterKubeCarrierHandlerServer(ctx, grpcGatewayMux, &v1.KubeCarrierServer{}); err != nil {
 		return err
 	}
 	offeringServer, err := v1.NewOfferingServiceServer(c, dynamicClient, mapper, scheme)

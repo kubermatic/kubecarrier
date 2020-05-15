@@ -42,7 +42,6 @@ import (
 type offeringServer struct {
 	client        client.Client
 	dynamicClient dynamic.Interface
-	restMapper    meta.RESTMapper
 	scheme        *runtime.Scheme
 
 	gvr schema.GroupVersionResource
@@ -56,14 +55,13 @@ func NewOfferingServiceServer(c client.Client, dynamicClient dynamic.Interface, 
 	offeringServer := &offeringServer{
 		client:        c,
 		dynamicClient: dynamicClient,
-		restMapper:    restMapper,
 		scheme:        scheme,
 	}
 	objGVK, err := apiutil.GVKForObject(&catalogv1alpha1.Offering{}, offeringServer.scheme)
 	if err != nil {
 		return nil, err
 	}
-	restMapping, err := offeringServer.restMapper.RESTMapping(objGVK.GroupKind(), objGVK.Version)
+	restMapping, err := restMapper.RESTMapping(objGVK.GroupKind(), objGVK.Version)
 	if err != nil {
 		return nil, err
 	}
