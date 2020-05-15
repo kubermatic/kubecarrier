@@ -130,6 +130,12 @@ func runE(flags *flags, log logr.Logger) error {
 		return err
 	}
 
+	regionServer := v1.NewRegionServiceServer(c)
+	apiserverv1.RegisterRegionServiceServer(grpcServer, regionServer)
+	if err := apiserverv1.RegisterRegionServiceHandlerServer(context.Background(), grpcGatewayMux, regionServer); err != nil {
+		return err
+	}
+
 	var handlerFunc http.HandlerFunc = func(writer http.ResponseWriter, request *http.Request) {
 		log.Info("got request for", "path", request.URL.Path)
 		if strings.Contains(request.Header.Get("Content-Type"), "application/grpc") {
