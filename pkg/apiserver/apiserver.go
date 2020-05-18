@@ -76,6 +76,12 @@ func NewAPIServer() *cobra.Command {
 }
 
 func runE(flags *flags, log logr.Logger) error {
+	// Validation
+	if flags.TLSCertFile == "" || flags.TLSPrivateKeyFile == "" {
+		return fmt.Errorf("--tls-cert-file or --tls-private-key-file not specified, cannot start")
+	}
+
+	// Startup
 	grpcServer := grpc.NewServer()
 	grpcGatewayMux := gwruntime.NewServeMux(
 		gwruntime.WithProtoErrorHandler(func(ctx context.Context, serveMux *gwruntime.ServeMux, marshaler gwruntime.Marshaler, writer http.ResponseWriter, request *http.Request, err error) {
@@ -112,8 +118,34 @@ func runE(flags *flags, log logr.Logger) error {
 		return fmt.Errorf("creating client: %w", err)
 	}
 
+	// Create Kubernetes Client
+	cfg := config.GetConfigOrDie()
+	mapper, err := apiutil.NewDiscoveryRESTMapper(cfg)
+	if err != nil {
+		return fmt.Errorf("creating rest mapper: %w", err)
+	}
+	c, err := client.New(cfg, client.Options{
+		Scheme: scheme,
+		Mapper: mapper,
+	})
+	if err != nil {
+		return fmt.Errorf("creating client: %w", err)
+
+	}
+
 	apiserverv1.RegisterKubeCarrierServer(grpcServer, &v1.KubeCarrierServer{})
 	if err := apiserverv1.RegisterKubeCarrierHandlerServer(context.Background(), grpcGatewayMux, &v1.KubeCarrierServer{}); err != nil {
+		return err
+	}
+	offeringServer := v1.NewOfferingServiceServer(c)
+	apiserverv1.RegisterOfferingServiceServer(grpcServer, offeringServer)
+	if err := apiserverv1.RegisterOfferingServiceHandlerServer(context.Background(), grpcGatewayMux, offeringServer); err != nil {
+		return err
+	}
+
+	regionServer := v1.NewRegionServiceServer(c)
+	apiserverv1.RegisterRegionServiceServer(grpcServer, regionServer)
+	if err := apiserverv1.RegisterRegionServiceHandlerServer(context.Background(), grpcGatewayMux, regionServer); err != nil {
 		return err
 	}
 
@@ -138,11 +170,5 @@ func runE(flags *flags, log logr.Logger) error {
 	}
 
 	log.Info("serving serving API-server", "address", flags.address)
-	if flags.TLSCertFile == "" {
-		log.V(4).Info("No TLS cert file defined, skipping TLS setup")
-		return server.ListenAndServe()
-	} else {
-		log.Info("using provided TLS cert/key")
-		return server.ListenAndServeTLS(flags.TLSCertFile, flags.TLSPrivateKeyFile)
-	}
+	return server.ListenAndServeTLS(flags.TLSCertFile, flags.TLSPrivateKeyFile)
 }
