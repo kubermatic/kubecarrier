@@ -14,3 +14,10 @@ rules:
   - get
   - list
   - watch
+- apiGroups:
+  - catalog.kubecarrier.io
+  resources:
+  - regions
+  verbs:
+  - get
+  - list

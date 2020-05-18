@@ -42,6 +42,7 @@ import (
 	"k8s.io/apimachinery/pkg/watch"
 
 	catalogv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/catalog/v1alpha1"
+	corev1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/core/v1alpha1"
 	operatorv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/operator/v1alpha1"
 	apiserverv1 "github.com/kubermatic/kubecarrier/pkg/apiserver/api/v1"
 	"github.com/kubermatic/kubecarrier/pkg/testutil"
@@ -171,6 +172,7 @@ func newAPIServer(f *testutil.Framework) func(t *testing.T) {
 
 		for name, testFn := range map[string]func(ctx context.Context, conn *grpc.ClientConn, managementClient *testutil.RecordingClient) func(t *testing.T){
 			"offering-service": offeringService,
+			"region-service":   regionService,
 		} {
 			name := name
 			testFn := testFn
@@ -380,5 +382,117 @@ func offeringService(ctx context.Context, conn *grpc.ClientConn, managementClien
 				return false, nil
 			}
 		}, offeringCtx.Done()))
+	}
+}
+
+func regionService(ctx context.Context, conn *grpc.ClientConn, managementClient *testutil.RecordingClient) func(t *testing.T) {
+	return func(t *testing.T) {
+		testName := strings.Replace(strings.ToLower(t.Name()), "/", "-", -1)
+		ns := &corev1.Namespace{}
+		ns.Name = testName
+		require.NoError(t, managementClient.Create(ctx, ns))
+		// Create region objects in the management cluster.
+		region1 := &catalogv1alpha1.Region{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "test-region-1",
+				Namespace: testName,
+				Labels: map[string]string{
+					"test-label": "region1",
+				},
+			},
+			Spec: catalogv1alpha1.RegionSpec{
+				Metadata: corev1alpha1.ServiceClusterMetadata{
+					Description: "Test Region",
+					DisplayName: "Test Region",
+				},
+				Provider: catalogv1alpha1.ObjectReference{
+					Name: "test-provider",
+				},
+			},
+		}
+		region2 := &catalogv1alpha1.Region{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "test-region-2",
+				Namespace: testName,
+				Labels: map[string]string{
+					"test-label": "region2",
+				},
+			},
+			Spec: catalogv1alpha1.RegionSpec{
+				Metadata: corev1alpha1.ServiceClusterMetadata{
+					Description: "Test Region",
+					DisplayName: "Test Region",
+				},
+				Provider: catalogv1alpha1.ObjectReference{
+					Name: "test-provider",
+				},
+			},
+		}
+		require.NoError(t, managementClient.Create(ctx, region1))
+		require.NoError(t, managementClient.Create(ctx, region2))
+
+		client := apiserverv1.NewRegionServiceClient(conn)
+		regionCtx, cancel := context.WithTimeout(ctx, 30*time.Second)
+		t.Cleanup(cancel)
+		// list regions with limit and continuation token.
+		require.NoError(t, wait.PollUntil(time.Second, func() (done bool, err error) {
+			regions, err := client.List(regionCtx, &apiserverv1.RegionListRequest{
+				Account: testName,
+				Limit:   1,
+			})
+			if err != nil {
+				return false, err
+			}
+			assert.Len(t, regions.Items, 1)
+			regions, err = client.List(regionCtx, &apiserverv1.RegionListRequest{
+				Account:  testName,
+				Limit:    1,
+				Continue: regions.Metadata.Continue,
+			})
+			if err != nil {
+				return false, err
+			}
+			assert.Len(t, regions.Items, 1)
+			return true, nil
+		}, regionCtx.Done()))
+
+		// get region
+		require.NoError(t, wait.PollUntil(time.Second, func() (done bool, err error) {
+			region, err := client.Get(regionCtx, &apiserverv1.RegionGetRequest{
+				Account: testName,
+				Name:    "test-region-1",
+			})
+			if err != nil {
+				return false, err
+			}
+			creationTimestamp, err := ptypes.TimestampProto(region1.CreationTimestamp.Time)
+			if err != nil {
+				return true, err
+			}
+			expectedResult := &apiserverv1.Region{
+				Metadata: &apiserverv1.ObjectMeta{
+					Name:    "test-region-1",
+					Account: testName,
+					Labels: map[string]string{
+						"test-label": "region1",
+					},
+					Uid:               string(region1.UID),
+					CreationTimestamp: creationTimestamp,
+					ResourceVersion:   region1.ResourceVersion,
+					Generation:        region1.Generation,
+				},
+				Spec: &apiserverv1.RegionSpec{
+					Metadata: &apiserverv1.RegionMetadata{
+						Description: "Test Region",
+						DisplayName: "Test Region",
+					},
+					Provider: &apiserverv1.ObjectReference{
+						Name: "test-provider",
+					},
+				},
+			}
+			assert.Equal(t, expectedResult, region)
+			return true, nil
+		}, regionCtx.Done()))
 	}
 }

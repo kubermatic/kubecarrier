@@ -37,7 +37,7 @@ endif
 
 # Dev Image to use
 # Always bump this version, when changing ANY component version below.
-DEV_IMAGE_TAG=v2
+DEV_IMAGE_TAG=v3
 
 # Versions used to build DEV image:
 export GOLANGCI_LINT_VERSION=1.26.0
@@ -46,6 +46,7 @@ export CONTROLLER_GEN_VERSION=0.2.9
 export PROTOC_VERSION=3.11.4
 export PROTOC_GEN_GO_VERSION=1.3.5
 export PROTOC_GRPC_GATEWAY_VERSION=1.14.3
+export TESTIFY_VERSION=1.4.0
 
 # every makefile operation should have explicit kubeconfig
 undefine KUBECONFIG
@@ -253,6 +254,7 @@ build-image-dev: require-docker
 		--build-arg CONTROLLER_GEN_VERSION=${CONTROLLER_GEN_VERSION} \
 		--build-arg PROTOC_VERSION=${PROTOC_VERSION} \
 		--build-arg PROTOC_GEN_GO_VERSION=${PROTOC_GEN_GO_VERSION} \
+		--build-arg TESTIFY_VERSION=${TESTIFY_VERSION} \
 		--build-arg PROTOC_GRPC_GATEWAY_VERSION=${PROTOC_GRPC_GATEWAY_VERSION}
 
 push-image-dev: build-image-dev
