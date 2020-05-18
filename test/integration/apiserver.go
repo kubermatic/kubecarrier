@@ -283,7 +283,7 @@ func offeringService(ctx context.Context, conn *grpc.ClientConn, managementClien
 		t.Cleanup(cancel)
 		// list offerings with limit and continuation token.
 		require.NoError(t, wait.PollUntil(time.Second, func() (done bool, err error) {
-			offerings, err := client.List(offeringCtx, &apiserverv1.OfferingListRequest{
+			offerings, err := client.List(offeringCtx, &apiserverv1.ListRequest{
 				Account: testName,
 				Limit:   1,
 			})
@@ -291,7 +291,7 @@ func offeringService(ctx context.Context, conn *grpc.ClientConn, managementClien
 				return false, err
 			}
 			assert.Len(t, offerings.Items, 1)
-			offerings, err = client.List(offeringCtx, &apiserverv1.OfferingListRequest{
+			offerings, err = client.List(offeringCtx, &apiserverv1.ListRequest{
 				Account:  testName,
 				Limit:    1,
 				Continue: offerings.Metadata.Continue,
@@ -305,7 +305,7 @@ func offeringService(ctx context.Context, conn *grpc.ClientConn, managementClien
 
 		// get offering
 		require.NoError(t, wait.PollUntil(time.Second, func() (done bool, err error) {
-			offering, err := client.Get(offeringCtx, &apiserverv1.OfferingGetRequest{
+			offering, err := client.Get(offeringCtx, &apiserverv1.GetRequest{
 				Account: testName,
 				Name:    "test-offering-1",
 			})
@@ -410,7 +410,7 @@ func regionService(ctx context.Context, conn *grpc.ClientConn, managementClient 
 		t.Cleanup(cancel)
 		// list regions with limit and continuation token.
 		require.NoError(t, wait.PollUntil(time.Second, func() (done bool, err error) {
-			regions, err := client.List(regionCtx, &apiserverv1.RegionListRequest{
+			regions, err := client.List(regionCtx, &apiserverv1.ListRequest{
 				Account: testName,
 				Limit:   1,
 			})
@@ -418,7 +418,7 @@ func regionService(ctx context.Context, conn *grpc.ClientConn, managementClient 
 				return false, err
 			}
 			assert.Len(t, regions.Items, 1)
-			regions, err = client.List(regionCtx, &apiserverv1.RegionListRequest{
+			regions, err = client.List(regionCtx, &apiserverv1.ListRequest{
 				Account:  testName,
 				Limit:    1,
 				Continue: regions.Metadata.Continue,
@@ -432,7 +432,7 @@ func regionService(ctx context.Context, conn *grpc.ClientConn, managementClient 
 
 		// get region
 		require.NoError(t, wait.PollUntil(time.Second, func() (done bool, err error) {
-			region, err := client.Get(regionCtx, &apiserverv1.RegionGetRequest{
+			region, err := client.Get(regionCtx, &apiserverv1.GetRequest{
 				Account: testName,
 				Name:    "test-region-1",
 			})

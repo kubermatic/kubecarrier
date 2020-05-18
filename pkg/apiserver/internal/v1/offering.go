@@ -23,7 +23,6 @@ import (
 
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
-	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -46,9 +45,9 @@ func NewOfferingServiceServer(c client.Client) v1.OfferingServiceServer {
 	}
 }
 
-func (o offeringServer) List(ctx context.Context, req *v1.OfferingListRequest) (res *v1.OfferingList, err error) {
+func (o offeringServer) List(ctx context.Context, req *v1.ListRequest) (res *v1.OfferingList, err error) {
 	var listOptions []client.ListOption
-	listOptions, err = o.validateListRequest(req)
+	listOptions, err = util.ValidateListRequest(req)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
@@ -64,8 +63,8 @@ func (o offeringServer) List(ctx context.Context, req *v1.OfferingListRequest) (
 	return
 }
 
-func (o offeringServer) Get(ctx context.Context, req *v1.OfferingGetRequest) (res *v1.Offering, err error) {
-	if err = o.validateGetRequest(req); err != nil {
+func (o offeringServer) Get(ctx context.Context, req *v1.GetRequest) (res *v1.Offering, err error) {
+	if err = util.ValidateGetRequest(req); err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
 	offering := &catalogv1alpha1.Offering{}
@@ -80,41 +79,6 @@ func (o offeringServer) Get(ctx context.Context, req *v1.OfferingGetRequest) (re
 		return nil, status.Errorf(codes.Internal, fmt.Sprintf("converting Offering: %s", err.Error()))
 	}
 	return
-}
-
-func (o offeringServer) validateListRequest(req *v1.OfferingListRequest) ([]client.ListOption, error) {
-	var listOptions []client.ListOption
-	if req.Account == "" {
-		return listOptions, fmt.Errorf("missing namespace")
-	}
-	listOptions = append(listOptions, client.InNamespace(req.Account))
-	if req.Limit < 0 {
-		return listOptions, fmt.Errorf("invalid limit: should not be negative number")
-	}
-	listOptions = append(listOptions, client.Limit(req.Limit))
-	if req.LabelSelector != "" {
-		selector, err := labels.Parse(req.LabelSelector)
-		if err != nil {
-			return listOptions, fmt.Errorf("invalid LabelSelector: %w", err)
-		}
-		listOptions = append(listOptions, client.MatchingLabelsSelector{
-			Selector: selector,
-		})
-	}
-	if req.Continue != "" {
-		listOptions = append(listOptions, client.Continue(req.Continue))
-	}
-	return listOptions, nil
-}
-
-func (o offeringServer) validateGetRequest(req *v1.OfferingGetRequest) error {
-	if req.Name == "" {
-		return fmt.Errorf("missing name")
-	}
-	if req.Account == "" {
-		return fmt.Errorf("missing namespace")
-	}
-	return nil
 }
 
 func (o offeringServer) convertOffering(in *catalogv1alpha1.Offering) (out *v1.Offering, err error) {

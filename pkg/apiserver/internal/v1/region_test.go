@@ -79,13 +79,13 @@ func TestListRegion(t *testing.T) {
 	ctx := context.Background()
 	tests := []struct {
 		name           string
-		req            *v1.RegionListRequest
+		req            *v1.ListRequest
 		expectedError  error
 		expectedResult *v1.RegionList
 	}{
 		{
 			name: "missing namespace",
-			req: &v1.RegionListRequest{
+			req: &v1.ListRequest{
 				Account: "",
 			},
 			expectedError:  status.Errorf(codes.InvalidArgument, "missing namespace"),
@@ -93,7 +93,7 @@ func TestListRegion(t *testing.T) {
 		},
 		{
 			name: "invalid limit",
-			req: &v1.RegionListRequest{
+			req: &v1.ListRequest{
 				Account: "test-namespace",
 				Limit:   -1,
 			},
@@ -102,7 +102,7 @@ func TestListRegion(t *testing.T) {
 		},
 		{
 			name: "invalid label selector",
-			req: &v1.RegionListRequest{
+			req: &v1.ListRequest{
 				Account:       "test-namespace",
 				LabelSelector: "test-label=====region1",
 			},
@@ -111,7 +111,7 @@ func TestListRegion(t *testing.T) {
 		},
 		{
 			name: "valid request",
-			req: &v1.RegionListRequest{
+			req: &v1.ListRequest{
 				Account: "test-namespace",
 			},
 			expectedError: nil,
@@ -162,7 +162,7 @@ func TestListRegion(t *testing.T) {
 		},
 		{
 			name: "LabelSelector works",
-			req: &v1.RegionListRequest{
+			req: &v1.ListRequest{
 				Account:       "test-namespace",
 				LabelSelector: "test-label=region1",
 			},
@@ -227,13 +227,13 @@ func TestGetRegion(t *testing.T) {
 	ctx := context.Background()
 	tests := []struct {
 		name           string
-		req            *v1.RegionGetRequest
+		req            *v1.GetRequest
 		expectedError  error
 		expectedResult *v1.Region
 	}{
 		{
 			name: "missing namespace",
-			req: &v1.RegionGetRequest{
+			req: &v1.GetRequest{
 				Name:    "test-region",
 				Account: "",
 			},
@@ -242,7 +242,7 @@ func TestGetRegion(t *testing.T) {
 		},
 		{
 			name: "missing name",
-			req: &v1.RegionGetRequest{
+			req: &v1.GetRequest{
 				Account: "test-namespace",
 			},
 			expectedError:  status.Errorf(codes.InvalidArgument, "missing name"),
@@ -250,7 +250,7 @@ func TestGetRegion(t *testing.T) {
 		},
 		{
 			name: "valid request",
-			req: &v1.RegionGetRequest{
+			req: &v1.GetRequest{
 				Name:    "test-region",
 				Account: "test-namespace",
 			},

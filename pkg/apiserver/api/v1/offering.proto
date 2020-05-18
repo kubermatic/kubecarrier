@@ -22,6 +22,7 @@ import "google/api/annotations.proto";
 
 import "types.proto";
 import "meta.proto";
+import "request.proto";
 
 message Offering {
   ObjectMeta metadata = 1;
@@ -44,25 +45,13 @@ message OfferingList {
   repeated Offering items = 2;
 }
 
-message OfferingGetRequest {
-  string name = 1;
-  string account = 2;
-}
-
-message OfferingListRequest {
-  string account = 1;
-  string labelSelector = 2;
-  int64 limit = 3;
-  string continue = 4;
-}
-
 service OfferingService {
-  rpc List(OfferingListRequest) returns (OfferingList) {
+  rpc List(ListRequest) returns (OfferingList) {
     option (google.api.http) = {
       get : "/v1/accounts/{account}/offerings"
     };
   };
-  rpc Get(OfferingGetRequest) returns (Offering) {
+  rpc Get(GetRequest) returns (Offering) {
     option (google.api.http) = {
       get : "/v1/accounts/{account}/offerings/{name}"
     };

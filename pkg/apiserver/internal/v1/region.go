@@ -18,11 +18,9 @@ package v1
 
 import (
 	"context"
-	"fmt"
 
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
-	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -45,9 +43,9 @@ func NewRegionServiceServer(c client.Client) v1.RegionServiceServer {
 	}
 }
 
-func (o regionServer) List(ctx context.Context, req *v1.RegionListRequest) (res *v1.RegionList, err error) {
+func (o regionServer) List(ctx context.Context, req *v1.ListRequest) (res *v1.RegionList, err error) {
 	var listOptions []client.ListOption
-	listOptions, err = o.validateListRequest(req)
+	listOptions, err = util.ValidateListRequest(req)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
@@ -63,8 +61,8 @@ func (o regionServer) List(ctx context.Context, req *v1.RegionListRequest) (res 
 	return
 }
 
-func (o regionServer) Get(ctx context.Context, req *v1.RegionGetRequest) (res *v1.Region, err error) {
-	if err = o.validateGetRequest(req); err != nil {
+func (o regionServer) Get(ctx context.Context, req *v1.GetRequest) (res *v1.Region, err error) {
+	if err = util.ValidateGetRequest(req); err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 	region := &catalogv1alpha1.Region{}
@@ -79,41 +77,6 @@ func (o regionServer) Get(ctx context.Context, req *v1.RegionGetRequest) (res *v
 		return nil, status.Errorf(codes.Internal, "converting Region: %s", err.Error())
 	}
 	return
-}
-
-func (o regionServer) validateListRequest(req *v1.RegionListRequest) ([]client.ListOption, error) {
-	var listOptions []client.ListOption
-	if req.Account == "" {
-		return listOptions, fmt.Errorf("missing namespace")
-	}
-	listOptions = append(listOptions, client.InNamespace(req.Account))
-	if req.Limit < 0 {
-		return listOptions, fmt.Errorf("invalid limit: should not be negative number")
-	}
-	listOptions = append(listOptions, client.Limit(req.Limit))
-	if req.LabelSelector != "" {
-		selector, err := labels.Parse(req.LabelSelector)
-		if err != nil {
-			return listOptions, fmt.Errorf("invalid LabelSelector: %w", err)
-		}
-		listOptions = append(listOptions, client.MatchingLabelsSelector{
-			Selector: selector,
-		})
-	}
-	if req.Continue != "" {
-		listOptions = append(listOptions, client.Continue(req.Continue))
-	}
-	return listOptions, nil
-}
-
-func (o regionServer) validateGetRequest(req *v1.RegionGetRequest) error {
-	if req.Name == "" {
-		return fmt.Errorf("missing name")
-	}
-	if req.Account == "" {
-		return fmt.Errorf("missing namespace")
-	}
-	return nil
 }
 
 func (o regionServer) convertRegion(in *catalogv1alpha1.Region) (out *v1.Region, err error) {
