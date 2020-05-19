@@ -182,20 +182,6 @@ spec:
               metadata:
                 description: Metadata contains the metadata of each CatalogEntry for
                   the Service Catalog.
-                properties:
-                  description:
-                    description: Description shows the human-readable description
-                      of this CatalogEntrySet.
-                    minLength: 1
-                    type: string
-                  displayName:
-                    description: DisplayName shows the human-readable name of this
-                      CatalogEntrySet.
-                    minLength: 1
-                    type: string
-                required:
-                - description
-                - displayName
                 type: object
             required:
             - discover

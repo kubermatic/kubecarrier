@@ -62,8 +62,10 @@ func newAccount(f *testutil.Framework) func(t *testing.T) {
 				},
 				Spec: catalogv1alpha1.AccountSpec{
 					Metadata: catalogv1alpha1.AccountMetadata{
-						DisplayName: "metadata name",
-						Description: "metadata desc",
+						CommonMetadata: catalogv1alpha1.CommonMetadata{
+							DisplayName: "metadata name",
+							Description: "metadata desc",
+						},
 					},
 					Roles: []catalogv1alpha1.AccountRole{
 						catalogv1alpha1.TenantRole,

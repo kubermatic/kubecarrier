@@ -101,20 +101,6 @@ spec:
                 metadata:
                   description: OfferingMetadata contains the metadata (display name,
                     description, etc) of the Offering.
-                  properties:
-                    description:
-                      description: Description shows the human-readable description
-                        of this Offering.
-                      minLength: 1
-                      type: string
-                    displayName:
-                      description: DisplayName shows the human-readable name of this
-                        Offering.
-                      minLength: 1
-                      type: string
-                  required:
-                    - description
-                    - displayName
                   type: object
                 provider:
                   description: Provider references the Provider managing this Offering.

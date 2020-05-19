@@ -180,8 +180,10 @@ func (f *Framework) NewProviderAccount(name string, subjects ...rbacv1.Subject) 
 		},
 		Spec: catalogv1alpha1.AccountSpec{
 			Metadata: catalogv1alpha1.AccountMetadata{
-				DisplayName: name + " provider",
-				Description: name + " provider desc",
+				CommonMetadata: catalogv1alpha1.CommonMetadata{
+					DisplayName: name + " provider",
+					Description: name + " provider desc",
+				},
 			},
 			Roles: []catalogv1alpha1.AccountRole{
 				catalogv1alpha1.ProviderRole,
@@ -198,8 +200,10 @@ func (f *Framework) NewTenantAccount(name string, subjects ...rbacv1.Subject) *c
 		},
 		Spec: catalogv1alpha1.AccountSpec{
 			Metadata: catalogv1alpha1.AccountMetadata{
-				DisplayName: name + " tenant",
-				Description: name + " tenant desc",
+				CommonMetadata: catalogv1alpha1.CommonMetadata{
+					DisplayName: name + " tenant",
+					Description: name + " tenant desc",
+				},
 			},
 			Roles: []catalogv1alpha1.AccountRole{
 				catalogv1alpha1.TenantRole,

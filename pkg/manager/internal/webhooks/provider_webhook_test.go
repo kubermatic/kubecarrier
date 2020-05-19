@@ -45,8 +45,10 @@ func TestProviderValidatingCreate(t *testing.T) {
 				},
 				Spec: catalogv1alpha1.ProviderSpec{
 					Metadata: catalogv1alpha1.AccountMetadata{
-						Description: "test Provider",
-						DisplayName: "test Provider",
+						CommonMetadata: catalogv1alpha1.CommonMetadata{
+							Description: "test Provider",
+							DisplayName: "test Provider",
+						},
 					},
 				},
 			},
@@ -71,7 +73,9 @@ func TestProviderValidatingCreate(t *testing.T) {
 				},
 				Spec: catalogv1alpha1.ProviderSpec{
 					Metadata: catalogv1alpha1.AccountMetadata{
-						DisplayName: "test Provider",
+						CommonMetadata: catalogv1alpha1.CommonMetadata{
+							DisplayName: "test Provider",
+						},
 					},
 				},
 			},
@@ -86,7 +90,9 @@ func TestProviderValidatingCreate(t *testing.T) {
 				},
 				Spec: catalogv1alpha1.ProviderSpec{
 					Metadata: catalogv1alpha1.AccountMetadata{
-						Description: "test Provider",
+						CommonMetadata: catalogv1alpha1.CommonMetadata{
+							Description: "test Provider",
+						},
 					},
 				},
 			},
@@ -101,8 +107,10 @@ func TestProviderValidatingCreate(t *testing.T) {
 				},
 				Spec: catalogv1alpha1.ProviderSpec{
 					Metadata: catalogv1alpha1.AccountMetadata{
-						Description: "test Provider",
-						DisplayName: "test Provider",
+						CommonMetadata: catalogv1alpha1.CommonMetadata{
+							Description: "test Provider",
+							DisplayName: "test Provider",
+						},
 					},
 				},
 			},

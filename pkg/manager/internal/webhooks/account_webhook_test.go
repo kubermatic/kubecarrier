@@ -49,8 +49,10 @@ func TestAccountValidatingCreate(t *testing.T) {
 				},
 				Spec: catalogv1alpha1.AccountSpec{
 					Metadata: catalogv1alpha1.AccountMetadata{
-						Description: "test Account",
-						DisplayName: "test Account",
+						CommonMetadata: catalogv1alpha1.CommonMetadata{
+							Description: "test Account",
+							DisplayName: "test Account",
+						},
 					},
 				},
 			},
@@ -90,7 +92,9 @@ func TestAccountValidatingCreate(t *testing.T) {
 						catalogv1alpha1.ProviderRole,
 					},
 					Metadata: catalogv1alpha1.AccountMetadata{
-						DisplayName: "test Account",
+						CommonMetadata: catalogv1alpha1.CommonMetadata{
+							DisplayName: "test Account",
+						},
 					},
 				},
 			},
@@ -107,7 +111,9 @@ func TestAccountValidatingCreate(t *testing.T) {
 						catalogv1alpha1.ProviderRole,
 					},
 					Metadata: catalogv1alpha1.AccountMetadata{
-						Description: "test Account",
+						CommonMetadata: catalogv1alpha1.CommonMetadata{
+							Description: "test Account",
+						},
 					},
 				},
 			},
@@ -121,8 +127,10 @@ func TestAccountValidatingCreate(t *testing.T) {
 				},
 				Spec: catalogv1alpha1.AccountSpec{
 					Metadata: catalogv1alpha1.AccountMetadata{
-						Description: "test Account",
-						DisplayName: "test Account",
+						CommonMetadata: catalogv1alpha1.CommonMetadata{
+							Description: "test Account",
+							DisplayName: "test Account",
+						},
 					},
 					Roles: []catalogv1alpha1.AccountRole{
 						catalogv1alpha1.ProviderRole,
@@ -140,8 +148,10 @@ func TestAccountValidatingCreate(t *testing.T) {
 				},
 				Spec: catalogv1alpha1.AccountSpec{
 					Metadata: catalogv1alpha1.AccountMetadata{
-						Description: "test Account",
-						DisplayName: "test Account",
+						CommonMetadata: catalogv1alpha1.CommonMetadata{
+							Description: "test Account",
+							DisplayName: "test Account",
+						},
 					},
 					Roles: []catalogv1alpha1.AccountRole{
 						catalogv1alpha1.ProviderRole,
@@ -161,8 +171,10 @@ func TestAccountValidatingCreate(t *testing.T) {
 				},
 				Spec: catalogv1alpha1.AccountSpec{
 					Metadata: catalogv1alpha1.AccountMetadata{
-						Description: "test Account",
-						DisplayName: "test Account",
+						CommonMetadata: catalogv1alpha1.CommonMetadata{
+							Description: "test Account",
+							DisplayName: "test Account",
+						},
 					},
 					Roles: []catalogv1alpha1.AccountRole{
 						catalogv1alpha1.ProviderRole,
@@ -200,8 +212,10 @@ func TestAccountValidatingDelete(t *testing.T) {
 		},
 		Spec: catalogv1alpha1.AccountSpec{
 			Metadata: catalogv1alpha1.AccountMetadata{
-				Description: "test Account",
-				DisplayName: "test Account",
+				CommonMetadata: catalogv1alpha1.CommonMetadata{
+					Description: "test Account",
+					DisplayName: "test Account",
+				},
 			},
 		},
 		Status: catalogv1alpha1.AccountStatus{
