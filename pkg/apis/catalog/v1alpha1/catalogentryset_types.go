@@ -49,7 +49,7 @@ type CustomResourceDiscoverySetConfig struct {
 
 // CatalogEntrySetMetadata contains the metadata (display name, description, etc) of the CatalogEntrySet.
 type CatalogEntrySetMetadata struct {
-	CommonMetadata
+	CommonMetadata `json:",inline"`
 }
 
 // CatalogEntrySetStatus defines the observed state of CatalogEntrySet.

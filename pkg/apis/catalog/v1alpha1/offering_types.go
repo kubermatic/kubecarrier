@@ -31,7 +31,7 @@ type OfferingSpec struct {
 
 // OfferingMetadata contains the metadata (display name, description, etc) of the Offering.
 type OfferingMetadata struct {
-	CommonMetadata
+	CommonMetadata `json:",inline"`
 }
 
 // Offering is used for Tenants to discover services that have been made available to them.

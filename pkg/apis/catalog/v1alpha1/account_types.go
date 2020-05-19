@@ -36,7 +36,7 @@ type AccountSpec struct {
 
 // AccountMetadata contains the metadata of the Account.
 type AccountMetadata struct {
-	CommonMetadata
+	CommonMetadata `json:",inline"`
 }
 
 // AccountRole type represents available Account roles.

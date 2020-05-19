@@ -40,7 +40,7 @@ type DerivedConfig struct {
 
 // CatalogEntryMetadata contains metadata of the CatalogEntry.
 type CatalogEntryMetadata struct {
-	CommonMetadata
+	CommonMetadata `json:",inline"`
 }
 
 // CatalogEntryStatus represents the observed state of CatalogEntry.

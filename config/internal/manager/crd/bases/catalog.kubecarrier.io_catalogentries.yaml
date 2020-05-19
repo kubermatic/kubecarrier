@@ -123,6 +123,55 @@ spec:
                 metadata:
                   description: Metadata contains the metadata of the CatalogEntry
                     for the Service Catalog.
+                  properties:
+                    description:
+                      description: Description is the long and detailed description
+                        of the Service.
+                      minLength: 1
+                      type: string
+                    displayName:
+                      description: DisplayName is the human-readable name of this
+                        Service.
+                      minLength: 1
+                      type: string
+                    icon:
+                      description: Icon is a small squared logo of the service.
+                      properties:
+                        data:
+                          description: Data is the image data.
+                          format: byte
+                          type: string
+                        mediaType:
+                          description: MediaType of the included image in data. e.g.
+                            image/png, image/jpeg, image/svg
+                          type: string
+                      required:
+                        - data
+                        - mediaType
+                      type: object
+                    logo:
+                      description: Logo is the full sized logo of the service.
+                      properties:
+                        data:
+                          description: Data is the image data.
+                          format: byte
+                          type: string
+                        mediaType:
+                          description: MediaType of the included image in data. e.g.
+                            image/png, image/jpeg, image/svg
+                          type: string
+                      required:
+                        - data
+                        - mediaType
+                      type: object
+                    shortDescription:
+                      description: ShortDescription is a single line short description
+                        of the Service.
+                      minLength: 1
+                      type: string
+                  required:
+                    - displayName
+                    - shortDescription
                   type: object
               required:
                 - baseCRD
