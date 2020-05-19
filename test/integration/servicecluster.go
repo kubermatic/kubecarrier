@@ -135,8 +135,8 @@ func newServiceClusterSuite(
 			Spec: catalogv1alpha1.CatalogEntrySetSpec{
 				Metadata: catalogv1alpha1.CatalogEntrySetMetadata{
 					CommonMetadata: catalogv1alpha1.CommonMetadata{
-						DisplayName: "Test CatalogEntrySet",
-						Description: "Test CatalogEntrySet",
+						DisplayName:      "Test CatalogEntrySet",
+						ShortDescription: "Test CatalogEntrySet",
 					},
 				},
 				Discover: catalogv1alpha1.CustomResourceDiscoverySetConfig{

@@ -203,8 +203,8 @@ func providerService(ctx context.Context, conn *grpc.ClientConn, managementClien
 			Spec: catalogv1alpha1.ProviderSpec{
 				Metadata: catalogv1alpha1.AccountMetadata{
 					CommonMetadata: catalogv1alpha1.CommonMetadata{
-						Description: "Test Provider",
-						DisplayName: "Test Provider",
+						ShortDescription: "Test Provider",
+						DisplayName:      "Test Provider",
 					},
 				},
 			},
@@ -220,8 +220,8 @@ func providerService(ctx context.Context, conn *grpc.ClientConn, managementClien
 			Spec: catalogv1alpha1.ProviderSpec{
 				Metadata: catalogv1alpha1.AccountMetadata{
 					CommonMetadata: catalogv1alpha1.CommonMetadata{
-						Description: "Test Provider",
-						DisplayName: "Test Provider",
+						ShortDescription: "Test Provider",
+						DisplayName:      "Test Provider",
 					},
 				},
 			},
@@ -282,9 +282,9 @@ func providerService(ctx context.Context, conn *grpc.ClientConn, managementClien
 					Generation:        provider1.Generation,
 				},
 				Spec: &apiserverv1.ProviderSpec{
-					Metadata: &apiserverv1.AccountMetadata{
-						Description: "Test Provider",
-						DisplayName: "Test Provider",
+					Metadata: &apiserverv1.ProviderMetadata{
+						ShortDescription: "Test Provider",
+						DisplayName:      "Test Provider",
 					},
 				},
 			}
@@ -317,8 +317,8 @@ func offeringService(ctx context.Context, conn *grpc.ClientConn, managementClien
 			Spec: catalogv1alpha1.OfferingSpec{
 				Metadata: catalogv1alpha1.OfferingMetadata{
 					CommonMetadata: catalogv1alpha1.CommonMetadata{
-						Description: "Test Offering",
-						DisplayName: "Test Offering",
+						ShortDescription: "Test Offering",
+						DisplayName:      "Test Offering",
 					},
 				},
 				Provider: catalogv1alpha1.ObjectReference{
@@ -359,8 +359,8 @@ func offeringService(ctx context.Context, conn *grpc.ClientConn, managementClien
 			Spec: catalogv1alpha1.OfferingSpec{
 				Metadata: catalogv1alpha1.OfferingMetadata{
 					CommonMetadata: catalogv1alpha1.CommonMetadata{
-						Description: "Test Offering",
-						DisplayName: "Test Offering",
+						ShortDescription: "Test Offering",
+						DisplayName:      "Test Offering",
 					},
 				},
 				Provider: catalogv1alpha1.ObjectReference{
@@ -445,8 +445,8 @@ func offeringService(ctx context.Context, conn *grpc.ClientConn, managementClien
 				},
 				Spec: &apiserverv1.OfferingSpec{
 					Metadata: &apiserverv1.OfferingMetadata{
-						Description: "Test Offering",
-						DisplayName: "Test Offering",
+						ShortDescription: "Test Offering",
+						DisplayName:      "Test Offering",
 					},
 					Provider: &apiserverv1.ObjectReference{
 						Name: "test-provider",

@@ -136,8 +136,8 @@ func newCatalogSuite(
 			Spec: catalogv1alpha1.CatalogEntrySpec{
 				Metadata: catalogv1alpha1.CatalogEntryMetadata{
 					CommonMetadata: catalogv1alpha1.CommonMetadata{
-						DisplayName: "Couch DB",
-						Description: "The comfy nosql database",
+						DisplayName:      "Couch DB",
+						ShortDescription: "The comfy nosql database",
 					},
 				},
 				BaseCRD: catalogv1alpha1.ObjectReference{
