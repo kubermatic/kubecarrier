@@ -18,7 +18,6 @@ package v1
 
 import (
 	"context"
-	"fmt"
 
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -46,16 +45,16 @@ func NewProviderServiceServer(c client.Client) v1.ProviderServiceServer {
 func (o providerServer) List(ctx context.Context, req *v1.ListRequest) (res *v1.ProviderList, err error) {
 	listOptions, err := validateListRequest(req)
 	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 	providerList := &catalogv1alpha1.ProviderList{}
 	if err := o.client.List(ctx, providerList, listOptions...); err != nil {
-		return nil, fmt.Errorf("listing providers: %w", err)
+		return nil, status.Errorf(codes.Internal, "listing providers: %s", err.Error())
 	}
 
 	res, err = o.convertProviderList(providerList)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, fmt.Sprintf("converting ProviderList: %s", err.Error()))
+		return nil, status.Errorf(codes.Internal, "converting ProviderList: %s", err.Error())
 	}
 	return
 }
@@ -69,11 +68,11 @@ func (o providerServer) Get(ctx context.Context, req *v1.GetRequest) (res *v1.Pr
 		Name:      req.Name,
 		Namespace: req.Account,
 	}, provider); err != nil {
-		return nil, status.Errorf(codes.Internal, fmt.Sprintf("getting provider: %s", err.Error()))
+		return nil, status.Errorf(codes.Internal, "getting provider: %s", err.Error())
 	}
 	res, err = o.convertProvider(provider)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, fmt.Sprintf("converting Provider: %s", err.Error()))
+		return nil, status.Errorf(codes.Internal, "converting Provider: %s", err.Error())
 	}
 	return
 }

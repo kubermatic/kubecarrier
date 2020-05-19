@@ -19,7 +19,6 @@ package v1
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -48,34 +47,34 @@ func (o offeringServer) List(ctx context.Context, req *v1.ListRequest) (res *v1.
 	var listOptions []client.ListOption
 	listOptions, err = validateListRequest(req)
 	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 	offeringList := &catalogv1alpha1.OfferingList{}
 	if err := o.client.List(ctx, offeringList, listOptions...); err != nil {
-		return nil, status.Errorf(codes.Internal, fmt.Sprintf("listing offerings: %s", err.Error()))
+		return nil, status.Errorf(codes.Internal, "listing offerings: %s", err.Error())
 	}
 
 	res, err = o.convertOfferingList(offeringList)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, fmt.Sprintf("converting OfferingList: %s", err.Error()))
+		return nil, status.Errorf(codes.Internal, "converting OfferingList: %s", err.Error())
 	}
 	return
 }
 
 func (o offeringServer) Get(ctx context.Context, req *v1.GetRequest) (res *v1.Offering, err error) {
 	if err = validateGetRequest(req); err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 	offering := &catalogv1alpha1.Offering{}
 	if err = o.client.Get(ctx, types.NamespacedName{
 		Name:      req.Name,
 		Namespace: req.Account,
 	}, offering); err != nil {
-		return nil, status.Errorf(codes.Internal, fmt.Sprintf("getting offering: %s", err.Error()))
+		return nil, status.Errorf(codes.Internal, "getting offering: %s", err.Error())
 	}
 	res, err = o.convertOffering(offering)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, fmt.Sprintf("converting Offering: %s", err.Error()))
+		return nil, status.Errorf(codes.Internal, "converting Offering: %s", err.Error())
 	}
 	return
 }
