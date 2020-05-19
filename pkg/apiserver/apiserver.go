@@ -118,21 +118,6 @@ func runE(flags *flags, log logr.Logger) error {
 		return fmt.Errorf("creating client: %w", err)
 	}
 
-	// Create Kubernetes Client
-	cfg := config.GetConfigOrDie()
-	mapper, err := apiutil.NewDiscoveryRESTMapper(cfg)
-	if err != nil {
-		return fmt.Errorf("creating rest mapper: %w", err)
-	}
-	c, err := client.New(cfg, client.Options{
-		Scheme: scheme,
-		Mapper: mapper,
-	})
-	if err != nil {
-		return fmt.Errorf("creating client: %w", err)
-
-	}
-
 	apiserverv1.RegisterKubeCarrierServer(grpcServer, &v1.KubeCarrierServer{})
 	if err := apiserverv1.RegisterKubeCarrierHandlerServer(context.Background(), grpcGatewayMux, &v1.KubeCarrierServer{}); err != nil {
 		return err

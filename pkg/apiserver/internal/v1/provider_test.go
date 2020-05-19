@@ -77,18 +77,18 @@ func TestListProvider(t *testing.T) {
 		expectedResult *v1.ProviderList
 	}{
 		{
-			name: "missing tenant",
+			name: "missing namespace",
 			req: &v1.ProviderListRequest{
-				Tenant: "",
+				Account: "",
 			},
-			expectedError:  status.Errorf(codes.InvalidArgument, "missing tenant"),
+			expectedError:  status.Errorf(codes.InvalidArgument, "missing namespace"),
 			expectedResult: nil,
 		},
 		{
 			name: "invalid limit",
 			req: &v1.ProviderListRequest{
-				Tenant: "test-namespace",
-				Limit:  -1,
+				Account: "test-namespace",
+				Limit:   -1,
 			},
 			expectedError:  status.Errorf(codes.InvalidArgument, "invalid limit: should not be negative number"),
 			expectedResult: nil,
@@ -96,7 +96,7 @@ func TestListProvider(t *testing.T) {
 		{
 			name: "invalid label selector",
 			req: &v1.ProviderListRequest{
-				Tenant:        "test-namespace",
+				Account:       "test-namespace",
 				LabelSelector: "test-label=====provider1",
 			},
 			expectedError:  status.Errorf(codes.InvalidArgument, "invalid LabelSelector: unable to parse requirement: found '==', expected: identifier"),
@@ -105,23 +105,43 @@ func TestListProvider(t *testing.T) {
 		{
 			name: "valid request",
 			req: &v1.ProviderListRequest{
-				Tenant: "test-namespace",
+				Account: "test-namespace",
 			},
 			expectedError: nil,
 			expectedResult: &v1.ProviderList{
+				Metadata: &v1.ListMeta{
+					Continue:        "",
+					ResourceVersion: "",
+				},
 				Items: []*v1.Provider{
 					{
-						Name: "test-provider-1",
-						Metadata: &v1.AccountMetadata{
-							Description: "Test Provider",
-							DisplayName: "Test Provider",
+						Metadata: &v1.ObjectMeta{
+							Name:    "test-provider-1",
+							Account: "test-namespace",
+							Labels: map[string]string{
+								"test-label": "provider1",
+							},
+						},
+						Spec: &v1.ProviderSpec{
+							Metadata: &v1.AccountMetadata{
+								Description: "Test Provider",
+								DisplayName: "Test Provider",
+							},
 						},
 					},
 					{
-						Name: "test-provider-2",
-						Metadata: &v1.AccountMetadata{
-							Description: "Test Provider",
-							DisplayName: "Test Provider",
+						Metadata: &v1.ObjectMeta{
+							Name:    "test-provider-2",
+							Account: "test-namespace",
+							Labels: map[string]string{
+								"test-label": "provider2",
+							},
+						},
+						Spec: &v1.ProviderSpec{
+							Metadata: &v1.AccountMetadata{
+								Description: "Test Provider",
+								DisplayName: "Test Provider",
+							},
 						},
 					},
 				},
@@ -130,17 +150,29 @@ func TestListProvider(t *testing.T) {
 		{
 			name: "LabelSelector works",
 			req: &v1.ProviderListRequest{
-				Tenant:        "test-namespace",
+				Account:       "test-namespace",
 				LabelSelector: "test-label=provider1",
 			},
 			expectedError: nil,
 			expectedResult: &v1.ProviderList{
+				Metadata: &v1.ListMeta{
+					Continue:        "",
+					ResourceVersion: "",
+				},
 				Items: []*v1.Provider{
 					{
-						Name: "test-provider-1",
-						Metadata: &v1.AccountMetadata{
-							Description: "Test Provider",
-							DisplayName: "Test Provider",
+						Metadata: &v1.ObjectMeta{
+							Name:    "test-provider-1",
+							Account: "test-namespace",
+							Labels: map[string]string{
+								"test-label": "provider1",
+							},
+						},
+						Spec: &v1.ProviderSpec{
+							Metadata: &v1.AccountMetadata{
+								Description: "Test Provider",
+								DisplayName: "Test Provider",
+							},
 						},
 					},
 				},
@@ -176,39 +208,44 @@ func TestGetProvider(t *testing.T) {
 	ctx := context.Background()
 	tests := []struct {
 		name           string
-		req            *v1.ProviderRequest
+		req            *v1.ProviderGetRequest
 		expectedError  error
 		expectedResult *v1.Provider
 	}{
 		{
-			name: "missing tenant",
-			req: &v1.ProviderRequest{
-				Name:   "test-provider",
-				Tenant: "",
+			name: "missing namespace",
+			req: &v1.ProviderGetRequest{
+				Name:    "test-provider",
+				Account: "",
 			},
-			expectedError:  status.Errorf(codes.InvalidArgument, "missing tenant"),
+			expectedError:  status.Errorf(codes.InvalidArgument, "missing namespace"),
 			expectedResult: nil,
 		},
 		{
 			name: "missing name",
-			req: &v1.ProviderRequest{
-				Tenant: "test-namespace",
+			req: &v1.ProviderGetRequest{
+				Account: "test-namespace",
 			},
 			expectedError:  status.Errorf(codes.InvalidArgument, "missing name"),
 			expectedResult: nil,
 		},
 		{
 			name: "valid request",
-			req: &v1.ProviderRequest{
-				Name:   "test-provider",
-				Tenant: "test-namespace",
+			req: &v1.ProviderGetRequest{
+				Name:    "test-provider",
+				Account: "test-namespace",
 			},
 			expectedError: nil,
 			expectedResult: &v1.Provider{
-				Name: "test-provider",
-				Metadata: &v1.AccountMetadata{
-					Description: "Test Provider",
-					DisplayName: "Test Provider",
+				Metadata: &v1.ObjectMeta{
+					Name:    "test-provider",
+					Account: "test-namespace",
+				},
+				Spec: &v1.ProviderSpec{
+					Metadata: &v1.AccountMetadata{
+						Description: "Test Provider",
+						DisplayName: "Test Provider",
+					},
 				},
 			},
 		},

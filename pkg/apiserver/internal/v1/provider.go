@@ -18,7 +18,6 @@ package v1
 
 import (
 	"context"
-	"errors"
 	"fmt"
 
 	"google.golang.org/grpc/codes"
@@ -29,6 +28,7 @@ import (
 
 	catalogv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/catalog/v1alpha1"
 	v1 "github.com/kubermatic/kubecarrier/pkg/apiserver/api/v1"
+	"github.com/kubermatic/kubecarrier/pkg/apiserver/internal/util"
 )
 
 type providerServer struct {
@@ -45,89 +45,120 @@ func NewProviderServiceServer(c client.Client) v1.ProviderServiceServer {
 	}
 }
 
-func (o providerServer) validateListRequest(req *v1.ProviderListRequest) error {
-	if req.Tenant == "" {
-		return errors.New("missing tenant")
+func (o providerServer) validateListRequest(req *v1.ProviderListRequest) ([]client.ListOption, error) {
+	var listOptions []client.ListOption
+	if req.Account == "" {
+		return listOptions, fmt.Errorf("missing namespace")
 	}
+	listOptions = append(listOptions, client.InNamespace(req.Account))
 	if req.Limit < 0 {
-		return errors.New("invalid limit: should not be negative number")
+		return listOptions, fmt.Errorf("invalid limit: should not be negative number")
 	}
-	if req.LabelSelector != "" {
-		if _, err := labels.Parse(req.LabelSelector); err != nil {
-			return errors.New("invalid LabelSelector: unable to parse requirement: found '==', expected: identifier")
-		}
-	}
-	return nil
-}
-
-func (o providerServer) getListOptions(req *v1.ProviderListRequest) ([]client.ListOption, error) {
-	if err := o.validateListRequest(req); err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
-	}
-	listOptions := []client.ListOption{}
-	listOptions = append(listOptions, client.InNamespace(req.Tenant))
 	listOptions = append(listOptions, client.Limit(req.Limit))
 	if req.LabelSelector != "" {
-		labelSelector, err := labels.Parse(req.LabelSelector)
+		selector, err := labels.Parse(req.LabelSelector)
 		if err != nil {
-			return nil, status.Errorf(codes.InvalidArgument, fmt.Errorf("invalid LabelSelector: %w", err).Error())
+			return listOptions, fmt.Errorf("invalid LabelSelector: %w", err)
 		}
-		listOptions = append(listOptions, client.MatchingLabelsSelector{Selector: labelSelector})
+		listOptions = append(listOptions, client.MatchingLabelsSelector{
+			Selector: selector,
+		})
+	}
+	if req.Continue != "" {
+		listOptions = append(listOptions, client.Continue(req.Continue))
 	}
 	return listOptions, nil
 }
 
 func (o providerServer) List(ctx context.Context, req *v1.ProviderListRequest) (res *v1.ProviderList, err error) {
-	listOptions, err := o.getListOptions(req)
+	listOptions, err := o.validateListRequest(req)
 	if err != nil {
-		return nil, err
+		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
 	providerList := &catalogv1alpha1.ProviderList{}
 	if err := o.client.List(ctx, providerList, listOptions...); err != nil {
-		return nil, fmt.Errorf("listing provider: %w", err)
+		return nil, fmt.Errorf("listing providers: %w", err)
 	}
 
-	res = &v1.ProviderList{}
-	for _, catalogProvider := range providerList.Items {
-		res.Items = append(res.Items, o.convertProvider(&catalogProvider))
-
+	res, err = o.convertProviderList(providerList)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, fmt.Sprintf("converting ProviderList: %s", err.Error()))
 	}
-	res.Continue = providerList.Continue
 	return
 }
 
-func validateProviderRequest(req *v1.ProviderRequest) error {
-	if req.Name == "" {
-		return errors.New("missing name")
-	}
-	if req.Tenant == "" {
-		return errors.New("missing tenant")
-	}
-	return nil
-}
-
-func (o providerServer) Get(ctx context.Context, req *v1.ProviderRequest) (res *v1.Provider, err error) {
-	if err := validateProviderRequest(req); err != nil {
+func (o providerServer) Get(ctx context.Context, req *v1.ProviderGetRequest) (res *v1.Provider, err error) {
+	if err := o.validateGetRequest(req); err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 	provider := &catalogv1alpha1.Provider{}
 	if err = o.client.Get(ctx, types.NamespacedName{
 		Name:      req.Name,
-		Namespace: req.Tenant,
+		Namespace: req.Account,
 	}, provider); err != nil {
-		return
+		return nil, status.Errorf(codes.Internal, fmt.Sprintf("getting provider: %s", err.Error()))
 	}
-
-	return o.convertProvider(provider), nil
-
+	res, err = o.convertProvider(provider)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, fmt.Sprintf("converting Provider: %s", err.Error()))
+	}
+	return
 }
 
-func (o providerServer) convertProvider(in *catalogv1alpha1.Provider) (out *v1.Provider) {
-	return &v1.Provider{
-		Name: in.Name,
-		Metadata: &v1.AccountMetadata{
-			DisplayName: in.Spec.Metadata.DisplayName,
-			Description: in.Spec.Metadata.Description,
+func (o providerServer) validateGetRequest(req *v1.ProviderGetRequest) error {
+	if req.Name == "" {
+		return fmt.Errorf("missing name")
+	}
+	if req.Account == "" {
+		return fmt.Errorf("missing namespace")
+	}
+	return nil
+}
+
+func (o providerServer) convertProvider(in *catalogv1alpha1.Provider) (out *v1.Provider, err error) {
+	creationTimestamp, err := util.TimestampProto(&in.ObjectMeta.CreationTimestamp)
+	if err != nil {
+		return nil, err
+	}
+	deletionTimestamp, err := util.TimestampProto(in.ObjectMeta.DeletionTimestamp)
+	if err != nil {
+		return nil, err
+	}
+	out = &v1.Provider{
+		Metadata: &v1.ObjectMeta{
+			Uid:               string(in.UID),
+			Name:              in.Name,
+			Account:           in.Namespace,
+			CreationTimestamp: creationTimestamp,
+			DeletionTimestamp: deletionTimestamp,
+			ResourceVersion:   in.ResourceVersion,
+			Labels:            in.Labels,
+			Annotations:       in.Annotations,
+			Generation:        in.Generation,
+		},
+		Spec: &v1.ProviderSpec{
+			Metadata: &v1.AccountMetadata{
+				DisplayName: in.Spec.Metadata.DisplayName,
+				Description: in.Spec.Metadata.Description,
+			},
 		},
 	}
+	return
+}
+
+func (o providerServer) convertProviderList(in *catalogv1alpha1.ProviderList) (out *v1.ProviderList, err error) {
+	out = &v1.ProviderList{
+		Metadata: &v1.ListMeta{
+			Continue:        in.Continue,
+			ResourceVersion: in.ResourceVersion,
+		},
+	}
+	for _, inProvider := range in.Items {
+		provider, err := o.convertProvider(&inProvider)
+		if err != nil {
+			return nil, err
+		}
+		out.Items = append(out.Items, provider)
+	}
+	return
 }

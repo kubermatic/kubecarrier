@@ -47,30 +47,87 @@
       },
       "type": "object"
     },
-    "v1Provider": {
+    "v1ListMeta": {
       "properties": {
-        "metadata": {
-          "$ref": "#/definitions/v1AccountMetadata"
+        "continue": {
+          "type": "string"
+        },
+        "resourceVersion": {
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "v1ObjectMeta": {
+      "properties": {
+        "account": {
+          "type": "string"
+        },
+        "annotations": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "type": "object"
+        },
+        "creationTimestamp": {
+          "format": "date-time",
+          "type": "string"
+        },
+        "deletionTimestamp": {
+          "format": "date-time",
+          "type": "string"
+        },
+        "generation": {
+          "format": "int64",
+          "type": "string"
+        },
+        "labels": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "type": "object"
         },
         "name": {
           "type": "string"
         },
-        "tenant": {
+        "resourceVersion": {
           "type": "string"
+        },
+        "uid": {
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "v1Provider": {
+      "properties": {
+        "metadata": {
+          "$ref": "#/definitions/v1ObjectMeta"
+        },
+        "spec": {
+          "$ref": "#/definitions/v1ProviderSpec"
         }
       },
       "type": "object"
     },
     "v1ProviderList": {
       "properties": {
-        "continue": {
-          "type": "string"
-        },
         "items": {
           "items": {
             "$ref": "#/definitions/v1Provider"
           },
           "type": "array"
+        },
+        "metadata": {
+          "$ref": "#/definitions/v1ListMeta"
+        }
+      },
+      "type": "object"
+    },
+    "v1ProviderSpec": {
+      "properties": {
+        "metadata": {
+          "$ref": "#/definitions/v1AccountMetadata"
         }
       },
       "type": "object"
@@ -81,13 +138,13 @@
     "version": "version not set"
   },
   "paths": {
-    "/v1/tenants/{tenant}/providers": {
+    "/v1/accounts/{account}/providers": {
       "get": {
         "operationId": "List",
         "parameters": [
           {
             "in": "path",
-            "name": "tenant",
+            "name": "account",
             "required": true,
             "type": "string"
           },
@@ -130,13 +187,13 @@
         ]
       }
     },
-    "/v1/tenants/{tenant}/providers/{name}": {
+    "/v1/accounts/{account}/providers/{name}": {
       "get": {
         "operationId": "Get",
         "parameters": [
           {
             "in": "path",
-            "name": "tenant",
+            "name": "account",
             "required": true,
             "type": "string"
           },

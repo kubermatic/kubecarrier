@@ -189,7 +189,6 @@ func providerService(ctx context.Context, conn *grpc.ClientConn, managementClien
 	return func(t *testing.T) {
 		testName := strings.Replace(strings.ToLower(t.Name()), "/", "-", -1)
 		ns := &corev1.Namespace{}
-		fmt.Printf("creating namespace with name: %v\n", testName)
 		ns.Name = testName
 		require.NoError(t, managementClient.Create(ctx, ns))
 		// Create tenants objects in the management cluster.
@@ -232,8 +231,8 @@ func providerService(ctx context.Context, conn *grpc.ClientConn, managementClien
 		// list providers with limit and continuation token.
 		require.NoError(t, wait.PollUntil(time.Second, func() (done bool, err error) {
 			providers, err := client.List(providerCtx, &apiserverv1.ProviderListRequest{
-				Tenant: testName,
-				Limit:  1,
+				Account: testName,
+				Limit:   1,
 			})
 			if err != nil {
 				return false, err
@@ -241,9 +240,9 @@ func providerService(ctx context.Context, conn *grpc.ClientConn, managementClien
 			assert.Len(t, providers.Items, 1)
 			testutil.LogObject(t, providers)
 			providers, err = client.List(providerCtx, &apiserverv1.ProviderListRequest{
-				Tenant:   testName,
+				Account:  testName,
 				Limit:    1,
-				Continue: providers.Continue,
+				Continue: providers.Metadata.Continue,
 			})
 			if err != nil {
 				return false, err
@@ -255,18 +254,34 @@ func providerService(ctx context.Context, conn *grpc.ClientConn, managementClien
 
 		// get provider
 		require.NoError(t, wait.PollUntil(time.Second, func() (done bool, err error) {
-			provider, err := client.Get(providerCtx, &apiserverv1.ProviderRequest{
-				Tenant: testName,
-				Name:   "test-provider-1",
+			provider, err := client.Get(providerCtx, &apiserverv1.ProviderGetRequest{
+				Account: testName,
+				Name:    "test-provider-1",
 			})
 			if err != nil {
 				return false, err
 			}
+			creationTimestamp, err := ptypes.TimestampProto(provider1.CreationTimestamp.Time)
+			if err != nil {
+				return true, err
+			}
 			expectedResult := &apiserverv1.Provider{
-				Name: "test-provider-1",
-				Metadata: &apiserverv1.AccountMetadata{
-					Description: "Test Provider",
-					DisplayName: "Test Provider",
+				Metadata: &apiserverv1.ObjectMeta{
+					Name:    "test-provider-1",
+					Account: testName,
+					Labels: map[string]string{
+						"test-label": "provider1",
+					},
+					Uid:               string(provider1.UID),
+					CreationTimestamp: creationTimestamp,
+					ResourceVersion:   provider1.ResourceVersion,
+					Generation:        provider1.Generation,
+				},
+				Spec: &apiserverv1.ProviderSpec{
+					Metadata: &apiserverv1.AccountMetadata{
+						Description: "Test Provider",
+						DisplayName: "Test Provider",
+					},
 				},
 			}
 			assert.EqualValues(t, provider, expectedResult)

@@ -18,29 +18,31 @@ syntax = "proto3";
 package kubecarrier.api.v1;
 option go_package = "v1";
 
-import "google/protobuf/timestamp.proto";
 import "google/api/annotations.proto";
 
-import "types.proto";
+import "meta.proto";
 
 message Provider {
-  string name = 1;
-  string tenant = 2;
-  AccountMetadata metadata = 3;
+  ObjectMeta metadata = 1;
+  ProviderSpec spec = 2;
+}
+
+message ProviderSpec {
+  AccountMetadata metadata = 1;
 }
 
 message ProviderList {
-  repeated Provider items = 1;
-  string continue = 2;
+  ListMeta metadata = 1;
+  repeated Provider items = 2;
 }
 
-message ProviderRequest {
+message ProviderGetRequest {
   string name = 1;
-  string tenant = 2;
+  string account = 2;
 }
 
 message ProviderListRequest {
-  string tenant = 1;
+  string account = 1;
   string labelSelector = 2;
   int64 limit = 3;
   string continue = 4;
@@ -55,12 +57,12 @@ message AccountMetadata {
 service ProviderService {
   rpc List(ProviderListRequest) returns (ProviderList) {
     option (google.api.http) = {
-      get : "/v1/tenants/{tenant}/providers"
+      get : "/v1/accounts/{account}/providers"
     };
   };
-  rpc Get(ProviderRequest) returns (Provider) {
+  rpc Get(ProviderGetRequest) returns (Provider) {
     option (google.api.http) = {
-      get : "/v1/tenants/{tenant}/providers/{name}"
+      get : "/v1/accounts/{account}/providers/{name}"
     };
   };
 }
