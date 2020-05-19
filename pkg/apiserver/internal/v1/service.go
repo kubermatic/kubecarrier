@@ -31,6 +31,8 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
+	"github.com/golang/protobuf/ptypes/empty"
+
 	v1 "github.com/kubermatic/kubecarrier/pkg/apiserver/api/v1"
 	"github.com/kubermatic/kubecarrier/pkg/apiserver/internal/util"
 )
@@ -51,12 +53,7 @@ func NewServicesServer(c client.Client, scheme *runtime.Scheme) v1.ServicesServe
 func (o serviceServer) Create(ctx context.Context, req *v1.ServiceCreateRequest) (res *v1.Service, err error) {
 	obj := &unstructured.Unstructured{}
 
-	parts := strings.SplitN(req.Service, ".", 2)
-	gvk := schema.GroupVersionKind{
-		Kind:    parts[0],
-		Group:   parts[1],
-		Version: req.Version,
-	}
+	gvk := o.gvkFromService(req.Service, req.Version)
 	obj.SetGroupVersionKind(gvk)
 	val := map[string]interface{}{}
 	if err := json.Unmarshal([]byte(req.Spec.Spec), &val); err != nil {
@@ -91,12 +88,7 @@ func (o serviceServer) List(ctx context.Context, req *v1.ServiceListRequest) (re
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
 	obj := &unstructured.UnstructuredList{}
-	parts := strings.SplitN(req.Service, ".", 2)
-	gvk := schema.GroupVersionKind{
-		Kind:    parts[0],
-		Group:   parts[1],
-		Version: req.Version,
-	}
+	gvk := o.gvkFromService(req.Service, req.Version)
 	obj.SetGroupVersionKind(gvk)
 	if err := o.client.List(ctx, obj, listOptions...); err != nil {
 		return nil, status.Errorf(codes.Internal, fmt.Sprintf("listing services: %s", err.Error()))
@@ -109,17 +101,21 @@ func (o serviceServer) List(ctx context.Context, req *v1.ServiceListRequest) (re
 	return
 }
 
+func (o serviceServer) gvkFromService(service string, version string) schema.GroupVersionKind {
+	parts := strings.SplitN(service, ".", 2)
+	return schema.GroupVersionKind{
+		Kind:    parts[0],
+		Group:   parts[1],
+		Version: version,
+	}
+}
+
 func (o serviceServer) Get(ctx context.Context, req *v1.ServiceGetRequest) (res *v1.Service, err error) {
 	if err = o.validateGetRequest(req); err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
 	obj := &unstructured.Unstructured{}
-	parts := strings.SplitN(req.Service, ".", 2)
-	gvk := schema.GroupVersionKind{
-		Kind:    parts[0],
-		Group:   parts[1],
-		Version: req.Version,
-	}
+	gvk := o.gvkFromService(req.Service, req.Version)
 	obj.SetGroupVersionKind(gvk)
 	if err = o.client.Get(ctx, types.NamespacedName{
 		Name:      req.Name,
@@ -132,6 +128,22 @@ func (o serviceServer) Get(ctx context.Context, req *v1.ServiceGetRequest) (res 
 		return nil, status.Errorf(codes.Internal, fmt.Sprintf("converting Service: %s", err.Error()))
 	}
 	return
+}
+
+func (o serviceServer) Delete(ctx context.Context, req *v1.ServiceDeleteRequest) (*empty.Empty, error) {
+	obj := &unstructured.Unstructured{}
+	gvk := o.gvkFromService(req.Service, req.Version)
+	obj.SetGroupVersionKind(gvk)
+	if err := o.client.Get(ctx, types.NamespacedName{
+		Name:      req.Name,
+		Namespace: req.Account,
+	}, obj); err != nil {
+		return nil, status.Errorf(codes.Internal, fmt.Sprintf("delete service: %s", err.Error()))
+	}
+	if err := o.client.Delete(ctx, obj); err != nil {
+		return nil, status.Errorf(codes.Internal, fmt.Sprintf("delete service: %s", err.Error()))
+	}
+	return &empty.Empty{}, nil
 }
 
 func (o serviceServer) validateListRequest(req *v1.ServiceListRequest) ([]client.ListOption, error) {

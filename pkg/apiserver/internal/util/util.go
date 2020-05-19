@@ -57,27 +57,32 @@ func FromMetav1(obj metav1.ObjectMeta) (*v1.ObjectMeta, error) {
 }
 
 func ToMetav1(obj *v1.ObjectMeta) (*metav1.ObjectMeta, error) {
-	creationTimestamp, err := ptypes.Timestamp(obj.CreationTimestamp)
-	if err != nil {
-		return nil, err
-	}
-	deletionTimestamp, err := ptypes.Timestamp(obj.DeletionTimestamp)
-	if err != nil {
-		return nil, err
-	}
-	metav1DeletionTimestamp := metav1.NewTime(deletionTimestamp)
 
-	return &metav1.ObjectMeta{
-		UID:               types.UID(obj.Uid),
-		Name:              obj.Name,
-		Namespace:         obj.Account,
-		CreationTimestamp: metav1.NewTime(creationTimestamp),
-		DeletionTimestamp: &metav1DeletionTimestamp,
-		ResourceVersion:   obj.ResourceVersion,
-		Labels:            obj.Labels,
-		Annotations:       obj.Annotations,
-		Generation:        obj.Generation,
-	}, nil
+	objMeta := &metav1.ObjectMeta{
+		UID:             types.UID(obj.Uid),
+		Name:            obj.Name,
+		Namespace:       obj.Account,
+		ResourceVersion: obj.ResourceVersion,
+		Labels:          obj.Labels,
+		Annotations:     obj.Annotations,
+		Generation:      obj.Generation,
+	}
+	if obj.CreationTimestamp != nil {
+		timestamp, err := ptypes.Timestamp(obj.CreationTimestamp)
+		if err != nil {
+			return nil, err
+		}
+		objMeta.CreationTimestamp = metav1.NewTime(timestamp)
+	}
+	if obj.DeletionTimestamp != nil {
+		timestamp, err := ptypes.Timestamp(obj.DeletionTimestamp)
+		if err != nil {
+			return nil, err
+		}
+		metav1DeletionTimestamp := metav1.NewTime(timestamp)
+		objMeta.DeletionTimestamp = &metav1DeletionTimestamp
+	}
+	return objMeta, nil
 }
 
 func FromUnstructured(obj *unstructured.Unstructured) (*v1.ObjectMeta, error) {
