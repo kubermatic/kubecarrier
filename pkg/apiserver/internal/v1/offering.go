@@ -28,7 +28,6 @@ import (
 
 	catalogv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/catalog/v1alpha1"
 	v1 "github.com/kubermatic/kubecarrier/pkg/apiserver/api/v1"
-	"github.com/kubermatic/kubecarrier/pkg/apiserver/internal/util"
 )
 
 type offeringServer struct {
@@ -90,27 +89,13 @@ func (o offeringServer) convertOffering(in *catalogv1alpha1.Offering) (out *v1.O
 			Schema: string(schemaBytes),
 		})
 	}
+	metadata, err := convertObjectMeta(in.ObjectMeta)
+	if err != nil {
+		return nil, err
+	}
 
-	creationTimestamp, err := util.TimestampProto(&in.ObjectMeta.CreationTimestamp)
-	if err != nil {
-		return nil, err
-	}
-	deletionTimestamp, err := util.TimestampProto(in.ObjectMeta.DeletionTimestamp)
-	if err != nil {
-		return nil, err
-	}
 	out = &v1.Offering{
-		Metadata: &v1.ObjectMeta{
-			Uid:               string(in.UID),
-			Name:              in.Name,
-			Account:           in.Namespace,
-			CreationTimestamp: creationTimestamp,
-			DeletionTimestamp: deletionTimestamp,
-			ResourceVersion:   in.ResourceVersion,
-			Labels:            in.Labels,
-			Annotations:       in.Annotations,
-			Generation:        in.Generation,
-		},
+		Metadata: metadata,
 		Spec: &v1.OfferingSpec{
 			Metadata: &v1.OfferingMetadata{
 				DisplayName: in.Spec.Metadata.DisplayName,
@@ -136,10 +121,7 @@ func (o offeringServer) convertOffering(in *catalogv1alpha1.Offering) (out *v1.O
 
 func (o offeringServer) convertOfferingList(in *catalogv1alpha1.OfferingList) (out *v1.OfferingList, err error) {
 	out = &v1.OfferingList{
-		Metadata: &v1.ListMeta{
-			Continue:        in.Continue,
-			ResourceVersion: in.ResourceVersion,
-		},
+		Metadata: convertListMeta(in.ListMeta),
 	}
 	for _, inOffering := range in.Items {
 		offering, err := o.convertOffering(&inOffering)

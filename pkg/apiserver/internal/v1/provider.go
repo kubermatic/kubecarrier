@@ -27,7 +27,6 @@ import (
 
 	catalogv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/catalog/v1alpha1"
 	v1 "github.com/kubermatic/kubecarrier/pkg/apiserver/api/v1"
-	"github.com/kubermatic/kubecarrier/pkg/apiserver/internal/util"
 )
 
 type providerServer struct {
@@ -80,26 +79,12 @@ func (o providerServer) Get(ctx context.Context, req *v1.GetRequest) (res *v1.Pr
 }
 
 func (o providerServer) convertProvider(in *catalogv1alpha1.Provider) (out *v1.Provider, err error) {
-	creationTimestamp, err := util.TimestampProto(&in.ObjectMeta.CreationTimestamp)
-	if err != nil {
-		return nil, err
-	}
-	deletionTimestamp, err := util.TimestampProto(in.ObjectMeta.DeletionTimestamp)
+	metadata, err := convertObjectMeta(in.ObjectMeta)
 	if err != nil {
 		return nil, err
 	}
 	out = &v1.Provider{
-		Metadata: &v1.ObjectMeta{
-			Uid:               string(in.UID),
-			Name:              in.Name,
-			Account:           in.Namespace,
-			CreationTimestamp: creationTimestamp,
-			DeletionTimestamp: deletionTimestamp,
-			ResourceVersion:   in.ResourceVersion,
-			Labels:            in.Labels,
-			Annotations:       in.Annotations,
-			Generation:        in.Generation,
-		},
+		Metadata: metadata,
 		Spec: &v1.ProviderSpec{
 			Metadata: &v1.AccountMetadata{
 				DisplayName: in.Spec.Metadata.DisplayName,
@@ -112,10 +97,7 @@ func (o providerServer) convertProvider(in *catalogv1alpha1.Provider) (out *v1.P
 
 func (o providerServer) convertProviderList(in *catalogv1alpha1.ProviderList) (out *v1.ProviderList, err error) {
 	out = &v1.ProviderList{
-		Metadata: &v1.ListMeta{
-			Continue:        in.Continue,
-			ResourceVersion: in.ResourceVersion,
-		},
+		Metadata: convertListMeta(in.ListMeta),
 	}
 	for _, inProvider := range in.Items {
 		provider, err := o.convertProvider(&inProvider)

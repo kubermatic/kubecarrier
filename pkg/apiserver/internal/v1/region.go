@@ -26,7 +26,6 @@ import (
 
 	catalogv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/catalog/v1alpha1"
 	v1 "github.com/kubermatic/kubecarrier/pkg/apiserver/api/v1"
-	"github.com/kubermatic/kubecarrier/pkg/apiserver/internal/util"
 )
 
 type regionServer struct {
@@ -80,26 +79,12 @@ func (o regionServer) Get(ctx context.Context, req *v1.GetRequest) (res *v1.Regi
 }
 
 func (o regionServer) convertRegion(in *catalogv1alpha1.Region) (out *v1.Region, err error) {
-	creationTimestamp, err := util.TimestampProto(&in.ObjectMeta.CreationTimestamp)
-	if err != nil {
-		return nil, err
-	}
-	deletionTimestamp, err := util.TimestampProto(in.ObjectMeta.DeletionTimestamp)
+	metadata, err := convertObjectMeta(in.ObjectMeta)
 	if err != nil {
 		return nil, err
 	}
 	out = &v1.Region{
-		Metadata: &v1.ObjectMeta{
-			Uid:               string(in.UID),
-			Name:              in.Name,
-			Account:           in.Namespace,
-			CreationTimestamp: creationTimestamp,
-			DeletionTimestamp: deletionTimestamp,
-			ResourceVersion:   in.ResourceVersion,
-			Labels:            in.Labels,
-			Annotations:       in.Annotations,
-			Generation:        in.Generation,
-		},
+		Metadata: metadata,
 		Spec: &v1.RegionSpec{
 			Metadata: &v1.RegionMetadata{
 				DisplayName: in.Spec.Metadata.DisplayName,
@@ -115,10 +100,7 @@ func (o regionServer) convertRegion(in *catalogv1alpha1.Region) (out *v1.Region,
 
 func (o regionServer) convertRegionList(in *catalogv1alpha1.RegionList) (out *v1.RegionList, err error) {
 	out = &v1.RegionList{
-		Metadata: &v1.ListMeta{
-			Continue:        in.Continue,
-			ResourceVersion: in.ResourceVersion,
-		},
+		Metadata: convertListMeta(in.ListMeta),
 	}
 	for _, inRegion := range in.Items {
 		region, err := o.convertRegion(&inRegion)
