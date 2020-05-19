@@ -173,6 +173,7 @@ func newAPIServer(f *testutil.Framework) func(t *testing.T) {
 		for name, testFn := range map[string]func(ctx context.Context, conn *grpc.ClientConn, managementClient *testutil.RecordingClient) func(t *testing.T){
 			"offering-service": offeringService,
 			"region-service":   regionService,
+			"provider-service": providerService,
 		} {
 			name := name
 			testFn := testFn
@@ -182,6 +183,112 @@ func newAPIServer(f *testutil.Framework) func(t *testing.T) {
 				testFn(ctx, conn, managementClient)(t)
 			})
 		}
+	}
+}
+
+func providerService(ctx context.Context, conn *grpc.ClientConn, managementClient *testutil.RecordingClient) func(t *testing.T) {
+	return func(t *testing.T) {
+		testName := strings.Replace(strings.ToLower(t.Name()), "/", "-", -1)
+		ns := &corev1.Namespace{}
+		ns.Name = testName
+		require.NoError(t, managementClient.Create(ctx, ns))
+		// Create tenants objects in the management cluster.
+		provider1 := &catalogv1alpha1.Provider{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "test-provider-1",
+				Namespace: testName,
+				Labels: map[string]string{
+					"test-label": "provider1",
+				},
+			},
+			Spec: catalogv1alpha1.ProviderSpec{
+				Metadata: catalogv1alpha1.AccountMetadata{
+					Description: "Test Provider",
+					DisplayName: "Test Provider",
+				},
+			},
+		}
+		provider2 := &catalogv1alpha1.Provider{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "test-provider-2",
+				Namespace: testName,
+				Labels: map[string]string{
+					"test-label": "provider2",
+				},
+			},
+			Spec: catalogv1alpha1.ProviderSpec{
+				Metadata: catalogv1alpha1.AccountMetadata{
+					Description: "Test Provider",
+					DisplayName: "Test Provider",
+				},
+			},
+		}
+		require.NoError(t, managementClient.Create(ctx, provider1))
+		require.NoError(t, managementClient.Create(ctx, provider2))
+
+		client := apiserverv1.NewProviderServiceClient(conn)
+		providerCtx, cancel := context.WithTimeout(ctx, 30*time.Second)
+		t.Cleanup(cancel)
+		// list providers with limit and continuation token.
+		require.NoError(t, wait.PollUntil(time.Second, func() (done bool, err error) {
+			providers, err := client.List(providerCtx, &apiserverv1.ProviderListRequest{
+				Account: testName,
+				Limit:   1,
+			})
+			if err != nil {
+				return false, err
+			}
+			assert.Len(t, providers.Items, 1)
+			testutil.LogObject(t, providers)
+			providers, err = client.List(providerCtx, &apiserverv1.ProviderListRequest{
+				Account:  testName,
+				Limit:    1,
+				Continue: providers.Metadata.Continue,
+			})
+			if err != nil {
+				return false, err
+			}
+			assert.Len(t, providers.Items, 1)
+			testutil.LogObject(t, providers)
+			return true, nil
+		}, providerCtx.Done()))
+
+		// get provider
+		require.NoError(t, wait.PollUntil(time.Second, func() (done bool, err error) {
+			provider, err := client.Get(providerCtx, &apiserverv1.ProviderGetRequest{
+				Account: testName,
+				Name:    "test-provider-1",
+			})
+			if err != nil {
+				return false, err
+			}
+			creationTimestamp, err := ptypes.TimestampProto(provider1.CreationTimestamp.Time)
+			if err != nil {
+				return true, err
+			}
+			expectedResult := &apiserverv1.Provider{
+				Metadata: &apiserverv1.ObjectMeta{
+					Name:    "test-provider-1",
+					Account: testName,
+					Labels: map[string]string{
+						"test-label": "provider1",
+					},
+					Uid:               string(provider1.UID),
+					CreationTimestamp: creationTimestamp,
+					ResourceVersion:   provider1.ResourceVersion,
+					Generation:        provider1.Generation,
+				},
+				Spec: &apiserverv1.ProviderSpec{
+					Metadata: &apiserverv1.AccountMetadata{
+						Description: "Test Provider",
+						DisplayName: "Test Provider",
+					},
+				},
+			}
+			assert.EqualValues(t, provider, expectedResult)
+			testutil.LogObject(t, provider)
+			return true, nil
+		}, providerCtx.Done()))
 	}
 }
 

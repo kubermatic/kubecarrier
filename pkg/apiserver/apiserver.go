@@ -109,7 +109,6 @@ func runE(flags *flags, log logr.Logger) error {
 			_, _ = writer.Write(buf)
 		}),
 	)
-
 	// Create Kubernetes Client
 	cfg := config.GetConfigOrDie()
 	mapper, err := apiutil.NewDiscoveryRESTMapper(cfg)
@@ -161,6 +160,12 @@ func runE(flags *flags, log logr.Logger) error {
 	regionServer := v1.NewRegionServiceServer(c)
 	apiserverv1.RegisterRegionServiceServer(grpcServer, regionServer)
 	if err := apiserverv1.RegisterRegionServiceHandlerServer(context.Background(), grpcGatewayMux, regionServer); err != nil {
+		return err
+	}
+
+	providerServer := v1.NewProviderServiceServer(c)
+	apiserverv1.RegisterProviderServiceServer(grpcServer, providerServer)
+	if err := apiserverv1.RegisterProviderServiceHandlerServer(context.Background(), grpcGatewayMux, providerServer); err != nil {
 		return err
 	}
 
