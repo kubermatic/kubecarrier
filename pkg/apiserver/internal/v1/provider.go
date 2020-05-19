@@ -22,7 +22,6 @@ import (
 
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
-	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -45,33 +44,8 @@ func NewProviderServiceServer(c client.Client) v1.ProviderServiceServer {
 	}
 }
 
-func (o providerServer) validateListRequest(req *v1.ProviderListRequest) ([]client.ListOption, error) {
-	var listOptions []client.ListOption
-	if req.Account == "" {
-		return listOptions, fmt.Errorf("missing namespace")
-	}
-	listOptions = append(listOptions, client.InNamespace(req.Account))
-	if req.Limit < 0 {
-		return listOptions, fmt.Errorf("invalid limit: should not be negative number")
-	}
-	listOptions = append(listOptions, client.Limit(req.Limit))
-	if req.LabelSelector != "" {
-		selector, err := labels.Parse(req.LabelSelector)
-		if err != nil {
-			return listOptions, fmt.Errorf("invalid LabelSelector: %w", err)
-		}
-		listOptions = append(listOptions, client.MatchingLabelsSelector{
-			Selector: selector,
-		})
-	}
-	if req.Continue != "" {
-		listOptions = append(listOptions, client.Continue(req.Continue))
-	}
-	return listOptions, nil
-}
-
-func (o providerServer) List(ctx context.Context, req *v1.ProviderListRequest) (res *v1.ProviderList, err error) {
-	listOptions, err := o.validateListRequest(req)
+func (o providerServer) List(ctx context.Context, req *v1.ListRequest) (res *v1.ProviderList, err error) {
+	listOptions, err := validateListRequest(req)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
@@ -87,8 +61,8 @@ func (o providerServer) List(ctx context.Context, req *v1.ProviderListRequest) (
 	return
 }
 
-func (o providerServer) Get(ctx context.Context, req *v1.ProviderGetRequest) (res *v1.Provider, err error) {
-	if err := o.validateGetRequest(req); err != nil {
+func (o providerServer) Get(ctx context.Context, req *v1.GetRequest) (res *v1.Provider, err error) {
+	if err := validateGetRequest(req); err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 	provider := &catalogv1alpha1.Provider{}
@@ -103,16 +77,6 @@ func (o providerServer) Get(ctx context.Context, req *v1.ProviderGetRequest) (re
 		return nil, status.Errorf(codes.Internal, fmt.Sprintf("converting Provider: %s", err.Error()))
 	}
 	return
-}
-
-func (o providerServer) validateGetRequest(req *v1.ProviderGetRequest) error {
-	if req.Name == "" {
-		return fmt.Errorf("missing name")
-	}
-	if req.Account == "" {
-		return fmt.Errorf("missing namespace")
-	}
-	return nil
 }
 
 func (o providerServer) convertProvider(in *catalogv1alpha1.Provider) (out *v1.Provider, err error) {

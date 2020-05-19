@@ -21,6 +21,7 @@ option go_package = "v1";
 import "google/api/annotations.proto";
 
 import "meta.proto";
+import "request.proto";
 
 message Provider {
   ObjectMeta metadata = 1;
@@ -36,31 +37,18 @@ message ProviderList {
   repeated Provider items = 2;
 }
 
-message ProviderGetRequest {
-  string name = 1;
-  string account = 2;
-}
-
-message ProviderListRequest {
-  string account = 1;
-  string labelSelector = 2;
-  int64 limit = 3;
-  string continue = 4;
-}
-
-
 message AccountMetadata {
   string displayName = 1;
   string description = 2;
 }
 
 service ProviderService {
-  rpc List(ProviderListRequest) returns (ProviderList) {
+  rpc List(ListRequest) returns (ProviderList) {
     option (google.api.http) = {
       get : "/v1/accounts/{account}/providers"
     };
   };
-  rpc Get(ProviderGetRequest) returns (Provider) {
+  rpc Get(GetRequest) returns (Provider) {
     option (google.api.http) = {
       get : "/v1/accounts/{account}/providers/{name}"
     };
