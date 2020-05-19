@@ -54,68 +54,6 @@ func TestProviderValidatingCreate(t *testing.T) {
 			},
 			expectedError: true,
 		},
-		{
-			name: "metadata missing",
-			object: &catalogv1alpha1.Provider{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "test-provider",
-					Namespace: "test-provider-namespace",
-				},
-			},
-			expectedError: true,
-		},
-		{
-			name: "description missing",
-			object: &catalogv1alpha1.Provider{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "test-provider",
-					Namespace: "test-provider-namespace",
-				},
-				Spec: catalogv1alpha1.ProviderSpec{
-					Metadata: catalogv1alpha1.AccountMetadata{
-						CommonMetadata: catalogv1alpha1.CommonMetadata{
-							DisplayName: "test Provider",
-						},
-					},
-				},
-			},
-			expectedError: true,
-		},
-		{
-			name: "displayName missing",
-			object: &catalogv1alpha1.Provider{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "test-provider",
-					Namespace: "test-provider-namespace",
-				},
-				Spec: catalogv1alpha1.ProviderSpec{
-					Metadata: catalogv1alpha1.AccountMetadata{
-						CommonMetadata: catalogv1alpha1.CommonMetadata{
-							Description: "test Provider",
-						},
-					},
-				},
-			},
-			expectedError: true,
-		},
-		{
-			name: "can pass validate create",
-			object: &catalogv1alpha1.Provider{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "test-provider",
-					Namespace: "test-provider-namespace",
-				},
-				Spec: catalogv1alpha1.ProviderSpec{
-					Metadata: catalogv1alpha1.AccountMetadata{
-						CommonMetadata: catalogv1alpha1.CommonMetadata{
-							Description: "test Provider",
-							DisplayName: "test Provider",
-						},
-					},
-				},
-			},
-			expectedError: false,
-		},
 	}
 
 	for _, test := range tests {
