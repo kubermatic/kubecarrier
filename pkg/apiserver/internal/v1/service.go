@@ -65,8 +65,9 @@ func (o serviceServer) Create(ctx context.Context, req *v1.ServiceCreateRequest)
 	if err := unstructured.SetNestedMap(obj.Object, val, "spec"); err != nil {
 		return nil, status.Errorf(codes.Internal, fmt.Sprintf("creating services: %s", err.Error()))
 	}
-	obj.SetName(req.Spec.Metadata.Name)
-	obj.SetNamespace(req.Spec.Metadata.Account)
+	if err := util.SetMetadata(obj, req.Spec.Metadata); err != nil {
+		return nil, status.Errorf(codes.Internal, fmt.Sprintf("creating services: %s", err.Error()))
+	}
 	if err := o.client.Create(ctx, obj); err != nil {
 		return nil, status.Errorf(codes.Internal, fmt.Sprintf("creating services: %s", err.Error()))
 	}
@@ -187,28 +188,11 @@ func (o serviceServer) validateGetRequest(req *v1.ServiceGetRequest) error {
 }
 
 func (o serviceServer) convertService(in *unstructured.Unstructured) (out *v1.Service, err error) {
-	metaCreationTimestamp := in.GetCreationTimestamp()
-	creationTimestamp, err := util.TimestampProto(&metaCreationTimestamp)
+	metadata, err := util.FromUnstructured(in)
 	if err != nil {
 		return nil, err
 	}
-	deletionTimestamp, err := util.TimestampProto(in.GetDeletionTimestamp())
-	if err != nil {
-		return nil, err
-	}
-	out = &v1.Service{
-		Metadata: &v1.ObjectMeta{
-			Uid:               string(in.GetUID()),
-			Name:              in.GetName(),
-			Account:           in.GetNamespace(),
-			CreationTimestamp: creationTimestamp,
-			DeletionTimestamp: deletionTimestamp,
-			ResourceVersion:   in.GetResourceVersion(),
-			Labels:            in.GetLabels(),
-			Annotations:       in.GetAnnotations(),
-			Generation:        in.GetGeneration(),
-		},
-	}
+	out = &v1.Service{Metadata: metadata}
 	spec, _, err := unstructured.NestedMap(in.Object, "spec")
 	if err != nil {
 		return nil, err
