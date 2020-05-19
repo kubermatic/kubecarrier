@@ -47,7 +47,7 @@ func NewOfferingServiceServer(c client.Client) v1.OfferingServiceServer {
 
 func (o offeringServer) List(ctx context.Context, req *v1.ListRequest) (res *v1.OfferingList, err error) {
 	var listOptions []client.ListOption
-	listOptions, err = util.ValidateListRequest(req)
+	listOptions, err = validateListRequest(req)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
@@ -64,7 +64,7 @@ func (o offeringServer) List(ctx context.Context, req *v1.ListRequest) (res *v1.
 }
 
 func (o offeringServer) Get(ctx context.Context, req *v1.GetRequest) (res *v1.Offering, err error) {
-	if err = util.ValidateGetRequest(req); err != nil {
+	if err = validateGetRequest(req); err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
 	offering := &catalogv1alpha1.Offering{}

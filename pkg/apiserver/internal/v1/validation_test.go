@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package util
+package v1
 
 import (
 	"fmt"
@@ -57,7 +57,7 @@ func TestValidateGetRequest(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			assert.Equal(t, test.expectedError, ValidateGetRequest(test.req))
+			assert.Equal(t, test.expectedError, validateGetRequest(test.req))
 		})
 	}
 }
@@ -101,7 +101,7 @@ func TestValidateListRequest(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			_, err := ValidateListRequest(test.req)
+			_, err := validateListRequest(test.req)
 			if err == nil {
 				assert.Equal(t, test.expectedError, err)
 			} else {
