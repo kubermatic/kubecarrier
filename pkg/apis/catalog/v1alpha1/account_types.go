@@ -36,12 +36,7 @@ type AccountSpec struct {
 
 // AccountMetadata contains the metadata of the Account.
 type AccountMetadata struct {
-	// DisplayName is the human-readable name of this Account.
-	// +kubebuilder:validation:MinLength=1
-	DisplayName string `json:"displayName,omitempty"`
-	// Description is the human-readable description of this Account.
-	// +kubebuilder:validation:MinLength=1
-	Description string `json:"description,omitempty"`
+	CommonMetadata
 }
 
 // AccountRole type represents available Account roles.
