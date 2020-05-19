@@ -69,17 +69,6 @@
                 metadata:
                   description: "Metadata\tcontains additional human readable account
                     details."
-                  properties:
-                    description:
-                      description: Description is the human-readable description of
-                        this Account.
-                      minLength: 1
-                      type: string
-                    displayName:
-                      description: DisplayName is the human-readable name of this
-                        Account.
-                      minLength: 1
-                      type: string
                   type: object
                 roles:
                   description: Roles this account uses.
@@ -334,20 +323,6 @@
                 metadata:
                   description: Metadata contains the metadata of the CatalogEntry
                     for the Service Catalog.
-                  properties:
-                    description:
-                      description: Description shows the human-readable description
-                        of this CatalogEntry.
-                      minLength: 1
-                      type: string
-                    displayName:
-                      description: DisplayName shows the human-readable name of this
-                        CatalogEntry.
-                      minLength: 1
-                      type: string
-                  required:
-                  - description
-                  - displayName
                   type: object
               required:
               - baseCRD
@@ -696,20 +671,6 @@
                 metadata:
                   description: Metadata contains the metadata of each CatalogEntry
                     for the Service Catalog.
-                  properties:
-                    description:
-                      description: Description shows the human-readable description
-                        of this CatalogEntrySet.
-                      minLength: 1
-                      type: string
-                    displayName:
-                      description: DisplayName shows the human-readable name of this
-                        CatalogEntrySet.
-                      minLength: 1
-                      type: string
-                  required:
-                  - description
-                  - displayName
                   type: object
               required:
               - discover
@@ -1313,20 +1274,6 @@
                 metadata:
                   description: OfferingMetadata contains the metadata (display name,
                     description, etc) of the Offering.
-                  properties:
-                    description:
-                      description: Description shows the human-readable description
-                        of this Offering.
-                      minLength: 1
-                      type: string
-                    displayName:
-                      description: DisplayName shows the human-readable name of this
-                        Offering.
-                      minLength: 1
-                      type: string
-                  required:
-                  - description
-                  - displayName
                   type: object
                 provider:
                   description: Provider references the Provider managing this Offering.
@@ -1411,17 +1358,6 @@
                 metadata:
                   description: Metadata contains the metadata (display name, description,
                     etc) of the Provider.
-                  properties:
-                    description:
-                      description: Description is the human-readable description of
-                        this Account.
-                      minLength: 1
-                      type: string
-                    displayName:
-                      description: DisplayName is the human-readable name of this
-                        Account.
-                      minLength: 1
-                      type: string
                   type: object
               required:
               - metadata
