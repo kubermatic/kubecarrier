@@ -118,7 +118,6 @@ func runE(flags *flags, log logr.Logger) error {
 	})
 	if err != nil {
 		return fmt.Errorf("creating client: %w", err)
-
 	}
 
 	authClient := authorizer.AuthorizationClient{
