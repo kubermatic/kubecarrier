@@ -18,7 +18,6 @@ package v1
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 
 	"google.golang.org/grpc/codes"
@@ -32,57 +31,57 @@ import (
 	"github.com/kubermatic/kubecarrier/pkg/apiserver/internal/util"
 )
 
-type offeringServer struct {
+type regionServer struct {
 	client client.Client
 }
 
-var _ v1.OfferingServiceServer = (*offeringServer)(nil)
+var _ v1.RegionServiceServer = (*regionServer)(nil)
 
-// +kubebuilder:rbac:groups=catalog.kubecarrier.io,resources=offerings,verbs=get;list
+// +kubebuilder:rbac:groups=catalog.kubecarrier.io,resources=regions,verbs=get;list
 
-func NewOfferingServiceServer(c client.Client) v1.OfferingServiceServer {
-	return &offeringServer{
+func NewRegionServiceServer(c client.Client) v1.RegionServiceServer {
+	return &regionServer{
 		client: c,
 	}
 }
 
-func (o offeringServer) List(ctx context.Context, req *v1.OfferingListRequest) (res *v1.OfferingList, err error) {
+func (o regionServer) List(ctx context.Context, req *v1.RegionListRequest) (res *v1.RegionList, err error) {
 	var listOptions []client.ListOption
 	listOptions, err = o.validateListRequest(req)
 	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
-	offeringList := &catalogv1alpha1.OfferingList{}
-	if err := o.client.List(ctx, offeringList, listOptions...); err != nil {
-		return nil, status.Errorf(codes.Internal, fmt.Sprintf("listing offerings: %s", err.Error()))
+	regionList := &catalogv1alpha1.RegionList{}
+	if err := o.client.List(ctx, regionList, listOptions...); err != nil {
+		return nil, status.Errorf(codes.Internal, "listing regions: %s", err.Error())
 	}
 
-	res, err = o.convertOfferingList(offeringList)
+	res, err = o.convertRegionList(regionList)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, fmt.Sprintf("converting OfferingList: %s", err.Error()))
+		return nil, status.Errorf(codes.Internal, "converting RegionList: %s", err.Error())
 	}
 	return
 }
 
-func (o offeringServer) Get(ctx context.Context, req *v1.OfferingGetRequest) (res *v1.Offering, err error) {
+func (o regionServer) Get(ctx context.Context, req *v1.RegionGetRequest) (res *v1.Region, err error) {
 	if err = o.validateGetRequest(req); err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
-	offering := &catalogv1alpha1.Offering{}
+	region := &catalogv1alpha1.Region{}
 	if err = o.client.Get(ctx, types.NamespacedName{
 		Name:      req.Name,
 		Namespace: req.Account,
-	}, offering); err != nil {
-		return nil, status.Errorf(codes.Internal, fmt.Sprintf("getting offering: %s", err.Error()))
+	}, region); err != nil {
+		return nil, status.Errorf(codes.Internal, "getting region: %s", err.Error())
 	}
-	res, err = o.convertOffering(offering)
+	res, err = o.convertRegion(region)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, fmt.Sprintf("converting Offering: %s", err.Error()))
+		return nil, status.Errorf(codes.Internal, "converting Region: %s", err.Error())
 	}
 	return
 }
 
-func (o offeringServer) validateListRequest(req *v1.OfferingListRequest) ([]client.ListOption, error) {
+func (o regionServer) validateListRequest(req *v1.RegionListRequest) ([]client.ListOption, error) {
 	var listOptions []client.ListOption
 	if req.Account == "" {
 		return listOptions, fmt.Errorf("missing namespace")
@@ -107,7 +106,7 @@ func (o offeringServer) validateListRequest(req *v1.OfferingListRequest) ([]clie
 	return listOptions, nil
 }
 
-func (o offeringServer) validateGetRequest(req *v1.OfferingGetRequest) error {
+func (o regionServer) validateGetRequest(req *v1.RegionGetRequest) error {
 	if req.Name == "" {
 		return fmt.Errorf("missing name")
 	}
@@ -117,16 +116,7 @@ func (o offeringServer) validateGetRequest(req *v1.OfferingGetRequest) error {
 	return nil
 }
 
-func (o offeringServer) convertOffering(in *catalogv1alpha1.Offering) (out *v1.Offering, err error) {
-	var versions []*v1.CRDVersion
-	for _, catalogCRDVersion := range in.Spec.CRD.Versions {
-		schemaBytes, _ := json.Marshal(catalogCRDVersion.Schema)
-		versions = append(versions, &v1.CRDVersion{
-			Name:   catalogCRDVersion.Name,
-			Schema: string(schemaBytes),
-		})
-	}
-
+func (o regionServer) convertRegion(in *catalogv1alpha1.Region) (out *v1.Region, err error) {
 	creationTimestamp, err := util.TimestampProto(&in.ObjectMeta.CreationTimestamp)
 	if err != nil {
 		return nil, err
@@ -135,7 +125,7 @@ func (o offeringServer) convertOffering(in *catalogv1alpha1.Offering) (out *v1.O
 	if err != nil {
 		return nil, err
 	}
-	out = &v1.Offering{
+	out = &v1.Region{
 		Metadata: &v1.ObjectMeta{
 			Uid:               string(in.UID),
 			Name:              in.Name,
@@ -147,42 +137,32 @@ func (o offeringServer) convertOffering(in *catalogv1alpha1.Offering) (out *v1.O
 			Annotations:       in.Annotations,
 			Generation:        in.Generation,
 		},
-		Spec: &v1.OfferingSpec{
-			Metadata: &v1.OfferingMetadata{
+		Spec: &v1.RegionSpec{
+			Metadata: &v1.RegionMetadata{
 				DisplayName: in.Spec.Metadata.DisplayName,
 				Description: in.Spec.Metadata.Description,
 			},
 			Provider: &v1.ObjectReference{
 				Name: in.Spec.Provider.Name,
 			},
-			Crd: &v1.CRDInformation{
-				Name:     in.Spec.CRD.Name,
-				ApiGroup: in.Spec.CRD.APIGroup,
-				Kind:     in.Spec.CRD.Kind,
-				Plural:   in.Spec.CRD.Plural,
-				Versions: versions,
-				Region: &v1.ObjectReference{
-					Name: in.Spec.CRD.Region.Name,
-				},
-			},
 		},
 	}
 	return
 }
 
-func (o offeringServer) convertOfferingList(in *catalogv1alpha1.OfferingList) (out *v1.OfferingList, err error) {
-	out = &v1.OfferingList{
+func (o regionServer) convertRegionList(in *catalogv1alpha1.RegionList) (out *v1.RegionList, err error) {
+	out = &v1.RegionList{
 		Metadata: &v1.ListMeta{
 			Continue:        in.Continue,
 			ResourceVersion: in.ResourceVersion,
 		},
 	}
-	for _, inOffering := range in.Items {
-		offering, err := o.convertOffering(&inOffering)
+	for _, inRegion := range in.Items {
+		region, err := o.convertRegion(&inRegion)
 		if err != nil {
 			return nil, err
 		}
-		out.Items = append(out.Items, offering)
+		out.Items = append(out.Items, region)
 	}
 	return
 }

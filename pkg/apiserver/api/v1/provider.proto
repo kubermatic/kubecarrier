@@ -20,51 +20,49 @@ option go_package = "v1";
 
 import "google/api/annotations.proto";
 
-import "types.proto";
 import "meta.proto";
 
-message Offering {
+message Provider {
   ObjectMeta metadata = 1;
-  OfferingSpec spec = 2;
+  ProviderSpec spec = 2;
 }
 
-message OfferingSpec {
-  OfferingMetadata metadata = 1;
-  ObjectReference provider = 2;
-  CRDInformation crd = 3;
+message ProviderSpec {
+  AccountMetadata metadata = 1;
 }
 
-message OfferingMetadata {
-  string displayName = 1;
-  string description = 2;
-}
-
-message OfferingList {
+message ProviderList {
   ListMeta metadata = 1;
-  repeated Offering items = 2;
+  repeated Provider items = 2;
 }
 
-message OfferingGetRequest {
+message ProviderGetRequest {
   string name = 1;
   string account = 2;
 }
 
-message OfferingListRequest {
+message ProviderListRequest {
   string account = 1;
   string labelSelector = 2;
   int64 limit = 3;
   string continue = 4;
 }
 
-service OfferingService {
-  rpc List(OfferingListRequest) returns (OfferingList) {
+
+message AccountMetadata {
+  string displayName = 1;
+  string description = 2;
+}
+
+service ProviderService {
+  rpc List(ProviderListRequest) returns (ProviderList) {
     option (google.api.http) = {
-      get : "/v1/accounts/{account}/offerings"
+      get : "/v1/accounts/{account}/providers"
     };
   };
-  rpc Get(OfferingGetRequest) returns (Offering) {
+  rpc Get(ProviderGetRequest) returns (Provider) {
     option (google.api.http) = {
-      get : "/v1/accounts/{account}/offerings/{name}"
+      get : "/v1/accounts/{account}/providers/{name}"
     };
   };
 }

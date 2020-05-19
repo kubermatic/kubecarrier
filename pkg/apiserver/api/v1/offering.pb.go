@@ -24,7 +24,6 @@ import (
 	math "math"
 
 	proto "github.com/golang/protobuf/proto"
-	_ "github.com/golang/protobuf/ptypes/timestamp"
 	_ "google.golang.org/genproto/googleapis/api/annotations"
 	grpc "google.golang.org/grpc"
 	codes "google.golang.org/grpc/codes"
@@ -43,14 +42,11 @@ var _ = math.Inf
 const _ = proto.ProtoPackageIsVersion3 // please upgrade the proto package
 
 type Offering struct {
-	Name                 string            `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
-	Tenant               string            `protobuf:"bytes,2,opt,name=tenant,proto3" json:"tenant,omitempty"`
-	Metadata             *OfferingMetadata `protobuf:"bytes,3,opt,name=metadata,proto3" json:"metadata,omitempty"`
-	Provider             *ObjectReference  `protobuf:"bytes,4,opt,name=provider,proto3" json:"provider,omitempty"`
-	Crd                  *CRDInformation   `protobuf:"bytes,5,opt,name=crd,proto3" json:"crd,omitempty"`
-	XXX_NoUnkeyedLiteral struct{}          `json:"-"`
-	XXX_unrecognized     []byte            `json:"-"`
-	XXX_sizecache        int32             `json:"-"`
+	Metadata             *ObjectMeta   `protobuf:"bytes,1,opt,name=metadata,proto3" json:"metadata,omitempty"`
+	Spec                 *OfferingSpec `protobuf:"bytes,2,opt,name=spec,proto3" json:"spec,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}      `json:"-"`
+	XXX_unrecognized     []byte        `json:"-"`
+	XXX_sizecache        int32         `json:"-"`
 }
 
 func (m *Offering) Reset()         { *m = Offering{} }
@@ -78,196 +74,73 @@ func (m *Offering) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_Offering proto.InternalMessageInfo
 
-func (m *Offering) GetName() string {
-	if m != nil {
-		return m.Name
-	}
-	return ""
-}
-
-func (m *Offering) GetTenant() string {
-	if m != nil {
-		return m.Tenant
-	}
-	return ""
-}
-
-func (m *Offering) GetMetadata() *OfferingMetadata {
+func (m *Offering) GetMetadata() *ObjectMeta {
 	if m != nil {
 		return m.Metadata
 	}
 	return nil
 }
 
-func (m *Offering) GetProvider() *ObjectReference {
+func (m *Offering) GetSpec() *OfferingSpec {
+	if m != nil {
+		return m.Spec
+	}
+	return nil
+}
+
+type OfferingSpec struct {
+	Metadata             *OfferingMetadata `protobuf:"bytes,1,opt,name=metadata,proto3" json:"metadata,omitempty"`
+	Provider             *ObjectReference  `protobuf:"bytes,2,opt,name=provider,proto3" json:"provider,omitempty"`
+	Crd                  *CRDInformation   `protobuf:"bytes,3,opt,name=crd,proto3" json:"crd,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}          `json:"-"`
+	XXX_unrecognized     []byte            `json:"-"`
+	XXX_sizecache        int32             `json:"-"`
+}
+
+func (m *OfferingSpec) Reset()         { *m = OfferingSpec{} }
+func (m *OfferingSpec) String() string { return proto.CompactTextString(m) }
+func (*OfferingSpec) ProtoMessage()    {}
+func (*OfferingSpec) Descriptor() ([]byte, []int) {
+	return fileDescriptor_d876d3a4bab4c43a, []int{1}
+}
+
+func (m *OfferingSpec) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_OfferingSpec.Unmarshal(m, b)
+}
+func (m *OfferingSpec) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_OfferingSpec.Marshal(b, m, deterministic)
+}
+func (m *OfferingSpec) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_OfferingSpec.Merge(m, src)
+}
+func (m *OfferingSpec) XXX_Size() int {
+	return xxx_messageInfo_OfferingSpec.Size(m)
+}
+func (m *OfferingSpec) XXX_DiscardUnknown() {
+	xxx_messageInfo_OfferingSpec.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_OfferingSpec proto.InternalMessageInfo
+
+func (m *OfferingSpec) GetMetadata() *OfferingMetadata {
+	if m != nil {
+		return m.Metadata
+	}
+	return nil
+}
+
+func (m *OfferingSpec) GetProvider() *ObjectReference {
 	if m != nil {
 		return m.Provider
 	}
 	return nil
 }
 
-func (m *Offering) GetCrd() *CRDInformation {
+func (m *OfferingSpec) GetCrd() *CRDInformation {
 	if m != nil {
 		return m.Crd
 	}
 	return nil
-}
-
-type OfferingList struct {
-	Items                []*Offering `protobuf:"bytes,1,rep,name=items,proto3" json:"items,omitempty"`
-	Continue             string      `protobuf:"bytes,2,opt,name=continue,proto3" json:"continue,omitempty"`
-	XXX_NoUnkeyedLiteral struct{}    `json:"-"`
-	XXX_unrecognized     []byte      `json:"-"`
-	XXX_sizecache        int32       `json:"-"`
-}
-
-func (m *OfferingList) Reset()         { *m = OfferingList{} }
-func (m *OfferingList) String() string { return proto.CompactTextString(m) }
-func (*OfferingList) ProtoMessage()    {}
-func (*OfferingList) Descriptor() ([]byte, []int) {
-	return fileDescriptor_d876d3a4bab4c43a, []int{1}
-}
-
-func (m *OfferingList) XXX_Unmarshal(b []byte) error {
-	return xxx_messageInfo_OfferingList.Unmarshal(m, b)
-}
-func (m *OfferingList) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	return xxx_messageInfo_OfferingList.Marshal(b, m, deterministic)
-}
-func (m *OfferingList) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_OfferingList.Merge(m, src)
-}
-func (m *OfferingList) XXX_Size() int {
-	return xxx_messageInfo_OfferingList.Size(m)
-}
-func (m *OfferingList) XXX_DiscardUnknown() {
-	xxx_messageInfo_OfferingList.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_OfferingList proto.InternalMessageInfo
-
-func (m *OfferingList) GetItems() []*Offering {
-	if m != nil {
-		return m.Items
-	}
-	return nil
-}
-
-func (m *OfferingList) GetContinue() string {
-	if m != nil {
-		return m.Continue
-	}
-	return ""
-}
-
-type OfferingRequest struct {
-	Name                 string   `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
-	Tenant               string   `protobuf:"bytes,2,opt,name=tenant,proto3" json:"tenant,omitempty"`
-	XXX_NoUnkeyedLiteral struct{} `json:"-"`
-	XXX_unrecognized     []byte   `json:"-"`
-	XXX_sizecache        int32    `json:"-"`
-}
-
-func (m *OfferingRequest) Reset()         { *m = OfferingRequest{} }
-func (m *OfferingRequest) String() string { return proto.CompactTextString(m) }
-func (*OfferingRequest) ProtoMessage()    {}
-func (*OfferingRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_d876d3a4bab4c43a, []int{2}
-}
-
-func (m *OfferingRequest) XXX_Unmarshal(b []byte) error {
-	return xxx_messageInfo_OfferingRequest.Unmarshal(m, b)
-}
-func (m *OfferingRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	return xxx_messageInfo_OfferingRequest.Marshal(b, m, deterministic)
-}
-func (m *OfferingRequest) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_OfferingRequest.Merge(m, src)
-}
-func (m *OfferingRequest) XXX_Size() int {
-	return xxx_messageInfo_OfferingRequest.Size(m)
-}
-func (m *OfferingRequest) XXX_DiscardUnknown() {
-	xxx_messageInfo_OfferingRequest.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_OfferingRequest proto.InternalMessageInfo
-
-func (m *OfferingRequest) GetName() string {
-	if m != nil {
-		return m.Name
-	}
-	return ""
-}
-
-func (m *OfferingRequest) GetTenant() string {
-	if m != nil {
-		return m.Tenant
-	}
-	return ""
-}
-
-type OfferingListRequest struct {
-	Tenant               string   `protobuf:"bytes,1,opt,name=tenant,proto3" json:"tenant,omitempty"`
-	LabelSelector        string   `protobuf:"bytes,2,opt,name=labelSelector,proto3" json:"labelSelector,omitempty"`
-	Limit                int64    `protobuf:"varint,3,opt,name=limit,proto3" json:"limit,omitempty"`
-	Continue             string   `protobuf:"bytes,4,opt,name=continue,proto3" json:"continue,omitempty"`
-	XXX_NoUnkeyedLiteral struct{} `json:"-"`
-	XXX_unrecognized     []byte   `json:"-"`
-	XXX_sizecache        int32    `json:"-"`
-}
-
-func (m *OfferingListRequest) Reset()         { *m = OfferingListRequest{} }
-func (m *OfferingListRequest) String() string { return proto.CompactTextString(m) }
-func (*OfferingListRequest) ProtoMessage()    {}
-func (*OfferingListRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_d876d3a4bab4c43a, []int{3}
-}
-
-func (m *OfferingListRequest) XXX_Unmarshal(b []byte) error {
-	return xxx_messageInfo_OfferingListRequest.Unmarshal(m, b)
-}
-func (m *OfferingListRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	return xxx_messageInfo_OfferingListRequest.Marshal(b, m, deterministic)
-}
-func (m *OfferingListRequest) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_OfferingListRequest.Merge(m, src)
-}
-func (m *OfferingListRequest) XXX_Size() int {
-	return xxx_messageInfo_OfferingListRequest.Size(m)
-}
-func (m *OfferingListRequest) XXX_DiscardUnknown() {
-	xxx_messageInfo_OfferingListRequest.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_OfferingListRequest proto.InternalMessageInfo
-
-func (m *OfferingListRequest) GetTenant() string {
-	if m != nil {
-		return m.Tenant
-	}
-	return ""
-}
-
-func (m *OfferingListRequest) GetLabelSelector() string {
-	if m != nil {
-		return m.LabelSelector
-	}
-	return ""
-}
-
-func (m *OfferingListRequest) GetLimit() int64 {
-	if m != nil {
-		return m.Limit
-	}
-	return 0
-}
-
-func (m *OfferingListRequest) GetContinue() string {
-	if m != nil {
-		return m.Continue
-	}
-	return ""
 }
 
 type OfferingMetadata struct {
@@ -282,7 +155,7 @@ func (m *OfferingMetadata) Reset()         { *m = OfferingMetadata{} }
 func (m *OfferingMetadata) String() string { return proto.CompactTextString(m) }
 func (*OfferingMetadata) ProtoMessage()    {}
 func (*OfferingMetadata) Descriptor() ([]byte, []int) {
-	return fileDescriptor_d876d3a4bab4c43a, []int{4}
+	return fileDescriptor_d876d3a4bab4c43a, []int{2}
 }
 
 func (m *OfferingMetadata) XXX_Unmarshal(b []byte) error {
@@ -317,12 +190,170 @@ func (m *OfferingMetadata) GetDescription() string {
 	return ""
 }
 
+type OfferingList struct {
+	Metadata             *ListMeta   `protobuf:"bytes,1,opt,name=metadata,proto3" json:"metadata,omitempty"`
+	Items                []*Offering `protobuf:"bytes,2,rep,name=items,proto3" json:"items,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}    `json:"-"`
+	XXX_unrecognized     []byte      `json:"-"`
+	XXX_sizecache        int32       `json:"-"`
+}
+
+func (m *OfferingList) Reset()         { *m = OfferingList{} }
+func (m *OfferingList) String() string { return proto.CompactTextString(m) }
+func (*OfferingList) ProtoMessage()    {}
+func (*OfferingList) Descriptor() ([]byte, []int) {
+	return fileDescriptor_d876d3a4bab4c43a, []int{3}
+}
+
+func (m *OfferingList) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_OfferingList.Unmarshal(m, b)
+}
+func (m *OfferingList) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_OfferingList.Marshal(b, m, deterministic)
+}
+func (m *OfferingList) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_OfferingList.Merge(m, src)
+}
+func (m *OfferingList) XXX_Size() int {
+	return xxx_messageInfo_OfferingList.Size(m)
+}
+func (m *OfferingList) XXX_DiscardUnknown() {
+	xxx_messageInfo_OfferingList.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_OfferingList proto.InternalMessageInfo
+
+func (m *OfferingList) GetMetadata() *ListMeta {
+	if m != nil {
+		return m.Metadata
+	}
+	return nil
+}
+
+func (m *OfferingList) GetItems() []*Offering {
+	if m != nil {
+		return m.Items
+	}
+	return nil
+}
+
+type OfferingGetRequest struct {
+	Name                 string   `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	Account              string   `protobuf:"bytes,2,opt,name=account,proto3" json:"account,omitempty"`
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
+}
+
+func (m *OfferingGetRequest) Reset()         { *m = OfferingGetRequest{} }
+func (m *OfferingGetRequest) String() string { return proto.CompactTextString(m) }
+func (*OfferingGetRequest) ProtoMessage()    {}
+func (*OfferingGetRequest) Descriptor() ([]byte, []int) {
+	return fileDescriptor_d876d3a4bab4c43a, []int{4}
+}
+
+func (m *OfferingGetRequest) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_OfferingGetRequest.Unmarshal(m, b)
+}
+func (m *OfferingGetRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_OfferingGetRequest.Marshal(b, m, deterministic)
+}
+func (m *OfferingGetRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_OfferingGetRequest.Merge(m, src)
+}
+func (m *OfferingGetRequest) XXX_Size() int {
+	return xxx_messageInfo_OfferingGetRequest.Size(m)
+}
+func (m *OfferingGetRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_OfferingGetRequest.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_OfferingGetRequest proto.InternalMessageInfo
+
+func (m *OfferingGetRequest) GetName() string {
+	if m != nil {
+		return m.Name
+	}
+	return ""
+}
+
+func (m *OfferingGetRequest) GetAccount() string {
+	if m != nil {
+		return m.Account
+	}
+	return ""
+}
+
+type OfferingListRequest struct {
+	Account              string   `protobuf:"bytes,1,opt,name=account,proto3" json:"account,omitempty"`
+	LabelSelector        string   `protobuf:"bytes,2,opt,name=labelSelector,proto3" json:"labelSelector,omitempty"`
+	Limit                int64    `protobuf:"varint,3,opt,name=limit,proto3" json:"limit,omitempty"`
+	Continue             string   `protobuf:"bytes,4,opt,name=continue,proto3" json:"continue,omitempty"`
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
+}
+
+func (m *OfferingListRequest) Reset()         { *m = OfferingListRequest{} }
+func (m *OfferingListRequest) String() string { return proto.CompactTextString(m) }
+func (*OfferingListRequest) ProtoMessage()    {}
+func (*OfferingListRequest) Descriptor() ([]byte, []int) {
+	return fileDescriptor_d876d3a4bab4c43a, []int{5}
+}
+
+func (m *OfferingListRequest) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_OfferingListRequest.Unmarshal(m, b)
+}
+func (m *OfferingListRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_OfferingListRequest.Marshal(b, m, deterministic)
+}
+func (m *OfferingListRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_OfferingListRequest.Merge(m, src)
+}
+func (m *OfferingListRequest) XXX_Size() int {
+	return xxx_messageInfo_OfferingListRequest.Size(m)
+}
+func (m *OfferingListRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_OfferingListRequest.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_OfferingListRequest proto.InternalMessageInfo
+
+func (m *OfferingListRequest) GetAccount() string {
+	if m != nil {
+		return m.Account
+	}
+	return ""
+}
+
+func (m *OfferingListRequest) GetLabelSelector() string {
+	if m != nil {
+		return m.LabelSelector
+	}
+	return ""
+}
+
+func (m *OfferingListRequest) GetLimit() int64 {
+	if m != nil {
+		return m.Limit
+	}
+	return 0
+}
+
+func (m *OfferingListRequest) GetContinue() string {
+	if m != nil {
+		return m.Continue
+	}
+	return ""
+}
+
 func init() {
 	proto.RegisterType((*Offering)(nil), "kubecarrier.api.v1.Offering")
-	proto.RegisterType((*OfferingList)(nil), "kubecarrier.api.v1.OfferingList")
-	proto.RegisterType((*OfferingRequest)(nil), "kubecarrier.api.v1.OfferingRequest")
-	proto.RegisterType((*OfferingListRequest)(nil), "kubecarrier.api.v1.OfferingListRequest")
+	proto.RegisterType((*OfferingSpec)(nil), "kubecarrier.api.v1.OfferingSpec")
 	proto.RegisterType((*OfferingMetadata)(nil), "kubecarrier.api.v1.OfferingMetadata")
+	proto.RegisterType((*OfferingList)(nil), "kubecarrier.api.v1.OfferingList")
+	proto.RegisterType((*OfferingGetRequest)(nil), "kubecarrier.api.v1.OfferingGetRequest")
+	proto.RegisterType((*OfferingListRequest)(nil), "kubecarrier.api.v1.OfferingListRequest")
 }
 
 func init() {
@@ -330,37 +361,39 @@ func init() {
 }
 
 var fileDescriptor_d876d3a4bab4c43a = []byte{
-	// 475 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x94, 0x53, 0xcd, 0x8a, 0xd4, 0x40,
-	0x10, 0x26, 0x93, 0xec, 0x32, 0xd6, 0xf8, 0x47, 0x2b, 0x12, 0x86, 0x45, 0x43, 0x76, 0x75, 0xe7,
-	0x62, 0xc2, 0x8c, 0x5e, 0x45, 0x51, 0x41, 0x04, 0x7f, 0x20, 0x0b, 0x1e, 0x3c, 0x08, 0x9d, 0x4c,
-	0x65, 0x68, 0x4d, 0xba, 0x63, 0xa7, 0x26, 0x32, 0x2c, 0x7b, 0x11, 0xf6, 0x09, 0x7c, 0x34, 0x5f,
-	0xc1, 0xbb, 0xaf, 0x20, 0xd3, 0xe9, 0xf9, 0x5b, 0x97, 0x88, 0xb7, 0xae, 0xca, 0x57, 0x5f, 0x55,
-	0x7d, 0x5f, 0x0a, 0xae, 0xab, 0x3c, 0x47, 0x2d, 0xe4, 0x2c, 0xaa, 0xb4, 0x22, 0xc5, 0xd8, 0x97,
-	0x79, 0x8a, 0x19, 0xd7, 0x5a, 0xa0, 0x8e, 0x78, 0x25, 0xa2, 0x66, 0x3c, 0xbc, 0x37, 0x53, 0x6a,
-	0x56, 0x60, 0x6c, 0x10, 0xe9, 0x3c, 0x8f, 0x49, 0x94, 0x58, 0x13, 0x2f, 0xab, 0xb6, 0x68, 0x78,
-	0x60, 0x01, 0xbc, 0x12, 0x31, 0x97, 0x52, 0x11, 0x27, 0xa1, 0x64, 0x6d, 0xbf, 0x0e, 0x68, 0x51,
-	0xa1, 0x0d, 0xc2, 0xdf, 0x0e, 0xf4, 0xdf, 0xdb, 0x96, 0x8c, 0x81, 0x27, 0x79, 0x89, 0xbe, 0x13,
-	0x38, 0xa3, 0x2b, 0x89, 0x79, 0xb3, 0x3b, 0xb0, 0x4f, 0x28, 0xb9, 0x24, 0xbf, 0x67, 0xb2, 0x36,
-	0x62, 0xcf, 0xa0, 0x5f, 0x22, 0xf1, 0x29, 0x27, 0xee, 0xbb, 0x81, 0x33, 0x1a, 0x4c, 0x8e, 0xa2,
-	0xbf, 0x67, 0x8d, 0x56, 0xdc, 0x6f, 0x2d, 0x36, 0x59, 0x57, 0xb1, 0xa7, 0xd0, 0xaf, 0xb4, 0x6a,
-	0xc4, 0x14, 0xb5, 0xef, 0x19, 0x86, 0xc3, 0x4b, 0x19, 0xd2, 0xcf, 0x98, 0x51, 0x82, 0x39, 0x6a,
-	0x94, 0x19, 0x26, 0xeb, 0x22, 0xf6, 0x18, 0xdc, 0x4c, 0x4f, 0xfd, 0x3d, 0x53, 0x1b, 0x5e, 0x56,
-	0xfb, 0x22, 0x79, 0xf9, 0x5a, 0xe6, 0x4a, 0x97, 0x46, 0x80, 0x64, 0x09, 0x0f, 0x3f, 0xc1, 0xd5,
-	0xd5, 0x50, 0x6f, 0x44, 0x4d, 0x6c, 0x02, 0x7b, 0x82, 0xb0, 0xac, 0x7d, 0x27, 0x70, 0x47, 0x83,
-	0xc9, 0x41, 0xd7, 0x16, 0x49, 0x0b, 0x65, 0x43, 0xe8, 0x67, 0x4a, 0x92, 0x90, 0x73, 0xb4, 0xb2,
-	0xac, 0xe3, 0xf0, 0x09, 0xdc, 0x58, 0xc3, 0xf1, 0xeb, 0x1c, 0x6b, 0xfa, 0x1f, 0x5d, 0xc3, 0x73,
-	0x07, 0x6e, 0x6d, 0xcf, 0xb7, 0xe2, 0xd8, 0xe0, 0x9d, 0x1d, 0x1f, 0x8e, 0xe0, 0x5a, 0xc1, 0x53,
-	0x2c, 0x4e, 0xb0, 0xc0, 0x8c, 0x94, 0xb6, 0x74, 0xbb, 0x49, 0x76, 0x1b, 0xf6, 0x0a, 0x51, 0x0a,
-	0x32, 0x56, 0xb9, 0x49, 0x1b, 0xec, 0xac, 0xe1, 0x5d, 0x58, 0xe3, 0x03, 0xdc, 0xbc, 0xe8, 0x1d,
-	0x0b, 0x60, 0x30, 0x15, 0x75, 0x55, 0xf0, 0xc5, 0xbb, 0xcd, 0x3a, 0xdb, 0x29, 0x83, 0xc0, 0x3a,
-	0xd3, 0xa2, 0x5a, 0x0a, 0x6e, 0x67, 0xd9, 0x4e, 0x4d, 0xce, 0x7b, 0x1b, 0x7d, 0x4e, 0x50, 0x37,
-	0x22, 0x43, 0xb6, 0x00, 0xcf, 0x58, 0x71, 0xdc, 0xa5, 0xfd, 0x96, 0x18, 0xc3, 0xe0, 0x5f, 0xc0,
-	0xf0, 0xc1, 0xf7, 0x9f, 0xbf, 0x7e, 0xf4, 0x02, 0x76, 0x37, 0x6e, 0xc6, 0x71, 0x2b, 0x55, 0x1d,
-	0x9f, 0xb6, 0x8f, 0xb3, 0x78, 0x75, 0x64, 0x35, 0xfb, 0x06, 0xee, 0x2b, 0x24, 0x76, 0xd8, 0xe9,
-	0xba, 0xed, 0xda, 0xf9, 0x6b, 0x84, 0x0f, 0x4d, 0xc7, 0x63, 0x76, 0xbf, 0xbb, 0x63, 0x7c, 0xba,
-	0xb4, 0xff, 0xec, 0xb9, 0xf7, 0xb1, 0xd7, 0x8c, 0xd3, 0x7d, 0x73, 0x85, 0x8f, 0xfe, 0x04, 0x00,
-	0x00, 0xff, 0xff, 0xd0, 0x87, 0xe1, 0xa8, 0xf7, 0x03, 0x00, 0x00,
+	// 503 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x84, 0x54, 0xcd, 0x6e, 0xd3, 0x40,
+	0x10, 0x56, 0x7e, 0x0a, 0x61, 0xc2, 0x9f, 0x06, 0x0e, 0x56, 0x54, 0x21, 0x6b, 0xa9, 0x68, 0xb9,
+	0xc4, 0x4a, 0xe8, 0x01, 0x71, 0x01, 0x15, 0xa4, 0x0a, 0x89, 0x52, 0x69, 0x2b, 0x71, 0xe0, 0xb6,
+	0xd9, 0x4c, 0xa2, 0x05, 0x67, 0xd7, 0xac, 0x37, 0x96, 0xaa, 0xa4, 0x17, 0x2e, 0x5c, 0xb8, 0xf1,
+	0x50, 0x3c, 0x00, 0xaf, 0xc0, 0x83, 0x54, 0xde, 0xd8, 0x89, 0xdb, 0xa4, 0xe9, 0x6d, 0x66, 0xfc,
+	0x7d, 0x33, 0xdf, 0x7c, 0x63, 0x1b, 0x1e, 0x9a, 0xd1, 0x88, 0xac, 0xd2, 0xe3, 0x6e, 0x62, 0x8d,
+	0x33, 0x88, 0xdf, 0xa7, 0x03, 0x92, 0xc2, 0x5a, 0x45, 0xb6, 0x2b, 0x12, 0xd5, 0xcd, 0x7a, 0x9d,
+	0xdd, 0xb1, 0x31, 0xe3, 0x98, 0x22, 0x91, 0xa8, 0x48, 0x68, 0x6d, 0x9c, 0x70, 0xca, 0xe8, 0x74,
+	0xc1, 0xe8, 0xb4, 0xdd, 0x79, 0x42, 0x65, 0x02, 0x13, 0x72, 0x62, 0x11, 0xb3, 0x39, 0xb4, 0x4e,
+	0x8b, 0xe6, 0xf8, 0x06, 0x5a, 0xf9, 0x93, 0xa1, 0x70, 0x22, 0xa8, 0x85, 0xb5, 0x83, 0x76, 0xff,
+	0x59, 0x77, 0x7d, 0x52, 0xf7, 0x74, 0xf0, 0x8d, 0xa4, 0x3b, 0x21, 0x27, 0xf8, 0x12, 0x8f, 0x87,
+	0xd0, 0x4c, 0x13, 0x92, 0x41, 0xdd, 0xf3, 0xc2, 0x8d, 0xbc, 0x62, 0xce, 0x59, 0x42, 0x92, 0x7b,
+	0x34, 0xfb, 0x5b, 0x83, 0xfb, 0xd5, 0x32, 0xbe, 0x5b, 0x93, 0xb0, 0xb7, 0xad, 0xd5, 0x49, 0x81,
+	0xad, 0x08, 0x79, 0x0b, 0xad, 0xc4, 0x9a, 0x4c, 0x0d, 0xc9, 0x16, 0x62, 0x9e, 0xdf, 0xbc, 0x04,
+	0xa7, 0x11, 0x59, 0xd2, 0x92, 0xf8, 0x92, 0x84, 0x87, 0xd0, 0x90, 0x76, 0x18, 0x34, 0x3c, 0x97,
+	0x6d, 0xe2, 0xbe, 0xe7, 0x1f, 0x3e, 0xea, 0x91, 0xb1, 0x13, 0x6f, 0x31, 0xcf, 0xe1, 0xec, 0x0b,
+	0x3c, 0xbe, 0x2e, 0x0a, 0x43, 0x68, 0x0f, 0x55, 0x9a, 0xc4, 0xe2, 0xfc, 0xb3, 0x98, 0x90, 0xdf,
+	0xe7, 0x1e, 0xaf, 0x96, 0x3c, 0x82, 0x52, 0x69, 0x55, 0x92, 0x77, 0xf2, 0x7a, 0x73, 0xc4, 0xaa,
+	0xc4, 0xe6, 0x2b, 0x83, 0x3e, 0xa9, 0xd4, 0xe1, 0xeb, 0x35, 0x83, 0x76, 0x37, 0x49, 0xcc, 0xb1,
+	0xd7, 0x2e, 0xd4, 0x87, 0x1d, 0xe5, 0x68, 0x92, 0x06, 0xf5, 0xb0, 0x71, 0x13, 0xad, 0x1c, 0xc5,
+	0x17, 0x50, 0x76, 0x04, 0x58, 0x96, 0x8e, 0xc9, 0x71, 0xfa, 0x31, 0xa5, 0xd4, 0x21, 0x42, 0x53,
+	0xaf, 0x16, 0xf2, 0x31, 0x06, 0x70, 0x57, 0x48, 0x69, 0xa6, 0xda, 0x15, 0x5b, 0x94, 0x29, 0xfb,
+	0x55, 0x83, 0x27, 0xd5, 0x15, 0xca, 0x2e, 0x15, 0x46, 0xed, 0x0a, 0x03, 0xf7, 0xe0, 0x41, 0x2c,
+	0x06, 0x14, 0x9f, 0x51, 0x4c, 0xd2, 0x19, 0x5b, 0x74, 0xbc, 0x5a, 0xc4, 0xa7, 0xb0, 0x13, 0xab,
+	0x89, 0x72, 0xfe, 0x52, 0x0d, 0xbe, 0x48, 0xb0, 0x03, 0x2d, 0x69, 0xb4, 0x53, 0x7a, 0x4a, 0x41,
+	0xd3, 0xd3, 0x96, 0x79, 0xff, 0x77, 0x1d, 0x1e, 0x2d, 0xdf, 0x36, 0xb2, 0x99, 0x92, 0x84, 0x33,
+	0x68, 0x7a, 0x5f, 0xf7, 0xb7, 0xd9, 0x51, 0x91, 0xdd, 0x09, 0x6f, 0x03, 0xb2, 0x83, 0x9f, 0xff,
+	0xfe, 0xff, 0xa9, 0x33, 0x0c, 0xa3, 0xac, 0x17, 0x15, 0x3b, 0xa5, 0xd1, 0xac, 0x88, 0x2e, 0xa2,
+	0xf2, 0x63, 0x4e, 0x71, 0x0e, 0x8d, 0x63, 0x72, 0xf8, 0x62, 0x5b, 0xcb, 0x95, 0xef, 0x9d, 0xad,
+	0x27, 0x63, 0x91, 0x1f, 0xfb, 0x12, 0xf7, 0x6f, 0x1b, 0x1b, 0xcd, 0xf2, 0x8b, 0x5d, 0x1c, 0x35,
+	0xbf, 0xd6, 0xb3, 0xde, 0xe0, 0x8e, 0xff, 0x0f, 0xbc, 0xba, 0x0c, 0x00, 0x00, 0xff, 0xff, 0x86,
+	0x3d, 0xeb, 0x06, 0x64, 0x04, 0x00, 0x00,
 }
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -376,7 +409,7 @@ const _ = grpc.SupportPackageIsVersion6
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://godoc.org/google.golang.org/grpc#ClientConn.NewStream.
 type OfferingServiceClient interface {
 	List(ctx context.Context, in *OfferingListRequest, opts ...grpc.CallOption) (*OfferingList, error)
-	Get(ctx context.Context, in *OfferingRequest, opts ...grpc.CallOption) (*Offering, error)
+	Get(ctx context.Context, in *OfferingGetRequest, opts ...grpc.CallOption) (*Offering, error)
 }
 
 type offeringServiceClient struct {
@@ -396,7 +429,7 @@ func (c *offeringServiceClient) List(ctx context.Context, in *OfferingListReques
 	return out, nil
 }
 
-func (c *offeringServiceClient) Get(ctx context.Context, in *OfferingRequest, opts ...grpc.CallOption) (*Offering, error) {
+func (c *offeringServiceClient) Get(ctx context.Context, in *OfferingGetRequest, opts ...grpc.CallOption) (*Offering, error) {
 	out := new(Offering)
 	err := c.cc.Invoke(ctx, "/kubecarrier.api.v1.OfferingService/Get", in, out, opts...)
 	if err != nil {
@@ -408,7 +441,7 @@ func (c *offeringServiceClient) Get(ctx context.Context, in *OfferingRequest, op
 // OfferingServiceServer is the server API for OfferingService service.
 type OfferingServiceServer interface {
 	List(context.Context, *OfferingListRequest) (*OfferingList, error)
-	Get(context.Context, *OfferingRequest) (*Offering, error)
+	Get(context.Context, *OfferingGetRequest) (*Offering, error)
 }
 
 // UnimplementedOfferingServiceServer can be embedded to have forward compatible implementations.
@@ -418,7 +451,7 @@ type UnimplementedOfferingServiceServer struct {
 func (*UnimplementedOfferingServiceServer) List(ctx context.Context, req *OfferingListRequest) (*OfferingList, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method List not implemented")
 }
-func (*UnimplementedOfferingServiceServer) Get(ctx context.Context, req *OfferingRequest) (*Offering, error) {
+func (*UnimplementedOfferingServiceServer) Get(ctx context.Context, req *OfferingGetRequest) (*Offering, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Get not implemented")
 }
 
@@ -445,7 +478,7 @@ func _OfferingService_List_Handler(srv interface{}, ctx context.Context, dec fun
 }
 
 func _OfferingService_Get_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(OfferingRequest)
+	in := new(OfferingGetRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -457,7 +490,7 @@ func _OfferingService_Get_Handler(srv interface{}, ctx context.Context, dec func
 		FullMethod: "/kubecarrier.api.v1.OfferingService/Get",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(OfferingServiceServer).Get(ctx, req.(*OfferingRequest))
+		return srv.(OfferingServiceServer).Get(ctx, req.(*OfferingGetRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }

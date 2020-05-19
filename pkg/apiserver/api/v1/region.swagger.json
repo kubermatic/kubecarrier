@@ -36,43 +36,6 @@
       },
       "type": "object"
     },
-    "v1CRDInformation": {
-      "properties": {
-        "apiGroup": {
-          "type": "string"
-        },
-        "kind": {
-          "type": "string"
-        },
-        "name": {
-          "type": "string"
-        },
-        "plural": {
-          "type": "string"
-        },
-        "region": {
-          "$ref": "#/definitions/v1ObjectReference"
-        },
-        "versions": {
-          "items": {
-            "$ref": "#/definitions/v1CRDVersion"
-          },
-          "type": "array"
-        }
-      },
-      "type": "object"
-    },
-    "v1CRDVersion": {
-      "properties": {
-        "name": {
-          "type": "string"
-        },
-        "schema": {
-          "type": "string"
-        }
-      },
-      "type": "object"
-    },
     "v1ListMeta": {
       "properties": {
         "continue": {
@@ -133,22 +96,22 @@
       },
       "type": "object"
     },
-    "v1Offering": {
+    "v1Region": {
       "properties": {
         "metadata": {
           "$ref": "#/definitions/v1ObjectMeta"
         },
         "spec": {
-          "$ref": "#/definitions/v1OfferingSpec"
+          "$ref": "#/definitions/v1RegionSpec"
         }
       },
       "type": "object"
     },
-    "v1OfferingList": {
+    "v1RegionList": {
       "properties": {
         "items": {
           "items": {
-            "$ref": "#/definitions/v1Offering"
+            "$ref": "#/definitions/v1Region"
           },
           "type": "array"
         },
@@ -158,7 +121,7 @@
       },
       "type": "object"
     },
-    "v1OfferingMetadata": {
+    "v1RegionMetadata": {
       "properties": {
         "description": {
           "type": "string"
@@ -169,13 +132,10 @@
       },
       "type": "object"
     },
-    "v1OfferingSpec": {
+    "v1RegionSpec": {
       "properties": {
-        "crd": {
-          "$ref": "#/definitions/v1CRDInformation"
-        },
         "metadata": {
-          "$ref": "#/definitions/v1OfferingMetadata"
+          "$ref": "#/definitions/v1RegionMetadata"
         },
         "provider": {
           "$ref": "#/definitions/v1ObjectReference"
@@ -185,11 +145,11 @@
     }
   },
   "info": {
-    "title": "offering.proto",
+    "title": "region.proto",
     "version": "version not set"
   },
   "paths": {
-    "/v1/accounts/{account}/offerings": {
+    "/v1/accounts/{account}/regions": {
       "get": {
         "operationId": "List",
         "parameters": [
@@ -223,7 +183,7 @@
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/v1OfferingList"
+              "$ref": "#/definitions/v1RegionList"
             }
           },
           "default": {
@@ -234,11 +194,11 @@
           }
         },
         "tags": [
-          "OfferingService"
+          "RegionService"
         ]
       }
     },
-    "/v1/accounts/{account}/offerings/{name}": {
+    "/v1/accounts/{account}/regions/{name}": {
       "get": {
         "operationId": "Get",
         "parameters": [
@@ -259,7 +219,7 @@
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/v1Offering"
+              "$ref": "#/definitions/v1Region"
             }
           },
           "default": {
@@ -270,7 +230,7 @@
           }
         },
         "tags": [
-          "OfferingService"
+          "RegionService"
         ]
       }
     }

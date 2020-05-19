@@ -130,7 +130,7 @@ func TestListOffering(t *testing.T) {
 		{
 			name: "missing namespace",
 			req: &v1.OfferingListRequest{
-				Tenant: "",
+				Account: "",
 			},
 			expectedError:  status.Errorf(codes.InvalidArgument, "missing namespace"),
 			expectedResult: nil,
@@ -138,8 +138,8 @@ func TestListOffering(t *testing.T) {
 		{
 			name: "invalid limit",
 			req: &v1.OfferingListRequest{
-				Tenant: "test-namespace",
-				Limit:  -1,
+				Account: "test-namespace",
+				Limit:   -1,
 			},
 			expectedError:  status.Errorf(codes.InvalidArgument, "invalid limit: should not be negative number"),
 			expectedResult: nil,
@@ -147,7 +147,7 @@ func TestListOffering(t *testing.T) {
 		{
 			name: "invalid label selector",
 			req: &v1.OfferingListRequest{
-				Tenant:        "test-namespace",
+				Account:       "test-namespace",
 				LabelSelector: "test-label=====offering1",
 			},
 			expectedError:  status.Errorf(codes.InvalidArgument, "invalid LabelSelector: unable to parse requirement: found '==', expected: identifier"),
@@ -156,58 +156,78 @@ func TestListOffering(t *testing.T) {
 		{
 			name: "valid request",
 			req: &v1.OfferingListRequest{
-				Tenant: "test-namespace",
+				Account: "test-namespace",
 			},
 			expectedError: nil,
 			expectedResult: &v1.OfferingList{
+				Metadata: &v1.ListMeta{
+					Continue:        "",
+					ResourceVersion: "",
+				},
 				Items: []*v1.Offering{
 					{
-						Name: "test-offering-1",
-						Metadata: &v1.OfferingMetadata{
-							Description: "Test Offering",
-							DisplayName: "Test Offering",
-						},
-						Provider: &v1.ObjectReference{
-							Name: "test-provider",
-						},
-						Crd: &v1.CRDInformation{
-							Name:     "test-crd",
-							ApiGroup: "test-crd-group",
-							Kind:     "test-kind",
-							Plural:   "test-plural",
-							Versions: []*v1.CRDVersion{
-								{
-									Name:   "test-version",
-									Schema: "{\"openAPIV3Schema\":{\"type\":\"object\",\"properties\":{\"apiVersion\":{\"type\":\"string\"}}}}",
-								},
+						Metadata: &v1.ObjectMeta{
+							Name:    "test-offering-1",
+							Account: "test-namespace",
+							Labels: map[string]string{
+								"test-label": "offering1",
 							},
-							Region: &v1.ObjectReference{
-								Name: "test-region",
+						},
+						Spec: &v1.OfferingSpec{
+							Metadata: &v1.OfferingMetadata{
+								Description: "Test Offering",
+								DisplayName: "Test Offering",
+							},
+							Provider: &v1.ObjectReference{
+								Name: "test-provider",
+							},
+							Crd: &v1.CRDInformation{
+								Name:     "test-crd",
+								ApiGroup: "test-crd-group",
+								Kind:     "test-kind",
+								Plural:   "test-plural",
+								Versions: []*v1.CRDVersion{
+									{
+										Name:   "test-version",
+										Schema: `{"openAPIV3Schema":{"type":"object","properties":{"apiVersion":{"type":"string"}}}}`,
+									},
+								},
+								Region: &v1.ObjectReference{
+									Name: "test-region",
+								},
 							},
 						},
 					},
 					{
-						Name: "test-offering-2",
-						Metadata: &v1.OfferingMetadata{
-							Description: "Test Offering",
-							DisplayName: "Test Offering",
-						},
-						Provider: &v1.ObjectReference{
-							Name: "test-provider",
-						},
-						Crd: &v1.CRDInformation{
-							Name:     "test-crd",
-							ApiGroup: "test-crd-group",
-							Kind:     "test-kind",
-							Plural:   "test-plural",
-							Versions: []*v1.CRDVersion{
-								{
-									Name:   "test-version",
-									Schema: "{\"openAPIV3Schema\":{\"type\":\"object\",\"properties\":{\"apiVersion\":{\"type\":\"string\"}}}}",
-								},
+						Metadata: &v1.ObjectMeta{
+							Name:    "test-offering-2",
+							Account: "test-namespace",
+							Labels: map[string]string{
+								"test-label": "offering2",
 							},
-							Region: &v1.ObjectReference{
-								Name: "test-region",
+						},
+						Spec: &v1.OfferingSpec{
+							Metadata: &v1.OfferingMetadata{
+								Description: "Test Offering",
+								DisplayName: "Test Offering",
+							},
+							Provider: &v1.ObjectReference{
+								Name: "test-provider",
+							},
+							Crd: &v1.CRDInformation{
+								Name:     "test-crd",
+								ApiGroup: "test-crd-group",
+								Kind:     "test-kind",
+								Plural:   "test-plural",
+								Versions: []*v1.CRDVersion{
+									{
+										Name:   "test-version",
+										Schema: `{"openAPIV3Schema":{"type":"object","properties":{"apiVersion":{"type":"string"}}}}`,
+									},
+								},
+								Region: &v1.ObjectReference{
+									Name: "test-region",
+								},
 							},
 						},
 					},
@@ -217,34 +237,46 @@ func TestListOffering(t *testing.T) {
 		{
 			name: "LabelSelector works",
 			req: &v1.OfferingListRequest{
-				Tenant:        "test-namespace",
+				Account:       "test-namespace",
 				LabelSelector: "test-label=offering1",
 			},
 			expectedError: nil,
 			expectedResult: &v1.OfferingList{
+				Metadata: &v1.ListMeta{
+					Continue:        "",
+					ResourceVersion: "",
+				},
 				Items: []*v1.Offering{
 					{
-						Name: "test-offering-1",
-						Metadata: &v1.OfferingMetadata{
-							Description: "Test Offering",
-							DisplayName: "Test Offering",
-						},
-						Provider: &v1.ObjectReference{
-							Name: "test-provider",
-						},
-						Crd: &v1.CRDInformation{
-							Name:     "test-crd",
-							ApiGroup: "test-crd-group",
-							Kind:     "test-kind",
-							Plural:   "test-plural",
-							Versions: []*v1.CRDVersion{
-								{
-									Name:   "test-version",
-									Schema: "{\"openAPIV3Schema\":{\"type\":\"object\",\"properties\":{\"apiVersion\":{\"type\":\"string\"}}}}",
-								},
+						Metadata: &v1.ObjectMeta{
+							Name:    "test-offering-1",
+							Account: "test-namespace",
+							Labels: map[string]string{
+								"test-label": "offering1",
 							},
-							Region: &v1.ObjectReference{
-								Name: "test-region",
+						},
+						Spec: &v1.OfferingSpec{
+							Metadata: &v1.OfferingMetadata{
+								Description: "Test Offering",
+								DisplayName: "Test Offering",
+							},
+							Provider: &v1.ObjectReference{
+								Name: "test-provider",
+							},
+							Crd: &v1.CRDInformation{
+								Name:     "test-crd",
+								ApiGroup: "test-crd-group",
+								Kind:     "test-kind",
+								Plural:   "test-plural",
+								Versions: []*v1.CRDVersion{
+									{
+										Name:   "test-version",
+										Schema: `{"openAPIV3Schema":{"type":"object","properties":{"apiVersion":{"type":"string"}}}}`,
+									},
+								},
+								Region: &v1.ObjectReference{
+									Name: "test-region",
+								},
 							},
 						},
 					},
@@ -306,56 +338,61 @@ func TestGetOffering(t *testing.T) {
 	ctx := context.Background()
 	tests := []struct {
 		name           string
-		req            *v1.OfferingRequest
+		req            *v1.OfferingGetRequest
 		expectedError  error
 		expectedResult *v1.Offering
 	}{
 		{
 			name: "missing namespace",
-			req: &v1.OfferingRequest{
-				Name:   "test-offering",
-				Tenant: "",
+			req: &v1.OfferingGetRequest{
+				Name:    "test-offering",
+				Account: "",
 			},
 			expectedError:  status.Errorf(codes.InvalidArgument, "missing namespace"),
 			expectedResult: nil,
 		},
 		{
 			name: "missing name",
-			req: &v1.OfferingRequest{
-				Tenant: "test-namespace",
+			req: &v1.OfferingGetRequest{
+				Account: "test-namespace",
 			},
 			expectedError:  status.Errorf(codes.InvalidArgument, "missing name"),
 			expectedResult: nil,
 		},
 		{
 			name: "valid request",
-			req: &v1.OfferingRequest{
-				Name:   "test-offering",
-				Tenant: "test-namespace",
+			req: &v1.OfferingGetRequest{
+				Name:    "test-offering",
+				Account: "test-namespace",
 			},
 			expectedError: nil,
 			expectedResult: &v1.Offering{
-				Name: "test-offering",
-				Metadata: &v1.OfferingMetadata{
-					Description: "Test Offering",
-					DisplayName: "Test Offering",
+				Metadata: &v1.ObjectMeta{
+					Name:    "test-offering",
+					Account: "test-namespace",
 				},
-				Provider: &v1.ObjectReference{
-					Name: "test-provider",
-				},
-				Crd: &v1.CRDInformation{
-					Name:     "test-crd",
-					ApiGroup: "test-crd-group",
-					Kind:     "test-kind",
-					Plural:   "test-plural",
-					Versions: []*v1.CRDVersion{
-						{
-							Name:   "test-version",
-							Schema: "{\"openAPIV3Schema\":{\"type\":\"object\",\"properties\":{\"apiVersion\":{\"type\":\"string\"}}}}",
-						},
+				Spec: &v1.OfferingSpec{
+					Metadata: &v1.OfferingMetadata{
+						Description: "Test Offering",
+						DisplayName: "Test Offering",
 					},
-					Region: &v1.ObjectReference{
-						Name: "test-region",
+					Provider: &v1.ObjectReference{
+						Name: "test-provider",
+					},
+					Crd: &v1.CRDInformation{
+						Name:     "test-crd",
+						ApiGroup: "test-crd-group",
+						Kind:     "test-kind",
+						Plural:   "test-plural",
+						Versions: []*v1.CRDVersion{
+							{
+								Name:   "test-version",
+								Schema: `{"openAPIV3Schema":{"type":"object","properties":{"apiVersion":{"type":"string"}}}}`,
+							},
+						},
+						Region: &v1.ObjectReference{
+							Name: "test-region",
+						},
 					},
 				},
 			},

@@ -26,6 +26,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/golang/protobuf/ptypes"
 	certmanagerv1alpha3 "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha3"
 	v1 "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
 	"github.com/stretchr/testify/assert"
@@ -40,6 +41,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 
 	catalogv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/catalog/v1alpha1"
+	corev1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/core/v1alpha1"
 	operatorv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/operator/v1alpha1"
 	apiserverv1 "github.com/kubermatic/kubecarrier/pkg/apiserver/api/v1"
 	"github.com/kubermatic/kubecarrier/pkg/testutil"
@@ -169,6 +171,8 @@ func newAPIServer(f *testutil.Framework) func(t *testing.T) {
 
 		for name, testFn := range map[string]func(ctx context.Context, conn *grpc.ClientConn, managementClient *testutil.RecordingClient) func(t *testing.T){
 			"offering-service": offeringService,
+			"region-service":   regionService,
+			"provider-service": providerService,
 		} {
 			name := name
 			testFn := testFn
@@ -178,6 +182,112 @@ func newAPIServer(f *testutil.Framework) func(t *testing.T) {
 				testFn(ctx, conn, managementClient)(t)
 			})
 		}
+	}
+}
+
+func providerService(ctx context.Context, conn *grpc.ClientConn, managementClient *testutil.RecordingClient) func(t *testing.T) {
+	return func(t *testing.T) {
+		testName := strings.Replace(strings.ToLower(t.Name()), "/", "-", -1)
+		ns := &corev1.Namespace{}
+		ns.Name = testName
+		require.NoError(t, managementClient.Create(ctx, ns))
+		// Create tenants objects in the management cluster.
+		provider1 := &catalogv1alpha1.Provider{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "test-provider-1",
+				Namespace: testName,
+				Labels: map[string]string{
+					"test-label": "provider1",
+				},
+			},
+			Spec: catalogv1alpha1.ProviderSpec{
+				Metadata: catalogv1alpha1.AccountMetadata{
+					Description: "Test Provider",
+					DisplayName: "Test Provider",
+				},
+			},
+		}
+		provider2 := &catalogv1alpha1.Provider{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "test-provider-2",
+				Namespace: testName,
+				Labels: map[string]string{
+					"test-label": "provider2",
+				},
+			},
+			Spec: catalogv1alpha1.ProviderSpec{
+				Metadata: catalogv1alpha1.AccountMetadata{
+					Description: "Test Provider",
+					DisplayName: "Test Provider",
+				},
+			},
+		}
+		require.NoError(t, managementClient.Create(ctx, provider1))
+		require.NoError(t, managementClient.Create(ctx, provider2))
+
+		client := apiserverv1.NewProviderServiceClient(conn)
+		providerCtx, cancel := context.WithTimeout(ctx, 30*time.Second)
+		t.Cleanup(cancel)
+		// list providers with limit and continuation token.
+		require.NoError(t, wait.PollUntil(time.Second, func() (done bool, err error) {
+			providers, err := client.List(providerCtx, &apiserverv1.ProviderListRequest{
+				Account: testName,
+				Limit:   1,
+			})
+			if err != nil {
+				return false, err
+			}
+			assert.Len(t, providers.Items, 1)
+			testutil.LogObject(t, providers)
+			providers, err = client.List(providerCtx, &apiserverv1.ProviderListRequest{
+				Account:  testName,
+				Limit:    1,
+				Continue: providers.Metadata.Continue,
+			})
+			if err != nil {
+				return false, err
+			}
+			assert.Len(t, providers.Items, 1)
+			testutil.LogObject(t, providers)
+			return true, nil
+		}, providerCtx.Done()))
+
+		// get provider
+		require.NoError(t, wait.PollUntil(time.Second, func() (done bool, err error) {
+			provider, err := client.Get(providerCtx, &apiserverv1.ProviderGetRequest{
+				Account: testName,
+				Name:    "test-provider-1",
+			})
+			if err != nil {
+				return false, err
+			}
+			creationTimestamp, err := ptypes.TimestampProto(provider1.CreationTimestamp.Time)
+			if err != nil {
+				return true, err
+			}
+			expectedResult := &apiserverv1.Provider{
+				Metadata: &apiserverv1.ObjectMeta{
+					Name:    "test-provider-1",
+					Account: testName,
+					Labels: map[string]string{
+						"test-label": "provider1",
+					},
+					Uid:               string(provider1.UID),
+					CreationTimestamp: creationTimestamp,
+					ResourceVersion:   provider1.ResourceVersion,
+					Generation:        provider1.Generation,
+				},
+				Spec: &apiserverv1.ProviderSpec{
+					Metadata: &apiserverv1.AccountMetadata{
+						Description: "Test Provider",
+						DisplayName: "Test Provider",
+					},
+				},
+			}
+			assert.EqualValues(t, provider, expectedResult)
+			testutil.LogObject(t, provider)
+			return true, nil
+		}, providerCtx.Done()))
 	}
 }
 
@@ -281,64 +391,189 @@ func offeringService(ctx context.Context, conn *grpc.ClientConn, managementClien
 		// list offerings with limit and continuation token.
 		require.NoError(t, wait.PollUntil(time.Second, func() (done bool, err error) {
 			offerings, err := client.List(offeringCtx, &apiserverv1.OfferingListRequest{
-				Tenant: testName,
-				Limit:  1,
+				Account: testName,
+				Limit:   1,
 			})
 			if err != nil {
 				return false, err
 			}
 			assert.Len(t, offerings.Items, 1)
-			testutil.LogObject(t, offerings)
 			offerings, err = client.List(offeringCtx, &apiserverv1.OfferingListRequest{
-				Tenant:   testName,
+				Account:  testName,
 				Limit:    1,
-				Continue: offerings.Continue,
+				Continue: offerings.Metadata.Continue,
 			})
 			if err != nil {
 				return false, err
 			}
 			assert.Len(t, offerings.Items, 1)
-			testutil.LogObject(t, offerings)
 			return true, nil
 		}, offeringCtx.Done()))
 
 		// get offering
 		require.NoError(t, wait.PollUntil(time.Second, func() (done bool, err error) {
-			offering, err := client.Get(offeringCtx, &apiserverv1.OfferingRequest{
-				Tenant: testName,
-				Name:   "test-offering-1",
+			offering, err := client.Get(offeringCtx, &apiserverv1.OfferingGetRequest{
+				Account: testName,
+				Name:    "test-offering-1",
 			})
 			if err != nil {
 				return false, err
 			}
+			creationTimestamp, err := ptypes.TimestampProto(offering1.CreationTimestamp.Time)
+			if err != nil {
+				return true, err
+			}
 			expectedResult := &apiserverv1.Offering{
-				Name: "test-offering-1",
-				Metadata: &apiserverv1.OfferingMetadata{
-					Description: "Test Offering",
-					DisplayName: "Test Offering",
-				},
-				Provider: &apiserverv1.ObjectReference{
-					Name: "test-provider",
-				},
-				Crd: &apiserverv1.CRDInformation{
-					Name:     "test-crd",
-					ApiGroup: "test-crd-group",
-					Kind:     "test-kind",
-					Plural:   "test-plural",
-					Versions: []*apiserverv1.CRDVersion{
-						{
-							Name:   "test-version",
-							Schema: "{\"openAPIV3Schema\":{\"type\":\"object\",\"properties\":{\"apiVersion\":{\"type\":\"string\"}}}}",
-						},
+				Metadata: &apiserverv1.ObjectMeta{
+					Name:    "test-offering-1",
+					Account: testName,
+					Labels: map[string]string{
+						"test-label": "offering1",
 					},
-					Region: &apiserverv1.ObjectReference{
-						Name: "test-region",
+					Uid:               string(offering1.UID),
+					CreationTimestamp: creationTimestamp,
+					ResourceVersion:   offering1.ResourceVersion,
+					Generation:        offering1.Generation,
+				},
+				Spec: &apiserverv1.OfferingSpec{
+					Metadata: &apiserverv1.OfferingMetadata{
+						Description: "Test Offering",
+						DisplayName: "Test Offering",
+					},
+					Provider: &apiserverv1.ObjectReference{
+						Name: "test-provider",
+					},
+					Crd: &apiserverv1.CRDInformation{
+						Name:     "test-crd",
+						ApiGroup: "test-crd-group",
+						Kind:     "test-kind",
+						Plural:   "test-plural",
+						Versions: []*apiserverv1.CRDVersion{
+							{
+								Name:   "test-version",
+								Schema: `{"openAPIV3Schema":{"type":"object","properties":{"apiVersion":{"type":"string"}}}}`,
+							},
+						},
+						Region: &apiserverv1.ObjectReference{
+							Name: "test-region",
+						},
 					},
 				},
 			}
-			assert.Equal(t, offering, expectedResult)
-			testutil.LogObject(t, offering)
+			assert.Equal(t, expectedResult, offering)
 			return true, nil
 		}, offeringCtx.Done()))
+	}
+}
+
+func regionService(ctx context.Context, conn *grpc.ClientConn, managementClient *testutil.RecordingClient) func(t *testing.T) {
+	return func(t *testing.T) {
+		testName := strings.Replace(strings.ToLower(t.Name()), "/", "-", -1)
+		ns := &corev1.Namespace{}
+		ns.Name = testName
+		require.NoError(t, managementClient.Create(ctx, ns))
+		// Create region objects in the management cluster.
+		region1 := &catalogv1alpha1.Region{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "test-region-1",
+				Namespace: testName,
+				Labels: map[string]string{
+					"test-label": "region1",
+				},
+			},
+			Spec: catalogv1alpha1.RegionSpec{
+				Metadata: corev1alpha1.ServiceClusterMetadata{
+					Description: "Test Region",
+					DisplayName: "Test Region",
+				},
+				Provider: catalogv1alpha1.ObjectReference{
+					Name: "test-provider",
+				},
+			},
+		}
+		region2 := &catalogv1alpha1.Region{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "test-region-2",
+				Namespace: testName,
+				Labels: map[string]string{
+					"test-label": "region2",
+				},
+			},
+			Spec: catalogv1alpha1.RegionSpec{
+				Metadata: corev1alpha1.ServiceClusterMetadata{
+					Description: "Test Region",
+					DisplayName: "Test Region",
+				},
+				Provider: catalogv1alpha1.ObjectReference{
+					Name: "test-provider",
+				},
+			},
+		}
+		require.NoError(t, managementClient.Create(ctx, region1))
+		require.NoError(t, managementClient.Create(ctx, region2))
+
+		client := apiserverv1.NewRegionServiceClient(conn)
+		regionCtx, cancel := context.WithTimeout(ctx, 30*time.Second)
+		t.Cleanup(cancel)
+		// list regions with limit and continuation token.
+		require.NoError(t, wait.PollUntil(time.Second, func() (done bool, err error) {
+			regions, err := client.List(regionCtx, &apiserverv1.RegionListRequest{
+				Account: testName,
+				Limit:   1,
+			})
+			if err != nil {
+				return false, err
+			}
+			assert.Len(t, regions.Items, 1)
+			regions, err = client.List(regionCtx, &apiserverv1.RegionListRequest{
+				Account:  testName,
+				Limit:    1,
+				Continue: regions.Metadata.Continue,
+			})
+			if err != nil {
+				return false, err
+			}
+			assert.Len(t, regions.Items, 1)
+			return true, nil
+		}, regionCtx.Done()))
+
+		// get region
+		require.NoError(t, wait.PollUntil(time.Second, func() (done bool, err error) {
+			region, err := client.Get(regionCtx, &apiserverv1.RegionGetRequest{
+				Account: testName,
+				Name:    "test-region-1",
+			})
+			if err != nil {
+				return false, err
+			}
+			creationTimestamp, err := ptypes.TimestampProto(region1.CreationTimestamp.Time)
+			if err != nil {
+				return true, err
+			}
+			expectedResult := &apiserverv1.Region{
+				Metadata: &apiserverv1.ObjectMeta{
+					Name:    "test-region-1",
+					Account: testName,
+					Labels: map[string]string{
+						"test-label": "region1",
+					},
+					Uid:               string(region1.UID),
+					CreationTimestamp: creationTimestamp,
+					ResourceVersion:   region1.ResourceVersion,
+					Generation:        region1.Generation,
+				},
+				Spec: &apiserverv1.RegionSpec{
+					Metadata: &apiserverv1.RegionMetadata{
+						Description: "Test Region",
+						DisplayName: "Test Region",
+					},
+					Provider: &apiserverv1.ObjectReference{
+						Name: "test-provider",
+					},
+				},
+			}
+			assert.Equal(t, expectedResult, region)
+			return true, nil
+		}, regionCtx.Done()))
 	}
 }

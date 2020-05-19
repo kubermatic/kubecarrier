@@ -23,48 +23,47 @@ import "google/api/annotations.proto";
 import "types.proto";
 import "meta.proto";
 
-message Offering {
+message Region {
   ObjectMeta metadata = 1;
-  OfferingSpec spec = 2;
+  RegionSpec spec = 2;
 }
 
-message OfferingSpec {
-  OfferingMetadata metadata = 1;
+message RegionSpec {
+  RegionMetadata metadata = 1;
   ObjectReference provider = 2;
-  CRDInformation crd = 3;
 }
 
-message OfferingMetadata {
+message RegionMetadata {
   string displayName = 1;
   string description = 2;
 }
 
-message OfferingList {
+message RegionList {
   ListMeta metadata = 1;
-  repeated Offering items = 2;
+  repeated Region items = 2;
 }
 
-message OfferingGetRequest {
+message RegionGetRequest {
   string name = 1;
   string account = 2;
 }
 
-message OfferingListRequest {
+message RegionListRequest {
   string account = 1;
   string labelSelector = 2;
   int64 limit = 3;
   string continue = 4;
 }
 
-service OfferingService {
-  rpc List(OfferingListRequest) returns (OfferingList) {
+service RegionService {
+  rpc List(RegionListRequest) returns (RegionList) {
     option (google.api.http) = {
-      get : "/v1/accounts/{account}/offerings"
+      get : "/v1/accounts/{account}/regions"
     };
   };
-  rpc Get(OfferingGetRequest) returns (Offering) {
+  rpc Get(RegionGetRequest) returns (Region) {
     option (google.api.http) = {
-      get : "/v1/accounts/{account}/offerings/{name}"
+      get : "/v1/accounts/{account}/regions/{name}"
     };
   };
 }
