@@ -7,7 +7,5 @@ metadata:
 aggregationRule:
   clusterRoleSelectors:
     - matchLabels:
-        "kubecarrier.io/manager": "true"
-    - matchLabels:
-        "kubecarrier.io/role": "manager"
+        "kubecarrier.io/apiserver": "true"
 rules: []

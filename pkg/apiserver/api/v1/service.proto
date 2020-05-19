@@ -25,6 +25,7 @@ import "meta.proto";
 message Service {
   ObjectMeta metadata = 1;
   string spec = 2;
+  string status = 3;
 }
 
 message ServiceList {
@@ -48,6 +49,13 @@ message ServiceListRequest {
   string continue = 6;
 }
 
+message ServiceCreateRequest {
+  string service = 1;
+  string version = 2;
+  Service spec = 3;
+  string account = 4;
+}
+
 service Services {
   rpc List(ServiceListRequest) returns (ServiceList) {
     option (google.api.http) = {
@@ -57,6 +65,12 @@ service Services {
   rpc Get(ServiceGetRequest) returns (Service) {
     option (google.api.http) = {
       get : "/v1/accounts/{account}/services/{service}/{version}/{name}"
+    };
+  };
+  rpc Create(ServiceCreateRequest) returns (Service) {
+    option (google.api.http) = {
+      post : "/v1/accounts/{account}/services/{service}/{version}"
+      body: "spec"
     };
   };
 }

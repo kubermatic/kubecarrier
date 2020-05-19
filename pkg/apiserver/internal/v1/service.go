@@ -18,6 +18,7 @@ package v1
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"strings"
 
@@ -46,6 +47,40 @@ func NewServicesServer(c client.Client, scheme *runtime.Scheme) v1.ServicesServe
 		client: c,
 		scheme: scheme,
 	}
+}
+func (o serviceServer) Create(ctx context.Context, req *v1.ServiceCreateRequest) (res *v1.Service, err error) {
+	obj := &unstructured.Unstructured{}
+
+	parts := strings.SplitN(req.Service, ".", 2)
+	gvk := schema.GroupVersionKind{
+		Kind:    parts[0],
+		Group:   parts[1],
+		Version: req.Version,
+	}
+	obj.SetGroupVersionKind(gvk)
+	val := map[string]interface{}{}
+	if err := json.Unmarshal([]byte(req.Spec.Spec), &val); err != nil {
+		return nil, status.Errorf(codes.Internal, "creating services: spec should by type of map[string]intreface{}")
+	}
+	if err := unstructured.SetNestedMap(obj.Object, val, "spec"); err != nil {
+		return nil, status.Errorf(codes.Internal, fmt.Sprintf("creating services: %s", err.Error()))
+	}
+	obj.SetName(req.Spec.Metadata.Name)
+	obj.SetNamespace(req.Spec.Metadata.Account)
+	if err := o.client.Create(ctx, obj); err != nil {
+		return nil, status.Errorf(codes.Internal, fmt.Sprintf("creating services: %s", err.Error()))
+	}
+	if err = o.client.Get(ctx, types.NamespacedName{
+		Name:      obj.GetName(),
+		Namespace: obj.GetNamespace(),
+	}, obj); err != nil {
+		return nil, status.Errorf(codes.Internal, fmt.Sprintf("creating service: %s", err.Error()))
+	}
+	res, err = o.convertService(obj)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, fmt.Sprintf("converting Service: %s", err.Error()))
+	}
+	return
 }
 
 func (o serviceServer) List(ctx context.Context, req *v1.ServiceListRequest) (res *v1.ServiceList, err error) {
@@ -174,9 +209,26 @@ func (o serviceServer) convertService(in *unstructured.Unstructured) (out *v1.Se
 			Generation:        in.GetGeneration(),
 		},
 	}
-	in.SetAnnotations(nil)
-	schemaBytes, _ := in.MarshalJSON()
-	out.Spec = string(schemaBytes)
+	spec, _, err := unstructured.NestedMap(in.Object, "spec")
+	if err != nil {
+		return nil, err
+	}
+	data, err := json.Marshal(spec)
+	if err != nil {
+		return nil, err
+	}
+	out.Spec = string(data)
+	status, ok, err := unstructured.NestedMap(in.Object, "status")
+	if err != nil {
+		return nil, err
+	}
+	if ok {
+		data, err = json.Marshal(status)
+		if err != nil {
+			return nil, err
+		}
+		out.Status = string(data)
+	}
 	return
 }
 
