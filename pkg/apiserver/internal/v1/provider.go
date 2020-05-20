@@ -138,8 +138,9 @@ func (o providerServer) convertProvider(in *catalogv1alpha1.Provider) (out *v1.P
 		},
 		Spec: &v1.ProviderSpec{
 			Metadata: &v1.ProviderMetadata{
-				DisplayName: in.Spec.Metadata.DisplayName,
-				Description: in.Spec.Metadata.Description,
+				DisplayName:      in.Spec.Metadata.DisplayName,
+				Description:      in.Spec.Metadata.Description,
+				ShortDescription: in.Spec.Metadata.ShortDescription,
 			},
 		},
 	}
