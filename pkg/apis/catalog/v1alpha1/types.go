@@ -40,3 +40,29 @@ type ObjectReference struct {
 	// +kubebuilder:validation:MinLength=1
 	Name string `json:"name"`
 }
+
+// CommonMetadata contains human-readable information shared for all catalog related objects.
+type CommonMetadata struct {
+	// DisplayName is the human-readable name of this Service.
+	// +kubebuilder:validation:MinLength=1
+	DisplayName string `json:"displayName"`
+	// Description is the long and detailed description of the Service.
+	// +kubebuilder:validation:MinLength=1
+	Description string `json:"description,omitempty"`
+	// ShortDescription is a single line short description of the Service.
+	// +kubebuilder:validation:MinLength=1
+	ShortDescription string `json:"shortDescription"`
+	// Logo is the full sized logo of the service.
+	Logo *Image `json:"logo,omitempty"`
+	// Icon is a small squared logo of the service.
+	Icon *Image `json:"icon,omitempty"`
+}
+
+// Image describes an inlined image.
+type Image struct {
+	// MediaType of the included image in data.
+	// e.g. image/png, image/jpeg, image/svg
+	MediaType string `json:"mediaType"`
+	// Data is the image data.
+	Data []byte `json:"data"`
+}

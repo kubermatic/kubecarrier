@@ -49,8 +49,10 @@ func TestAccountValidatingCreate(t *testing.T) {
 				},
 				Spec: catalogv1alpha1.AccountSpec{
 					Metadata: catalogv1alpha1.AccountMetadata{
-						Description: "test Account",
-						DisplayName: "test Account",
+						CommonMetadata: catalogv1alpha1.CommonMetadata{
+							Description: "test Account",
+							DisplayName: "test Account",
+						},
 					},
 				},
 			},
@@ -77,7 +79,7 @@ func TestAccountValidatingCreate(t *testing.T) {
 					},
 				},
 			},
-			expectedError: fmt.Errorf("the description or the display name of an Account with Provider role cannot be empty"),
+			expectedError: fmt.Errorf("the short description or the display name of an Account with Provider role cannot be empty"),
 		},
 		{
 			name: "metadata description missing",
@@ -90,11 +92,13 @@ func TestAccountValidatingCreate(t *testing.T) {
 						catalogv1alpha1.ProviderRole,
 					},
 					Metadata: catalogv1alpha1.AccountMetadata{
-						DisplayName: "test Account",
+						CommonMetadata: catalogv1alpha1.CommonMetadata{
+							DisplayName: "test Account",
+						},
 					},
 				},
 			},
-			expectedError: fmt.Errorf("the description or the display name of an Account with Provider role cannot be empty"),
+			expectedError: fmt.Errorf("the short description or the display name of an Account with Provider role cannot be empty"),
 		},
 		{
 			name: "displayName missing",
@@ -107,11 +111,13 @@ func TestAccountValidatingCreate(t *testing.T) {
 						catalogv1alpha1.ProviderRole,
 					},
 					Metadata: catalogv1alpha1.AccountMetadata{
-						Description: "test Account",
+						CommonMetadata: catalogv1alpha1.CommonMetadata{
+							Description: "test Account",
+						},
 					},
 				},
 			},
-			expectedError: fmt.Errorf("the description or the display name of an Account with Provider role cannot be empty"),
+			expectedError: fmt.Errorf("the short description or the display name of an Account with Provider role cannot be empty"),
 		},
 		{
 			name: "duplicate roles",
@@ -121,8 +127,10 @@ func TestAccountValidatingCreate(t *testing.T) {
 				},
 				Spec: catalogv1alpha1.AccountSpec{
 					Metadata: catalogv1alpha1.AccountMetadata{
-						Description: "test Account",
-						DisplayName: "test Account",
+						CommonMetadata: catalogv1alpha1.CommonMetadata{
+							Description: "test Account",
+							DisplayName: "test Account",
+						},
 					},
 					Roles: []catalogv1alpha1.AccountRole{
 						catalogv1alpha1.ProviderRole,
@@ -140,8 +148,10 @@ func TestAccountValidatingCreate(t *testing.T) {
 				},
 				Spec: catalogv1alpha1.AccountSpec{
 					Metadata: catalogv1alpha1.AccountMetadata{
-						Description: "test Account",
-						DisplayName: "test Account",
+						CommonMetadata: catalogv1alpha1.CommonMetadata{
+							Description: "test Account",
+							DisplayName: "test Account",
+						},
 					},
 					Roles: []catalogv1alpha1.AccountRole{
 						catalogv1alpha1.ProviderRole,
@@ -161,8 +171,10 @@ func TestAccountValidatingCreate(t *testing.T) {
 				},
 				Spec: catalogv1alpha1.AccountSpec{
 					Metadata: catalogv1alpha1.AccountMetadata{
-						Description: "test Account",
-						DisplayName: "test Account",
+						CommonMetadata: catalogv1alpha1.CommonMetadata{
+							ShortDescription: "test Account",
+							DisplayName:      "test Account",
+						},
 					},
 					Roles: []catalogv1alpha1.AccountRole{
 						catalogv1alpha1.ProviderRole,
@@ -200,8 +212,10 @@ func TestAccountValidatingDelete(t *testing.T) {
 		},
 		Spec: catalogv1alpha1.AccountSpec{
 			Metadata: catalogv1alpha1.AccountMetadata{
-				Description: "test Account",
-				DisplayName: "test Account",
+				CommonMetadata: catalogv1alpha1.CommonMetadata{
+					ShortDescription: "test Account",
+					DisplayName:      "test Account",
+				},
 			},
 		},
 		Status: catalogv1alpha1.AccountStatus{
