@@ -26,6 +26,7 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/gorilla/handlers"
 	gwruntime "github.com/grpc-ecosystem/grpc-gateway/runtime"
+	"github.com/improbable-eng/grpc-web/go/grpcweb"
 	"github.com/spf13/cobra"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -84,6 +85,7 @@ func runE(flags *flags, log logr.Logger) error {
 
 	// Startup
 	grpcServer := grpc.NewServer()
+	wrappedGrpc := grpcweb.WrapServer(grpcServer)
 	grpcGatewayMux := gwruntime.NewServeMux(
 		gwruntime.WithProtoErrorHandler(func(ctx context.Context, serveMux *gwruntime.ServeMux, marshaler gwruntime.Marshaler, writer http.ResponseWriter, request *http.Request, err error) {
 			const fallback = `{"error": "failed to marshal error message"}`
@@ -144,7 +146,7 @@ func runE(flags *flags, log logr.Logger) error {
 	var handler http.Handler = http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 		log.Info("got request for", "path", request.URL.Path)
 		if strings.Contains(request.Header.Get("Content-Type"), "application/grpc") {
-			grpcServer.ServeHTTP(writer, request)
+			wrappedGrpc.ServeHTTP(writer, request)
 		} else {
 			grpcGatewayMux.ServeHTTP(writer, request)
 		}
