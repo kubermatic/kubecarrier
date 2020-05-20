@@ -17,6 +17,20 @@
     verbs:
     - get
     - list
+  - apiGroups:
+    - catalog.kubecarrier.io
+    resources:
+    - providers
+    verbs:
+    - get
+    - list
+  - apiGroups:
+    - catalog.kubecarrier.io
+    resources:
+    - regions
+    verbs:
+    - get
+    - list
 - apiVersion: v1
   kind: ServiceAccount
   metadata:
