@@ -278,7 +278,7 @@ func Manifests(c Config) ([]unstructured.Unstructured, error) {
 			{
 				APIGroups: []string{c.TenantGroup},
 				Resources: []string{c.TenantPlural},
-				Verbs:     []string{"create", "delete", "get", "list", "watch"},
+				Verbs:     []string{"create", "delete", "get", "list"},
 			},
 		},
 	}

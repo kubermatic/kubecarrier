@@ -43,9 +43,6 @@ type DBSpec struct {
 type OperationFlagType string
 
 func (o OperationFlagType) Enabled() bool {
-	if o == "" {
-		return true
-	}
 	return o == OperationFlagEnabled
 }
 

@@ -34,7 +34,6 @@ import (
 	"github.com/golang/protobuf/ptypes/empty"
 
 	v1 "github.com/kubermatic/kubecarrier/pkg/apiserver/api/v1"
-	"github.com/kubermatic/kubecarrier/pkg/apiserver/internal/util"
 )
 
 type serviceServer struct {
@@ -62,17 +61,11 @@ func (o serviceServer) Create(ctx context.Context, req *v1.ServiceCreateRequest)
 	if err := unstructured.SetNestedMap(obj.Object, val, "spec"); err != nil {
 		return nil, status.Errorf(codes.Internal, fmt.Sprintf("creating services: %s", err.Error()))
 	}
-	if err := util.SetMetadata(obj, req.Spec.Metadata); err != nil {
+	if err := SetMetadata(obj, req.Spec.Metadata); err != nil {
 		return nil, status.Errorf(codes.Internal, fmt.Sprintf("creating services: %s", err.Error()))
 	}
 	if err := o.client.Create(ctx, obj); err != nil {
 		return nil, status.Errorf(codes.Internal, fmt.Sprintf("creating services: %s", err.Error()))
-	}
-	if err = o.client.Get(ctx, types.NamespacedName{
-		Name:      obj.GetName(),
-		Namespace: obj.GetNamespace(),
-	}, obj); err != nil {
-		return nil, status.Errorf(codes.Internal, fmt.Sprintf("creating service: %s", err.Error()))
 	}
 	res, err = o.convertService(obj)
 	if err != nil {
@@ -134,12 +127,8 @@ func (o serviceServer) Delete(ctx context.Context, req *v1.ServiceDeleteRequest)
 	obj := &unstructured.Unstructured{}
 	gvk := o.gvkFromService(req.Service, req.Version)
 	obj.SetGroupVersionKind(gvk)
-	if err := o.client.Get(ctx, types.NamespacedName{
-		Name:      req.Name,
-		Namespace: req.Account,
-	}, obj); err != nil {
-		return nil, status.Errorf(codes.Internal, fmt.Sprintf("delete service: %s", err.Error()))
-	}
+	obj.SetNamespace(req.Account)
+	obj.SetName(req.Name)
 	if err := o.client.Delete(ctx, obj); err != nil {
 		return nil, status.Errorf(codes.Internal, fmt.Sprintf("delete service: %s", err.Error()))
 	}
@@ -200,7 +189,7 @@ func (o serviceServer) validateGetRequest(req *v1.ServiceGetRequest) error {
 }
 
 func (o serviceServer) convertService(in *unstructured.Unstructured) (out *v1.Service, err error) {
-	metadata, err := util.FromUnstructured(in)
+	metadata, err := FromUnstructured(in)
 	if err != nil {
 		return nil, err
 	}

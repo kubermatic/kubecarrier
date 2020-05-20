@@ -20,10 +20,6 @@ import (
 	"github.com/golang/protobuf/ptypes"
 	"github.com/golang/protobuf/ptypes/timestamp"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"k8s.io/apimachinery/pkg/types"
-
-	v1 "github.com/kubermatic/kubecarrier/pkg/apiserver/api/v1"
 )
 
 func TimestampProto(t *metav1.Time) (*timestamp.Timestamp, error) {
@@ -31,96 +27,4 @@ func TimestampProto(t *metav1.Time) (*timestamp.Timestamp, error) {
 		return nil, nil
 	}
 	return ptypes.TimestampProto(t.Time)
-}
-
-func FromMetav1(obj metav1.ObjectMeta) (*v1.ObjectMeta, error) {
-	creationTimestamp, err := TimestampProto(&obj.CreationTimestamp)
-	if err != nil {
-		return nil, err
-	}
-	deletionTimestamp, err := TimestampProto(obj.DeletionTimestamp)
-	if err != nil {
-		return nil, err
-	}
-
-	return &v1.ObjectMeta{
-		Uid:               string(obj.UID),
-		Name:              obj.Name,
-		Account:           obj.Namespace,
-		CreationTimestamp: creationTimestamp,
-		DeletionTimestamp: deletionTimestamp,
-		ResourceVersion:   obj.ResourceVersion,
-		Labels:            obj.Labels,
-		Annotations:       obj.Annotations,
-		Generation:        obj.Generation,
-	}, nil
-}
-
-func ToMetav1(obj *v1.ObjectMeta) (*metav1.ObjectMeta, error) {
-
-	objMeta := &metav1.ObjectMeta{
-		UID:             types.UID(obj.Uid),
-		Name:            obj.Name,
-		Namespace:       obj.Account,
-		ResourceVersion: obj.ResourceVersion,
-		Labels:          obj.Labels,
-		Annotations:     obj.Annotations,
-		Generation:      obj.Generation,
-	}
-	if obj.CreationTimestamp != nil {
-		timestamp, err := ptypes.Timestamp(obj.CreationTimestamp)
-		if err != nil {
-			return nil, err
-		}
-		objMeta.CreationTimestamp = metav1.NewTime(timestamp)
-	}
-	if obj.DeletionTimestamp != nil {
-		timestamp, err := ptypes.Timestamp(obj.DeletionTimestamp)
-		if err != nil {
-			return nil, err
-		}
-		metav1DeletionTimestamp := metav1.NewTime(timestamp)
-		objMeta.DeletionTimestamp = &metav1DeletionTimestamp
-	}
-	return objMeta, nil
-}
-
-func FromUnstructured(obj *unstructured.Unstructured) (*v1.ObjectMeta, error) {
-	metaCreationTimestamp := obj.GetCreationTimestamp()
-	creationTimestamp, err := TimestampProto(&metaCreationTimestamp)
-	if err != nil {
-		return nil, err
-	}
-	deletionTimestamp, err := TimestampProto(obj.GetDeletionTimestamp())
-	if err != nil {
-		return nil, err
-	}
-	return &v1.ObjectMeta{
-		Uid:               string(obj.GetUID()),
-		Name:              obj.GetName(),
-		Account:           obj.GetNamespace(),
-		CreationTimestamp: creationTimestamp,
-		DeletionTimestamp: deletionTimestamp,
-		ResourceVersion:   obj.GetResourceVersion(),
-		Labels:            obj.GetLabels(),
-		Annotations:       obj.GetAnnotations(),
-		Generation:        obj.GetGeneration(),
-	}, nil
-}
-
-func SetMetadata(obj *unstructured.Unstructured, metadata *v1.ObjectMeta) error {
-	m, err := ToMetav1(metadata)
-	if err != nil {
-		return err
-	}
-	obj.SetUID(m.UID)
-	obj.SetName(m.Name)
-	obj.SetNamespace(m.Namespace)
-	obj.SetCreationTimestamp(m.CreationTimestamp)
-	obj.SetDeletionTimestamp(m.DeletionTimestamp)
-	obj.SetResourceVersion(m.ResourceVersion)
-	obj.SetLabels(m.Labels)
-	obj.SetAnnotations(m.Annotations)
-	obj.SetGeneration(m.Generation)
-	return nil
 }
