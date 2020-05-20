@@ -14,6 +14,7 @@ require (
 	github.com/gobuffalo/flect v0.2.0
 	github.com/golang/protobuf v1.3.5
 	github.com/google/go-cmp v0.4.0
+	github.com/gorilla/handlers v1.4.2
 	github.com/grpc-ecosystem/grpc-gateway v1.14.3
 	github.com/huandu/xstrings v1.3.0 // indirect
 	github.com/jetstack/cert-manager v0.13.0
