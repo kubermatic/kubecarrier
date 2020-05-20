@@ -56,7 +56,7 @@ func (o serviceServer) Create(ctx context.Context, req *v1.ServiceCreateRequest)
 	obj.SetGroupVersionKind(gvk)
 	val := map[string]interface{}{}
 	if err := json.Unmarshal([]byte(req.Spec.Spec), &val); err != nil {
-		return nil, status.Errorf(codes.Internal, "creating services: spec should by type of map[string]intreface{}")
+		return nil, status.Error(codes.Internal, "creating service: spec should be type of map[string]intreface{}")
 	}
 	if err := unstructured.SetNestedMap(obj.Object, val, "spec"); err != nil {
 		return nil, status.Errorf(codes.Internal, fmt.Sprintf("creating services: %s", err.Error()))
