@@ -176,6 +176,9 @@ e2e-setup: install require-docker
 	@$(MAKE) KUBECONFIG=${HOME}/.kube/kind-config-${MANAGEMENT_KIND_CLUSTER} cert-manager
 	@kind get kubeconfig --internal --name=${SVC_KIND_CLUSTER} > "${HOME}/.kube/internal-kind-config-${SVC_KIND_CLUSTER}"
 	@kind get kubeconfig --name=${SVC_KIND_CLUSTER} > "${HOME}/.kube/kind-config-${SVC_KIND_CLUSTER}"
+	@echo fixing internal IP for kind v0.8.0+
+	sed -i'' "s/kubecarrier-svc-${TEST_ID}-control-plane/$$(docker  network inspect kind  | jq '.[0].Containers | to_entries | map(.value) | map(select(.Name == "kubecarrier-svc-${TEST_ID}-control-plane"))[0].IPv4Address[:-3]' -r)/g" "${HOME}/.kube/internal-kind-config-${SVC_KIND_CLUSTER}"
+	sed -i'' "s/kubecarrier-${TEST_ID}-control-plane/$$(docker  network inspect kind  | jq '.[0].Containers | to_entries | map(.value) | map(select(.Name == "kubecarrier-${TEST_ID}-control-plane"))[0].IPv4Address[:-3]' -r)/g" "${HOME}/.kube/internal-kind-config-${MANAGEMENT_KIND_CLUSTER}"
 	@$(MAKE) KUBECONFIG=${HOME}/.kube/kind-config-${SVC_KIND_CLUSTER} cert-manager
 	@echo "kind clusters created"
 	@kubectl --kubeconfig=${HOME}/.kube/kind-config-${SVC_KIND_CLUSTER} apply -n default -f ./config/serviceCluster
