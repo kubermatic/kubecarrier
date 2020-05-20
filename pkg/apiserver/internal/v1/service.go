@@ -24,6 +24,7 @@ import (
 
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -39,20 +40,25 @@ import (
 type serviceServer struct {
 	client client.Client
 	scheme *runtime.Scheme
+	mapper meta.RESTMapper
 }
 
 var _ v1.ServicesServer = (*serviceServer)(nil)
 
-func NewServicesServer(c client.Client, scheme *runtime.Scheme) v1.ServicesServer {
+func NewServicesServer(c client.Client, scheme *runtime.Scheme, mapper meta.RESTMapper) v1.ServicesServer {
 	return &serviceServer{
 		client: c,
 		scheme: scheme,
+		mapper: mapper,
 	}
 }
 func (o serviceServer) Create(ctx context.Context, req *v1.ServiceCreateRequest) (res *v1.Service, err error) {
 	obj := &unstructured.Unstructured{}
 
-	gvk := o.gvkFromService(req.Service, req.Version)
+	gvk, err := o.gvkFromService(o.mapper, req.Service, req.Version)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "creating service: unable to get Kind: %s", err.Error())
+	}
 	obj.SetGroupVersionKind(gvk)
 	val := map[string]interface{}{}
 	if err := json.Unmarshal([]byte(req.Spec.Spec), &val); err != nil {
@@ -81,7 +87,10 @@ func (o serviceServer) List(ctx context.Context, req *v1.ServiceListRequest) (re
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
 	obj := &unstructured.UnstructuredList{}
-	gvk := o.gvkFromService(req.Service, req.Version)
+	gvk, err := o.gvkFromService(o.mapper, req.Service, req.Version)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "listing service: unable to get Kind: %s", err.Error())
+	}
 	obj.SetGroupVersionKind(gvk)
 	if err := o.client.List(ctx, obj, listOptions...); err != nil {
 		return nil, status.Errorf(codes.Internal, fmt.Sprintf("listing services: %s", err.Error()))
@@ -94,13 +103,14 @@ func (o serviceServer) List(ctx context.Context, req *v1.ServiceListRequest) (re
 	return
 }
 
-func (o serviceServer) gvkFromService(service string, version string) schema.GroupVersionKind {
+func (o serviceServer) gvkFromService(mapper meta.RESTMapper, service string, version string) (schema.GroupVersionKind, error) {
 	parts := strings.SplitN(service, ".", 2)
-	return schema.GroupVersionKind{
-		Kind:    parts[0],
-		Group:   parts[1],
-		Version: version,
+	gvr := schema.GroupVersionResource{
+		Resource: parts[0],
+		Group:    parts[1],
+		Version:  version,
 	}
+	return o.mapper.KindFor(gvr)
 }
 
 func (o serviceServer) Get(ctx context.Context, req *v1.ServiceGetRequest) (res *v1.Service, err error) {
@@ -108,7 +118,10 @@ func (o serviceServer) Get(ctx context.Context, req *v1.ServiceGetRequest) (res 
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
 	obj := &unstructured.Unstructured{}
-	gvk := o.gvkFromService(req.Service, req.Version)
+	gvk, err := o.gvkFromService(o.mapper, req.Service, req.Version)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "getting service: unable to get Kind: %s", err.Error())
+	}
 	obj.SetGroupVersionKind(gvk)
 	if err = o.client.Get(ctx, types.NamespacedName{
 		Name:      req.Name,
@@ -125,7 +138,10 @@ func (o serviceServer) Get(ctx context.Context, req *v1.ServiceGetRequest) (res 
 
 func (o serviceServer) Delete(ctx context.Context, req *v1.ServiceDeleteRequest) (*empty.Empty, error) {
 	obj := &unstructured.Unstructured{}
-	gvk := o.gvkFromService(req.Service, req.Version)
+	gvk, err := o.gvkFromService(o.mapper, req.Service, req.Version)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "deleting service: unable to get Kind: %s", err.Error())
+	}
 	obj.SetGroupVersionKind(gvk)
 	obj.SetNamespace(req.Account)
 	obj.SetName(req.Name)
