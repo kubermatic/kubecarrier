@@ -363,8 +363,7 @@ func (r *CatalogReconciler) buildDesiredOfferings(
 			},
 			Spec: catalogv1alpha1.OfferingSpec{
 				Metadata: catalogv1alpha1.OfferingMetadata{
-					DisplayName: catalogEntry.Spec.Metadata.DisplayName,
-					Description: catalogEntry.Spec.Metadata.Description,
+					CommonMetadata: catalogEntry.Spec.Metadata.CommonMetadata,
 				},
 				Provider: catalogv1alpha1.ObjectReference{
 					Name: provider.Name,
