@@ -169,16 +169,13 @@ SVC_KIND_CLUSTER?=kubecarrier-svc-${TEST_ID}
 
 e2e-setup: install require-docker
 	@bash -c "kind create cluster --kubeconfig=${HOME}/.kube/kind-config-${MANAGEMENT_KIND_CLUSTER} --name=${MANAGEMENT_KIND_CLUSTER} --image=${KIND_NODE_IMAGE} & kind create cluster --kubeconfig=${HOME}/.kube/kind-config-${SVC_KIND_CLUSTER} --name=${SVC_KIND_CLUSTER} --image=${KIND_NODE_IMAGE} & wait < <(jobs -p)"
-	@kind get kubeconfig --internal --name=${MANAGEMENT_KIND_CLUSTER} > "${HOME}/.kube/internal-kind-config-${MANAGEMENT_KIND_CLUSTER}"
+	@kind get kubeconfig --internal --name=${MANAGEMENT_KIND_CLUSTER} | sed "s/kubecarrier-${TEST_ID}-control-plane/$$(docker  network inspect kind  | jq '.[0].Containers | to_entries | map(.value) | map(select(.Name == "kubecarrier-${TEST_ID}-control-plane"))[0].IPv4Address[:-3]' -r)/g" > "${HOME}/.kube/internal-kind-config-${MANAGEMENT_KIND_CLUSTER}"
 	@kind get kubeconfig --name=${MANAGEMENT_KIND_CLUSTER} > "${HOME}/.kube/kind-config-${MANAGEMENT_KIND_CLUSTER}"
 	@echo "Deploy cert-manger in management cluster"
 	# Deploy cert-manager right after the creation of the management cluster, since the deployments of cert-manger take some time to get ready.
 	@$(MAKE) KUBECONFIG=${HOME}/.kube/kind-config-${MANAGEMENT_KIND_CLUSTER} cert-manager
-	@kind get kubeconfig --internal --name=${SVC_KIND_CLUSTER} > "${HOME}/.kube/internal-kind-config-${SVC_KIND_CLUSTER}"
+	@kind get kubeconfig --internal --name=${SVC_KIND_CLUSTER} | sed "s/kubecarrier-svc-${TEST_ID}-control-plane/$$(docker  network inspect kind  | jq '.[0].Containers | to_entries | map(.value) | map(select(.Name == "kubecarrier-svc-${TEST_ID}-control-plane"))[0].IPv4Address[:-3]' -r)/g"  > "${HOME}/.kube/internal-kind-config-${SVC_KIND_CLUSTER}"
 	@kind get kubeconfig --name=${SVC_KIND_CLUSTER} > "${HOME}/.kube/kind-config-${SVC_KIND_CLUSTER}"
-	@echo fixing internal IP for kind v0.8.0+
-	sed -i'' "s/kubecarrier-svc-${TEST_ID}-control-plane/$$(docker  network inspect kind  | jq '.[0].Containers | to_entries | map(.value) | map(select(.Name == "kubecarrier-svc-${TEST_ID}-control-plane"))[0].IPv4Address[:-3]' -r)/g" "${HOME}/.kube/internal-kind-config-${SVC_KIND_CLUSTER}"
-	sed -i'' "s/kubecarrier-${TEST_ID}-control-plane/$$(docker  network inspect kind  | jq '.[0].Containers | to_entries | map(.value) | map(select(.Name == "kubecarrier-${TEST_ID}-control-plane"))[0].IPv4Address[:-3]' -r)/g" "${HOME}/.kube/internal-kind-config-${MANAGEMENT_KIND_CLUSTER}"
 	@$(MAKE) KUBECONFIG=${HOME}/.kube/kind-config-${SVC_KIND_CLUSTER} cert-manager
 	@echo "kind clusters created"
 	@kubectl --kubeconfig=${HOME}/.kube/kind-config-${SVC_KIND_CLUSTER} apply -n default -f ./config/serviceCluster
