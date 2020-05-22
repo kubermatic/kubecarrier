@@ -38,8 +38,10 @@ func TestCatalogEntryValidatingUpdate(t *testing.T) {
 		},
 		Spec: catalogv1alpha1.CatalogEntrySpec{
 			Metadata: catalogv1alpha1.CatalogEntryMetadata{
-				Description: "test CatalogEntry",
-				DisplayName: "test CatalogEntry",
+				CommonMetadata: catalogv1alpha1.CommonMetadata{
+					Description: "test CatalogEntry",
+					DisplayName: "test CatalogEntry",
+				},
 			},
 			BaseCRD: catalogv1alpha1.ObjectReference{
 				Name: "test-crd",
@@ -61,8 +63,10 @@ func TestCatalogEntryValidatingUpdate(t *testing.T) {
 				},
 				Spec: catalogv1alpha1.CatalogEntrySpec{
 					Metadata: catalogv1alpha1.CatalogEntryMetadata{
-						Description: "test CatalogEntry",
-						DisplayName: "test CatalogEntry",
+						CommonMetadata: catalogv1alpha1.CommonMetadata{
+							Description: "test CatalogEntry",
+							DisplayName: "test CatalogEntry",
+						},
 					},
 					BaseCRD: catalogv1alpha1.ObjectReference{
 						Name: "test-crd2",
@@ -80,8 +84,10 @@ func TestCatalogEntryValidatingUpdate(t *testing.T) {
 				},
 				Spec: catalogv1alpha1.CatalogEntrySpec{
 					Metadata: catalogv1alpha1.CatalogEntryMetadata{
-						Description: "test CatalogEntry",
-						DisplayName: "test CatalogEntry",
+						CommonMetadata: catalogv1alpha1.CommonMetadata{
+							Description: "test CatalogEntry",
+							DisplayName: "test CatalogEntry",
+						},
 					},
 					BaseCRD: catalogv1alpha1.ObjectReference{
 						Name: "test-crd",

@@ -137,11 +137,18 @@ func (o providerServer) convertProvider(in *catalogv1alpha1.Provider) (out *v1.P
 			Generation:        in.Generation,
 		},
 		Spec: &v1.ProviderSpec{
-			Metadata: &v1.AccountMetadata{
-				DisplayName: in.Spec.Metadata.DisplayName,
-				Description: in.Spec.Metadata.Description,
+			Metadata: &v1.ProviderMetadata{
+				DisplayName:      in.Spec.Metadata.DisplayName,
+				Description:      in.Spec.Metadata.Description,
+				ShortDescription: in.Spec.Metadata.ShortDescription,
 			},
 		},
+	}
+	if in.Spec.Metadata.Logo != nil {
+		out.Spec.Metadata.Logo = convertImage(in.Spec.Metadata.Logo)
+	}
+	if in.Spec.Metadata.Icon != nil {
+		out.Spec.Metadata.Icon = convertImage(in.Spec.Metadata.Icon)
 	}
 	return
 }

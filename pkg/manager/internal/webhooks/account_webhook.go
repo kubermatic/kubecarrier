@@ -133,9 +133,9 @@ func (r *AccountWebhookHandler) validateMetadataAndRoles(account *catalogv1alpha
 
 	if _, ok := roles[catalogv1alpha1.ProviderRole]; ok {
 		// Account has the Provider Role
-		if account.Spec.Metadata.Description == "" ||
+		if account.Spec.Metadata.ShortDescription == "" ||
 			account.Spec.Metadata.DisplayName == "" {
-			return fmt.Errorf("the description or the display name of an Account with Provider role cannot be empty")
+			return fmt.Errorf("the short description or the display name of an Account with Provider role cannot be empty")
 		}
 	}
 

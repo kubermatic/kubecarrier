@@ -22,6 +22,7 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/types"
 
+	catalogv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/catalog/v1alpha1"
 	v1 "github.com/kubermatic/kubecarrier/pkg/apiserver/api/v1"
 	"github.com/kubermatic/kubecarrier/pkg/apiserver/internal/util"
 )
@@ -93,4 +94,11 @@ func SetMetadata(obj *unstructured.Unstructured, metadata *v1.ObjectMeta) error 
 	obj.SetAnnotations(m.Annotations)
 	obj.SetGeneration(m.Generation)
 	return nil
+}
+
+func convertImage(in *catalogv1alpha1.Image) (out *v1.Image) {
+	return &v1.Image{
+		MediaType: in.MediaType,
+		Data:      in.Data,
+	}
 }
