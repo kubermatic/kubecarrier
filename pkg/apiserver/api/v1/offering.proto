@@ -38,6 +38,9 @@ message OfferingSpec {
 message OfferingMetadata {
   string displayName = 1;
   string description = 2;
+  string shortDescription = 3;
+  Image logo = 4;
+  Image icon = 5;
 }
 
 message OfferingList {

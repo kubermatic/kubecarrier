@@ -14,27 +14,16 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-syntax = "proto3";
-package kubecarrier.api.v1;
-option go_package = "v1";
+package v1
 
-message ObjectReference { string name = 1; }
+import (
+	catalogv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/catalog/v1alpha1"
+	v1 "github.com/kubermatic/kubecarrier/pkg/apiserver/api/v1"
+)
 
-message CRDInformation {
-  string name = 1;
-  string apiGroup = 2;
-  string kind = 3;
-  string plural = 4;
-  repeated CRDVersion versions = 5;
-  ObjectReference region = 6;
-}
-
-message CRDVersion {
-  string name = 1;
-  string schema = 2;
-}
-
-message Image {
-  string mediaType = 1;
-  bytes data = 2;
+func convertImage(in *catalogv1alpha1.Image) (out *v1.Image) {
+	return &v1.Image{
+		MediaType: in.MediaType,
+		Data:      in.Data,
+	}
 }

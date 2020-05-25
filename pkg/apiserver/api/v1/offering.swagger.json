@@ -112,6 +112,18 @@
       },
       "type": "object"
     },
+    "v1Image": {
+      "properties": {
+        "data": {
+          "format": "byte",
+          "type": "string"
+        },
+        "mediaType": {
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
     "v1ListMeta": {
       "properties": {
         "continue": {
@@ -203,6 +215,15 @@
           "type": "string"
         },
         "displayName": {
+          "type": "string"
+        },
+        "icon": {
+          "$ref": "#/definitions/v1Image"
+        },
+        "logo": {
+          "$ref": "#/definitions/v1Image"
+        },
+        "shortDescription": {
           "type": "string"
         }
       },

@@ -43,8 +43,10 @@ func TestListProvider(t *testing.T) {
 				},
 				Spec: catalogv1alpha1.ProviderSpec{
 					Metadata: catalogv1alpha1.AccountMetadata{
-						Description: "Test Provider",
-						DisplayName: "Test Provider",
+						CommonMetadata: catalogv1alpha1.CommonMetadata{
+							Description: "Test Provider",
+							DisplayName: "Test Provider",
+						},
 					},
 				},
 			},
@@ -58,8 +60,10 @@ func TestListProvider(t *testing.T) {
 				},
 				Spec: catalogv1alpha1.ProviderSpec{
 					Metadata: catalogv1alpha1.AccountMetadata{
-						Description: "Test Provider",
-						DisplayName: "Test Provider",
+						CommonMetadata: catalogv1alpha1.CommonMetadata{
+							Description: "Test Provider",
+							DisplayName: "Test Provider",
+						},
 					},
 				},
 			},
@@ -123,7 +127,7 @@ func TestListProvider(t *testing.T) {
 							},
 						},
 						Spec: &v1.ProviderSpec{
-							Metadata: &v1.AccountMetadata{
+							Metadata: &v1.ProviderMetadata{
 								Description: "Test Provider",
 								DisplayName: "Test Provider",
 							},
@@ -138,7 +142,7 @@ func TestListProvider(t *testing.T) {
 							},
 						},
 						Spec: &v1.ProviderSpec{
-							Metadata: &v1.AccountMetadata{
+							Metadata: &v1.ProviderMetadata{
 								Description: "Test Provider",
 								DisplayName: "Test Provider",
 							},
@@ -169,7 +173,7 @@ func TestListProvider(t *testing.T) {
 							},
 						},
 						Spec: &v1.ProviderSpec{
-							Metadata: &v1.AccountMetadata{
+							Metadata: &v1.ProviderMetadata{
 								Description: "Test Provider",
 								DisplayName: "Test Provider",
 							},
@@ -196,8 +200,10 @@ func TestGetProvider(t *testing.T) {
 		},
 		Spec: catalogv1alpha1.ProviderSpec{
 			Metadata: catalogv1alpha1.AccountMetadata{
-				Description: "Test Provider",
-				DisplayName: "Test Provider",
+				CommonMetadata: catalogv1alpha1.CommonMetadata{
+					Description: "Test Provider",
+					DisplayName: "Test Provider",
+				},
 			},
 		},
 	}
@@ -242,7 +248,7 @@ func TestGetProvider(t *testing.T) {
 					Account: "test-namespace",
 				},
 				Spec: &v1.ProviderSpec{
-					Metadata: &v1.AccountMetadata{
+					Metadata: &v1.ProviderMetadata{
 						Description: "Test Provider",
 						DisplayName: "Test Provider",
 					},

@@ -99,8 +99,10 @@ func TestCatalogEntryReconciler(t *testing.T) {
 		},
 		Spec: catalogv1alpha1.CatalogEntrySpec{
 			Metadata: catalogv1alpha1.CatalogEntryMetadata{
-				DisplayName: "Test CatalogEntry",
-				Description: "Test CatalogEntry",
+				CommonMetadata: catalogv1alpha1.CommonMetadata{
+					DisplayName: "Test CatalogEntry",
+					Description: "Test CatalogEntry",
+				},
 			},
 			BaseCRD: catalogv1alpha1.ObjectReference{
 				Name: baseCRD.Name,
