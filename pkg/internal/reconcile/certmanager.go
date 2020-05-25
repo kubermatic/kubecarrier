@@ -45,7 +45,7 @@ func Issuer(
 	}
 	if errors.IsNotFound(err) {
 		// Create missing Issuer
-		log.Info("creating", "Issuer", nn.String())
+		log.V(1).Info("creating", "Issuer", nn.String())
 		if err = c.Create(ctx, desiredIssuer); err != nil {
 			return currentIssuer, fmt.Errorf("creating Issuer: %w", err)
 		}
@@ -71,7 +71,7 @@ func Certificate(
 	}
 	if errors.IsNotFound(err) {
 		// Create missing Certificate
-		log.Info("creating", "Certificate", nn.String())
+		log.V(1).Info("creating", "Certificate", nn.String())
 		if err = c.Create(ctx, desiredCertificate); err != nil {
 			return currentCertificate, fmt.Errorf("creating Certificate: %w", err)
 		}

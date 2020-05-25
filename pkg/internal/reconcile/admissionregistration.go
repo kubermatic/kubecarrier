@@ -45,7 +45,7 @@ func MutatingWebhookConfiguration(
 	}
 	if errors.IsNotFound(err) {
 		// Create missing MutatingWebhookConfiguration
-		log.Info("creating", "MutatingWebhookConfiguration", nn.String())
+		log.V(1).Info("creating", "MutatingWebhookConfiguration", nn.String())
 		if err = c.Create(ctx, desiredMutatingWebhookConfiguration); err != nil {
 			return currentMutatingWebhookConfiguration, fmt.Errorf("creating MutatingWebhookConfiguration: %w", err)
 		}
@@ -71,7 +71,7 @@ func ValidatingWebhookConfiguration(
 	}
 	if errors.IsNotFound(err) {
 		// Create missing ValidatingWebhookConfiguration
-		log.Info("creating", "ValidatingWebhookConfiguration", nn.String())
+		log.V(1).Info("creating", "ValidatingWebhookConfiguration", nn.String())
 		if err = c.Create(ctx, desiredValidatingWebhookConfiguration); err != nil {
 			return currentValidatingWebhookConfiguration, fmt.Errorf("creating ValidatingWebhookConfiguration: %w", err)
 		}
