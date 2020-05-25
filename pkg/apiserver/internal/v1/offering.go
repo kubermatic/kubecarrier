@@ -97,8 +97,9 @@ func (o offeringServer) convertOffering(in *catalogv1alpha1.Offering) (out *v1.O
 		Metadata: metadata,
 		Spec: &v1.OfferingSpec{
 			Metadata: &v1.OfferingMetadata{
-				DisplayName: in.Spec.Metadata.DisplayName,
-				Description: in.Spec.Metadata.Description,
+				DisplayName:      in.Spec.Metadata.DisplayName,
+				Description:      in.Spec.Metadata.Description,
+				ShortDescription: in.Spec.Metadata.ShortDescription,
 			},
 			Provider: &v1.ObjectReference{
 				Name: in.Spec.Provider.Name,
@@ -114,6 +115,12 @@ func (o offeringServer) convertOffering(in *catalogv1alpha1.Offering) (out *v1.O
 				},
 			},
 		},
+	}
+	if in.Spec.Metadata.Logo != nil {
+		out.Spec.Metadata.Logo = convertImage(in.Spec.Metadata.Logo)
+	}
+	if in.Spec.Metadata.Icon != nil {
+		out.Spec.Metadata.Icon = convertImage(in.Spec.Metadata.Icon)
 	}
 	return
 }

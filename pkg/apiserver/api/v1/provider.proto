@@ -21,6 +21,7 @@ option go_package = "v1";
 import "google/api/annotations.proto";
 
 import "meta.proto";
+import "types.proto";
 import "request.proto";
 
 message Provider {
@@ -28,18 +29,31 @@ message Provider {
   ProviderSpec spec = 2;
 }
 
-message ProviderSpec {
-  AccountMetadata metadata = 1;
-}
+message ProviderSpec { ProviderMetadata metadata = 1; }
 
 message ProviderList {
   ListMeta metadata = 1;
   repeated Provider items = 2;
 }
 
-message AccountMetadata {
+message ProviderGetRequest {
+  string name = 1;
+  string account = 2;
+}
+
+message ProviderListRequest {
+  string account = 1;
+  string labelSelector = 2;
+  int64 limit = 3;
+  string continue = 4;
+}
+
+message ProviderMetadata {
   string displayName = 1;
   string description = 2;
+  string shortDescription = 3;
+  Image logo = 4;
+  Image icon = 5;
 }
 
 service ProviderService {

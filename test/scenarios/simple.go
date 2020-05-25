@@ -100,8 +100,10 @@ func newSimpleScenario(f *testutil.Framework) func(t *testing.T) {
 			},
 			Spec: catalogv1alpha1.CatalogEntrySetSpec{
 				Metadata: catalogv1alpha1.CatalogEntrySetMetadata{
-					DisplayName: "CouchDB",
-					Description: "small database living near Tegel airport",
+					CommonMetadata: catalogv1alpha1.CommonMetadata{
+						DisplayName:      "CouchDB",
+						ShortDescription: "small database living near Tegel airport",
+					},
 				},
 				Derive: &catalogv1alpha1.DerivedConfig{
 					KindOverride: "CouchDB",
