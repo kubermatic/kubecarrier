@@ -17,7 +17,7 @@
 set -o pipefail
 
 if [[ -n "$(git status --porcelain)" ]]; then
-  git status
+  git diff
   echo "Some files have changed after run make generate, please make sure to run make generate before commit changes";
   exit 1
 fi
