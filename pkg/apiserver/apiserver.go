@@ -55,9 +55,10 @@ func init() {
 }
 
 type flags struct {
-	address           string
-	TLSCertFile       string
-	TLSPrivateKeyFile string
+	address            string
+	TLSCertFile        string
+	TLSPrivateKeyFile  string
+	CORSAllowedOrigins []string
 }
 
 func NewAPIServer() *cobra.Command {
@@ -74,6 +75,7 @@ func NewAPIServer() *cobra.Command {
 	cmd.Flags().StringVar(&flags.address, "address", "0.0.0.0:8080", "Address to bind this API server on.")
 	cmd.Flags().StringVar(&flags.TLSCertFile, "tls-cert-file", "", "File containing the default x509 Certificate for HTTPS. If not provided no TLS security shall be enabled")
 	cmd.Flags().StringVar(&flags.TLSPrivateKeyFile, "tls-private-key-file", "", "File containing the default x509 private key matching --tls-cert-file.")
+	cmd.Flags().StringArrayVar(&flags.CORSAllowedOrigins, "cors-allowed-origins", []string{"*"}, "List of allowed origins for CORS, comma separated. An allowed origin can be a regular expression to support subdomain matching. If this list is empty CORS will not be enabled.")
 	return util.CmdLogMixin(cmd)
 }
 
@@ -152,17 +154,19 @@ func runE(flags *flags, log logr.Logger) error {
 		}
 	})
 
-	handler = handlers.CORS(
-		handlers.AllowedHeaders([]string{
-			"X-Requested-With",
-			"Content-Type",
-			"Authorization",
-			"X-grpc-web",
-			"X-user-agent",
-		}),
-		handlers.AllowedMethods([]string{"GET", "POST"}),
-		handlers.AllowedOrigins([]string{"*"}),
-	)(handler)
+	if len(flags.CORSAllowedOrigins) > 0 {
+		handler = handlers.CORS(
+			handlers.AllowedHeaders([]string{
+				"X-Requested-With",
+				"Content-Type",
+				"Authorization",
+				"X-grpc-web",
+				"X-user-agent",
+			}),
+			handlers.AllowedMethods([]string{"GET", "POST"}),
+			handlers.AllowedOrigins(flags.CORSAllowedOrigins),
+		)(handler)
+	}
 
 	server := http.Server{
 		Handler: handler,
