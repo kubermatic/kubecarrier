@@ -23,33 +23,33 @@ import "google/protobuf/empty.proto";
 
 import "meta.proto";
 
-message Service {
+message Instance {
   ObjectMeta metadata = 1;
   string spec = 2;
   string status = 3;
 }
 
-message ServiceList {
+message InstanceList {
   ListMeta metadata = 1;
-  repeated Service items = 2;
+  repeated Instance items = 2;
 }
 
-message ServiceGetRequest {
-  string service = 1;
+message InstanceGetRequest {
+  string instance = 1;
   string version = 2;
   string name = 3;
   string account = 4;
 }
 
-message ServiceDeleteRequest {
-  string service = 1;
+message InstanceDeleteRequest {
+  string instance = 1;
   string version = 2;
   string name = 3;
   string account = 4;
 }
 
-message ServiceListRequest {
-  string service = 1;
+message InstanceListRequest {
+  string instance = 1;
   string version = 2;
   string account = 3;
   string labelSelector = 4;
@@ -57,32 +57,32 @@ message ServiceListRequest {
   string continue = 6;
 }
 
-message ServiceCreateRequest {
-  string service = 1;
+message InstanceCreateRequest {
+  string instance = 1;
   string version = 2;
-  Service spec = 3;
+  Instance spec = 3;
   string account = 4;
 }
 
-service Services {
-  rpc List(ServiceListRequest) returns (ServiceList) {
+service Instances {
+  rpc List(InstanceListRequest) returns (InstanceList) {
     option (google.api.http) = {
-      get : "/v1/accounts/{account}/services/{service}/{version}"
+      get : "/v1/accounts/{account}/instance/{instance}/{version}"
     };
   };
-  rpc Get(ServiceGetRequest) returns (Service) {
+  rpc Get(InstanceGetRequest) returns (Instance) {
     option (google.api.http) = {
-      get : "/v1/accounts/{account}/services/{service}/{version}/{name}"
+      get : "/v1/accounts/{account}/instance/{instance}/{version}/{name}"
     };
   };
-  rpc Delete(ServiceDeleteRequest) returns (google.protobuf.Empty) {
+  rpc Delete(InstanceDeleteRequest) returns (google.protobuf.Empty) {
     option (google.api.http) = {
-      delete : "/v1/accounts/{account}/services/{service}/{version}/{name}"
+      delete : "/v1/accounts/{account}/instance/{instance}/{version}/{name}"
     };
   };
-  rpc Create(ServiceCreateRequest) returns (Service) {
+  rpc Create(InstanceCreateRequest) returns (Instance) {
     option (google.api.http) = {
-      post : "/v1/accounts/{account}/services/{service}/{version}"
+      post : "/v1/accounts/{account}/instance/{instance}/{version}"
       body: "spec"
     };
   };

@@ -33,12 +33,12 @@ import (
 )
 
 var (
-	serviceGVK = schema.GroupVersionKind{
+	instanceGVK = schema.GroupVersionKind{
 		Group:   "eu-west-1.team-a",
 		Version: "v1alpha1",
 		Kind:    "CouchDB",
 	}
-	serviceListGVK = schema.GroupVersionKind{
+	instanceListGVK = schema.GroupVersionKind{
 		Group:   "eu-west-1.team-a",
 		Version: "v1alpha1",
 		Kind:    "CouchDBList",
@@ -61,106 +61,106 @@ func (frm *fakeRESTMapper) KindFor(resource schema.GroupVersionResource) (schema
 	}, nil
 }
 
-func newService(name, namespace string, spec, status, labels map[string]string) (*unstructured.Unstructured, error) {
-	service := &unstructured.Unstructured{}
+func newInstance(name, namespace string, spec, status, labels map[string]string) (*unstructured.Unstructured, error) {
+	instance := &unstructured.Unstructured{}
 	metadata := &v1.ObjectMeta{
 		Name:    name,
 		Account: namespace,
 		Labels:  labels,
 	}
-	service.SetUnstructuredContent(map[string]interface{}{})
-	if err := unstructured.SetNestedStringMap(service.Object, spec, "spec"); err != nil {
+	instance.SetUnstructuredContent(map[string]interface{}{})
+	if err := unstructured.SetNestedStringMap(instance.Object, spec, "spec"); err != nil {
 		return nil, err
 	}
-	if err := unstructured.SetNestedStringMap(service.Object, status, "status"); err != nil {
+	if err := unstructured.SetNestedStringMap(instance.Object, status, "status"); err != nil {
 		return nil, err
 	}
-	service.SetLabels(labels)
-	service.SetGroupVersionKind(serviceGVK)
-	service.SetName(name)
-	service.SetNamespace(namespace)
-	return service, SetMetadata(service, metadata)
+	instance.SetLabels(labels)
+	instance.SetGroupVersionKind(instanceGVK)
+	instance.SetName(name)
+	instance.SetNamespace(namespace)
+	return instance, SetMetadata(instance, metadata)
 }
 
-func TestGetService(t *testing.T) {
-	service, err := newService("test-service", "test-namespace",
+func TestGetInstance(t *testing.T) {
+	instance, err := newInstance("test-instance", "test-namespace",
 		map[string]string{"username": "username", "password": "password"},
 		map[string]string{"status": "ready"}, map[string]string{})
 	assert.Nil(t, err)
 
-	client := fakeclient.NewFakeClientWithScheme(testScheme, service)
-	serviceServer := NewServicesServer(client, newFakeRESTMapper("CouchDB"))
+	client := fakeclient.NewFakeClientWithScheme(testScheme, instance)
+	instanceServer := NewInstancesServer(client, newFakeRESTMapper("CouchDB"))
 	ctx := context.Background()
 	tests := []struct {
 		name           string
-		req            *v1.ServiceGetRequest
+		req            *v1.InstanceGetRequest
 		expectedError  error
-		expectedResult *v1.Service
+		expectedResult *v1.Instance
 	}{
 		{
 			name: "missing namespace",
-			req: &v1.ServiceGetRequest{
-				Name:    "test-service",
-				Account: "",
-				Service: "couchdb.eu-west-1.team-a",
-				Version: "v1alpha1",
+			req: &v1.InstanceGetRequest{
+				Name:     "test-instance",
+				Account:  "",
+				Instance: "couchdb.eu-west-1.team-a",
+				Version:  "v1alpha1",
 			},
 			expectedError:  status.Errorf(codes.InvalidArgument, "missing namespace"),
 			expectedResult: nil,
 		},
 		{
 			name: "missing name",
-			req: &v1.ServiceGetRequest{
-				Account: "test-namespace",
-				Service: "couchdb.eu-west-1.team-a",
-				Version: "v1alpha1",
+			req: &v1.InstanceGetRequest{
+				Account:  "test-namespace",
+				Instance: "couchdb.eu-west-1.team-a",
+				Version:  "v1alpha1",
 			},
 			expectedError:  status.Errorf(codes.InvalidArgument, "missing name"),
 			expectedResult: nil,
 		},
 		{
-			name: "missing service",
-			req: &v1.ServiceGetRequest{
-				Name:    "test-service",
+			name: "missing instance",
+			req: &v1.InstanceGetRequest{
+				Name:    "test-instance",
 				Account: "test-namespace",
 				Version: "v1alpha1",
 			},
-			expectedError:  status.Errorf(codes.InvalidArgument, "missing service"),
+			expectedError:  status.Errorf(codes.InvalidArgument, "missing instance"),
 			expectedResult: nil,
 		},
 		{
 			name: "missing version",
-			req: &v1.ServiceGetRequest{
-				Name:    "test-service",
-				Account: "test-namespace",
-				Service: "couchdb.eu-west-1.team-a",
+			req: &v1.InstanceGetRequest{
+				Name:     "test-instance",
+				Account:  "test-namespace",
+				Instance: "couchdb.eu-west-1.team-a",
 			},
 			expectedError:  status.Errorf(codes.InvalidArgument, "missing version"),
 			expectedResult: nil,
 		},
 		{
-			name: "wrong service name",
-			req: &v1.ServiceGetRequest{
-				Name:    "test-service",
-				Account: "test-namespace",
-				Service: "couchdb",
-				Version: "v1alpha1",
+			name: "wrong instance name",
+			req: &v1.InstanceGetRequest{
+				Name:     "test-instance",
+				Account:  "test-namespace",
+				Instance: "couchdb",
+				Version:  "v1alpha1",
 			},
-			expectedError:  status.Errorf(codes.InvalidArgument, "service should have format: {kind}.{apiGroup}"),
+			expectedError:  status.Errorf(codes.InvalidArgument, "instance should have format: {kind}.{apiGroup}"),
 			expectedResult: nil,
 		},
 		{
 			name: "valid request",
-			req: &v1.ServiceGetRequest{
-				Name:    "test-service",
-				Account: "test-namespace",
-				Service: "couchdb.eu-west-1.team-a",
-				Version: "v1alpha1",
+			req: &v1.InstanceGetRequest{
+				Name:     "test-instance",
+				Account:  "test-namespace",
+				Instance: "couchdb.eu-west-1.team-a",
+				Version:  "v1alpha1",
 			},
 			expectedError: nil,
-			expectedResult: &v1.Service{
+			expectedResult: &v1.Instance{
 				Metadata: &v1.ObjectMeta{
-					Name:    "test-service",
+					Name:    "test-instance",
 					Account: "test-namespace",
 					Labels:  map[string]string{},
 				},
@@ -171,39 +171,39 @@ func TestGetService(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			service, err := serviceServer.Get(ctx, test.req)
+			instance, err := instanceServer.Get(ctx, test.req)
 			assert.Equal(t, test.expectedError, err)
-			assert.Equal(t, test.expectedResult, service)
+			assert.Equal(t, test.expectedResult, instance)
 		})
 	}
 }
 
-func TestCreateService(t *testing.T) {
+func TestCreateInstance(t *testing.T) {
 	spec := "{\"password\":\"password\",\"username\":\"username\"}"
 	client := fakeclient.NewFakeClientWithScheme(testScheme)
-	serviceServer := NewServicesServer(client, newFakeRESTMapper("CouchDB"))
+	instanceServer := NewInstancesServer(client, newFakeRESTMapper("CouchDB"))
 	ctx := context.Background()
 	tests := []struct {
 		name           string
-		req            *v1.ServiceCreateRequest
+		req            *v1.InstanceCreateRequest
 		expectedError  error
-		expectedResult *v1.Service
+		expectedResult *v1.Instance
 	}{
 		{
 			name: "valid request",
-			req: &v1.ServiceCreateRequest{
-				Account: "test-namespace",
-				Service: "couchdb.eu-west-1.team-a",
-				Version: "v1alpha1",
-				Spec: &v1.Service{
-					Metadata: &v1.ObjectMeta{Name: "test-service"},
+			req: &v1.InstanceCreateRequest{
+				Account:  "test-namespace",
+				Instance: "couchdb.eu-west-1.team-a",
+				Version:  "v1alpha1",
+				Spec: &v1.Instance{
+					Metadata: &v1.ObjectMeta{Name: "test-instance"},
 					Spec:     spec,
 				},
 			},
 			expectedError: nil,
-			expectedResult: &v1.Service{
+			expectedResult: &v1.Instance{
 				Metadata: &v1.ObjectMeta{
-					Name:            "test-service",
+					Name:            "test-instance",
 					Account:         "test-namespace",
 					ResourceVersion: "1",
 				},
@@ -213,36 +213,36 @@ func TestCreateService(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			service, err := serviceServer.Create(ctx, test.req)
+			instance, err := instanceServer.Create(ctx, test.req)
 			assert.Equal(t, test.expectedError, err)
-			assert.Equal(t, test.expectedResult, service)
+			assert.Equal(t, test.expectedResult, instance)
 		})
 	}
 }
 
-func TestDeleteService(t *testing.T) {
-	service, err := newService("test-service", "test-namespace",
+func TestDeleteInstance(t *testing.T) {
+	instance, err := newInstance("test-instance", "test-namespace",
 		map[string]string{"username": "username", "password": "password"},
 		map[string]string{"status": "ready"}, map[string]string{})
 	assert.Nil(t, err)
 	client := fakeclient.NewFakeClientWithScheme(testScheme)
-	serviceServer := NewServicesServer(client, newFakeRESTMapper("CouchDB"))
+	instanceServer := NewInstancesServer(client, newFakeRESTMapper("CouchDB"))
 	ctx := context.Background()
-	err = client.Create(ctx, service)
+	err = client.Create(ctx, instance)
 	assert.Nil(t, err)
 	tests := []struct {
 		name           string
-		req            *v1.ServiceDeleteRequest
+		req            *v1.InstanceDeleteRequest
 		expectedError  error
 		expectedResult *empty.Empty
 	}{
 		{
 			name: "valid request",
-			req: &v1.ServiceDeleteRequest{
-				Name:    "test-service",
-				Account: "test-namespace",
-				Service: "couchdb.eu-west-1.team-a",
-				Version: "v1alpha1",
+			req: &v1.InstanceDeleteRequest{
+				Name:     "test-instance",
+				Account:  "test-namespace",
+				Instance: "couchdb.eu-west-1.team-a",
+				Version:  "v1alpha1",
 			},
 			expectedError:  nil,
 			expectedResult: &empty.Empty{},
@@ -250,95 +250,95 @@ func TestDeleteService(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			empty, err := serviceServer.Delete(ctx, test.req)
+			empty, err := instanceServer.Delete(ctx, test.req)
 			assert.Equal(t, test.expectedError, err)
 			assert.Equal(t, test.expectedResult, empty)
 		})
 	}
 }
 
-func TestListService(t *testing.T) {
+func TestListInstance(t *testing.T) {
 	spec := map[string]string{"username": "username", "password": "password"}
 	st := map[string]string{"status": "ready"}
 	labels := map[string]string{
-		"test-label": "service1",
+		"test-label": "instance1",
 	}
-	services := &unstructured.UnstructuredList{}
-	services.SetGroupVersionKind(serviceListGVK)
-	service, err := newService("test-service-1", "test-namespace", spec, st, labels)
+	instances := &unstructured.UnstructuredList{}
+	instances.SetGroupVersionKind(instanceListGVK)
+	instance, err := newInstance("test-instance-1", "test-namespace", spec, st, labels)
 	assert.Nil(t, err)
-	services.Items = append(services.Items, *service)
+	instances.Items = append(instances.Items, *instance)
 	labels = map[string]string{
-		"test-label": "service2",
+		"test-label": "instance2",
 	}
-	service, err = newService("test-service-2", "test-namespace", spec, st, labels)
+	instance, err = newInstance("test-instance-2", "test-namespace", spec, st, labels)
 	assert.Nil(t, err)
-	services.Items = append(services.Items, *service)
+	instances.Items = append(instances.Items, *instance)
 
-	client := fakeclient.NewFakeClientWithScheme(testScheme, services)
-	testScheme.AddKnownTypeWithName(serviceListGVK, services)
-	serviceServer := NewServicesServer(client, newFakeRESTMapper("CouchDBList"))
+	client := fakeclient.NewFakeClientWithScheme(testScheme, instances)
+	testScheme.AddKnownTypeWithName(instanceListGVK, instances)
+	instanceServer := NewInstancesServer(client, newFakeRESTMapper("CouchDBList"))
 	ctx := context.Background()
-	// err = client.Create(ctx, service)
+	// err = client.Create(ctx, instance)
 	// assert.Nil(t, err)
 	tests := []struct {
 		name           string
-		req            *v1.ServiceListRequest
+		req            *v1.InstanceListRequest
 		expectedError  error
-		expectedResult *v1.ServiceList
+		expectedResult *v1.InstanceList
 	}{
 		{
 			name: "valid request",
-			req: &v1.ServiceListRequest{
-				Account: "",
-				Service: "couchdb.eu-west-1.team-a",
-				Version: "v1alpha1",
+			req: &v1.InstanceListRequest{
+				Account:  "",
+				Instance: "couchdb.eu-west-1.team-a",
+				Version:  "v1alpha1",
 			},
 			expectedError:  status.Errorf(codes.InvalidArgument, "missing namespace"),
 			expectedResult: nil,
 		},
 		{
 			name: "invalid limit",
-			req: &v1.ServiceListRequest{
-				Account: "test-namespace",
-				Service: "couchdb.eu-west-1.team-a",
-				Version: "v1alpha1",
-				Limit:   -1,
+			req: &v1.InstanceListRequest{
+				Account:  "test-namespace",
+				Instance: "couchdb.eu-west-1.team-a",
+				Version:  "v1alpha1",
+				Limit:    -1,
 			},
 			expectedError:  status.Errorf(codes.InvalidArgument, "invalid limit: should not be negative number"),
 			expectedResult: nil,
 		},
 		{
 			name: "invalid label selector",
-			req: &v1.ServiceListRequest{
+			req: &v1.InstanceListRequest{
 				Account:       "test-namespace",
-				Service:       "couchdb.eu-west-1.team-a",
+				Instance:      "couchdb.eu-west-1.team-a",
 				Version:       "v1alpha1",
-				LabelSelector: "test-label=====service1",
+				LabelSelector: "test-label=====instance1",
 			},
 			expectedError:  status.Errorf(codes.InvalidArgument, "invalid LabelSelector: unable to parse requirement: found '==', expected: identifier"),
 			expectedResult: nil,
 		},
 		{
 			name: "valid request",
-			req: &v1.ServiceListRequest{
-				Account: "test-namespace",
-				Service: "couchdb.eu-west-1.team-a",
-				Version: "v1alpha1",
+			req: &v1.InstanceListRequest{
+				Account:  "test-namespace",
+				Instance: "couchdb.eu-west-1.team-a",
+				Version:  "v1alpha1",
 			},
 			expectedError: nil,
-			expectedResult: &v1.ServiceList{
+			expectedResult: &v1.InstanceList{
 				Metadata: &v1.ListMeta{
 					Continue:        "",
 					ResourceVersion: "",
 				},
-				Items: []*v1.Service{
+				Items: []*v1.Instance{
 					{
 						Metadata: &v1.ObjectMeta{
-							Name:    "test-service-1",
+							Name:    "test-instance-1",
 							Account: "test-namespace",
 							Labels: map[string]string{
-								"test-label": "service1",
+								"test-label": "instance1",
 							},
 						},
 						Spec:   "{\"password\":\"password\",\"username\":\"username\"}",
@@ -346,10 +346,10 @@ func TestListService(t *testing.T) {
 					},
 					{
 						Metadata: &v1.ObjectMeta{
-							Name:    "test-service-2",
+							Name:    "test-instance-2",
 							Account: "test-namespace",
 							Labels: map[string]string{
-								"test-label": "service2",
+								"test-label": "instance2",
 							},
 						},
 						Spec:   "{\"password\":\"password\",\"username\":\"username\"}",
@@ -360,25 +360,25 @@ func TestListService(t *testing.T) {
 		},
 		{
 			name: "LabelSelector works",
-			req: &v1.ServiceListRequest{
+			req: &v1.InstanceListRequest{
 				Account:       "test-namespace",
-				Service:       "couchdb.eu-west-1.team-a",
+				Instance:      "couchdb.eu-west-1.team-a",
 				Version:       "v1alpha1",
-				LabelSelector: "test-label=service1",
+				LabelSelector: "test-label=instance1",
 			},
 			expectedError: nil,
-			expectedResult: &v1.ServiceList{
+			expectedResult: &v1.InstanceList{
 				Metadata: &v1.ListMeta{
 					Continue:        "",
 					ResourceVersion: "",
 				},
-				Items: []*v1.Service{
+				Items: []*v1.Instance{
 					{
 						Metadata: &v1.ObjectMeta{
-							Name:    "test-service-1",
+							Name:    "test-instance-1",
 							Account: "test-namespace",
 							Labels: map[string]string{
-								"test-label": "service1",
+								"test-label": "instance1",
 							},
 						},
 						Spec:   "{\"password\":\"password\",\"username\":\"username\"}",
@@ -390,9 +390,9 @@ func TestListService(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			services, err := serviceServer.List(ctx, test.req)
+			instances, err := instanceServer.List(ctx, test.req)
 			assert.Equal(t, test.expectedError, err)
-			assert.Equal(t, test.expectedResult, services)
+			assert.Equal(t, test.expectedResult, instances)
 		})
 	}
 }

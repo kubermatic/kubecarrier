@@ -128,9 +128,9 @@ func runE(flags *flags, log logr.Logger) error {
 		return err
 	}
 
-	serviceServer := v1.NewServicesServer(c, mapper)
-	apiserverv1.RegisterServicesServer(grpcServer, serviceServer)
-	if err := apiserverv1.RegisterServicesHandlerServer(context.Background(), grpcGatewayMux, serviceServer); err != nil {
+	instanceServer := v1.NewInstancesServer(c, mapper)
+	apiserverv1.RegisterInstancesServer(grpcServer, instanceServer)
+	if err := apiserverv1.RegisterInstancesHandlerServer(context.Background(), grpcGatewayMux, instanceServer); err != nil {
 		return err
 	}
 

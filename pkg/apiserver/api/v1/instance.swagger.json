@@ -36,6 +36,34 @@
       },
       "type": "object"
     },
+    "v1Instance": {
+      "properties": {
+        "metadata": {
+          "$ref": "#/definitions/v1ObjectMeta"
+        },
+        "spec": {
+          "type": "string"
+        },
+        "status": {
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "v1InstanceList": {
+      "properties": {
+        "items": {
+          "items": {
+            "$ref": "#/definitions/v1Instance"
+          },
+          "type": "array"
+        },
+        "metadata": {
+          "$ref": "#/definitions/v1ListMeta"
+        }
+      },
+      "type": "object"
+    },
     "v1ListMeta": {
       "properties": {
         "continue": {
@@ -87,42 +115,14 @@
         }
       },
       "type": "object"
-    },
-    "v1Service": {
-      "properties": {
-        "metadata": {
-          "$ref": "#/definitions/v1ObjectMeta"
-        },
-        "spec": {
-          "type": "string"
-        },
-        "status": {
-          "type": "string"
-        }
-      },
-      "type": "object"
-    },
-    "v1ServiceList": {
-      "properties": {
-        "items": {
-          "items": {
-            "$ref": "#/definitions/v1Service"
-          },
-          "type": "array"
-        },
-        "metadata": {
-          "$ref": "#/definitions/v1ListMeta"
-        }
-      },
-      "type": "object"
     }
   },
   "info": {
-    "title": "service.proto",
+    "title": "instance.proto",
     "version": "version not set"
   },
   "paths": {
-    "/v1/accounts/{account}/services/{service}/{version}": {
+    "/v1/accounts/{account}/instance/{instance}/{version}": {
       "get": {
         "operationId": "List",
         "parameters": [
@@ -134,7 +134,7 @@
           },
           {
             "in": "path",
-            "name": "service",
+            "name": "instance",
             "required": true,
             "type": "string"
           },
@@ -168,7 +168,7 @@
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/v1ServiceList"
+              "$ref": "#/definitions/v1InstanceList"
             }
           },
           "default": {
@@ -179,7 +179,7 @@
           }
         },
         "tags": [
-          "Services"
+          "Instances"
         ]
       },
       "post": {
@@ -193,7 +193,7 @@
           },
           {
             "in": "path",
-            "name": "service",
+            "name": "instance",
             "required": true,
             "type": "string"
           },
@@ -208,7 +208,7 @@
             "name": "body",
             "required": true,
             "schema": {
-              "$ref": "#/definitions/v1Service"
+              "$ref": "#/definitions/v1Instance"
             }
           }
         ],
@@ -216,7 +216,7 @@
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/v1Service"
+              "$ref": "#/definitions/v1Instance"
             }
           },
           "default": {
@@ -227,11 +227,11 @@
           }
         },
         "tags": [
-          "Services"
+          "Instances"
         ]
       }
     },
-    "/v1/accounts/{account}/services/{service}/{version}/{name}": {
+    "/v1/accounts/{account}/instance/{instance}/{version}/{name}": {
       "delete": {
         "operationId": "Delete",
         "parameters": [
@@ -243,7 +243,7 @@
           },
           {
             "in": "path",
-            "name": "service",
+            "name": "instance",
             "required": true,
             "type": "string"
           },
@@ -275,7 +275,7 @@
           }
         },
         "tags": [
-          "Services"
+          "Instances"
         ]
       },
       "get": {
@@ -289,7 +289,7 @@
           },
           {
             "in": "path",
-            "name": "service",
+            "name": "instance",
             "required": true,
             "type": "string"
           },
@@ -310,7 +310,7 @@
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/v1Service"
+              "$ref": "#/definitions/v1Instance"
             }
           },
           "default": {
@@ -321,7 +321,7 @@
           }
         },
         "tags": [
-          "Services"
+          "Instances"
         ]
       }
     }

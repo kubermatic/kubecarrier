@@ -36,74 +36,74 @@ import (
 	v1 "github.com/kubermatic/kubecarrier/pkg/apiserver/api/v1"
 )
 
-type serviceServer struct {
+type instanceServer struct {
 	client client.Client
 	mapper meta.RESTMapper
 }
 
-var _ v1.ServicesServer = (*serviceServer)(nil)
+var _ v1.InstancesServer = (*instanceServer)(nil)
 
-func NewServicesServer(c client.Client, mapper meta.RESTMapper) v1.ServicesServer {
-	return &serviceServer{
+func NewInstancesServer(c client.Client, mapper meta.RESTMapper) v1.InstancesServer {
+	return &instanceServer{
 		client: c,
 		mapper: mapper,
 	}
 }
-func (o serviceServer) Create(ctx context.Context, req *v1.ServiceCreateRequest) (res *v1.Service, err error) {
+func (o instanceServer) Create(ctx context.Context, req *v1.InstanceCreateRequest) (res *v1.Instance, err error) {
 	obj := &unstructured.Unstructured{}
 
-	gvk, err := o.gvkFromService(o.mapper, req.Service, req.Version)
+	gvk, err := o.gvkFromInstance(o.mapper, req.Instance, req.Version)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "creating service: unable to get Kind: %s", err.Error())
+		return nil, status.Errorf(codes.Internal, "creating instance: unable to get Kind: %s", err.Error())
 	}
 	obj.SetGroupVersionKind(gvk)
 	val := map[string]interface{}{}
 	if err := json.Unmarshal([]byte(req.Spec.Spec), &val); err != nil {
-		return nil, status.Error(codes.Internal, "creating service: spec should be type of map[string]intreface{}")
+		return nil, status.Error(codes.Internal, "creating instance: spec should be type of map[string]intreface{}")
 	}
 	if err := unstructured.SetNestedMap(obj.Object, val, "spec"); err != nil {
-		return nil, status.Errorf(codes.Internal, fmt.Sprintf("creating services: %s", err.Error()))
+		return nil, status.Errorf(codes.Internal, fmt.Sprintf("creating instances: %s", err.Error()))
 	}
 	// force account from request
 	req.Spec.Metadata.Account = req.Account
 	if err := SetMetadata(obj, req.Spec.Metadata); err != nil {
-		return nil, status.Errorf(codes.Internal, fmt.Sprintf("creating services: %s", err.Error()))
+		return nil, status.Errorf(codes.Internal, fmt.Sprintf("creating instances: %s", err.Error()))
 	}
 	if err := o.client.Create(ctx, obj); err != nil {
-		return nil, status.Errorf(codes.Internal, fmt.Sprintf("creating services: %s", err.Error()))
+		return nil, status.Errorf(codes.Internal, fmt.Sprintf("creating instances: %s", err.Error()))
 	}
-	res, err = o.convertService(obj)
+	res, err = o.convertInstance(obj)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, fmt.Sprintf("converting Service: %s", err.Error()))
+		return nil, status.Errorf(codes.Internal, fmt.Sprintf("converting Instance: %s", err.Error()))
 	}
 	return
 }
 
-func (o serviceServer) List(ctx context.Context, req *v1.ServiceListRequest) (res *v1.ServiceList, err error) {
+func (o instanceServer) List(ctx context.Context, req *v1.InstanceListRequest) (res *v1.InstanceList, err error) {
 	var listOptions []client.ListOption
 	listOptions, err = o.validateListRequest(req)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
 	obj := &unstructured.UnstructuredList{}
-	gvk, err := o.gvkFromService(o.mapper, req.Service, req.Version)
+	gvk, err := o.gvkFromInstance(o.mapper, req.Instance, req.Version)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "listing service: unable to get Kind: %s", err.Error())
+		return nil, status.Errorf(codes.Internal, "listing instance: unable to get Kind: %s", err.Error())
 	}
 	obj.SetGroupVersionKind(gvk)
 	if err := o.client.List(ctx, obj, listOptions...); err != nil {
-		return nil, status.Errorf(codes.Internal, fmt.Sprintf("listing services: %s", err.Error()))
+		return nil, status.Errorf(codes.Internal, fmt.Sprintf("listing instances: %s", err.Error()))
 	}
 
-	res, err = o.convertServiceList(obj)
+	res, err = o.convertInstanceList(obj)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, fmt.Sprintf("converting ServiceList: %s", err.Error()))
+		return nil, status.Errorf(codes.Internal, fmt.Sprintf("converting InstanceList: %s", err.Error()))
 	}
 	return
 }
 
-func (o serviceServer) gvkFromService(mapper meta.RESTMapper, service string, version string) (schema.GroupVersionKind, error) {
-	parts := strings.SplitN(service, ".", 2)
+func (o instanceServer) gvkFromInstance(mapper meta.RESTMapper, instance string, version string) (schema.GroupVersionKind, error) {
+	parts := strings.SplitN(instance, ".", 2)
 	gvr := schema.GroupVersionResource{
 		Resource: parts[0],
 		Group:    parts[1],
@@ -112,45 +112,45 @@ func (o serviceServer) gvkFromService(mapper meta.RESTMapper, service string, ve
 	return o.mapper.KindFor(gvr)
 }
 
-func (o serviceServer) Get(ctx context.Context, req *v1.ServiceGetRequest) (res *v1.Service, err error) {
+func (o instanceServer) Get(ctx context.Context, req *v1.InstanceGetRequest) (res *v1.Instance, err error) {
 	if err = o.validateGetRequest(req); err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
 	obj := &unstructured.Unstructured{}
-	gvk, err := o.gvkFromService(o.mapper, req.Service, req.Version)
+	gvk, err := o.gvkFromInstance(o.mapper, req.Instance, req.Version)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "getting service: unable to get Kind: %s", err.Error())
+		return nil, status.Errorf(codes.Internal, "getting instance: unable to get Kind: %s", err.Error())
 	}
 	obj.SetGroupVersionKind(gvk)
 	if err = o.client.Get(ctx, types.NamespacedName{
 		Name:      req.Name,
 		Namespace: req.Account,
 	}, obj); err != nil {
-		return nil, status.Errorf(codes.Internal, fmt.Sprintf("getting service: %s", err.Error()))
+		return nil, status.Errorf(codes.Internal, fmt.Sprintf("getting instance: %s", err.Error()))
 	}
-	res, err = o.convertService(obj)
+	res, err = o.convertInstance(obj)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, fmt.Sprintf("converting Service: %s", err.Error()))
+		return nil, status.Errorf(codes.Internal, fmt.Sprintf("converting Instance: %s", err.Error()))
 	}
 	return
 }
 
-func (o serviceServer) Delete(ctx context.Context, req *v1.ServiceDeleteRequest) (*empty.Empty, error) {
+func (o instanceServer) Delete(ctx context.Context, req *v1.InstanceDeleteRequest) (*empty.Empty, error) {
 	obj := &unstructured.Unstructured{}
-	gvk, err := o.gvkFromService(o.mapper, req.Service, req.Version)
+	gvk, err := o.gvkFromInstance(o.mapper, req.Instance, req.Version)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "deleting service: unable to get Kind: %s", err.Error())
+		return nil, status.Errorf(codes.Internal, "deleting instance: unable to get Kind: %s", err.Error())
 	}
 	obj.SetGroupVersionKind(gvk)
 	obj.SetNamespace(req.Account)
 	obj.SetName(req.Name)
 	if err := o.client.Delete(ctx, obj); err != nil {
-		return nil, status.Errorf(codes.Internal, fmt.Sprintf("delete service: %s", err.Error()))
+		return nil, status.Errorf(codes.Internal, fmt.Sprintf("delete instance: %s", err.Error()))
 	}
 	return &empty.Empty{}, nil
 }
 
-func (o serviceServer) validateListRequest(req *v1.ServiceListRequest) ([]client.ListOption, error) {
+func (o instanceServer) validateListRequest(req *v1.InstanceListRequest) ([]client.ListOption, error) {
 	var listOptions []client.ListOption
 	if req.Account == "" {
 		return listOptions, fmt.Errorf("missing namespace")
@@ -158,11 +158,11 @@ func (o serviceServer) validateListRequest(req *v1.ServiceListRequest) ([]client
 	if req.Version == "" {
 		return listOptions, fmt.Errorf("missing version")
 	}
-	if req.Service == "" {
-		return listOptions, fmt.Errorf("missing service")
+	if req.Instance == "" {
+		return listOptions, fmt.Errorf("missing instance")
 	}
-	if len(strings.SplitN(req.Service, ".", 2)) < 2 {
-		return listOptions, fmt.Errorf("service should have format: {kind}.{apiGroup}")
+	if len(strings.SplitN(req.Instance, ".", 2)) < 2 {
+		return listOptions, fmt.Errorf("instance should have format: {kind}.{apiGroup}")
 	}
 	listOptions = append(listOptions, client.InNamespace(req.Account))
 	if req.Limit < 0 {
@@ -184,15 +184,15 @@ func (o serviceServer) validateListRequest(req *v1.ServiceListRequest) ([]client
 	return listOptions, nil
 }
 
-func (o serviceServer) validateGetRequest(req *v1.ServiceGetRequest) error {
+func (o instanceServer) validateGetRequest(req *v1.InstanceGetRequest) error {
 	if req.Name == "" {
 		return fmt.Errorf("missing name")
 	}
-	if req.Service == "" {
-		return fmt.Errorf("missing service")
+	if req.Instance == "" {
+		return fmt.Errorf("missing instance")
 	}
-	if len(strings.SplitN(req.Service, ".", 2)) < 2 {
-		return fmt.Errorf("service should have format: {kind}.{apiGroup}")
+	if len(strings.SplitN(req.Instance, ".", 2)) < 2 {
+		return fmt.Errorf("instance should have format: {kind}.{apiGroup}")
 	}
 	if req.Version == "" {
 		return fmt.Errorf("missing version")
@@ -203,12 +203,12 @@ func (o serviceServer) validateGetRequest(req *v1.ServiceGetRequest) error {
 	return nil
 }
 
-func (o serviceServer) convertService(in *unstructured.Unstructured) (out *v1.Service, err error) {
+func (o instanceServer) convertInstance(in *unstructured.Unstructured) (out *v1.Instance, err error) {
 	metadata, err := FromUnstructured(in)
 	if err != nil {
 		return nil, err
 	}
-	out = &v1.Service{Metadata: metadata}
+	out = &v1.Instance{Metadata: metadata}
 	spec, _, err := unstructured.NestedMap(in.Object, "spec")
 	if err != nil {
 		return nil, err
@@ -232,19 +232,19 @@ func (o serviceServer) convertService(in *unstructured.Unstructured) (out *v1.Se
 	return
 }
 
-func (o serviceServer) convertServiceList(in *unstructured.UnstructuredList) (out *v1.ServiceList, err error) {
-	out = &v1.ServiceList{
+func (o instanceServer) convertInstanceList(in *unstructured.UnstructuredList) (out *v1.InstanceList, err error) {
+	out = &v1.InstanceList{
 		Metadata: &v1.ListMeta{
 			Continue:        in.GetContinue(),
 			ResourceVersion: in.GetResourceVersion(),
 		},
 	}
-	for _, inService := range in.Items {
-		service, err := o.convertService(&inService)
+	for _, inInstance := range in.Items {
+		instance, err := o.convertInstance(&inInstance)
 		if err != nil {
 			return nil, err
 		}
-		out.Items = append(out.Items, service)
+		out.Items = append(out.Items, instance)
 	}
 	return
 }
