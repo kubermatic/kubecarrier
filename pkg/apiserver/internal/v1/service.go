@@ -27,7 +27,6 @@ import (
 	"k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/labels"
-	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -39,16 +38,14 @@ import (
 
 type serviceServer struct {
 	client client.Client
-	scheme *runtime.Scheme
 	mapper meta.RESTMapper
 }
 
 var _ v1.ServicesServer = (*serviceServer)(nil)
 
-func NewServicesServer(c client.Client, scheme *runtime.Scheme, mapper meta.RESTMapper) v1.ServicesServer {
+func NewServicesServer(c client.Client, mapper meta.RESTMapper) v1.ServicesServer {
 	return &serviceServer{
 		client: c,
-		scheme: scheme,
 		mapper: mapper,
 	}
 }
@@ -67,6 +64,8 @@ func (o serviceServer) Create(ctx context.Context, req *v1.ServiceCreateRequest)
 	if err := unstructured.SetNestedMap(obj.Object, val, "spec"); err != nil {
 		return nil, status.Errorf(codes.Internal, fmt.Sprintf("creating services: %s", err.Error()))
 	}
+	// force account from request
+	req.Spec.Metadata.Account = req.Account
 	if err := SetMetadata(obj, req.Spec.Metadata); err != nil {
 		return nil, status.Errorf(codes.Internal, fmt.Sprintf("creating services: %s", err.Error()))
 	}
