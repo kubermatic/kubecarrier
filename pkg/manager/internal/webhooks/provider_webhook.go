@@ -70,12 +70,5 @@ func (r *ProviderWebhookHandler) validateCreate(provider *catalogv1alpha1.Provid
 	if !webhook.IsDNS1123Label(provider.Name) {
 		return fmt.Errorf("provider name: %s is not a valid DNS 1123 Label, %s", provider.Name, webhook.DNS1123LabelDescription)
 	}
-	return r.validateMetadata(provider)
-}
-
-func (r *ProviderWebhookHandler) validateMetadata(provider *catalogv1alpha1.Provider) error {
-	if provider.Spec.Metadata.Description == "" || provider.Spec.Metadata.DisplayName == "" {
-		return fmt.Errorf("the description or the display name of the Provider: %s cannot be empty", provider.Name)
-	}
 	return nil
 }

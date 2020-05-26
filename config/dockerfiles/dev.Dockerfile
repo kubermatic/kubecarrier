@@ -35,9 +35,11 @@ ARG CONTROLLER_GEN_VERSION
 ARG PROTOC_VERSION
 ARG PROTOC_GEN_GO_VERSION
 ARG PROTOC_GRPC_GATEWAY_VERSION
+ARG TESTIFY_VERSION
 
 RUN echo $PATH && go get github.com/golangci/golangci-lint/cmd/golangci-lint@v${GOLANGCI_LINT_VERSION} && \
   go get golang.org/x/tools/cmd/goimports && \
+  go get github.com/stretchr/testify@v${TESTIFY_VERSION} && \
   go get github.com/thetechnick/statik@v${STATIK_VERSION} && \
   go get sigs.k8s.io/controller-tools/cmd/controller-gen@v${CONTROLLER_GEN_VERSION} && \
   go get -u github.com/golang/protobuf/protoc-gen-go@v${PROTOC_GEN_GO_VERSION} && \

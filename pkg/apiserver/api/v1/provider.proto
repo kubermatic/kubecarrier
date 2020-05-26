@@ -1,0 +1,69 @@
+/*
+Copyright 2019 The KubeCarrier Authors.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
+syntax = "proto3";
+package kubecarrier.api.v1;
+option go_package = "v1";
+
+import "google/api/annotations.proto";
+
+import "meta.proto";
+import "types.proto";
+
+message Provider {
+  ObjectMeta metadata = 1;
+  ProviderSpec spec = 2;
+}
+
+message ProviderSpec { ProviderMetadata metadata = 1; }
+
+message ProviderList {
+  ListMeta metadata = 1;
+  repeated Provider items = 2;
+}
+
+message ProviderGetRequest {
+  string name = 1;
+  string account = 2;
+}
+
+message ProviderListRequest {
+  string account = 1;
+  string labelSelector = 2;
+  int64 limit = 3;
+  string continue = 4;
+}
+
+message ProviderMetadata {
+  string displayName = 1;
+  string description = 2;
+  string shortDescription = 3;
+  Image logo = 4;
+  Image icon = 5;
+}
+
+service ProviderService {
+  rpc List(ProviderListRequest) returns (ProviderList) {
+    option (google.api.http) = {
+      get : "/v1/accounts/{account}/providers"
+    };
+  };
+  rpc Get(ProviderGetRequest) returns (Provider) {
+    option (google.api.http) = {
+      get : "/v1/accounts/{account}/providers/{name}"
+    };
+  };
+}

@@ -1,0 +1,303 @@
+{
+  "consumes": [
+    "application/json"
+  ],
+  "definitions": {
+    "protobufAny": {
+      "properties": {
+        "type_url": {
+          "type": "string"
+        },
+        "value": {
+          "format": "byte",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "runtimeError": {
+      "properties": {
+        "code": {
+          "format": "int32",
+          "type": "integer"
+        },
+        "details": {
+          "items": {
+            "$ref": "#/definitions/protobufAny"
+          },
+          "type": "array"
+        },
+        "error": {
+          "type": "string"
+        },
+        "message": {
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "v1CRDInformation": {
+      "properties": {
+        "apiGroup": {
+          "type": "string"
+        },
+        "kind": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "plural": {
+          "type": "string"
+        },
+        "region": {
+          "$ref": "#/definitions/v1ObjectReference"
+        },
+        "versions": {
+          "items": {
+            "$ref": "#/definitions/v1CRDVersion"
+          },
+          "type": "array"
+        }
+      },
+      "type": "object"
+    },
+    "v1CRDVersion": {
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "schema": {
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "v1Image": {
+      "properties": {
+        "data": {
+          "format": "byte",
+          "type": "string"
+        },
+        "mediaType": {
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "v1ListMeta": {
+      "properties": {
+        "continue": {
+          "type": "string"
+        },
+        "resourceVersion": {
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "v1ObjectMeta": {
+      "properties": {
+        "account": {
+          "type": "string"
+        },
+        "annotations": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "type": "object"
+        },
+        "creationTimestamp": {
+          "format": "date-time",
+          "type": "string"
+        },
+        "deletionTimestamp": {
+          "format": "date-time",
+          "type": "string"
+        },
+        "generation": {
+          "format": "int64",
+          "type": "string"
+        },
+        "labels": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "type": "object"
+        },
+        "name": {
+          "type": "string"
+        },
+        "resourceVersion": {
+          "type": "string"
+        },
+        "uid": {
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "v1ObjectReference": {
+      "properties": {
+        "name": {
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "v1Offering": {
+      "properties": {
+        "metadata": {
+          "$ref": "#/definitions/v1ObjectMeta"
+        },
+        "spec": {
+          "$ref": "#/definitions/v1OfferingSpec"
+        }
+      },
+      "type": "object"
+    },
+    "v1OfferingList": {
+      "properties": {
+        "items": {
+          "items": {
+            "$ref": "#/definitions/v1Offering"
+          },
+          "type": "array"
+        },
+        "metadata": {
+          "$ref": "#/definitions/v1ListMeta"
+        }
+      },
+      "type": "object"
+    },
+    "v1OfferingMetadata": {
+      "properties": {
+        "description": {
+          "type": "string"
+        },
+        "displayName": {
+          "type": "string"
+        },
+        "icon": {
+          "$ref": "#/definitions/v1Image"
+        },
+        "logo": {
+          "$ref": "#/definitions/v1Image"
+        },
+        "shortDescription": {
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "v1OfferingSpec": {
+      "properties": {
+        "crd": {
+          "$ref": "#/definitions/v1CRDInformation"
+        },
+        "metadata": {
+          "$ref": "#/definitions/v1OfferingMetadata"
+        },
+        "provider": {
+          "$ref": "#/definitions/v1ObjectReference"
+        }
+      },
+      "type": "object"
+    }
+  },
+  "info": {
+    "title": "offering.proto",
+    "version": "version not set"
+  },
+  "paths": {
+    "/v1/accounts/{account}/offerings": {
+      "get": {
+        "operationId": "List",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "account",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "in": "query",
+            "name": "labelSelector",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "format": "int64",
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "in": "query",
+            "name": "continue",
+            "required": false,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1OfferingList"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response",
+            "schema": {
+              "$ref": "#/definitions/runtimeError"
+            }
+          }
+        },
+        "tags": [
+          "OfferingService"
+        ]
+      }
+    },
+    "/v1/accounts/{account}/offerings/{name}": {
+      "get": {
+        "operationId": "Get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "account",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "in": "path",
+            "name": "name",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1Offering"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response",
+            "schema": {
+              "$ref": "#/definitions/runtimeError"
+            }
+          }
+        },
+        "tags": [
+          "OfferingService"
+        ]
+      }
+    }
+  },
+  "produces": [
+    "application/json"
+  ],
+  "swagger": "2.0"
+}
