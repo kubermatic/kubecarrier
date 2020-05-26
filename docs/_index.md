@@ -1,3 +1,11 @@
+---
+title: KubeCarrier
+date: 2020-04-24T09:00:00+02:00
+---
+
+![KubeCarrier logo][logo]
+
+
 # What is KubeCarrier?
 
 KubeCarrier is a open source project for managing services across multiple Kubernetes Clusters running on multiple clouds across multiple regions and provides facilities to provide these services to external users in a self service catalog.
@@ -46,3 +54,5 @@ Independent of *Cloud*, *Datacenter* and *Region*.
 KubeCarrier is just yet another Kubernetes Operator, using `CustomResourceDefinitions` and the Kubernetes Controller pattern to do its magic.
 
 Checkout our *Getting Started* docs to see how easy it is to setup and play around with KubeCarrier.
+
+[logo]: ./img/KubeCarrier.png
