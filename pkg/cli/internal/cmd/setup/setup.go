@@ -245,3 +245,28 @@ func createLocalManagementCluster(ctx context.Context, c *util.ClientWatcher, ku
 		})
 	}
 }
+
+func createLocalManagementCluster(ctx context.Context, c *util.ClientWatcher, kubeCarrier *operatorv1alpha1.KubeCarrier) func() error {
+	return func() error {
+		localManagementCluster := &masterv1alpha1.ManagementCluster{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: constants.LocalManagementClusterName,
+			},
+		}
+
+		if err := controllerutil.SetControllerReference(kubeCarrier, localManagementCluster, scheme); err != nil {
+			return fmt.Errorf("set controller reference: %w", err)
+		}
+		if _, err := ctrl.CreateOrUpdate(ctx, c, localManagementCluster, func() error {
+			if err := controllerutil.SetControllerReference(kubeCarrier, localManagementCluster, scheme); err != nil {
+				return fmt.Errorf("set controller reference on local ManagementCluster object: %w", err)
+			}
+			return nil
+		}); err != nil {
+			return fmt.Errorf("cannot create or update local ManagementCluster object: %w", err)
+		}
+		return c.WaitUntil(ctx, localManagementCluster, func() (done bool, err error) {
+			return localManagementCluster.IsReady(), nil
+		})
+	}
+}

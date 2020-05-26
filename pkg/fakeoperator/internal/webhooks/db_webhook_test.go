@@ -196,7 +196,7 @@ func TestDBValidatingUpdate(t *testing.T) {
 					Name: "testdb",
 				},
 				Spec: fakev1.DBSpec{
-					Config: fakev1.Config{},
+					Config: fakev1.Config{Update: fakev1.OperationFlagDisabled},
 				},
 			},
 			expectedError: fmt.Errorf("update operation disabled for %s", "testdb"),
