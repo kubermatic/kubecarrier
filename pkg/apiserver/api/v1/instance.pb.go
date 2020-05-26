@@ -145,13 +145,13 @@ func (m *InstanceList) GetItems() []*Instance {
 }
 
 type InstanceGetRequest struct {
-	// instance - name of the offering, i.e. couchdb.eu-west-1.team-a
+	// Instance - name of the offering, i.e. couchdb.eu-west-1.team-a
 	Instance string `protobuf:"bytes,1,opt,name=instance,proto3" json:"instance,omitempty"`
-	// version of the resource
+	// Version of the resource
 	Version string `protobuf:"bytes,2,opt,name=version,proto3" json:"version,omitempty"`
-	// name of the offering instance
+	// Name of the offering instance
 	Name string `protobuf:"bytes,3,opt,name=name,proto3" json:"name,omitempty"`
-	// account indicate namespace of the project/account
+	// Account indicate namespace of the project/account
 	Account              string   `protobuf:"bytes,4,opt,name=account,proto3" json:"account,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
@@ -212,13 +212,13 @@ func (m *InstanceGetRequest) GetAccount() string {
 }
 
 type InstanceDeleteRequest struct {
-	// instance - name of the offering, i.e. couchdb.eu-west-1.team-a
+	// Instance - name of the offering, i.e. couchdb.eu-west-1.team-a
 	Instance string `protobuf:"bytes,1,opt,name=instance,proto3" json:"instance,omitempty"`
-	// version of the resource
+	// Version of the resource
 	Version string `protobuf:"bytes,2,opt,name=version,proto3" json:"version,omitempty"`
-	// name of the offering instance
+	// Name of the offering instance
 	Name string `protobuf:"bytes,3,opt,name=name,proto3" json:"name,omitempty"`
-	// account indicate namespace of the project/account
+	// Account indicate namespace of the project/account
 	Account              string   `protobuf:"bytes,4,opt,name=account,proto3" json:"account,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
@@ -279,11 +279,11 @@ func (m *InstanceDeleteRequest) GetAccount() string {
 }
 
 type InstanceListRequest struct {
-	// instance - name of the offering, i.e. couchdb.eu-west-1.team-a
+	// Instance - name of the offering, i.e. couchdb.eu-west-1.team-a
 	Instance string `protobuf:"bytes,1,opt,name=instance,proto3" json:"instance,omitempty"`
-	// version of the resource
+	// Version of the resource
 	Version string `protobuf:"bytes,2,opt,name=version,proto3" json:"version,omitempty"`
-	// account indicate namespace of the project/account
+	// Account indicate namespace of the project/account
 	Account              string   `protobuf:"bytes,3,opt,name=account,proto3" json:"account,omitempty"`
 	LabelSelector        string   `protobuf:"bytes,4,opt,name=labelSelector,proto3" json:"labelSelector,omitempty"`
 	Limit                int64    `protobuf:"varint,5,opt,name=limit,proto3" json:"limit,omitempty"`
@@ -361,12 +361,12 @@ func (m *InstanceListRequest) GetContinue() string {
 }
 
 type InstanceCreateRequest struct {
-	// instance - name of the offering, i.e. couchdb.eu-west-1.team-a
+	// Instance is a name of the offering, i.e. couchdb.eu-west-1.team-a
 	Instance string `protobuf:"bytes,1,opt,name=instance,proto3" json:"instance,omitempty"`
-	// version of the resource
+	// Version of the resource
 	Version string    `protobuf:"bytes,2,opt,name=version,proto3" json:"version,omitempty"`
 	Spec    *Instance `protobuf:"bytes,3,opt,name=spec,proto3" json:"spec,omitempty"`
-	// account indicate namespace of the project/account
+	// Account indicate namespace of the project/account
 	Account              string   `protobuf:"bytes,4,opt,name=account,proto3" json:"account,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
