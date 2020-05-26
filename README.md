@@ -34,7 +34,7 @@ KubeCarrier is currently in early development and is not ready for production us
 
 ## Documentation
 
-You can find following useful documentation in our [docs folder](./docs), and you also can find all our documentation for different releases on our [documentation website](https://docs.kubermatic.com/kubecarrier).
+You can find following useful documentation in our [docs folder](./docs), and you also can find documentation for different releases on our [documentation website](https://docs.kubermatic.com/kubecarrier).
 
 - [What is KubeCarrier](./docs/_index.md)
 - [Getting Started](./docs/getting_started)
