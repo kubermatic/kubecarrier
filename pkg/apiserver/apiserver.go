@@ -118,6 +118,12 @@ func runE(flags *flags, log logr.Logger) error {
 		return fmt.Errorf("creating client: %w", err)
 	}
 
+	accountServer := v1.NewAccountServiceServer(c)
+	apiserverv1.RegisterAccountServiceServer(grpcServer, accountServer)
+	if err := apiserverv1.RegisterAccountServiceHandlerServer(context.Background(), grpcGatewayMux, accountServer); err != nil {
+		return err
+	}
+
 	apiserverv1.RegisterKubeCarrierServer(grpcServer, &v1.KubeCarrierServer{})
 	if err := apiserverv1.RegisterKubeCarrierHandlerServer(context.Background(), grpcGatewayMux, &v1.KubeCarrierServer{}); err != nil {
 		return err

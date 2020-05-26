@@ -1,0 +1,95 @@
+/*
+Copyright 2019 The KubeCarrier Authors.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
+syntax = "proto3";
+package kubecarrier.api.v1;
+option go_package = "v1";
+
+import "google/api/annotations.proto";
+import "google/protobuf/timestamp.proto";
+
+import "meta.proto";
+import "types.proto";
+
+message Account {
+  ObjectMeta metadata = 1;
+  AccountSpec spec = 2;
+  AccountStatus status = 3;
+}
+
+message AccountSpec {
+  AccountMetadata metadata = 1;
+  repeated string roles = 2;
+  repeated Subject subjects = 3;
+}
+
+message AccountMetadata {
+  string displayName = 1;
+  string description = 2;
+  string shortDescription = 3;
+  Image logo = 4;
+  Image icon = 5;
+}
+
+message Subject {
+  string kind = 1;
+  string apiGroup = 2;
+  string name = 3;
+  string namespace = 4;
+}
+
+message AccountStatus {
+  ObjectReference namespace = 1;
+  int64 observedGeneration = 2;
+  string phase = 3;
+  repeated AccountCondition conditions = 4;
+}
+
+message AccountCondition {
+  string type = 1;
+  string status = 2;
+  google.protobuf.Timestamp lastTransitionTime = 3;
+  string reason = 4;
+  string message = 5;
+}
+
+message AccountList {
+  ListMeta metadata = 1;
+  repeated Account items = 2;
+}
+
+message AccountGetRequest {
+  string name = 1;
+}
+
+message AccountListRequest {
+  string labelSelector = 1;
+  int64 limit = 2;
+  string continue = 3;
+}
+
+service AccountService {
+  rpc List(AccountListRequest) returns (AccountList) {
+    option (google.api.http) = {
+      get : "/v1/accounts"
+    };
+  };
+  rpc Get(AccountGetRequest) returns (Account) {
+    option (google.api.http) = {
+      get : "/v1/accounts/{name}"
+    };
+  };
+}

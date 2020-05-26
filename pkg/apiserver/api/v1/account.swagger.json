@@ -1,0 +1,322 @@
+{
+  "consumes": [
+    "application/json"
+  ],
+  "definitions": {
+    "protobufAny": {
+      "properties": {
+        "type_url": {
+          "type": "string"
+        },
+        "value": {
+          "format": "byte",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "runtimeError": {
+      "properties": {
+        "code": {
+          "format": "int32",
+          "type": "integer"
+        },
+        "details": {
+          "items": {
+            "$ref": "#/definitions/protobufAny"
+          },
+          "type": "array"
+        },
+        "error": {
+          "type": "string"
+        },
+        "message": {
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "v1Account": {
+      "properties": {
+        "metadata": {
+          "$ref": "#/definitions/v1ObjectMeta"
+        },
+        "spec": {
+          "$ref": "#/definitions/v1AccountSpec"
+        },
+        "status": {
+          "$ref": "#/definitions/v1AccountStatus"
+        }
+      },
+      "type": "object"
+    },
+    "v1AccountCondition": {
+      "properties": {
+        "lastTransitionTime": {
+          "format": "date-time",
+          "type": "string"
+        },
+        "message": {
+          "type": "string"
+        },
+        "reason": {
+          "type": "string"
+        },
+        "status": {
+          "type": "string"
+        },
+        "type": {
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "v1AccountList": {
+      "properties": {
+        "items": {
+          "items": {
+            "$ref": "#/definitions/v1Account"
+          },
+          "type": "array"
+        },
+        "metadata": {
+          "$ref": "#/definitions/v1ListMeta"
+        }
+      },
+      "type": "object"
+    },
+    "v1AccountMetadata": {
+      "properties": {
+        "description": {
+          "type": "string"
+        },
+        "displayName": {
+          "type": "string"
+        },
+        "icon": {
+          "$ref": "#/definitions/v1Image"
+        },
+        "logo": {
+          "$ref": "#/definitions/v1Image"
+        },
+        "shortDescription": {
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "v1AccountSpec": {
+      "properties": {
+        "metadata": {
+          "$ref": "#/definitions/v1AccountMetadata"
+        },
+        "roles": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "subjects": {
+          "items": {
+            "$ref": "#/definitions/v1Subject"
+          },
+          "type": "array"
+        }
+      },
+      "type": "object"
+    },
+    "v1AccountStatus": {
+      "properties": {
+        "conditions": {
+          "items": {
+            "$ref": "#/definitions/v1AccountCondition"
+          },
+          "type": "array"
+        },
+        "namespace": {
+          "$ref": "#/definitions/v1ObjectReference"
+        },
+        "observedGeneration": {
+          "format": "int64",
+          "type": "string"
+        },
+        "phase": {
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "v1Image": {
+      "properties": {
+        "data": {
+          "format": "byte",
+          "type": "string"
+        },
+        "mediaType": {
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "v1ListMeta": {
+      "properties": {
+        "continue": {
+          "type": "string"
+        },
+        "resourceVersion": {
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "v1ObjectMeta": {
+      "properties": {
+        "account": {
+          "type": "string"
+        },
+        "annotations": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "type": "object"
+        },
+        "creationTimestamp": {
+          "format": "date-time",
+          "type": "string"
+        },
+        "deletionTimestamp": {
+          "format": "date-time",
+          "type": "string"
+        },
+        "generation": {
+          "format": "int64",
+          "type": "string"
+        },
+        "labels": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "type": "object"
+        },
+        "name": {
+          "type": "string"
+        },
+        "resourceVersion": {
+          "type": "string"
+        },
+        "uid": {
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "v1ObjectReference": {
+      "properties": {
+        "name": {
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "v1Subject": {
+      "properties": {
+        "apiGroup": {
+          "type": "string"
+        },
+        "kind": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "namespace": {
+          "type": "string"
+        }
+      },
+      "type": "object"
+    }
+  },
+  "info": {
+    "title": "account.proto",
+    "version": "version not set"
+  },
+  "paths": {
+    "/v1/accounts": {
+      "get": {
+        "operationId": "List",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "labelSelector",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "format": "int64",
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "in": "query",
+            "name": "continue",
+            "required": false,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1AccountList"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response",
+            "schema": {
+              "$ref": "#/definitions/runtimeError"
+            }
+          }
+        },
+        "tags": [
+          "AccountService"
+        ]
+      }
+    },
+    "/v1/accounts/{name}": {
+      "get": {
+        "operationId": "Get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "name",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1Account"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response",
+            "schema": {
+              "$ref": "#/definitions/runtimeError"
+            }
+          }
+        },
+        "tags": [
+          "AccountService"
+        ]
+      }
+    }
+  },
+  "produces": [
+    "application/json"
+  ],
+  "swagger": "2.0"
+}
