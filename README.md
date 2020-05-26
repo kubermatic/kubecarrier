@@ -90,5 +90,3 @@ See [the list of releases][3] to find out about feature changes.
 [11]: https://groups.google.com/forum/#!forum/loodse-dev
 [12]: https://kubermatic.slack.com/messages/kubecarrier
 [15]: http://slack.kubermatic.io/
-
-[21]: docs/README.md
