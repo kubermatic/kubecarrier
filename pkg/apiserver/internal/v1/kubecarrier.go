@@ -24,6 +24,7 @@ import (
 	"github.com/golang/protobuf/ptypes/timestamp"
 
 	v1 "github.com/kubermatic/kubecarrier/pkg/apiserver/api/v1"
+	"github.com/kubermatic/kubecarrier/pkg/apiserver/internal/oidc"
 	"github.com/kubermatic/kubecarrier/pkg/internal/version"
 )
 
@@ -46,7 +47,7 @@ func (v KubeCarrierServer) Version(context.Context, *v1.VersionRequest) (*v1.API
 }
 
 func (v KubeCarrierServer) WhoAmI(ctx context.Context, _ *empty.Empty) (*v1.UserInfo, error) {
-	user, present := ExtractUserInfo(ctx)
+	user, present := oidc.ExtractUserInfo(ctx)
 	if !present {
 		return nil, fmt.Errorf("unauthorized")
 	}

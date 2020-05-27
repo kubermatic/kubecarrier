@@ -26,7 +26,7 @@ authentication pass due to asymmetric encryption nature.)
 Thus we're re-exporting two private methods to create authenticator in a sync manner, and ensure it's initialized
 by fetching the OIDC /.well-known/openid-configuration and letting it configure itself
 */
-package v1
+package oidc
 
 import (
 	"context"

@@ -20,7 +20,6 @@ import (
 	"fmt"
 	"strings"
 
-	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"sigs.k8s.io/kustomize/v3/pkg/image"
 	"sigs.k8s.io/kustomize/v3/pkg/types"
@@ -79,12 +78,6 @@ func Manifests(c Config) ([]unstructured.Unstructured, error) {
 	// we are not using *appsv1.Deployment here,
 	// because some fields will be defaulted to empty and
 	// interfere with the strategic merge patch of kustomize.
-	probe := map[string]interface{}{
-		"tcpSocket": map[string]interface{}{
-			"port": 8443,
-		},
-	}
-
 	managerEnv := map[string]interface{}{
 		"apiVersion": "apps/v1",
 		"kind":       "Deployment",
@@ -111,8 +104,6 @@ func Manifests(c Config) ([]unstructured.Unstructured, error) {
 								"--oidc-groups-prefix=$(API_SERVER_OIDC_GROUPS_PREFIX)",
 								"--oidc-signing-algs=$(API_SERVER_OIDC_SIGNING_ALGS)",
 							}, extraArgs...),
-							"readinessProbe": probe,
-							"livenessProbe":  probe,
 							"env": []map[string]interface{}{
 								{
 									"name":  "API_SERVER_ADDR",
@@ -159,11 +150,6 @@ func Manifests(c Config) ([]unstructured.Unstructured, error) {
 									"value": strings.Join(c.Spec.OIDC.SupportedSigningAlgs, ","),
 								},
 							},
-							"ports": []corev1.ContainerPort{{
-								Name:          "https",
-								ContainerPort: 8443,
-								Protocol:      "TCP",
-							}},
 							"volumeMounts": []map[string]interface{}{{
 								"mountPath": "/run/serving-certs",
 								"readyOnly": true,
