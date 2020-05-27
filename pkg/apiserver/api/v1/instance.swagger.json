@@ -122,7 +122,7 @@
     "version": "version not set"
   },
   "paths": {
-    "/v1/accounts/{account}/instance/{instance}/{version}": {
+    "/v1/accounts/{account}/instances/{offering}/{version}": {
       "get": {
         "operationId": "List",
         "parameters": [
@@ -134,9 +134,9 @@
             "type": "string"
           },
           {
-            "description": "Instance - name of the offering, i.e. couchdb.eu-west-1.team-a",
+            "description": "Offering name, i.e. couchdb.eu-west-1.team-a",
             "in": "path",
-            "name": "instance",
+            "name": "offering",
             "required": true,
             "type": "string"
           },
@@ -196,9 +196,9 @@
             "type": "string"
           },
           {
-            "description": "Instance is a name of the offering, i.e. couchdb.eu-west-1.team-a",
+            "description": "Offering name, i.e. couchdb.eu-west-1.team-a",
             "in": "path",
-            "name": "instance",
+            "name": "offering",
             "required": true,
             "type": "string"
           },
@@ -237,7 +237,7 @@
         ]
       }
     },
-    "/v1/accounts/{account}/instance/{instance}/{version}/{name}": {
+    "/v1/accounts/{account}/instances/{offering}/{version}/{name}": {
       "delete": {
         "operationId": "Delete",
         "parameters": [
@@ -249,9 +249,9 @@
             "type": "string"
           },
           {
-            "description": "Instance - name of the offering, i.e. couchdb.eu-west-1.team-a",
+            "description": "Offering name, i.e. couchdb.eu-west-1.team-a",
             "in": "path",
-            "name": "instance",
+            "name": "offering",
             "required": true,
             "type": "string"
           },
@@ -299,9 +299,9 @@
             "type": "string"
           },
           {
-            "description": "Instance - name of the offering, i.e. couchdb.eu-west-1.team-a",
+            "description": "Offering name, i.e. couchdb.eu-west-1.team-a",
             "in": "path",
-            "name": "instance",
+            "name": "offering",
             "required": true,
             "type": "string"
           },

@@ -102,7 +102,7 @@ func TestGetInstance(t *testing.T) {
 			req: &v1.InstanceGetRequest{
 				Name:     "test-instance",
 				Account:  "",
-				Instance: "couchdb.eu-west-1.team-a",
+				Offering: "couchdb.eu-west-1.team-a",
 				Version:  "v1alpha1",
 			},
 			expectedError:  status.Errorf(codes.InvalidArgument, "missing namespace"),
@@ -112,20 +112,20 @@ func TestGetInstance(t *testing.T) {
 			name: "missing name",
 			req: &v1.InstanceGetRequest{
 				Account:  "test-namespace",
-				Instance: "couchdb.eu-west-1.team-a",
+				Offering: "couchdb.eu-west-1.team-a",
 				Version:  "v1alpha1",
 			},
 			expectedError:  status.Errorf(codes.InvalidArgument, "missing name"),
 			expectedResult: nil,
 		},
 		{
-			name: "missing instance",
+			name: "missing offering name",
 			req: &v1.InstanceGetRequest{
 				Name:    "test-instance",
 				Account: "test-namespace",
 				Version: "v1alpha1",
 			},
-			expectedError:  status.Errorf(codes.InvalidArgument, "missing instance"),
+			expectedError:  status.Errorf(codes.InvalidArgument, "missing offering"),
 			expectedResult: nil,
 		},
 		{
@@ -133,20 +133,20 @@ func TestGetInstance(t *testing.T) {
 			req: &v1.InstanceGetRequest{
 				Name:     "test-instance",
 				Account:  "test-namespace",
-				Instance: "couchdb.eu-west-1.team-a",
+				Offering: "couchdb.eu-west-1.team-a",
 			},
 			expectedError:  status.Errorf(codes.InvalidArgument, "missing version"),
 			expectedResult: nil,
 		},
 		{
-			name: "wrong instance name",
+			name: "wrong offering name",
 			req: &v1.InstanceGetRequest{
 				Name:     "test-instance",
 				Account:  "test-namespace",
-				Instance: "couchdb",
+				Offering: "couchdb",
 				Version:  "v1alpha1",
 			},
-			expectedError:  status.Errorf(codes.InvalidArgument, "instance should have format: {kind}.{apiGroup}"),
+			expectedError:  status.Errorf(codes.InvalidArgument, "offering should have format: {kind}.{apiGroup}"),
 			expectedResult: nil,
 		},
 		{
@@ -154,7 +154,7 @@ func TestGetInstance(t *testing.T) {
 			req: &v1.InstanceGetRequest{
 				Name:     "test-instance",
 				Account:  "test-namespace",
-				Instance: "couchdb.eu-west-1.team-a",
+				Offering: "couchdb.eu-west-1.team-a",
 				Version:  "v1alpha1",
 			},
 			expectedError: nil,
@@ -193,7 +193,7 @@ func TestCreateInstance(t *testing.T) {
 			name: "valid request",
 			req: &v1.InstanceCreateRequest{
 				Account:  "test-namespace",
-				Instance: "couchdb.eu-west-1.team-a",
+				Offering: "couchdb.eu-west-1.team-a",
 				Version:  "v1alpha1",
 				Spec: &v1.Instance{
 					Metadata: &v1.ObjectMeta{Name: "test-instance"},
@@ -241,7 +241,7 @@ func TestDeleteInstance(t *testing.T) {
 			req: &v1.InstanceDeleteRequest{
 				Name:     "test-instance",
 				Account:  "test-namespace",
-				Instance: "couchdb.eu-west-1.team-a",
+				Offering: "couchdb.eu-west-1.team-a",
 				Version:  "v1alpha1",
 			},
 			expectedError:  nil,
@@ -279,8 +279,6 @@ func TestListInstance(t *testing.T) {
 	testScheme.AddKnownTypeWithName(instanceListGVK, instances)
 	instanceServer := NewInstancesServer(client, newFakeRESTMapper("CouchDBList"))
 	ctx := context.Background()
-	// err = client.Create(ctx, instance)
-	// assert.Nil(t, err)
 	tests := []struct {
 		name           string
 		req            *v1.InstanceListRequest
@@ -291,7 +289,7 @@ func TestListInstance(t *testing.T) {
 			name: "valid request",
 			req: &v1.InstanceListRequest{
 				Account:  "",
-				Instance: "couchdb.eu-west-1.team-a",
+				Offering: "couchdb.eu-west-1.team-a",
 				Version:  "v1alpha1",
 			},
 			expectedError:  status.Errorf(codes.InvalidArgument, "missing namespace"),
@@ -301,7 +299,7 @@ func TestListInstance(t *testing.T) {
 			name: "invalid limit",
 			req: &v1.InstanceListRequest{
 				Account:  "test-namespace",
-				Instance: "couchdb.eu-west-1.team-a",
+				Offering: "couchdb.eu-west-1.team-a",
 				Version:  "v1alpha1",
 				Limit:    -1,
 			},
@@ -312,7 +310,7 @@ func TestListInstance(t *testing.T) {
 			name: "invalid label selector",
 			req: &v1.InstanceListRequest{
 				Account:       "test-namespace",
-				Instance:      "couchdb.eu-west-1.team-a",
+				Offering:      "couchdb.eu-west-1.team-a",
 				Version:       "v1alpha1",
 				LabelSelector: "test-label=====instance1",
 			},
@@ -323,7 +321,7 @@ func TestListInstance(t *testing.T) {
 			name: "valid request",
 			req: &v1.InstanceListRequest{
 				Account:  "test-namespace",
-				Instance: "couchdb.eu-west-1.team-a",
+				Offering: "couchdb.eu-west-1.team-a",
 				Version:  "v1alpha1",
 			},
 			expectedError: nil,
@@ -362,7 +360,7 @@ func TestListInstance(t *testing.T) {
 			name: "LabelSelector works",
 			req: &v1.InstanceListRequest{
 				Account:       "test-namespace",
-				Instance:      "couchdb.eu-west-1.team-a",
+				Offering:      "couchdb.eu-west-1.team-a",
 				Version:       "v1alpha1",
 				LabelSelector: "test-label=instance1",
 			},

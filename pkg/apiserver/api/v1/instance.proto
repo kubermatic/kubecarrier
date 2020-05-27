@@ -35,8 +35,8 @@ message InstanceList {
 }
 
 message InstanceGetRequest {
-  // Instance - name of the offering, i.e. couchdb.eu-west-1.team-a
-  string instance = 1;
+  // Offering name, i.e. couchdb.eu-west-1.team-a
+  string offering = 1;
   // Version of the resource
   string version = 2;
   // Name of the offering instance
@@ -46,8 +46,8 @@ message InstanceGetRequest {
 }
 
 message InstanceDeleteRequest {
-  // Instance - name of the offering, i.e. couchdb.eu-west-1.team-a
-  string instance = 1;
+  // Offering name, i.e. couchdb.eu-west-1.team-a
+  string offering = 1;
   // Version of the resource
   string version = 2;
   // Name of the offering instance
@@ -57,8 +57,8 @@ message InstanceDeleteRequest {
 }
 
 message InstanceListRequest {
-  // Instance - name of the offering, i.e. couchdb.eu-west-1.team-a
-  string instance = 1;
+  // Offering name, i.e. couchdb.eu-west-1.team-a
+  string offering = 1;
   // Version of the resource
   string version = 2;
   // Account indicate namespace of the project/account
@@ -69,8 +69,8 @@ message InstanceListRequest {
 }
 
 message InstanceCreateRequest {
-  // Instance is a name of the offering, i.e. couchdb.eu-west-1.team-a
-  string instance = 1;
+  // Offering name, i.e. couchdb.eu-west-1.team-a
+  string offering = 1;
   // Version of the resource
   string version = 2;
   Instance spec = 3;
@@ -81,22 +81,22 @@ message InstanceCreateRequest {
 service Instances {
   rpc List(InstanceListRequest) returns (InstanceList) {
     option (google.api.http) = {
-      get : "/v1/accounts/{account}/instance/{instance}/{version}"
+      get : "/v1/accounts/{account}/instances/{offering}/{version}"
     };
   };
   rpc Get(InstanceGetRequest) returns (Instance) {
     option (google.api.http) = {
-      get : "/v1/accounts/{account}/instance/{instance}/{version}/{name}"
+      get : "/v1/accounts/{account}/instances/{offering}/{version}/{name}"
     };
   };
   rpc Delete(InstanceDeleteRequest) returns (google.protobuf.Empty) {
     option (google.api.http) = {
-      delete : "/v1/accounts/{account}/instance/{instance}/{version}/{name}"
+      delete : "/v1/accounts/{account}/instances/{offering}/{version}/{name}"
     };
   };
   rpc Create(InstanceCreateRequest) returns (Instance) {
     option (google.api.http) = {
-      post : "/v1/accounts/{account}/instance/{instance}/{version}"
+      post : "/v1/accounts/{account}/instances/{offering}/{version}"
       body: "spec"
     };
   };

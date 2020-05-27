@@ -52,7 +52,7 @@ func NewInstancesServer(c client.Client, mapper meta.RESTMapper) v1.InstancesSer
 func (o instanceServer) Create(ctx context.Context, req *v1.InstanceCreateRequest) (res *v1.Instance, err error) {
 	obj := &unstructured.Unstructured{}
 
-	gvk, err := o.gvkFromInstance(o.mapper, req.Instance, req.Version)
+	gvk, err := o.gvkFromInstance(o.mapper, req.Offering, req.Version)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "creating instance: unable to get Kind: %s", err.Error())
 	}
@@ -86,7 +86,7 @@ func (o instanceServer) List(ctx context.Context, req *v1.InstanceListRequest) (
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
 	obj := &unstructured.UnstructuredList{}
-	gvk, err := o.gvkFromInstance(o.mapper, req.Instance, req.Version)
+	gvk, err := o.gvkFromInstance(o.mapper, req.Offering, req.Version)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "listing instance: unable to get Kind: %s", err.Error())
 	}
@@ -117,7 +117,7 @@ func (o instanceServer) Get(ctx context.Context, req *v1.InstanceGetRequest) (re
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
 	obj := &unstructured.Unstructured{}
-	gvk, err := o.gvkFromInstance(o.mapper, req.Instance, req.Version)
+	gvk, err := o.gvkFromInstance(o.mapper, req.Offering, req.Version)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "getting instance: unable to get Kind: %s", err.Error())
 	}
@@ -137,7 +137,7 @@ func (o instanceServer) Get(ctx context.Context, req *v1.InstanceGetRequest) (re
 
 func (o instanceServer) Delete(ctx context.Context, req *v1.InstanceDeleteRequest) (*empty.Empty, error) {
 	obj := &unstructured.Unstructured{}
-	gvk, err := o.gvkFromInstance(o.mapper, req.Instance, req.Version)
+	gvk, err := o.gvkFromInstance(o.mapper, req.Offering, req.Version)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "deleting instance: unable to get Kind: %s", err.Error())
 	}
@@ -158,11 +158,11 @@ func (o instanceServer) validateListRequest(req *v1.InstanceListRequest) ([]clie
 	if req.Version == "" {
 		return listOptions, fmt.Errorf("missing version")
 	}
-	if req.Instance == "" {
-		return listOptions, fmt.Errorf("missing instance")
+	if req.Offering == "" {
+		return listOptions, fmt.Errorf("missing offering")
 	}
-	if len(strings.SplitN(req.Instance, ".", 2)) < 2 {
-		return listOptions, fmt.Errorf("instance should have format: {kind}.{apiGroup}")
+	if len(strings.SplitN(req.Offering, ".", 2)) < 2 {
+		return listOptions, fmt.Errorf("offering should have format: {kind}.{apiGroup}")
 	}
 	listOptions = append(listOptions, client.InNamespace(req.Account))
 	if req.Limit < 0 {
@@ -188,11 +188,11 @@ func (o instanceServer) validateGetRequest(req *v1.InstanceGetRequest) error {
 	if req.Name == "" {
 		return fmt.Errorf("missing name")
 	}
-	if req.Instance == "" {
-		return fmt.Errorf("missing instance")
+	if req.Offering == "" {
+		return fmt.Errorf("missing offering")
 	}
-	if len(strings.SplitN(req.Instance, ".", 2)) < 2 {
-		return fmt.Errorf("instance should have format: {kind}.{apiGroup}")
+	if len(strings.SplitN(req.Offering, ".", 2)) < 2 {
+		return fmt.Errorf("offering should have format: {kind}.{apiGroup}")
 	}
 	if req.Version == "" {
 		return fmt.Errorf("missing version")
