@@ -39,7 +39,6 @@ type APIServerOIDCConfig struct {
 	//
 	// The provider must implement configuration discovery.
 	// See: https://openid.net/specs/openid-connect-discovery-1_0.html#ProviderConfig
-	// +kubebuilder:validation:Required
 	IssuerURL string `json:"issuerURL"`
 
 	// ClientID the JWT must be issued for, the "sub" field. This plugin only trusts a single
@@ -48,7 +47,6 @@ type APIServerOIDCConfig struct {
 	// The plugin supports the "authorized party" OpenID Connect claim, which allows
 	// specialized providers to issue tokens to a client for a different client.
 	// See: https://openid.net/specs/openid-connect-core-1_0.html#IDToken
-	// +kubebuilder:validation:Required
 	ClientID string `json:"clientID"`
 
 	// APIAudiences are the audiences that the API server identitifes as. The
