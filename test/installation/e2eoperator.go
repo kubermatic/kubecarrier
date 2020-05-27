@@ -39,6 +39,6 @@ func newE2EOperator(f *testutil.Framework) func(t *testing.T) {
 
 		serviceClient, err := f.ServiceClient(t)
 		require.NoError(t, err, "creating service client")
-		f.E2EOperatorCheck(ctx, t, serviceClient, f.ServiceScheme)
+		testutil.E2EOperatorCheck(ctx, t, serviceClient, f.ServiceScheme)
 	}
 }

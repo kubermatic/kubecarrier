@@ -43,7 +43,7 @@ func newKubeCarrier(f *testutil.Framework) func(t *testing.T) {
 		managementClient, err := f.ManagementClient(t)
 		require.NoError(t, err, "creating management client")
 
-		f.KubeCarrierOperatorCheck(ctx, t, managementClient, f.ManagementScheme)
+		testutil.KubeCarrierOperatorCheck(ctx, t, managementClient, f.ManagementScheme)
 
 		kubeCarrier := &operatorv1alpha1.KubeCarrier{ObjectMeta: metav1.ObjectMeta{
 			Name: "kubecarrier1",
@@ -62,6 +62,6 @@ func newKubeCarrier(f *testutil.Framework) func(t *testing.T) {
 		}
 		kubeCarrier.Name = "kubecarrier"
 		require.NoError(t, testutil.WaitUntilReady(ctx, managementClient, kubeCarrier))
-		f.KubeCarrierCheck(ctx, t, managementClient, f.ManagementScheme)
+		testutil.KubeCarrierCheck(ctx, t, managementClient, f.ManagementScheme)
 	}
 }
