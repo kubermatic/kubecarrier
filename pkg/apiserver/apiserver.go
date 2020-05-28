@@ -24,13 +24,16 @@ import (
 	"strings"
 
 	"github.com/go-logr/logr"
+	"github.com/gorilla/handlers"
 	gwruntime "github.com/grpc-ecosystem/grpc-gateway/runtime"
+	"github.com/improbable-eng/grpc-web/go/grpcweb"
 	"github.com/spf13/cobra"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
+	k8soidc "k8s.io/apiserver/plugin/pkg/authenticator/token/oidc"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -39,6 +42,7 @@ import (
 
 	catalogv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/catalog/v1alpha1"
 	apiserverv1 "github.com/kubermatic/kubecarrier/pkg/apiserver/api/v1"
+	"github.com/kubermatic/kubecarrier/pkg/apiserver/internal/oidc"
 	v1 "github.com/kubermatic/kubecarrier/pkg/apiserver/internal/v1"
 	"github.com/kubermatic/kubecarrier/pkg/internal/util"
 )
@@ -53,9 +57,11 @@ func init() {
 }
 
 type flags struct {
-	address           string
-	TLSCertFile       string
-	TLSPrivateKeyFile string
+	address            string
+	TLSCertFile        string
+	TLSPrivateKeyFile  string
+	CORSAllowedOrigins []string
+	OIDCOptions        k8soidc.Options
 }
 
 func NewAPIServer() *cobra.Command {
@@ -72,6 +78,8 @@ func NewAPIServer() *cobra.Command {
 	cmd.Flags().StringVar(&flags.address, "address", "0.0.0.0:8080", "Address to bind this API server on.")
 	cmd.Flags().StringVar(&flags.TLSCertFile, "tls-cert-file", "", "File containing the default x509 Certificate for HTTPS. If not provided no TLS security shall be enabled")
 	cmd.Flags().StringVar(&flags.TLSPrivateKeyFile, "tls-private-key-file", "", "File containing the default x509 private key matching --tls-cert-file.")
+	cmd.Flags().StringArrayVar(&flags.CORSAllowedOrigins, "cors-allowed-origins", []string{"*"}, "List of allowed origins for CORS, comma separated. An allowed origin can be a regular expression to support subdomain matching. If this list is empty CORS will not be enabled.")
+	oidc.AddOIDCPFlags(&flags.OIDCOptions, cmd.Flags())
 	return util.CmdLogMixin(cmd)
 }
 
@@ -83,6 +91,7 @@ func runE(flags *flags, log logr.Logger) error {
 
 	// Startup
 	grpcServer := grpc.NewServer()
+	wrappedGrpc := grpcweb.WrapServer(grpcServer)
 	grpcGatewayMux := gwruntime.NewServeMux(
 		gwruntime.WithProtoErrorHandler(func(ctx context.Context, serveMux *gwruntime.ServeMux, marshaler gwruntime.Marshaler, writer http.ResponseWriter, request *http.Request, err error) {
 			const fallback = `{"error": "failed to marshal error message"}`
@@ -127,30 +136,49 @@ func runE(flags *flags, log logr.Logger) error {
 	if err := apiserverv1.RegisterOfferingServiceHandlerServer(context.Background(), grpcGatewayMux, offeringServer); err != nil {
 		return err
 	}
-
 	regionServer := v1.NewRegionServiceServer(c)
 	apiserverv1.RegisterRegionServiceServer(grpcServer, regionServer)
 	if err := apiserverv1.RegisterRegionServiceHandlerServer(context.Background(), grpcGatewayMux, regionServer); err != nil {
 		return err
 	}
-
 	providerServer := v1.NewProviderServiceServer(c)
 	apiserverv1.RegisterProviderServiceServer(grpcServer, providerServer)
 	if err := apiserverv1.RegisterProviderServiceHandlerServer(context.Background(), grpcGatewayMux, providerServer); err != nil {
 		return err
 	}
 
-	var handlerFunc http.HandlerFunc = func(writer http.ResponseWriter, request *http.Request) {
+	var handler http.Handler = http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 		log.Info("got request for", "path", request.URL.Path)
 		if strings.Contains(request.Header.Get("Content-Type"), "application/grpc") {
-			grpcServer.ServeHTTP(writer, request)
+			wrappedGrpc.ServeHTTP(writer, request)
 		} else {
 			grpcGatewayMux.ServeHTTP(writer, request)
 		}
+	})
+
+	log.Info("setting up OIDC auth middleware", "iss", flags.OIDCOptions.IssuerURL)
+	oidcMiddleware, err := oidc.NewOIDCMiddleware(log, flags.OIDCOptions)
+	if err != nil {
+		return fmt.Errorf("init OIDC Middleware: %w", err)
+	}
+	handler = oidcMiddleware(handler)
+
+	if len(flags.CORSAllowedOrigins) > 0 {
+		handler = handlers.CORS(
+			handlers.AllowedHeaders([]string{
+				"X-Requested-With",
+				"Content-Type",
+				"Authorization",
+				"X-grpc-web",
+				"X-user-agent",
+			}),
+			handlers.AllowedMethods([]string{"GET", "POST"}),
+			handlers.AllowedOrigins(flags.CORSAllowedOrigins),
+		)(handler)
 	}
 
 	server := http.Server{
-		Handler: handlerFunc,
+		Handler: handler,
 		Addr:    flags.address,
 	}
 

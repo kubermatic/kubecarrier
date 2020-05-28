@@ -27,7 +27,7 @@ func NewIntegrationSuite(f *testutil.Framework) func(t *testing.T) {
 	return func(t *testing.T) {
 		t.Parallel()
 		for name, testFn := range map[string]func(f *testutil.Framework) func(t *testing.T){
-			"api-server":     newAPIServer,
+			"apiserver":      newAPIServer,
 			"derivedCR":      newDerivedCR,
 			"serviceCluster": newServiceClusterSuite,
 			"catalog":        newCatalogSuite,

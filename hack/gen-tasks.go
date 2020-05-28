@@ -58,7 +58,12 @@ func main() {
 			Name:    "API Server",
 			Program: "cmd/apiserver",
 			LDFlags: *ldFlags,
-			Args:    nil,
+			Args: []string{
+				"--address=:8090",
+				"--oidc-issuer-url=https://accounts.google.com",
+				"--oidc-client-id=640570493642-p10tov8pbr0b5kplri6to2fumbkrf397.apps.googleusercontent.com",
+				"--oidc-username-claim=email",
+			},
 			Env: map[string]string{
 				"KUBECONFIG": managementKubeconfigPath,
 			},

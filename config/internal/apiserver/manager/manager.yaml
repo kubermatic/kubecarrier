@@ -26,4 +26,14 @@ spec:
           requests:
             cpu: 100m
             memory: 100Mi
+        readinessProbe:
+          tcpSocket:
+            port: https
+        livenessProbe:
+          tcpSocket:
+            port: https
+        ports:
+          - name: https
+            containerPort: 8443
+            protocol: "TCP"
       terminationGracePeriodSeconds: 10
