@@ -262,7 +262,7 @@ func instanceService(ctx context.Context, conn *grpc.ClientConn, managementClien
 			},
 		}
 		require.NoError(t, managementClient.Create(ctx, catalogEntrySet))
-		require.NoError(t, testutil.WaitUntilReady(ctx, managementClient, catalogEntrySet, testutil.WithTimeout(time.Minute)))
+		require.NoError(t, testutil.WaitUntilReady(ctx, managementClient, catalogEntrySet, testutil.WithTimeout(time.Minute*2)))
 
 		catalog := f.NewCatalog("test-catalog", providerAccount.Status.Namespace.Name, &metav1.LabelSelector{}, &metav1.LabelSelector{})
 		require.NoError(t, managementClient.Create(ctx, catalog), "creating Catalog error")
