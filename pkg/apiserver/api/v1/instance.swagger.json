@@ -182,7 +182,7 @@
           }
         },
         "tags": [
-          "Instances"
+          "InstancesService"
         ]
       },
       "post": {
@@ -233,7 +233,7 @@
           }
         },
         "tags": [
-          "Instances"
+          "InstancesService"
         ]
       }
     },
@@ -285,7 +285,7 @@
           }
         },
         "tags": [
-          "Instances"
+          "InstancesService"
         ]
       },
       "get": {
@@ -335,7 +335,7 @@
           }
         },
         "tags": [
-          "Instances"
+          "InstancesService"
         ]
       }
     }

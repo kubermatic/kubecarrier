@@ -125,65 +125,20 @@ func newCatalogSuite(
 			t, managementClient.Create(ctx, crd), fmt.Sprintf("creating CRD: %s error", crd.Name))
 
 		// Create a CatalogEntry to execute our tests in
-		catalogEntry := &catalogv1alpha1.CatalogEntry{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "couchdbs",
-				Namespace: provider.Status.Namespace.Name,
-				Labels: map[string]string{
-					"kubecarrier.io/test": "label",
-				},
-			},
-			Spec: catalogv1alpha1.CatalogEntrySpec{
-				Metadata: catalogv1alpha1.CatalogEntryMetadata{
-					CommonMetadata: catalogv1alpha1.CommonMetadata{
-						DisplayName:      "Couch DB",
-						ShortDescription: "The comfy nosql database",
-					},
-				},
-				BaseCRD: catalogv1alpha1.ObjectReference{
-					Name: crd.Name,
-				},
-			},
-		}
+		catalogEntry := f.NewCatalogEntry("couchdbs", provider.Status.Namespace.Name, crd.Name)
 		require.NoError(
 			t, managementClient.Create(ctx, catalogEntry), "could not create CatalogEntry")
 		require.NoError(t, testutil.WaitUntilReady(ctx, managementClient, catalogEntry))
 
 		// Create a ServiceCluster to execute our tests in
-		serviceCluster := &corev1alpha1.ServiceCluster{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "eu-west-1",
-				Namespace: provider.Status.Namespace.Name,
-			},
-			Spec: corev1alpha1.ServiceClusterSpec{
-				Metadata: corev1alpha1.ServiceClusterMetadata{
-					DisplayName: "eu-west-1",
-					Description: "eu-west-1 service cluster!",
-				},
-				KubeconfigSecret: corev1alpha1.ObjectReference{
-					Name: "eu-west-1-secret",
-				},
-			},
-		}
+		serviceCluster := f.NewServiceCluster("eu-west-1", provider.Status.Namespace.Name, "eu-west-1-secret")
 		require.NoError(
 			t, managementClient.Create(ctx, serviceCluster), "could not create ServiceCluster")
 
 		// Catalog
 		// Test case
-		catalog := &catalogv1alpha1.Catalog{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "test-catalog",
-				Namespace: provider.Status.Namespace.Name,
-			},
-			Spec: catalogv1alpha1.CatalogSpec{
-				CatalogEntrySelector: &metav1.LabelSelector{
-					MatchLabels: map[string]string{
-						"kubecarrier.io/test": "label",
-					},
-				},
-				TenantSelector: &metav1.LabelSelector{},
-			},
-		}
+
+		catalog := f.NewCatalog("test-catalog", provider.Status.Namespace.Name, &metav1.LabelSelector{MatchLabels: map[string]string{"kubecarrier.io/test": "label"}}, &metav1.LabelSelector{})
 		require.NoError(t, managementClient.Create(ctx, catalog), "creating Catalog error")
 
 		// Check the status of the Catalog.

@@ -36,8 +36,10 @@ import (
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/status"
 	corev1 "k8s.io/api/core/v1"
+	rbacv1 "k8s.io/api/rbac/v1"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/wait"
 
 	catalogv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/catalog/v1alpha1"
@@ -157,7 +159,6 @@ func newAPIServer(f *testutil.Framework) func(t *testing.T) {
 				assert.NotEmpty(t, version.BuildDate)
 				assert.NotEmpty(t, version.GoVersion)
 				t.Log("got response for gRPC server version")
-				testutil.LogObject(t, version)
 				return true, nil
 			}
 			if grpcStatus, ok := err.(toGRPCStatus); ok {
@@ -169,23 +170,148 @@ func newAPIServer(f *testutil.Framework) func(t *testing.T) {
 			return false, err
 		}, versionCtx.Done()), "client version gRPC call")
 
-		for name, testFn := range map[string]func(ctx context.Context, conn *grpc.ClientConn, managementClient *testutil.RecordingClient) func(t *testing.T){
+		for name, testFn := range map[string]func(ctx context.Context, conn *grpc.ClientConn, managementClient *testutil.RecordingClient, f *testutil.Framework) func(t *testing.T){
 			"offering-service": offeringService,
 			"region-service":   regionService,
 			"provider-service": providerService,
+			"instance-service": instanceService,
 		} {
 			name := name
 			testFn := testFn
 
 			t.Run(name, func(t *testing.T) {
 				t.Parallel()
-				testFn(ctx, conn, managementClient)(t)
+				testFn(ctx, conn, managementClient, f)(t)
 			})
 		}
 	}
 }
 
-func providerService(ctx context.Context, conn *grpc.ClientConn, managementClient *testutil.RecordingClient) func(t *testing.T) {
+type toGRPCStatus interface {
+	GRPCStatus() *status.Status
+}
+
+func instanceService(ctx context.Context, conn *grpc.ClientConn, managementClient *testutil.RecordingClient, f *testutil.Framework) func(t *testing.T) {
+	return func(t *testing.T) {
+		serviceClient, err := f.ServiceClient(t)
+		require.NoError(t, err, "creating service client")
+		ctx, cancel := context.WithCancel(context.Background())
+		t.Cleanup(cancel)
+		managementClient, err := f.ManagementClient(t)
+		require.NoError(t, err, "creating management client")
+		t.Cleanup(managementClient.CleanUpFunc(ctx))
+
+		// we hit length limit of 63 chars, so we need a shorter name
+		testName := "instsvc"
+
+		providerAccount := f.NewProviderAccount(testName, rbacv1.Subject{
+			Kind:     rbacv1.GroupKind,
+			APIGroup: "rbac.authorization.k8s.io",
+			Name:     "providerAccount",
+		})
+		tenantAccount := f.NewTenantAccount(testName, rbacv1.Subject{
+			Kind:     rbacv1.GroupKind,
+			APIGroup: "rbac.authorization.k8s.io",
+			Name:     "tenantAccount",
+		})
+		require.NoError(t, managementClient.Create(ctx, providerAccount), "creating providerAccount")
+		require.NoError(t, testutil.WaitUntilReady(ctx, managementClient, providerAccount))
+
+		require.NoError(t, managementClient.Create(ctx, tenantAccount), "creating tenantAccount")
+		require.NoError(t, testutil.WaitUntilReady(ctx, managementClient, tenantAccount))
+
+		serviceCluster := f.SetupServiceCluster(ctx, managementClient, t, "eu-west-1", providerAccount)
+
+		catalogEntrySet := &catalogv1alpha1.CatalogEntrySet{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      testName,
+				Namespace: providerAccount.Status.Namespace.Name,
+			},
+			Spec: catalogv1alpha1.CatalogEntrySetSpec{
+				Metadata: catalogv1alpha1.CatalogEntrySetMetadata{
+					CommonMetadata: catalogv1alpha1.CommonMetadata{
+						DisplayName:      "FakeDB",
+						Description:      "small database living near Tegel airport",
+						ShortDescription: "some short description",
+					},
+				},
+				Derive: &catalogv1alpha1.DerivedConfig{
+					KindOverride: "DB",
+					Expose: []catalogv1alpha1.VersionExposeConfig{
+						{
+							Versions: []string{
+								"v1",
+							},
+							Fields: []catalogv1alpha1.FieldPath{
+								{JSONPath: ".spec.databaseName"},
+								{JSONPath: ".spec.databaseUser"},
+								{JSONPath: ".spec.config.create"},
+								{JSONPath: ".status.observedGeneration"},
+							},
+						},
+					},
+				},
+				Discover: catalogv1alpha1.CustomResourceDiscoverySetConfig{
+					CRD: catalogv1alpha1.ObjectReference{
+						Name: "dbs.fake.kubecarrier.io",
+					},
+					ServiceClusterSelector: metav1.LabelSelector{},
+					KindOverride:           "DBInternal",
+					WebhookStrategy:        corev1alpha1.WebhookStrategyTypeServiceCluster,
+				},
+			},
+		}
+		require.NoError(t, managementClient.Create(ctx, catalogEntrySet))
+		require.NoError(t, testutil.WaitUntilReady(ctx, managementClient, catalogEntrySet, testutil.WithTimeout(time.Minute)))
+
+		catalog := f.NewCatalog("test-catalog", providerAccount.Status.Namespace.Name, &metav1.LabelSelector{}, &metav1.LabelSelector{})
+		require.NoError(t, managementClient.Create(ctx, catalog), "creating Catalog error")
+
+		// Check the status of the Catalog.
+		assert.NoError(t, managementClient.WaitUntil(ctx, catalog, func() (b bool, err error) {
+			return len(catalog.Status.Entries) == 1 && len(catalog.Status.Tenants) > 0, nil
+		}))
+
+		offering := &catalogv1alpha1.Offering{
+			ObjectMeta: metav1.ObjectMeta{
+				Namespace: tenantAccount.Status.Namespace.Name,
+				Name:      strings.Join([]string{"dbs", serviceCluster.Name, providerAccount.Name}, "."),
+			},
+		}
+
+		require.NoError(t, testutil.WaitUntilFound(ctx, managementClient, offering))
+		require.NoError(t, managementClient.Get(ctx, types.NamespacedName{
+			Namespace: tenantAccount.Status.Namespace.Name,
+			Name:      strings.Join([]string{"dbs", serviceCluster.Name, providerAccount.Name}, "."),
+		}, offering), "getting Offering error")
+
+		client := apiserverv1.NewInstancesServiceClient(conn)
+		createReq := &apiserverv1.InstanceCreateRequest{
+			Offering: offering.Name,
+			Version:  "v1",
+			Spec: &apiserverv1.Instance{
+				Metadata: &apiserverv1.ObjectMeta{Name: "fakedb"},
+				Spec:     "{\"password\":\"password\",\"username\":\"username\"}",
+			},
+			Account: tenantAccount.Status.Namespace.Name,
+		}
+		instance, err := client.Create(ctx, createReq)
+		require.NoError(t, err, "creating instance")
+		testutil.LogObject(t, instance)
+		fakeDB := f.NewFakeDB("fakedb", tenantAccount.Status.Namespace.Name)
+		require.NoError(t, testutil.WaitUntilFound(ctx, serviceClient, fakeDB))
+
+		getReq := &apiserverv1.InstanceGetRequest{
+			Offering: offering.Name,
+			Version:  "v1",
+			Name:     "fakedb",
+			Account:  tenantAccount.Status.Namespace.Name,
+		}
+		instance, err := client.Get(ctx, getReq)
+	}
+}
+
+func providerService(ctx context.Context, conn *grpc.ClientConn, managementClient *testutil.RecordingClient, f *testutil.Framework) func(t *testing.T) {
 	return func(t *testing.T) {
 		testName := strings.Replace(strings.ToLower(t.Name()), "/", "-", -1)
 		ns := &corev1.Namespace{}
@@ -242,7 +368,6 @@ func providerService(ctx context.Context, conn *grpc.ClientConn, managementClien
 				return false, err
 			}
 			assert.Len(t, providers.Items, 1)
-			testutil.LogObject(t, providers)
 			providers, err = client.List(providerCtx, &apiserverv1.ProviderListRequest{
 				Account:  testName,
 				Limit:    1,
@@ -252,7 +377,6 @@ func providerService(ctx context.Context, conn *grpc.ClientConn, managementClien
 				return false, err
 			}
 			assert.Len(t, providers.Items, 1)
-			testutil.LogObject(t, providers)
 			return true, nil
 		}, providerCtx.Done()))
 
@@ -289,17 +413,12 @@ func providerService(ctx context.Context, conn *grpc.ClientConn, managementClien
 				},
 			}
 			assert.EqualValues(t, provider, expectedResult)
-			testutil.LogObject(t, provider)
 			return true, nil
 		}, providerCtx.Done()))
 	}
 }
 
-type toGRPCStatus interface {
-	GRPCStatus() *status.Status
-}
-
-func offeringService(ctx context.Context, conn *grpc.ClientConn, managementClient *testutil.RecordingClient) func(t *testing.T) {
+func offeringService(ctx context.Context, conn *grpc.ClientConn, managementClient *testutil.RecordingClient, f *testutil.Framework) func(t *testing.T) {
 	return func(t *testing.T) {
 		testName := strings.Replace(strings.ToLower(t.Name()), "/", "-", -1)
 		ns := &corev1.Namespace{}
@@ -474,7 +593,7 @@ func offeringService(ctx context.Context, conn *grpc.ClientConn, managementClien
 	}
 }
 
-func regionService(ctx context.Context, conn *grpc.ClientConn, managementClient *testutil.RecordingClient) func(t *testing.T) {
+func regionService(ctx context.Context, conn *grpc.ClientConn, managementClient *testutil.RecordingClient, f *testutil.Framework) func(t *testing.T) {
 	return func(t *testing.T) {
 		testName := strings.Replace(strings.ToLower(t.Name()), "/", "-", -1)
 		ns := &corev1.Namespace{}

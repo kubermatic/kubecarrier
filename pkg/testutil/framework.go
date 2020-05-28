@@ -226,6 +226,60 @@ func (f *Framework) NewFakeDB(name, namespace string) *fakev1alpha1.DB {
 	}
 }
 
+func (f *Framework) NewServiceCluster(name, namespace, secret string) *corev1alpha1.ServiceCluster {
+	return &corev1alpha1.ServiceCluster{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      name,
+			Namespace: namespace,
+		},
+		Spec: corev1alpha1.ServiceClusterSpec{
+			Metadata: corev1alpha1.ServiceClusterMetadata{
+				DisplayName: name,
+				Description: fmt.Sprintf("%s service cluster", name),
+			},
+			KubeconfigSecret: corev1alpha1.ObjectReference{
+				Name: secret,
+			},
+		},
+	}
+}
+
+func (f *Framework) NewCatalogEntry(name, namespace, crdName string) *catalogv1alpha1.CatalogEntry {
+	return &catalogv1alpha1.CatalogEntry{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      name,
+			Namespace: namespace,
+			Labels: map[string]string{
+				"kubecarrier.io/test": "label",
+			},
+		},
+		Spec: catalogv1alpha1.CatalogEntrySpec{
+			Metadata: catalogv1alpha1.CatalogEntryMetadata{
+				CommonMetadata: catalogv1alpha1.CommonMetadata{
+					DisplayName:      fmt.Sprintf("display name for %s", name),
+					ShortDescription: fmt.Sprintf("short description for %s", name),
+				},
+			},
+			BaseCRD: catalogv1alpha1.ObjectReference{
+				Name: crdName,
+			},
+		},
+	}
+}
+
+func (f *Framework) NewCatalog(name, namespace string, catalogEntrySelector, tenantSelector *metav1.LabelSelector) *catalogv1alpha1.Catalog {
+	return &catalogv1alpha1.Catalog{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      name,
+			Namespace: namespace,
+		},
+		Spec: catalogv1alpha1.CatalogSpec{
+			CatalogEntrySelector: catalogEntrySelector,
+			TenantSelector:       tenantSelector,
+		},
+	}
+}
+
 func (f *Framework) NewFakeCouchDBCRD(group string) *apiextensionsv1.CustomResourceDefinition {
 	return &apiextensionsv1.CustomResourceDefinition{
 		ObjectMeta: metav1.ObjectMeta{
@@ -292,21 +346,7 @@ func (f *Framework) SetupServiceCluster(ctx context.Context, cl *RecordingClient
 		},
 	}
 
-	serviceCluster := &corev1alpha1.ServiceCluster{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      name,
-			Namespace: account.Status.Namespace.Name,
-		},
-		Spec: corev1alpha1.ServiceClusterSpec{
-			Metadata: corev1alpha1.ServiceClusterMetadata{
-				DisplayName: name,
-				Description: name + "service cluster",
-			},
-			KubeconfigSecret: corev1alpha1.ObjectReference{
-				Name: serviceClusterSecret.Name,
-			},
-		},
-	}
+	serviceCluster := f.NewServiceCluster(name, account.Status.Namespace.Name, serviceClusterSecret.Name)
 
 	require.NoError(t, cl.Create(ctx, serviceClusterSecret))
 	require.NoError(t, cl.Create(ctx, serviceCluster))

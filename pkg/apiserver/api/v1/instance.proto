@@ -78,7 +78,7 @@ message InstanceCreateRequest {
   string account = 4;
 }
 
-service Instances {
+service InstancesService {
   rpc List(InstanceListRequest) returns (InstanceList) {
     option (google.api.http) = {
       get : "/v1/accounts/{account}/instances/{offering}/{version}"

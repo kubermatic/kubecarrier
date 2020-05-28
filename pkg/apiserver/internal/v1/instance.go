@@ -41,9 +41,9 @@ type instanceServer struct {
 	mapper meta.RESTMapper
 }
 
-var _ v1.InstancesServer = (*instanceServer)(nil)
+var _ v1.InstancesServiceServer = (*instanceServer)(nil)
 
-func NewInstancesServer(c client.Client, mapper meta.RESTMapper) v1.InstancesServer {
+func NewInstancesServer(c client.Client, mapper meta.RESTMapper) v1.InstancesServiceServer {
 	return &instanceServer{
 		client: c,
 		mapper: mapper,
@@ -54,7 +54,7 @@ func (o instanceServer) Create(ctx context.Context, req *v1.InstanceCreateReques
 
 	gvk, err := o.gvkFromInstance(o.mapper, req.Offering, req.Version)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "creating instance: unable to get Kind: %s", err.Error())
+		return nil, status.Errorf(codes.InvalidArgument, "creating instance: unable to get Kind: %s", err.Error())
 	}
 	obj.SetGroupVersionKind(gvk)
 	val := map[string]interface{}{}
