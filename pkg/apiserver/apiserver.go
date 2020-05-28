@@ -106,7 +106,7 @@ func runE(flags *flags, log logr.Logger) error {
 	)
 	// Create Kubernetes Client
 	cfg := config.GetConfigOrDie()
-	mapper, err := apiutil.NewDiscoveryRESTMapper(cfg)
+	mapper, err := apiutil.NewDynamicRESTMapper(cfg)
 	if err != nil {
 		return fmt.Errorf("creating rest mapper: %w", err)
 	}

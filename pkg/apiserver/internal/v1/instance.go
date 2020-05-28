@@ -107,9 +107,13 @@ func (o instanceServer) gvkFromInstance(mapper meta.RESTMapper, instance string,
 	gvr := schema.GroupVersionResource{
 		Resource: parts[0],
 		Group:    parts[1],
-		Version:  version,
 	}
-	return o.mapper.KindFor(gvr)
+	kind, err := o.mapper.KindFor(gvr)
+	if err != nil {
+		return schema.GroupVersionKind{}, err
+	}
+	kind.Version = version
+	return kind, nil
 }
 
 func (o instanceServer) Get(ctx context.Context, req *v1.InstanceGetRequest) (res *v1.Instance, err error) {

@@ -285,20 +285,28 @@ func instanceService(ctx context.Context, conn *grpc.ClientConn, managementClien
 			Name:      strings.Join([]string{"dbs", serviceCluster.Name, providerAccount.Name}, "."),
 		}, offering), "getting Offering error")
 
+		serviceClusterAssignment := &corev1alpha1.ServiceClusterAssignment{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      tenantAccount.Status.Namespace.Name + "." + serviceCluster.Name,
+				Namespace: providerAccount.Status.Namespace.Name,
+			},
+		}
+		require.NoError(t, testutil.WaitUntilReady(ctx, managementClient, serviceClusterAssignment), "service cluster assignment not ready")
+
 		client := apiserverv1.NewInstancesServiceClient(conn)
 		createReq := &apiserverv1.InstanceCreateRequest{
 			Offering: offering.Name,
 			Version:  "v1",
 			Spec: &apiserverv1.Instance{
 				Metadata: &apiserverv1.ObjectMeta{Name: "fakedb"},
-				Spec:     "{\"password\":\"password\",\"username\":\"username\"}",
+				Spec:     "{\"databaseName\":\"coolDB\",\"databaseUser\":\"username\"}",
 			},
 			Account: tenantAccount.Status.Namespace.Name,
 		}
-		instance, err := client.Create(ctx, createReq)
+		_, err = client.Create(ctx, createReq)
 		require.NoError(t, err, "creating instance")
-		testutil.LogObject(t, instance)
-		fakeDB := f.NewFakeDB("fakedb", tenantAccount.Status.Namespace.Name)
+
+		fakeDB := f.NewFakeDB("fakedb", serviceClusterAssignment.Status.ServiceClusterNamespace.Name)
 		require.NoError(t, testutil.WaitUntilFound(ctx, serviceClient, fakeDB))
 
 		getReq := &apiserverv1.InstanceGetRequest{
@@ -307,7 +315,26 @@ func instanceService(ctx context.Context, conn *grpc.ClientConn, managementClien
 			Name:     "fakedb",
 			Account:  tenantAccount.Status.Namespace.Name,
 		}
-		instance, err := client.Get(ctx, getReq)
+		_, err = client.Get(ctx, getReq)
+		require.NoError(t, err, "getting instance")
+		listReq := &apiserverv1.InstanceListRequest{
+			Offering: offering.Name,
+			Version:  "v1",
+			Account:  tenantAccount.Status.Namespace.Name,
+		}
+		instances, err := client.List(ctx, listReq)
+		require.NoError(t, err, "listing instance")
+		assert.Len(t, instances.Items, 1)
+
+		delReq := &apiserverv1.InstanceDeleteRequest{
+			Offering: offering.Name,
+			Version:  "v1",
+			Name:     "fakedb",
+			Account:  tenantAccount.Status.Namespace.Name,
+		}
+		_, err = client.Delete(ctx, delReq)
+		require.NoError(t, err, "deleting instance")
+		require.NoError(t, testutil.WaitUntilNotFound(ctx, serviceClient, fakeDB))
 	}
 }
 
