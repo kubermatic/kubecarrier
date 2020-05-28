@@ -25,8 +25,9 @@ import "meta.proto";
 
 message Instance {
   ObjectMeta metadata = 1;
-  string spec = 2;
-  string status = 3;
+  string offering = 2;
+  string spec = 3;
+  string status = 4;
 }
 
 message InstanceList {

@@ -76,6 +76,7 @@ func (o instanceServer) Create(ctx context.Context, req *v1.InstanceCreateReques
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, fmt.Sprintf("converting Instance: %s", err.Error()))
 	}
+	res.Offering = req.Offering
 	return
 }
 
@@ -95,7 +96,7 @@ func (o instanceServer) List(ctx context.Context, req *v1.InstanceListRequest) (
 		return nil, status.Errorf(codes.Internal, fmt.Sprintf("listing instances: %s", err.Error()))
 	}
 
-	res, err = o.convertInstanceList(obj)
+	res, err = o.convertInstanceList(obj, req.Offering)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, fmt.Sprintf("converting InstanceList: %s", err.Error()))
 	}
@@ -136,6 +137,7 @@ func (o instanceServer) Get(ctx context.Context, req *v1.InstanceGetRequest) (re
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, fmt.Sprintf("converting Instance: %s", err.Error()))
 	}
+	res.Offering = req.Offering
 	return
 }
 
@@ -236,7 +238,7 @@ func (o instanceServer) convertInstance(in *unstructured.Unstructured) (out *v1.
 	return
 }
 
-func (o instanceServer) convertInstanceList(in *unstructured.UnstructuredList) (out *v1.InstanceList, err error) {
+func (o instanceServer) convertInstanceList(in *unstructured.UnstructuredList, offering string) (out *v1.InstanceList, err error) {
 	out = &v1.InstanceList{
 		Metadata: &v1.ListMeta{
 			Continue:        in.GetContinue(),
@@ -248,6 +250,7 @@ func (o instanceServer) convertInstanceList(in *unstructured.UnstructuredList) (
 		if err != nil {
 			return nil, err
 		}
+		instance.Offering = offering
 		out.Items = append(out.Items, instance)
 	}
 	return

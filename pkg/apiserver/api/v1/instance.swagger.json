@@ -41,6 +41,9 @@
         "metadata": {
           "$ref": "#/definitions/v1ObjectMeta"
         },
+        "offering": {
+          "type": "string"
+        },
         "spec": {
           "type": "string"
         },
