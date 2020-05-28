@@ -30,7 +30,7 @@ import (
 // CmdLogMixin adds necessary CLI flags for logging and setups the controller runtime log
 func CmdLogMixin(cmd *cobra.Command) *cobra.Command {
 	dev := cmd.PersistentFlags().Bool("development", terminal.IsTerminal(int(os.Stdout.Fd())), "format output for console")
-	v := cmd.PersistentFlags().Int8P("verbose", "v", 4, "verbosity level")
+	v := cmd.PersistentFlags().Int8P("verbose", "v", 0, "verbosity level")
 
 	if cmd.PersistentPreRunE != nil {
 		parent := cmd.PersistentPreRunE
