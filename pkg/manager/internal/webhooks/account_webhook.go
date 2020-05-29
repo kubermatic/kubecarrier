@@ -150,7 +150,7 @@ func (r *AccountWebhookHandler) validateDelete(ctx context.Context, obj *catalog
 	// if no namespace was created for the object, we are safe to delete it
 	// there's unlikely race condition here if the namespace was created, but not propagated to the account and
 	// deletion blocking objects were created in the namespace
-	if obj.Status.Namespace.Name == "" {
+	if obj.Status.Namespace == nil || obj.Status.Namespace.Name == "" {
 		return nil
 	}
 

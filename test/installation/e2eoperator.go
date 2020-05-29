@@ -14,34 +14,31 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package integration
+package installation
 
 import (
+	"context"
+	"os/exec"
 	"testing"
+	"time"
+
+	"github.com/stretchr/testify/require"
 
 	"github.com/kubermatic/kubecarrier/pkg/testutil"
 )
 
-// AdminSuite tests administrator operations - notably the management of Tenants and Providers.
-func NewIntegrationSuite(f *testutil.Framework) func(t *testing.T) {
+func newE2EOperator(f *testutil.Framework) func(t *testing.T) {
 	return func(t *testing.T) {
-		t.Parallel()
-		for name, testFn := range map[string]func(f *testutil.Framework) func(t *testing.T){
-			"apiserver":      newAPIServer,
-			"derivedCR":      newDerivedCR,
-			"serviceCluster": newServiceClusterSuite,
-			"catalog":        newCatalogSuite,
-			"account":        newAccount,
-			"cli":            newCLI,
-			"fakeDB":         newFakeDB,
-		} {
-			name := name
-			testFn := testFn
+		ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
+		t.Cleanup(cancel)
 
-			t.Run(name, func(t *testing.T) {
-				t.Parallel()
-				testFn(f)(t)
-			})
-		}
+		c := exec.CommandContext(ctx, "kubectl", "kubecarrier", "e2e-test", "setup-e2e-operator", "--kubeconfig", f.Config().ServiceExternalKubeconfigPath)
+		out, err := c.CombinedOutput()
+		t.Log(string(out))
+		require.NoError(t, err)
+
+		serviceClient, err := f.ServiceClient(t)
+		require.NoError(t, err, "creating service client")
+		testutil.E2EOperatorCheck(ctx, t, serviceClient, f.ServiceScheme)
 	}
 }
