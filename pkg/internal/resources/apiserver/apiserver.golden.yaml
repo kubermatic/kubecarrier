@@ -71,7 +71,7 @@
     labels:
       app.kubernetes.io/instance: foo
       app.kubernetes.io/managed-by: kubecarrier-operator
-      app.kubernetes.io/name: api-server
+      app.kubernetes.io/name: apiserver
       app.kubernetes.io/version: was not build properly
       kubecarrier.io/role: api-server
     name: kubecarrier-api-server-agg-manager-role
@@ -82,7 +82,7 @@
     labels:
       app.kubernetes.io/instance: foo
       app.kubernetes.io/managed-by: kubecarrier-operator
-      app.kubernetes.io/name: api-server
+      app.kubernetes.io/name: apiserver
       app.kubernetes.io/version: was not build properly
       kubecarrier.io/role: api-server
     name: kubecarrier-api-server-agg-manager-rolebinding
