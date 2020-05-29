@@ -138,7 +138,7 @@ func newSimpleScenario(f *testutil.Framework) func(t *testing.T) {
 			},
 		}
 		require.NoError(t, managementClient.Create(ctx, catalogEntrySet))
-		require.NoError(t, testutil.WaitUntilReady(ctx, managementClient, catalogEntrySet, testutil.WithTimeout(time.Minute)))
+		require.NoError(t, testutil.WaitUntilReady(ctx, managementClient, catalogEntrySet, testutil.WithTimeout(time.Minute*2)))
 
 		internalCRD := &apiextensionsv1.CustomResourceDefinition{}
 		require.NoError(t, managementClient.Get(ctx, types.NamespacedName{
