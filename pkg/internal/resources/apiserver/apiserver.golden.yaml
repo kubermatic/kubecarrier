@@ -180,7 +180,7 @@
           image: quay.io/kubecarrier/apiserver:was not build properly
           livenessProbe:
             tcpSocket:
-              port: https
+              port: 9440
           name: manager
           ports:
           - containerPort: 8443
@@ -188,7 +188,7 @@
             protocol: TCP
           readinessProbe:
             tcpSocket:
-              port: https
+              port: 9440
           resources:
             limits:
               cpu: 100m

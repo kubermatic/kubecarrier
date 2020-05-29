@@ -28,10 +28,10 @@ spec:
             memory: 100Mi
         readinessProbe:
           tcpSocket:
-            port: https
+            port: 9440
         livenessProbe:
           tcpSocket:
-            port: https
+            port: 9440
         ports:
           - name: https
             containerPort: 8443
