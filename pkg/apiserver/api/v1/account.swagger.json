@@ -283,36 +283,6 @@
           "AccountService"
         ]
       }
-    },
-    "/v1/accounts/{name}": {
-      "get": {
-        "operationId": "Get",
-        "parameters": [
-          {
-            "in": "path",
-            "name": "name",
-            "required": true,
-            "type": "string"
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "A successful response.",
-            "schema": {
-              "$ref": "#/definitions/v1Account"
-            }
-          },
-          "default": {
-            "description": "An unexpected error response",
-            "schema": {
-              "$ref": "#/definitions/runtimeError"
-            }
-          }
-        },
-        "tags": [
-          "AccountService"
-        ]
-      }
     }
   },
   "produces": [

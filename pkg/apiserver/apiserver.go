@@ -36,6 +36,7 @@ import (
 	k8soidc "k8s.io/apiserver/plugin/pkg/authenticator/token/oidc"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/cache"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/apiutil"
 	"sigs.k8s.io/controller-runtime/pkg/client/config"
@@ -127,7 +128,27 @@ func runE(flags *flags, log logr.Logger) error {
 		return fmt.Errorf("creating client: %w", err)
 	}
 
-	accountServer := v1.NewAccountServiceServer(c)
+	// Set up cache for account
+	accountCache, err := cache.New(cfg, cache.Options{
+		Scheme: scheme,
+		Mapper: mapper,
+	})
+	if err != nil {
+		return fmt.Errorf("creating cache for account: %w", err)
+	}
+	if err := v1.RegisterAccountUsernameFieldIndex(accountCache); err != nil {
+		return fmt.Errorf("fail to register field index for Account Username: %w", err)
+	}
+	accountClient := &client.DelegatingClient{
+		Reader:       accountCache,
+		Writer:       c,
+		StatusClient: c,
+	}
+	if err := accountCache.Start(ctrl.SetupSignalHandler()); err != nil {
+		return fmt.Errorf("running account cache: %w", err)
+	}
+
+	accountServer := v1.NewAccountServiceServer(accountClient)
 	apiserverv1.RegisterAccountServiceServer(grpcServer, accountServer)
 	if err := apiserverv1.RegisterAccountServiceHandlerServer(context.Background(), grpcGatewayMux, accountServer); err != nil {
 		return err
