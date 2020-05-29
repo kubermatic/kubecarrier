@@ -144,9 +144,12 @@ func runE(flags *flags, log logr.Logger) error {
 		Writer:       c,
 		StatusClient: c,
 	}
-	if err := accountCache.Start(ctrl.SetupSignalHandler()); err != nil {
-		return fmt.Errorf("running account cache: %w", err)
-	}
+	log.Info("start cache")
+	go func() {
+		if err := accountCache.Start(ctrl.SetupSignalHandler()); err != nil {
+			log.Error(err, "starting cache")
+		}
+	}()
 
 	accountServer := v1.NewAccountServiceServer(accountClient)
 	apiserverv1.RegisterAccountServiceServer(grpcServer, accountServer)

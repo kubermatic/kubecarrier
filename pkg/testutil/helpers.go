@@ -33,6 +33,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/apiutil"
 
+	catalogv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/catalog/v1alpha1"
 	"github.com/kubermatic/kubecarrier/pkg/internal/constants"
 	"github.com/kubermatic/kubecarrier/pkg/internal/util"
 )
@@ -286,4 +287,47 @@ func componentCheck(
 		require.NoError(t, WaitUntilFound(ctx, cli, ownedObject), fmt.Sprintf("%s: getting %s failed", componentName, gvk.Kind))
 	}
 	t.Logf(fmt.Sprintf("%s is ready", componentName))
+}
+
+func NewProviderAccount(name string, subjects ...rbacv1.Subject) *catalogv1alpha1.Account {
+	return &catalogv1alpha1.Account{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: name + "-provider",
+			Labels: map[string]string{
+				"test-case": name,
+			},
+		},
+		Spec: catalogv1alpha1.AccountSpec{
+			Metadata: catalogv1alpha1.AccountMetadata{
+				CommonMetadata: catalogv1alpha1.CommonMetadata{
+					DisplayName:      name + " provider",
+					ShortDescription: name + " provider desc",
+				},
+			},
+			Roles: []catalogv1alpha1.AccountRole{
+				catalogv1alpha1.ProviderRole,
+			},
+			Subjects: subjects,
+		},
+	}
+}
+
+func NewTenantAccount(name string, subjects ...rbacv1.Subject) *catalogv1alpha1.Account {
+	return &catalogv1alpha1.Account{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: name + "-tenant",
+		},
+		Spec: catalogv1alpha1.AccountSpec{
+			Metadata: catalogv1alpha1.AccountMetadata{
+				CommonMetadata: catalogv1alpha1.CommonMetadata{
+					DisplayName:      name + " tenant",
+					ShortDescription: name + " tenant desc",
+				},
+			},
+			Roles: []catalogv1alpha1.AccountRole{
+				catalogv1alpha1.TenantRole,
+			},
+			Subjects: subjects,
+		},
+	}
 }

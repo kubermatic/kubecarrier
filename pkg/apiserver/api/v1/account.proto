@@ -73,8 +73,6 @@ message AccountList {
 
 message AccountListRequest {
   string labelSelector = 1;
-  int64 limit = 2;
-  string continue = 3;
 }
 
 service AccountService {

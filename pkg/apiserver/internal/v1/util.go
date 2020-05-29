@@ -17,6 +17,9 @@ limitations under the License.
 package v1
 
 import (
+	"k8s.io/apimachinery/pkg/runtime"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+
 	catalogv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/catalog/v1alpha1"
 	v1 "github.com/kubermatic/kubecarrier/pkg/apiserver/api/v1"
 )
@@ -25,5 +28,28 @@ func convertImage(in *catalogv1alpha1.Image) (out *v1.Image) {
 	return &v1.Image{
 		MediaType: in.MediaType,
 		Data:      in.Data,
+	}
+}
+
+const (
+	accountUserFieldIndex = "account.kubecarrier.io/user"
+)
+
+// RegisterAccountUsernameFieldIndex adds a field index for user names in Account.Spec.Subjects.
+func RegisterAccountUsernameFieldIndex(indexer client.FieldIndexer) error {
+	return indexer.IndexField(
+		&catalogv1alpha1.Account{}, accountUserFieldIndex,
+		func(obj runtime.Object) (values []string) {
+			account := obj.(*catalogv1alpha1.Account)
+			for _, subject := range account.Spec.Subjects {
+				values = append(values, subject.Name)
+			}
+			return
+		})
+}
+
+func accountByUsernameListOption(username string) client.ListOption {
+	return client.MatchingFields{
+		accountUserFieldIndex: username,
 	}
 }

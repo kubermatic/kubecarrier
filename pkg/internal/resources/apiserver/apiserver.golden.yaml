@@ -186,17 +186,11 @@
           - name: API_SERVER_OIDC_SIGNING_ALGS
             value: ""
           image: quay.io/kubecarrier/apiserver:was not build properly
-          livenessProbe:
-            tcpSocket:
-              port: https
           name: manager
           ports:
           - containerPort: 8443
             name: https
             protocol: TCP
-          readinessProbe:
-            tcpSocket:
-              port: https
           resources:
             limits:
               cpu: 100m

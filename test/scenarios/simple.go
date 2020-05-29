@@ -60,12 +60,12 @@ func newSimpleScenario(f *testutil.Framework) func(t *testing.T) {
 			tenantUser   = testName + "-tenant"
 			providerUser = testName + "-provider"
 		)
-		tenantAccount := f.NewTenantAccount(testName, rbacv1.Subject{
+		tenantAccount := testutil.NewTenantAccount(testName, rbacv1.Subject{
 			Kind:     rbacv1.UserKind,
 			APIGroup: "rbac.authorization.k8s.io",
 			Name:     tenantUser,
 		})
-		provider := f.NewProviderAccount(testName, rbacv1.Subject{
+		provider := testutil.NewProviderAccount(testName, rbacv1.Subject{
 			Kind:     rbacv1.UserKind,
 			APIGroup: "rbac.authorization.k8s.io",
 			Name:     providerUser,

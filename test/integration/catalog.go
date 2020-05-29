@@ -50,12 +50,12 @@ func newCatalogSuite(
 		testName := strings.Replace(strings.ToLower(t.Name()), "/", "-", -1)
 
 		// Create a Tenant to execute our tests in
-		tenantAccount := f.NewTenantAccount(testName, rbacv1.Subject{
+		tenantAccount := testutil.NewTenantAccount(testName, rbacv1.Subject{
 			Kind:     rbacv1.GroupKind,
 			APIGroup: "rbac.authorization.k8s.io",
 			Name:     "admin",
 		})
-		provider := f.NewProviderAccount(testName, rbacv1.Subject{
+		provider := testutil.NewProviderAccount(testName, rbacv1.Subject{
 			Kind:     rbacv1.GroupKind,
 			APIGroup: "rbac.authorization.k8s.io",
 			Name:     "provider",
@@ -297,7 +297,7 @@ func newCatalogSuite(
 		}))
 
 		// Recreate the tenant
-		tenantAccount = f.NewTenantAccount(testName, rbacv1.Subject{
+		tenantAccount = testutil.NewTenantAccount(testName, rbacv1.Subject{
 			Kind:     rbacv1.GroupKind,
 			APIGroup: "rbac.authorization.k8s.io",
 			Name:     "admin",

@@ -48,7 +48,7 @@ func newDerivedCR(
 		t.Cleanup(managementClient.CleanUpFunc(ctx))
 
 		testName := strings.Replace(strings.ToLower(t.Name()), "/", "-", -1)
-		provider := f.NewProviderAccount(testName, rbacv1.Subject{
+		provider := testutil.NewProviderAccount(testName, rbacv1.Subject{
 			Kind:     rbacv1.GroupKind,
 			APIGroup: "rbac.authorization.k8s.io",
 			Name:     "provider",

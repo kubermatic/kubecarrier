@@ -23,7 +23,6 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"k8s.io/apimachinery/pkg/labels"
-	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	catalogv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/catalog/v1alpha1"
@@ -47,13 +46,17 @@ func NewAccountServiceServer(c client.Client) v1.AccountServiceServer {
 }
 
 func (o accountServer) List(ctx context.Context, req *v1.AccountListRequest) (res *v1.AccountList, err error) {
-	var listOptions []client.ListOption
 	user, present := oidc.ExtractUserInfo(ctx)
 	if !present {
 		return nil, status.Error(codes.Unauthenticated, "unauthenticated user")
 	}
+	return o.handleListRequest(ctx, req, user.GetName())
+}
+
+func (o accountServer) handleListRequest(ctx context.Context, req *v1.AccountListRequest, username string) (res *v1.AccountList, err error) {
+	var listOptions []client.ListOption
 	listOptions, err = o.validateListRequest(req)
-	listOptions = append(listOptions, AccountByUsernameListOption(user.GetName()))
+	listOptions = append(listOptions, accountByUsernameListOption(username))
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
@@ -61,7 +64,6 @@ func (o accountServer) List(ctx context.Context, req *v1.AccountListRequest) (re
 	if err := o.client.List(ctx, accountList, listOptions...); err != nil {
 		return nil, status.Errorf(codes.Internal, "listing accounts: %s", err.Error())
 	}
-
 	res, err = o.convertAccountList(accountList)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "converting AccountList: %s", err.Error())
@@ -71,10 +73,6 @@ func (o accountServer) List(ctx context.Context, req *v1.AccountListRequest) (re
 
 func (o accountServer) validateListRequest(req *v1.AccountListRequest) ([]client.ListOption, error) {
 	var listOptions []client.ListOption
-	if req.Limit < 0 {
-		return listOptions, fmt.Errorf("invalid limit: should not be negative number")
-	}
-	listOptions = append(listOptions, client.Limit(req.Limit))
 	if req.LabelSelector != "" {
 		selector, err := labels.Parse(req.LabelSelector)
 		if err != nil {
@@ -83,9 +81,6 @@ func (o accountServer) validateListRequest(req *v1.AccountListRequest) ([]client
 		listOptions = append(listOptions, client.MatchingLabelsSelector{
 			Selector: selector,
 		})
-	}
-	if req.Continue != "" {
-		listOptions = append(listOptions, client.Continue(req.Continue))
 	}
 	return listOptions, nil
 }
@@ -176,27 +171,4 @@ func (o accountServer) convertAccountList(in *catalogv1alpha1.AccountList) (out 
 		out.Items = append(out.Items, account)
 	}
 	return
-}
-
-const (
-	AccountUserFieldIndex = "account.kubecarrier.io/user"
-)
-
-// RegisterAccountUsernameFieldIndex adds a field index for user names in Account.Spec.Subjects.
-func RegisterAccountUsernameFieldIndex(indexer client.FieldIndexer) error {
-	return indexer.IndexField(
-		&catalogv1alpha1.Account{}, AccountUserFieldIndex,
-		func(obj runtime.Object) (values []string) {
-			account := obj.(*catalogv1alpha1.Account)
-			for _, subject := range account.Spec.Subjects {
-				values = append(values, subject.Name)
-			}
-			return
-		})
-}
-
-func AccountByUsernameListOption(username string) client.ListOption {
-	return client.MatchingFields{
-		AccountUserFieldIndex: username,
-	}
 }

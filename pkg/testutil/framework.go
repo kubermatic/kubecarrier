@@ -28,7 +28,6 @@ import (
 	certmanagerv1alpha3 "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha3"
 	"github.com/stretchr/testify/require"
 	corev1 "k8s.io/api/core/v1"
-	rbacv1 "k8s.io/api/rbac/v1"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -172,49 +171,6 @@ func (f *Framework) ServiceClient(t *testing.T, options ...func(config *restclie
 		return nil, err
 	}
 	return recordingClient(c, f.ServiceScheme, t, f.config.CleanUpStrategy), nil
-}
-
-func (f *Framework) NewProviderAccount(name string, subjects ...rbacv1.Subject) *catalogv1alpha1.Account {
-	return &catalogv1alpha1.Account{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: name + "-provider",
-			Labels: map[string]string{
-				"test-case": name,
-			},
-		},
-		Spec: catalogv1alpha1.AccountSpec{
-			Metadata: catalogv1alpha1.AccountMetadata{
-				CommonMetadata: catalogv1alpha1.CommonMetadata{
-					DisplayName:      name + " provider",
-					ShortDescription: name + " provider desc",
-				},
-			},
-			Roles: []catalogv1alpha1.AccountRole{
-				catalogv1alpha1.ProviderRole,
-			},
-			Subjects: subjects,
-		},
-	}
-}
-
-func (f *Framework) NewTenantAccount(name string, subjects ...rbacv1.Subject) *catalogv1alpha1.Account {
-	return &catalogv1alpha1.Account{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: name + "-tenant",
-		},
-		Spec: catalogv1alpha1.AccountSpec{
-			Metadata: catalogv1alpha1.AccountMetadata{
-				CommonMetadata: catalogv1alpha1.CommonMetadata{
-					DisplayName:      name + " tenant",
-					ShortDescription: name + " tenant desc",
-				},
-			},
-			Roles: []catalogv1alpha1.AccountRole{
-				catalogv1alpha1.TenantRole,
-			},
-			Subjects: subjects,
-		},
-	}
 }
 
 func (f *Framework) NewFakeDB(name, namespace string) *fakev1alpha1.DB {
