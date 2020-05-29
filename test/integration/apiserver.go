@@ -18,8 +18,10 @@ package integration
 
 import (
 	"context"
+	"crypto/tls"
 	"crypto/x509"
 	"fmt"
+	"net/http"
 	"os"
 	"os/exec"
 	"strings"
@@ -27,6 +29,7 @@ import (
 	"time"
 
 	"github.com/golang/protobuf/ptypes"
+	"github.com/golang/protobuf/ptypes/empty"
 	certmanagerv1alpha3 "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha3"
 	v1 "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
 	"github.com/stretchr/testify/assert"
@@ -58,12 +61,12 @@ func newAPIServer(f *testutil.Framework) func(t *testing.T) {
 		require.NoError(t, err, "creating management client")
 		t.Cleanup(managementClient.CleanUpFunc(ctx))
 
-		testName := strings.Replace(strings.ToLower(t.Name()), "/", "-", -1)
-
 		ns := &corev1.Namespace{}
-		ns.Name = testName
-		require.NoError(t, managementClient.Create(ctx, ns))
-		const localPort = 9443
+		ns.Name = "kubecarrier-system"
+		const localAPIServerPort = 9443
+
+		token := fetchUserToken(ctx, t, managementClient, f.Config().ManagementExternalKubeconfigPath)
+		t.Log("token", token)
 
 		servingTLSSecret := &corev1.Secret{
 			ObjectMeta: metav1.ObjectMeta{
@@ -91,9 +94,11 @@ func newAPIServer(f *testutil.Framework) func(t *testing.T) {
 			Spec: certmanagerv1alpha3.CertificateSpec{
 				SecretName: servingTLSSecret.GetName(),
 				DNSNames: []string{
-					strings.Join([]string{"foo", servingTLSSecret.GetNamespace(), "svc"}, "."),
+					strings.Join([]string{"kubecarrier-api-server-manager", servingTLSSecret.GetNamespace(), "svc"}, "."),
+					"kubecarrier-api-server-manager",
 					"localhost",
 				},
+				IsCA: true,
 				IssuerRef: v1.ObjectReference{
 					Name: issuer.GetName(),
 				},
@@ -115,10 +120,19 @@ func newAPIServer(f *testutil.Framework) func(t *testing.T) {
 				TLSSecretRef: operatorv1alpha1.ObjectReference{
 					Name: servingTLSSecret.GetName(),
 				},
+				OIDC: operatorv1alpha1.APIServerOIDCConfig{
+					// from test/testdata/dex_values.yaml
+					IssuerURL:     "https://dex.kubecarrier-system.svc",
+					ClientID:      "e2e-client-id",
+					UsernameClaim: "name",
+					CertificateAuthority: operatorv1alpha1.ObjectReference{
+						Name: "dex-web-server",
+					},
+				},
 			},
 		}
 		require.NoError(t, managementClient.Create(ctx, apiServer))
-		assert.NoError(t, testutil.WaitUntilReady(ctx, managementClient, apiServer))
+		require.NoError(t, testutil.WaitUntilReady(ctx, managementClient, apiServer))
 
 		ctx, cancel = context.WithCancel(ctx)
 		t.Cleanup(cancel)
@@ -130,7 +144,7 @@ func newAPIServer(f *testutil.Framework) func(t *testing.T) {
 			"port-forward",
 			// well known service name since it's assumed only one API server shall be deployed
 			"service/kubecarrier-api-server-manager",
-			fmt.Sprintf("%d:https", localPort),
+			fmt.Sprintf("%d:https", localAPIServerPort),
 		)
 		pfCmd.Stdout = os.Stdout
 		pfCmd.Stderr = os.Stderr
@@ -142,10 +156,11 @@ func newAPIServer(f *testutil.Framework) func(t *testing.T) {
 
 		conn, err := grpc.DialContext(
 			ctx,
-			fmt.Sprintf("localhost:%d", localPort),
+			fmt.Sprintf("localhost:%d", localAPIServerPort),
 			grpc.WithTransportCredentials(
 				credentials.NewClientTLSFromCert(certPool, ""),
 			),
+			grpc.WithPerRPCCredentials(gRPCWithAuthToken{token: token}),
 		)
 		require.NoError(t, err)
 		client := apiserverv1.NewKubeCarrierClient(conn)
@@ -166,9 +181,21 @@ func newAPIServer(f *testutil.Framework) func(t *testing.T) {
 					t.Log("gRPC server temporary unavailable, retrying")
 					return false, nil
 				}
+				t.Logf("gRPC server errored out, retrying : %d %v %v",
+					grpcStatus.GRPCStatus().Code(),
+					grpcStatus.GRPCStatus().Message(),
+					grpcStatus.GRPCStatus().Err(),
+				)
+				return false, nil
 			}
 			return false, err
 		}, versionCtx.Done()), "client version gRPC call")
+
+		userinfo, err := client.WhoAmI(ctx, &empty.Empty{})
+		if assert.NoError(t, err, "whoami gRPC") {
+			t.Log("User info:")
+			testutil.LogObject(t, userinfo)
+		}
 
 		for name, testFn := range map[string]func(ctx context.Context, conn *grpc.ClientConn, managementClient *testutil.RecordingClient, f *testutil.Framework) func(t *testing.T){
 			"offering-service": offeringService,
@@ -185,10 +212,6 @@ func newAPIServer(f *testutil.Framework) func(t *testing.T) {
 			})
 		}
 	}
-}
-
-type toGRPCStatus interface {
-	GRPCStatus() *status.Status
 }
 
 func instanceService(ctx context.Context, conn *grpc.ClientConn, managementClient *testutil.RecordingClient, f *testutil.Framework) func(t *testing.T) {
@@ -336,6 +359,65 @@ func instanceService(ctx context.Context, conn *grpc.ClientConn, managementClien
 		require.NoError(t, err, "deleting instance")
 		require.NoError(t, testutil.WaitUntilNotFound(ctx, serviceClient, fakeDB))
 	}
+}
+
+func fetchUserToken(ctx context.Context, t *testing.T, managementClient *testutil.RecordingClient, kubeconfig string) string {
+	const localDexServerPort = 10443
+	pfDex := exec.CommandContext(ctx,
+		"kubectl",
+		"--kubeconfig", kubeconfig,
+		"--namespace", "kubecarrier-system",
+		"port-forward",
+		"service/dex",
+		fmt.Sprintf("%d:https", localDexServerPort),
+	)
+	pfDex.Stdout = os.Stdout
+	pfDex.Stderr = os.Stderr
+
+	require.NoError(t, pfDex.Start())
+	certPool := x509.NewCertPool()
+	dexTLSSecret := &corev1.Secret{}
+	require.NoError(t, managementClient.Get(ctx, types.NamespacedName{Name: "dex-web-server", Namespace: "kubecarrier-system"}, dexTLSSecret))
+	require.True(t, certPool.AppendCertsFromPEM(dexTLSSecret.Data["ca.crt"]))
+	require.True(t, certPool.AppendCertsFromPEM(dexTLSSecret.Data[corev1.TLSCertKey]))
+	token, err := testutil.DexFakeClientCredentialsGrant(
+		ctx,
+		testutil.NewLogger(t),
+		&http.Client{
+			Transport: &http.Transport{
+				TLSClientConfig: &tls.Config{
+					RootCAs:    certPool,
+					ServerName: "dex.kubecarrier-system.svc",
+				},
+			},
+			Timeout: 5 * time.Second,
+		},
+		fmt.Sprintf("https://localhost:%d/auth", localDexServerPort),
+		"admin@example.com",
+		"password",
+	)
+	require.NoError(t, err, "getting token from internal dex instance")
+	return token
+}
+
+type toGRPCStatus interface {
+	GRPCStatus() *status.Status
+}
+
+type gRPCWithAuthToken struct {
+	token string
+}
+
+var _ credentials.PerRPCCredentials = gRPCWithAuthToken{}
+
+func (w gRPCWithAuthToken) GetRequestMetadata(ctx context.Context, uri ...string) (map[string]string, error) {
+	return map[string]string{
+		"Authorization": "Bearer " + w.token,
+	}, nil
+}
+
+func (w gRPCWithAuthToken) RequireTransportSecurity() bool {
+	return true
 }
 
 func providerService(ctx context.Context, conn *grpc.ClientConn, managementClient *testutil.RecordingClient, f *testutil.Framework) func(t *testing.T) {

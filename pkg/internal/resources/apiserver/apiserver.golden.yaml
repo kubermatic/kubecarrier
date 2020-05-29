@@ -5,7 +5,7 @@
     labels:
       app.kubernetes.io/instance: foo
       app.kubernetes.io/managed-by: kubecarrier-operator
-      app.kubernetes.io/name: api-server
+      app.kubernetes.io/name: apiserver
       app.kubernetes.io/version: was not build properly
       kubecarrier.io/role: api-server
     name: kubecarrier-api-server-manager-role
@@ -37,7 +37,7 @@
     labels:
       app.kubernetes.io/instance: foo
       app.kubernetes.io/managed-by: kubecarrier-operator
-      app.kubernetes.io/name: api-server
+      app.kubernetes.io/name: apiserver
       app.kubernetes.io/version: was not build properly
       kubecarrier.io/role: api-server
     name: kubecarrier-api-server-sa
@@ -48,7 +48,7 @@
     labels:
       app.kubernetes.io/instance: foo
       app.kubernetes.io/managed-by: kubecarrier-operator
-      app.kubernetes.io/name: api-server
+      app.kubernetes.io/name: apiserver
       app.kubernetes.io/version: was not build properly
       kubecarrier.io/role: api-server
     name: kubecarrier-api-server-manager-rolebinding
@@ -100,7 +100,7 @@
     labels:
       app.kubernetes.io/instance: foo
       app.kubernetes.io/managed-by: kubecarrier-operator
-      app.kubernetes.io/name: api-server
+      app.kubernetes.io/name: apiserver
       app.kubernetes.io/version: was not build properly
       kubecarrier.io/role: api-server
     name: kubecarrier-api-server-leader-election-role
@@ -138,7 +138,7 @@
     labels:
       app.kubernetes.io/instance: foo
       app.kubernetes.io/managed-by: kubecarrier-operator
-      app.kubernetes.io/name: api-server
+      app.kubernetes.io/name: apiserver
       app.kubernetes.io/version: was not build properly
       kubecarrier.io/role: api-server
     name: kubecarrier-api-server-leader-election-rolebinding
@@ -157,7 +157,7 @@
     labels:
       app.kubernetes.io/instance: foo
       app.kubernetes.io/managed-by: kubecarrier-operator
-      app.kubernetes.io/name: api-server
+      app.kubernetes.io/name: apiserver
       app.kubernetes.io/version: was not build properly
       control-plane: api-server
       kubecarrier.io/role: api-server
@@ -180,6 +180,14 @@
           - --address=$(API_SERVER_ADDR)
           - --tls-cert-file=$(API_SERVER_TLS_CERT_FILE)
           - --tls-private-key-file=$(API_SERVER_TLS_PRIVATE_KEY_FILE)
+          - --oidc-issuer-url=$(API_SERVER_OIDC_ISSUER_URL)
+          - --oidc-client-id=$(API_SERVER_OIDC_CLIENT_ID)
+          - --oidc-ca-file=$(API_SERVER_OIDC_CA_FILE)
+          - --oidc-username-claim=$(API_SERVER_OIDC_USERNAME_CLAIM)
+          - --oidc-username-prefix=$(API_SERVER_OIDC_USERNAME_PREFIX)
+          - --oidc-groups-claim=$(API_SERVER_OIDC_GROUPS_CLAIM)
+          - --oidc-groups-prefix=$(API_SERVER_OIDC_GROUPS_PREFIX)
+          - --oidc-signing-algs=$(API_SERVER_OIDC_SIGNING_ALGS)
           env:
           - name: API_SERVER_ADDR
             value: :8443
@@ -187,12 +195,34 @@
             value: /run/serving-certs/tls.crt
           - name: API_SERVER_TLS_PRIVATE_KEY_FILE
             value: /run/serving-certs/tls.key
+          - name: API_SERVER_OIDC_ISSUER_URL
+            value: ""
+          - name: API_SERVER_OIDC_CLIENT_ID
+            value: ""
+          - name: API_SERVER_OIDC_CA_FILE
+            value: /run/oidc-certs/ca.crt
+          - name: API_SERVER_OIDC_USERNAME_CLAIM
+            value: ""
+          - name: API_SERVER_OIDC_USERNAME_PREFIX
+            value: ""
+          - name: API_SERVER_OIDC_GROUPS_CLAIM
+            value: ""
+          - name: API_SERVER_OIDC_GROUPS_PREFIX
+            value: ""
+          - name: API_SERVER_OIDC_SIGNING_ALGS
+            value: ""
           image: quay.io/kubecarrier/apiserver:was not build properly
+          livenessProbe:
+            tcpSocket:
+              port: https
           name: manager
           ports:
           - containerPort: 8443
             name: https
             protocol: TCP
+          readinessProbe:
+            tcpSocket:
+              port: https
           resources:
             limits:
               cpu: 100m
@@ -204,19 +234,25 @@
           - mountPath: /run/serving-certs
             name: serving-cert
             readyOnly: true
+          - mountPath: /run/oidc-certs
+            name: oidc-cert
+            readyOnly: true
         serviceAccountName: kubecarrier-api-server-sa
         terminationGracePeriodSeconds: 10
         volumes:
         - name: serving-cert
           secret:
             secretName: serving-tls-secret
+        - name: oidc-cert
+          secret:
+            secretName: ""
 - apiVersion: v1
   kind: Service
   metadata:
     labels:
       app.kubernetes.io/instance: foo
       app.kubernetes.io/managed-by: kubecarrier-operator
-      app.kubernetes.io/name: api-server
+      app.kubernetes.io/name: apiserver
       app.kubernetes.io/version: was not build properly
       control-plane: api-server
       kubecarrier.io/role: api-server

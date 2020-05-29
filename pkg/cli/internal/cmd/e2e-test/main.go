@@ -30,6 +30,16 @@ func NewCommand(log logr.Logger) *cobra.Command {
 		Short: "end2end testing utilities",
 		PersistentPreRun: func(cmd *cobra.Command, args []string) {
 			cfg.Default()
+			for p := cmd.Parent(); p != nil; p = p.Parent() {
+				if p.PersistentPreRun != nil {
+					p.PersistentPreRun(p, args)
+				}
+				if p.PersistentPreRunE != nil {
+					if err := p.PersistentPreRunE(p, args); err != nil {
+						panic(err)
+					}
+				}
+			}
 		},
 	}
 
