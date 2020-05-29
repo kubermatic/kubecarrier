@@ -1,6 +1,19 @@
 # KubeCarrier
 
-<p align="center"><img src="docs/img/KubeCarrier.png" width="700px" /></p>
+<p align="center">
+  <img src="docs/img/KubeCarrier.png" width="700px" />
+</p>
+
+<p align="center">
+  <img src="https://img.shields.io/github/license/kubermatic/kubecarrier"/>
+  <img src="https://img.shields.io/github/go-mod/go-version/kubermatic/kubecarrier"/>
+  <a href="https://github.com/kubermatic/kubecarrier/releases">
+    <img src="https://img.shields.io/github/v/release/kubermatic/kubecarrier"/>
+  </a>
+  <a href="https://docs.kubermatic.com/kubecarrier">
+    <img src="https://img.shields.io/badge/documentation-docs.kubermatic.io-blue"/>
+  </a>
+</p>
 
 ---
 
@@ -34,14 +47,7 @@ KubeCarrier is currently in early development and is not ready for production us
 
 ## Documentation
 
-You can find following useful documentation in our [docs folder](./docs), and you also can find documentation for different releases on our [documentation website](https://docs.kubermatic.com/kubecarrier).
-
-- [What is KubeCarrier](./docs/_index.md)
-- [Getting Started](./docs/getting_started)
-- [Architecture](./docs/architecture/_index.md)
-- [Repository Organization](./docs/repository_organization/_index.md)
-- [Glossary](./docs/glossary/_index.md)
-- [API Reference](./docs/api_reference/_index.md)
+KubeCarrier is documented on [docs.kubermatic.io](https://docs.kubermatic.io) alongside our other open source projects.
 
 ## Troubleshooting
 
