@@ -220,7 +220,6 @@ func instanceService(ctx context.Context, conn *grpc.ClientConn, managementClien
 		require.NoError(t, err, "creating service client")
 		managementClient, err := f.ManagementClient(t)
 		require.NoError(t, err, "creating management client")
-		t.Cleanup(managementClient.CleanUpFunc(ctx))
 
 		// we hit length limit of 63 chars, so we need a shorter name
 		testName := "instsvc"
