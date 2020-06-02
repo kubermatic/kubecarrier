@@ -144,13 +144,18 @@ func runE(flags *flags, log logr.Logger) error {
 		Writer:       c,
 		StatusClient: c,
 	}
-	ctx := context.Background()
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
 	log.Info("start cache")
 	go func() {
-		if err := accountCache.Start(ctx.Done()); err != nil {
+		if err := accountCache.Start(ctrl.SetupSignalHandler()); err != nil {
 			log.Error(err, "starting cache")
+			cancel()
 		}
 	}()
+	if isSynced := accountCache.WaitForCacheSync(ctx.Done()); !isSynced {
+		return fmt.Errorf("cache is outdated")
+	}
 
 	accountServer := v1.NewAccountServiceServer(accountClient)
 	apiserverv1.RegisterAccountServiceServer(grpcServer, accountServer)
