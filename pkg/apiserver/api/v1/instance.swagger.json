@@ -39,16 +39,20 @@
     "v1Instance": {
       "properties": {
         "metadata": {
-          "$ref": "#/definitions/v1ObjectMeta"
+          "$ref": "#/definitions/v1ObjectMeta",
+          "title": "Metadata - common metadata"
         },
         "offering": {
+          "title": "Offering name, i.e. couchdb.eu-west-1.team-a",
           "type": "string"
         },
         "spec": {
-          "type": "string"
+          "$ref": "#/definitions/v1RawObject",
+          "title": "Spec - instance spec"
         },
         "status": {
-          "type": "string"
+          "$ref": "#/definitions/v1RawObject",
+          "title": "Status - instance status"
         }
       },
       "type": "object"
@@ -114,6 +118,20 @@
           "type": "string"
         },
         "uid": {
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "v1RawObject": {
+      "properties": {
+        "data": {
+          "format": "byte",
+          "title": "Data - actual data",
+          "type": "string"
+        },
+        "encoding": {
+          "title": "Encoding of the object data",
           "type": "string"
         }
       },

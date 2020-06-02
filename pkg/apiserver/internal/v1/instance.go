@@ -58,7 +58,11 @@ func (o instanceServer) Create(ctx context.Context, req *v1.InstanceCreateReques
 	}
 	obj.SetGroupVersionKind(gvk)
 	val := map[string]interface{}{}
-	if err := json.Unmarshal([]byte(req.Spec.Spec), &val); err != nil {
+	rawObject, err := v1.NewRawObject(req.Spec.Spec.Encoding, req.Spec.Spec.Data)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, "creating instance: spec format: %s", err.Error())
+	}
+	if err := rawObject.Unmarshal(&val); err != nil {
 		return nil, status.Error(codes.Internal, "creating instance: spec should be type of map[string]intreface{}")
 	}
 	if err := unstructured.SetNestedMap(obj.Object, val, "spec"); err != nil {
@@ -223,7 +227,7 @@ func (o instanceServer) convertInstance(in *unstructured.Unstructured) (out *v1.
 	if err != nil {
 		return nil, err
 	}
-	out.Spec = string(data)
+	out.Spec = v1.NewJSONRawObject(data)
 	status, ok, err := unstructured.NestedMap(in.Object, "status")
 	if err != nil {
 		return nil, err
@@ -233,7 +237,7 @@ func (o instanceServer) convertInstance(in *unstructured.Unstructured) (out *v1.
 		if err != nil {
 			return nil, err
 		}
-		out.Status = string(data)
+		out.Status = v1.NewJSONRawObject(data)
 	}
 	return
 }

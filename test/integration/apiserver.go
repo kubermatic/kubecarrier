@@ -322,7 +322,7 @@ func instanceService(ctx context.Context, conn *grpc.ClientConn, managementClien
 			Version:  "v1",
 			Spec: &apiserverv1.Instance{
 				Metadata: &apiserverv1.ObjectMeta{Name: "fakedb"},
-				Spec:     "{\"databaseName\":\"coolDB\",\"databaseUser\":\"username\"}",
+				Spec:     apiserverv1.NewJSONRawObject([]byte("{\"databaseName\":\"coolDB\",\"databaseUser\":\"username\"}")),
 			},
 			Account: tenantAccount.Status.Namespace.Name,
 		}

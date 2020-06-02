@@ -165,8 +165,8 @@ func TestGetInstance(t *testing.T) {
 					Labels:  map[string]string{},
 				},
 				Offering: "couchdb.eu-west-1.team-a",
-				Spec:     "{\"password\":\"password\",\"username\":\"username\"}",
-				Status:   "{\"status\":\"ready\"}",
+				Spec:     v1.NewJSONRawObject([]byte("{\"password\":\"password\",\"username\":\"username\"}")),
+				Status:   v1.NewJSONRawObject([]byte("{\"status\":\"ready\"}")),
 			},
 		},
 	}
@@ -180,7 +180,7 @@ func TestGetInstance(t *testing.T) {
 }
 
 func TestCreateInstance(t *testing.T) {
-	spec := "{\"password\":\"password\",\"username\":\"username\"}"
+	spec := v1.NewJSONRawObject([]byte("{\"password\":\"password\",\"username\":\"username\"}"))
 	client := fakeclient.NewFakeClientWithScheme(testScheme)
 	instanceServer := NewInstancesServer(client, newFakeRESTMapper("CouchDB"))
 	ctx := context.Background()
@@ -341,9 +341,9 @@ func TestListInstance(t *testing.T) {
 								"test-label": "instance1",
 							},
 						},
-						Spec:     "{\"password\":\"password\",\"username\":\"username\"}",
+						Spec:     v1.NewJSONRawObject([]byte("{\"password\":\"password\",\"username\":\"username\"}")),
 						Offering: "couchdb.eu-west-1.team-a",
-						Status:   "{\"status\":\"ready\"}",
+						Status:   v1.NewJSONRawObject([]byte("{\"status\":\"ready\"}")),
 					},
 					{
 						Metadata: &v1.ObjectMeta{
@@ -353,9 +353,9 @@ func TestListInstance(t *testing.T) {
 								"test-label": "instance2",
 							},
 						},
-						Spec:     "{\"password\":\"password\",\"username\":\"username\"}",
+						Spec:     v1.NewJSONRawObject([]byte("{\"password\":\"password\",\"username\":\"username\"}")),
 						Offering: "couchdb.eu-west-1.team-a",
-						Status:   "{\"status\":\"ready\"}",
+						Status:   v1.NewJSONRawObject([]byte("{\"status\":\"ready\"}")),
 					},
 				},
 			},
@@ -383,8 +383,8 @@ func TestListInstance(t *testing.T) {
 								"test-label": "instance1",
 							},
 						},
-						Spec:     "{\"password\":\"password\",\"username\":\"username\"}",
-						Status:   "{\"status\":\"ready\"}",
+						Spec:     v1.NewJSONRawObject([]byte("{\"password\":\"password\",\"username\":\"username\"}")),
+						Status:   v1.NewJSONRawObject([]byte("{\"status\":\"ready\"}")),
 						Offering: "couchdb.eu-west-1.team-a",
 					},
 				},
