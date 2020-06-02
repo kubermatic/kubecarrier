@@ -51,7 +51,7 @@ var (
 )
 
 func request_ProviderService_List_0(ctx context.Context, marshaler runtime.Marshaler, client ProviderServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq ProviderListRequest
+	var protoReq ListRequest
 	var metadata runtime.ServerMetadata
 
 	var (
@@ -85,7 +85,7 @@ func request_ProviderService_List_0(ctx context.Context, marshaler runtime.Marsh
 }
 
 func local_request_ProviderService_List_0(ctx context.Context, marshaler runtime.Marshaler, server ProviderServiceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq ProviderListRequest
+	var protoReq ListRequest
 	var metadata runtime.ServerMetadata
 
 	var (
@@ -116,7 +116,7 @@ func local_request_ProviderService_List_0(ctx context.Context, marshaler runtime
 }
 
 func request_ProviderService_Get_0(ctx context.Context, marshaler runtime.Marshaler, client ProviderServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq ProviderGetRequest
+	var protoReq GetRequest
 	var metadata runtime.ServerMetadata
 
 	var (
@@ -154,7 +154,7 @@ func request_ProviderService_Get_0(ctx context.Context, marshaler runtime.Marsha
 }
 
 func local_request_ProviderService_Get_0(ctx context.Context, marshaler runtime.Marshaler, server ProviderServiceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq ProviderGetRequest
+	var protoReq GetRequest
 	var metadata runtime.ServerMetadata
 
 	var (
