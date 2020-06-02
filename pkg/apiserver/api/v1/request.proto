@@ -29,3 +29,10 @@ message ListRequest {
   int64 limit = 3;
   string continue = 4;
 }
+
+message WatchRequest {
+  string account = 1;
+  string labelSelector = 2;
+  string resourceVersion = 3;
+  string operationType = 4;
+}

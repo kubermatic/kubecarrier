@@ -19,14 +19,11 @@ package v1
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 
 	"github.com/golang/protobuf/ptypes"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"k8s.io/apimachinery/pkg/api/meta"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
@@ -36,7 +33,6 @@ import (
 
 	catalogv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/catalog/v1alpha1"
 	v1 "github.com/kubermatic/kubecarrier/pkg/apiserver/api/v1"
-	"github.com/kubermatic/kubecarrier/pkg/apiserver/internal/util"
 )
 
 type offeringServer struct {
@@ -105,19 +101,20 @@ func (o offeringServer) Get(ctx context.Context, req *v1.GetRequest) (res *v1.Of
 	return
 }
 
-func (o offeringServer) Watch(req *v1.OfferingWatchRequest, stream v1.OfferingService_WatchServer) error {
-	listOptions, err := o.validateWatchRequest(req)
+func (o offeringServer) Watch(req *v1.WatchRequest, stream v1.OfferingService_WatchServer) error {
+	listOptions, err := validateWatchRequest(req)
 	if err != nil {
 		return status.Error(codes.InvalidArgument, err.Error())
 	}
 	watcher, err := o.dynamicClient.Resource(o.gvr).Namespace(req.Account).Watch(listOptions)
+	defer watcher.Stop()
 	if err != nil {
 		return status.Errorf(codes.Internal, "watching offerings: %s", err.Error())
 	}
 	for {
 		select {
 		case <-stream.Context().Done():
-			return status.Error(codes.Internal, stream.Context().Err().Error())
+			return stream.Context().Err()
 		case event, ok := <-watcher.ResultChan():
 			if !ok {
 				return status.Error(codes.Internal, "watch event channel was closed")
@@ -138,33 +135,17 @@ func (o offeringServer) Watch(req *v1.OfferingWatchRequest, stream v1.OfferingSe
 			if err != nil {
 				return status.Errorf(codes.Internal, "marshalling Offering to Any: %s", err.Error())
 			}
-			if err := stream.Send(&v1.Event{
+			err = stream.Send(&v1.Event{
 				Type:   string(event.Type),
 				Object: any,
-			}); err != nil {
+			})
+			if grpcStatus, ok := err.(toGRPCStatus); ok {
+				return status.Error(grpcStatus.GRPCStatus().Code(), grpcStatus.GRPCStatus().Message())
+			} else if err != nil {
 				return status.Errorf(codes.Internal, "sending Offering stream: %s", err.Error())
 			}
 		}
 	}
-}
-
-func (o offeringServer) validateWatchRequest(req *v1.OfferingWatchRequest) (metav1.ListOptions, error) {
-	var listOptions metav1.ListOptions
-	if req.Account == "" {
-		return listOptions, fmt.Errorf("missing namespace")
-	}
-	if err := util.ValidateWatchOperation(req.OperationType); err != nil {
-		return listOptions, err
-	}
-	if req.LabelSelector != "" {
-		_, err := labels.Parse(req.LabelSelector)
-		if err != nil {
-			return listOptions, fmt.Errorf("invalid LabelSelector: %w", err)
-		}
-		listOptions.LabelSelector = req.LabelSelector
-	}
-	listOptions.ResourceVersion = req.ResourceVersion
-	return listOptions, nil
 }
 
 func (o offeringServer) convertOffering(in *catalogv1alpha1.Offering) (out *v1.Offering, err error) {

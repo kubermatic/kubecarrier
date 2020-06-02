@@ -196,7 +196,7 @@ var (
 )
 
 func request_OfferingService_Watch_0(ctx context.Context, marshaler runtime.Marshaler, client OfferingServiceClient, req *http.Request, pathParams map[string]string) (OfferingService_WatchClient, runtime.ServerMetadata, error) {
-	var protoReq OfferingWatchRequest
+	var protoReq WatchRequest
 	var metadata runtime.ServerMetadata
 
 	var (

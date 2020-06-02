@@ -478,7 +478,7 @@ func offeringService(ctx context.Context, conn *grpc.ClientConn, managementClien
 		require.NoError(t, managementClient.Create(ctx, offering2))
 
 		client := apiserverv1.NewOfferingServiceClient(conn)
-		offeringCtx, cancel := context.WithTimeout(ctx, 30*time.Second)
+		offeringCtx, cancel := context.WithTimeout(ctx, 15*time.Second)
 		t.Cleanup(cancel)
 		// list offerings with limit and continuation token.
 		require.NoError(t, wait.PollUntil(time.Second, func() (done bool, err error) {
@@ -557,29 +557,30 @@ func offeringService(ctx context.Context, conn *grpc.ClientConn, managementClien
 		}, offeringCtx.Done()))
 
 		// watch offerings
-		watchClient, err := client.Watch(offeringCtx, &apiserverv1.OfferingWatchRequest{
+		t.Cleanup(cancel)
+		watchClient, err := client.Watch(offeringCtx, &apiserverv1.WatchRequest{
 			Account: testName,
 		})
 		require.NoError(t, err)
-		counter := 0
-		expectedEventNum := 2
-		assert.NoError(t, wait.PollUntil(time.Second, func() (done bool, err error) {
+		// Update an offering object to get Modified event.
+		offering2.Spec.Metadata.ShortDescription = "test offering update"
+		require.NoError(t, managementClient.Update(ctx, offering2))
+		// Delete an offering object to get Delete event.
+		require.NoError(t, managementClient.Delete(ctx, offering1))
+		expectedEventNum := map[string]int{
+			string(watch.Added):    2,
+			string(watch.Modified): 1,
+			string(watch.Deleted):  1,
+		}
+		eventCounters := make(map[string]int)
+		for {
 			event, err := watchClient.Recv()
-			switch {
-			case counter == expectedEventNum && event == nil:
-				return true, nil
-			case counter > expectedEventNum:
-				fallthrough
-			case counter < expectedEventNum && event == nil:
-				return true, fmt.Errorf("received wrong number of watch event, expected: %d, received: %d", expectedEventNum, counter)
-			case err != nil:
-				return true, err
-			default:
-				assert.Equal(t, event.Type, string(watch.Added))
-				counter++
-				return false, nil
+			if err != nil || event == nil {
+				assert.Equal(t, expectedEventNum, eventCounters)
+				break
 			}
-		}, offeringCtx.Done()))
+			eventCounters[event.Type]++
+		}
 	}
 }
 

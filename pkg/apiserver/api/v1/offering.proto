@@ -49,13 +49,6 @@ message OfferingList {
   repeated Offering items = 2;
 }
 
-message OfferingWatchRequest {
-  string account = 1;
-  string labelSelector = 2;
-  string resourceVersion = 3;
-  string operationType = 4;
-}
-
 service OfferingService {
   rpc List(ListRequest) returns (OfferingList) {
     option (google.api.http) = {
@@ -67,7 +60,7 @@ service OfferingService {
       get : "/v1/accounts/{account}/offerings/{name}"
     };
   };
-  rpc Watch(OfferingWatchRequest) returns (stream Event) {
+  rpc Watch(WatchRequest) returns (stream Event) {
     option (google.api.http) = {
       get : "/v1/watch/accounts/{account}/offerings"
     };

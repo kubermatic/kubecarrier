@@ -17,6 +17,7 @@ limitations under the License.
 package v1
 
 import (
+	"google.golang.org/grpc/status"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	catalogv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/catalog/v1alpha1"
@@ -60,4 +61,8 @@ func convertListMeta(in metav1.ListMeta) (out *v1.ListMeta) {
 		ResourceVersion: in.ResourceVersion,
 	}
 	return
+}
+
+type toGRPCStatus interface {
+	GRPCStatus() *status.Status
 }
