@@ -25,32 +25,32 @@ import (
 )
 
 const (
-	FormatJSON = "json"
-	FormatYAML = "yaml"
+	EncodingJSON = "json"
+	EncodingYAML = "yaml"
 )
 
 func NewRawObject(format string, data []byte) (*RawObject, error) {
-	if format != FormatJSON && format != FormatYAML {
+	if format != EncodingJSON && format != EncodingYAML {
 		return nil, errors.New("unsupported format")
 	}
 	return &RawObject{Encoding: format, Data: data}, nil
 }
 
 func NewJSONRawObject(data []byte) *RawObject {
-	ro, _ := NewRawObject(FormatJSON, data)
+	ro, _ := NewRawObject(EncodingJSON, data)
 	return ro
 }
 
 func NewYAMLRawObject(data []byte) *RawObject {
-	ro, _ := NewRawObject(FormatYAML, data)
+	ro, _ := NewRawObject(EncodingYAML, data)
 	return ro
 }
 
 func (ro *RawObject) Unmarshal(v interface{}) error {
 	switch ro.Encoding {
-	case FormatJSON:
+	case EncodingJSON:
 		return json.Unmarshal(ro.Data, v)
-	case FormatYAML:
+	case EncodingYAML:
 		return yaml.Unmarshal(ro.Data, v)
 	default:
 		return fmt.Errorf("unsupported encoding format: %s", ro.Encoding)
