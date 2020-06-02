@@ -55,7 +55,7 @@ func (o accountServer) List(ctx context.Context, req *v1.AccountListRequest) (re
 
 func (o accountServer) handleListRequest(ctx context.Context, req *v1.AccountListRequest, username string) (res *v1.AccountList, err error) {
 	var listOptions []client.ListOption
-	listOptions, err = o.validateAccountListRequest(req)
+	listOptions, err = o.validateListRequest(req)
 	listOptions = append(listOptions, accountByUsernameListOption(username))
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
@@ -71,7 +71,7 @@ func (o accountServer) handleListRequest(ctx context.Context, req *v1.AccountLis
 	return
 }
 
-func (o accountServer) validateAccountListRequest(req *v1.AccountListRequest) ([]client.ListOption, error) {
+func (o accountServer) validateListRequest(req *v1.AccountListRequest) ([]client.ListOption, error) {
 	var listOptions []client.ListOption
 	if req.LabelSelector != "" {
 		selector, err := labels.Parse(req.LabelSelector)
