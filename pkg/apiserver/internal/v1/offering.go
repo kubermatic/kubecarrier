@@ -69,9 +69,9 @@ func NewOfferingServiceServer(c client.Client, dynamicClient dynamic.Interface, 
 	return offeringServer, nil
 }
 
-func (o offeringServer) List(ctx context.Context, req *v1.OfferingListRequest) (res *v1.OfferingList, err error) {
+func (o offeringServer) List(ctx context.Context, req *v1.ListRequest) (res *v1.OfferingList, err error) {
 	var listOptions []client.ListOption
-	listOptions, err = o.validateListRequest(req)
+	listOptions, err = validateListRequest(req)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
@@ -87,8 +87,8 @@ func (o offeringServer) List(ctx context.Context, req *v1.OfferingListRequest) (
 	return
 }
 
-func (o offeringServer) Get(ctx context.Context, req *v1.OfferingGetRequest) (res *v1.Offering, err error) {
-	if err = o.validateGetRequest(req); err != nil {
+func (o offeringServer) Get(ctx context.Context, req *v1.GetRequest) (res *v1.Offering, err error) {
+	if err = validateGetRequest(req); err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 	offering := &catalogv1alpha1.Offering{}
@@ -96,7 +96,7 @@ func (o offeringServer) Get(ctx context.Context, req *v1.OfferingGetRequest) (re
 		Name:      req.Name,
 		Namespace: req.Account,
 	}, offering); err != nil {
-		return nil, status.Errorf(codes.Internal, "getting Offering: %s", err.Error())
+		return nil, status.Errorf(codes.Internal, "getting offering: %s", err.Error())
 	}
 	res, err = o.convertOffering(offering)
 	if err != nil {
@@ -148,41 +148,6 @@ func (o offeringServer) Watch(req *v1.OfferingWatchRequest, stream v1.OfferingSe
 	}
 }
 
-func (o offeringServer) validateListRequest(req *v1.OfferingListRequest) ([]client.ListOption, error) {
-	var listOptions []client.ListOption
-	if req.Account == "" {
-		return listOptions, fmt.Errorf("missing namespace")
-	}
-	listOptions = append(listOptions, client.InNamespace(req.Account))
-	if req.Limit < 0 {
-		return listOptions, fmt.Errorf("invalid limit: should not be negative number")
-	}
-	listOptions = append(listOptions, client.Limit(req.Limit))
-	if req.LabelSelector != "" {
-		selector, err := labels.Parse(req.LabelSelector)
-		if err != nil {
-			return listOptions, fmt.Errorf("invalid LabelSelector: %w", err)
-		}
-		listOptions = append(listOptions, client.MatchingLabelsSelector{
-			Selector: selector,
-		})
-	}
-	if req.Continue != "" {
-		listOptions = append(listOptions, client.Continue(req.Continue))
-	}
-	return listOptions, nil
-}
-
-func (o offeringServer) validateGetRequest(req *v1.OfferingGetRequest) error {
-	if req.Name == "" {
-		return fmt.Errorf("missing name")
-	}
-	if req.Account == "" {
-		return fmt.Errorf("missing namespace")
-	}
-	return nil
-}
-
 func (o offeringServer) validateWatchRequest(req *v1.OfferingWatchRequest) (metav1.ListOptions, error) {
 	var listOptions metav1.ListOptions
 	if req.Account == "" {
@@ -211,27 +176,13 @@ func (o offeringServer) convertOffering(in *catalogv1alpha1.Offering) (out *v1.O
 			Schema: string(schemaBytes),
 		})
 	}
+	metadata, err := convertObjectMeta(in.ObjectMeta)
+	if err != nil {
+		return nil, err
+	}
 
-	creationTimestamp, err := util.TimestampProto(&in.ObjectMeta.CreationTimestamp)
-	if err != nil {
-		return nil, err
-	}
-	deletionTimestamp, err := util.TimestampProto(in.ObjectMeta.DeletionTimestamp)
-	if err != nil {
-		return nil, err
-	}
 	out = &v1.Offering{
-		Metadata: &v1.ObjectMeta{
-			Uid:               string(in.UID),
-			Name:              in.Name,
-			Account:           in.Namespace,
-			CreationTimestamp: creationTimestamp,
-			DeletionTimestamp: deletionTimestamp,
-			ResourceVersion:   in.ResourceVersion,
-			Labels:            in.Labels,
-			Annotations:       in.Annotations,
-			Generation:        in.Generation,
-		},
+		Metadata: metadata,
 		Spec: &v1.OfferingSpec{
 			Metadata: &v1.OfferingMetadata{
 				DisplayName:      in.Spec.Metadata.DisplayName,
@@ -264,10 +215,7 @@ func (o offeringServer) convertOffering(in *catalogv1alpha1.Offering) (out *v1.O
 
 func (o offeringServer) convertOfferingList(in *catalogv1alpha1.OfferingList) (out *v1.OfferingList, err error) {
 	out = &v1.OfferingList{
-		Metadata: &v1.ListMeta{
-			Continue:        in.Continue,
-			ResourceVersion: in.ResourceVersion,
-		},
+		Metadata: convertListMeta(in.ListMeta),
 	}
 	for _, inOffering := range in.Items {
 		offering, err := o.convertOffering(&inOffering)

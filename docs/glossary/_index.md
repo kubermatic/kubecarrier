@@ -1,4 +1,8 @@
-# Glossary
+---
+title: Glossary
+weight: 40
+date: 2020-04-24T09:00:00+02:00
+---
 
 A glossary of terms used throughout this documentation.
 
@@ -8,9 +12,7 @@ Kubernetes Controllers are the driving force behind Kubernetes, they ensure step
 
 ### CustomResourceDefinition - CRD
 
-Custom resources are extensions of the Kubernetes API. This page discusses when to add a custom resource to your Kubernetes cluster and when to use a standalone service. It describes the two methods for adding custom resources and how to choose between them.
-
-https://kubernetes.io/docs/concepts/extend-kubernetes/api-extension/custom-resources/
+[Custom Resources][custom-resources] are extensions of the Kubernetes API. This page discusses when to add a custom resource to your Kubernetes cluster and when to use a standalone service. It describes the two methods for adding custom resources and how to choose between them.
 
 ### Kubernetes Operator
 
@@ -24,6 +26,7 @@ Kubernetes Operators usually consist of multiple Kubernetes Controllers and `Cus
 ### Kubernetes Webhooks
 
 Kubernetes Webhooks complement CustomResourceDefinitions by adding a mechanism to attach custom validation, defaulting and version conversion logic to CRDs.
+You can read more about it in the Kubernetes documentation about [Admission Controllers][admission-controllers].
 
 - `MutatingWebhookConfiguration`
   Can be used to set defaults or overwise manipulate custom resources before validation and storage.
@@ -34,4 +37,5 @@ Kubernetes Webhooks complement CustomResourceDefinitions by adding a mechanism t
 - `ConversionWebhook`
   Can be used to convert between versions of the same custom resource and allow to still serve older api versions. e.g. they can convert a `v1alpha1` object into it's `v1` representation and vice versa.
 
-https://kubernetes.io/docs/reference/access-authn-authz/extensible-admission-controllers/
+[admission-controllers]: https://kubernetes.io/docs/reference/access-authn-authz/extensible-admission-controllers/
+[custom-resources]: https://kubernetes.io/docs/concepts/extend-kubernetes/api-extension/custom-resources/

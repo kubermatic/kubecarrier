@@ -22,6 +22,7 @@ import "google/api/annotations.proto";
 
 import "meta.proto";
 import "types.proto";
+import "request.proto";
 
 message Provider {
   ObjectMeta metadata = 1;
@@ -56,12 +57,12 @@ message ProviderMetadata {
 }
 
 service ProviderService {
-  rpc List(ProviderListRequest) returns (ProviderList) {
+  rpc List(ListRequest) returns (ProviderList) {
     option (google.api.http) = {
       get : "/v1/accounts/{account}/providers"
     };
   };
-  rpc Get(ProviderGetRequest) returns (Provider) {
+  rpc Get(GetRequest) returns (Provider) {
     option (google.api.http) = {
       get : "/v1/accounts/{account}/providers/{name}"
     };

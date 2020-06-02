@@ -17,8 +17,11 @@ limitations under the License.
 package v1
 
 import (
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
 	catalogv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/catalog/v1alpha1"
 	v1 "github.com/kubermatic/kubecarrier/pkg/apiserver/api/v1"
+	"github.com/kubermatic/kubecarrier/pkg/apiserver/internal/util"
 )
 
 func convertImage(in *catalogv1alpha1.Image) (out *v1.Image) {
@@ -26,4 +29,35 @@ func convertImage(in *catalogv1alpha1.Image) (out *v1.Image) {
 		MediaType: in.MediaType,
 		Data:      in.Data,
 	}
+}
+
+func convertObjectMeta(in metav1.ObjectMeta) (out *v1.ObjectMeta, err error) {
+	creationTimestamp, err := util.TimestampProto(&in.CreationTimestamp)
+	if err != nil {
+		return out, err
+	}
+	deletionTimestamp, err := util.TimestampProto(in.DeletionTimestamp)
+	if err != nil {
+		return out, err
+	}
+	out = &v1.ObjectMeta{
+		Uid:               string(in.UID),
+		Name:              in.Name,
+		Account:           in.Namespace,
+		CreationTimestamp: creationTimestamp,
+		DeletionTimestamp: deletionTimestamp,
+		ResourceVersion:   in.ResourceVersion,
+		Labels:            in.Labels,
+		Annotations:       in.Annotations,
+		Generation:        in.Generation,
+	}
+	return
+}
+
+func convertListMeta(in metav1.ListMeta) (out *v1.ListMeta) {
+	out = &v1.ListMeta{
+		Continue:        in.Continue,
+		ResourceVersion: in.ResourceVersion,
+	}
+	return
 }

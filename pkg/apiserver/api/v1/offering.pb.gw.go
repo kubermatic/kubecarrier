@@ -51,7 +51,7 @@ var (
 )
 
 func request_OfferingService_List_0(ctx context.Context, marshaler runtime.Marshaler, client OfferingServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq OfferingListRequest
+	var protoReq ListRequest
 	var metadata runtime.ServerMetadata
 
 	var (
@@ -85,7 +85,7 @@ func request_OfferingService_List_0(ctx context.Context, marshaler runtime.Marsh
 }
 
 func local_request_OfferingService_List_0(ctx context.Context, marshaler runtime.Marshaler, server OfferingServiceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq OfferingListRequest
+	var protoReq ListRequest
 	var metadata runtime.ServerMetadata
 
 	var (
@@ -116,7 +116,7 @@ func local_request_OfferingService_List_0(ctx context.Context, marshaler runtime
 }
 
 func request_OfferingService_Get_0(ctx context.Context, marshaler runtime.Marshaler, client OfferingServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq OfferingGetRequest
+	var protoReq GetRequest
 	var metadata runtime.ServerMetadata
 
 	var (
@@ -154,7 +154,7 @@ func request_OfferingService_Get_0(ctx context.Context, marshaler runtime.Marsha
 }
 
 func local_request_OfferingService_Get_0(ctx context.Context, marshaler runtime.Marshaler, server OfferingServiceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq OfferingGetRequest
+	var protoReq GetRequest
 	var metadata runtime.ServerMetadata
 
 	var (
