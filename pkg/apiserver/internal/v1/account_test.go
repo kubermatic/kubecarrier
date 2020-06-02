@@ -105,13 +105,13 @@ func TestListAccount(t *testing.T) {
 	ctx := context.Background()
 	tests := []struct {
 		name           string
-		req            *v1.AccountListRequest
+		req            *v1.ListRequest
 		expectedError  error
 		expectedResult *v1.AccountList
 	}{
 		{
 			name: "invalid label selector",
-			req: &v1.AccountListRequest{
+			req: &v1.ListRequest{
 				LabelSelector: "test-label=====account1",
 			},
 			expectedError:  status.Errorf(codes.InvalidArgument, "invalid LabelSelector: unable to parse requirement: found '==', expected: identifier"),
@@ -119,7 +119,7 @@ func TestListAccount(t *testing.T) {
 		},
 		{
 			name:          "valid request",
-			req:           &v1.AccountListRequest{},
+			req:           &v1.ListRequest{},
 			expectedError: nil,
 			expectedResult: &v1.AccountList{
 				Metadata: &v1.ListMeta{
@@ -139,8 +139,10 @@ func TestListAccount(t *testing.T) {
 								DisplayName:      "provider",
 								ShortDescription: "provider desc",
 							},
-							Roles: []string{
-								"Provider",
+							Roles: []*v1.AccountRole{
+								{
+									Type: "Provider",
+								},
 							},
 							Subjects: []*v1.Subject{
 								{
@@ -150,11 +152,7 @@ func TestListAccount(t *testing.T) {
 								},
 							},
 						},
-						Status: &v1.AccountStatus{
-							Namespace: &v1.ObjectReference{
-								Name: "test-account-1",
-							},
-						},
+						Status: &v1.AccountStatus{},
 					},
 					{
 						Metadata: &v1.ObjectMeta{
@@ -168,8 +166,10 @@ func TestListAccount(t *testing.T) {
 								DisplayName:      "tenant",
 								ShortDescription: "tenant desc",
 							},
-							Roles: []string{
-								"Tenant",
+							Roles: []*v1.AccountRole{
+								{
+									Type: "Tenant",
+								},
 							},
 							Subjects: []*v1.Subject{
 								{
@@ -179,18 +179,14 @@ func TestListAccount(t *testing.T) {
 								},
 							},
 						},
-						Status: &v1.AccountStatus{
-							Namespace: &v1.ObjectReference{
-								Name: "test-account-2",
-							},
-						},
+						Status: &v1.AccountStatus{},
 					},
 				},
 			},
 		},
 		{
 			name: "LabelSelector works",
-			req: &v1.AccountListRequest{
+			req: &v1.ListRequest{
 				LabelSelector: "test-label=account1",
 			},
 			expectedError: nil,
@@ -212,8 +208,10 @@ func TestListAccount(t *testing.T) {
 								DisplayName:      "provider",
 								ShortDescription: "provider desc",
 							},
-							Roles: []string{
-								"Provider",
+							Roles: []*v1.AccountRole{
+								{
+									Type: "Provider",
+								},
 							},
 							Subjects: []*v1.Subject{
 								{
@@ -223,11 +221,7 @@ func TestListAccount(t *testing.T) {
 								},
 							},
 						},
-						Status: &v1.AccountStatus{
-							Namespace: &v1.ObjectReference{
-								Name: "test-account-1",
-							},
-						},
+						Status: &v1.AccountStatus{},
 					},
 				},
 			},

@@ -18,11 +18,9 @@ package v1
 
 import (
 	"context"
-	"fmt"
 
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
-	"k8s.io/apimachinery/pkg/labels"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	catalogv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/catalog/v1alpha1"
@@ -45,7 +43,7 @@ func NewAccountServiceServer(c client.Client) v1.AccountServiceServer {
 	}
 }
 
-func (o accountServer) List(ctx context.Context, req *v1.AccountListRequest) (res *v1.AccountList, err error) {
+func (o accountServer) List(ctx context.Context, req *v1.ListRequest) (res *v1.AccountList, err error) {
 	user, present := oidc.ExtractUserInfo(ctx)
 	if !present {
 		return nil, status.Error(codes.Unauthenticated, "unauthenticated user")
@@ -53,9 +51,9 @@ func (o accountServer) List(ctx context.Context, req *v1.AccountListRequest) (re
 	return o.handleListRequest(ctx, req, user.GetName())
 }
 
-func (o accountServer) handleListRequest(ctx context.Context, req *v1.AccountListRequest, username string) (res *v1.AccountList, err error) {
+func (o accountServer) handleListRequest(ctx context.Context, req *v1.ListRequest, username string) (res *v1.AccountList, err error) {
 	var listOptions []client.ListOption
-	listOptions, err = o.validateListRequest(req)
+	listOptions, err = validateListAccountRequest(req)
 	listOptions = append(listOptions, accountByUsernameListOption(username))
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
@@ -69,20 +67,6 @@ func (o accountServer) handleListRequest(ctx context.Context, req *v1.AccountLis
 		return nil, status.Errorf(codes.Internal, "converting AccountList: %s", err.Error())
 	}
 	return
-}
-
-func (o accountServer) validateListRequest(req *v1.AccountListRequest) ([]client.ListOption, error) {
-	var listOptions []client.ListOption
-	if req.LabelSelector != "" {
-		selector, err := labels.Parse(req.LabelSelector)
-		if err != nil {
-			return listOptions, fmt.Errorf("invalid LabelSelector: %w", err)
-		}
-		listOptions = append(listOptions, client.MatchingLabelsSelector{
-			Selector: selector,
-		})
-	}
-	return listOptions, nil
 }
 
 func (o accountServer) convertAccount(in *catalogv1alpha1.Account) (out *v1.Account, err error) {
@@ -114,8 +98,7 @@ func (o accountServer) convertAccount(in *catalogv1alpha1.Account) (out *v1.Acco
 			},
 		},
 		Status: &v1.AccountStatus{
-			ObservedGeneration: in.Status.ObservedGeneration,
-			Phase:              string(in.Status.Phase),
+			Phase: string(in.Status.Phase),
 		},
 	}
 	if in.Spec.Metadata.Logo != nil {
@@ -125,7 +108,9 @@ func (o accountServer) convertAccount(in *catalogv1alpha1.Account) (out *v1.Acco
 		out.Spec.Metadata.Icon = convertImage(in.Spec.Metadata.Icon)
 	}
 	for _, accountRole := range in.Spec.Roles {
-		out.Spec.Roles = append(out.Spec.Roles, string(accountRole))
+		out.Spec.Roles = append(out.Spec.Roles, &v1.AccountRole{
+			Type: string(accountRole),
+		})
 	}
 	for _, subject := range in.Spec.Subjects {
 		out.Spec.Subjects = append(out.Spec.Subjects, &v1.Subject{
@@ -135,18 +120,15 @@ func (o accountServer) convertAccount(in *catalogv1alpha1.Account) (out *v1.Acco
 			Namespace: subject.Namespace,
 		})
 	}
-	if in.Status.Namespace != nil {
-		out.Status.Namespace = &v1.ObjectReference{
-			Name: in.Status.Namespace.Name,
-		}
-	}
 	for _, condition := range in.Status.Conditions {
 		lastTransitionTime, err := util.TimestampProto(&condition.LastTransitionTime)
 		if err != nil {
 			return nil, err
 		}
 		out.Status.Conditions = append(out.Status.Conditions, &v1.AccountCondition{
-			Type:               string(condition.Type),
+			Type: &v1.AccountConditionType{
+				Type: string(condition.Type),
+			},
 			Status:             string(condition.Status),
 			LastTransitionTime: lastTransitionTime,
 			Reason:             condition.Reason,

@@ -23,6 +23,7 @@ import "google/protobuf/timestamp.proto";
 
 import "meta.proto";
 import "types.proto";
+import "request.proto";
 
 message Account {
   ObjectMeta metadata = 1;
@@ -32,8 +33,12 @@ message Account {
 
 message AccountSpec {
   AccountMetadata metadata = 1;
-  repeated string roles = 2;
+  repeated AccountRole roles = 2;
   repeated Subject subjects = 3;
+}
+
+message AccountRole{
+  string type = 1;
 }
 
 message AccountMetadata {
@@ -52,18 +57,20 @@ message Subject {
 }
 
 message AccountStatus {
-  ObjectReference namespace = 1;
-  int64 observedGeneration = 2;
-  string phase = 3;
-  repeated AccountCondition conditions = 4;
+  string phase = 1;
+  repeated AccountCondition conditions = 2;
 }
 
 message AccountCondition {
-  string type = 1;
+  AccountConditionType type = 1;
   string status = 2;
   google.protobuf.Timestamp lastTransitionTime = 3;
   string reason = 4;
   string message = 5;
+}
+
+message AccountConditionType {
+  string type = 1;
 }
 
 message AccountList {
@@ -71,12 +78,8 @@ message AccountList {
   repeated Account items = 2;
 }
 
-message AccountListRequest {
-  string labelSelector = 1;
-}
-
 service AccountService {
-  rpc List(AccountListRequest) returns (AccountList) {
+  rpc List(ListRequest) returns (AccountList) {
     option (google.api.http) = {
       get : "/v1/accounts"
     };

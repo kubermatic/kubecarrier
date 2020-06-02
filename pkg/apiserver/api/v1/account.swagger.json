@@ -66,6 +66,14 @@
           "type": "string"
         },
         "type": {
+          "$ref": "#/definitions/v1AccountConditionType"
+        }
+      },
+      "type": "object"
+    },
+    "v1AccountConditionType": {
+      "properties": {
+        "type": {
           "type": "string"
         }
       },
@@ -105,6 +113,14 @@
       },
       "type": "object"
     },
+    "v1AccountRole": {
+      "properties": {
+        "type": {
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
     "v1AccountSpec": {
       "properties": {
         "metadata": {
@@ -112,7 +128,7 @@
         },
         "roles": {
           "items": {
-            "type": "string"
+            "$ref": "#/definitions/v1AccountRole"
           },
           "type": "array"
         },
@@ -132,13 +148,6 @@
             "$ref": "#/definitions/v1AccountCondition"
           },
           "type": "array"
-        },
-        "namespace": {
-          "$ref": "#/definitions/v1ObjectReference"
-        },
-        "observedGeneration": {
-          "format": "int64",
-          "type": "string"
         },
         "phase": {
           "type": "string"
@@ -210,14 +219,6 @@
       },
       "type": "object"
     },
-    "v1ObjectReference": {
-      "properties": {
-        "name": {
-          "type": "string"
-        }
-      },
-      "type": "object"
-    },
     "v1Subject": {
       "properties": {
         "apiGroup": {
@@ -247,7 +248,26 @@
         "parameters": [
           {
             "in": "query",
+            "name": "account",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "in": "query",
             "name": "labelSelector",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "format": "int64",
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "in": "query",
+            "name": "continue",
             "required": false,
             "type": "string"
           }
