@@ -18,9 +18,11 @@ package v1
 
 import (
 	"context"
+	"fmt"
 
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"k8s.io/apimachinery/pkg/labels"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	catalogv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/catalog/v1alpha1"
@@ -43,7 +45,7 @@ func NewAccountServiceServer(c client.Client) v1.AccountServiceServer {
 	}
 }
 
-func (o accountServer) List(ctx context.Context, req *v1.ListRequest) (res *v1.AccountList, err error) {
+func (o accountServer) List(ctx context.Context, req *v1.AccountListRequest) (res *v1.AccountList, err error) {
 	user, present := oidc.ExtractUserInfo(ctx)
 	if !present {
 		return nil, status.Error(codes.Unauthenticated, "unauthenticated user")
@@ -51,9 +53,9 @@ func (o accountServer) List(ctx context.Context, req *v1.ListRequest) (res *v1.A
 	return o.handleListRequest(ctx, req, user.GetName())
 }
 
-func (o accountServer) handleListRequest(ctx context.Context, req *v1.ListRequest, username string) (res *v1.AccountList, err error) {
+func (o accountServer) handleListRequest(ctx context.Context, req *v1.AccountListRequest, username string) (res *v1.AccountList, err error) {
 	var listOptions []client.ListOption
-	listOptions, err = validateListAccountRequest(req)
+	listOptions, err = o.validateAccountListRequest(req)
 	listOptions = append(listOptions, accountByUsernameListOption(username))
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
@@ -67,6 +69,20 @@ func (o accountServer) handleListRequest(ctx context.Context, req *v1.ListReques
 		return nil, status.Errorf(codes.Internal, "converting AccountList: %s", err.Error())
 	}
 	return
+}
+
+func (o accountServer) validateAccountListRequest(req *v1.AccountListRequest) ([]client.ListOption, error) {
+	var listOptions []client.ListOption
+	if req.LabelSelector != "" {
+		selector, err := labels.Parse(req.LabelSelector)
+		if err != nil {
+			return listOptions, fmt.Errorf("invalid LabelSelector: %w", err)
+		}
+		listOptions = append(listOptions, client.MatchingLabelsSelector{
+			Selector: selector,
+		})
+	}
+	return listOptions, nil
 }
 
 func (o accountServer) convertAccount(in *catalogv1alpha1.Account) (out *v1.Account, err error) {

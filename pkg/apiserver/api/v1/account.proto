@@ -23,7 +23,6 @@ import "google/protobuf/timestamp.proto";
 
 import "meta.proto";
 import "types.proto";
-import "request.proto";
 
 message Account {
   ObjectMeta metadata = 1;
@@ -77,8 +76,12 @@ message AccountList {
   repeated Account items = 2;
 }
 
+message AccountListRequest {
+  string labelSelector = 1;
+}
+
 service AccountService {
-  rpc List(ListRequest) returns (AccountList) {
+  rpc List(AccountListRequest) returns (AccountList) {
     option (google.api.http) = {
       get : "/v1/accounts"
     };

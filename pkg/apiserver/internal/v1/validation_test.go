@@ -110,37 +110,3 @@ func TestValidateListRequest(t *testing.T) {
 		})
 	}
 }
-
-func TestValidateListAccountRequest(t *testing.T) {
-	tests := []struct {
-		name          string
-		req           *v1.ListRequest
-		expectedError error
-	}{
-		{
-			name: "invalid label selector",
-			req: &v1.ListRequest{
-				Account:       "test-namespace",
-				LabelSelector: "test-label=====name1",
-			},
-			expectedError: fmt.Errorf("invalid LabelSelector: unable to parse requirement: found '==', expected: identifier"),
-		},
-		{
-			name: "valid request",
-			req: &v1.ListRequest{
-				Account: "test-namespace",
-			},
-			expectedError: nil,
-		},
-	}
-	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
-			_, err := validateListAccountRequest(test.req)
-			if err == nil {
-				assert.Equal(t, test.expectedError, err)
-			} else {
-				assert.EqualError(t, err, test.expectedError.Error())
-			}
-		})
-	}
-}

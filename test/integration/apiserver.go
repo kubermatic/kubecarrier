@@ -320,7 +320,7 @@ func accountService(ctx context.Context, conn *grpc.ClientConn, managementClient
 		t.Cleanup(cancel)
 		// list account for "admin@kubecarrier.io".
 		require.NoError(t, wait.PollUntil(time.Second, func() (done bool, err error) {
-			accounts, err := client.List(accountCtx, &apiserverv1.ListRequest{
+			accounts, err := client.List(accountCtx, &apiserverv1.AccountListRequest{
 				LabelSelector: "test-case=integration-apiserver-account-service",
 			})
 			if err != nil {
@@ -328,7 +328,7 @@ func accountService(ctx context.Context, conn *grpc.ClientConn, managementClient
 			}
 			assert.Len(t, accounts.Items, 1)
 			assert.True(t, accounts.Items[0].Metadata.Name == providerAccount.Name)
-			accounts, err = client.List(accountCtx, &apiserverv1.ListRequest{})
+			accounts, err = client.List(accountCtx, &apiserverv1.AccountListRequest{})
 			if err != nil {
 				return false, err
 			}

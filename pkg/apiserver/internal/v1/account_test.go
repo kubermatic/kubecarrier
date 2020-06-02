@@ -105,13 +105,13 @@ func TestListAccount(t *testing.T) {
 	ctx := context.Background()
 	tests := []struct {
 		name           string
-		req            *v1.ListRequest
+		req            *v1.AccountListRequest
 		expectedError  error
 		expectedResult *v1.AccountList
 	}{
 		{
 			name: "invalid label selector",
-			req: &v1.ListRequest{
+			req: &v1.AccountListRequest{
 				LabelSelector: "test-label=====account1",
 			},
 			expectedError:  status.Errorf(codes.InvalidArgument, "invalid LabelSelector: unable to parse requirement: found '==', expected: identifier"),
@@ -119,7 +119,7 @@ func TestListAccount(t *testing.T) {
 		},
 		{
 			name:          "valid request",
-			req:           &v1.ListRequest{},
+			req:           &v1.AccountListRequest{},
 			expectedError: nil,
 			expectedResult: &v1.AccountList{
 				Metadata: &v1.ListMeta{
@@ -186,7 +186,7 @@ func TestListAccount(t *testing.T) {
 		},
 		{
 			name: "LabelSelector works",
-			req: &v1.ListRequest{
+			req: &v1.AccountListRequest{
 				LabelSelector: "test-label=account1",
 			},
 			expectedError: nil,

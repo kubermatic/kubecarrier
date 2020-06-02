@@ -253,26 +253,7 @@
         "parameters": [
           {
             "in": "query",
-            "name": "account",
-            "required": false,
-            "type": "string"
-          },
-          {
-            "in": "query",
             "name": "labelSelector",
-            "required": false,
-            "type": "string"
-          },
-          {
-            "format": "int64",
-            "in": "query",
-            "name": "limit",
-            "required": false,
-            "type": "string"
-          },
-          {
-            "in": "query",
-            "name": "continue",
             "required": false,
             "type": "string"
           }

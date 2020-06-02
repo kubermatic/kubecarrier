@@ -59,17 +59,3 @@ func validateListRequest(req *v1.ListRequest) ([]client.ListOption, error) {
 	}
 	return listOptions, nil
 }
-
-func validateListAccountRequest(req *v1.ListRequest) ([]client.ListOption, error) {
-	var listOptions []client.ListOption
-	if req.LabelSelector != "" {
-		selector, err := labels.Parse(req.LabelSelector)
-		if err != nil {
-			return listOptions, fmt.Errorf("invalid LabelSelector: %w", err)
-		}
-		listOptions = append(listOptions, client.MatchingLabelsSelector{
-			Selector: selector,
-		})
-	}
-	return listOptions, nil
-}
