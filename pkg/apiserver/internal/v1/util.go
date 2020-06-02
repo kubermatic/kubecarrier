@@ -102,3 +102,34 @@ func convertImage(in *catalogv1alpha1.Image) (out *v1.Image) {
 		Data:      in.Data,
 	}
 }
+
+func convertObjectMeta(in metav1.ObjectMeta) (out *v1.ObjectMeta, err error) {
+	creationTimestamp, err := util.TimestampProto(&in.CreationTimestamp)
+	if err != nil {
+		return out, err
+	}
+	deletionTimestamp, err := util.TimestampProto(in.DeletionTimestamp)
+	if err != nil {
+		return out, err
+	}
+	out = &v1.ObjectMeta{
+		Uid:               string(in.UID),
+		Name:              in.Name,
+		Account:           in.Namespace,
+		CreationTimestamp: creationTimestamp,
+		DeletionTimestamp: deletionTimestamp,
+		ResourceVersion:   in.ResourceVersion,
+		Labels:            in.Labels,
+		Annotations:       in.Annotations,
+		Generation:        in.Generation,
+	}
+	return
+}
+
+func convertListMeta(in metav1.ListMeta) (out *v1.ListMeta) {
+	out = &v1.ListMeta{
+		Continue:        in.Continue,
+		ResourceVersion: in.ResourceVersion,
+	}
+	return
+}

@@ -76,13 +76,13 @@ func TestListProvider(t *testing.T) {
 	ctx := context.Background()
 	tests := []struct {
 		name           string
-		req            *v1.ProviderListRequest
+		req            *v1.ListRequest
 		expectedError  error
 		expectedResult *v1.ProviderList
 	}{
 		{
 			name: "missing namespace",
-			req: &v1.ProviderListRequest{
+			req: &v1.ListRequest{
 				Account: "",
 			},
 			expectedError:  status.Errorf(codes.InvalidArgument, "missing namespace"),
@@ -90,7 +90,7 @@ func TestListProvider(t *testing.T) {
 		},
 		{
 			name: "invalid limit",
-			req: &v1.ProviderListRequest{
+			req: &v1.ListRequest{
 				Account: "test-namespace",
 				Limit:   -1,
 			},
@@ -99,7 +99,7 @@ func TestListProvider(t *testing.T) {
 		},
 		{
 			name: "invalid label selector",
-			req: &v1.ProviderListRequest{
+			req: &v1.ListRequest{
 				Account:       "test-namespace",
 				LabelSelector: "test-label=====provider1",
 			},
@@ -108,7 +108,7 @@ func TestListProvider(t *testing.T) {
 		},
 		{
 			name: "valid request",
-			req: &v1.ProviderListRequest{
+			req: &v1.ListRequest{
 				Account: "test-namespace",
 			},
 			expectedError: nil,
@@ -153,7 +153,7 @@ func TestListProvider(t *testing.T) {
 		},
 		{
 			name: "LabelSelector works",
-			req: &v1.ProviderListRequest{
+			req: &v1.ListRequest{
 				Account:       "test-namespace",
 				LabelSelector: "test-label=provider1",
 			},
@@ -214,13 +214,13 @@ func TestGetProvider(t *testing.T) {
 	ctx := context.Background()
 	tests := []struct {
 		name           string
-		req            *v1.ProviderGetRequest
+		req            *v1.GetRequest
 		expectedError  error
 		expectedResult *v1.Provider
 	}{
 		{
 			name: "missing namespace",
-			req: &v1.ProviderGetRequest{
+			req: &v1.GetRequest{
 				Name:    "test-provider",
 				Account: "",
 			},
@@ -229,7 +229,7 @@ func TestGetProvider(t *testing.T) {
 		},
 		{
 			name: "missing name",
-			req: &v1.ProviderGetRequest{
+			req: &v1.GetRequest{
 				Account: "test-namespace",
 			},
 			expectedError:  status.Errorf(codes.InvalidArgument, "missing name"),
@@ -237,7 +237,7 @@ func TestGetProvider(t *testing.T) {
 		},
 		{
 			name: "valid request",
-			req: &v1.ProviderGetRequest{
+			req: &v1.GetRequest{
 				Name:    "test-provider",
 				Account: "test-namespace",
 			},
