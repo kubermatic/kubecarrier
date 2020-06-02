@@ -34,7 +34,6 @@ func TimestampProto(t *metav1.Time) (*timestamp.Timestamp, error) {
 
 func ValidateWatchOperation(operation string) error {
 	switch operation {
-	case "":
 	case string(watch.Added):
 	case string(watch.Modified):
 	case string(watch.Deleted):
