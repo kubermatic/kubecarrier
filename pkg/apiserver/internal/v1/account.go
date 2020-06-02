@@ -97,9 +97,7 @@ func (o accountServer) convertAccount(in *catalogv1alpha1.Account) (out *v1.Acco
 				ShortDescription: in.Spec.Metadata.ShortDescription,
 			},
 		},
-		Status: &v1.AccountStatus{
-			Phase: string(in.Status.Phase),
-		},
+		Status: &v1.AccountStatus{},
 	}
 	if in.Spec.Metadata.Logo != nil {
 		out.Spec.Metadata.Logo = convertImage(in.Spec.Metadata.Logo)

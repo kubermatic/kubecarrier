@@ -57,7 +57,6 @@ message Subject {
 }
 
 message AccountStatus {
-  string phase = 1;
   repeated AccountCondition conditions = 2;
 }
 
@@ -67,10 +66,6 @@ message AccountCondition {
   google.protobuf.Timestamp lastTransitionTime = 3;
   string reason = 4;
   string message = 5;
-}
-
-message ConditionStatus {
-  string status = 1;
 }
 
 message AccountConditionType {

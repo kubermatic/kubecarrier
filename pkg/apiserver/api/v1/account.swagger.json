@@ -148,9 +148,6 @@
             "$ref": "#/definitions/v1AccountCondition"
           },
           "type": "array"
-        },
-        "phase": {
-          "type": "string"
         }
       },
       "type": "object"
