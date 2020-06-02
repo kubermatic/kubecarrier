@@ -144,36 +144,37 @@ func runE(flags *flags, log logr.Logger) error {
 		Writer:       c,
 		StatusClient: c,
 	}
+	ctx := context.Background()
 	log.Info("start cache")
 	go func() {
-		if err := accountCache.Start(ctrl.SetupSignalHandler()); err != nil {
+		if err := accountCache.Start(ctx.Done()); err != nil {
 			log.Error(err, "starting cache")
 		}
 	}()
 
 	accountServer := v1.NewAccountServiceServer(accountClient)
 	apiserverv1.RegisterAccountServiceServer(grpcServer, accountServer)
-	if err := apiserverv1.RegisterAccountServiceHandlerServer(context.Background(), grpcGatewayMux, accountServer); err != nil {
+	if err := apiserverv1.RegisterAccountServiceHandlerServer(ctx, grpcGatewayMux, accountServer); err != nil {
 		return err
 	}
 
 	apiserverv1.RegisterKubeCarrierServer(grpcServer, &v1.KubeCarrierServer{})
-	if err := apiserverv1.RegisterKubeCarrierHandlerServer(context.Background(), grpcGatewayMux, &v1.KubeCarrierServer{}); err != nil {
+	if err := apiserverv1.RegisterKubeCarrierHandlerServer(ctx, grpcGatewayMux, &v1.KubeCarrierServer{}); err != nil {
 		return err
 	}
 	offeringServer := v1.NewOfferingServiceServer(c)
 	apiserverv1.RegisterOfferingServiceServer(grpcServer, offeringServer)
-	if err := apiserverv1.RegisterOfferingServiceHandlerServer(context.Background(), grpcGatewayMux, offeringServer); err != nil {
+	if err := apiserverv1.RegisterOfferingServiceHandlerServer(ctx, grpcGatewayMux, offeringServer); err != nil {
 		return err
 	}
 	regionServer := v1.NewRegionServiceServer(c)
 	apiserverv1.RegisterRegionServiceServer(grpcServer, regionServer)
-	if err := apiserverv1.RegisterRegionServiceHandlerServer(context.Background(), grpcGatewayMux, regionServer); err != nil {
+	if err := apiserverv1.RegisterRegionServiceHandlerServer(ctx, grpcGatewayMux, regionServer); err != nil {
 		return err
 	}
 	providerServer := v1.NewProviderServiceServer(c)
 	apiserverv1.RegisterProviderServiceServer(grpcServer, providerServer)
-	if err := apiserverv1.RegisterProviderServiceHandlerServer(context.Background(), grpcGatewayMux, providerServer); err != nil {
+	if err := apiserverv1.RegisterProviderServiceHandlerServer(ctx, grpcGatewayMux, providerServer); err != nil {
 		return err
 	}
 
