@@ -129,7 +129,9 @@ func (o accountServer) convertAccount(in *catalogv1alpha1.Account) (out *v1.Acco
 			Type: &v1.AccountConditionType{
 				Type: string(condition.Type),
 			},
-			Status:             string(condition.Status),
+			Status: &v1.ConditionStatus{
+				Status: string(condition.Status),
+			},
 			LastTransitionTime: lastTransitionTime,
 			Reason:             condition.Reason,
 			Message:            condition.Message,

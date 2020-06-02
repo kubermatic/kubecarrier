@@ -63,10 +63,14 @@ message AccountStatus {
 
 message AccountCondition {
   AccountConditionType type = 1;
-  string status = 2;
+  ConditionStatus status = 2;
   google.protobuf.Timestamp lastTransitionTime = 3;
   string reason = 4;
   string message = 5;
+}
+
+message ConditionStatus {
+  string status = 1;
 }
 
 message AccountConditionType {

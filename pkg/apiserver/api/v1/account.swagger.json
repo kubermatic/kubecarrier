@@ -63,7 +63,7 @@
           "type": "string"
         },
         "status": {
-          "type": "string"
+          "$ref": "#/definitions/v1ConditionStatus"
         },
         "type": {
           "$ref": "#/definitions/v1AccountConditionType"
@@ -150,6 +150,14 @@
           "type": "array"
         },
         "phase": {
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "v1ConditionStatus": {
+      "properties": {
+        "status": {
           "type": "string"
         }
       },
