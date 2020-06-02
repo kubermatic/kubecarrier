@@ -218,8 +218,6 @@ func instanceService(ctx context.Context, conn *grpc.ClientConn, managementClien
 	return func(t *testing.T) {
 		serviceClient, err := f.ServiceClient(t)
 		require.NoError(t, err, "creating service client")
-		ctx, cancel := context.WithCancel(context.Background())
-		t.Cleanup(cancel)
 		managementClient, err := f.ManagementClient(t)
 		require.NoError(t, err, "creating management client")
 		t.Cleanup(managementClient.CleanUpFunc(ctx))
@@ -227,12 +225,12 @@ func instanceService(ctx context.Context, conn *grpc.ClientConn, managementClien
 		// we hit length limit of 63 chars, so we need a shorter name
 		testName := "instsvc"
 
-		providerAccount := f.NewProviderAccount(testName, rbacv1.Subject{
+		providerAccount := testutil.NewProviderAccount(testName, rbacv1.Subject{
 			Kind:     rbacv1.GroupKind,
 			APIGroup: "rbac.authorization.k8s.io",
 			Name:     "providerAccount",
 		})
-		tenantAccount := f.NewTenantAccount(testName, rbacv1.Subject{
+		tenantAccount := testutil.NewTenantAccount(testName, rbacv1.Subject{
 			Kind:     rbacv1.GroupKind,
 			APIGroup: "rbac.authorization.k8s.io",
 			Name:     "tenantAccount",
@@ -287,7 +285,7 @@ func instanceService(ctx context.Context, conn *grpc.ClientConn, managementClien
 		require.NoError(t, managementClient.Create(ctx, catalogEntrySet))
 		require.NoError(t, testutil.WaitUntilReady(ctx, managementClient, catalogEntrySet, testutil.WithTimeout(time.Minute*2)))
 
-		catalog := f.NewCatalog("test-catalog", providerAccount.Status.Namespace.Name, &metav1.LabelSelector{}, &metav1.LabelSelector{})
+		catalog := testutil.NewCatalog("test-catalog", providerAccount.Status.Namespace.Name, &metav1.LabelSelector{}, &metav1.LabelSelector{})
 		require.NoError(t, managementClient.Create(ctx, catalog), "creating Catalog error")
 
 		// Check the status of the Catalog.
@@ -329,7 +327,7 @@ func instanceService(ctx context.Context, conn *grpc.ClientConn, managementClien
 		_, err = client.Create(ctx, createReq)
 		require.NoError(t, err, "creating instance")
 
-		fakeDB := f.NewFakeDB("fakedb", serviceClusterAssignment.Status.ServiceClusterNamespace.Name)
+		fakeDB := testutil.NewFakeDB("fakedb", serviceClusterAssignment.Status.ServiceClusterNamespace.Name)
 		require.NoError(t, testutil.WaitUntilFound(ctx, serviceClient, fakeDB))
 
 		getReq := &apiserverv1.InstanceGetRequest{
