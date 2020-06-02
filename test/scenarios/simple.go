@@ -138,7 +138,7 @@ func newSimpleScenario(f *testutil.Framework) func(t *testing.T) {
 			},
 		}
 		require.NoError(t, managementClient.Create(ctx, catalogEntrySet))
-		require.NoError(t, testutil.WaitUntilReady(ctx, managementClient, catalogEntrySet, testutil.WithTimeout(time.Minute*2)))
+		require.NoError(t, testutil.WaitUntilReady(ctx, managementClient, catalogEntrySet, testutil.WithTimeout(time.Minute)))
 
 		internalCRD := &apiextensionsv1.CustomResourceDefinition{}
 		require.NoError(t, managementClient.Get(ctx, types.NamespacedName{
@@ -149,16 +149,7 @@ func newSimpleScenario(f *testutil.Framework) func(t *testing.T) {
 			Name: strings.Join([]string{"dbs", serviceCluster.Name, provider.Name}, "."),
 		}, externalCRD))
 
-		catalog := &catalogv1alpha1.Catalog{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "default",
-				Namespace: provider.Status.Namespace.Name,
-			},
-			Spec: catalogv1alpha1.CatalogSpec{
-				CatalogEntrySelector: &metav1.LabelSelector{},
-				TenantSelector:       &metav1.LabelSelector{},
-			},
-		}
+		catalog := f.NewCatalog("default", provider.Status.Namespace.Name, &metav1.LabelSelector{}, &metav1.LabelSelector{})
 		require.NoError(t, managementClient.Create(ctx, catalog))
 		require.NoError(t, testutil.WaitUntilReady(ctx, managementClient, catalog))
 
