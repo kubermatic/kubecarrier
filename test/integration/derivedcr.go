@@ -56,7 +56,7 @@ func newDerivedCR(
 		require.NoError(t, managementClient.Create(ctx, provider))
 		require.NoError(t, testutil.WaitUntilReady(ctx, managementClient, provider))
 
-		baseCRD := f.NewFakeCouchDBCRD(testName + "test.kubecarrier.io")
+		baseCRD := testutil.NewFakeCouchDBCRD(testName + "test.kubecarrier.io")
 		baseCRD.Labels = map[string]string{
 			"kubecarrier.io/service-cluster":  "eu-west-1",
 			"kubecarrier.io/origin-namespace": provider.Status.Namespace.Name,

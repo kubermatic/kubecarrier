@@ -174,7 +174,6 @@ func newAPIServer(f *testutil.Framework) func(t *testing.T) {
 				assert.NotEmpty(t, version.BuildDate)
 				assert.NotEmpty(t, version.GoVersion)
 				t.Log("got response for gRPC server version")
-				testutil.LogObject(t, version)
 				return true, nil
 			}
 			if grpcStatus, ok := err.(toGRPCStatus); ok {
@@ -198,20 +197,165 @@ func newAPIServer(f *testutil.Framework) func(t *testing.T) {
 			testutil.LogObject(t, userinfo)
 		}
 
-		for name, testFn := range map[string]func(ctx context.Context, conn *grpc.ClientConn, managementClient *testutil.RecordingClient) func(t *testing.T){
+		for name, testFn := range map[string]func(ctx context.Context, conn *grpc.ClientConn, managementClient *testutil.RecordingClient, f *testutil.Framework) func(t *testing.T){
 			"account-service":  accountService,
 			"offering-service": offeringService,
 			"region-service":   regionService,
 			"provider-service": providerService,
+			"instance-service": instanceService,
 		} {
 			name := name
 			testFn := testFn
 
 			t.Run(name, func(t *testing.T) {
 				t.Parallel()
-				testFn(ctx, conn, managementClient)(t)
+				testFn(ctx, conn, managementClient, f)(t)
 			})
 		}
+	}
+}
+
+func instanceService(ctx context.Context, conn *grpc.ClientConn, managementClient *testutil.RecordingClient, f *testutil.Framework) func(t *testing.T) {
+	return func(t *testing.T) {
+		serviceClient, err := f.ServiceClient(t)
+		require.NoError(t, err, "creating service client")
+		managementClient, err := f.ManagementClient(t)
+		require.NoError(t, err, "creating management client")
+
+		// we hit length limit of 63 chars, so we need a shorter name
+		testName := "instsvc"
+
+		providerAccount := testutil.NewProviderAccount(testName, rbacv1.Subject{
+			Kind:     rbacv1.GroupKind,
+			APIGroup: "rbac.authorization.k8s.io",
+			Name:     "providerAccount",
+		})
+		tenantAccount := testutil.NewTenantAccount(testName, rbacv1.Subject{
+			Kind:     rbacv1.GroupKind,
+			APIGroup: "rbac.authorization.k8s.io",
+			Name:     "tenantAccount",
+		})
+		require.NoError(t, managementClient.Create(ctx, providerAccount), "creating providerAccount")
+		require.NoError(t, testutil.WaitUntilReady(ctx, managementClient, providerAccount))
+
+		require.NoError(t, managementClient.Create(ctx, tenantAccount), "creating tenantAccount")
+		require.NoError(t, testutil.WaitUntilReady(ctx, managementClient, tenantAccount))
+
+		serviceCluster := f.SetupServiceCluster(ctx, managementClient, t, "eu-west-1", providerAccount)
+
+		catalogEntrySet := &catalogv1alpha1.CatalogEntrySet{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      testName,
+				Namespace: providerAccount.Status.Namespace.Name,
+			},
+			Spec: catalogv1alpha1.CatalogEntrySetSpec{
+				Metadata: catalogv1alpha1.CatalogEntrySetMetadata{
+					CommonMetadata: catalogv1alpha1.CommonMetadata{
+						DisplayName:      "FakeDB",
+						Description:      "small database living near Tegel airport",
+						ShortDescription: "some short description",
+					},
+				},
+				Derive: &catalogv1alpha1.DerivedConfig{
+					KindOverride: "DB",
+					Expose: []catalogv1alpha1.VersionExposeConfig{
+						{
+							Versions: []string{
+								"v1",
+							},
+							Fields: []catalogv1alpha1.FieldPath{
+								{JSONPath: ".spec.databaseName"},
+								{JSONPath: ".spec.databaseUser"},
+								{JSONPath: ".spec.config.create"},
+								{JSONPath: ".status.observedGeneration"},
+							},
+						},
+					},
+				},
+				Discover: catalogv1alpha1.CustomResourceDiscoverySetConfig{
+					CRD: catalogv1alpha1.ObjectReference{
+						Name: "dbs.fake.kubecarrier.io",
+					},
+					ServiceClusterSelector: metav1.LabelSelector{},
+					KindOverride:           "DBInternal",
+					WebhookStrategy:        corev1alpha1.WebhookStrategyTypeServiceCluster,
+				},
+			},
+		}
+		require.NoError(t, managementClient.Create(ctx, catalogEntrySet))
+		require.NoError(t, testutil.WaitUntilReady(ctx, managementClient, catalogEntrySet, testutil.WithTimeout(time.Minute*2)))
+
+		catalog := testutil.NewCatalog("test-catalog", providerAccount.Status.Namespace.Name, &metav1.LabelSelector{}, &metav1.LabelSelector{})
+		require.NoError(t, managementClient.Create(ctx, catalog), "creating Catalog error")
+
+		// Check the status of the Catalog.
+		assert.NoError(t, managementClient.WaitUntil(ctx, catalog, func() (b bool, err error) {
+			return len(catalog.Status.Entries) == 1 && len(catalog.Status.Tenants) > 0, nil
+		}))
+
+		offering := &catalogv1alpha1.Offering{
+			ObjectMeta: metav1.ObjectMeta{
+				Namespace: tenantAccount.Status.Namespace.Name,
+				Name:      strings.Join([]string{"dbs", serviceCluster.Name, providerAccount.Name}, "."),
+			},
+		}
+
+		require.NoError(t, testutil.WaitUntilFound(ctx, managementClient, offering))
+		require.NoError(t, managementClient.Get(ctx, types.NamespacedName{
+			Namespace: tenantAccount.Status.Namespace.Name,
+			Name:      strings.Join([]string{"dbs", serviceCluster.Name, providerAccount.Name}, "."),
+		}, offering), "getting Offering error")
+
+		serviceClusterAssignment := &corev1alpha1.ServiceClusterAssignment{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      tenantAccount.Status.Namespace.Name + "." + serviceCluster.Name,
+				Namespace: providerAccount.Status.Namespace.Name,
+			},
+		}
+		require.NoError(t, testutil.WaitUntilReady(ctx, managementClient, serviceClusterAssignment), "service cluster assignment not ready")
+
+		client := apiserverv1.NewInstancesServiceClient(conn)
+		createReq := &apiserverv1.InstanceCreateRequest{
+			Offering: offering.Name,
+			Version:  "v1",
+			Spec: &apiserverv1.Instance{
+				Metadata: &apiserverv1.ObjectMeta{Name: "fakedb"},
+				Spec:     apiserverv1.NewJSONRawObject([]byte("{\"databaseName\":\"coolDB\",\"databaseUser\":\"username\"}")),
+			},
+			Account: tenantAccount.Status.Namespace.Name,
+		}
+		_, err = client.Create(ctx, createReq)
+		require.NoError(t, err, "creating instance")
+
+		fakeDB := testutil.NewFakeDB("fakedb", serviceClusterAssignment.Status.ServiceClusterNamespace.Name)
+		require.NoError(t, testutil.WaitUntilFound(ctx, serviceClient, fakeDB))
+
+		getReq := &apiserverv1.InstanceGetRequest{
+			Offering: offering.Name,
+			Version:  "v1",
+			Name:     "fakedb",
+			Account:  tenantAccount.Status.Namespace.Name,
+		}
+		_, err = client.Get(ctx, getReq)
+		require.NoError(t, err, "getting instance")
+		listReq := &apiserverv1.InstanceListRequest{
+			Offering: offering.Name,
+			Version:  "v1",
+			Account:  tenantAccount.Status.Namespace.Name,
+		}
+		instances, err := client.List(ctx, listReq)
+		require.NoError(t, err, "listing instance")
+		assert.Len(t, instances.Items, 1)
+
+		delReq := &apiserverv1.InstanceDeleteRequest{
+			Offering: offering.Name,
+			Version:  "v1",
+			Name:     "fakedb",
+			Account:  tenantAccount.Status.Namespace.Name,
+		}
+		_, err = client.Delete(ctx, delReq)
+		require.NoError(t, err, "deleting instance")
+		require.NoError(t, testutil.WaitUntilNotFound(ctx, serviceClient, fakeDB))
 	}
 }
 
@@ -274,7 +418,7 @@ func (w gRPCWithAuthToken) RequireTransportSecurity() bool {
 	return true
 }
 
-func accountService(ctx context.Context, conn *grpc.ClientConn, managementClient *testutil.RecordingClient) func(t *testing.T) {
+func accountService(ctx context.Context, conn *grpc.ClientConn, managementClient *testutil.RecordingClient, f *testutil.Framework) func(t *testing.T) {
 	return func(t *testing.T) {
 		testName := strings.Replace(strings.ToLower(t.Name()), "/", "-", -1)
 		providerAccount := testutil.NewProviderAccount(testName, rbacv1.Subject{
@@ -338,7 +482,7 @@ func accountService(ctx context.Context, conn *grpc.ClientConn, managementClient
 	}
 }
 
-func providerService(ctx context.Context, conn *grpc.ClientConn, managementClient *testutil.RecordingClient) func(t *testing.T) {
+func providerService(ctx context.Context, conn *grpc.ClientConn, managementClient *testutil.RecordingClient, f *testutil.Framework) func(t *testing.T) {
 	return func(t *testing.T) {
 		testName := strings.Replace(strings.ToLower(t.Name()), "/", "-", -1)
 		ns := &corev1.Namespace{}
@@ -395,7 +539,6 @@ func providerService(ctx context.Context, conn *grpc.ClientConn, managementClien
 				return false, err
 			}
 			assert.Len(t, providers.Items, 1)
-			testutil.LogObject(t, providers)
 			providers, err = client.List(providerCtx, &apiserverv1.ListRequest{
 				Account:  testName,
 				Limit:    1,
@@ -405,7 +548,6 @@ func providerService(ctx context.Context, conn *grpc.ClientConn, managementClien
 				return false, err
 			}
 			assert.Len(t, providers.Items, 1)
-			testutil.LogObject(t, providers)
 			return true, nil
 		}, providerCtx.Done()))
 
@@ -442,13 +584,12 @@ func providerService(ctx context.Context, conn *grpc.ClientConn, managementClien
 				},
 			}
 			assert.EqualValues(t, provider, expectedResult)
-			testutil.LogObject(t, provider)
 			return true, nil
 		}, providerCtx.Done()))
 	}
 }
 
-func offeringService(ctx context.Context, conn *grpc.ClientConn, managementClient *testutil.RecordingClient) func(t *testing.T) {
+func offeringService(ctx context.Context, conn *grpc.ClientConn, managementClient *testutil.RecordingClient, f *testutil.Framework) func(t *testing.T) {
 	return func(t *testing.T) {
 		testName := strings.Replace(strings.ToLower(t.Name()), "/", "-", -1)
 		ns := &corev1.Namespace{}
@@ -623,7 +764,7 @@ func offeringService(ctx context.Context, conn *grpc.ClientConn, managementClien
 	}
 }
 
-func regionService(ctx context.Context, conn *grpc.ClientConn, managementClient *testutil.RecordingClient) func(t *testing.T) {
+func regionService(ctx context.Context, conn *grpc.ClientConn, managementClient *testutil.RecordingClient, f *testutil.Framework) func(t *testing.T) {
 	return func(t *testing.T) {
 		testName := strings.Replace(strings.ToLower(t.Name()), "/", "-", -1)
 		ns := &corev1.Namespace{}

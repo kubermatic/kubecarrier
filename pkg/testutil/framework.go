@@ -173,72 +173,6 @@ func (f *Framework) ServiceClient(t *testing.T, options ...func(config *restclie
 	return recordingClient(c, f.ServiceScheme, t, f.config.CleanUpStrategy), nil
 }
 
-func (f *Framework) NewFakeDB(name, namespace string) *fakev1alpha1.DB {
-	return &fakev1alpha1.DB{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      name,
-			Namespace: namespace,
-		},
-		Spec: fakev1alpha1.DBSpec{
-			DatabaseName: "fakeDB",
-			DatabaseUser: "user",
-			Config: fakev1alpha1.Config{
-				Create: fakev1alpha1.OperationFlagEnabled,
-			}},
-	}
-}
-
-func (f *Framework) NewFakeCouchDBCRD(group string) *apiextensionsv1.CustomResourceDefinition {
-	return &apiextensionsv1.CustomResourceDefinition{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: "couchdbs." + group,
-		},
-		Spec: apiextensionsv1.CustomResourceDefinitionSpec{
-			Group: group,
-			Names: apiextensionsv1.CustomResourceDefinitionNames{
-				Plural: "couchdbs",
-				Kind:   "CouchDB",
-			},
-			Versions: []apiextensionsv1.CustomResourceDefinitionVersion{
-				{
-					Name:    "v1alpha1",
-					Storage: true,
-					Served:  true,
-					Schema: &apiextensionsv1.CustomResourceValidation{
-						OpenAPIV3Schema: &apiextensionsv1.JSONSchemaProps{
-							Properties: map[string]apiextensionsv1.JSONSchemaProps{
-								"apiVersion": {Type: "string"},
-								"kind":       {Type: "string"},
-								"metadata":   {Type: "object"},
-								"spec": {
-									Type: "object",
-									Properties: map[string]apiextensionsv1.JSONSchemaProps{
-										"prop1": {Type: "string"},
-										"prop2": {Type: "string"},
-									},
-								},
-								"status": {
-									Type: "object",
-									Properties: map[string]apiextensionsv1.JSONSchemaProps{
-										"observedGeneration": {Type: "integer"},
-										"prop1":              {Type: "string"},
-										"prop2":              {Type: "string"},
-									},
-								},
-							},
-							Type: "object",
-						},
-					},
-					Subresources: &apiextensionsv1.CustomResourceSubresources{
-						Status: &apiextensionsv1.CustomResourceSubresourceStatus{},
-					},
-				},
-			},
-			Scope: apiextensionsv1.NamespaceScoped,
-		},
-	}
-}
-
 func (f *Framework) SetupServiceCluster(ctx context.Context, cl *RecordingClient, t *testing.T, name string, account *catalogv1alpha1.Account) *corev1alpha1.ServiceCluster {
 	// Setup
 	serviceKubeconfig, err := ioutil.ReadFile(f.Config().ServiceInternalKubeconfigPath)
@@ -254,21 +188,7 @@ func (f *Framework) SetupServiceCluster(ctx context.Context, cl *RecordingClient
 		},
 	}
 
-	serviceCluster := &corev1alpha1.ServiceCluster{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      name,
-			Namespace: account.Status.Namespace.Name,
-		},
-		Spec: corev1alpha1.ServiceClusterSpec{
-			Metadata: corev1alpha1.ServiceClusterMetadata{
-				DisplayName: name,
-				Description: name + "service cluster",
-			},
-			KubeconfigSecret: corev1alpha1.ObjectReference{
-				Name: serviceClusterSecret.Name,
-			},
-		},
-	}
+	serviceCluster := NewServiceCluster(name, account.Status.Namespace.Name, serviceClusterSecret.Name)
 
 	require.NoError(t, cl.Create(ctx, serviceClusterSecret))
 	require.NoError(t, cl.Create(ctx, serviceCluster))
@@ -367,7 +287,7 @@ func (rc *RecordingClient) CleanUpFunc(ctx context.Context) func() {
 				continue
 			}
 
-			err := DeleteAndWaitUntilNotFound(ctx, rc, obj)
+			err := DeleteAndWaitUntilNotFound(ctx, rc, obj, WithTimeout(time.Minute))
 			if err != nil {
 				err = fmt.Errorf("cleanup %s: %w", key, err)
 			}
