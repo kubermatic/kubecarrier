@@ -116,7 +116,7 @@ func runE(flags *flags, log logr.Logger) error {
 	)
 	// Create Kubernetes Client
 	cfg := config.GetConfigOrDie()
-	mapper, err := apiutil.NewDiscoveryRESTMapper(cfg)
+	mapper, err := apiutil.NewDynamicRESTMapper(cfg)
 	if err != nil {
 		return fmt.Errorf("creating rest mapper: %w", err)
 	}
@@ -147,6 +147,11 @@ func runE(flags *flags, log logr.Logger) error {
 	providerServer := v1.NewProviderServiceServer(c, authorizer)
 	apiserverv1.RegisterProviderServiceServer(grpcServer, providerServer)
 	if err := apiserverv1.RegisterProviderServiceHandlerServer(context.Background(), grpcGatewayMux, providerServer); err != nil {
+		return err
+	}
+	instanceServer := v1.NewInstancesServer(c, mapper)
+	apiserverv1.RegisterInstancesServiceServer(grpcServer, instanceServer)
+	if err := apiserverv1.RegisterInstancesServiceHandlerServer(context.Background(), grpcGatewayMux, instanceServer); err != nil {
 		return err
 	}
 
