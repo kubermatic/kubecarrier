@@ -60,8 +60,13 @@ func TestListAccount(t *testing.T) {
 					},
 				},
 				Status: catalogv1alpha1.AccountStatus{
-					Namespace: &catalogv1alpha1.ObjectReference{
-						Name: "test-account-1",
+					Conditions: []catalogv1alpha1.AccountCondition{
+						{
+							Type:    catalogv1alpha1.AccountReady,
+							Status:  catalogv1alpha1.ConditionTrue,
+							Reason:  "fake reason",
+							Message: "fake message",
+						},
 					},
 				},
 			},
@@ -91,8 +96,13 @@ func TestListAccount(t *testing.T) {
 					},
 				},
 				Status: catalogv1alpha1.AccountStatus{
-					Namespace: &catalogv1alpha1.ObjectReference{
-						Name: "test-account-2",
+					Conditions: []catalogv1alpha1.AccountCondition{
+						{
+							Type:    catalogv1alpha1.AccountReady,
+							Status:  catalogv1alpha1.ConditionTrue,
+							Reason:  "fake reason",
+							Message: "fake message",
+						},
 					},
 				},
 			},
@@ -152,7 +162,20 @@ func TestListAccount(t *testing.T) {
 								},
 							},
 						},
-						Status: &v1.AccountStatus{},
+						Status: &v1.AccountStatus{
+							Conditions: []*v1.AccountCondition{
+								{
+									Type: &v1.AccountConditionType{
+										Type: "Ready",
+									},
+									Status: &v1.ConditionStatus{
+										Status: "True",
+									},
+									Reason:  "fake reason",
+									Message: "fake message",
+								},
+							},
+						},
 					},
 					{
 						Metadata: &v1.ObjectMeta{
@@ -179,7 +202,20 @@ func TestListAccount(t *testing.T) {
 								},
 							},
 						},
-						Status: &v1.AccountStatus{},
+						Status: &v1.AccountStatus{
+							Conditions: []*v1.AccountCondition{
+								{
+									Type: &v1.AccountConditionType{
+										Type: "Ready",
+									},
+									Status: &v1.ConditionStatus{
+										Status: "True",
+									},
+									Reason:  "fake reason",
+									Message: "fake message",
+								},
+							},
+						},
 					},
 				},
 			},
@@ -221,7 +257,20 @@ func TestListAccount(t *testing.T) {
 								},
 							},
 						},
-						Status: &v1.AccountStatus{},
+						Status: &v1.AccountStatus{
+							Conditions: []*v1.AccountCondition{
+								{
+									Type: &v1.AccountConditionType{
+										Type: "Ready",
+									},
+									Status: &v1.ConditionStatus{
+										Status: "True",
+									},
+									Reason:  "fake reason",
+									Message: "fake message",
+								},
+							},
+						},
 					},
 				},
 			},
