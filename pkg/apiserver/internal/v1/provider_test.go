@@ -43,8 +43,10 @@ func TestListProvider(t *testing.T) {
 				},
 				Spec: catalogv1alpha1.ProviderSpec{
 					Metadata: catalogv1alpha1.AccountMetadata{
-						Description: "Test Provider",
-						DisplayName: "Test Provider",
+						CommonMetadata: catalogv1alpha1.CommonMetadata{
+							Description: "Test Provider",
+							DisplayName: "Test Provider",
+						},
 					},
 				},
 			},
@@ -58,8 +60,10 @@ func TestListProvider(t *testing.T) {
 				},
 				Spec: catalogv1alpha1.ProviderSpec{
 					Metadata: catalogv1alpha1.AccountMetadata{
-						Description: "Test Provider",
-						DisplayName: "Test Provider",
+						CommonMetadata: catalogv1alpha1.CommonMetadata{
+							Description: "Test Provider",
+							DisplayName: "Test Provider",
+						},
 					},
 				},
 			},
@@ -72,13 +76,13 @@ func TestListProvider(t *testing.T) {
 	ctx := context.Background()
 	tests := []struct {
 		name           string
-		req            *v1.ProviderListRequest
+		req            *v1.ListRequest
 		expectedError  error
 		expectedResult *v1.ProviderList
 	}{
 		{
 			name: "missing namespace",
-			req: &v1.ProviderListRequest{
+			req: &v1.ListRequest{
 				Account: "",
 			},
 			expectedError:  status.Errorf(codes.InvalidArgument, "missing namespace"),
@@ -86,7 +90,7 @@ func TestListProvider(t *testing.T) {
 		},
 		{
 			name: "invalid limit",
-			req: &v1.ProviderListRequest{
+			req: &v1.ListRequest{
 				Account: "test-namespace",
 				Limit:   -1,
 			},
@@ -95,7 +99,7 @@ func TestListProvider(t *testing.T) {
 		},
 		{
 			name: "invalid label selector",
-			req: &v1.ProviderListRequest{
+			req: &v1.ListRequest{
 				Account:       "test-namespace",
 				LabelSelector: "test-label=====provider1",
 			},
@@ -104,7 +108,7 @@ func TestListProvider(t *testing.T) {
 		},
 		{
 			name: "valid request",
-			req: &v1.ProviderListRequest{
+			req: &v1.ListRequest{
 				Account: "test-namespace",
 			},
 			expectedError: nil,
@@ -123,7 +127,7 @@ func TestListProvider(t *testing.T) {
 							},
 						},
 						Spec: &v1.ProviderSpec{
-							Metadata: &v1.AccountMetadata{
+							Metadata: &v1.ProviderMetadata{
 								Description: "Test Provider",
 								DisplayName: "Test Provider",
 							},
@@ -138,7 +142,7 @@ func TestListProvider(t *testing.T) {
 							},
 						},
 						Spec: &v1.ProviderSpec{
-							Metadata: &v1.AccountMetadata{
+							Metadata: &v1.ProviderMetadata{
 								Description: "Test Provider",
 								DisplayName: "Test Provider",
 							},
@@ -149,7 +153,7 @@ func TestListProvider(t *testing.T) {
 		},
 		{
 			name: "LabelSelector works",
-			req: &v1.ProviderListRequest{
+			req: &v1.ListRequest{
 				Account:       "test-namespace",
 				LabelSelector: "test-label=provider1",
 			},
@@ -169,7 +173,7 @@ func TestListProvider(t *testing.T) {
 							},
 						},
 						Spec: &v1.ProviderSpec{
-							Metadata: &v1.AccountMetadata{
+							Metadata: &v1.ProviderMetadata{
 								Description: "Test Provider",
 								DisplayName: "Test Provider",
 							},
@@ -196,8 +200,10 @@ func TestGetProvider(t *testing.T) {
 		},
 		Spec: catalogv1alpha1.ProviderSpec{
 			Metadata: catalogv1alpha1.AccountMetadata{
-				Description: "Test Provider",
-				DisplayName: "Test Provider",
+				CommonMetadata: catalogv1alpha1.CommonMetadata{
+					Description: "Test Provider",
+					DisplayName: "Test Provider",
+				},
 			},
 		},
 	}
@@ -208,13 +214,13 @@ func TestGetProvider(t *testing.T) {
 	ctx := context.Background()
 	tests := []struct {
 		name           string
-		req            *v1.ProviderGetRequest
+		req            *v1.GetRequest
 		expectedError  error
 		expectedResult *v1.Provider
 	}{
 		{
 			name: "missing namespace",
-			req: &v1.ProviderGetRequest{
+			req: &v1.GetRequest{
 				Name:    "test-provider",
 				Account: "",
 			},
@@ -223,7 +229,7 @@ func TestGetProvider(t *testing.T) {
 		},
 		{
 			name: "missing name",
-			req: &v1.ProviderGetRequest{
+			req: &v1.GetRequest{
 				Account: "test-namespace",
 			},
 			expectedError:  status.Errorf(codes.InvalidArgument, "missing name"),
@@ -231,7 +237,7 @@ func TestGetProvider(t *testing.T) {
 		},
 		{
 			name: "valid request",
-			req: &v1.ProviderGetRequest{
+			req: &v1.GetRequest{
 				Name:    "test-provider",
 				Account: "test-namespace",
 			},
@@ -242,7 +248,7 @@ func TestGetProvider(t *testing.T) {
 					Account: "test-namespace",
 				},
 				Spec: &v1.ProviderSpec{
-					Metadata: &v1.AccountMetadata{
+					Metadata: &v1.ProviderMetadata{
 						Description: "Test Provider",
 						DisplayName: "Test Provider",
 					},

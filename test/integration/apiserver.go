@@ -18,8 +18,10 @@ package integration
 
 import (
 	"context"
+	"crypto/tls"
 	"crypto/x509"
 	"fmt"
+	"net/http"
 	"os"
 	"os/exec"
 	"strings"
@@ -27,6 +29,7 @@ import (
 	"time"
 
 	"github.com/golang/protobuf/ptypes"
+	"github.com/golang/protobuf/ptypes/empty"
 	certmanagerv1alpha3 "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha3"
 	v1 "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
 	"github.com/stretchr/testify/assert"
@@ -38,6 +41,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/wait"
 
 	catalogv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/catalog/v1alpha1"
@@ -56,12 +60,12 @@ func newAPIServer(f *testutil.Framework) func(t *testing.T) {
 		require.NoError(t, err, "creating management client")
 		t.Cleanup(managementClient.CleanUpFunc(ctx))
 
-		testName := strings.Replace(strings.ToLower(t.Name()), "/", "-", -1)
-
 		ns := &corev1.Namespace{}
-		ns.Name = testName
-		require.NoError(t, managementClient.Create(ctx, ns))
-		const localPort = 9443
+		ns.Name = "kubecarrier-system"
+		const localAPIServerPort = 9443
+
+		token := fetchUserToken(ctx, t, managementClient, f.Config().ManagementExternalKubeconfigPath)
+		t.Log("token", token)
 
 		servingTLSSecret := &corev1.Secret{
 			ObjectMeta: metav1.ObjectMeta{
@@ -89,9 +93,11 @@ func newAPIServer(f *testutil.Framework) func(t *testing.T) {
 			Spec: certmanagerv1alpha3.CertificateSpec{
 				SecretName: servingTLSSecret.GetName(),
 				DNSNames: []string{
-					strings.Join([]string{"foo", servingTLSSecret.GetNamespace(), "svc"}, "."),
+					strings.Join([]string{"kubecarrier-api-server-manager", servingTLSSecret.GetNamespace(), "svc"}, "."),
+					"kubecarrier-api-server-manager",
 					"localhost",
 				},
+				IsCA: true,
 				IssuerRef: v1.ObjectReference{
 					Name: issuer.GetName(),
 				},
@@ -113,10 +119,19 @@ func newAPIServer(f *testutil.Framework) func(t *testing.T) {
 				TLSSecretRef: operatorv1alpha1.ObjectReference{
 					Name: servingTLSSecret.GetName(),
 				},
+				OIDC: operatorv1alpha1.APIServerOIDCConfig{
+					// from test/testdata/dex_values.yaml
+					IssuerURL:     "https://dex.kubecarrier-system.svc",
+					ClientID:      "e2e-client-id",
+					UsernameClaim: "name",
+					CertificateAuthority: operatorv1alpha1.ObjectReference{
+						Name: "dex-web-server",
+					},
+				},
 			},
 		}
 		require.NoError(t, managementClient.Create(ctx, apiServer))
-		assert.NoError(t, testutil.WaitUntilReady(ctx, managementClient, apiServer))
+		require.NoError(t, testutil.WaitUntilReady(ctx, managementClient, apiServer))
 
 		ctx, cancel = context.WithCancel(ctx)
 		t.Cleanup(cancel)
@@ -128,7 +143,7 @@ func newAPIServer(f *testutil.Framework) func(t *testing.T) {
 			"port-forward",
 			// well known service name since it's assumed only one API server shall be deployed
 			"service/kubecarrier-api-server-manager",
-			fmt.Sprintf("%d:https", localPort),
+			fmt.Sprintf("%d:https", localAPIServerPort),
 		)
 		pfCmd.Stdout = os.Stdout
 		pfCmd.Stderr = os.Stderr
@@ -140,10 +155,11 @@ func newAPIServer(f *testutil.Framework) func(t *testing.T) {
 
 		conn, err := grpc.DialContext(
 			ctx,
-			fmt.Sprintf("localhost:%d", localPort),
+			fmt.Sprintf("localhost:%d", localAPIServerPort),
 			grpc.WithTransportCredentials(
 				credentials.NewClientTLSFromCert(certPool, ""),
 			),
+			grpc.WithPerRPCCredentials(gRPCWithAuthToken{token: token}),
 		)
 		require.NoError(t, err)
 		client := apiserverv1.NewKubeCarrierClient(conn)
@@ -165,9 +181,21 @@ func newAPIServer(f *testutil.Framework) func(t *testing.T) {
 					t.Log("gRPC server temporary unavailable, retrying")
 					return false, nil
 				}
+				t.Logf("gRPC server errored out, retrying : %d %v %v",
+					grpcStatus.GRPCStatus().Code(),
+					grpcStatus.GRPCStatus().Message(),
+					grpcStatus.GRPCStatus().Err(),
+				)
+				return false, nil
 			}
 			return false, err
 		}, versionCtx.Done()), "client version gRPC call")
+
+		userinfo, err := client.WhoAmI(ctx, &empty.Empty{})
+		if assert.NoError(t, err, "whoami gRPC") {
+			t.Log("User info:")
+			testutil.LogObject(t, userinfo)
+		}
 
 		for name, testFn := range map[string]func(ctx context.Context, conn *grpc.ClientConn, managementClient *testutil.RecordingClient) func(t *testing.T){
 			"offering-service": offeringService,
@@ -183,6 +211,65 @@ func newAPIServer(f *testutil.Framework) func(t *testing.T) {
 			})
 		}
 	}
+}
+
+func fetchUserToken(ctx context.Context, t *testing.T, managementClient *testutil.RecordingClient, kubeconfig string) string {
+	const localDexServerPort = 10443
+	pfDex := exec.CommandContext(ctx,
+		"kubectl",
+		"--kubeconfig", kubeconfig,
+		"--namespace", "kubecarrier-system",
+		"port-forward",
+		"service/dex",
+		fmt.Sprintf("%d:https", localDexServerPort),
+	)
+	pfDex.Stdout = os.Stdout
+	pfDex.Stderr = os.Stderr
+
+	require.NoError(t, pfDex.Start())
+	certPool := x509.NewCertPool()
+	dexTLSSecret := &corev1.Secret{}
+	require.NoError(t, managementClient.Get(ctx, types.NamespacedName{Name: "dex-web-server", Namespace: "kubecarrier-system"}, dexTLSSecret))
+	require.True(t, certPool.AppendCertsFromPEM(dexTLSSecret.Data["ca.crt"]))
+	require.True(t, certPool.AppendCertsFromPEM(dexTLSSecret.Data[corev1.TLSCertKey]))
+	token, err := testutil.DexFakeClientCredentialsGrant(
+		ctx,
+		testutil.NewLogger(t),
+		&http.Client{
+			Transport: &http.Transport{
+				TLSClientConfig: &tls.Config{
+					RootCAs:    certPool,
+					ServerName: "dex.kubecarrier-system.svc",
+				},
+			},
+			Timeout: 5 * time.Second,
+		},
+		fmt.Sprintf("https://localhost:%d/auth", localDexServerPort),
+		"admin@example.com",
+		"password",
+	)
+	require.NoError(t, err, "getting token from internal dex instance")
+	return token
+}
+
+type toGRPCStatus interface {
+	GRPCStatus() *status.Status
+}
+
+type gRPCWithAuthToken struct {
+	token string
+}
+
+var _ credentials.PerRPCCredentials = gRPCWithAuthToken{}
+
+func (w gRPCWithAuthToken) GetRequestMetadata(ctx context.Context, uri ...string) (map[string]string, error) {
+	return map[string]string{
+		"Authorization": "Bearer " + w.token,
+	}, nil
+}
+
+func (w gRPCWithAuthToken) RequireTransportSecurity() bool {
+	return true
 }
 
 func providerService(ctx context.Context, conn *grpc.ClientConn, managementClient *testutil.RecordingClient) func(t *testing.T) {
@@ -202,8 +289,10 @@ func providerService(ctx context.Context, conn *grpc.ClientConn, managementClien
 			},
 			Spec: catalogv1alpha1.ProviderSpec{
 				Metadata: catalogv1alpha1.AccountMetadata{
-					Description: "Test Provider",
-					DisplayName: "Test Provider",
+					CommonMetadata: catalogv1alpha1.CommonMetadata{
+						ShortDescription: "Test Provider",
+						DisplayName:      "Test Provider",
+					},
 				},
 			},
 		}
@@ -217,8 +306,10 @@ func providerService(ctx context.Context, conn *grpc.ClientConn, managementClien
 			},
 			Spec: catalogv1alpha1.ProviderSpec{
 				Metadata: catalogv1alpha1.AccountMetadata{
-					Description: "Test Provider",
-					DisplayName: "Test Provider",
+					CommonMetadata: catalogv1alpha1.CommonMetadata{
+						ShortDescription: "Test Provider",
+						DisplayName:      "Test Provider",
+					},
 				},
 			},
 		}
@@ -230,7 +321,7 @@ func providerService(ctx context.Context, conn *grpc.ClientConn, managementClien
 		t.Cleanup(cancel)
 		// list providers with limit and continuation token.
 		require.NoError(t, wait.PollUntil(time.Second, func() (done bool, err error) {
-			providers, err := client.List(providerCtx, &apiserverv1.ProviderListRequest{
+			providers, err := client.List(providerCtx, &apiserverv1.ListRequest{
 				Account: testName,
 				Limit:   1,
 			})
@@ -239,7 +330,7 @@ func providerService(ctx context.Context, conn *grpc.ClientConn, managementClien
 			}
 			assert.Len(t, providers.Items, 1)
 			testutil.LogObject(t, providers)
-			providers, err = client.List(providerCtx, &apiserverv1.ProviderListRequest{
+			providers, err = client.List(providerCtx, &apiserverv1.ListRequest{
 				Account:  testName,
 				Limit:    1,
 				Continue: providers.Metadata.Continue,
@@ -254,7 +345,7 @@ func providerService(ctx context.Context, conn *grpc.ClientConn, managementClien
 
 		// get provider
 		require.NoError(t, wait.PollUntil(time.Second, func() (done bool, err error) {
-			provider, err := client.Get(providerCtx, &apiserverv1.ProviderGetRequest{
+			provider, err := client.Get(providerCtx, &apiserverv1.GetRequest{
 				Account: testName,
 				Name:    "test-provider-1",
 			})
@@ -278,9 +369,9 @@ func providerService(ctx context.Context, conn *grpc.ClientConn, managementClien
 					Generation:        provider1.Generation,
 				},
 				Spec: &apiserverv1.ProviderSpec{
-					Metadata: &apiserverv1.AccountMetadata{
-						Description: "Test Provider",
-						DisplayName: "Test Provider",
+					Metadata: &apiserverv1.ProviderMetadata{
+						ShortDescription: "Test Provider",
+						DisplayName:      "Test Provider",
 					},
 				},
 			}
@@ -289,10 +380,6 @@ func providerService(ctx context.Context, conn *grpc.ClientConn, managementClien
 			return true, nil
 		}, providerCtx.Done()))
 	}
-}
-
-type toGRPCStatus interface {
-	GRPCStatus() *status.Status
 }
 
 func offeringService(ctx context.Context, conn *grpc.ClientConn, managementClient *testutil.RecordingClient) func(t *testing.T) {
@@ -312,8 +399,10 @@ func offeringService(ctx context.Context, conn *grpc.ClientConn, managementClien
 			},
 			Spec: catalogv1alpha1.OfferingSpec{
 				Metadata: catalogv1alpha1.OfferingMetadata{
-					Description: "Test Offering",
-					DisplayName: "Test Offering",
+					CommonMetadata: catalogv1alpha1.CommonMetadata{
+						ShortDescription: "Test Offering",
+						DisplayName:      "Test Offering",
+					},
 				},
 				Provider: catalogv1alpha1.ObjectReference{
 					Name: "test-provider",
@@ -352,8 +441,10 @@ func offeringService(ctx context.Context, conn *grpc.ClientConn, managementClien
 			},
 			Spec: catalogv1alpha1.OfferingSpec{
 				Metadata: catalogv1alpha1.OfferingMetadata{
-					Description: "Test Offering",
-					DisplayName: "Test Offering",
+					CommonMetadata: catalogv1alpha1.CommonMetadata{
+						ShortDescription: "Test Offering",
+						DisplayName:      "Test Offering",
+					},
 				},
 				Provider: catalogv1alpha1.ObjectReference{
 					Name: "test-provider",
@@ -390,7 +481,7 @@ func offeringService(ctx context.Context, conn *grpc.ClientConn, managementClien
 		t.Cleanup(cancel)
 		// list offerings with limit and continuation token.
 		require.NoError(t, wait.PollUntil(time.Second, func() (done bool, err error) {
-			offerings, err := client.List(offeringCtx, &apiserverv1.OfferingListRequest{
+			offerings, err := client.List(offeringCtx, &apiserverv1.ListRequest{
 				Account: testName,
 				Limit:   1,
 			})
@@ -398,7 +489,7 @@ func offeringService(ctx context.Context, conn *grpc.ClientConn, managementClien
 				return false, err
 			}
 			assert.Len(t, offerings.Items, 1)
-			offerings, err = client.List(offeringCtx, &apiserverv1.OfferingListRequest{
+			offerings, err = client.List(offeringCtx, &apiserverv1.ListRequest{
 				Account:  testName,
 				Limit:    1,
 				Continue: offerings.Metadata.Continue,
@@ -412,7 +503,7 @@ func offeringService(ctx context.Context, conn *grpc.ClientConn, managementClien
 
 		// get offering
 		require.NoError(t, wait.PollUntil(time.Second, func() (done bool, err error) {
-			offering, err := client.Get(offeringCtx, &apiserverv1.OfferingGetRequest{
+			offering, err := client.Get(offeringCtx, &apiserverv1.GetRequest{
 				Account: testName,
 				Name:    "test-offering-1",
 			})
@@ -437,8 +528,8 @@ func offeringService(ctx context.Context, conn *grpc.ClientConn, managementClien
 				},
 				Spec: &apiserverv1.OfferingSpec{
 					Metadata: &apiserverv1.OfferingMetadata{
-						Description: "Test Offering",
-						DisplayName: "Test Offering",
+						ShortDescription: "Test Offering",
+						DisplayName:      "Test Offering",
 					},
 					Provider: &apiserverv1.ObjectReference{
 						Name: "test-provider",
@@ -517,7 +608,7 @@ func regionService(ctx context.Context, conn *grpc.ClientConn, managementClient 
 		t.Cleanup(cancel)
 		// list regions with limit and continuation token.
 		require.NoError(t, wait.PollUntil(time.Second, func() (done bool, err error) {
-			regions, err := client.List(regionCtx, &apiserverv1.RegionListRequest{
+			regions, err := client.List(regionCtx, &apiserverv1.ListRequest{
 				Account: testName,
 				Limit:   1,
 			})
@@ -525,7 +616,7 @@ func regionService(ctx context.Context, conn *grpc.ClientConn, managementClient 
 				return false, err
 			}
 			assert.Len(t, regions.Items, 1)
-			regions, err = client.List(regionCtx, &apiserverv1.RegionListRequest{
+			regions, err = client.List(regionCtx, &apiserverv1.ListRequest{
 				Account:  testName,
 				Limit:    1,
 				Continue: regions.Metadata.Continue,
@@ -539,7 +630,7 @@ func regionService(ctx context.Context, conn *grpc.ClientConn, managementClient 
 
 		// get region
 		require.NoError(t, wait.PollUntil(time.Second, func() (done bool, err error) {
-			region, err := client.Get(regionCtx, &apiserverv1.RegionGetRequest{
+			region, err := client.Get(regionCtx, &apiserverv1.GetRequest{
 				Account: testName,
 				Name:    "test-region-1",
 			})

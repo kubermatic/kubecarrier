@@ -51,7 +51,7 @@ var (
 )
 
 func request_RegionService_List_0(ctx context.Context, marshaler runtime.Marshaler, client RegionServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq RegionListRequest
+	var protoReq ListRequest
 	var metadata runtime.ServerMetadata
 
 	var (
@@ -85,7 +85,7 @@ func request_RegionService_List_0(ctx context.Context, marshaler runtime.Marshal
 }
 
 func local_request_RegionService_List_0(ctx context.Context, marshaler runtime.Marshaler, server RegionServiceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq RegionListRequest
+	var protoReq ListRequest
 	var metadata runtime.ServerMetadata
 
 	var (
@@ -116,7 +116,7 @@ func local_request_RegionService_List_0(ctx context.Context, marshaler runtime.M
 }
 
 func request_RegionService_Get_0(ctx context.Context, marshaler runtime.Marshaler, client RegionServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq RegionGetRequest
+	var protoReq GetRequest
 	var metadata runtime.ServerMetadata
 
 	var (
@@ -154,7 +154,7 @@ func request_RegionService_Get_0(ctx context.Context, marshaler runtime.Marshale
 }
 
 func local_request_RegionService_Get_0(ctx context.Context, marshaler runtime.Marshaler, server RegionServiceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq RegionGetRequest
+	var protoReq GetRequest
 	var metadata runtime.ServerMetadata
 
 	var (

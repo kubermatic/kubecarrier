@@ -49,8 +49,10 @@ func TestCustomResourceDiscoveryReconciler(t *testing.T) {
 		},
 		Spec: catalogv1alpha1.AccountSpec{
 			Metadata: catalogv1alpha1.AccountMetadata{
-				DisplayName: "prov",
-				Description: "Beginner really long indie n00b",
+				CommonMetadata: catalogv1alpha1.CommonMetadata{
+					DisplayName: "prov",
+					Description: "Beginner really long indie n00b",
+				},
 			},
 			Roles: []catalogv1alpha1.AccountRole{
 				catalogv1alpha1.ProviderRole,

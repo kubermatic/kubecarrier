@@ -5,7 +5,7 @@ metadata:
 spec:
   metadata:
     displayName: The A Team
-    description: In 1972, a crack commando unit was sent to prison by a military court...
+    shortDescription: In 1972, a crack commando unit was sent to prison by a military court...
   roles:
   - Provider
   subjects:
@@ -21,6 +21,9 @@ kind: Account
 metadata:
   name: team-b
 spec:
+  metadata:
+    displayName: The B Team
+    shortDescription: In 1972, a crack commando unit was sent to prison by a military court...
   roles:
   - Tenant
   subjects:
