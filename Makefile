@@ -104,7 +104,7 @@ e2e-test-clean:
 
 clean: e2e-test-clean
 	rm -rf bin/$*
-.PHONEY: clean
+.PHONY: clean
 
 # ---------------
 # Code Generators
@@ -145,7 +145,7 @@ generate: generate-grpc generate-config
 # Create API Reference docs
 docs: bin/docgen
 	@hack/docgen.sh
-.PHONEY: docs
+.PHONY: docs
 
 # ------------
 # Test Runners
@@ -215,7 +215,7 @@ tidy:
 require-docker:
 	@docker ps > /dev/null 2>&1 || start-docker.sh || (echo "cannot find running docker daemon nor can start new one" && false)
 	@[[ -z "${QUAY_IO_USERNAME}" ]] || ( echo "logging in to ${QUAY_IO_USERNAME}" && docker login -u ${QUAY_IO_USERNAME} -p ${QUAY_IO_PASSWORD} quay.io )
-.PHONEY: require-docker
+.PHONY: require-docker
 
 generate-ide-tasks:
 	@go run ./hack/gen-tasks.go -ldflags "${LD_FLAGS}"

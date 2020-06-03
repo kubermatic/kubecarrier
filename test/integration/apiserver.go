@@ -44,6 +44,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/wait"
+	"k8s.io/apimachinery/pkg/watch"
 
 	catalogv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/catalog/v1alpha1"
 	corev1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/core/v1alpha1"
@@ -761,6 +762,32 @@ func offeringService(ctx context.Context, conn *grpc.ClientConn, managementClien
 			assert.Equal(t, expectedResult, offering)
 			return true, nil
 		}, offeringCtx.Done()))
+
+		// watch offerings
+		t.Cleanup(cancel)
+		watchClient, err := client.Watch(offeringCtx, &apiserverv1.WatchRequest{
+			Account: testName,
+		})
+		require.NoError(t, err)
+		// Update an offering object to get Modified event.
+		offering2.Spec.Metadata.ShortDescription = "test offering update"
+		require.NoError(t, managementClient.Update(ctx, offering2))
+		// Delete an offering object to get Delete event.
+		require.NoError(t, managementClient.Delete(ctx, offering1))
+		expectedEventNum := map[string]int{
+			string(watch.Added):    2,
+			string(watch.Modified): 1,
+			string(watch.Deleted):  1,
+		}
+		eventCounters := make(map[string]int)
+		for {
+			event, err := watchClient.Recv()
+			if err != nil || event == nil {
+				assert.Equal(t, expectedEventNum, eventCounters)
+				break
+			}
+			eventCounters[event.Type]++
+		}
 	}
 }
 

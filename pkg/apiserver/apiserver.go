@@ -18,8 +18,11 @@ package apiserver
 
 import (
 	"context"
+	"crypto/tls"
+	"crypto/x509"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"net/http"
 	"strings"
 
@@ -30,10 +33,12 @@ import (
 	"github.com/spf13/cobra"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/status"
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	k8soidc "k8s.io/apiserver/plugin/pkg/authenticator/token/oidc"
+	"k8s.io/client-go/dynamic"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/cache"
@@ -114,6 +119,11 @@ func runE(flags *flags, log logr.Logger) error {
 			_, _ = writer.Write(buf)
 		}),
 	)
+	ctx := context.Background()
+	grpcClient, err := createInternalGRPCClient(ctx, flags)
+	if err != nil {
+		return err
+	}
 	// Create Kubernetes Client
 	cfg := config.GetConfigOrDie()
 	mapper, err := apiutil.NewDynamicRESTMapper(cfg)
@@ -126,6 +136,10 @@ func runE(flags *flags, log logr.Logger) error {
 	})
 	if err != nil {
 		return fmt.Errorf("creating client: %w", err)
+	}
+	dynamicClient, err := dynamic.NewForConfig(cfg)
+	if err != nil {
+		return fmt.Errorf("creating dynamic client: %w", err)
 	}
 
 	// Set up cache for account
@@ -167,15 +181,18 @@ func runE(flags *flags, log logr.Logger) error {
 	if err := apiserverv1.RegisterKubeCarrierHandlerServer(ctx, grpcGatewayMux, &v1.KubeCarrierServer{}); err != nil {
 		return err
 	}
-	offeringServer := v1.NewOfferingServiceServer(c)
+	offeringServer, err := v1.NewOfferingServiceServer(c, dynamicClient, mapper, scheme)
+	if err != nil {
+		return err
+	}
 	apiserverv1.RegisterOfferingServiceServer(grpcServer, offeringServer)
-	if err := apiserverv1.RegisterOfferingServiceHandlerServer(ctx, grpcGatewayMux, offeringServer); err != nil {
+	if err := apiserverv1.RegisterOfferingServiceHandler(ctx, grpcGatewayMux, grpcClient); err != nil {
 		return err
 	}
 
 	instanceServer := v1.NewInstancesServer(c, mapper)
 	apiserverv1.RegisterInstancesServiceServer(grpcServer, instanceServer)
-	if err := apiserverv1.RegisterInstancesServiceHandlerServer(context.Background(), grpcGatewayMux, instanceServer); err != nil {
+	if err := apiserverv1.RegisterInstancesServiceHandlerServer(ctx, grpcGatewayMux, instanceServer); err != nil {
 		return err
 	}
 
@@ -227,4 +244,22 @@ func runE(flags *flags, log logr.Logger) error {
 
 	log.Info("serving serving API-server", "address", flags.address)
 	return server.ListenAndServeTLS(flags.TLSCertFile, flags.TLSPrivateKeyFile)
+}
+
+func createInternalGRPCClient(ctx context.Context, flags *flags) (*grpc.ClientConn, error) {
+	certPool := x509.NewCertPool()
+	certs, err := ioutil.ReadFile(flags.TLSCertFile)
+	if err != nil {
+		return nil, err
+	}
+	certPool.AppendCertsFromPEM(certs)
+	// Create grpc client for watch api
+	grpcClient, err := grpc.DialContext(ctx, flags.address, grpc.WithTransportCredentials(credentials.NewTLS(&tls.Config{
+		InsecureSkipVerify: true,
+		RootCAs:            certPool,
+	})))
+	if err != nil {
+		return nil, err
+	}
+	return grpcClient, nil
 }

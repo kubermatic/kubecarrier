@@ -20,27 +20,49 @@ import (
 	"context"
 	"encoding/json"
 
+	"github.com/golang/protobuf/ptypes"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"k8s.io/apimachinery/pkg/api/meta"
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/client-go/dynamic"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/client/apiutil"
 
 	catalogv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/catalog/v1alpha1"
 	v1 "github.com/kubermatic/kubecarrier/pkg/apiserver/api/v1"
 )
 
 type offeringServer struct {
-	client client.Client
+	client        client.Client
+	dynamicClient dynamic.Interface
+	scheme        *runtime.Scheme
+
+	gvr schema.GroupVersionResource
 }
 
 var _ v1.OfferingServiceServer = (*offeringServer)(nil)
 
-// +kubebuilder:rbac:groups=catalog.kubecarrier.io,resources=offerings,verbs=get;list
+// +kubebuilder:rbac:groups=catalog.kubecarrier.io,resources=offerings,verbs=get;list;watch
 
-func NewOfferingServiceServer(c client.Client) v1.OfferingServiceServer {
-	return &offeringServer{
-		client: c,
+func NewOfferingServiceServer(c client.Client, dynamicClient dynamic.Interface, restMapper meta.RESTMapper, scheme *runtime.Scheme) (v1.OfferingServiceServer, error) {
+	offeringServer := &offeringServer{
+		client:        c,
+		dynamicClient: dynamicClient,
+		scheme:        scheme,
 	}
+	objGVK, err := apiutil.GVKForObject(&catalogv1alpha1.Offering{}, offeringServer.scheme)
+	if err != nil {
+		return nil, err
+	}
+	restMapping, err := restMapper.RESTMapping(objGVK.GroupKind(), objGVK.Version)
+	if err != nil {
+		return nil, err
+	}
+	offeringServer.gvr = restMapping.Resource
+	return offeringServer, nil
 }
 
 func (o offeringServer) List(ctx context.Context, req *v1.ListRequest) (res *v1.OfferingList, err error) {
@@ -77,6 +99,49 @@ func (o offeringServer) Get(ctx context.Context, req *v1.GetRequest) (res *v1.Of
 		return nil, status.Errorf(codes.Internal, "converting Offering: %s", err.Error())
 	}
 	return
+}
+
+func (o offeringServer) Watch(req *v1.WatchRequest, stream v1.OfferingService_WatchServer) error {
+	listOptions, err := validateWatchRequest(req)
+	if err != nil {
+		return status.Error(codes.InvalidArgument, err.Error())
+	}
+	watcher, err := o.dynamicClient.Resource(o.gvr).Namespace(req.Account).Watch(listOptions)
+	defer watcher.Stop()
+	if err != nil {
+		return status.Errorf(codes.Internal, "watching offerings: %s", err.Error())
+	}
+	for {
+		select {
+		case <-stream.Context().Done():
+			return stream.Context().Err()
+		case event, ok := <-watcher.ResultChan():
+			if !ok {
+				return status.Error(codes.Internal, "watch event channel was closed")
+			}
+			catalogOffering := &catalogv1alpha1.Offering{}
+			if err := o.scheme.Convert(event.Object, catalogOffering, nil); err != nil {
+				return status.Errorf(codes.Internal, "converting event.Object to Offering: %s", err.Error())
+			}
+			offering, err := o.convertOffering(catalogOffering)
+			if err != nil {
+				return status.Errorf(codes.Internal, "converting Offering: %s", err.Error())
+			}
+			any, err := ptypes.MarshalAny(offering)
+			if err != nil {
+				return status.Errorf(codes.Internal, "marshalling Offering to Any: %s", err.Error())
+			}
+			err = stream.Send(&v1.WatchEvent{
+				Type:   string(event.Type),
+				Object: any,
+			})
+			if grpcStatus, ok := err.(toGRPCStatus); ok {
+				return status.Error(grpcStatus.GRPCStatus().Code(), grpcStatus.GRPCStatus().Message())
+			} else if err != nil {
+				return status.Errorf(codes.Internal, "sending Offering stream: %s", err.Error())
+			}
+		}
+	}
 }
 
 func (o offeringServer) convertOffering(in *catalogv1alpha1.Offering) (out *v1.Offering, err error) {

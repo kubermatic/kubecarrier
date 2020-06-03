@@ -21,6 +21,7 @@ rules:
   verbs:
   - get
   - list
+  - watch
 - apiGroups:
   - catalog.kubecarrier.io
   resources:
