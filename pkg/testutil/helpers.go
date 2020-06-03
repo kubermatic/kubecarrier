@@ -33,6 +33,9 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/apiutil"
 
+	catalogv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/catalog/v1alpha1"
+	corev1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/core/v1alpha1"
+	fakev1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/fake/v1alpha1"
 	"github.com/kubermatic/kubecarrier/pkg/internal/constants"
 	"github.com/kubermatic/kubecarrier/pkg/internal/util"
 )
@@ -286,4 +289,167 @@ func componentCheck(
 		require.NoError(t, WaitUntilFound(ctx, cli, ownedObject), fmt.Sprintf("%s: getting %s failed", componentName, gvk.Kind))
 	}
 	t.Logf(fmt.Sprintf("%s is ready", componentName))
+}
+
+func NewProviderAccount(name string, subjects ...rbacv1.Subject) *catalogv1alpha1.Account {
+	return &catalogv1alpha1.Account{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: name + "-provider",
+			Labels: map[string]string{
+				"test-case": name,
+			},
+		},
+		Spec: catalogv1alpha1.AccountSpec{
+			Metadata: catalogv1alpha1.AccountMetadata{
+				CommonMetadata: catalogv1alpha1.CommonMetadata{
+					DisplayName:      name + " provider",
+					ShortDescription: name + " provider desc",
+				},
+			},
+			Roles: []catalogv1alpha1.AccountRole{
+				catalogv1alpha1.ProviderRole,
+			},
+			Subjects: subjects,
+		},
+	}
+}
+
+func NewTenantAccount(name string, subjects ...rbacv1.Subject) *catalogv1alpha1.Account {
+	return &catalogv1alpha1.Account{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: name + "-tenant",
+		},
+		Spec: catalogv1alpha1.AccountSpec{
+			Metadata: catalogv1alpha1.AccountMetadata{
+				CommonMetadata: catalogv1alpha1.CommonMetadata{
+					DisplayName:      name + " tenant",
+					ShortDescription: name + " tenant desc",
+				},
+			},
+			Roles: []catalogv1alpha1.AccountRole{
+				catalogv1alpha1.TenantRole,
+			},
+			Subjects: subjects,
+		},
+	}
+}
+
+func NewFakeDB(name, namespace string) *fakev1alpha1.DB {
+	return &fakev1alpha1.DB{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      name,
+			Namespace: namespace,
+		},
+		Spec: fakev1alpha1.DBSpec{
+			DatabaseName: "fakeDB",
+			DatabaseUser: "user",
+			Config: fakev1alpha1.Config{
+				Create: fakev1alpha1.OperationFlagEnabled,
+			}},
+	}
+}
+
+func NewServiceCluster(name, namespace, secret string) *corev1alpha1.ServiceCluster {
+	return &corev1alpha1.ServiceCluster{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      name,
+			Namespace: namespace,
+		},
+		Spec: corev1alpha1.ServiceClusterSpec{
+			Metadata: corev1alpha1.ServiceClusterMetadata{
+				DisplayName: name,
+				Description: fmt.Sprintf("%s service cluster", name),
+			},
+			KubeconfigSecret: corev1alpha1.ObjectReference{
+				Name: secret,
+			},
+		},
+	}
+}
+
+func NewCatalogEntry(name, namespace, crdName string) *catalogv1alpha1.CatalogEntry {
+	return &catalogv1alpha1.CatalogEntry{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      name,
+			Namespace: namespace,
+			Labels: map[string]string{
+				"kubecarrier.io/test": "label",
+			},
+		},
+		Spec: catalogv1alpha1.CatalogEntrySpec{
+			Metadata: catalogv1alpha1.CatalogEntryMetadata{
+				CommonMetadata: catalogv1alpha1.CommonMetadata{
+					DisplayName:      fmt.Sprintf("display name for %s", name),
+					ShortDescription: fmt.Sprintf("short description for %s", name),
+				},
+			},
+			BaseCRD: catalogv1alpha1.ObjectReference{
+				Name: crdName,
+			},
+		},
+	}
+}
+
+func NewCatalog(name, namespace string, catalogEntrySelector, tenantSelector *metav1.LabelSelector) *catalogv1alpha1.Catalog {
+	return &catalogv1alpha1.Catalog{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      name,
+			Namespace: namespace,
+		},
+		Spec: catalogv1alpha1.CatalogSpec{
+			CatalogEntrySelector: catalogEntrySelector,
+			TenantSelector:       tenantSelector,
+		},
+	}
+}
+
+func NewFakeCouchDBCRD(group string) *apiextensionsv1.CustomResourceDefinition {
+	return &apiextensionsv1.CustomResourceDefinition{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "couchdbs." + group,
+		},
+		Spec: apiextensionsv1.CustomResourceDefinitionSpec{
+			Group: group,
+			Names: apiextensionsv1.CustomResourceDefinitionNames{
+				Plural: "couchdbs",
+				Kind:   "CouchDB",
+			},
+			Versions: []apiextensionsv1.CustomResourceDefinitionVersion{
+				{
+					Name:    "v1alpha1",
+					Storage: true,
+					Served:  true,
+					Schema: &apiextensionsv1.CustomResourceValidation{
+						OpenAPIV3Schema: &apiextensionsv1.JSONSchemaProps{
+							Properties: map[string]apiextensionsv1.JSONSchemaProps{
+								"apiVersion": {Type: "string"},
+								"kind":       {Type: "string"},
+								"metadata":   {Type: "object"},
+								"spec": {
+									Type: "object",
+									Properties: map[string]apiextensionsv1.JSONSchemaProps{
+										"prop1": {Type: "string"},
+										"prop2": {Type: "string"},
+									},
+								},
+								"status": {
+									Type: "object",
+									Properties: map[string]apiextensionsv1.JSONSchemaProps{
+										"observedGeneration": {Type: "integer"},
+										"prop1":              {Type: "string"},
+										"prop2":              {Type: "string"},
+									},
+								},
+							},
+							Type: "object",
+						},
+					},
+					Subresources: &apiextensionsv1.CustomResourceSubresources{
+						Status: &apiextensionsv1.CustomResourceSubresourceStatus{},
+					},
+				},
+			},
+			Scope: apiextensionsv1.NamespaceScoped,
+		},
+	}
 }

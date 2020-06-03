@@ -153,6 +153,13 @@ func runE(flags *flags, log logr.Logger) error {
 	if err := apiserverv1.RegisterOfferingServiceHandler(ctx, grpcGatewayMux, grpcClient); err != nil {
 		return err
 	}
+
+	instanceServer := v1.NewInstancesServer(c, mapper)
+	apiserverv1.RegisterInstancesServiceServer(grpcServer, instanceServer)
+	if err := apiserverv1.RegisterInstancesServiceHandlerServer(context.Background(), grpcGatewayMux, instanceServer); err != nil {
+		return err
+	}
+
 	regionServer := v1.NewRegionServiceServer(c)
 	apiserverv1.RegisterRegionServiceServer(grpcServer, regionServer)
 	if err := apiserverv1.RegisterRegionServiceHandlerServer(ctx, grpcGatewayMux, regionServer); err != nil {

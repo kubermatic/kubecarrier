@@ -40,7 +40,7 @@ func newCLI(f *testutil.Framework) func(t *testing.T) {
 		require.NoError(t, err, "creating management client")
 		t.Cleanup(managementClient.CleanUpFunc(ctx))
 
-		account := f.NewTenantAccount(testName+"-force", rbacv1.Subject{
+		account := testutil.NewTenantAccount(testName+"-force", rbacv1.Subject{
 			Kind:     rbacv1.GroupKind,
 			APIGroup: "rbac.authorization.k8s.io",
 			Name:     "admin",
