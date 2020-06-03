@@ -36,6 +36,7 @@ import (
 	k8soidc "k8s.io/apiserver/plugin/pkg/authenticator/token/oidc"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/cache"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/apiutil"
 	"sigs.k8s.io/controller-runtime/pkg/client/config"
@@ -127,13 +128,48 @@ func runE(flags *flags, log logr.Logger) error {
 		return fmt.Errorf("creating client: %w", err)
 	}
 
+	// Set up cache for account
+	accountCache, err := cache.New(cfg, cache.Options{
+		Scheme: scheme,
+		Mapper: mapper,
+	})
+	if err != nil {
+		return fmt.Errorf("creating cache for account: %w", err)
+	}
+	if err := v1.RegisterAccountUsernameFieldIndex(accountCache); err != nil {
+		return fmt.Errorf("fail to register field index for Account Username: %w", err)
+	}
+	accountClient := &client.DelegatingClient{
+		Reader:       accountCache,
+		Writer:       c,
+		StatusClient: c,
+	}
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	log.Info("start cache")
+	go func() {
+		if err := accountCache.Start(ctrl.SetupSignalHandler()); err != nil {
+			log.Error(err, "starting cache")
+			cancel()
+		}
+	}()
+	if isSynced := accountCache.WaitForCacheSync(ctx.Done()); !isSynced {
+		return fmt.Errorf("cache is outdated")
+	}
+
+	accountServer := v1.NewAccountServiceServer(accountClient)
+	apiserverv1.RegisterAccountServiceServer(grpcServer, accountServer)
+	if err := apiserverv1.RegisterAccountServiceHandlerServer(ctx, grpcGatewayMux, accountServer); err != nil {
+		return err
+	}
+
 	apiserverv1.RegisterKubeCarrierServer(grpcServer, &v1.KubeCarrierServer{})
-	if err := apiserverv1.RegisterKubeCarrierHandlerServer(context.Background(), grpcGatewayMux, &v1.KubeCarrierServer{}); err != nil {
+	if err := apiserverv1.RegisterKubeCarrierHandlerServer(ctx, grpcGatewayMux, &v1.KubeCarrierServer{}); err != nil {
 		return err
 	}
 	offeringServer := v1.NewOfferingServiceServer(c)
 	apiserverv1.RegisterOfferingServiceServer(grpcServer, offeringServer)
-	if err := apiserverv1.RegisterOfferingServiceHandlerServer(context.Background(), grpcGatewayMux, offeringServer); err != nil {
+	if err := apiserverv1.RegisterOfferingServiceHandlerServer(ctx, grpcGatewayMux, offeringServer); err != nil {
 		return err
 	}
 
@@ -145,12 +181,12 @@ func runE(flags *flags, log logr.Logger) error {
 
 	regionServer := v1.NewRegionServiceServer(c)
 	apiserverv1.RegisterRegionServiceServer(grpcServer, regionServer)
-	if err := apiserverv1.RegisterRegionServiceHandlerServer(context.Background(), grpcGatewayMux, regionServer); err != nil {
+	if err := apiserverv1.RegisterRegionServiceHandlerServer(ctx, grpcGatewayMux, regionServer); err != nil {
 		return err
 	}
 	providerServer := v1.NewProviderServiceServer(c)
 	apiserverv1.RegisterProviderServiceServer(grpcServer, providerServer)
-	if err := apiserverv1.RegisterProviderServiceHandlerServer(context.Background(), grpcGatewayMux, providerServer); err != nil {
+	if err := apiserverv1.RegisterProviderServiceHandlerServer(ctx, grpcGatewayMux, providerServer); err != nil {
 		return err
 	}
 
