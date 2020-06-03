@@ -263,6 +263,30 @@ func Manifests(c Config) ([]unstructured.Unstructured, error) {
 	}
 	objects = append(objects, unstructured.Unstructured{Object: obj})
 
+	apiserverManagerRole := &rbacv1.ClusterRole{
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: "rbac.authorization.k8s.io/v1",
+			Kind:       "ClusterRole",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name: c.TenantPlural + "." + c.TenantGroup,
+			Labels: map[string]string{
+				"kubecarrier.io/apiserver": "true",
+			},
+		},
+		Rules: []rbacv1.PolicyRule{
+			{
+				APIGroups: []string{c.TenantGroup},
+				Resources: []string{c.TenantPlural},
+				Verbs:     []string{"create", "delete", "get", "list"},
+			},
+		},
+	}
+	obj, err = runtime.DefaultUnstructuredConverter.ToUnstructured(apiserverManagerRole)
+	if err != nil {
+		return nil, fmt.Errorf("converting to unstructured: %w", err)
+	}
+	objects = append(objects, unstructured.Unstructured{Object: obj})
 	for _, obj := range objects {
 		labels := obj.GetLabels()
 		if labels == nil {

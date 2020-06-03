@@ -53,7 +53,7 @@ func newServiceClusterSuite(
 		t.Cleanup(serviceClient.CleanUpFunc(ctx))
 		testName := strings.Replace(strings.ToLower(t.Name()), "/", "-", -1)
 
-		provider := f.NewProviderAccount(testName, rbacv1.Subject{
+		provider := testutil.NewProviderAccount(testName, rbacv1.Subject{
 			Kind:     rbacv1.GroupKind,
 			APIGroup: "rbac.authorization.k8s.io",
 			Name:     "provider",
@@ -214,7 +214,7 @@ ServiceClusterAssignment.kubecarrier.io/v1alpha1: %s.eu-west-1
 
 		// service cluster -> management cluster
 		//
-		serviceClusterObj2 := f.NewFakeDB("test-instance-2", serviceClusterAssignment.Status.ServiceClusterNamespace.Name)
+		serviceClusterObj2 := testutil.NewFakeDB("test-instance-2", serviceClusterAssignment.Status.ServiceClusterNamespace.Name)
 		require.NoError(t, serviceClient.Create(ctx, serviceClusterObj2))
 		// we need to unregister this object,
 		// as the management cluster takes control and will just recreate it.

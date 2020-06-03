@@ -60,6 +60,40 @@
   - kind: ServiceAccount
     name: kubecarrier-api-server-sa
     namespace: kubecarrier-system-10
+- aggregationRule:
+    clusterRoleSelectors:
+    - matchLabels:
+        kubecarrier.io/apiserver: "true"
+  apiVersion: rbac.authorization.k8s.io/v1
+  kind: ClusterRole
+  metadata:
+    creationTimestamp: null
+    labels:
+      app.kubernetes.io/instance: foo
+      app.kubernetes.io/managed-by: kubecarrier-operator
+      app.kubernetes.io/name: apiserver
+      app.kubernetes.io/version: was not build properly
+      kubecarrier.io/role: api-server
+    name: kubecarrier-api-server-agg-manager-role
+  rules: []
+- apiVersion: rbac.authorization.k8s.io/v1
+  kind: ClusterRoleBinding
+  metadata:
+    labels:
+      app.kubernetes.io/instance: foo
+      app.kubernetes.io/managed-by: kubecarrier-operator
+      app.kubernetes.io/name: apiserver
+      app.kubernetes.io/version: was not build properly
+      kubecarrier.io/role: api-server
+    name: kubecarrier-api-server-agg-manager-rolebinding
+  roleRef:
+    apiGroup: rbac.authorization.k8s.io
+    kind: ClusterRole
+    name: kubecarrier-api-server-agg-manager-role
+  subjects:
+  - kind: ServiceAccount
+    name: kubecarrier-api-server-sa
+    namespace: kubecarrier-system-10
 - apiVersion: rbac.authorization.k8s.io/v1
   kind: Role
   metadata:
