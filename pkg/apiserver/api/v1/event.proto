@@ -20,7 +20,7 @@ option go_package = "v1";
 
 import "google/protobuf/any.proto";
 
-message Event {
+message WatchEvent {
   google.protobuf.Any object = 1;
   string type = 2;
 }

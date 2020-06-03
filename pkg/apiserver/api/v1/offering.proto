@@ -60,7 +60,7 @@ service OfferingService {
       get : "/v1/accounts/{account}/offerings/{name}"
     };
   };
-  rpc Watch(WatchRequest) returns (stream Event) {
+  rpc Watch(WatchRequest) returns (stream WatchEvent) {
     option (google.api.http) = {
       get : "/v1/watch/accounts/{account}/offerings"
     };

@@ -119,10 +119,6 @@ func (o offeringServer) Watch(req *v1.WatchRequest, stream v1.OfferingService_Wa
 			if !ok {
 				return status.Error(codes.Internal, "watch event channel was closed")
 			}
-			if req.OperationType != "" &&
-				req.OperationType != string(event.Type) {
-				continue
-			}
 			catalogOffering := &catalogv1alpha1.Offering{}
 			if err := o.scheme.Convert(event.Object, catalogOffering, nil); err != nil {
 				return status.Errorf(codes.Internal, "converting event.Object to Offering: %s", err.Error())
@@ -135,7 +131,7 @@ func (o offeringServer) Watch(req *v1.WatchRequest, stream v1.OfferingService_Wa
 			if err != nil {
 				return status.Errorf(codes.Internal, "marshalling Offering to Any: %s", err.Error())
 			}
-			err = stream.Send(&v1.Event{
+			err = stream.Send(&v1.WatchEvent{
 				Type:   string(event.Type),
 				Object: any,
 			})

@@ -101,17 +101,6 @@
       },
       "type": "object"
     },
-    "v1Event": {
-      "properties": {
-        "object": {
-          "$ref": "#/definitions/protobufAny"
-        },
-        "type": {
-          "type": "string"
-        }
-      },
-      "type": "object"
-    },
     "v1Image": {
       "properties": {
         "data": {
@@ -242,6 +231,17 @@
         }
       },
       "type": "object"
+    },
+    "v1WatchEvent": {
+      "properties": {
+        "object": {
+          "$ref": "#/definitions/protobufAny"
+        },
+        "type": {
+          "type": "string"
+        }
+      },
+      "type": "object"
     }
   },
   "info": {
@@ -355,12 +355,6 @@
             "name": "resourceVersion",
             "required": false,
             "type": "string"
-          },
-          {
-            "in": "query",
-            "name": "operationType",
-            "required": false,
-            "type": "string"
           }
         ],
         "responses": {
@@ -372,10 +366,10 @@
                   "$ref": "#/definitions/runtimeStreamError"
                 },
                 "result": {
-                  "$ref": "#/definitions/v1Event"
+                  "$ref": "#/definitions/v1WatchEvent"
                 }
               },
-              "title": "Stream result of v1Event",
+              "title": "Stream result of v1WatchEvent",
               "type": "object"
             }
           },

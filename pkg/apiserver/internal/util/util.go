@@ -17,12 +17,9 @@ limitations under the License.
 package util
 
 import (
-	"fmt"
-
 	"github.com/golang/protobuf/ptypes"
 	"github.com/golang/protobuf/ptypes/timestamp"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/watch"
 )
 
 func TimestampProto(t *metav1.Time) (*timestamp.Timestamp, error) {
@@ -30,19 +27,4 @@ func TimestampProto(t *metav1.Time) (*timestamp.Timestamp, error) {
 		return nil, nil
 	}
 	return ptypes.TimestampProto(t.Time)
-}
-
-func ValidateWatchOperation(operation string) error {
-	switch operation {
-	// Watch all types of operations.
-	case "":
-	case string(watch.Added):
-	case string(watch.Modified):
-	case string(watch.Deleted):
-	case string(watch.Bookmark):
-	case string(watch.Error):
-	default:
-		return fmt.Errorf("invalid watch operation type: %s", operation)
-	}
-	return nil
 }

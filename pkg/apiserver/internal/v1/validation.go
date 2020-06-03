@@ -24,7 +24,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	v1 "github.com/kubermatic/kubecarrier/pkg/apiserver/api/v1"
-	"github.com/kubermatic/kubecarrier/pkg/apiserver/internal/util"
 )
 
 func validateGetRequest(req *v1.GetRequest) error {
@@ -66,9 +65,6 @@ func validateWatchRequest(req *v1.WatchRequest) (metav1.ListOptions, error) {
 	var listOptions metav1.ListOptions
 	if req.Account == "" {
 		return listOptions, fmt.Errorf("missing namespace")
-	}
-	if err := util.ValidateWatchOperation(req.OperationType); err != nil {
-		return listOptions, err
 	}
 	if req.LabelSelector != "" {
 		_, err := labels.Parse(req.LabelSelector)
