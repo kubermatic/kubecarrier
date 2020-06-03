@@ -39,6 +39,7 @@ import (
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/status"
 	corev1 "k8s.io/api/core/v1"
+	rbacv1 "k8s.io/api/rbac/v1"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
@@ -275,14 +276,20 @@ func (w gRPCWithAuthToken) RequireTransportSecurity() bool {
 func providerService(ctx context.Context, conn *grpc.ClientConn, managementClient *testutil.RecordingClient) func(t *testing.T) {
 	return func(t *testing.T) {
 		testName := strings.Replace(strings.ToLower(t.Name()), "/", "-", -1)
-		ns := &corev1.Namespace{}
-		ns.Name = testName
-		require.NoError(t, managementClient.Create(ctx, ns))
-		// Create tenants objects in the management cluster.
+		// Create an account to test authorization middleware
+		account := testutil.NewTenantAccount(testName, rbacv1.Subject{
+			Kind:     rbacv1.UserKind,
+			APIGroup: "rbac.authorization.k8s.io",
+			Name:     "admin@kubecarrier.io",
+		})
+		require.NoError(t, managementClient.Create(ctx, account))
+		require.NoError(t, testutil.WaitUntilReady(ctx, managementClient, account), "account not ready")
+		namespaceName := account.Status.Namespace.Name
+		// Create providers objects in the management cluster.
 		provider1 := &catalogv1alpha1.Provider{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "test-provider-1",
-				Namespace: testName,
+				Namespace: namespaceName,
 				Labels: map[string]string{
 					"test-label": "provider1",
 				},
@@ -299,7 +306,7 @@ func providerService(ctx context.Context, conn *grpc.ClientConn, managementClien
 		provider2 := &catalogv1alpha1.Provider{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "test-provider-2",
-				Namespace: testName,
+				Namespace: namespaceName,
 				Labels: map[string]string{
 					"test-label": "provider2",
 				},
@@ -322,7 +329,7 @@ func providerService(ctx context.Context, conn *grpc.ClientConn, managementClien
 		// list providers with limit and continuation token.
 		require.NoError(t, wait.PollUntil(time.Second, func() (done bool, err error) {
 			providers, err := client.List(providerCtx, &apiserverv1.ListRequest{
-				Account: testName,
+				Account: account.Name,
 				Limit:   1,
 			})
 			if err != nil {
@@ -331,7 +338,7 @@ func providerService(ctx context.Context, conn *grpc.ClientConn, managementClien
 			assert.Len(t, providers.Items, 1)
 			testutil.LogObject(t, providers)
 			providers, err = client.List(providerCtx, &apiserverv1.ListRequest{
-				Account:  testName,
+				Account:  account.Name,
 				Limit:    1,
 				Continue: providers.Metadata.Continue,
 			})
@@ -346,7 +353,7 @@ func providerService(ctx context.Context, conn *grpc.ClientConn, managementClien
 		// get provider
 		require.NoError(t, wait.PollUntil(time.Second, func() (done bool, err error) {
 			provider, err := client.Get(providerCtx, &apiserverv1.GetRequest{
-				Account: testName,
+				Account: account.Name,
 				Name:    "test-provider-1",
 			})
 			if err != nil {
@@ -359,7 +366,7 @@ func providerService(ctx context.Context, conn *grpc.ClientConn, managementClien
 			expectedResult := &apiserverv1.Provider{
 				Metadata: &apiserverv1.ObjectMeta{
 					Name:    "test-provider-1",
-					Account: testName,
+					Account: account.Name,
 					Labels: map[string]string{
 						"test-label": "provider1",
 					},
@@ -385,14 +392,20 @@ func providerService(ctx context.Context, conn *grpc.ClientConn, managementClien
 func offeringService(ctx context.Context, conn *grpc.ClientConn, managementClient *testutil.RecordingClient) func(t *testing.T) {
 	return func(t *testing.T) {
 		testName := strings.Replace(strings.ToLower(t.Name()), "/", "-", -1)
-		ns := &corev1.Namespace{}
-		ns.Name = testName
-		require.NoError(t, managementClient.Create(ctx, ns))
+		// Create an account to test authorization middleware
+		account := testutil.NewTenantAccount(testName, rbacv1.Subject{
+			Kind:     rbacv1.UserKind,
+			APIGroup: "rbac.authorization.k8s.io",
+			Name:     "admin@kubecarrier.io",
+		})
+		require.NoError(t, managementClient.Create(ctx, account))
+		require.NoError(t, testutil.WaitUntilReady(ctx, managementClient, account), "account not ready")
+		namespaceName := account.Status.Namespace.Name
 		// Create offering objects in the management cluster.
 		offering1 := &catalogv1alpha1.Offering{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "test-offering-1",
-				Namespace: testName,
+				Namespace: namespaceName,
 				Labels: map[string]string{
 					"test-label": "offering1",
 				},
@@ -434,7 +447,7 @@ func offeringService(ctx context.Context, conn *grpc.ClientConn, managementClien
 		offering2 := &catalogv1alpha1.Offering{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "test-offering-2",
-				Namespace: testName,
+				Namespace: namespaceName,
 				Labels: map[string]string{
 					"test-label": "offering2",
 				},
@@ -482,7 +495,7 @@ func offeringService(ctx context.Context, conn *grpc.ClientConn, managementClien
 		// list offerings with limit and continuation token.
 		require.NoError(t, wait.PollUntil(time.Second, func() (done bool, err error) {
 			offerings, err := client.List(offeringCtx, &apiserverv1.ListRequest{
-				Account: testName,
+				Account: account.Name,
 				Limit:   1,
 			})
 			if err != nil {
@@ -490,7 +503,7 @@ func offeringService(ctx context.Context, conn *grpc.ClientConn, managementClien
 			}
 			assert.Len(t, offerings.Items, 1)
 			offerings, err = client.List(offeringCtx, &apiserverv1.ListRequest{
-				Account:  testName,
+				Account:  account.Name,
 				Limit:    1,
 				Continue: offerings.Metadata.Continue,
 			})
@@ -504,7 +517,7 @@ func offeringService(ctx context.Context, conn *grpc.ClientConn, managementClien
 		// get offering
 		require.NoError(t, wait.PollUntil(time.Second, func() (done bool, err error) {
 			offering, err := client.Get(offeringCtx, &apiserverv1.GetRequest{
-				Account: testName,
+				Account: account.Name,
 				Name:    "test-offering-1",
 			})
 			if err != nil {
@@ -517,7 +530,7 @@ func offeringService(ctx context.Context, conn *grpc.ClientConn, managementClien
 			expectedResult := &apiserverv1.Offering{
 				Metadata: &apiserverv1.ObjectMeta{
 					Name:    "test-offering-1",
-					Account: testName,
+					Account: namespaceName,
 					Labels: map[string]string{
 						"test-label": "offering1",
 					},
@@ -560,14 +573,20 @@ func offeringService(ctx context.Context, conn *grpc.ClientConn, managementClien
 func regionService(ctx context.Context, conn *grpc.ClientConn, managementClient *testutil.RecordingClient) func(t *testing.T) {
 	return func(t *testing.T) {
 		testName := strings.Replace(strings.ToLower(t.Name()), "/", "-", -1)
-		ns := &corev1.Namespace{}
-		ns.Name = testName
-		require.NoError(t, managementClient.Create(ctx, ns))
+		// Create an account to test authorization middleware
+		account := testutil.NewTenantAccount(testName, rbacv1.Subject{
+			Kind:     rbacv1.UserKind,
+			APIGroup: "rbac.authorization.k8s.io",
+			Name:     "admin@kubecarrier.io",
+		})
+		require.NoError(t, managementClient.Create(ctx, account))
+		require.NoError(t, testutil.WaitUntilReady(ctx, managementClient, account), "account not ready")
+		namespaceName := account.Status.Namespace.Name
 		// Create region objects in the management cluster.
 		region1 := &catalogv1alpha1.Region{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "test-region-1",
-				Namespace: testName,
+				Namespace: namespaceName,
 				Labels: map[string]string{
 					"test-label": "region1",
 				},
@@ -585,7 +604,7 @@ func regionService(ctx context.Context, conn *grpc.ClientConn, managementClient 
 		region2 := &catalogv1alpha1.Region{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "test-region-2",
-				Namespace: testName,
+				Namespace: namespaceName,
 				Labels: map[string]string{
 					"test-label": "region2",
 				},
@@ -609,7 +628,7 @@ func regionService(ctx context.Context, conn *grpc.ClientConn, managementClient 
 		// list regions with limit and continuation token.
 		require.NoError(t, wait.PollUntil(time.Second, func() (done bool, err error) {
 			regions, err := client.List(regionCtx, &apiserverv1.ListRequest{
-				Account: testName,
+				Account: account.Name,
 				Limit:   1,
 			})
 			if err != nil {
@@ -617,7 +636,7 @@ func regionService(ctx context.Context, conn *grpc.ClientConn, managementClient 
 			}
 			assert.Len(t, regions.Items, 1)
 			regions, err = client.List(regionCtx, &apiserverv1.ListRequest{
-				Account:  testName,
+				Account:  account.Name,
 				Limit:    1,
 				Continue: regions.Metadata.Continue,
 			})
@@ -631,7 +650,7 @@ func regionService(ctx context.Context, conn *grpc.ClientConn, managementClient 
 		// get region
 		require.NoError(t, wait.PollUntil(time.Second, func() (done bool, err error) {
 			region, err := client.Get(regionCtx, &apiserverv1.GetRequest{
-				Account: testName,
+				Account: account.Name,
 				Name:    "test-region-1",
 			})
 			if err != nil {
@@ -644,7 +663,7 @@ func regionService(ctx context.Context, conn *grpc.ClientConn, managementClient 
 			expectedResult := &apiserverv1.Region{
 				Metadata: &apiserverv1.ObjectMeta{
 					Name:    "test-region-1",
-					Account: testName,
+					Account: namespaceName,
 					Labels: map[string]string{
 						"test-label": "region1",
 					},

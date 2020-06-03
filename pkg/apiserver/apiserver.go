@@ -128,27 +128,23 @@ func runE(flags *flags, log logr.Logger) error {
 		return fmt.Errorf("creating client: %w", err)
 	}
 
-	authClient := authorizer.AuthorizationClient{
-		Scheme: scheme,
-		Log:    log,
-		Client: c,
-	}
+	authorizer := authorizer.NewAuthorizer(log, scheme, c, mapper)
 
 	apiserverv1.RegisterKubeCarrierServer(grpcServer, &v1.KubeCarrierServer{})
 	if err := apiserverv1.RegisterKubeCarrierHandlerServer(context.Background(), grpcGatewayMux, &v1.KubeCarrierServer{}); err != nil {
 		return err
 	}
-	offeringServer := v1.NewOfferingServiceServer(authClient)
+	offeringServer := v1.NewOfferingServiceServer(c, authorizer)
 	apiserverv1.RegisterOfferingServiceServer(grpcServer, offeringServer)
 	if err := apiserverv1.RegisterOfferingServiceHandlerServer(context.Background(), grpcGatewayMux, offeringServer); err != nil {
 		return err
 	}
-	regionServer := v1.NewRegionServiceServer(c)
+	regionServer := v1.NewRegionServiceServer(c, authorizer)
 	apiserverv1.RegisterRegionServiceServer(grpcServer, regionServer)
 	if err := apiserverv1.RegisterRegionServiceHandlerServer(context.Background(), grpcGatewayMux, regionServer); err != nil {
 		return err
 	}
-	providerServer := v1.NewProviderServiceServer(c)
+	providerServer := v1.NewProviderServiceServer(c, authorizer)
 	apiserverv1.RegisterProviderServiceServer(grpcServer, providerServer)
 	if err := apiserverv1.RegisterProviderServiceHandlerServer(context.Background(), grpcGatewayMux, providerServer); err != nil {
 		return err

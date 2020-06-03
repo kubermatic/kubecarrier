@@ -19,164 +19,97 @@ package authorizer
 import (
 	"context"
 	"fmt"
-	"strings"
 
 	"github.com/go-logr/logr"
-	"github.com/gobuffalo/flect"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/metadata"
-	"google.golang.org/grpc/status"
 	authv1 "k8s.io/api/authorization/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/apiutil"
+
+	"github.com/kubermatic/kubecarrier/pkg/apiserver/internal/oidc"
 )
 
-const (
-	userHeaderKey = "authorization"
-)
-
-type AuthorizationClient struct {
-	Scheme *runtime.Scheme
-	Log    logr.Logger
-	client.Client
+type Authorizer struct {
+	scheme     *runtime.Scheme
+	log        logr.Logger
+	client     client.Client
+	restMapper meta.RESTMapper
 }
 
-func (a AuthorizationClient) Get(ctx context.Context, key client.ObjectKey, obj runtime.Object) error {
-	decision, err := a.authorize(ctx, obj, GetAuthorization{
-		Name:      key.Name,
-		Namespace: key.Namespace,
-	})
-	if err != nil {
-		return status.Errorf(codes.Internal, fmt.Sprintf("authorizing request: %s", err.Error()))
+func NewAuthorizer(log logr.Logger, scheme *runtime.Scheme, client client.Client, restMapper meta.RESTMapper) Authorizer {
+	return Authorizer{
+		scheme:     scheme,
+		log:        log,
+		client:     client,
+		restMapper: restMapper,
 	}
-	if decision != DecisionAllowed {
-		return status.Errorf(codes.Unauthenticated, "authorizing request failed.")
-	}
-	if err := a.Client.Get(ctx, key, obj); err != nil {
-		return status.Errorf(codes.Internal, fmt.Sprintf("getting %s: %s", obj.GetObjectKind().GroupVersionKind().Kind, err.Error()))
-	}
-	return nil
 }
-
-func (a AuthorizationClient) List(ctx context.Context, list runtime.Object, opts ...client.ListOption) error {
-	var authOpt ListAuthorization
-	for _, opt := range opts {
-		if namespace, isInNamespace := opt.(client.InNamespace); isInNamespace {
-			authOpt.Namespace = string(namespace)
-		}
-	}
-	decision, err := a.authorize(ctx, list, authOpt)
-	if err != nil {
-		return status.Errorf(codes.Internal, fmt.Sprintf("authorizing request: %s", err.Error()))
-	}
-	if decision != DecisionAllowed {
-		return status.Errorf(codes.Unauthenticated, "authorizing request failed.")
-	}
-	if err := a.Client.List(ctx, list, opts...); err != nil {
-		return status.Errorf(codes.Internal, fmt.Sprintf("listing %s: %s", list.GetObjectKind().GroupVersionKind().Kind, err.Error()))
-	}
-	return nil
-}
-
-type AuthorizationDecision string
-
-const (
-	DecisionAllowed   AuthorizationDecision = "allowed"
-	DecisionDenied    AuthorizationDecision = "denied"
-	DecisionNoOpinion AuthorizationDecision = "no opinion"
-)
 
 // +kubebuilder:rbac:groups=authorization.k8s.io,resources=subjectaccessreviews,verbs=create
 
-func (a AuthorizationClient) authorize(
+func (a Authorizer) Authorize(
 	ctx context.Context,
 	objType runtime.Object,
 	option AuthorizationOption,
-) (AuthorizationDecision, error) {
-	userInfo, err := a.getUserInfo(ctx)
-	if err != nil {
-		return DecisionDenied, fmt.Errorf("cannot get the user infomation from the request: %w", err)
+) error {
+	user, present := oidc.ExtractUserInfo(ctx)
+	if !present {
+		return fmt.Errorf("cannot get user info from OIDC")
 	}
-
-	gvk, err := apiutil.GVKForObject(objType, a.Scheme)
+	gvk, err := apiutil.GVKForObject(objType, a.scheme)
 	if err != nil {
-		return DecisionDenied, fmt.Errorf("cannot get GVK for %T: %w", objType, err)
+		return fmt.Errorf("cannot get GVK for %T: %w", objType, err)
 	}
-	var resource string
-	if meta.IsListType(objType) {
-		resource = flect.Pluralize(strings.ToLower(strings.TrimSuffix(gvk.Kind, "List")))
-
-	} else {
-		resource = flect.Pluralize(strings.ToLower(gvk.Kind))
+	restMapping, err := a.restMapper.RESTMapping(gvk.GroupKind(), gvk.Version)
+	if err != nil {
+		return fmt.Errorf("cannot get resources for %T: %w", objType, err)
 	}
 
 	review := &authv1.SubjectAccessReview{
 		Spec: authv1.SubjectAccessReviewSpec{
 			ResourceAttributes: &authv1.ResourceAttributes{
-				Group:    gvk.Group,
-				Version:  gvk.Version,
-				Resource: resource,
+				Group:    restMapping.Resource.Group,
+				Version:  restMapping.Resource.Version,
+				Resource: restMapping.Resource.Resource,
 			},
-			User: userInfo.Name,
+			User:   user.GetName(),
+			Groups: user.GetGroups(),
+			UID:    user.GetUID(),
+			Extra:  make(map[string]authv1.ExtraValue),
 		},
 	}
+	for key, val := range user.GetExtra() {
+		review.Spec.Extra[key] = val
+	}
 	option.apply(review)
-	if err := a.Create(ctx, review); err != nil {
-		return DecisionDenied, fmt.Errorf("creating SubjectAccessReview: %s", err)
+	if err := a.client.Create(ctx, review); err != nil {
+		return fmt.Errorf("creating SubjectAccessReview: %s", err)
 	}
-	switch {
-	case review.Status.Denied:
-		return DecisionDenied, nil
-	case review.Status.Allowed:
-		return DecisionAllowed, nil
-	default:
-		return DecisionNoOpinion, nil
+	if !review.Status.Allowed {
+		return fmt.Errorf("permission denied: %s", review)
 	}
-}
-
-func (a AuthorizationClient) getUserInfo(ctx context.Context) (UserInfo, error) {
-	var userInfo UserInfo
-	md, ok := metadata.FromIncomingContext(ctx)
-	if !ok {
-		return userInfo, fmt.Errorf("request doesn't contain user info")
-	}
-	userNames := md.Get(userHeaderKey)
-	if len(userNames) != 1 {
-		return userInfo, fmt.Errorf("user header is invalid in request")
-	}
-	userInfo.Name = userNames[0]
-	return userInfo, nil
+	return nil
 }
 
 type RequestOperation string
 
 const (
-	RequestGet  RequestOperation = "get"
-	RequestList RequestOperation = "list"
+	RequestGet    RequestOperation = "get"
+	RequestList   RequestOperation = "list"
+	RequestWatch  RequestOperation = "watch"
+	RequestCreate RequestOperation = "create"
+	RequestDelete RequestOperation = "delete"
 )
 
-type AuthorizationOption interface {
-	apply(review *authv1.SubjectAccessReview)
-}
-
-type GetAuthorization struct {
-	Namespace string
+type AuthorizationOption struct {
 	Name      string
-}
-
-func (a GetAuthorization) apply(review *authv1.SubjectAccessReview) {
-	review.Spec.ResourceAttributes.Verb = string(RequestGet)
-	review.Spec.ResourceAttributes.Namespace = a.Namespace
-	review.Spec.ResourceAttributes.Name = a.Name
-}
-
-type ListAuthorization struct {
 	Namespace string
+	Verb      RequestOperation
 }
 
-func (a ListAuthorization) apply(review *authv1.SubjectAccessReview) {
-	review.Spec.ResourceAttributes.Verb = string(RequestList)
+func (a AuthorizationOption) apply(review *authv1.SubjectAccessReview) {
+	review.Spec.ResourceAttributes.Name = a.Name
 	review.Spec.ResourceAttributes.Namespace = a.Namespace
+	review.Spec.ResourceAttributes.Verb = string(a.Verb)
 }
