@@ -134,8 +134,9 @@ func runE(flags *flags, log logr.Logger) error {
 	if err := apiserverv1.RegisterKubeCarrierHandlerServer(context.Background(), grpcGatewayMux, &v1.KubeCarrierServer{}); err != nil {
 		return err
 	}
-	offeringServer := v1.NewOfferingServiceServer(c, authorizer)
-	apiserverv1.RegisterOfferingServiceServer(grpcServer, offeringServer)
+	offeringServer := v1.NewOfferingServiceServer(c)
+	offeringAuthServer := v1.NewOfferingAuthWrapper(offeringServer, authorizer)
+	apiserverv1.RegisterOfferingServiceServer(grpcServer, offeringAuthServer)
 	if err := apiserverv1.RegisterOfferingServiceHandlerServer(context.Background(), grpcGatewayMux, offeringServer); err != nil {
 		return err
 	}

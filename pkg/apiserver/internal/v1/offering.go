@@ -27,7 +27,6 @@ import (
 
 	catalogv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/catalog/v1alpha1"
 	v1 "github.com/kubermatic/kubecarrier/pkg/apiserver/api/v1"
-	"github.com/kubermatic/kubecarrier/pkg/apiserver/internal/authorizer"
 )
 
 type offeringServer struct {
@@ -38,9 +37,8 @@ var _ v1.OfferingServiceServer = (*offeringServer)(nil)
 
 // +kubebuilder:rbac:groups=catalog.kubecarrier.io,resources=offerings,verbs=get;list
 
-func NewOfferingServiceServer(c client.Client, authorizer authorizer.Authorizer) v1.OfferingServiceServer {
-	service := offeringServer{client: c}
-	return NewOfferingAuthWrapper(service, authorizer)
+func NewOfferingServiceServer(c client.Client) v1.OfferingServiceServer {
+	return &offeringServer{client: c}
 }
 
 func (o offeringServer) List(ctx context.Context, req *v1.ListRequest) (res *v1.OfferingList, err error) {
