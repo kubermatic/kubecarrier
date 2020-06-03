@@ -41,6 +41,7 @@ import (
 	"k8s.io/client-go/dynamic"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/cache"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/apiutil"
 	"sigs.k8s.io/controller-runtime/pkg/client/config"
@@ -141,6 +142,41 @@ func runE(flags *flags, log logr.Logger) error {
 		return fmt.Errorf("creating dynamic client: %w", err)
 	}
 
+	// Set up cache for account
+	accountCache, err := cache.New(cfg, cache.Options{
+		Scheme: scheme,
+		Mapper: mapper,
+	})
+	if err != nil {
+		return fmt.Errorf("creating cache for account: %w", err)
+	}
+	if err := v1.RegisterAccountUsernameFieldIndex(accountCache); err != nil {
+		return fmt.Errorf("fail to register field index for Account Username: %w", err)
+	}
+	accountClient := &client.DelegatingClient{
+		Reader:       accountCache,
+		Writer:       c,
+		StatusClient: c,
+	}
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	log.Info("start cache")
+	go func() {
+		if err := accountCache.Start(ctrl.SetupSignalHandler()); err != nil {
+			log.Error(err, "starting cache")
+			cancel()
+		}
+	}()
+	if isSynced := accountCache.WaitForCacheSync(ctx.Done()); !isSynced {
+		return fmt.Errorf("cache is outdated")
+	}
+
+	accountServer := v1.NewAccountServiceServer(accountClient)
+	apiserverv1.RegisterAccountServiceServer(grpcServer, accountServer)
+	if err := apiserverv1.RegisterAccountServiceHandlerServer(ctx, grpcGatewayMux, accountServer); err != nil {
+		return err
+	}
+
 	apiserverv1.RegisterKubeCarrierServer(grpcServer, &v1.KubeCarrierServer{})
 	if err := apiserverv1.RegisterKubeCarrierHandlerServer(ctx, grpcGatewayMux, &v1.KubeCarrierServer{}); err != nil {
 		return err
@@ -156,7 +192,7 @@ func runE(flags *flags, log logr.Logger) error {
 
 	instanceServer := v1.NewInstancesServer(c, mapper)
 	apiserverv1.RegisterInstancesServiceServer(grpcServer, instanceServer)
-	if err := apiserverv1.RegisterInstancesServiceHandlerServer(context.Background(), grpcGatewayMux, instanceServer); err != nil {
+	if err := apiserverv1.RegisterInstancesServiceHandlerServer(ctx, grpcGatewayMux, instanceServer); err != nil {
 		return err
 	}
 
