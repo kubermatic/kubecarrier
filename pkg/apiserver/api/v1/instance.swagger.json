@@ -39,6 +39,31 @@
       },
       "type": "object"
     },
+    "runtimeStreamError": {
+      "properties": {
+        "details": {
+          "items": {
+            "$ref": "#/definitions/protobufAny"
+          },
+          "type": "array"
+        },
+        "grpc_code": {
+          "format": "int32",
+          "type": "integer"
+        },
+        "http_code": {
+          "format": "int32",
+          "type": "integer"
+        },
+        "http_status": {
+          "type": "string"
+        },
+        "message": {
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
     "v1Instance": {
       "properties": {
         "metadata": {
@@ -135,6 +160,17 @@
         },
         "encoding": {
           "title": "Encoding of the object data",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "v1WatchEvent": {
+      "properties": {
+        "object": {
+          "$ref": "#/definitions/protobufAny"
+        },
+        "type": {
           "type": "string"
         }
       },
@@ -349,6 +385,71 @@
             "description": "A successful response.",
             "schema": {
               "$ref": "#/definitions/v1Instance"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response",
+            "schema": {
+              "$ref": "#/definitions/runtimeError"
+            }
+          }
+        },
+        "tags": [
+          "InstancesService"
+        ]
+      }
+    },
+    "/v1/watch/accounts/{account}/instances/{offering}/{version}": {
+      "get": {
+        "operationId": "Watch",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "account",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "description": "Offering name, i.e. couchdb.eu-west-1.team-a",
+            "in": "path",
+            "name": "offering",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "description": "Version of the resource",
+            "in": "path",
+            "name": "version",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "in": "query",
+            "name": "labelSelector",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "in": "query",
+            "name": "resourceVersion",
+            "required": false,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A successful response.(streaming responses)",
+            "schema": {
+              "properties": {
+                "error": {
+                  "$ref": "#/definitions/runtimeStreamError"
+                },
+                "result": {
+                  "$ref": "#/definitions/v1WatchEvent"
+                }
+              },
+              "title": "Stream result of v1WatchEvent",
+              "type": "object"
             }
           },
           "default": {

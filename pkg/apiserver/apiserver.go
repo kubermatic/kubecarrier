@@ -190,9 +190,9 @@ func runE(flags *flags, log logr.Logger) error {
 		return err
 	}
 
-	instanceServer := v1.NewInstancesServer(c, mapper)
+	instanceServer := v1.NewInstancesServer(c, dynamicClient, mapper, scheme)
 	apiserverv1.RegisterInstancesServiceServer(grpcServer, instanceServer)
-	if err := apiserverv1.RegisterInstancesServiceHandlerServer(ctx, grpcGatewayMux, instanceServer); err != nil {
+	if err := apiserverv1.RegisterInstancesServiceHandler(ctx, grpcGatewayMux, grpcClient); err != nil {
 		return err
 	}
 

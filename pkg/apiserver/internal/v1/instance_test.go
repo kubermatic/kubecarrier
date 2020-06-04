@@ -89,7 +89,7 @@ func TestGetInstance(t *testing.T) {
 	assert.Nil(t, err)
 
 	client := fakeclient.NewFakeClientWithScheme(testScheme, instance)
-	instanceServer := NewInstancesServer(client, newFakeRESTMapper("CouchDB"))
+	instanceServer := NewInstancesServer(client, nil, newFakeRESTMapper("CouchDB"), testScheme)
 	ctx := context.Background()
 	tests := []struct {
 		name           string
@@ -182,7 +182,7 @@ func TestGetInstance(t *testing.T) {
 func TestCreateInstance(t *testing.T) {
 	spec := v1.NewJSONRawObject([]byte("{\"password\":\"password\",\"username\":\"username\"}"))
 	client := fakeclient.NewFakeClientWithScheme(testScheme)
-	instanceServer := NewInstancesServer(client, newFakeRESTMapper("CouchDB"))
+	instanceServer := NewInstancesServer(client, nil, newFakeRESTMapper("CouchDB"), testScheme)
 	ctx := context.Background()
 	tests := []struct {
 		name           string
@@ -228,7 +228,7 @@ func TestDeleteInstance(t *testing.T) {
 		map[string]string{"status": "ready"}, map[string]string{})
 	assert.Nil(t, err)
 	client := fakeclient.NewFakeClientWithScheme(testScheme)
-	instanceServer := NewInstancesServer(client, newFakeRESTMapper("CouchDB"))
+	instanceServer := NewInstancesServer(client, nil, newFakeRESTMapper("CouchDB"), testScheme)
 	ctx := context.Background()
 	err = client.Create(ctx, instance)
 	assert.Nil(t, err)
@@ -279,7 +279,7 @@ func TestListInstance(t *testing.T) {
 
 	client := fakeclient.NewFakeClientWithScheme(testScheme, instances)
 	testScheme.AddKnownTypeWithName(instanceListGVK, instances)
-	instanceServer := NewInstancesServer(client, newFakeRESTMapper("CouchDBList"))
+	instanceServer := NewInstancesServer(client, nil, newFakeRESTMapper("CouchDBList"), testScheme)
 	ctx := context.Background()
 	tests := []struct {
 		name           string

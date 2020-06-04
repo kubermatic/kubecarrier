@@ -216,6 +216,65 @@ func newAPIServer(f *testutil.Framework) func(t *testing.T) {
 	}
 }
 
+func fetchUserToken(ctx context.Context, t *testing.T, managementClient *testutil.RecordingClient, kubeconfig string) string {
+	const localDexServerPort = 10443
+	pfDex := exec.CommandContext(ctx,
+		"kubectl",
+		"--kubeconfig", kubeconfig,
+		"--namespace", "kubecarrier-system",
+		"port-forward",
+		"service/dex",
+		fmt.Sprintf("%d:https", localDexServerPort),
+	)
+	pfDex.Stdout = os.Stdout
+	pfDex.Stderr = os.Stderr
+
+	require.NoError(t, pfDex.Start())
+	certPool := x509.NewCertPool()
+	dexTLSSecret := &corev1.Secret{}
+	require.NoError(t, managementClient.Get(ctx, types.NamespacedName{Name: "dex-web-server", Namespace: "kubecarrier-system"}, dexTLSSecret))
+	require.True(t, certPool.AppendCertsFromPEM(dexTLSSecret.Data["ca.crt"]))
+	require.True(t, certPool.AppendCertsFromPEM(dexTLSSecret.Data[corev1.TLSCertKey]))
+	token, err := testutil.DexFakeClientCredentialsGrant(
+		ctx,
+		testutil.NewLogger(t),
+		&http.Client{
+			Transport: &http.Transport{
+				TLSClientConfig: &tls.Config{
+					RootCAs:    certPool,
+					ServerName: "dex.kubecarrier-system.svc",
+				},
+			},
+			Timeout: 5 * time.Second,
+		},
+		fmt.Sprintf("https://localhost:%d/auth", localDexServerPort),
+		"admin@example.com",
+		"password",
+	)
+	require.NoError(t, err, "getting token from internal dex instance")
+	return token
+}
+
+type toGRPCStatus interface {
+	GRPCStatus() *status.Status
+}
+
+type gRPCWithAuthToken struct {
+	token string
+}
+
+var _ credentials.PerRPCCredentials = gRPCWithAuthToken{}
+
+func (w gRPCWithAuthToken) GetRequestMetadata(ctx context.Context, uri ...string) (map[string]string, error) {
+	return map[string]string{
+		"Authorization": "Bearer " + w.token,
+	}, nil
+}
+
+func (w gRPCWithAuthToken) RequireTransportSecurity() bool {
+	return true
+}
+
 func instanceService(ctx context.Context, conn *grpc.ClientConn, managementClient *testutil.RecordingClient, f *testutil.Framework) func(t *testing.T) {
 	return func(t *testing.T) {
 		serviceClient, err := f.ServiceClient(t)
@@ -316,6 +375,15 @@ func instanceService(ctx context.Context, conn *grpc.ClientConn, managementClien
 		require.NoError(t, testutil.WaitUntilReady(ctx, managementClient, serviceClusterAssignment), "service cluster assignment not ready")
 
 		client := apiserverv1.NewInstancesServiceClient(conn)
+		// watch instances
+		watchCtx, cancel := context.WithTimeout(ctx, 30*time.Second)
+		t.Cleanup(cancel)
+		watchClient, err := client.Watch(watchCtx, &apiserverv1.InstanceWatchRequest{
+			Offering: offering.Name,
+			Version:  "v1",
+			Account:  tenantAccount.Status.Namespace.Name,
+		})
+		require.NoError(t, err)
 		createReq := &apiserverv1.InstanceCreateRequest{
 			Offering: offering.Name,
 			Version:  "v1",
@@ -357,66 +425,22 @@ func instanceService(ctx context.Context, conn *grpc.ClientConn, managementClien
 		_, err = client.Delete(ctx, delReq)
 		require.NoError(t, err, "deleting instance")
 		require.NoError(t, testutil.WaitUntilNotFound(ctx, serviceClient, fakeDB))
+
+		// validate watch result
+		expectedEventNum := map[string]int{
+			string(watch.Added):   1,
+			string(watch.Deleted): 1,
+		}
+		eventCounters := make(map[string]int)
+		for {
+			event, err := watchClient.Recv()
+			if err != nil || event == nil {
+				assert.Equal(t, expectedEventNum, eventCounters)
+				break
+			}
+			eventCounters[event.Type]++
+		}
 	}
-}
-
-func fetchUserToken(ctx context.Context, t *testing.T, managementClient *testutil.RecordingClient, kubeconfig string) string {
-	const localDexServerPort = 10443
-	pfDex := exec.CommandContext(ctx,
-		"kubectl",
-		"--kubeconfig", kubeconfig,
-		"--namespace", "kubecarrier-system",
-		"port-forward",
-		"service/dex",
-		fmt.Sprintf("%d:https", localDexServerPort),
-	)
-	pfDex.Stdout = os.Stdout
-	pfDex.Stderr = os.Stderr
-
-	require.NoError(t, pfDex.Start())
-	certPool := x509.NewCertPool()
-	dexTLSSecret := &corev1.Secret{}
-	require.NoError(t, managementClient.Get(ctx, types.NamespacedName{Name: "dex-web-server", Namespace: "kubecarrier-system"}, dexTLSSecret))
-	require.True(t, certPool.AppendCertsFromPEM(dexTLSSecret.Data["ca.crt"]))
-	require.True(t, certPool.AppendCertsFromPEM(dexTLSSecret.Data[corev1.TLSCertKey]))
-	token, err := testutil.DexFakeClientCredentialsGrant(
-		ctx,
-		testutil.NewLogger(t),
-		&http.Client{
-			Transport: &http.Transport{
-				TLSClientConfig: &tls.Config{
-					RootCAs:    certPool,
-					ServerName: "dex.kubecarrier-system.svc",
-				},
-			},
-			Timeout: 5 * time.Second,
-		},
-		fmt.Sprintf("https://localhost:%d/auth", localDexServerPort),
-		"admin@example.com",
-		"password",
-	)
-	require.NoError(t, err, "getting token from internal dex instance")
-	return token
-}
-
-type toGRPCStatus interface {
-	GRPCStatus() *status.Status
-}
-
-type gRPCWithAuthToken struct {
-	token string
-}
-
-var _ credentials.PerRPCCredentials = gRPCWithAuthToken{}
-
-func (w gRPCWithAuthToken) GetRequestMetadata(ctx context.Context, uri ...string) (map[string]string, error) {
-	return map[string]string{
-		"Authorization": "Bearer " + w.token,
-	}, nil
-}
-
-func (w gRPCWithAuthToken) RequireTransportSecurity() bool {
-	return true
 }
 
 func accountService(ctx context.Context, conn *grpc.ClientConn, managementClient *testutil.RecordingClient, f *testutil.Framework) func(t *testing.T) {
@@ -764,7 +788,6 @@ func offeringService(ctx context.Context, conn *grpc.ClientConn, managementClien
 		}, offeringCtx.Done()))
 
 		// watch offerings
-		t.Cleanup(cancel)
 		watchClient, err := client.Watch(offeringCtx, &apiserverv1.WatchRequest{
 			Account: testName,
 		})
