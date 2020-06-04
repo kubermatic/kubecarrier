@@ -57,6 +57,7 @@ RUN curl -sL https://go.kubebuilder.io/dl/${kubebuilder_version}/linux/amd64 | t
 
 RUN go get golang.org/x/tools/cmd/goimports
 RUN go get github.com/rakyll/statik
+RUN go get github.com/pablo-ruth/go-init
 # Install controller-gen in the dockerfile, otherwise it will be installed during `make generate` which will modify the go.mod
 # and go.sum files, and make the directory dirty.
 RUN go get sigs.k8s.io/controller-tools/cmd/controller-gen@v0.2.9
