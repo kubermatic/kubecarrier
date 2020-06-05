@@ -23,14 +23,17 @@ function cleanup() {
   mkdir -p ${workdir}/svc
   kind export logs --name ${MANAGEMENT_KIND_CLUSTER} ${workdir}/management
   kind export logs --name ${SVC_KIND_CLUSTER} ${workdir}/svc
+  echo "export logs finishes"
 
   # https://github.com/kubernetes/test-infra/blob/master/prow/jobs.md#job-environment-variables
   local JOB_LOG=${PULL_NUMBER:-}-${JOB_NAME:-}-${BUILD_ID:-}
   if [[ "${JOB_LOG}" != "--" ]]; then
     zip -r "${workdir}/${JOB_LOG}.zip" "${workdir}/management" "${workdir}/svc"
     aws s3 cp "${workdir}/${JOB_LOG}.zip" "s3://e2elogs.kubecarrier.io/${JOB_LOG}.zip"
+    echo "save logs to aws finishes"
   fi
 }
 
 trap cleanup EXIT
 kubectl kubecarrier e2e-test run --test.v --test.failfast --test-id=${TEST_ID} | richgo testfilter
+echo "tests finishes"
