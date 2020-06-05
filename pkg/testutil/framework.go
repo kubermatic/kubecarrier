@@ -287,7 +287,7 @@ func (rc *RecordingClient) CleanUpFunc(ctx context.Context) func() {
 				continue
 			}
 
-			err := DeleteAndWaitUntilNotFound(ctx, rc, obj, WithTimeout(time.Minute))
+			err := DeleteAndWaitUntilNotFound(ctx, rc, obj, WithTimeout(2*time.Minute))
 			if err != nil {
 				err = fmt.Errorf("cleanup %s: %w", key, err)
 			}
