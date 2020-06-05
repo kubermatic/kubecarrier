@@ -196,7 +196,7 @@ func (o instanceServer) Watch(req *v1.InstanceWatchRequest, stream v1.InstancesS
 				Object: any,
 			})
 			if grpcStatus, ok := err.(toGRPCStatus); ok {
-				return status.Error(grpcStatus.GRPCStatus().Code(), grpcStatus.GRPCStatus().Message())
+				return grpcStatus.GRPCStatus().Err()
 			} else if err != nil {
 				return status.Errorf(codes.Internal, "sending instance stream: %s", err.Error())
 			}
