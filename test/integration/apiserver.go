@@ -764,7 +764,6 @@ func offeringService(ctx context.Context, conn *grpc.ClientConn, managementClien
 		}, offeringCtx.Done()))
 
 		// watch offerings
-		t.Cleanup(cancel)
 		watchClient, err := client.Watch(offeringCtx, &apiserverv1.WatchRequest{
 			Account: testName,
 		})
