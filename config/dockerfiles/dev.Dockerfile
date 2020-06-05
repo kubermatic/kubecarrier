@@ -39,6 +39,7 @@ ARG TESTIFY_VERSION
 
 RUN echo $PATH && go get github.com/golangci/golangci-lint/cmd/golangci-lint@v${GOLANGCI_LINT_VERSION} && \
   go get golang.org/x/tools/cmd/goimports && \
+  go get github.com/pablo-ruth/go-init && \
   go get github.com/stretchr/testify@v${TESTIFY_VERSION} && \
   go get github.com/thetechnick/statik@v${STATIK_VERSION} && \
   go get sigs.k8s.io/controller-tools/cmd/controller-gen@v${CONTROLLER_GEN_VERSION} && \

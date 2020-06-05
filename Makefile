@@ -37,7 +37,7 @@ endif
 
 # Dev Image to use
 # Always bump this version, when changing ANY component version below.
-DEV_IMAGE_TAG=v3
+DEV_IMAGE_TAG=v4
 
 # Versions used to build DEV image:
 export GOLANGCI_LINT_VERSION=1.26.0
