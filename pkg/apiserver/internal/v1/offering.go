@@ -107,10 +107,10 @@ func (o offeringServer) Watch(req *v1.WatchRequest, stream v1.OfferingService_Wa
 		return status.Error(codes.InvalidArgument, err.Error())
 	}
 	watcher, err := o.dynamicClient.Resource(o.gvr).Namespace(req.Account).Watch(listOptions)
-	defer watcher.Stop()
 	if err != nil {
 		return status.Errorf(codes.Internal, "watching offerings: %s", err.Error())
 	}
+	defer watcher.Stop()
 	for {
 		select {
 		case <-stream.Context().Done():
