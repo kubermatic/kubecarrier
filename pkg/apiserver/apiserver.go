@@ -38,7 +38,6 @@ import (
 	gwruntime "github.com/grpc-ecosystem/grpc-gateway/runtime"
 	"github.com/improbable-eng/grpc-web/go/grpcweb"
 	"github.com/spf13/cobra"
-	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials"
@@ -55,12 +54,13 @@ import (
 
 	catalogv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/catalog/v1alpha1"
 	apiserverv1 "github.com/kubermatic/kubecarrier/pkg/apiserver/api/v1"
-	"github.com/kubermatic/kubecarrier/pkg/apiserver/internal/auth"
-
-	// for provider
-	_ "github.com/kubermatic/kubecarrier/pkg/apiserver/internal/auth/oidc"
+	"github.com/kubermatic/kubecarrier/pkg/apiserver/auth"
 	v1 "github.com/kubermatic/kubecarrier/pkg/apiserver/internal/v1"
 	"github.com/kubermatic/kubecarrier/pkg/internal/util"
+
+	// for auth provider
+	_ "github.com/kubermatic/kubecarrier/pkg/apiserver/internal/auth/anonymous"
+	_ "github.com/kubermatic/kubecarrier/pkg/apiserver/internal/auth/oidc"
 )
 
 var (
@@ -95,7 +95,8 @@ func NewAPIServer() *cobra.Command {
 	cmd.Flags().StringVar(&flags.TLSCertFile, "tls-cert-file", "", "File containing the default x509 Certificate for HTTPS. If not provided no TLS security shall be enabled")
 	cmd.Flags().StringVar(&flags.TLSPrivateKeyFile, "tls-private-key-file", "", "File containing the default x509 private key matching --tls-cert-file.")
 	cmd.Flags().StringArrayVar(&flags.CORSAllowedOrigins, "cors-allowed-origins", []string{"*"}, "List of allowed origins for CORS, comma separated. An allowed origin can be a regular expression to support subdomain matching. If this list is empty CORS will not be enabled.")
-	cmd.Flags().StringArrayVar(&flags.AuthorizationMode, "authorization-mode", []string{"OIDC"}, "Ordered list of plug-ins to do authorization on secure port. Comma-delimited list of: OIDC,Token")
+	cmd.Flags().StringArrayVar(&flags.AuthorizationMode, "authorization-mode", []string{"OIDC"}, "Ordered list of plug-ins to do authorization on secure port. Comma-delimited list of: "+strings.Join(auth.RegisteredAuthProviders(), ","))
+	auth.RegisterPFlags(cmd.Flags())
 	return util.CmdLogMixin(cmd)
 }
 
@@ -105,31 +106,18 @@ func runE(flags *flags, log logr.Logger) error {
 		return fmt.Errorf("--tls-cert-file or --tls-private-key-file not specified, cannot start")
 	}
 
-	zapLogger, err := zap.NewDevelopment()
+	grpc_zap.ReplaceGrpcLoggerV2(util.ZapLogger)
+	authFunc, err := auth.CreateAuthFunction(flags.AuthorizationMode)
 	if err != nil {
 		return err
 	}
-	grpc_zap.ReplaceGrpcLoggerV2(zapLogger)
-	var authProviders []auth.AuthProvider
 
-	for _, mode := range flags.AuthorizationMode {
-		authProvider, err := auth.NewAuthProvider(mode)
-		if err != nil {
-			return err
-		}
-		if err := authProvider.Init(log); err != nil {
-			return fmt.Errorf("cannot init auth provider: %s: %w", mode, err)
-		}
-		authProviders = append(authProviders, authProvider)
-	}
-
-	authFunc := auth.CreateAuthFunction(authProviders)
 	grpcServer := grpc.NewServer(
 		grpc.StreamInterceptor(grpc_middleware.ChainStreamServer(
 			grpc_ctxtags.StreamServerInterceptor(),
 			grpc_opentracing.StreamServerInterceptor(),
 			grpc_prometheus.StreamServerInterceptor,
-			grpc_zap.StreamServerInterceptor(zapLogger),
+			grpc_zap.StreamServerInterceptor(util.ZapLogger),
 			grpc_auth.StreamServerInterceptor(authFunc),
 			grpc_recovery.StreamServerInterceptor(),
 		)),
@@ -137,7 +125,7 @@ func runE(flags *flags, log logr.Logger) error {
 			grpc_ctxtags.UnaryServerInterceptor(),
 			grpc_opentracing.UnaryServerInterceptor(),
 			grpc_prometheus.UnaryServerInterceptor,
-			grpc_zap.UnaryServerInterceptor(zapLogger),
+			grpc_zap.UnaryServerInterceptor(util.ZapLogger),
 			grpc_auth.UnaryServerInterceptor(authFunc),
 			grpc_recovery.UnaryServerInterceptor(),
 		)),

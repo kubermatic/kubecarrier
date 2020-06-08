@@ -19,6 +19,7 @@ package util
 import (
 	"os"
 
+	"github.com/go-logr/zapr"
 	"github.com/spf13/cobra"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -27,19 +28,26 @@ import (
 	corezap "sigs.k8s.io/controller-runtime/pkg/log/zap"
 )
 
+var ZapLogger *zap.Logger
+
 // CmdLogMixin adds necessary CLI flags for logging and setups the controller runtime log
 func CmdLogMixin(cmd *cobra.Command) *cobra.Command {
 	dev := cmd.PersistentFlags().Bool("development", terminal.IsTerminal(int(os.Stdout.Fd())), "format output for console")
 	v := cmd.PersistentFlags().Int8P("verbose", "v", 0, "verbosity level")
 
+	setupLogger := func() {
+		ZapLogger = corezap.NewRaw(func(options *corezap.Options) {
+			level := zap.NewAtomicLevelAt(zapcore.Level(-*v))
+			options.Level = &level
+			options.Development = *dev
+		})
+		ctrl.SetLogger(zapr.NewLogger(ZapLogger))
+	}
+
 	if cmd.PersistentPreRunE != nil {
 		parent := cmd.PersistentPreRunE
 		cmd.PersistentPreRunE = func(c *cobra.Command, args []string) error {
-			ctrl.SetLogger(corezap.New(func(options *corezap.Options) {
-				level := zap.NewAtomicLevelAt(zapcore.Level(-*v))
-				options.Level = &level
-				options.Development = *dev
-			}))
+			setupLogger()
 			return parent(c, args)
 		}
 		return cmd
@@ -47,11 +55,7 @@ func CmdLogMixin(cmd *cobra.Command) *cobra.Command {
 
 	parent := cmd.PersistentPreRun
 	cmd.PersistentPreRun = func(c *cobra.Command, args []string) {
-		ctrl.SetLogger(corezap.New(func(options *corezap.Options) {
-			level := zap.NewAtomicLevelAt(zapcore.Level(-*v))
-			options.Level = &level
-			options.Development = *dev
-		}))
+		setupLogger()
 		if parent != nil {
 			parent(c, args)
 		}

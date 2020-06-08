@@ -13,6 +13,7 @@ require (
 	github.com/gernest/wow v0.1.0
 	github.com/ghodss/yaml v1.0.0
 	github.com/go-logr/logr v0.1.0
+	github.com/go-logr/zapr v0.1.1
 	github.com/gobuffalo/flect v0.2.0
 	github.com/golang/protobuf v1.3.5
 	github.com/google/go-cmp v0.4.0
