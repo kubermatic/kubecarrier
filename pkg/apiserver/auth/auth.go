@@ -20,9 +20,8 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/go-logr/logr"
 	grpc_auth "github.com/grpc-ecosystem/go-grpc-middleware/auth"
-	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"k8s.io/apiserver/pkg/authentication/authenticator"
@@ -32,8 +31,8 @@ import (
 type contextKey string
 
 type AuthProvider interface {
-	RegisterFlags(command *cobra.Command)
-	Init(log logr.Logger) error
+	RegisterPFlags(fs *pflag.FlagSet)
+	Init() error
 	Authenticate(ctx context.Context) (user.Info, error)
 }
 
@@ -43,16 +42,29 @@ func RegisterAuthProvider(name string, provider AuthProvider) {
 	authProviderFactory[name] = provider
 }
 
-func NewAuthProvider(name string) (AuthProvider, error) {
-	provider, ok := authProviderFactory[name]
+func RegisteredAuthProviders() (out []string) {
+	for k := range authProviderFactory {
+		out = append(out, k)
+	}
+	return
+}
+
+func RegisterPFlags(fs *pflag.FlagSet) {
+	for _, provider := range authProviderFactory {
+		provider.RegisterPFlags(fs)
+	}
+}
+
+func newAuthProvider(name string) (AuthProvider, error) {
+	authProvider, ok := authProviderFactory[name]
 	if !ok {
 		return nil, fmt.Errorf("unknown authorization mode: %v", name)
 	}
-	return provider, nil
+	return authProvider, nil
 }
 
 const (
-	userInfoKey contextKey = "oidc.kubecarrier.io"
+	userInfoKey contextKey = "userinfo.kubecarrier.io"
 )
 
 func ExtractUserInfo(ctx context.Context) (user.Info, bool) {
@@ -60,7 +72,19 @@ func ExtractUserInfo(ctx context.Context) (user.Info, bool) {
 	return u.User, ok
 }
 
-func CreateAuthFunction(authProviders []AuthProvider) grpc_auth.AuthFunc {
+func CreateAuthFunction(authorizationModes []string) (grpc_auth.AuthFunc, error) {
+	authProviders := make([]AuthProvider, 0, len(authorizationModes))
+	for _, mode := range authorizationModes {
+		authProvider, err := newAuthProvider(mode)
+		if err != nil {
+			return nil, err
+		}
+		if err := authProvider.Init(); err != nil {
+			return nil, fmt.Errorf("cannot init auth provider: %s: %w", mode, err)
+		}
+		authProviders = append(authProviders, authProvider)
+	}
+
 	return func(ctx context.Context) (context.Context, error) {
 		for _, provider := range authProviders {
 			userInfo, err := provider.Authenticate(ctx)
@@ -77,5 +101,5 @@ func CreateAuthFunction(authProviders []AuthProvider) grpc_auth.AuthFunc {
 			return context.WithValue(ctx, userInfoKey, userInfo), nil
 		}
 		return ctx, status.Error(codes.Unauthenticated, "no auth plugin successfully authenticated the user")
-	}
+	}, nil
 }

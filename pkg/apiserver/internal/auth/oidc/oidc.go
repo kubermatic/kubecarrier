@@ -19,63 +19,55 @@ package oidc
 import (
 	"context"
 
-	"github.com/go-logr/logr"
 	grpc_auth "github.com/grpc-ecosystem/go-grpc-middleware/auth"
-	"github.com/grpc-ecosystem/go-grpc-middleware/logging/zap/ctxzap"
-	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"k8s.io/apiserver/pkg/authentication/user"
 	"k8s.io/apiserver/plugin/pkg/authenticator/token/oidc"
 	cliflag "k8s.io/component-base/cli/flag"
+	ctrl "sigs.k8s.io/controller-runtime"
 
-	auth2 "github.com/kubermatic/kubecarrier/pkg/apiserver/internal/auth"
+	"github.com/kubermatic/kubecarrier/pkg/apiserver/auth"
 )
 
 func init() {
-	auth2.RegisterAuthProvider("OIDC", new(OIDCAuthenticator))
+	auth.RegisterAuthProvider("OIDC", &OIDCAuthenticator{})
 }
 
 type OIDCAuthenticator struct {
-	opts oidc.Options
-	log  logr.Logger
-	auth *oidc.Authenticator
+	opts          oidc.Options
+	authenticator *oidc.Authenticator
 }
 
-var _ auth2.AuthProvider = (*OIDCAuthenticator)(nil)
+var _ auth.AuthProvider = (*OIDCAuthenticator)(nil)
 
-func (O *OIDCAuthenticator) Init(logger logr.Logger) error {
-	O.log = logger
-	O.log.Info("setting up OIDC auth middleware", "iss", O.opts.IssuerURL)
-	auth, err := newAuthenticator(O.log, O.opts)
+func (O *OIDCAuthenticator) Init() error {
+	ctrl.Log.Info("setting up OIDC authenticator middleware", "iss", O.opts.IssuerURL)
+	authenticator, err := newAuthenticator(ctrl.Log, O.opts)
 	if err != nil {
 		return err
 	}
-	O.auth = auth
+	O.authenticator = authenticator
 	return nil
 }
 
 func (O *OIDCAuthenticator) Authenticate(ctx context.Context) (user.Info, error) {
-	l := ctxzap.Extract(ctx)
 	token, err := grpc_auth.AuthFromMD(ctx, "Bearer")
 	if err != nil {
 		return nil, err
 	}
-	resp, present, err := O.auth.AuthenticateToken(ctx, token)
+	resp, present, err := O.authenticator.AuthenticateToken(ctx, token)
 	if err != nil {
-		l.Sugar().Errorf("cannot AuthenticateToken: %s", token)
 		return nil, status.Error(codes.Unauthenticated, "AuthenticateToken")
 	}
 	if !present {
-		l.Sugar().Errorf("token not present %s", token)
 		return nil, status.Error(codes.Unauthenticated, "AuthenticateToken")
 	}
-	l.Info("successfully auth user")
 	return resp.User, nil
 }
 
-func (O *OIDCAuthenticator) RegisterFlags(cmd *cobra.Command) {
-	fs := cmd.Flags()
+func (O *OIDCAuthenticator) RegisterPFlags(fs *pflag.FlagSet) {
 	opts := &O.opts
 	fs.StringVar(&opts.IssuerURL, "oidc-issuer-url", opts.IssuerURL, ""+
 		"The URL of the OpenID issuer, only HTTPS scheme will be accepted. "+
