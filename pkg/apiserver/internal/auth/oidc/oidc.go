@@ -18,23 +18,18 @@ package oidc
 
 import (
 	"context"
-	"fmt"
-	"net/http"
-	"strings"
 
 	"github.com/go-logr/logr"
-	"github.com/gorilla/mux"
+	grpc_auth "github.com/grpc-ecosystem/go-grpc-middleware/auth"
+	"github.com/grpc-ecosystem/go-grpc-middleware/logging/zap/ctxzap"
 	"github.com/spf13/pflag"
-	"k8s.io/apiserver/pkg/authentication/authenticator"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 	"k8s.io/apiserver/pkg/authentication/user"
 	"k8s.io/apiserver/plugin/pkg/authenticator/token/oidc"
 	cliflag "k8s.io/component-base/cli/flag"
-)
 
-type contextKey string
-
-const (
-	oidcContextKey contextKey = "oidc.kubecarrier.io"
+	auth2 "github.com/kubermatic/kubecarrier/pkg/apiserver/internal/auth"
 )
 
 func AddOIDCPFlags(opts *oidc.Options, fs *pflag.FlagSet) {
@@ -79,69 +74,27 @@ func AddOIDCPFlags(opts *oidc.Options, fs *pflag.FlagSet) {
 		"Repeat this flag to specify multiple claims.")
 }
 
-func NewOIDCMiddleware(log logr.Logger, opts oidc.Options) (mux.MiddlewareFunc, error) {
+func NewOIDCMiddleware(log logr.Logger, opts oidc.Options) (auth2.AuthProvider, error) {
 	auth, err := newAuthenticator(log, opts)
 	if err != nil {
 		return nil, err
 	}
-	return func(next http.Handler) http.Handler {
-		return http.HandlerFunc(
-			func(writer http.ResponseWriter, request *http.Request) {
-				log := log.WithValues(
-					"url", request.URL,
-					"method", request.Method,
-					"remoteAddr", request.RemoteAddr,
-				)
-				authHeader := request.Header.Get("Authorization")
-
-				if authHeader == "" {
-					writer.WriteHeader(http.StatusUnauthorized)
-					log.Error(fmt.Errorf("Unauthorized"), "missing authorization header")
-					return
-				}
-				parts := strings.Split(authHeader, " ")
-				if len(parts) != 2 {
-					writer.WriteHeader(http.StatusUnauthorized)
-					log.Error(
-						fmt.Errorf("Unauthorized"),
-						fmt.Sprintf("got %d parts, expected 2", len(parts)),
-					)
-					return
-				}
-				if parts[0] != "Bearer" {
-					writer.WriteHeader(http.StatusUnauthorized)
-					log.Error(
-						fmt.Errorf("Unauthorized"),
-						fmt.Sprintf("expected Bearer authentication, got %s", parts[0]),
-					)
-					return
-				}
-				ctx := request.Context()
-				resp, present, err := auth.AuthenticateToken(ctx, parts[1])
-				if err != nil {
-					writer.WriteHeader(http.StatusUnauthorized)
-					log.Error(
-						err,
-						"AuthenticateToken",
-					)
-					return
-				}
-				if !present {
-					writer.WriteHeader(http.StatusUnauthorized)
-					log.Error(
-						fmt.Errorf("Unauthorized"),
-						"AuthenticateToken",
-					)
-					return
-				}
-				request = request.WithContext(context.WithValue(ctx, oidcContextKey, resp))
-				next.ServeHTTP(writer, request)
-			},
-		)
+	return func(ctx context.Context) (user.Info, error) {
+		l := ctxzap.Extract(ctx)
+		token, err := grpc_auth.AuthFromMD(ctx, "Bearer")
+		if err != nil {
+			return nil, err
+		}
+		resp, present, err := auth.AuthenticateToken(ctx, token)
+		if err != nil {
+			l.Sugar().Errorf("cannot AuthenticateToken: %s", token)
+			return nil, status.Error(codes.Unauthenticated, "AuthenticateToken")
+		}
+		if !present {
+			l.Sugar().Errorf("token not present %s", token)
+			return nil, status.Error(codes.Unauthenticated, "AuthenticateToken")
+		}
+		l.Info("successfully auth user")
+		return resp.User, nil
 	}, nil
-}
-
-func ExtractUserInfo(ctx context.Context) (user.Info, bool) {
-	u, ok := ctx.Value(oidcContextKey).(*authenticator.Response)
-	return u.User, ok
 }

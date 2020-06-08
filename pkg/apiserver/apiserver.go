@@ -28,9 +28,17 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/gorilla/handlers"
+	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
+	grpc_auth "github.com/grpc-ecosystem/go-grpc-middleware/auth"
+	grpc_zap "github.com/grpc-ecosystem/go-grpc-middleware/logging/zap"
+	grpc_recovery "github.com/grpc-ecosystem/go-grpc-middleware/recovery"
+	grpc_ctxtags "github.com/grpc-ecosystem/go-grpc-middleware/tags"
+	grpc_opentracing "github.com/grpc-ecosystem/go-grpc-middleware/tracing/opentracing"
+	grpc_prometheus "github.com/grpc-ecosystem/go-grpc-prometheus"
 	gwruntime "github.com/grpc-ecosystem/grpc-gateway/runtime"
 	"github.com/improbable-eng/grpc-web/go/grpcweb"
 	"github.com/spf13/cobra"
+	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials"
@@ -48,7 +56,8 @@ import (
 
 	catalogv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/catalog/v1alpha1"
 	apiserverv1 "github.com/kubermatic/kubecarrier/pkg/apiserver/api/v1"
-	"github.com/kubermatic/kubecarrier/pkg/apiserver/internal/oidc"
+	"github.com/kubermatic/kubecarrier/pkg/apiserver/internal/auth"
+	"github.com/kubermatic/kubecarrier/pkg/apiserver/internal/auth/oidc"
 	v1 "github.com/kubermatic/kubecarrier/pkg/apiserver/internal/v1"
 	"github.com/kubermatic/kubecarrier/pkg/internal/util"
 )
@@ -68,6 +77,7 @@ type flags struct {
 	TLSPrivateKeyFile  string
 	CORSAllowedOrigins []string
 	OIDCOptions        k8soidc.Options
+	AuthorizationMode  []string
 }
 
 func NewAPIServer() *cobra.Command {
@@ -85,6 +95,7 @@ func NewAPIServer() *cobra.Command {
 	cmd.Flags().StringVar(&flags.TLSCertFile, "tls-cert-file", "", "File containing the default x509 Certificate for HTTPS. If not provided no TLS security shall be enabled")
 	cmd.Flags().StringVar(&flags.TLSPrivateKeyFile, "tls-private-key-file", "", "File containing the default x509 private key matching --tls-cert-file.")
 	cmd.Flags().StringArrayVar(&flags.CORSAllowedOrigins, "cors-allowed-origins", []string{"*"}, "List of allowed origins for CORS, comma separated. An allowed origin can be a regular expression to support subdomain matching. If this list is empty CORS will not be enabled.")
+	cmd.Flags().StringArrayVar(&flags.AuthorizationMode, "authorization-mode", []string{"OIDC"}, "Ordered list of plug-ins to do authorization on secure port. Comma-delimited list of: OIDC,Token")
 	oidc.AddOIDCPFlags(&flags.OIDCOptions, cmd.Flags())
 	return util.CmdLogMixin(cmd)
 }
@@ -95,8 +106,46 @@ func runE(flags *flags, log logr.Logger) error {
 		return fmt.Errorf("--tls-cert-file or --tls-private-key-file not specified, cannot start")
 	}
 
-	// Startup
-	grpcServer := grpc.NewServer()
+	zapLogger, err := zap.NewDevelopment()
+	if err != nil {
+		return err
+	}
+	grpc_zap.ReplaceGrpcLoggerV2(zapLogger)
+	var authProviders []auth.AuthProvider
+
+	for _, middleware := range flags.AuthorizationMode {
+		switch middleware {
+		case "OIDC":
+			log.Info("setting up OIDC auth middleware", "iss", flags.OIDCOptions.IssuerURL)
+			oidcMiddleware, err := oidc.NewOIDCMiddleware(log, flags.OIDCOptions)
+			if err != nil {
+				return fmt.Errorf("init OIDC Middleware: %w", err)
+			}
+			authProviders = append(authProviders, oidcMiddleware)
+		default:
+			return fmt.Errorf("unknown authorization mode: %v", middleware)
+		}
+	}
+
+	authFunc := auth.CreateAuthFunction(authProviders)
+	grpcServer := grpc.NewServer(
+		grpc.StreamInterceptor(grpc_middleware.ChainStreamServer(
+			grpc_ctxtags.StreamServerInterceptor(),
+			grpc_opentracing.StreamServerInterceptor(),
+			grpc_prometheus.StreamServerInterceptor,
+			grpc_zap.StreamServerInterceptor(zapLogger),
+			grpc_auth.StreamServerInterceptor(authFunc),
+			grpc_recovery.StreamServerInterceptor(),
+		)),
+		grpc.UnaryInterceptor(grpc_middleware.ChainUnaryServer(
+			grpc_ctxtags.UnaryServerInterceptor(),
+			grpc_opentracing.UnaryServerInterceptor(),
+			grpc_prometheus.UnaryServerInterceptor,
+			grpc_zap.UnaryServerInterceptor(zapLogger),
+			grpc_auth.UnaryServerInterceptor(authFunc),
+			grpc_recovery.UnaryServerInterceptor(),
+		)),
+	)
 	wrappedGrpc := grpcweb.WrapServer(grpcServer)
 	grpcGatewayMux := gwruntime.NewServeMux(
 		gwruntime.WithProtoErrorHandler(func(ctx context.Context, serveMux *gwruntime.ServeMux, marshaler gwruntime.Marshaler, writer http.ResponseWriter, request *http.Request, err error) {
@@ -215,13 +264,6 @@ func runE(flags *flags, log logr.Logger) error {
 			grpcGatewayMux.ServeHTTP(writer, request)
 		}
 	})
-
-	log.Info("setting up OIDC auth middleware", "iss", flags.OIDCOptions.IssuerURL)
-	oidcMiddleware, err := oidc.NewOIDCMiddleware(log, flags.OIDCOptions)
-	if err != nil {
-		return fmt.Errorf("init OIDC Middleware: %w", err)
-	}
-	handler = oidcMiddleware(handler)
 
 	if len(flags.CORSAllowedOrigins) > 0 {
 		handler = handlers.CORS(
