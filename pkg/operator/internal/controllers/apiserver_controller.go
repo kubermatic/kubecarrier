@@ -55,6 +55,8 @@ type APIServerReconciler struct {
 // +kubebuilder:rbac:groups=rbac.authorization.k8s.io,resources=rolebindings,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=apps,resources=deployments,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups="",resources=serviceaccounts,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=cert-manager.io,resources=issuers,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=cert-manager.io,resources=certificates,verbs=get;list;watch;create;update;patch;delete
 
 func (r *APIServerReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	ctx := context.Background()
@@ -80,9 +82,9 @@ func (r *APIServerReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 
 	objects, err := apiserver.Manifests(
 		apiserver.Config{
-			Name:      apiServer.Name,
-			Namespace: apiServer.Namespace,
-			Spec:      apiServer.Spec,
+			Name:            apiServer.Name,
+			Namespace:       apiServer.Namespace,
+			APIServerConfig: apiServer.Spec.API,
 		},
 	)
 	if err != nil {

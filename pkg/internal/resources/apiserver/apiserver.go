@@ -39,7 +39,7 @@ type Config struct {
 	Name string
 
 	// Spec of the APIServer
-	Spec operatorv1alpha1.APIServerSpec
+	APIServerConfig operatorv1alpha1.APIServerConfig
 }
 
 var k = kustomize.NewDefaultKustomize()
@@ -48,6 +48,204 @@ var k = kustomize.NewDefaultKustomize()
 func Manifests(c Config) ([]unstructured.Unstructured, error) {
 	v := version.Get()
 	kc := k.ForHTTP(vfs)
+	resources := []string{"../default"}
+	if c.APIServerConfig.TLSSecretRef == nil || c.APIServerConfig.TLSSecretRef.Name == "" {
+		// TLS Secret is not present, we create a self-signed certificate for localhost via cert-manager.
+		resources = append(resources, "../certmanager")
+		c.APIServerConfig.TLSSecretRef = &operatorv1alpha1.ObjectReference{
+			Name: "tls-server-cert",
+		}
+	}
+	// Patch environment
+	// Note:
+	// we are not using *appsv1.Deployment here,
+	// because some fields will be defaulted to empty and
+	// interfere with the strategic merge patch of kustomize.
+	managerEnv := make(map[string]interface{})
+	if c.APIServerConfig.OIDC != nil {
+		extraArgs := make([]string, 0)
+		if len(c.APIServerConfig.OIDC.RequiredClaims) > 0 {
+			rclaims := make([]string, 0)
+			for k, v := range c.APIServerConfig.OIDC.RequiredClaims {
+				rclaims = append(rclaims, fmt.Sprintf("%s=%s", k, v))
+			}
+			extraArgs = append(extraArgs, "--oidc-required-claim="+strings.Join(rclaims, ","))
+		}
+
+		managerEnv = map[string]interface{}{
+			"apiVersion": "apps/v1",
+			"kind":       "Deployment",
+			"metadata": map[string]string{
+				"name":      "manager",
+				"namespace": "system",
+			},
+			"spec": map[string]interface{}{
+				"template": map[string]interface{}{
+					"spec": map[string]interface{}{
+						"containers": []map[string]interface{}{
+							{
+								"name": "manager",
+								"args": append([]string{
+									"--address=$(API_SERVER_ADDR)",
+									"--tls-cert-file=$(API_SERVER_TLS_CERT_FILE)",
+									"--tls-private-key-file=$(API_SERVER_TLS_PRIVATE_KEY_FILE)",
+									"--enable-oidc=$(ENABLE_OIDC)",
+									"--oidc-issuer-url=$(API_SERVER_OIDC_ISSUER_URL)",
+									"--oidc-client-id=$(API_SERVER_OIDC_CLIENT_ID)",
+									"--oidc-ca-file=$(API_SERVER_OIDC_CA_FILE)",
+									"--oidc-username-claim=$(API_SERVER_OIDC_USERNAME_CLAIM)",
+									"--oidc-username-prefix=$(API_SERVER_OIDC_USERNAME_PREFIX)",
+									"--oidc-groups-claim=$(API_SERVER_OIDC_GROUPS_CLAIM)",
+									"--oidc-groups-prefix=$(API_SERVER_OIDC_GROUPS_PREFIX)",
+									"--oidc-signing-algs=$(API_SERVER_OIDC_SIGNING_ALGS)",
+								}, extraArgs...),
+								"env": []map[string]interface{}{
+									{
+										"name":  "API_SERVER_ADDR",
+										"value": ":8443",
+									},
+									{
+										"name":  "API_SERVER_TLS_CERT_FILE",
+										"value": "/run/serving-certs/tls.crt",
+									},
+									{
+										"name":  "API_SERVER_TLS_PRIVATE_KEY_FILE",
+										"value": "/run/serving-certs/tls.key",
+									},
+									{
+										"name":  "ENABLE_OIDC",
+										"value": true,
+									},
+									{
+										"name":  "API_SERVER_OIDC_ISSUER_URL",
+										"value": c.APIServerConfig.OIDC.IssuerURL,
+									},
+									{
+										"name":  "API_SERVER_OIDC_CLIENT_ID",
+										"value": c.APIServerConfig.OIDC.ClientID,
+									},
+									{
+										"name":  "API_SERVER_OIDC_CA_FILE",
+										"value": "/run/oidc-certs/ca.crt",
+									},
+									{
+										"name":  "API_SERVER_OIDC_USERNAME_CLAIM",
+										"value": c.APIServerConfig.OIDC.UsernameClaim,
+									},
+									{
+										"name":  "API_SERVER_OIDC_USERNAME_PREFIX",
+										"value": c.APIServerConfig.OIDC.UsernamePrefix,
+									},
+									{
+										"name":  "API_SERVER_OIDC_GROUPS_CLAIM",
+										"value": c.APIServerConfig.OIDC.GroupsClaim,
+									},
+									{
+										"name":  "API_SERVER_OIDC_GROUPS_PREFIX",
+										"value": c.APIServerConfig.OIDC.GroupsPrefix,
+									},
+									{
+										"name":  "API_SERVER_OIDC_SIGNING_ALGS",
+										"value": strings.Join(c.APIServerConfig.OIDC.SupportedSigningAlgs, ","),
+									},
+								},
+								"volumeMounts": []map[string]interface{}{{
+									"mountPath": "/run/serving-certs",
+									"readyOnly": true,
+									"name":      "serving-cert",
+								}, {
+									"mountPath": "/run/oidc-certs",
+									"readyOnly": true,
+									"name":      "oidc-cert",
+								}},
+							},
+						},
+						"volumes": []map[string]interface{}{{
+							"name": "serving-cert",
+							"secret": map[string]interface{}{
+								"secretName": c.APIServerConfig.TLSSecretRef.Name,
+							},
+						}, {
+							"name": "oidc-cert",
+							"secret": map[string]interface{}{
+								"secretName": c.APIServerConfig.OIDC.CertificateAuthority.Name,
+							},
+						}},
+					},
+				},
+			},
+		}
+		managerEnvBytes, err := yaml.Marshal(managerEnv)
+		if err != nil {
+			return nil, fmt.Errorf("marshalling manager env patch: %w", err)
+		}
+		if err = kc.WriteFile("/man/manager_env_patch.yaml", managerEnvBytes); err != nil {
+			return nil, fmt.Errorf("writing manager_env_patch.yaml: %w", err)
+		}
+	} else {
+		managerEnv = map[string]interface{}{
+			"apiVersion": "apps/v1",
+			"kind":       "Deployment",
+			"metadata": map[string]string{
+				"name":      "manager",
+				"namespace": "system",
+			},
+			"spec": map[string]interface{}{
+				"template": map[string]interface{}{
+					"spec": map[string]interface{}{
+						"containers": []map[string]interface{}{
+							{
+								"name": "manager",
+								"args": []string{
+									"--address=$(API_SERVER_ADDR)",
+									"--tls-cert-file=$(API_SERVER_TLS_CERT_FILE)",
+									"--tls-private-key-file=$(API_SERVER_TLS_PRIVATE_KEY_FILE)",
+								},
+								"env": []map[string]interface{}{
+									{
+										"name":  "API_SERVER_ADDR",
+										"value": ":8443",
+									},
+									{
+										"name":  "API_SERVER_TLS_CERT_FILE",
+										"value": "/run/serving-certs/tls.crt",
+									},
+									{
+										"name":  "API_SERVER_TLS_PRIVATE_KEY_FILE",
+										"value": "/run/serving-certs/tls.key",
+									},
+								},
+								"volumeMounts": []map[string]interface{}{
+									{
+										"mountPath": "/run/serving-certs",
+										"readyOnly": true,
+										"name":      "serving-cert",
+									},
+								},
+							},
+						},
+						"volumes": []map[string]interface{}{
+							{
+								"name": "serving-cert",
+								"secret": map[string]interface{}{
+									"secretName": c.APIServerConfig.TLSSecretRef.Name,
+								},
+							},
+						},
+					},
+				},
+			},
+		}
+
+	}
+	managerEnvBytes, err := yaml.Marshal(managerEnv)
+	if err != nil {
+		return nil, fmt.Errorf("marshalling manager env patch: %w", err)
+	}
+	if err = kc.WriteFile("/man/manager_env_patch.yaml", managerEnvBytes); err != nil {
+		return nil, fmt.Errorf("writing manager_env_patch.yaml: %w", err)
+	}
+
 	if err := kc.MkLayer("man", types.Kustomization{
 		Namespace: c.Namespace,
 		Images: []image.Image{
@@ -59,129 +257,9 @@ func Manifests(c Config) ([]unstructured.Unstructured, error) {
 		PatchesStrategicMerge: []types.PatchStrategicMerge{
 			"manager_env_patch.yaml",
 		},
-		Resources: []string{"../default"},
+		Resources: resources,
 	}); err != nil {
 		return nil, fmt.Errorf("cannot mkdir: %w", err)
-	}
-
-	extraArgs := make([]string, 0)
-	if len(c.Spec.OIDC.RequiredClaims) > 0 {
-		rclaims := make([]string, 0)
-		for k, v := range c.Spec.OIDC.RequiredClaims {
-			rclaims = append(rclaims, fmt.Sprintf("%s=%s", k, v))
-		}
-		extraArgs = append(extraArgs, "--oidc-required-claim="+strings.Join(rclaims, ","))
-	}
-
-	// Patch environment
-	// Note:
-	// we are not using *appsv1.Deployment here,
-	// because some fields will be defaulted to empty and
-	// interfere with the strategic merge patch of kustomize.
-	managerEnv := map[string]interface{}{
-		"apiVersion": "apps/v1",
-		"kind":       "Deployment",
-		"metadata": map[string]string{
-			"name":      "manager",
-			"namespace": "system",
-		},
-		"spec": map[string]interface{}{
-			"template": map[string]interface{}{
-				"spec": map[string]interface{}{
-					"containers": []map[string]interface{}{
-						{
-							"name": "manager",
-							"args": append([]string{
-								"--address=$(API_SERVER_ADDR)",
-								"--tls-cert-file=$(API_SERVER_TLS_CERT_FILE)",
-								"--tls-private-key-file=$(API_SERVER_TLS_PRIVATE_KEY_FILE)",
-								"--oidc-issuer-url=$(API_SERVER_OIDC_ISSUER_URL)",
-								"--oidc-client-id=$(API_SERVER_OIDC_CLIENT_ID)",
-								"--oidc-ca-file=$(API_SERVER_OIDC_CA_FILE)",
-								"--oidc-username-claim=$(API_SERVER_OIDC_USERNAME_CLAIM)",
-								"--oidc-username-prefix=$(API_SERVER_OIDC_USERNAME_PREFIX)",
-								"--oidc-groups-claim=$(API_SERVER_OIDC_GROUPS_CLAIM)",
-								"--oidc-groups-prefix=$(API_SERVER_OIDC_GROUPS_PREFIX)",
-								"--oidc-signing-algs=$(API_SERVER_OIDC_SIGNING_ALGS)",
-							}, extraArgs...),
-							"env": []map[string]interface{}{
-								{
-									"name":  "API_SERVER_ADDR",
-									"value": ":8443",
-								},
-								{
-									"name":  "API_SERVER_TLS_CERT_FILE",
-									"value": "/run/serving-certs/tls.crt",
-								},
-								{
-									"name":  "API_SERVER_TLS_PRIVATE_KEY_FILE",
-									"value": "/run/serving-certs/tls.key",
-								},
-								{
-									"name":  "API_SERVER_OIDC_ISSUER_URL",
-									"value": c.Spec.OIDC.IssuerURL,
-								},
-								{
-									"name":  "API_SERVER_OIDC_CLIENT_ID",
-									"value": c.Spec.OIDC.ClientID,
-								},
-								{
-									"name":  "API_SERVER_OIDC_CA_FILE",
-									"value": "/run/oidc-certs/ca.crt",
-								},
-								{
-									"name":  "API_SERVER_OIDC_USERNAME_CLAIM",
-									"value": c.Spec.OIDC.UsernameClaim,
-								},
-								{
-									"name":  "API_SERVER_OIDC_USERNAME_PREFIX",
-									"value": c.Spec.OIDC.UsernamePrefix,
-								},
-								{
-									"name":  "API_SERVER_OIDC_GROUPS_CLAIM",
-									"value": c.Spec.OIDC.GroupsClaim,
-								},
-								{
-									"name":  "API_SERVER_OIDC_GROUPS_PREFIX",
-									"value": c.Spec.OIDC.GroupsPrefix,
-								},
-								{
-									"name":  "API_SERVER_OIDC_SIGNING_ALGS",
-									"value": strings.Join(c.Spec.OIDC.SupportedSigningAlgs, ","),
-								},
-							},
-							"volumeMounts": []map[string]interface{}{{
-								"mountPath": "/run/serving-certs",
-								"readyOnly": true,
-								"name":      "serving-cert",
-							}, {
-								"mountPath": "/run/oidc-certs",
-								"readyOnly": true,
-								"name":      "oidc-cert",
-							}},
-						},
-					},
-					"volumes": []map[string]interface{}{{
-						"name": "serving-cert",
-						"secret": map[string]interface{}{
-							"secretName": c.Spec.TLSSecretRef.Name,
-						},
-					}, {
-						"name": "oidc-cert",
-						"secret": map[string]interface{}{
-							"secretName": c.Spec.OIDC.CertificateAuthority.Name,
-						},
-					}},
-				},
-			},
-		},
-	}
-	managerEnvBytes, err := yaml.Marshal(managerEnv)
-	if err != nil {
-		return nil, fmt.Errorf("marshalling manager env patch: %w", err)
-	}
-	if err = kc.WriteFile("/man/manager_env_patch.yaml", managerEnvBytes); err != nil {
-		return nil, fmt.Errorf("writing manager_env_patch.yaml: %w", err)
 	}
 
 	// execute kustomize

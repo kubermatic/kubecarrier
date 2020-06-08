@@ -36,8 +36,8 @@ func TestManifests(t *testing.T) {
 	c := Config{
 		Namespace: "kubecarrier-system-10",
 		Name:      "foo",
-		Spec: operatorv1alpha1.APIServerSpec{
-			TLSSecretRef: operatorv1alpha1.ObjectReference{Name: "serving-tls-secret"},
+		APIServerConfig: operatorv1alpha1.APIServerConfig{
+			OIDC: &operatorv1alpha1.APIServerOIDCConfig{},
 		},
 	}
 

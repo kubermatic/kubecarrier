@@ -30,8 +30,6 @@ import (
 
 	"github.com/golang/protobuf/ptypes"
 	"github.com/golang/protobuf/ptypes/empty"
-	certmanagerv1alpha3 "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha3"
-	v1 "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc"
@@ -71,57 +69,24 @@ func newAPIServer(f *testutil.Framework) func(t *testing.T) {
 
 		servingTLSSecret := &corev1.Secret{
 			ObjectMeta: metav1.ObjectMeta{
-				Name:      "foo-tls",
-				Namespace: ns.GetName(),
+				Name:      "tls-server-cert",
+				Namespace: ns.Name,
 			},
 		}
 
-		issuer := &certmanagerv1alpha3.Issuer{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "foo",
-				Namespace: ns.GetName(),
-			},
-			Spec: certmanagerv1alpha3.IssuerSpec{
-				IssuerConfig: certmanagerv1alpha3.IssuerConfig{
-					SelfSigned: &certmanagerv1alpha3.SelfSignedIssuer{},
-				},
-			},
-		}
-		cert := &certmanagerv1alpha3.Certificate{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "foo",
-				Namespace: ns.GetName(),
-			},
-			Spec: certmanagerv1alpha3.CertificateSpec{
-				SecretName: servingTLSSecret.GetName(),
-				DNSNames: []string{
-					strings.Join([]string{"kubecarrier-api-server-manager", servingTLSSecret.GetNamespace(), "svc"}, "."),
-					"kubecarrier-api-server-manager",
-					"localhost",
-				},
-				IsCA: true,
-				IssuerRef: v1.ObjectReference{
-					Name: issuer.GetName(),
-				},
-			},
-		}
-		require.NoError(t, managementClient.Create(ctx, issuer))
-		require.NoError(t, managementClient.Create(ctx, cert))
-		require.NoError(t, testutil.WaitUntilReady(ctx, managementClient, cert), "cert not ready")
 		require.NoError(t, managementClient.WaitUntil(ctx, servingTLSSecret, func() (done bool, err error) {
 			data, ok := servingTLSSecret.Data[corev1.TLSCertKey]
 			return ok && len(data) > 0, nil
 		}))
 
-		apiServer := &operatorv1alpha1.APIServer{ObjectMeta: metav1.ObjectMeta{
-			Name:      "foo",
+		apiServer := &operatorv1alpha1.APIServer{}
+		require.NoError(t, managementClient.Get(ctx, types.NamespacedName{
+			Name:      "kubecarrier",
 			Namespace: ns.GetName(),
-		},
-			Spec: operatorv1alpha1.APIServerSpec{
-				TLSSecretRef: operatorv1alpha1.ObjectReference{
-					Name: servingTLSSecret.GetName(),
-				},
-				OIDC: operatorv1alpha1.APIServerOIDCConfig{
+		}, apiServer))
+		apiServer.Spec = operatorv1alpha1.APIServerSpec{
+			API: operatorv1alpha1.APIServerConfig{
+				OIDC: &operatorv1alpha1.APIServerOIDCConfig{
 					// from test/testdata/dex_values.yaml
 					IssuerURL:     "https://dex.kubecarrier-system.svc",
 					ClientID:      "e2e-client-id",
@@ -132,7 +97,7 @@ func newAPIServer(f *testutil.Framework) func(t *testing.T) {
 				},
 			},
 		}
-		require.NoError(t, managementClient.Create(ctx, apiServer))
+		require.NoError(t, managementClient.Update(ctx, apiServer))
 		require.NoError(t, testutil.WaitUntilReady(ctx, managementClient, apiServer))
 
 		ctx, cancel = context.WithCancel(ctx)

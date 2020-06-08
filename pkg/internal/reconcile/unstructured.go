@@ -146,6 +146,7 @@ func unstructuredDeployment(
 	// convert to proper type
 	obj := &appsv1.Deployment{}
 	if err = runtime.DefaultUnstructuredConverter.FromUnstructured(desiredObj.Object, obj); err != nil {
+		fmt.Println(desiredObj.Object)
 		return current, fmt.Errorf("convert from unstructured: %w", err)
 	}
 

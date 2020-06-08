@@ -22,6 +22,8 @@ import (
 
 // KubeCarrierSpec defines the desired state of KubeCarrier
 type KubeCarrierSpec struct {
+	// +optional
+	API APIServerConfig `json:"api,omitempty"`
 }
 
 // KubeCarrierStatus defines the observed state of KubeCarrier
@@ -85,7 +87,9 @@ type KubeCarrierConditionType string
 
 const (
 	// KubeCarrierReady represents a KubeCarrier condition is in ready state.
-	KubeCarrierReady KubeCarrierConditionType = "Ready"
+	KubeCarrierReady           KubeCarrierConditionType = "Ready"
+	KubeCarrierDeploymentReady KubeCarrierConditionType = "DeploymentReady"
+	KubeCarrierAPIServerReady  KubeCarrierConditionType = "APIServerReady"
 )
 
 // KubeCarrierCondition contains details for the current condition of this KubeCarrier.
@@ -171,34 +175,6 @@ func (s *KubeCarrier) IsReady() bool {
 			condition.Status == ConditionTrue {
 			return true
 		}
-	}
-	return false
-}
-
-func (s *KubeCarrier) SetReadyCondition() bool {
-	if !s.IsReady() {
-		s.Status.ObservedGeneration = s.Generation
-		s.Status.SetCondition(KubeCarrierCondition{
-			Type:    KubeCarrierReady,
-			Status:  ConditionTrue,
-			Reason:  "DeploymentReady",
-			Message: "the deployment of the KubeCarrier controller manager is ready",
-		})
-		return true
-	}
-	return false
-}
-func (s *KubeCarrier) SetUnReadyCondition() bool {
-	readyCondition, _ := s.Status.GetCondition(KubeCarrierReady)
-	if readyCondition.Status != ConditionFalse {
-		s.Status.ObservedGeneration = s.Generation
-		s.Status.SetCondition(KubeCarrierCondition{
-			Type:    KubeCarrierReady,
-			Status:  ConditionFalse,
-			Reason:  "DeploymentUnready",
-			Message: "the deployment of the KubeCarrier controller manager is not ready",
-		})
-		return true
 	}
 	return false
 }
