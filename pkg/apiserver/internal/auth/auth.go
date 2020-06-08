@@ -18,8 +18,11 @@ package auth
 
 import (
 	"context"
+	"fmt"
 
+	"github.com/go-logr/logr"
 	grpc_auth "github.com/grpc-ecosystem/go-grpc-middleware/auth"
+	"github.com/spf13/cobra"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"k8s.io/apiserver/pkg/authentication/authenticator"
@@ -27,7 +30,26 @@ import (
 )
 
 type contextKey string
-type AuthProvider func(ctx context.Context) (user.Info, error)
+
+type AuthProvider interface {
+	RegisterFlags(command *cobra.Command)
+	Init(log logr.Logger) error
+	Authenticate(ctx context.Context) (user.Info, error)
+}
+
+var authProviderFactory = make(map[string]AuthProvider)
+
+func RegisterAuthProvider(name string, provider AuthProvider) {
+	authProviderFactory[name] = provider
+}
+
+func NewAuthProvider(name string) (AuthProvider, error) {
+	provider, ok := authProviderFactory[name]
+	if !ok {
+		return nil, fmt.Errorf("unknown authorization mode: %v", name)
+	}
+	return provider, nil
+}
 
 const (
 	userInfoKey contextKey = "oidc.kubecarrier.io"
@@ -41,7 +63,7 @@ func ExtractUserInfo(ctx context.Context) (user.Info, bool) {
 func CreateAuthFunction(authProviders []AuthProvider) grpc_auth.AuthFunc {
 	return func(ctx context.Context) (context.Context, error) {
 		for _, provider := range authProviders {
-			userInfo, err := provider(ctx)
+			userInfo, err := provider.Authenticate(ctx)
 			if err != nil {
 				s, ok := status.FromError(err)
 				if !ok {

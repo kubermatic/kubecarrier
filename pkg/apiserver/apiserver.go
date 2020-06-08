@@ -45,7 +45,6 @@ import (
 	"google.golang.org/grpc/status"
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
-	k8soidc "k8s.io/apiserver/plugin/pkg/authenticator/token/oidc"
 	"k8s.io/client-go/dynamic"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -57,7 +56,9 @@ import (
 	catalogv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/catalog/v1alpha1"
 	apiserverv1 "github.com/kubermatic/kubecarrier/pkg/apiserver/api/v1"
 	"github.com/kubermatic/kubecarrier/pkg/apiserver/internal/auth"
-	"github.com/kubermatic/kubecarrier/pkg/apiserver/internal/auth/oidc"
+
+	// for provider
+	_ "github.com/kubermatic/kubecarrier/pkg/apiserver/internal/auth/oidc"
 	v1 "github.com/kubermatic/kubecarrier/pkg/apiserver/internal/v1"
 	"github.com/kubermatic/kubecarrier/pkg/internal/util"
 )
@@ -76,7 +77,6 @@ type flags struct {
 	TLSCertFile        string
 	TLSPrivateKeyFile  string
 	CORSAllowedOrigins []string
-	OIDCOptions        k8soidc.Options
 	AuthorizationMode  []string
 }
 
@@ -96,7 +96,6 @@ func NewAPIServer() *cobra.Command {
 	cmd.Flags().StringVar(&flags.TLSPrivateKeyFile, "tls-private-key-file", "", "File containing the default x509 private key matching --tls-cert-file.")
 	cmd.Flags().StringArrayVar(&flags.CORSAllowedOrigins, "cors-allowed-origins", []string{"*"}, "List of allowed origins for CORS, comma separated. An allowed origin can be a regular expression to support subdomain matching. If this list is empty CORS will not be enabled.")
 	cmd.Flags().StringArrayVar(&flags.AuthorizationMode, "authorization-mode", []string{"OIDC"}, "Ordered list of plug-ins to do authorization on secure port. Comma-delimited list of: OIDC,Token")
-	oidc.AddOIDCPFlags(&flags.OIDCOptions, cmd.Flags())
 	return util.CmdLogMixin(cmd)
 }
 
@@ -113,18 +112,15 @@ func runE(flags *flags, log logr.Logger) error {
 	grpc_zap.ReplaceGrpcLoggerV2(zapLogger)
 	var authProviders []auth.AuthProvider
 
-	for _, middleware := range flags.AuthorizationMode {
-		switch middleware {
-		case "OIDC":
-			log.Info("setting up OIDC auth middleware", "iss", flags.OIDCOptions.IssuerURL)
-			oidcMiddleware, err := oidc.NewOIDCMiddleware(log, flags.OIDCOptions)
-			if err != nil {
-				return fmt.Errorf("init OIDC Middleware: %w", err)
-			}
-			authProviders = append(authProviders, oidcMiddleware)
-		default:
-			return fmt.Errorf("unknown authorization mode: %v", middleware)
+	for _, mode := range flags.AuthorizationMode {
+		authProvider, err := auth.NewAuthProvider(mode)
+		if err != nil {
+			return err
 		}
+		if err := authProvider.Init(log); err != nil {
+			return fmt.Errorf("cannot init auth provider: %s: %w", mode, err)
+		}
+		authProviders = append(authProviders, authProvider)
 	}
 
 	authFunc := auth.CreateAuthFunction(authProviders)

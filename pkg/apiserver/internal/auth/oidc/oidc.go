@@ -22,7 +22,7 @@ import (
 	"github.com/go-logr/logr"
 	grpc_auth "github.com/grpc-ecosystem/go-grpc-middleware/auth"
 	"github.com/grpc-ecosystem/go-grpc-middleware/logging/zap/ctxzap"
-	"github.com/spf13/pflag"
+	"github.com/spf13/cobra"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"k8s.io/apiserver/pkg/authentication/user"
@@ -32,7 +32,51 @@ import (
 	auth2 "github.com/kubermatic/kubecarrier/pkg/apiserver/internal/auth"
 )
 
-func AddOIDCPFlags(opts *oidc.Options, fs *pflag.FlagSet) {
+func init() {
+	auth2.RegisterAuthProvider("OIDC", new(OIDCAuthenticator))
+}
+
+type OIDCAuthenticator struct {
+	opts oidc.Options
+	log  logr.Logger
+	auth *oidc.Authenticator
+}
+
+var _ auth2.AuthProvider = (*OIDCAuthenticator)(nil)
+
+func (O *OIDCAuthenticator) Init(logger logr.Logger) error {
+	O.log = logger
+	O.log.Info("setting up OIDC auth middleware", "iss", O.opts.IssuerURL)
+	auth, err := newAuthenticator(O.log, O.opts)
+	if err != nil {
+		return err
+	}
+	O.auth = auth
+	return nil
+}
+
+func (O *OIDCAuthenticator) Authenticate(ctx context.Context) (user.Info, error) {
+	l := ctxzap.Extract(ctx)
+	token, err := grpc_auth.AuthFromMD(ctx, "Bearer")
+	if err != nil {
+		return nil, err
+	}
+	resp, present, err := O.auth.AuthenticateToken(ctx, token)
+	if err != nil {
+		l.Sugar().Errorf("cannot AuthenticateToken: %s", token)
+		return nil, status.Error(codes.Unauthenticated, "AuthenticateToken")
+	}
+	if !present {
+		l.Sugar().Errorf("token not present %s", token)
+		return nil, status.Error(codes.Unauthenticated, "AuthenticateToken")
+	}
+	l.Info("successfully auth user")
+	return resp.User, nil
+}
+
+func (O *OIDCAuthenticator) RegisterFlags(cmd *cobra.Command) {
+	fs := cmd.Flags()
+	opts := &O.opts
 	fs.StringVar(&opts.IssuerURL, "oidc-issuer-url", opts.IssuerURL, ""+
 		"The URL of the OpenID issuer, only HTTPS scheme will be accepted. "+
 		"If set, it will be used to verify the OIDC JSON Web Token (JWT).")
@@ -72,29 +116,4 @@ func AddOIDCPFlags(opts *oidc.Options, fs *pflag.FlagSet) {
 		"A key=value pair that describes a required claim in the ID Token. "+
 		"If set, the claim is verified to be present in the ID Token with a matching value. "+
 		"Repeat this flag to specify multiple claims.")
-}
-
-func NewOIDCMiddleware(log logr.Logger, opts oidc.Options) (auth2.AuthProvider, error) {
-	auth, err := newAuthenticator(log, opts)
-	if err != nil {
-		return nil, err
-	}
-	return func(ctx context.Context) (user.Info, error) {
-		l := ctxzap.Extract(ctx)
-		token, err := grpc_auth.AuthFromMD(ctx, "Bearer")
-		if err != nil {
-			return nil, err
-		}
-		resp, present, err := auth.AuthenticateToken(ctx, token)
-		if err != nil {
-			l.Sugar().Errorf("cannot AuthenticateToken: %s", token)
-			return nil, status.Error(codes.Unauthenticated, "AuthenticateToken")
-		}
-		if !present {
-			l.Sugar().Errorf("token not present %s", token)
-			return nil, status.Error(codes.Unauthenticated, "AuthenticateToken")
-		}
-		l.Info("successfully auth user")
-		return resp.User, nil
-	}, nil
 }
