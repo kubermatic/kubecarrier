@@ -43,13 +43,12 @@ func NewRegionServiceServer(c client.Client) v1.RegionServiceServer {
 }
 
 func (o regionServer) List(ctx context.Context, req *v1.ListRequest) (res *v1.RegionList, err error) {
-	var listOptions []client.ListOption
-	listOptions, err = validateListRequest(req)
+	listOptions, err := req.GetListOptions()
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 	regionList := &catalogv1alpha1.RegionList{}
-	if err := o.client.List(ctx, regionList, listOptions...); err != nil {
+	if err := o.client.List(ctx, regionList, listOptions); err != nil {
 		return nil, status.Errorf(codes.Internal, "listing regions: %s", err.Error())
 	}
 
@@ -61,7 +60,7 @@ func (o regionServer) List(ctx context.Context, req *v1.ListRequest) (res *v1.Re
 }
 
 func (o regionServer) Get(ctx context.Context, req *v1.GetRequest) (res *v1.Region, err error) {
-	if err = validateGetRequest(req); err != nil {
+	if err = req.Validate(); err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 	region := &catalogv1alpha1.Region{}

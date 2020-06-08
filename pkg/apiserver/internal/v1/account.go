@@ -18,11 +18,9 @@ package v1
 
 import (
 	"context"
-	"fmt"
 
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
-	"k8s.io/apimachinery/pkg/labels"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	catalogv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/catalog/v1alpha1"
@@ -54,14 +52,13 @@ func (o accountServer) List(ctx context.Context, req *v1.AccountListRequest) (re
 }
 
 func (o accountServer) handleListRequest(ctx context.Context, req *v1.AccountListRequest, username string) (res *v1.AccountList, err error) {
-	var listOptions []client.ListOption
-	listOptions, err = o.validateListRequest(req)
-	listOptions = append(listOptions, accountByUsernameListOption(username))
+	listOptions, err := req.GetListOptions()
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
+	accountByUsernameListOption(username).ApplyToList(listOptions)
 	accountList := &catalogv1alpha1.AccountList{}
-	if err := o.client.List(ctx, accountList, listOptions...); err != nil {
+	if err := o.client.List(ctx, accountList, listOptions); err != nil {
 		return nil, status.Errorf(codes.Internal, "listing accounts: %s", err.Error())
 	}
 	res, err = o.convertAccountList(accountList)
@@ -69,20 +66,6 @@ func (o accountServer) handleListRequest(ctx context.Context, req *v1.AccountLis
 		return nil, status.Errorf(codes.Internal, "converting AccountList: %s", err.Error())
 	}
 	return
-}
-
-func (o accountServer) validateListRequest(req *v1.AccountListRequest) ([]client.ListOption, error) {
-	var listOptions []client.ListOption
-	if req.LabelSelector != "" {
-		selector, err := labels.Parse(req.LabelSelector)
-		if err != nil {
-			return listOptions, fmt.Errorf("invalid LabelSelector: %w", err)
-		}
-		listOptions = append(listOptions, client.MatchingLabelsSelector{
-			Selector: selector,
-		})
-	}
-	return listOptions, nil
 }
 
 func (o accountServer) convertAccount(in *catalogv1alpha1.Account) (out *v1.Account, err error) {

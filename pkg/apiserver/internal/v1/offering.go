@@ -66,13 +66,14 @@ func NewOfferingServiceServer(c client.Client, dynamicClient dynamic.Interface, 
 }
 
 func (o offeringServer) List(ctx context.Context, req *v1.ListRequest) (res *v1.OfferingList, err error) {
-	var listOptions []client.ListOption
-	listOptions, err = validateListRequest(req)
+	listOptions, err := req.GetListOptions()
+	// var listOptions []client.ListOption
+	// listOptions, err = validateListRequest(req)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 	offeringList := &catalogv1alpha1.OfferingList{}
-	if err := o.client.List(ctx, offeringList, listOptions...); err != nil {
+	if err := o.client.List(ctx, offeringList, listOptions); err != nil {
 		return nil, status.Errorf(codes.Internal, "listing offerings: %s", err.Error())
 	}
 
@@ -84,7 +85,7 @@ func (o offeringServer) List(ctx context.Context, req *v1.ListRequest) (res *v1.
 }
 
 func (o offeringServer) Get(ctx context.Context, req *v1.GetRequest) (res *v1.Offering, err error) {
-	if err = validateGetRequest(req); err != nil {
+	if err = req.Validate(); err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 	offering := &catalogv1alpha1.Offering{}
@@ -102,11 +103,11 @@ func (o offeringServer) Get(ctx context.Context, req *v1.GetRequest) (res *v1.Of
 }
 
 func (o offeringServer) Watch(req *v1.WatchRequest, stream v1.OfferingService_WatchServer) error {
-	listOptions, err := validateWatchRequest(req)
+	listOptions, err := req.GetListOptions()
 	if err != nil {
 		return status.Error(codes.InvalidArgument, err.Error())
 	}
-	watcher, err := o.dynamicClient.Resource(o.gvr).Namespace(req.Account).Watch(listOptions)
+	watcher, err := o.dynamicClient.Resource(o.gvr).Namespace(req.Account).Watch(*listOptions.AsListOptions())
 	if err != nil {
 		return status.Errorf(codes.Internal, "watching offerings: %s", err.Error())
 	}

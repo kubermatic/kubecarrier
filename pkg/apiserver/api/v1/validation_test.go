@@ -21,19 +21,17 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-
-	v1 "github.com/kubermatic/kubecarrier/pkg/apiserver/api/v1"
 )
 
 func TestValidateGetRequest(t *testing.T) {
 	tests := []struct {
 		name          string
-		req           *v1.GetRequest
+		req           *GetRequest
 		expectedError error
 	}{
 		{
 			name: "missing namespace",
-			req: &v1.GetRequest{
+			req: &GetRequest{
 				Name:    "test-name",
 				Account: "",
 			},
@@ -41,14 +39,14 @@ func TestValidateGetRequest(t *testing.T) {
 		},
 		{
 			name: "missing name",
-			req: &v1.GetRequest{
+			req: &GetRequest{
 				Account: "test-namespace",
 			},
 			expectedError: fmt.Errorf("missing name"),
 		},
 		{
 			name: "valid request",
-			req: &v1.GetRequest{
+			req: &GetRequest{
 				Name:    "test-name",
 				Account: "test-namespace",
 			},
@@ -57,7 +55,7 @@ func TestValidateGetRequest(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			assert.Equal(t, test.expectedError, validateGetRequest(test.req))
+			assert.Equal(t, test.expectedError, test.req.Validate())
 		})
 	}
 }
@@ -65,19 +63,19 @@ func TestValidateGetRequest(t *testing.T) {
 func TestValidateListRequest(t *testing.T) {
 	tests := []struct {
 		name          string
-		req           *v1.ListRequest
+		req           *ListRequest
 		expectedError error
 	}{
 		{
 			name: "missing namespace",
-			req: &v1.ListRequest{
+			req: &ListRequest{
 				Account: "",
 			},
 			expectedError: fmt.Errorf("missing namespace"),
 		},
 		{
 			name: "invalid limit",
-			req: &v1.ListRequest{
+			req: &ListRequest{
 				Account: "test-namespace",
 				Limit:   -1,
 			},
@@ -85,7 +83,7 @@ func TestValidateListRequest(t *testing.T) {
 		},
 		{
 			name: "invalid label selector",
-			req: &v1.ListRequest{
+			req: &ListRequest{
 				Account:       "test-namespace",
 				LabelSelector: "test-label=====name1",
 			},
@@ -93,7 +91,7 @@ func TestValidateListRequest(t *testing.T) {
 		},
 		{
 			name: "valid request",
-			req: &v1.ListRequest{
+			req: &ListRequest{
 				Account: "test-namespace",
 			},
 			expectedError: nil,
@@ -101,7 +99,7 @@ func TestValidateListRequest(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			_, err := validateListRequest(test.req)
+			_, err := test.req.GetListOptions()
 			if err == nil {
 				assert.Equal(t, test.expectedError, err)
 			} else {
@@ -114,19 +112,19 @@ func TestValidateListRequest(t *testing.T) {
 func TestValidateWatchRequest(t *testing.T) {
 	tests := []struct {
 		name          string
-		req           *v1.WatchRequest
+		req           *WatchRequest
 		expectedError error
 	}{
 		{
 			name: "missing namespace",
-			req: &v1.WatchRequest{
+			req: &WatchRequest{
 				Account: "",
 			},
 			expectedError: fmt.Errorf("missing namespace"),
 		},
 		{
 			name: "invalid label selector",
-			req: &v1.WatchRequest{
+			req: &WatchRequest{
 				Account:       "test-namespace",
 				LabelSelector: "test-label=====name1",
 			},
@@ -134,7 +132,7 @@ func TestValidateWatchRequest(t *testing.T) {
 		},
 		{
 			name: "valid request",
-			req: &v1.WatchRequest{
+			req: &WatchRequest{
 				Account:       "test-namespace",
 				LabelSelector: "test-label==name1",
 			},
@@ -143,7 +141,7 @@ func TestValidateWatchRequest(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			_, err := validateWatchRequest(test.req)
+			_, err := test.req.GetListOptions()
 			if err == nil {
 				assert.Equal(t, test.expectedError, err)
 			} else {
