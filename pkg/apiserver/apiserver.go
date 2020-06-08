@@ -28,6 +28,8 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/gorilla/handlers"
+	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
+	grpc_validator "github.com/grpc-ecosystem/go-grpc-middleware/validator"
 	gwruntime "github.com/grpc-ecosystem/grpc-gateway/runtime"
 	"github.com/improbable-eng/grpc-web/go/grpcweb"
 	"github.com/spf13/cobra"
@@ -96,7 +98,10 @@ func runE(flags *flags, log logr.Logger) error {
 	}
 
 	// Startup
-	grpcServer := grpc.NewServer()
+	grpcServer := grpc.NewServer(
+		grpc.UnaryInterceptor(
+			grpc_middleware.ChainUnaryServer(
+				grpc.UnaryServerInterceptor(grpc_validator.UnaryServerInterceptor()))))
 	wrappedGrpc := grpcweb.WrapServer(grpcServer)
 	grpcGatewayMux := gwruntime.NewServeMux(
 		gwruntime.WithProtoErrorHandler(func(ctx context.Context, serveMux *gwruntime.ServeMux, marshaler gwruntime.Marshaler, writer http.ResponseWriter, request *http.Request, err error) {

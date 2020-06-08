@@ -60,9 +60,6 @@ func (o regionServer) List(ctx context.Context, req *v1.ListRequest) (res *v1.Re
 }
 
 func (o regionServer) Get(ctx context.Context, req *v1.GetRequest) (res *v1.Region, err error) {
-	if err = req.Validate(); err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
-	}
 	region := &catalogv1alpha1.Region{}
 	if err = o.client.Get(ctx, types.NamespacedName{
 		Name:      req.Name,

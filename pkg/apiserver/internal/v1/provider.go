@@ -60,9 +60,6 @@ func (o providerServer) List(ctx context.Context, req *v1.ListRequest) (res *v1.
 }
 
 func (o providerServer) Get(ctx context.Context, req *v1.GetRequest) (res *v1.Provider, err error) {
-	if err := req.Validate(); err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
-	}
 	provider := &catalogv1alpha1.Provider{}
 	if err = o.client.Get(ctx, types.NamespacedName{
 		Name:      req.Name,

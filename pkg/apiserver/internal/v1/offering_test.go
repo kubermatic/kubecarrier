@@ -349,23 +349,6 @@ func TestGetOffering(t *testing.T) {
 		expectedResult *v1.Offering
 	}{
 		{
-			name: "missing namespace",
-			req: &v1.GetRequest{
-				Name:    "test-offering",
-				Account: "",
-			},
-			expectedError:  status.Errorf(codes.InvalidArgument, "missing namespace"),
-			expectedResult: nil,
-		},
-		{
-			name: "missing name",
-			req: &v1.GetRequest{
-				Account: "test-namespace",
-			},
-			expectedError:  status.Errorf(codes.InvalidArgument, "missing name"),
-			expectedResult: nil,
-		},
-		{
 			name: "valid request",
 			req: &v1.GetRequest{
 				Name:    "test-offering",

@@ -67,8 +67,6 @@ func NewOfferingServiceServer(c client.Client, dynamicClient dynamic.Interface, 
 
 func (o offeringServer) List(ctx context.Context, req *v1.ListRequest) (res *v1.OfferingList, err error) {
 	listOptions, err := req.GetListOptions()
-	// var listOptions []client.ListOption
-	// listOptions, err = validateListRequest(req)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
@@ -85,9 +83,6 @@ func (o offeringServer) List(ctx context.Context, req *v1.ListRequest) (res *v1.
 }
 
 func (o offeringServer) Get(ctx context.Context, req *v1.GetRequest) (res *v1.Offering, err error) {
-	if err = req.Validate(); err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
-	}
 	offering := &catalogv1alpha1.Offering{}
 	if err = o.client.Get(ctx, types.NamespacedName{
 		Name:      req.Name,
