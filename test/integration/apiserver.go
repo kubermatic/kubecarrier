@@ -213,6 +213,12 @@ func newAPIServer(f *testutil.Framework) func(t *testing.T) {
 			testutil.LogObject(t, userInfo)
 			assert.Equal(t, "admin@kubecarrier.io", userInfo.User)
 		}
+		docClient := apiserverv1.NewDocClient(conn)
+		docs, err := docClient.Swagger(ctx, &empty.Empty{})
+		if assert.NoError(t, err, "docs gRPC") {
+			t.Log("Docs")
+			testutil.LogObject(t, docs)
+		}
 
 		// Create an account to test authorization
 		accountName := "kubecarrier-admin"
