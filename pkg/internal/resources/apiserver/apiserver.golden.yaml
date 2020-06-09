@@ -11,21 +11,21 @@
     name: kubecarrier-api-server-manager-role
   rules:
   - apiGroups:
-      - authentication.k8s.io
+    - authentication.k8s.io
     resources:
-      - tokenreviews
+    - tokenreviews
     verbs:
-      - create
+    - create
   - apiGroups:
-      - catalog.kubecarrier.io
+    - catalog.kubecarrier.io
     resources:
-      - accounts
+    - accounts
     verbs:
-      - get
-      - list
-      - watch
+    - get
+    - list
+    - watch
   - apiGroups:
-      - catalog.kubecarrier.io
+    - catalog.kubecarrier.io
     resources:
     - offerings
     verbs:
