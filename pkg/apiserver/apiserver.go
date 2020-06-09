@@ -274,6 +274,13 @@ func runE(flags *flags, log logr.Logger) error {
 		return err
 	}
 
+	docServer := v1.NewDocServiceServer()
+	apiserverv1.RegisterDocServer(grpcServer, docServer)
+	gwruntime.SetHTTPBodyMarshaler(grpcGatewayMux)
+	if err := apiserverv1.RegisterDocHandlerServer(ctx, grpcGatewayMux, docServer); err != nil {
+		return err
+	}
+
 	var handler http.Handler = http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 		log.Info("got request for", "path", request.URL.Path)
 		if strings.Contains(request.Header.Get("Content-Type"), "application/grpc") {
