@@ -221,9 +221,7 @@ func (r *KubeCarrierReconciler) reconcileAPIServer(ctx context.Context, kubeCarr
 			Name:      kubeCarrier.Name,
 			Namespace: constants.KubeCarrierDefaultNamespace,
 		},
-		Spec: operatorv1alpha1.APIServerSpec{
-			API: kubeCarrier.Spec.API,
-		},
+		Spec: kubeCarrier.Spec.API,
 	}
 
 	if err := controllerutil.SetControllerReference(kubeCarrier, desiredAPIServer, r.Scheme); err != nil {

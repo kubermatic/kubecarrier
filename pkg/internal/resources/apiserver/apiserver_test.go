@@ -36,7 +36,7 @@ func TestManifests(t *testing.T) {
 	c := Config{
 		Namespace: "kubecarrier-system-10",
 		Name:      "foo",
-		APIServerConfig: operatorv1alpha1.APIServerConfig{
+		Spec: operatorv1alpha1.APIServerSpec{
 			OIDC: &operatorv1alpha1.APIServerOIDCConfig{},
 		},
 	}

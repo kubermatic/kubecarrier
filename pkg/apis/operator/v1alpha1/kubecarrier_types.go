@@ -23,7 +23,7 @@ import (
 // KubeCarrierSpec defines the desired state of KubeCarrier
 type KubeCarrierSpec struct {
 	// +optional
-	API APIServerConfig `json:"api,omitempty"`
+	API APIServerSpec `json:"api,omitempty"`
 }
 
 // KubeCarrierStatus defines the observed state of KubeCarrier

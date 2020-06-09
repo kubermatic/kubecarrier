@@ -85,15 +85,13 @@ func newAPIServer(f *testutil.Framework) func(t *testing.T) {
 			Namespace: ns.GetName(),
 		}, apiServer))
 		apiServer.Spec = operatorv1alpha1.APIServerSpec{
-			API: operatorv1alpha1.APIServerConfig{
-				OIDC: &operatorv1alpha1.APIServerOIDCConfig{
-					// from test/testdata/dex_values.yaml
-					IssuerURL:     "https://dex.kubecarrier-system.svc",
-					ClientID:      "e2e-client-id",
-					UsernameClaim: "name",
-					CertificateAuthority: operatorv1alpha1.ObjectReference{
-						Name: "dex-web-server",
-					},
+			OIDC: &operatorv1alpha1.APIServerOIDCConfig{
+				// from test/testdata/dex_values.yaml
+				IssuerURL:     "https://dex.kubecarrier-system.svc",
+				ClientID:      "e2e-client-id",
+				UsernameClaim: "name",
+				CertificateAuthority: operatorv1alpha1.ObjectReference{
+					Name: "dex-web-server",
 				},
 			},
 		}

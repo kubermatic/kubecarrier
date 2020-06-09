@@ -82,9 +82,9 @@ func (r *APIServerReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 
 	objects, err := apiserver.Manifests(
 		apiserver.Config{
-			Name:            apiServer.Name,
-			Namespace:       apiServer.Namespace,
-			APIServerConfig: apiServer.Spec.API,
+			Name:      apiServer.Name,
+			Namespace: apiServer.Namespace,
+			Spec:      apiServer.Spec,
 		},
 	)
 	if err != nil {

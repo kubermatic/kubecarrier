@@ -39,7 +39,7 @@ type Config struct {
 	Name string
 
 	// Spec of the APIServer
-	APIServerConfig operatorv1alpha1.APIServerConfig
+	Spec operatorv1alpha1.APIServerSpec
 }
 
 var k = kustomize.NewDefaultKustomize()
@@ -49,10 +49,10 @@ func Manifests(c Config) ([]unstructured.Unstructured, error) {
 	v := version.Get()
 	kc := k.ForHTTP(vfs)
 	resources := []string{"../default"}
-	if c.APIServerConfig.TLSSecretRef == nil || c.APIServerConfig.TLSSecretRef.Name == "" {
+	if c.Spec.TLSSecretRef == nil || c.Spec.TLSSecretRef.Name == "" {
 		// TLS Secret is not present, we create a self-signed certificate for localhost via cert-manager.
 		resources = append(resources, "../certmanager")
-		c.APIServerConfig.TLSSecretRef = &operatorv1alpha1.ObjectReference{
+		c.Spec.TLSSecretRef = &operatorv1alpha1.ObjectReference{
 			Name: "tls-server-cert",
 		}
 	}
@@ -62,11 +62,11 @@ func Manifests(c Config) ([]unstructured.Unstructured, error) {
 	// because some fields will be defaulted to empty and
 	// interfere with the strategic merge patch of kustomize.
 	managerEnv := make(map[string]interface{})
-	if c.APIServerConfig.OIDC != nil {
+	if c.Spec.OIDC != nil {
 		extraArgs := make([]string, 0)
-		if len(c.APIServerConfig.OIDC.RequiredClaims) > 0 {
+		if len(c.Spec.OIDC.RequiredClaims) > 0 {
 			rclaims := make([]string, 0)
-			for k, v := range c.APIServerConfig.OIDC.RequiredClaims {
+			for k, v := range c.Spec.OIDC.RequiredClaims {
 				rclaims = append(rclaims, fmt.Sprintf("%s=%s", k, v))
 			}
 			extraArgs = append(extraArgs, "--oidc-required-claim="+strings.Join(rclaims, ","))
@@ -89,7 +89,6 @@ func Manifests(c Config) ([]unstructured.Unstructured, error) {
 									"--address=$(API_SERVER_ADDR)",
 									"--tls-cert-file=$(API_SERVER_TLS_CERT_FILE)",
 									"--tls-private-key-file=$(API_SERVER_TLS_PRIVATE_KEY_FILE)",
-									"--enable-oidc=$(ENABLE_OIDC)",
 									"--oidc-issuer-url=$(API_SERVER_OIDC_ISSUER_URL)",
 									"--oidc-client-id=$(API_SERVER_OIDC_CLIENT_ID)",
 									"--oidc-ca-file=$(API_SERVER_OIDC_CA_FILE)",
@@ -113,16 +112,12 @@ func Manifests(c Config) ([]unstructured.Unstructured, error) {
 										"value": "/run/serving-certs/tls.key",
 									},
 									{
-										"name":  "ENABLE_OIDC",
-										"value": true,
-									},
-									{
 										"name":  "API_SERVER_OIDC_ISSUER_URL",
-										"value": c.APIServerConfig.OIDC.IssuerURL,
+										"value": c.Spec.OIDC.IssuerURL,
 									},
 									{
 										"name":  "API_SERVER_OIDC_CLIENT_ID",
-										"value": c.APIServerConfig.OIDC.ClientID,
+										"value": c.Spec.OIDC.ClientID,
 									},
 									{
 										"name":  "API_SERVER_OIDC_CA_FILE",
@@ -130,57 +125,56 @@ func Manifests(c Config) ([]unstructured.Unstructured, error) {
 									},
 									{
 										"name":  "API_SERVER_OIDC_USERNAME_CLAIM",
-										"value": c.APIServerConfig.OIDC.UsernameClaim,
+										"value": c.Spec.OIDC.UsernameClaim,
 									},
 									{
 										"name":  "API_SERVER_OIDC_USERNAME_PREFIX",
-										"value": c.APIServerConfig.OIDC.UsernamePrefix,
+										"value": c.Spec.OIDC.UsernamePrefix,
 									},
 									{
 										"name":  "API_SERVER_OIDC_GROUPS_CLAIM",
-										"value": c.APIServerConfig.OIDC.GroupsClaim,
+										"value": c.Spec.OIDC.GroupsClaim,
 									},
 									{
 										"name":  "API_SERVER_OIDC_GROUPS_PREFIX",
-										"value": c.APIServerConfig.OIDC.GroupsPrefix,
+										"value": c.Spec.OIDC.GroupsPrefix,
 									},
 									{
 										"name":  "API_SERVER_OIDC_SIGNING_ALGS",
-										"value": strings.Join(c.APIServerConfig.OIDC.SupportedSigningAlgs, ","),
+										"value": strings.Join(c.Spec.OIDC.SupportedSigningAlgs, ","),
 									},
 								},
-								"volumeMounts": []map[string]interface{}{{
-									"mountPath": "/run/serving-certs",
-									"readyOnly": true,
-									"name":      "serving-cert",
-								}, {
-									"mountPath": "/run/oidc-certs",
-									"readyOnly": true,
-									"name":      "oidc-cert",
-								}},
+								"volumeMounts": []map[string]interface{}{
+									{
+										"mountPath": "/run/serving-certs",
+										"readyOnly": true,
+										"name":      "serving-cert",
+									},
+									{
+										"mountPath": "/run/oidc-certs",
+										"readyOnly": true,
+										"name":      "oidc-cert",
+									},
+								},
 							},
 						},
-						"volumes": []map[string]interface{}{{
-							"name": "serving-cert",
-							"secret": map[string]interface{}{
-								"secretName": c.APIServerConfig.TLSSecretRef.Name,
+						"volumes": []map[string]interface{}{
+							{
+								"name": "serving-cert",
+								"secret": map[string]interface{}{
+									"secretName": c.Spec.TLSSecretRef.Name,
+								},
 							},
-						}, {
-							"name": "oidc-cert",
-							"secret": map[string]interface{}{
-								"secretName": c.APIServerConfig.OIDC.CertificateAuthority.Name,
+							{
+								"name": "oidc-cert",
+								"secret": map[string]interface{}{
+									"secretName": c.Spec.OIDC.CertificateAuthority.Name,
+								},
 							},
-						}},
+						},
 					},
 				},
 			},
-		}
-		managerEnvBytes, err := yaml.Marshal(managerEnv)
-		if err != nil {
-			return nil, fmt.Errorf("marshalling manager env patch: %w", err)
-		}
-		if err = kc.WriteFile("/man/manager_env_patch.yaml", managerEnvBytes); err != nil {
-			return nil, fmt.Errorf("writing manager_env_patch.yaml: %w", err)
 		}
 	} else {
 		managerEnv = map[string]interface{}{
@@ -228,7 +222,7 @@ func Manifests(c Config) ([]unstructured.Unstructured, error) {
 							{
 								"name": "serving-cert",
 								"secret": map[string]interface{}{
-									"secretName": c.APIServerConfig.TLSSecretRef.Name,
+									"secretName": c.Spec.TLSSecretRef.Name,
 								},
 							},
 						},

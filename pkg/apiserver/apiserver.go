@@ -67,7 +67,6 @@ type flags struct {
 	TLSCertFile        string
 	TLSPrivateKeyFile  string
 	CORSAllowedOrigins []string
-	enableOIDC         bool
 	OIDCOptions        k8soidc.Options
 }
 
@@ -86,10 +85,7 @@ func NewAPIServer() *cobra.Command {
 	cmd.Flags().StringVar(&flags.TLSCertFile, "tls-cert-file", "", "File containing the default x509 Certificate for HTTPS. If not provided no TLS security shall be enabled")
 	cmd.Flags().StringVar(&flags.TLSPrivateKeyFile, "tls-private-key-file", "", "File containing the default x509 private key matching --tls-cert-file.")
 	cmd.Flags().StringArrayVar(&flags.CORSAllowedOrigins, "cors-allowed-origins", []string{"*"}, "List of allowed origins for CORS, comma separated. An allowed origin can be a regular expression to support subdomain matching. If this list is empty CORS will not be enabled.")
-	cmd.Flags().BoolVar(&flags.enableOIDC, "enable-oidc", false, "List of allowed origins for CORS, comma separated. An allowed origin can be a regular expression to support subdomain matching. If this list is empty CORS will not be enabled.")
-	if flags.enableOIDC {
-		oidc.AddOIDCPFlags(&flags.OIDCOptions, cmd.Flags())
-	}
+	oidc.AddOIDCPFlags(&flags.OIDCOptions, cmd.Flags())
 	return util.CmdLogMixin(cmd)
 }
 
@@ -220,14 +216,12 @@ func runE(flags *flags, log logr.Logger) error {
 		}
 	})
 
-	if flags.enableOIDC {
-		log.Info("setting up OIDC auth middleware", "iss", flags.OIDCOptions.IssuerURL)
-		oidcMiddleware, err := oidc.NewOIDCMiddleware(log, flags.OIDCOptions)
-		if err != nil {
-			return fmt.Errorf("init OIDC Middleware: %w", err)
-		}
-		handler = oidcMiddleware(handler)
+	log.Info("setting up OIDC auth middleware", "iss", flags.OIDCOptions.IssuerURL)
+	oidcMiddleware, err := oidc.NewOIDCMiddleware(log, flags.OIDCOptions)
+	if err != nil {
+		return fmt.Errorf("init OIDC Middleware: %w", err)
 	}
+	handler = oidcMiddleware(handler)
 
 	if len(flags.CORSAllowedOrigins) > 0 {
 		handler = handlers.CORS(

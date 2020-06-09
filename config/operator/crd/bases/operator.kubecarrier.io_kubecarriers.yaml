@@ -45,6 +45,7 @@ spec:
             description: KubeCarrierSpec defines the desired state of KubeCarrier
             properties:
               api:
+                description: APIServerSpec defines the desired state of APIServer
                 properties:
                   oidc:
                     description: OIDC specifies OpenID Connect configuration for API
