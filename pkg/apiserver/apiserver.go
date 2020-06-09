@@ -128,7 +128,7 @@ func runE(flags *flags, log logr.Logger) error {
 		return fmt.Errorf("--tls-cert-file or --tls-private-key-file not specified, cannot start")
 	}
 
-	authProviders := make([]auth.AuthProvider, 0, len(flags.AuthenticationMode))
+	authProviders := make([]auth.Provider, 0, len(flags.AuthenticationMode))
 	for _, mode := range flags.AuthenticationMode {
 		authProvider, err := auth.GetAuthProvider(mode)
 		if err != nil {

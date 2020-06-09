@@ -27,7 +27,7 @@ import (
 
 type Auth struct{}
 
-var _ auth.AuthProvider = (*Auth)(nil)
+var _ auth.Provider = (*Auth)(nil)
 
 func init() {
 	auth.RegisterAuthProvider("Anonymous", &Auth{})

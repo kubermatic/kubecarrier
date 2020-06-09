@@ -43,7 +43,7 @@ type OIDCAuthenticator struct {
 	logr.Logger
 }
 
-var _ auth.AuthProvider = (*OIDCAuthenticator)(nil)
+var _ auth.Provider = (*OIDCAuthenticator)(nil)
 var _ inject.Logger = (*OIDCAuthenticator)(nil)
 
 func (O *OIDCAuthenticator) InjectLogger(l logr.Logger) error {

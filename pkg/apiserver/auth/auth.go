@@ -29,15 +29,15 @@ import (
 
 type contextKey string
 
-type AuthProvider interface {
+type Provider interface {
 	AddFlags(fs *pflag.FlagSet)
 	Init() error
 	Authenticate(ctx context.Context) (user.Info, error)
 }
 
-var authProviderRegistry = make(map[string]AuthProvider)
+var authProviderRegistry = make(map[string]Provider)
 
-func RegisterAuthProvider(name string, provider AuthProvider) {
+func RegisterAuthProvider(name string, provider Provider) {
 	authProviderRegistry[name] = provider
 }
 
@@ -54,7 +54,7 @@ func RegisterPFlags(fs *pflag.FlagSet) {
 	}
 }
 
-func GetAuthProvider(name string) (AuthProvider, error) {
+func GetAuthProvider(name string) (Provider, error) {
 	authProvider, ok := authProviderRegistry[name]
 	if !ok {
 		return nil, fmt.Errorf("unknown authorization mode: %v", name)
@@ -78,7 +78,7 @@ func ExtractUserInfo(ctx context.Context) (user.Info, error) {
 	return nil, status.Errorf(codes.Internal, "user info doesn't implement the right interface, got: %T", val)
 }
 
-func CreateAuthFunction(authProviders []AuthProvider) grpc_auth.AuthFunc {
+func CreateAuthFunction(authProviders []Provider) grpc_auth.AuthFunc {
 	return func(ctx context.Context) (context.Context, error) {
 		for _, provider := range authProviders {
 			userInfo, err := provider.Authenticate(ctx)
