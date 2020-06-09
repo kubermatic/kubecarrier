@@ -80,7 +80,7 @@ func (O *OIDCAuthenticator) Authenticate(ctx context.Context) (user.Info, error)
 	return resp.User, nil
 }
 
-func (O *OIDCAuthenticator) RegisterPFlags(fs *pflag.FlagSet) {
+func (O *OIDCAuthenticator) AddFlags(fs *pflag.FlagSet) {
 	opts := &O.opts
 	fs.StringVar(&opts.IssuerURL, "oidc-issuer-url", opts.IssuerURL, ""+
 		"The URL of the OpenID issuer, only HTTPS scheme will be accepted. "+

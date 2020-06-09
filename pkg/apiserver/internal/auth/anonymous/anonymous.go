@@ -33,7 +33,7 @@ func init() {
 	auth.RegisterAuthProvider("Anonymous", &Auth{})
 }
 
-func (a Auth) RegisterPFlags(fs *pflag.FlagSet) {}
+func (a Auth) AddFlags(fs *pflag.FlagSet) {}
 
 func (a Auth) Init() error {
 	return nil

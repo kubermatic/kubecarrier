@@ -31,7 +31,7 @@ import (
 type contextKey string
 
 type AuthProvider interface {
-	RegisterPFlags(fs *pflag.FlagSet)
+	AddFlags(fs *pflag.FlagSet)
 	Init() error
 	Authenticate(ctx context.Context) (user.Info, error)
 }
@@ -51,7 +51,7 @@ func RegisteredAuthProviders() (out []string) {
 
 func RegisterPFlags(fs *pflag.FlagSet) {
 	for _, provider := range authProviderFactory {
-		provider.RegisterPFlags(fs)
+		provider.AddFlags(fs)
 	}
 }
 
