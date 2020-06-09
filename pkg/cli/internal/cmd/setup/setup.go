@@ -191,19 +191,6 @@ func deployKubeCarrier(ctx context.Context, conf *rest.Config) func() error {
 			ObjectMeta: metav1.ObjectMeta{
 				Name: constants.KubeCarrierDefaultName,
 			},
-			Spec: operatorv1alpha1.KubeCarrierSpec{
-				API: operatorv1alpha1.APIServerSpec{
-					OIDC: &operatorv1alpha1.APIServerOIDCConfig{
-						// from test/testdata/dex_values.yaml
-						IssuerURL:     "https://dex.kubecarrier-system.svc",
-						ClientID:      "e2e-client-id",
-						UsernameClaim: "name",
-						CertificateAuthority: operatorv1alpha1.ObjectReference{
-							Name: "dex-web-server",
-						},
-					},
-				},
-			},
 		}
 		w, err := util.NewClientWatcher(conf, scheme, ctrl.Log)
 		if err != nil {

@@ -194,6 +194,7 @@ func Manifests(c Config) ([]unstructured.Unstructured, error) {
 									"--address=$(API_SERVER_ADDR)",
 									"--tls-cert-file=$(API_SERVER_TLS_CERT_FILE)",
 									"--tls-private-key-file=$(API_SERVER_TLS_PRIVATE_KEY_FILE)",
+									"--authentication-mode=$(AUTHENTICATION_MODE)",
 								},
 								"env": []map[string]interface{}{
 									{
@@ -207,6 +208,10 @@ func Manifests(c Config) ([]unstructured.Unstructured, error) {
 									{
 										"name":  "API_SERVER_TLS_PRIVATE_KEY_FILE",
 										"value": "/run/serving-certs/tls.key",
+									},
+									{
+										"name":  "AUTHENTICATION_MODE",
+										"value": "Anonymous",
 									},
 								},
 								"volumeMounts": []map[string]interface{}{
