@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package anonymous
+package token
 
 import (
 	"context"
@@ -91,7 +91,9 @@ func (a *Auth) Authenticate(ctx context.Context) (user.Info, error) {
 	}
 
 	if len(a.APIAudiences) > 0 && sets.NewString(a.APIAudiences...).Intersection(sets.NewString(tokenReview.Status.Audiences...)).Len() == 0 {
-		return nil, status.Errorf(codes.Unauthenticated, "wrong API audience")
+		err := status.Errorf(codes.Unauthenticated, "wrong API audience")
+		a.Error(err, "wrong API audiences", "expected", a.APIAudiences, "got", tokenReview.Status.Audiences)
+		return nil, err
 	}
 
 	userInfo := &user.DefaultInfo{
