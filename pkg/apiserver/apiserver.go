@@ -57,6 +57,7 @@ import (
 	"github.com/kubermatic/kubecarrier/pkg/apiserver/auth"
 	_ "github.com/kubermatic/kubecarrier/pkg/apiserver/internal/auth/anonymous"
 	_ "github.com/kubermatic/kubecarrier/pkg/apiserver/internal/auth/oidc"
+	_ "github.com/kubermatic/kubecarrier/pkg/apiserver/internal/auth/token"
 	v1 "github.com/kubermatic/kubecarrier/pkg/apiserver/internal/v1"
 	"github.com/kubermatic/kubecarrier/pkg/internal/util"
 )
@@ -97,7 +98,7 @@ func NewAPIServer() *cobra.Command {
 	cmd.Flags().StringVar(&flags.TLSCertFile, "tls-cert-file", "", "File containing the default x509 Certificate for HTTPS. If not provided no TLS security shall be enabled")
 	cmd.Flags().StringVar(&flags.TLSPrivateKeyFile, "tls-private-key-file", "", "File containing the default x509 private key matching --tls-cert-file.")
 	cmd.Flags().StringArrayVar(&flags.CORSAllowedOrigins, "cors-allowed-origins", []string{"*"}, "List of allowed origins for CORS, comma separated. An allowed origin can be a regular expression to support subdomain matching. If this list is empty CORS will not be enabled.")
-	cmd.Flags().StringArrayVar(&flags.AuthenticationMode, "authentication-mode", []string{"OIDC"}, "Ordered list of plug-ins to do authentication on secure port. Comma-delimited list of: "+strings.Join(auth.RegisteredAuthProviders(), ","))
+	cmd.Flags().StringArrayVar(&flags.AuthenticationMode, "authentication-mode", []string{"OIDC", "Token"}, "Ordered list of plug-ins to do authentication on secure port. Comma-delimited list of: "+strings.Join(auth.RegisteredAuthProviders(), ","))
 	auth.RegisterPFlags(cmd.Flags())
 	return util.CmdLogMixin(cmd)
 }

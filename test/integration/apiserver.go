@@ -195,6 +195,7 @@ func newAPIServer(f *testutil.Framework) func(t *testing.T) {
 		userinfo, err := client.WhoAmI(ctx, &empty.Empty{})
 		if assert.NoError(t, err, "whoami gRPC") {
 			t.Log("User info:")
+			assert.Equal(t, "admin@kubecarrier.io", userinfo.User)
 			testutil.LogObject(t, userinfo)
 		}
 

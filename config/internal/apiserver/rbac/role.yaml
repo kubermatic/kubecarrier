@@ -7,15 +7,21 @@ metadata:
   name: manager-role
 rules:
 - apiGroups:
-  - catalog.kubecarrier.io
+    - authentication.k8s.io
   resources:
-  - accounts
+    - tokenreviews
   verbs:
-  - get
-  - list
-  - watch
+    - create
 - apiGroups:
-  - catalog.kubecarrier.io
+    - catalog.kubecarrier.io
+  resources:
+    - accounts
+  verbs:
+    - get
+    - list
+    - watch
+- apiGroups:
+    - catalog.kubecarrier.io
   resources:
   - offerings
   verbs:
