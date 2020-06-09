@@ -25,7 +25,6 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	authenticationv1 "k8s.io/api/authentication/v1"
-	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/apiserver/pkg/authentication/user"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/runtime/inject"
@@ -79,7 +78,8 @@ func (a *Auth) Authenticate(ctx context.Context) (user.Info, error) {
 	}
 	tokenReview := &authenticationv1.TokenReview{
 		Spec: authenticationv1.TokenReviewSpec{
-			Token: token,
+			Token:     token,
+			Audiences: a.APIAudiences,
 		},
 	}
 	if err := a.client.Create(ctx, tokenReview); err != nil {
@@ -88,12 +88,6 @@ func (a *Auth) Authenticate(ctx context.Context) (user.Info, error) {
 
 	if !tokenReview.Status.Authenticated {
 		return nil, status.Error(codes.Unauthenticated, tokenReview.Status.Error)
-	}
-
-	if len(a.APIAudiences) > 0 && sets.NewString(a.APIAudiences...).Intersection(sets.NewString(tokenReview.Status.Audiences...)).Len() == 0 {
-		err := status.Errorf(codes.Unauthenticated, "wrong API audience")
-		a.Error(err, "wrong API audiences", "expected", a.APIAudiences, "got", tokenReview.Status.Audiences)
-		return nil, err
 	}
 
 	userInfo := &user.DefaultInfo{
