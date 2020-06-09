@@ -24,6 +24,7 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
+	"reflect"
 	"strings"
 	"testing"
 	"time"
@@ -64,6 +65,39 @@ func newAPIServer(f *testutil.Framework) func(t *testing.T) {
 		ns.Name = "kubecarrier-system"
 		const localAPIServerPort = 9443
 
+		// Enable OIDC for testing
+		apiCtx, cancel := context.WithTimeout(ctx, 30*time.Second)
+		t.Cleanup(cancel)
+		kubeCarrier := &operatorv1alpha1.KubeCarrier{}
+		require.NoError(t, managementClient.Get(apiCtx, types.NamespacedName{
+			Name: "kubecarrier",
+		}, kubeCarrier))
+		kubeCarrier.Spec = operatorv1alpha1.KubeCarrierSpec{
+			API: operatorv1alpha1.APIServerSpec{
+				OIDC: &operatorv1alpha1.APIServerOIDCConfig{
+					// from test/testdata/dex_values.yaml
+					IssuerURL:     "https://dex.kubecarrier-system.svc",
+					ClientID:      "e2e-client-id",
+					UsernameClaim: "name",
+					CertificateAuthority: operatorv1alpha1.ObjectReference{
+						Name: "dex-web-server",
+					},
+				},
+			},
+		}
+		require.NoError(t, managementClient.Update(apiCtx, kubeCarrier))
+		apiServer := &operatorv1alpha1.APIServer{}
+		require.NoError(t, wait.PollUntil(time.Second, func() (done bool, err error) {
+			if err := managementClient.Get(apiCtx, types.NamespacedName{
+				Name:      "kubecarrier",
+				Namespace: ns.GetName(),
+			}, apiServer); err != nil {
+				return true, err
+			}
+			return reflect.DeepEqual(kubeCarrier.Spec.API, apiServer.Spec) && apiServer.IsReady(), nil
+		}, apiCtx.Done()))
+		require.NoError(t, testutil.WaitUntilReady(apiCtx, managementClient, kubeCarrier))
+
 		token := fetchUserToken(ctx, t, managementClient, f.Config().ManagementExternalKubeconfigPath)
 		t.Log("token", token)
 
@@ -79,32 +113,13 @@ func newAPIServer(f *testutil.Framework) func(t *testing.T) {
 			return ok && len(data) > 0, nil
 		}))
 
-		apiServer := &operatorv1alpha1.APIServer{}
-		require.NoError(t, managementClient.Get(ctx, types.NamespacedName{
-			Name:      "kubecarrier",
-			Namespace: ns.GetName(),
-		}, apiServer))
-		apiServer.Spec = operatorv1alpha1.APIServerSpec{
-			OIDC: &operatorv1alpha1.APIServerOIDCConfig{
-				// from test/testdata/dex_values.yaml
-				IssuerURL:     "https://dex.kubecarrier-system.svc",
-				ClientID:      "e2e-client-id",
-				UsernameClaim: "name",
-				CertificateAuthority: operatorv1alpha1.ObjectReference{
-					Name: "dex-web-server",
-				},
-			},
-		}
-		require.NoError(t, managementClient.Update(ctx, apiServer))
-		require.NoError(t, testutil.WaitUntilReady(ctx, managementClient, apiServer))
-
 		ctx, cancel = context.WithCancel(ctx)
 		t.Cleanup(cancel)
 
 		pfCmd := exec.CommandContext(ctx,
 			"kubectl",
 			"--kubeconfig", f.Config().ManagementExternalKubeconfigPath,
-			"--namespace", apiServer.GetNamespace(),
+			"--namespace", ns.GetName(),
 			"port-forward",
 			// well known service name since it's assumed only one API server shall be deployed
 			"service/kubecarrier-api-server-manager",
