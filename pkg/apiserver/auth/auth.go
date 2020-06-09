@@ -35,27 +35,27 @@ type AuthProvider interface {
 	Authenticate(ctx context.Context) (user.Info, error)
 }
 
-var authProviderFactory = make(map[string]AuthProvider)
+var authProviderRegistry = make(map[string]AuthProvider)
 
 func RegisterAuthProvider(name string, provider AuthProvider) {
-	authProviderFactory[name] = provider
+	authProviderRegistry[name] = provider
 }
 
 func RegisteredAuthProviders() (out []string) {
-	for k := range authProviderFactory {
+	for k := range authProviderRegistry {
 		out = append(out, k)
 	}
 	return
 }
 
 func RegisterPFlags(fs *pflag.FlagSet) {
-	for _, provider := range authProviderFactory {
+	for _, provider := range authProviderRegistry {
 		provider.AddFlags(fs)
 	}
 }
 
-func NewAuthProvider(name string) (AuthProvider, error) {
-	authProvider, ok := authProviderFactory[name]
+func GetAuthProvider(name string) (AuthProvider, error) {
+	authProvider, ok := authProviderRegistry[name]
 	if !ok {
 		return nil, fmt.Errorf("unknown authorization mode: %v", name)
 	}

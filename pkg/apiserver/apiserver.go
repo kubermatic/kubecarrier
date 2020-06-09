@@ -130,7 +130,7 @@ func runE(flags *flags, log logr.Logger) error {
 
 	authProviders := make([]auth.AuthProvider, 0, len(flags.AuthenticationMode))
 	for _, mode := range flags.AuthenticationMode {
-		authProvider, err := auth.NewAuthProvider(mode)
+		authProvider, err := auth.GetAuthProvider(mode)
 		if err != nil {
 			return err
 		}
