@@ -46,9 +46,9 @@ func NewAccountServiceServer(c client.Client) v1.AccountServiceServer {
 }
 
 func (o accountServer) List(ctx context.Context, req *v1.AccountListRequest) (res *v1.AccountList, err error) {
-	user, present := auth.ExtractUserInfo(ctx)
-	if !present {
-		return nil, status.Error(codes.Unauthenticated, "unauthenticated user")
+	user, err := auth.ExtractUserInfo(ctx)
+	if err != nil {
+		return nil, err
 	}
 	return o.handleListRequest(ctx, req, user.GetName())
 }

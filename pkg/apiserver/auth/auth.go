@@ -24,7 +24,6 @@ import (
 	"github.com/spf13/pflag"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
-	"k8s.io/apiserver/pkg/authentication/authenticator"
 	"k8s.io/apiserver/pkg/authentication/user"
 )
 
@@ -67,9 +66,16 @@ const (
 	userInfoKey contextKey = "userinfo.kubecarrier.io"
 )
 
-func ExtractUserInfo(ctx context.Context) (user.Info, bool) {
-	u, ok := ctx.Value(userInfoKey).(*authenticator.Response)
-	return u.User, ok
+// ExtractUserInfo extracts the user info from context
+func ExtractUserInfo(ctx context.Context) (user.Info, error) {
+	val := ctx.Value(userInfoKey)
+	if val == nil {
+		return nil, status.Error(codes.Unauthenticated, "no user information found")
+	}
+	if info, ok := val.(user.Info); ok {
+		return info, nil
+	}
+	return nil, status.Errorf(codes.Internal, "user info doesn't implement the right interface, got: %T", val)
 }
 
 func CreateAuthFunction(authProviders []AuthProvider) grpc_auth.AuthFunc {
