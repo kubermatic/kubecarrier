@@ -61,7 +61,7 @@ func Manifests(c Config) ([]unstructured.Unstructured, error) {
 	// we are not using *appsv1.Deployment here,
 	// because some fields will be defaulted to empty and
 	// interfere with the strategic merge patch of kustomize.
-	managerEnv := make(map[string]interface{})
+	var managerEnv map[string]interface{}
 	if c.Spec.OIDC != nil {
 		extraArgs := make([]string, 0)
 		if len(c.Spec.OIDC.RequiredClaims) > 0 {
