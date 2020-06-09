@@ -55,7 +55,7 @@ func RegisterPFlags(fs *pflag.FlagSet) {
 	}
 }
 
-func newAuthProvider(name string) (AuthProvider, error) {
+func NewAuthProvider(name string) (AuthProvider, error) {
 	authProvider, ok := authProviderFactory[name]
 	if !ok {
 		return nil, fmt.Errorf("unknown authorization mode: %v", name)
@@ -72,19 +72,7 @@ func ExtractUserInfo(ctx context.Context) (user.Info, bool) {
 	return u.User, ok
 }
 
-func CreateAuthFunction(authorizationModes []string) (grpc_auth.AuthFunc, error) {
-	authProviders := make([]AuthProvider, 0, len(authorizationModes))
-	for _, mode := range authorizationModes {
-		authProvider, err := newAuthProvider(mode)
-		if err != nil {
-			return nil, err
-		}
-		if err := authProvider.Init(); err != nil {
-			return nil, fmt.Errorf("cannot init auth provider: %s: %w", mode, err)
-		}
-		authProviders = append(authProviders, authProvider)
-	}
-
+func CreateAuthFunction(authProviders []AuthProvider) grpc_auth.AuthFunc {
 	return func(ctx context.Context) (context.Context, error) {
 		for _, provider := range authProviders {
 			userInfo, err := provider.Authenticate(ctx)
@@ -101,5 +89,5 @@ func CreateAuthFunction(authorizationModes []string) (grpc_auth.AuthFunc, error)
 			return context.WithValue(ctx, userInfoKey, userInfo), nil
 		}
 		return ctx, status.Error(codes.Unauthenticated, "no auth plugin successfully authenticated the user")
-	}, nil
+	}
 }

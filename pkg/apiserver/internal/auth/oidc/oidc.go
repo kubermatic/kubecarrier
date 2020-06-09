@@ -18,7 +18,9 @@ package oidc
 
 import (
 	"context"
+	"fmt"
 
+	"github.com/go-logr/logr"
 	grpc_auth "github.com/grpc-ecosystem/go-grpc-middleware/auth"
 	"github.com/spf13/pflag"
 	"google.golang.org/grpc/codes"
@@ -27,6 +29,7 @@ import (
 	"k8s.io/apiserver/plugin/pkg/authenticator/token/oidc"
 	cliflag "k8s.io/component-base/cli/flag"
 	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/runtime/inject"
 
 	"github.com/kubermatic/kubecarrier/pkg/apiserver/auth"
 )
@@ -38,16 +41,23 @@ func init() {
 type OIDCAuthenticator struct {
 	opts          oidc.Options
 	authenticator *oidc.Authenticator
+	logr.Logger
 }
 
 var _ auth.AuthProvider = (*OIDCAuthenticator)(nil)
+var _ inject.Logger = (*OIDCAuthenticator)(nil)
+
+func (O *OIDCAuthenticator) InjectLogger(l logr.Logger) error {
+	O.Logger = l
+	return nil
+}
 
 func (O *OIDCAuthenticator) Init() error {
-	ctrl.Log.Info("setting up OIDC authenticator middleware", "iss", O.opts.IssuerURL)
 	authenticator, err := newAuthenticator(ctrl.Log, O.opts)
 	if err != nil {
 		return err
 	}
+	O.Info("setting up OIDC authenticator middleware", "iss", O.opts.IssuerURL)
 	O.authenticator = authenticator
 	return nil
 }
@@ -55,13 +65,16 @@ func (O *OIDCAuthenticator) Init() error {
 func (O *OIDCAuthenticator) Authenticate(ctx context.Context) (user.Info, error) {
 	token, err := grpc_auth.AuthFromMD(ctx, "Bearer")
 	if err != nil {
+		O.Error(err, "cannot extract token")
 		return nil, err
 	}
 	resp, present, err := O.authenticator.AuthenticateToken(ctx, token)
 	if err != nil {
+		O.Error(err, "cannot authenticate token", "token", token)
 		return nil, status.Error(codes.Unauthenticated, "AuthenticateToken")
 	}
 	if !present {
+		O.Error(fmt.Errorf("missing token"), "Token is not present")
 		return nil, status.Error(codes.Unauthenticated, "AuthenticateToken")
 	}
 	return resp.User, nil

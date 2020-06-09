@@ -44,13 +44,14 @@ import (
 	"google.golang.org/grpc/status"
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
+	"k8s.io/cli-runtime/pkg/genericclioptions"
 	"k8s.io/client-go/dynamic"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/cache"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/apiutil"
-	"sigs.k8s.io/controller-runtime/pkg/client/config"
+	"sigs.k8s.io/controller-runtime/pkg/runtime/inject"
 
 	catalogv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/catalog/v1alpha1"
 	apiserverv1 "github.com/kubermatic/kubecarrier/pkg/apiserver/api/v1"
@@ -78,11 +79,14 @@ type flags struct {
 	TLSPrivateKeyFile  string
 	CORSAllowedOrigins []string
 	AuthorizationMode  []string
+	*genericclioptions.ConfigFlags
 }
 
 func NewAPIServer() *cobra.Command {
 	log := ctrl.Log.WithName("apiserver")
-	flags := &flags{}
+	flags := &flags{
+		ConfigFlags: genericclioptions.NewConfigFlags(false),
+	}
 	cmd := &cobra.Command{
 		Args:  cobra.NoArgs,
 		Use:   "apiserver",
@@ -91,6 +95,7 @@ func NewAPIServer() *cobra.Command {
 			return runE(flags, log)
 		},
 	}
+	flags.ConfigFlags.AddFlags(cmd.Flags())
 	cmd.Flags().StringVar(&flags.address, "address", "0.0.0.0:8080", "Address to bind this API server on.")
 	cmd.Flags().StringVar(&flags.TLSCertFile, "tls-cert-file", "", "File containing the default x509 Certificate for HTTPS. If not provided no TLS security shall be enabled")
 	cmd.Flags().StringVar(&flags.TLSPrivateKeyFile, "tls-private-key-file", "", "File containing the default x509 private key matching --tls-cert-file.")
@@ -101,17 +106,65 @@ func NewAPIServer() *cobra.Command {
 }
 
 func runE(flags *flags, log logr.Logger) error {
+	ctx := context.Background()
+	cfg, err := flags.ToRESTConfig()
+	if err != nil {
+		return err
+	}
+	mapper, err := apiutil.NewDynamicRESTMapper(cfg)
+	if err != nil {
+		return fmt.Errorf("creating rest mapper: %w", err)
+	}
+	c, err := client.New(cfg, client.Options{
+		Scheme: scheme,
+		Mapper: mapper,
+	})
+	if err != nil {
+		return fmt.Errorf("creating client: %w", err)
+	}
+	dynamicClient, err := dynamic.NewForConfig(cfg)
+	if err != nil {
+		return fmt.Errorf("creating dynamic client: %w", err)
+	}
 	// Validation
 	if flags.TLSCertFile == "" || flags.TLSPrivateKeyFile == "" {
 		return fmt.Errorf("--tls-cert-file or --tls-private-key-file not specified, cannot start")
 	}
 
-	grpc_zap.ReplaceGrpcLoggerV2(util.ZapLogger)
-	authFunc, err := auth.CreateAuthFunction(flags.AuthorizationMode)
-	if err != nil {
-		return err
+	authProviders := make([]auth.AuthProvider, 0, len(flags.AuthorizationMode))
+	for _, mode := range flags.AuthorizationMode {
+		authProvider, err := auth.NewAuthProvider(mode)
+		if err != nil {
+			return err
+		}
+		if injector, ok := authProvider.(inject.Client); ok {
+			if err := injector.InjectClient(c); err != nil {
+				return fmt.Errorf("cannot inject client into auth provider %s: %w", mode, err)
+			}
+		}
+		if injector, ok := authProvider.(inject.Logger); ok {
+			if err := injector.InjectLogger(ctrl.Log.WithName("authentication").WithValues("mode", mode)); err != nil {
+				return fmt.Errorf("cannot inject logger into auth provider %s: %w", mode, err)
+			}
+		}
+		if injector, ok := authProvider.(inject.Scheme); ok {
+			if err := injector.InjectScheme(scheme); err != nil {
+				return fmt.Errorf("cannot inject scheme into auth provider %s: %w", mode, err)
+			}
+		}
+		if injector, ok := authProvider.(inject.Mapper); ok {
+			if err := injector.InjectMapper(mapper); err != nil {
+				return fmt.Errorf("cannot inject mapper into auth provider %s: %w", mode, err)
+			}
+		}
+		if err := authProvider.Init(); err != nil {
+			return fmt.Errorf("cannot init auth provider: %s: %w", mode, err)
+		}
+		authProviders = append(authProviders, authProvider)
 	}
 
+	authFunc := auth.CreateAuthFunction(authProviders)
+	grpc_zap.ReplaceGrpcLoggerV2(util.ZapLogger)
 	grpcServer := grpc.NewServer(
 		grpc.StreamInterceptor(grpc_middleware.ChainStreamServer(
 			grpc_ctxtags.StreamServerInterceptor(),
@@ -152,27 +205,9 @@ func runE(flags *flags, log logr.Logger) error {
 			_, _ = writer.Write(buf)
 		}),
 	)
-	ctx := context.Background()
 	grpcClient, err := createInternalGRPCClient(ctx, flags)
 	if err != nil {
 		return err
-	}
-	// Create Kubernetes Client
-	cfg := config.GetConfigOrDie()
-	mapper, err := apiutil.NewDynamicRESTMapper(cfg)
-	if err != nil {
-		return fmt.Errorf("creating rest mapper: %w", err)
-	}
-	c, err := client.New(cfg, client.Options{
-		Scheme: scheme,
-		Mapper: mapper,
-	})
-	if err != nil {
-		return fmt.Errorf("creating client: %w", err)
-	}
-	dynamicClient, err := dynamic.NewForConfig(cfg)
-	if err != nil {
-		return fmt.Errorf("creating dynamic client: %w", err)
 	}
 
 	// Set up cache for account
