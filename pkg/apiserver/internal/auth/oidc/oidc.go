@@ -19,25 +19,68 @@ package oidc
 import (
 	"context"
 	"fmt"
-	"net/http"
-	"strings"
 
 	"github.com/go-logr/logr"
-	"github.com/gorilla/mux"
+	grpc_auth "github.com/grpc-ecosystem/go-grpc-middleware/auth"
 	"github.com/spf13/pflag"
-	"k8s.io/apiserver/pkg/authentication/authenticator"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 	"k8s.io/apiserver/pkg/authentication/user"
 	"k8s.io/apiserver/plugin/pkg/authenticator/token/oidc"
 	cliflag "k8s.io/component-base/cli/flag"
+	"sigs.k8s.io/controller-runtime/pkg/runtime/inject"
+
+	"github.com/kubermatic/kubecarrier/pkg/apiserver/auth"
 )
 
-type contextKey string
+func init() {
+	auth.RegisterAuthProvider("OIDC", &OIDCAuthenticator{})
+}
 
-const (
-	oidcContextKey contextKey = "oidc.kubecarrier.io"
-)
+type OIDCAuthenticator struct {
+	opts          oidc.Options
+	authenticator *oidc.Authenticator
+	logr.Logger
+}
 
-func AddOIDCPFlags(opts *oidc.Options, fs *pflag.FlagSet) {
+var _ auth.Provider = (*OIDCAuthenticator)(nil)
+var _ inject.Logger = (*OIDCAuthenticator)(nil)
+
+func (O *OIDCAuthenticator) InjectLogger(l logr.Logger) error {
+	O.Logger = l
+	return nil
+}
+
+func (O *OIDCAuthenticator) Init() error {
+	authenticator, err := newAuthenticator(O.Logger, O.opts)
+	if err != nil {
+		return err
+	}
+	O.Info("setting up OIDC authenticator middleware", "iss", O.opts.IssuerURL)
+	O.authenticator = authenticator
+	return nil
+}
+
+func (O *OIDCAuthenticator) Authenticate(ctx context.Context) (user.Info, error) {
+	token, err := grpc_auth.AuthFromMD(ctx, "Bearer")
+	if err != nil {
+		O.Error(err, "cannot extract token")
+		return nil, err
+	}
+	resp, present, err := O.authenticator.AuthenticateToken(ctx, token)
+	if err != nil {
+		O.Error(err, "cannot authenticate token", "token", token)
+		return nil, status.Error(codes.Unauthenticated, "AuthenticateToken")
+	}
+	if !present {
+		O.Error(fmt.Errorf("missing token"), "Token is not present")
+		return nil, status.Error(codes.Unauthenticated, "AuthenticateToken")
+	}
+	return resp.User, nil
+}
+
+func (O *OIDCAuthenticator) AddFlags(fs *pflag.FlagSet) {
+	opts := &O.opts
 	fs.StringVar(&opts.IssuerURL, "oidc-issuer-url", opts.IssuerURL, ""+
 		"The URL of the OpenID issuer, only HTTPS scheme will be accepted. "+
 		"If set, it will be used to verify the OIDC JSON Web Token (JWT).")
@@ -77,71 +120,4 @@ func AddOIDCPFlags(opts *oidc.Options, fs *pflag.FlagSet) {
 		"A key=value pair that describes a required claim in the ID Token. "+
 		"If set, the claim is verified to be present in the ID Token with a matching value. "+
 		"Repeat this flag to specify multiple claims.")
-}
-
-func NewOIDCMiddleware(log logr.Logger, opts oidc.Options) (mux.MiddlewareFunc, error) {
-	auth, err := newAuthenticator(log, opts)
-	if err != nil {
-		return nil, err
-	}
-	return func(next http.Handler) http.Handler {
-		return http.HandlerFunc(
-			func(writer http.ResponseWriter, request *http.Request) {
-				log := log.WithValues(
-					"url", request.URL,
-					"method", request.Method,
-					"remoteAddr", request.RemoteAddr,
-				)
-				authHeader := request.Header.Get("Authorization")
-
-				if authHeader == "" {
-					writer.WriteHeader(http.StatusUnauthorized)
-					log.Error(fmt.Errorf("Unauthorized"), "missing authorization header")
-					return
-				}
-				parts := strings.Split(authHeader, " ")
-				if len(parts) != 2 {
-					writer.WriteHeader(http.StatusUnauthorized)
-					log.Error(
-						fmt.Errorf("Unauthorized"),
-						fmt.Sprintf("got %d parts, expected 2", len(parts)),
-					)
-					return
-				}
-				if parts[0] != "Bearer" {
-					writer.WriteHeader(http.StatusUnauthorized)
-					log.Error(
-						fmt.Errorf("Unauthorized"),
-						fmt.Sprintf("expected Bearer authentication, got %s", parts[0]),
-					)
-					return
-				}
-				ctx := request.Context()
-				resp, present, err := auth.AuthenticateToken(ctx, parts[1])
-				if err != nil {
-					writer.WriteHeader(http.StatusUnauthorized)
-					log.Error(
-						err,
-						"AuthenticateToken",
-					)
-					return
-				}
-				if !present {
-					writer.WriteHeader(http.StatusUnauthorized)
-					log.Error(
-						fmt.Errorf("Unauthorized"),
-						"AuthenticateToken",
-					)
-					return
-				}
-				request = request.WithContext(context.WithValue(ctx, oidcContextKey, resp))
-				next.ServeHTTP(writer, request)
-			},
-		)
-	}, nil
-}
-
-func ExtractUserInfo(ctx context.Context) (user.Info, bool) {
-	u, ok := ctx.Value(oidcContextKey).(*authenticator.Response)
-	return u.User, ok
 }
