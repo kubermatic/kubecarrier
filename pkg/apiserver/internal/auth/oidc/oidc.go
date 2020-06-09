@@ -28,7 +28,6 @@ import (
 	"k8s.io/apiserver/pkg/authentication/user"
 	"k8s.io/apiserver/plugin/pkg/authenticator/token/oidc"
 	cliflag "k8s.io/component-base/cli/flag"
-	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/runtime/inject"
 
 	"github.com/kubermatic/kubecarrier/pkg/apiserver/auth"
@@ -53,7 +52,7 @@ func (O *OIDCAuthenticator) InjectLogger(l logr.Logger) error {
 }
 
 func (O *OIDCAuthenticator) Init() error {
-	authenticator, err := newAuthenticator(ctrl.Log, O.opts)
+	authenticator, err := newAuthenticator(O.Logger, O.opts)
 	if err != nil {
 		return err
 	}
