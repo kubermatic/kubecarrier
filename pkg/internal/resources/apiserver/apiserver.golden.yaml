@@ -251,7 +251,7 @@
         volumes:
         - name: serving-cert
           secret:
-            secretName: tls-server-cert
+            secretName: apiserver-tls-cert
         - name: oidc-cert
           secret:
             secretName: ""
@@ -307,4 +307,4 @@
     issuerRef:
       kind: Issuer
       name: kubecarrier-apiserver-selfsigned-issuer
-    secretName: tls-server-cert
+    secretName: apiserver-tls-cert

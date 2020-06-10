@@ -53,7 +53,7 @@ func Manifests(c Config) ([]unstructured.Unstructured, error) {
 		// TLS Secret is not present, we create a self-signed certificate for localhost via cert-manager.
 		resources = append(resources, "../certmanager")
 		c.Spec.TLSSecretRef = &operatorv1alpha1.ObjectReference{
-			Name: "tls-server-cert",
+			Name: "apiserver-tls-cert",
 		}
 	}
 	// Patch environment

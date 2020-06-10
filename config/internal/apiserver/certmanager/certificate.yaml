@@ -23,5 +23,5 @@ spec:
   issuerRef:
     kind: Issuer
     name: kubecarrier-apiserver-selfsigned-issuer
-  secretName: tls-server-cert # this secret will not be prefixed, since it's not managed by kustomize
+  secretName: apiserver-tls-cert # this secret will not be prefixed, since it's not managed by kustomize
   isCA: true
