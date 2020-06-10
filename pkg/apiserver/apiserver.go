@@ -178,7 +178,7 @@ func runE(flags *flags, log logr.Logger) error {
 			grpc_prometheus.UnaryServerInterceptor,
 			grpc_zap.UnaryServerInterceptor(util.ZapLogger),
 			grpc_auth.UnaryServerInterceptor(authFunc),
-			grpc.UnaryServerInterceptor(grpc_validator.UnaryServerInterceptor()),
+			grpc_validator.UnaryServerInterceptor(),
 		)),
 	)
 	wrappedGrpc := grpcweb.WrapServer(grpcServer)
