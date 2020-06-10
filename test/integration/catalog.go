@@ -39,8 +39,7 @@ func newCatalogSuite(
 	f *testutil.Framework,
 ) func(t *testing.T) {
 	return func(t *testing.T) {
-		ctx, cancel := context.WithCancel(context.Background())
-		t.Cleanup(cancel)
+		ctx, _ := testutil.LoggingContext(t, context.Background())
 		managementClient, err := f.ManagementClient(t)
 		require.NoError(t, err, "creating management client")
 		t.Cleanup(managementClient.CleanUpFunc(ctx))

@@ -31,8 +31,7 @@ import (
 func newFakeDB(f *testutil.Framework) func(t *testing.T) {
 	return func(t *testing.T) {
 		t.Log("testing if we can create FakeDB in service cluster")
-		ctx, cancel := context.WithCancel(context.Background())
-		t.Cleanup(cancel)
+		ctx, _ := testutil.LoggingContext(t, context.Background())
 		serviceClient, err := f.ServiceClient(t)
 		require.NoError(t, err, "creating service client")
 		t.Cleanup(serviceClient.CleanUpFunc(ctx))

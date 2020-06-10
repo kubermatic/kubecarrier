@@ -17,89 +17,55 @@ limitations under the License.
 package testutil
 
 import (
-	"encoding/json"
-	"fmt"
-	"strings"
+	"context"
+	"io"
+	"os"
 	"testing"
 
 	"github.com/go-logr/logr"
+	"github.com/go-logr/zapr"
+	"go.uber.org/zap"
+	corezap "sigs.k8s.io/controller-runtime/pkg/log/zap"
+
+	"github.com/kubermatic/kubecarrier/pkg/internal/util"
 )
 
-// Logger implements logr.Logger and logs to testing.T to preserve the order of log lines in tests.
-type Logger struct {
-	t      *testing.T
-	names  []string
-	values map[string]interface{}
-}
-
-var _ logr.Logger = (*Logger)(nil)
-
 // NewLogger returns a new Logger flushing to testing.T.
-func NewLogger(t *testing.T) *Logger {
-	return &Logger{
-		t:      t,
-		values: map[string]interface{}{},
-	}
+func NewLogger(t *testing.T) logr.Logger {
+	return zapr.NewLogger(NewZapLogger(t))
 }
 
-// Info implements logr.Logger.Info
-func (l *Logger) Info(msg string, kvs ...interface{}) {
-	// marks this function as a helper method, so it will be excluded in the log stacktrace
-	l.t.Helper()
-
-	values := addValues(l.values, kvs...)
-
-	j, err := json.Marshal(values)
-	if err != nil {
-		panic(err)
-	}
-	l.t.Logf("%-15s %-20s %s", strings.Join(l.names, "."), msg, string(j))
+func NewZapLogger(t *testing.T) *zap.Logger {
+	return corezap.NewRaw(func(options *corezap.Options) {
+		options.Development = true
+		if t != nil {
+			options.DestWritter = &logWriter{T: t}
+		}
+		if level := os.Getenv("TEST_LOG_LEVEL"); level != "" {
+			l := zap.NewAtomicLevel()
+			if err := l.UnmarshalText([]byte(level)); err != nil {
+				panic(err)
+			}
+			options.Level = &l
+		}
+	})
 }
 
-// Error implements logr.Logger.Error
-func (l *Logger) Error(err error, msg string, kvs ...interface{}) {
-	// marks this function as a helper method, so it will be excluded in the log stacktrace
-	l.t.Helper()
-	l.Info(msg, append(kvs, "error", err.Error())...)
+func LoggingContext(t *testing.T, ctx context.Context) (context.Context, *zap.Logger) {
+	logger := NewZapLogger(t)
+	ctx = util.InjectLogger(ctx, logger)
+	ctx, cancel := context.WithCancel(ctx)
+	t.Cleanup(cancel)
+	return ctx, logger
 }
 
-// Enabled implements logr.Logger.Enabled
-func (l *Logger) Enabled() bool {
-	return true
+type logWriter struct {
+	*testing.T
 }
 
-// V implements logr.Logger.V
-func (l *Logger) V(level int) logr.InfoLogger {
-	return l
-}
+var _ io.Writer = (*logWriter)(nil)
 
-// WithValues implements logr.Logger.WithValues
-func (l *Logger) WithValues(kvs ...interface{}) logr.Logger {
-	return &Logger{
-		t:      l.t,
-		names:  l.names,
-		values: addValues(l.values, kvs...),
-	}
-}
-
-// WithName implements logr.Logger.WithName
-func (l *Logger) WithName(name string) logr.Logger {
-	return &Logger{
-		t:      l.t,
-		names:  append(l.names, name),
-		values: l.values,
-	}
-}
-
-func addValues(base map[string]interface{}, kvs ...interface{}) map[string]interface{} {
-	values := map[string]interface{}{}
-	// add existing k/v pairs
-	for k := range base {
-		values[k] = base[k]
-	}
-	// add new k/v pairs
-	for i := 0; i < len(kvs); i += 2 {
-		values[fmt.Sprint(kvs[i])] = kvs[i+1]
-	}
-	return values
+func (l logWriter) Write(p []byte) (n int, err error) {
+	l.T.Log(string(p))
+	return len(p), nil
 }

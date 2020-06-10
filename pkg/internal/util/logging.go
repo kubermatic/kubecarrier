@@ -14,20 +14,32 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package testutil
+package util
 
 import (
-	"testing"
+	"context"
 
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
+	"go.uber.org/zap"
 )
 
-func TestLoggerOutput(t *testing.T) {
-	l := NewLogger(t)
+type contextKey string
 
-	g := l.WithName("a").WithName("b").WithValues("c", "d")
-	g.Info("msg")
-	require.Equal(t, []string{"a", "b"}, g.(*Logger).names)
-	assert.Equal(t, "d", g.(*Logger).values["c"])
+const loggerKey contextKey = "logger"
+
+func InjectLogger(ctx context.Context, logger *zap.Logger) context.Context {
+	return context.WithValue(ctx, loggerKey, logger)
+}
+func ExtractLoggerFromContext(ctx context.Context) *zap.Logger {
+	logger := ctx.Value(loggerKey)
+	if logger != nil {
+		return logger.(*zap.Logger)
+	}
+	if ZapLogger != nil {
+		return ZapLogger
+	}
+	l, err := zap.NewDevelopment()
+	if err != nil {
+		panic(err)
+	}
+	return l
 }

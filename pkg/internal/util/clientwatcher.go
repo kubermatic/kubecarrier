@@ -113,10 +113,18 @@ func (cw *ClientWatcher) init(ctx context.Context, obj runtime.Object, options [
 	}
 	cfg.Defaults()
 	ctx, cancel := context.WithTimeout(ctx, cfg.hardTimeout)
+	log := ExtractLoggerFromContext(ctx).Sugar()
 	timer := time.AfterFunc(cfg.softTimeout, func() {
-		fmt.Printf("[WARNING][SOFT_LIMIT_EXCEEDED] %s passed soft-limit\n", MustLogLine(obj, cw.scheme))
+		log.Warnf("[SOFT_LIMIT_EXCEEDED] %s passed soft-limit\n", MustLogLine(obj, cw.scheme))
 	})
+	startTime := time.Now()
 	return ctx, func() {
+		log.Debugw("clientWatcher op finished",
+			"obj", MustLogLine(obj, cw.scheme),
+			"time", time.Since(startTime),
+			"softLimit", cfg.softTimeout,
+			"hardLimit", cfg.hardTimeout,
+		)
 		cancel()
 		timer.Stop()
 	}, nil
