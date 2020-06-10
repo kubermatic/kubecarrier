@@ -29,8 +29,9 @@ for pkg in ${PBUFS}; do
   protoc \
     --go_out=plugins=grpc:${abs_path} \
     --grpc-gateway_out=logtostderr=true:${abs_path} \
-    --swagger_out=logtostderr=true:${abs_path} \
+    --swagger_out=logtostderr=true,allow_merge=true,fqn_for_swagger_name=true:${abs_path} \
     -I/go/pkg/mod/github.com/grpc-ecosystem/grpc-gateway@v${PROTOC_GRPC_GATEWAY_VERSION}/third_party/googleapis \
+    -I/go/pkg/mod/github.com/grpc-ecosystem/grpc-gateway@v${PROTOC_GRPC_GATEWAY_VERSION} \
     -I/usr/local/protoc/include \
     -I=${abs_path} \
     $(find ${abs_path} -type f -name '*.proto')

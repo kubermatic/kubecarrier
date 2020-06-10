@@ -27,7 +27,7 @@ import (
 
 	catalogv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/catalog/v1alpha1"
 	v1 "github.com/kubermatic/kubecarrier/pkg/apiserver/api/v1"
-	"github.com/kubermatic/kubecarrier/pkg/apiserver/internal/oidc"
+	"github.com/kubermatic/kubecarrier/pkg/apiserver/auth"
 	"github.com/kubermatic/kubecarrier/pkg/apiserver/internal/util"
 )
 
@@ -46,9 +46,9 @@ func NewAccountServiceServer(c client.Client) v1.AccountServiceServer {
 }
 
 func (o accountServer) List(ctx context.Context, req *v1.AccountListRequest) (res *v1.AccountList, err error) {
-	user, present := oidc.ExtractUserInfo(ctx)
-	if !present {
-		return nil, status.Error(codes.Unauthenticated, "unauthenticated user")
+	user, err := auth.ExtractUserInfo(ctx)
+	if err != nil {
+		return nil, err
 	}
 	return o.handleListRequest(ctx, req, user.GetName())
 }
