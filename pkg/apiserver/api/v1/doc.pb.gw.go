@@ -47,6 +47,24 @@ var _ = runtime.String
 var _ = utilities.NewDoubleArray
 var _ = descriptor.ForMessage
 
+func request_Doc_OpenAPI_0(ctx context.Context, marshaler runtime.Marshaler, client DocClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+	var protoReq empty.Empty
+	var metadata runtime.ServerMetadata
+
+	msg, err := client.OpenAPI(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
+	return msg, metadata, err
+
+}
+
+func local_request_Doc_OpenAPI_0(ctx context.Context, marshaler runtime.Marshaler, server DocServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+	var protoReq empty.Empty
+	var metadata runtime.ServerMetadata
+
+	msg, err := server.OpenAPI(ctx, &protoReq)
+	return msg, metadata, err
+
+}
+
 func request_Doc_Swagger_0(ctx context.Context, marshaler runtime.Marshaler, client DocClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
 	var protoReq empty.Empty
 	var metadata runtime.ServerMetadata
@@ -69,6 +87,26 @@ func local_request_Doc_Swagger_0(ctx context.Context, marshaler runtime.Marshale
 // UnaryRPC     :call DocServer directly.
 // StreamingRPC :currently unsupported pending https://github.com/grpc/grpc-go/issues/906.
 func RegisterDocHandlerServer(ctx context.Context, mux *runtime.ServeMux, server DocServer) error {
+
+	mux.Handle("GET", pattern_Doc_OpenAPI_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+		ctx, cancel := context.WithCancel(req.Context())
+		defer cancel()
+		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
+		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req)
+		if err != nil {
+			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
+			return
+		}
+		resp, md, err := local_request_Doc_OpenAPI_0(rctx, inboundMarshaler, server, req, pathParams)
+		ctx = runtime.NewServerMetadataContext(ctx, md)
+		if err != nil {
+			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
+			return
+		}
+
+		forward_Doc_OpenAPI_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+
+	})
 
 	mux.Handle("GET", pattern_Doc_Swagger_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
@@ -131,6 +169,26 @@ func RegisterDocHandler(ctx context.Context, mux *runtime.ServeMux, conn *grpc.C
 // "DocClient" to call the correct interceptors.
 func RegisterDocHandlerClient(ctx context.Context, mux *runtime.ServeMux, client DocClient) error {
 
+	mux.Handle("GET", pattern_Doc_OpenAPI_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+		ctx, cancel := context.WithCancel(req.Context())
+		defer cancel()
+		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
+		rctx, err := runtime.AnnotateContext(ctx, mux, req)
+		if err != nil {
+			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
+			return
+		}
+		resp, md, err := request_Doc_OpenAPI_0(rctx, inboundMarshaler, client, req, pathParams)
+		ctx = runtime.NewServerMetadataContext(ctx, md)
+		if err != nil {
+			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
+			return
+		}
+
+		forward_Doc_OpenAPI_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+
+	})
+
 	mux.Handle("GET", pattern_Doc_Swagger_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
@@ -155,9 +213,13 @@ func RegisterDocHandlerClient(ctx context.Context, mux *runtime.ServeMux, client
 }
 
 var (
+	pattern_Doc_OpenAPI_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"v1", "openapi"}, "", runtime.AssumeColonVerbOpt(true)))
+
 	pattern_Doc_Swagger_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"v1", "swagger"}, "", runtime.AssumeColonVerbOpt(true)))
 )
 
 var (
+	forward_Doc_OpenAPI_0 = runtime.ForwardResponseMessage
+
 	forward_Doc_Swagger_0 = runtime.ForwardResponseMessage
 )

@@ -1111,6 +1111,28 @@
         ]
       }
     },
+    "/v1/openapi": {
+      "get": {
+        "operationId": "OpenAPI",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/google.api.HttpBody"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response",
+            "schema": {
+              "$ref": "#/definitions/grpc.gateway.runtime.Error"
+            }
+          }
+        },
+        "tags": [
+          "Doc"
+        ]
+      }
+    },
     "/v1/swagger": {
       "get": {
         "operationId": "Swagger",

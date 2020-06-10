@@ -23,6 +23,11 @@ import "google/api/annotations.proto";
 import "google/protobuf/empty.proto";
 
 service Doc {
+	rpc OpenAPI(google.protobuf.Empty) returns (google.api.HttpBody) {
+		option (google.api.http) = {
+			get: "/v1/openapi"
+		};
+	}
 	rpc Swagger(google.protobuf.Empty) returns (google.api.HttpBody) {
 		option (google.api.http) = {
 			get: "/v1/swagger"

@@ -47,6 +47,22 @@ func (o docServer) Swagger(context.Context, *empty.Empty) (*httpbody.HttpBody, e
 	}, nil
 }
 
+func (o docServer) OpenAPI(context.Context, *empty.Empty) (*httpbody.HttpBody, error) {
+	r, err := vfs.Open("/_index.md")
+	if err != nil {
+		return nil, err
+	}
+	defer r.Close()
+	contents, err := ioutil.ReadAll(r)
+	if err != nil {
+		return nil, err
+	}
+	return &httpbody.HttpBody{
+		ContentType: "text/markdown",
+		Data:        contents,
+	}, nil
+}
+
 func NewDocServiceServer() v1.DocServer {
 	return &docServer{}
 }
