@@ -13,12 +13,13 @@ require (
 	github.com/gernest/wow v0.1.0
 	github.com/ghodss/yaml v1.0.0
 	github.com/go-logr/logr v0.1.0
+	github.com/go-logr/zapr v0.1.1
 	github.com/gobuffalo/flect v0.2.0
 	github.com/golang/protobuf v1.3.5
 	github.com/google/go-cmp v0.4.0
 	github.com/gorilla/handlers v1.4.2
-	github.com/gorilla/mux v1.7.3
-	github.com/grpc-ecosystem/go-grpc-middleware v1.0.1-0.20190118093823-f849b5445de4
+	github.com/grpc-ecosystem/go-grpc-middleware v1.2.0
+	github.com/grpc-ecosystem/go-grpc-prometheus v1.2.0
 	github.com/grpc-ecosystem/grpc-gateway v1.14.3
 	github.com/huandu/xstrings v1.3.0 // indirect
 	github.com/improbable-eng/grpc-web v0.12.0

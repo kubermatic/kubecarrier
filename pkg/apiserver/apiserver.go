@@ -29,7 +29,12 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/gorilla/handlers"
 	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
+	grpc_auth "github.com/grpc-ecosystem/go-grpc-middleware/auth"
+	grpc_zap "github.com/grpc-ecosystem/go-grpc-middleware/logging/zap"
+	grpc_ctxtags "github.com/grpc-ecosystem/go-grpc-middleware/tags"
+	grpc_opentracing "github.com/grpc-ecosystem/go-grpc-middleware/tracing/opentracing"
 	grpc_validator "github.com/grpc-ecosystem/go-grpc-middleware/validator"
+	grpc_prometheus "github.com/grpc-ecosystem/go-grpc-prometheus"
 	gwruntime "github.com/grpc-ecosystem/grpc-gateway/runtime"
 	"github.com/improbable-eng/grpc-web/go/grpcweb"
 	"github.com/spf13/cobra"
@@ -39,18 +44,20 @@ import (
 	"google.golang.org/grpc/status"
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
-	k8soidc "k8s.io/apiserver/plugin/pkg/authenticator/token/oidc"
+	"k8s.io/cli-runtime/pkg/genericclioptions"
 	"k8s.io/client-go/dynamic"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/cache"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/apiutil"
-	"sigs.k8s.io/controller-runtime/pkg/client/config"
+	"sigs.k8s.io/controller-runtime/pkg/runtime/inject"
 
 	catalogv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/catalog/v1alpha1"
 	apiserverv1 "github.com/kubermatic/kubecarrier/pkg/apiserver/api/v1"
-	"github.com/kubermatic/kubecarrier/pkg/apiserver/internal/oidc"
+	"github.com/kubermatic/kubecarrier/pkg/apiserver/auth"
+	_ "github.com/kubermatic/kubecarrier/pkg/apiserver/internal/auth/anonymous"
+	_ "github.com/kubermatic/kubecarrier/pkg/apiserver/internal/auth/oidc"
 	v1 "github.com/kubermatic/kubecarrier/pkg/apiserver/internal/v1"
 	"github.com/kubermatic/kubecarrier/pkg/internal/util"
 )
@@ -69,12 +76,15 @@ type flags struct {
 	TLSCertFile        string
 	TLSPrivateKeyFile  string
 	CORSAllowedOrigins []string
-	OIDCOptions        k8soidc.Options
+	AuthenticationMode []string
+	*genericclioptions.ConfigFlags
 }
 
 func NewAPIServer() *cobra.Command {
 	log := ctrl.Log.WithName("apiserver")
-	flags := &flags{}
+	flags := &flags{
+		ConfigFlags: genericclioptions.NewConfigFlags(false),
+	}
 	cmd := &cobra.Command{
 		Args:  cobra.NoArgs,
 		Use:   "apiserver",
@@ -83,25 +93,94 @@ func NewAPIServer() *cobra.Command {
 			return runE(flags, log)
 		},
 	}
+	flags.ConfigFlags.AddFlags(cmd.Flags())
 	cmd.Flags().StringVar(&flags.address, "address", "0.0.0.0:8080", "Address to bind this API server on.")
 	cmd.Flags().StringVar(&flags.TLSCertFile, "tls-cert-file", "", "File containing the default x509 Certificate for HTTPS. If not provided no TLS security shall be enabled")
 	cmd.Flags().StringVar(&flags.TLSPrivateKeyFile, "tls-private-key-file", "", "File containing the default x509 private key matching --tls-cert-file.")
 	cmd.Flags().StringArrayVar(&flags.CORSAllowedOrigins, "cors-allowed-origins", []string{"*"}, "List of allowed origins for CORS, comma separated. An allowed origin can be a regular expression to support subdomain matching. If this list is empty CORS will not be enabled.")
-	oidc.AddOIDCPFlags(&flags.OIDCOptions, cmd.Flags())
+	cmd.Flags().StringArrayVar(&flags.AuthenticationMode, "authentication-mode", []string{"OIDC"}, "Ordered list of plug-ins to do authentication on secure port. Comma-delimited list of: "+strings.Join(auth.RegisteredAuthProviders(), ","))
+	auth.RegisterPFlags(cmd.Flags())
 	return util.CmdLogMixin(cmd)
 }
 
 func runE(flags *flags, log logr.Logger) error {
+	ctx := context.Background()
+	cfg, err := flags.ToRESTConfig()
+	if err != nil {
+		return err
+	}
+	mapper, err := apiutil.NewDynamicRESTMapper(cfg)
+	if err != nil {
+		return fmt.Errorf("creating rest mapper: %w", err)
+	}
+	c, err := client.New(cfg, client.Options{
+		Scheme: scheme,
+		Mapper: mapper,
+	})
+	if err != nil {
+		return fmt.Errorf("creating client: %w", err)
+	}
+	dynamicClient, err := dynamic.NewForConfig(cfg)
+	if err != nil {
+		return fmt.Errorf("creating dynamic client: %w", err)
+	}
 	// Validation
 	if flags.TLSCertFile == "" || flags.TLSPrivateKeyFile == "" {
 		return fmt.Errorf("--tls-cert-file or --tls-private-key-file not specified, cannot start")
 	}
 
-	// Startup
+	authProviders := make([]auth.Provider, 0, len(flags.AuthenticationMode))
+	for _, mode := range flags.AuthenticationMode {
+		authProvider, err := auth.GetAuthProvider(mode)
+		if err != nil {
+			return err
+		}
+		if injector, ok := authProvider.(inject.Client); ok {
+			if err := injector.InjectClient(c); err != nil {
+				return fmt.Errorf("cannot inject client into auth provider %s: %w", mode, err)
+			}
+		}
+		if injector, ok := authProvider.(inject.Logger); ok {
+			if err := injector.InjectLogger(ctrl.Log.WithName("authentication").WithValues("mode", mode)); err != nil {
+				return fmt.Errorf("cannot inject logger into auth provider %s: %w", mode, err)
+			}
+		}
+		if injector, ok := authProvider.(inject.Scheme); ok {
+			if err := injector.InjectScheme(scheme); err != nil {
+				return fmt.Errorf("cannot inject scheme into auth provider %s: %w", mode, err)
+			}
+		}
+		if injector, ok := authProvider.(inject.Mapper); ok {
+			if err := injector.InjectMapper(mapper); err != nil {
+				return fmt.Errorf("cannot inject mapper into auth provider %s: %w", mode, err)
+			}
+		}
+		if err := authProvider.Init(); err != nil {
+			return fmt.Errorf("cannot init auth provider: %s: %w", mode, err)
+		}
+		authProviders = append(authProviders, authProvider)
+	}
+
+	authFunc := auth.CreateAuthFunction(authProviders)
+	grpc_zap.ReplaceGrpcLoggerV2(util.ZapLogger)
 	grpcServer := grpc.NewServer(
-		grpc.UnaryInterceptor(
-			grpc_middleware.ChainUnaryServer(
-				grpc.UnaryServerInterceptor(grpc_validator.UnaryServerInterceptor()))))
+		grpc.StreamInterceptor(grpc_middleware.ChainStreamServer(
+			grpc_ctxtags.StreamServerInterceptor(),
+			grpc_opentracing.StreamServerInterceptor(),
+			grpc_prometheus.StreamServerInterceptor,
+			grpc_zap.StreamServerInterceptor(util.ZapLogger),
+			grpc_auth.StreamServerInterceptor(authFunc),
+			grpc_validator.StreamServerInterceptor(),
+		)),
+		grpc.UnaryInterceptor(grpc_middleware.ChainUnaryServer(
+			grpc_ctxtags.UnaryServerInterceptor(),
+			grpc_opentracing.UnaryServerInterceptor(),
+			grpc_prometheus.UnaryServerInterceptor,
+			grpc_zap.UnaryServerInterceptor(util.ZapLogger),
+			grpc_auth.UnaryServerInterceptor(authFunc),
+			grpc.UnaryServerInterceptor(grpc_validator.UnaryServerInterceptor()),
+		)),
+	)
 	wrappedGrpc := grpcweb.WrapServer(grpcServer)
 	grpcGatewayMux := gwruntime.NewServeMux(
 		gwruntime.WithProtoErrorHandler(func(ctx context.Context, serveMux *gwruntime.ServeMux, marshaler gwruntime.Marshaler, writer http.ResponseWriter, request *http.Request, err error) {
@@ -124,27 +203,9 @@ func runE(flags *flags, log logr.Logger) error {
 			_, _ = writer.Write(buf)
 		}),
 	)
-	ctx := context.Background()
 	grpcClient, err := createInternalGRPCClient(ctx, flags)
 	if err != nil {
 		return err
-	}
-	// Create Kubernetes Client
-	cfg := config.GetConfigOrDie()
-	mapper, err := apiutil.NewDynamicRESTMapper(cfg)
-	if err != nil {
-		return fmt.Errorf("creating rest mapper: %w", err)
-	}
-	c, err := client.New(cfg, client.Options{
-		Scheme: scheme,
-		Mapper: mapper,
-	})
-	if err != nil {
-		return fmt.Errorf("creating client: %w", err)
-	}
-	dynamicClient, err := dynamic.NewForConfig(cfg)
-	if err != nil {
-		return fmt.Errorf("creating dynamic client: %w", err)
 	}
 
 	// Set up cache for account
@@ -220,13 +281,6 @@ func runE(flags *flags, log logr.Logger) error {
 			grpcGatewayMux.ServeHTTP(writer, request)
 		}
 	})
-
-	log.Info("setting up OIDC auth middleware", "iss", flags.OIDCOptions.IssuerURL)
-	oidcMiddleware, err := oidc.NewOIDCMiddleware(log, flags.OIDCOptions)
-	if err != nil {
-		return fmt.Errorf("init OIDC Middleware: %w", err)
-	}
-	handler = oidcMiddleware(handler)
 
 	if len(flags.CORSAllowedOrigins) > 0 {
 		handler = handlers.CORS(
