@@ -48,7 +48,7 @@ RUN go env
 # binary will be $(go env GOPATH)/bin/golangci-lint
 RUN curl -sfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh| sh -s -- -b $(go env GOPATH)/bin v1.24.0
 
-RUN curl -sL --output /usr/local/bin/kind https://github.com/kubernetes-sigs/kind/releases/download/v0.7.0/kind-linux-amd64 && chmod a+x /usr/local/bin/kind
+RUN curl -sL --output /usr/local/bin/kind https://github.com/kubernetes-sigs/kind/releases/download/v0.8.1/kind-linux-amd64 && chmod a+x /usr/local/bin/kind
 RUN curl -sL https://github.com/kyoh86/richgo/releases/download/v0.3.3/richgo_0.3.3_linux_amd64.tar.gz | tar -xz -C /tmp/ && mv /tmp/richgo /usr/local/bin
 
 ARG kubebuilder_version=2.1.0
