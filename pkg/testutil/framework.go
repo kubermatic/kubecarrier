@@ -160,6 +160,7 @@ func (f *Framework) ManagementClient(t *testing.T, options ...func(config *restc
 }
 
 func (f *Framework) ServiceClient(t *testing.T, options ...func(config *restclient.Config) error) (*RecordingClient, error) {
+	t.Helper()
 	cfg := *f.serviceConfig
 	for _, f := range options {
 		if err := f(&cfg); err != nil {
@@ -174,6 +175,7 @@ func (f *Framework) ServiceClient(t *testing.T, options ...func(config *restclie
 }
 
 func (f *Framework) SetupServiceCluster(ctx context.Context, cl *RecordingClient, t *testing.T, name string, account *catalogv1alpha1.Account) *corev1alpha1.ServiceCluster {
+	t.Helper()
 	// Setup
 	serviceKubeconfig, err := ioutil.ReadFile(f.Config().ServiceInternalKubeconfigPath)
 	require.NoError(t, err, "cannot read service internal kubeconfig")

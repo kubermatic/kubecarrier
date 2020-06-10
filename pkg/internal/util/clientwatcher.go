@@ -35,21 +35,39 @@ import (
 )
 
 type clientWatcherOption struct {
-	timeout time.Duration
+	softTimeout time.Duration
+	hardTimeout time.Duration
+}
+
+func (opt *clientWatcherOption) Defaults() {
+	if opt.softTimeout == 0 {
+		opt.softTimeout = defaultTimeout
+	}
+
+	if opt.hardTimeout == 0 {
+		opt.hardTimeout = 10 * opt.softTimeout
+	}
 }
 
 type ClientWatcherOption func(*clientWatcherOption) error
 
 func WithClientWatcherTimeout(t time.Duration) ClientWatcherOption {
 	return func(option *clientWatcherOption) error {
-		option.timeout = t
+		option.softTimeout = t
+		return nil
+	}
+}
+
+func WithClientWatcherHardTimeout(t time.Duration) ClientWatcherOption {
+	return func(option *clientWatcherOption) error {
+		option.hardTimeout = t
 		return nil
 	}
 }
 
 func WithoutClientWatcher() ClientWatcherOption {
 	return func(option *clientWatcherOption) error {
-		option.timeout = time.Duration(0)
+		option.softTimeout = time.Duration(0)
 		return nil
 	}
 }
@@ -93,23 +111,33 @@ func NewClientWatcher(conf *rest.Config, scheme *runtime.Scheme, log logr.Logger
 	}, nil
 }
 
+func (cw *ClientWatcher) init(ctx context.Context, obj runtime.Object, options []ClientWatcherOption) (context.Context, func(), error) {
+	cfg := &clientWatcherOption{}
+	for _, f := range options {
+		if err := f(cfg); err != nil {
+			return nil, nil, err
+		}
+	}
+	cfg.Defaults()
+	ctx, cancel := context.WithTimeout(ctx, cfg.hardTimeout)
+	timer := time.AfterFunc(cfg.softTimeout, func() {
+		fmt.Printf("[WARNING][SOFT_LIMIT_EXCEEDED] %s passed soft-limit\n", MustLogLine(obj, cw.scheme))
+	})
+	return ctx, func() {
+		cancel()
+		timer.Stop()
+	}, nil
+}
+
 // WaitUntil waits until the Object's condition function is true, or the context deadline is reached
 //
 // condition function should operate on the passed object in a closure and should not modify the obj
 func (cw *ClientWatcher) WaitUntil(ctx context.Context, obj runtime.Object, cond func() (done bool, err error), options ...ClientWatcherOption) error {
-	cfg := &clientWatcherOption{
-		timeout: defaultTimeout,
+	ctx, closeFn, err := cw.init(ctx, obj, options)
+	if err != nil {
+		return err
 	}
-	for _, f := range options {
-		if err := f(cfg); err != nil {
-			return err
-		}
-	}
-	if cfg.timeout > time.Duration(0) {
-		var cancel func()
-		ctx, cancel = context.WithTimeout(ctx, cfg.timeout)
-		defer cancel()
-	}
+	defer closeFn()
 
 	lw, err := cw.objListWatch(obj)
 	if err != nil {
@@ -140,26 +168,18 @@ func (cw *ClientWatcher) WaitUntil(ctx context.Context, obj runtime.Object, cond
 		}
 		return true, nil
 	}); err != nil {
-		return fmt.Errorf("%s (after: %v): %w", MustLogLine(obj, cw.scheme), cfg.timeout, err)
+		return fmt.Errorf("%s (hardTimeout): %w", MustLogLine(obj, cw.scheme), err)
 	}
 	return nil
 }
 
 // WaitUntilNotFound waits until the object is not found or the context deadline is exceeded
 func (cw *ClientWatcher) WaitUntilNotFound(ctx context.Context, obj runtime.Object, options ...ClientWatcherOption) error {
-	cfg := &clientWatcherOption{
-		timeout: defaultTimeout,
+	ctx, closeFn, err := cw.init(ctx, obj, options)
+	if err != nil {
+		return err
 	}
-	for _, f := range options {
-		if err := f(cfg); err != nil {
-			return err
-		}
-	}
-	if cfg.timeout > time.Duration(0) {
-		var cancel func()
-		ctx, cancel = context.WithTimeout(ctx, cfg.timeout)
-		defer cancel()
-	}
+	defer closeFn()
 
 	// things get a bit tricky with not found watches
 	//  clientwatch.UntilWithSync seems useful since it has cache pre-conditions which I can check whether
@@ -191,7 +211,7 @@ func (cw *ClientWatcher) WaitUntilNotFound(ctx context.Context, obj runtime.Obje
 		return event.Type == watch.Deleted, nil
 	})
 	if err != nil {
-		return fmt.Errorf("%s (after: %v): %w", MustLogLine(obj, cw.scheme), cfg.timeout, err)
+		return fmt.Errorf("%s: (hardTimeout) %w", MustLogLine(obj, cw.scheme), err)
 	}
 	return nil
 }

@@ -147,7 +147,7 @@ func main() {
 		"InstallationSuite",
 		"Integration",
 		"Integration/account",
-		"Integration/api-server",
+		"Integration/apiserver",
 		"Integration/catalog",
 		"Integration/cli",
 		"Integration/derivedCR",
