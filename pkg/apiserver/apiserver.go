@@ -134,25 +134,17 @@ func runE(flags *flags, log logr.Logger) error {
 		if err != nil {
 			return err
 		}
-		if injector, ok := authProvider.(inject.Client); ok {
-			if err := injector.InjectClient(c); err != nil {
-				return fmt.Errorf("cannot inject client into auth provider %s: %w", mode, err)
-			}
+		if _, err := inject.ClientInto(c, authProvider); err != nil {
+			return fmt.Errorf("cannot inject client into auth provider %s: %w", mode, err)
 		}
-		if injector, ok := authProvider.(inject.Logger); ok {
-			if err := injector.InjectLogger(ctrl.Log.WithName("authentication").WithValues("mode", mode)); err != nil {
-				return fmt.Errorf("cannot inject logger into auth provider %s: %w", mode, err)
-			}
+		if _, err := inject.LoggerInto(ctrl.Log.WithName("authentication").WithValues("mode", mode), authProvider); err != nil {
+			return fmt.Errorf("cannot inject logger into auth provider %s: %w", mode, err)
 		}
-		if injector, ok := authProvider.(inject.Scheme); ok {
-			if err := injector.InjectScheme(scheme); err != nil {
-				return fmt.Errorf("cannot inject scheme into auth provider %s: %w", mode, err)
-			}
+		if _, err := inject.SchemeInto(scheme, authProvider); err != nil {
+			return fmt.Errorf("cannot inject scheme into auth provider %s: %w", mode, err)
 		}
-		if injector, ok := authProvider.(inject.Mapper); ok {
-			if err := injector.InjectMapper(mapper); err != nil {
-				return fmt.Errorf("cannot inject mapper into auth provider %s: %w", mode, err)
-			}
+		if _, err := inject.MapperInto(mapper, authProvider); err != nil {
+			return fmt.Errorf("cannot inject mapper into auth provider %s: %w", mode, err)
 		}
 		if err := authProvider.Init(); err != nil {
 			return fmt.Errorf("cannot init auth provider: %s: %w", mode, err)
