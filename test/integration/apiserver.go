@@ -85,7 +85,7 @@ func newAPIServer(f *testutil.Framework) func(t *testing.T) {
 		}
 		require.NoError(t, managementClient.Update(ctx, kubeCarrier))
 		apiServer := &operatorv1alpha1.APIServer{}
-		oidcCtx, cancel := context.WithTimeout(ctx, 30*time.Second)
+		oidcCtx, cancel := context.WithTimeout(ctx, 60*time.Second)
 		t.Cleanup(cancel)
 		require.NoError(t, wait.PollUntil(time.Second, func() (done bool, err error) {
 			if err := managementClient.Get(oidcCtx, types.NamespacedName{
