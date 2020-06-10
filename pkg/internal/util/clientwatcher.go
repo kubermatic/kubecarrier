@@ -65,13 +65,6 @@ func WithClientWatcherHardTimeout(t time.Duration) ClientWatcherOption {
 	}
 }
 
-func WithoutClientWatcher() ClientWatcherOption {
-	return func(option *clientWatcherOption) error {
-		option.softTimeout = time.Duration(0)
-		return nil
-	}
-}
-
 const (
 	defaultTimeout = 30 * time.Second
 )
