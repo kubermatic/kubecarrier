@@ -45,7 +45,7 @@ func (opt *clientWatcherOption) Defaults() {
 	}
 
 	if opt.hardTimeout == 0 {
-		opt.hardTimeout = 10 * opt.softTimeout
+		opt.hardTimeout = 2 * opt.softTimeout
 	}
 }
 
