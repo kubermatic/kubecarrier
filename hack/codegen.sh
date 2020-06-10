@@ -141,7 +141,7 @@ statik-gen elevator config/internal/elevator
 # RBAC
 $CONTROLLER_GEN rbac:roleName=manager-role paths="./pkg/apiserver/..." output:rbac:artifacts:config=config/internal/apiserver/rbac
 statik-gen apiserver config/internal/apiserver
-statik -m -src pkg/apiserver/api/v1/*.json -p v1 -dest pkg/apiserver/internal/ -f -c ''
+statik -m -include="*.json" -src pkg/apiserver/api/v1/ -p v1 -dest pkg/apiserver/internal/ -f -c ''
 cat hack/boilerplate/boilerplate.generatego.txt | sed s/YEAR/$(date +%Y)/ | cat - pkg/apiserver/internal/v1/statik.go > pkg/apiserver/internal/v1/statik.go.tmp
 mv pkg/apiserver/internal/v1/statik.go.tmp pkg/apiserver/internal/v1/statik.go
 go fmt pkg/apiserver/internal/v1/statik.go

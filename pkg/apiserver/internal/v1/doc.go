@@ -42,7 +42,7 @@ func (o docServer) Swagger(context.Context, *empty.Empty) (*httpbody.HttpBody, e
 		return nil, err
 	}
 	return &httpbody.HttpBody{
-		ContentType: "text/html",
+		ContentType: "application/json",
 		Data:        contents,
 	}, nil
 }
