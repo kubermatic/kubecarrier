@@ -174,10 +174,7 @@
     namespace: kubecarrier-system-10
   spec:
     replicas: 1
-    selector:
-      matchLabels:
-        control-plane: api-server
-        kubecarrier.io/role: api-server
+    strategy: {}
     template:
       metadata:
         labels:
@@ -206,23 +203,16 @@
           - name: API_SERVER_TLS_PRIVATE_KEY_FILE
             value: /run/serving-certs/tls.key
           - name: AUTHENTICATION_MODE
-            value: OIDC
+            value: Anonymous,OIDC
           - name: API_SERVER_OIDC_ISSUER_URL
-            value: ""
           - name: API_SERVER_OIDC_CLIENT_ID
-            value: ""
           - name: API_SERVER_OIDC_CA_FILE
             value: /run/oidc-certs/ca.crt
           - name: API_SERVER_OIDC_USERNAME_CLAIM
-            value: ""
           - name: API_SERVER_OIDC_USERNAME_PREFIX
-            value: ""
           - name: API_SERVER_OIDC_GROUPS_CLAIM
-            value: ""
           - name: API_SERVER_OIDC_GROUPS_PREFIX
-            value: ""
           - name: API_SERVER_OIDC_SIGNING_ALGS
-            value: ""
           image: quay.io/kubecarrier/apiserver:was not build properly
           livenessProbe:
             tcpSocket:
@@ -245,10 +235,10 @@
           volumeMounts:
           - mountPath: /run/serving-certs
             name: serving-cert
-            readyOnly: true
+            readOnly: true
           - mountPath: /run/oidc-certs
             name: oidc-cert
-            readyOnly: true
+            readOnly: true
         serviceAccountName: kubecarrier-api-server-sa
         terminationGracePeriodSeconds: 10
         volumes:
@@ -256,8 +246,8 @@
           secret:
             secretName: apiserver-tls-cert
         - name: oidc-cert
-          secret:
-            secretName: ""
+          secret: {}
+  status: {}
 - apiVersion: v1
   kind: Service
   metadata:
