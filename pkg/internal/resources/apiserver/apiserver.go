@@ -89,6 +89,7 @@ func Manifests(c Config) ([]unstructured.Unstructured, error) {
 									"--address=$(API_SERVER_ADDR)",
 									"--tls-cert-file=$(API_SERVER_TLS_CERT_FILE)",
 									"--tls-private-key-file=$(API_SERVER_TLS_PRIVATE_KEY_FILE)",
+									"--authentication-mode=$(AUTHENTICATION_MODE)",
 									"--oidc-issuer-url=$(API_SERVER_OIDC_ISSUER_URL)",
 									"--oidc-client-id=$(API_SERVER_OIDC_CLIENT_ID)",
 									"--oidc-ca-file=$(API_SERVER_OIDC_CA_FILE)",
@@ -110,6 +111,10 @@ func Manifests(c Config) ([]unstructured.Unstructured, error) {
 									{
 										"name":  "API_SERVER_TLS_PRIVATE_KEY_FILE",
 										"value": "/run/serving-certs/tls.key",
+									},
+									{
+										"name":  "AUTHENTICATION_MODE",
+										"value": "OIDC",
 									},
 									{
 										"name":  "API_SERVER_OIDC_ISSUER_URL",
