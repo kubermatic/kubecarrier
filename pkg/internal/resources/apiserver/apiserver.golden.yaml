@@ -11,6 +11,14 @@
     name: kubecarrier-api-server-manager-role
   rules:
   - apiGroups:
+    - ""
+    resources:
+    - secrets
+    verbs:
+    - get
+    - list
+    - watch
+  - apiGroups:
     - catalog.kubecarrier.io
     resources:
     - accounts
