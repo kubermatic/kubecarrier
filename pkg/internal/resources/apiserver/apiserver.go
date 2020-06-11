@@ -61,9 +61,7 @@ func Manifests(c Config) ([]unstructured.Unstructured, error) {
 	}
 	const AuthModeEnv = "AUTHENTICATION_MODE"
 
-	supportedAuth := []string{
-		"Anonymous",
-	}
+	var supportedAuth []string
 	deploymentPatch := &appsv1.Deployment{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: "apps/v1",
@@ -74,6 +72,7 @@ func Manifests(c Config) ([]unstructured.Unstructured, error) {
 			Namespace: "system",
 		},
 		Spec: appsv1.DeploymentSpec{
+			Selector: &metav1.LabelSelector{},
 			Template: corev1.PodTemplateSpec{
 				Spec: corev1.PodSpec{
 					Containers: []corev1.Container{
@@ -99,8 +98,8 @@ func Manifests(c Config) ([]unstructured.Unstructured, error) {
 									Value: "/run/serving-certs/tls.key",
 								},
 								{
-									Name:  "AUTHENTICATION_MODE",
-									Value: strings.Join(supportedAuth, ","),
+									Name:  AuthModeEnv,
+									Value: "",
 								},
 							},
 							VolumeMounts: []corev1.VolumeMount{
@@ -206,6 +205,19 @@ func Manifests(c Config) ([]unstructured.Unstructured, error) {
 				},
 			},
 		})
+	}
+	if len(supportedAuth) == 0 {
+		supportedAuth = append(supportedAuth, "Anonymous")
+		containers := deploymentPatch.Spec.Template.Spec.Containers
+		for i, container := range containers {
+			if container.Name == "manager" {
+				for j, env := range containers[i].Env {
+					if env.Name == AuthModeEnv {
+						containers[i].Env[j].Value = strings.Join(supportedAuth, ",")
+					}
+				}
+			}
+		}
 	}
 	managerEnvBytes, err := yaml.Marshal(deploymentPatch)
 	if err != nil {
