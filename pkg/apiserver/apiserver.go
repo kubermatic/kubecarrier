@@ -236,12 +236,12 @@ func runE(flags *flags, log logr.Logger) error {
 
 	accountServer := v1.NewAccountServiceServer(accountClient)
 	apiserverv1.RegisterAccountServiceServer(grpcServer, accountServer)
-	if err := apiserverv1.RegisterAccountServiceHandlerServer(ctx, grpcGatewayMux, accountServer); err != nil {
+	if err := apiserverv1.RegisterAccountServiceHandler(ctx, grpcGatewayMux, grpcClient); err != nil {
 		return err
 	}
 
 	apiserverv1.RegisterKubeCarrierServer(grpcServer, &v1.KubeCarrierServer{})
-	if err := apiserverv1.RegisterKubeCarrierHandlerServer(ctx, grpcGatewayMux, &v1.KubeCarrierServer{}); err != nil {
+	if err := apiserverv1.RegisterKubeCarrierHandler(ctx, grpcGatewayMux, grpcClient); err != nil {
 		return err
 	}
 	offeringServer, err := v1.NewOfferingServiceServer(c, dynamicClient, mapper, scheme)
@@ -261,12 +261,12 @@ func runE(flags *flags, log logr.Logger) error {
 
 	regionServer := v1.NewRegionServiceServer(c)
 	apiserverv1.RegisterRegionServiceServer(grpcServer, regionServer)
-	if err := apiserverv1.RegisterRegionServiceHandlerServer(ctx, grpcGatewayMux, regionServer); err != nil {
+	if err := apiserverv1.RegisterRegionServiceHandler(ctx, grpcGatewayMux, grpcClient); err != nil {
 		return err
 	}
 	providerServer := v1.NewProviderServiceServer(c)
 	apiserverv1.RegisterProviderServiceServer(grpcServer, providerServer)
-	if err := apiserverv1.RegisterProviderServiceHandlerServer(ctx, grpcGatewayMux, providerServer); err != nil {
+	if err := apiserverv1.RegisterProviderServiceHandler(ctx, grpcGatewayMux, grpcClient); err != nil {
 		return err
 	}
 
