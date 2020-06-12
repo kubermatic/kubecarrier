@@ -83,7 +83,7 @@ func (O *OIDCAuthenticator) Authenticate(ctx context.Context) (user.Info, error)
 
 func (O *OIDCAuthenticator) AddFlags(fs *pflag.FlagSet) {
 	opts := &O.opts
-	fs.StringArrayVar(&O.APIAudiences, "--oidc-api-audiences ", opts.APIAudiences,
+	fs.StringArrayVar(&O.APIAudiences, "oidc-api-audiences ", opts.APIAudiences,
 		"Identifiers of the API. The OIDC account token authenticator will validate that tokens used "+
 			"against the API are bound to at least one of these audiences.",
 	)

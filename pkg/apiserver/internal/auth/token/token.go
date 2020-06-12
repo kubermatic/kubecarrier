@@ -57,7 +57,7 @@ func (a *Auth) InjectClient(c client.Client) error {
 }
 
 func (a *Auth) AddFlags(fs *pflag.FlagSet) {
-	fs.StringArrayVar(&a.APIAudiences, "--token-api-audiences ", a.APIAudiences,
+	fs.StringArrayVar(&a.APIAudiences, "token-api-audiences ", a.APIAudiences,
 		"Identifiers of the API. The service account token authenticator will "+
 			"validate that tokens used against the API are bound to at least one of these "+
 			"audiences",
