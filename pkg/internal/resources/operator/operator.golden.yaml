@@ -139,9 +139,6 @@
                   required:
                   - name
                   type: object
-              required:
-              - oidc
-              - tlsSecretRef
               type: object
             status:
               description: APIServerStatus defines the observed state of APIServer
@@ -725,6 +722,105 @@
               type: object
             spec:
               description: KubeCarrierSpec defines the desired state of KubeCarrier
+              properties:
+                api:
+                  description: APIServerSpec defines the desired state of APIServer
+                  properties:
+                    oidc:
+                      description: OIDC specifies OpenID Connect configuration for
+                        API Server authentication
+                      properties:
+                        apiAudiences:
+                          description: APIAudiences are the audiences that the API
+                            server identitifes as. The (API audiences unioned with
+                            the ClientIDs) should have a non-empty intersection with
+                            the request's target audience. This preserves the behavior
+                            of the OIDC authenticator pre-introduction of API audiences.
+                          items:
+                            type: string
+                          type: array
+                        certificateAuthority:
+                          description: CertificateAuthority references the secret
+                            containing issuer's CA in a PEM encoded root certificate
+                            of the provider.
+                          properties:
+                            name:
+                              type: string
+                          required:
+                          - name
+                          type: object
+                        clientID:
+                          description: "ClientID the JWT must be issued for, the \"sub\"
+                            field. This plugin only trusts a single client to ensure
+                            the plugin can be used with public providers. \n The plugin
+                            supports the \"authorized party\" OpenID Connect claim,
+                            which allows specialized providers to issue tokens to
+                            a client for a different client. See: https://openid.net/specs/openid-connect-core-1_0.html#IDToken"
+                          type: string
+                        groupsClaim:
+                          description: GroupsClaim, if specified, causes the OIDCAuthenticator
+                            to try to populate the user's groups with an ID Token
+                            field. If the GroupsClaim field is present in an ID Token
+                            the value must be a string or list of strings.
+                          type: string
+                        groupsPrefix:
+                          description: GroupsPrefix, if specified, causes claims mapping
+                            to group names to be prefixed with the value. A value
+                            "oidc:" would result in groups like "oidc:engineering"
+                            and "oidc:marketing".
+                          type: string
+                        issuerURL:
+                          description: "IssuerURL is the URL the provider signs ID
+                            Tokens as. This will be the \"iss\" field of all tokens
+                            produced by the provider and is used for configuration
+                            discovery. \n The URL is usually the provider's URL without
+                            a path, for example \"https://accounts.google.com\" or
+                            \"https://login.salesforce.com\". \n The provider must
+                            implement configuration discovery. See: https://openid.net/specs/openid-connect-discovery-1_0.html#ProviderConfig"
+                          type: string
+                        requiredClaims:
+                          additionalProperties:
+                            type: string
+                          description: RequiredClaims, if specified, causes the OIDCAuthenticator
+                            to verify that all the required claims key value pairs
+                            are present in the ID Token.
+                          type: object
+                        supportedSigningAlgs:
+                          default:
+                          - RS256
+                          description: "SupportedSigningAlgs sets the accepted set
+                            of JOSE signing algorithms that can be used by the provider
+                            to sign tokens. \n https://tools.ietf.org/html/rfc7518#section-3.1
+                            \n This value defaults to RS256, the value recommended
+                            by the OpenID Connect spec: \n https://openid.net/specs/openid-connect-core-1_0.html#IDTokenValidation"
+                          items:
+                            type: string
+                          type: array
+                        usernameClaim:
+                          default: sub
+                          description: UsernameClaim is the JWT field to use as the
+                            user's username.
+                          type: string
+                        usernamePrefix:
+                          description: UsernamePrefix, if specified, causes claims
+                            mapping to username to be prefix with the provided value.
+                            A value "oidc:" would result in usernames like "oidc:john".
+                          type: string
+                      required:
+                      - certificateAuthority
+                      - clientID
+                      - issuerURL
+                      type: object
+                    tlsSecretRef:
+                      description: TLSSecretRef references the TLS certificate and
+                        private key for serving the KubeCarrier API.
+                      properties:
+                        name:
+                          type: string
+                      required:
+                      - name
+                      type: object
+                  type: object
               type: object
             status:
               description: KubeCarrierStatus defines the observed state of KubeCarrier
@@ -898,6 +994,7 @@
     resources:
     - apiservers
     verbs:
+    - create
     - get
     - list
     - patch

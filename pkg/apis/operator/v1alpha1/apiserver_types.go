@@ -24,9 +24,11 @@ import (
 // APIServerSpec defines the desired state of APIServer
 type APIServerSpec struct {
 	// TLSSecretRef references the TLS certificate and private key for serving the KubeCarrier API.
-	TLSSecretRef ObjectReference `json:"tlsSecretRef"`
+	// +optional
+	TLSSecretRef *ObjectReference `json:"tlsSecretRef,omitempty"`
 	// OIDC specifies OpenID Connect configuration for API Server authentication
-	OIDC APIServerOIDCConfig `json:"oidc"`
+	// +optional
+	OIDC *APIServerOIDCConfig `json:"oidc,omitempty"`
 }
 
 type APIServerOIDCConfig struct {
