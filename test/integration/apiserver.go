@@ -198,7 +198,17 @@ func newAPIServer(f *testutil.Framework) func(t *testing.T) {
 			testutil.LogObject(t, userinfo)
 		}
 
-		for name, testFn := range map[string]func(ctx context.Context, conn *grpc.ClientConn, managementClient *testutil.RecordingClient, f *testutil.Framework) func(t *testing.T){
+		// Create an account to test authorization
+		accountName := "kubecarrier-admin"
+		account := testutil.NewTenantAccount(accountName, rbacv1.Subject{
+			Kind:     rbacv1.UserKind,
+			APIGroup: "rbac.authorization.k8s.io",
+			Name:     "admin@kubecarrier.io",
+		})
+		require.NoError(t, managementClient.Create(ctx, account))
+		require.NoError(t, testutil.WaitUntilReady(ctx, managementClient, account), "account not ready")
+
+		for name, testFn := range map[string]func(ctx context.Context, conn *grpc.ClientConn, account *catalogv1alpha1.Account, managementClient *testutil.RecordingClient, f *testutil.Framework) func(t *testing.T){
 			"account-service":  accountService,
 			"offering-service": offeringService,
 			"region-service":   regionService,
@@ -210,13 +220,13 @@ func newAPIServer(f *testutil.Framework) func(t *testing.T) {
 
 			t.Run(name, func(t *testing.T) {
 				t.Parallel()
-				testFn(ctx, conn, managementClient, f)(t)
+				testFn(ctx, conn, account, managementClient, f)(t)
 			})
 		}
 	}
 }
 
-func instanceService(ctx context.Context, conn *grpc.ClientConn, managementClient *testutil.RecordingClient, f *testutil.Framework) func(t *testing.T) {
+func instanceService(ctx context.Context, conn *grpc.ClientConn, account *catalogv1alpha1.Account, managementClient *testutil.RecordingClient, f *testutil.Framework) func(t *testing.T) {
 	return func(t *testing.T) {
 		serviceClient, err := f.ServiceClient(t)
 		require.NoError(t, err, "creating service client")
@@ -419,7 +429,7 @@ func (w gRPCWithAuthToken) RequireTransportSecurity() bool {
 	return true
 }
 
-func accountService(ctx context.Context, conn *grpc.ClientConn, managementClient *testutil.RecordingClient, f *testutil.Framework) func(t *testing.T) {
+func accountService(ctx context.Context, conn *grpc.ClientConn, account *catalogv1alpha1.Account, managementClient *testutil.RecordingClient, f *testutil.Framework) func(t *testing.T) {
 	return func(t *testing.T) {
 		testName := strings.Replace(strings.ToLower(t.Name()), "/", "-", -1)
 		providerAccount := testutil.NewProviderAccount(testName, rbacv1.Subject{
@@ -432,33 +442,8 @@ func accountService(ctx context.Context, conn *grpc.ClientConn, managementClient
 			APIGroup: "rbac.authorization.k8s.io",
 			Name:     "user",
 		})
-		providerTenant := &catalogv1alpha1.Account{
-			ObjectMeta: metav1.ObjectMeta{
-				Name: testName + "-providertenant",
-			},
-			Spec: catalogv1alpha1.AccountSpec{
-				Metadata: catalogv1alpha1.AccountMetadata{
-					CommonMetadata: catalogv1alpha1.CommonMetadata{
-						DisplayName:      "metadata name",
-						ShortDescription: "metadata desc",
-					},
-				},
-				Roles: []catalogv1alpha1.AccountRole{
-					catalogv1alpha1.TenantRole,
-					catalogv1alpha1.ProviderRole,
-				},
-				Subjects: []rbacv1.Subject{
-					{
-						Kind:     rbacv1.GroupKind,
-						APIGroup: "rbac.authorization.k8s.io",
-						Name:     "admin@kubecarrier.io",
-					},
-				},
-			},
-		}
 		require.NoError(t, managementClient.Create(ctx, providerAccount))
 		require.NoError(t, managementClient.Create(ctx, tenantAccount))
-		require.NoError(t, managementClient.Create(ctx, providerTenant))
 
 		client := apiserverv1.NewAccountServiceClient(conn)
 		accountCtx, cancel := context.WithTimeout(ctx, 30*time.Second)
@@ -477,23 +462,15 @@ func accountService(ctx context.Context, conn *grpc.ClientConn, managementClient
 			if err != nil {
 				return false, err
 			}
+			// Another account is the one that passed to this test.
 			assert.Len(t, accounts.Items, 2)
 			return true, nil
 		}, accountCtx.Done()))
 	}
 }
 
-func providerService(ctx context.Context, conn *grpc.ClientConn, managementClient *testutil.RecordingClient, f *testutil.Framework) func(t *testing.T) {
+func providerService(ctx context.Context, conn *grpc.ClientConn, account *catalogv1alpha1.Account, managementClient *testutil.RecordingClient, f *testutil.Framework) func(t *testing.T) {
 	return func(t *testing.T) {
-		testName := strings.Replace(strings.ToLower(t.Name()), "/", "-", -1)
-		// Create an account to test authorization middleware
-		account := testutil.NewTenantAccount(testName, rbacv1.Subject{
-			Kind:     rbacv1.UserKind,
-			APIGroup: "rbac.authorization.k8s.io",
-			Name:     "admin@kubecarrier.io",
-		})
-		require.NoError(t, managementClient.Create(ctx, account))
-		require.NoError(t, testutil.WaitUntilReady(ctx, managementClient, account), "account not ready")
 		namespaceName := account.Status.Namespace.Name
 		// Create providers objects in the management cluster.
 		provider1 := &catalogv1alpha1.Provider{
@@ -596,17 +573,8 @@ func providerService(ctx context.Context, conn *grpc.ClientConn, managementClien
 	}
 }
 
-func offeringService(ctx context.Context, conn *grpc.ClientConn, managementClient *testutil.RecordingClient, f *testutil.Framework) func(t *testing.T) {
+func offeringService(ctx context.Context, conn *grpc.ClientConn, account *catalogv1alpha1.Account, managementClient *testutil.RecordingClient, f *testutil.Framework) func(t *testing.T) {
 	return func(t *testing.T) {
-		testName := strings.Replace(strings.ToLower(t.Name()), "/", "-", -1)
-		// Create an account to test authorization middleware
-		account := testutil.NewTenantAccount(testName, rbacv1.Subject{
-			Kind:     rbacv1.UserKind,
-			APIGroup: "rbac.authorization.k8s.io",
-			Name:     "admin@kubecarrier.io",
-		})
-		require.NoError(t, managementClient.Create(ctx, account))
-		require.NoError(t, testutil.WaitUntilReady(ctx, managementClient, account), "account not ready")
 		namespaceName := account.Status.Namespace.Name
 		// Create offering objects in the management cluster.
 		offering1 := &catalogv1alpha1.Offering{
@@ -778,7 +746,7 @@ func offeringService(ctx context.Context, conn *grpc.ClientConn, managementClien
 		// watch offerings
 		t.Cleanup(cancel)
 		watchClient, err := client.Watch(offeringCtx, &apiserverv1.WatchRequest{
-			Account: testName,
+			Account: namespaceName,
 		})
 		require.NoError(t, err)
 		// Update an offering object to get Modified event.
@@ -803,17 +771,8 @@ func offeringService(ctx context.Context, conn *grpc.ClientConn, managementClien
 	}
 }
 
-func regionService(ctx context.Context, conn *grpc.ClientConn, managementClient *testutil.RecordingClient, f *testutil.Framework) func(t *testing.T) {
+func regionService(ctx context.Context, conn *grpc.ClientConn, account *catalogv1alpha1.Account, managementClient *testutil.RecordingClient, f *testutil.Framework) func(t *testing.T) {
 	return func(t *testing.T) {
-		testName := strings.Replace(strings.ToLower(t.Name()), "/", "-", -1)
-		// Create an account to test authorization middleware
-		account := testutil.NewTenantAccount(testName, rbacv1.Subject{
-			Kind:     rbacv1.UserKind,
-			APIGroup: "rbac.authorization.k8s.io",
-			Name:     "admin@kubecarrier.io",
-		})
-		require.NoError(t, managementClient.Create(ctx, account))
-		require.NoError(t, testutil.WaitUntilReady(ctx, managementClient, account), "account not ready")
 		namespaceName := account.Status.Namespace.Name
 		// Create region objects in the management cluster.
 		region1 := &catalogv1alpha1.Region{

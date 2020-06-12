@@ -126,6 +126,12 @@ func (o offeringServer) handleGetRequest(ctx context.Context, req *v1.GetRequest
 }
 
 func (o offeringServer) Watch(req *v1.WatchRequest, stream v1.OfferingService_WatchServer) error {
+	if err := o.authorizer.Authorize(stream.Context(), &catalogv1alpha1.Offering{}, authorizer.AuthorizationOption{
+		Namespace: req.Account,
+		Verb:      authorizer.RequestWatch,
+	}); err != nil {
+		return status.Error(codes.Unauthenticated, err.Error())
+	}
 	listOptions, err := validateWatchRequest(req)
 	if err != nil {
 		return status.Error(codes.InvalidArgument, err.Error())
