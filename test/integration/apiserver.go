@@ -744,18 +744,18 @@ func offeringService(ctx context.Context, conn *grpc.ClientConn, account *catalo
 		}, offeringCtx.Done()))
 
 		// watch offerings
-		t.Cleanup(cancel)
 		watchClient, err := client.Watch(offeringCtx, &apiserverv1.WatchRequest{
-			Account: namespaceName,
+			Account:       namespaceName,
+			LabelSelector: "test-label==offering1",
 		})
 		require.NoError(t, err)
 		// Update an offering object to get Modified event.
-		offering2.Spec.Metadata.ShortDescription = "test offering update"
-		require.NoError(t, managementClient.Update(ctx, offering2))
+		offering1.Spec.Metadata.ShortDescription = "test offering update"
+		require.NoError(t, managementClient.Update(ctx, offering1))
 		// Delete an offering object to get Delete event.
 		require.NoError(t, managementClient.Delete(ctx, offering1))
 		expectedEventNum := map[string]int{
-			string(watch.Added):    2,
+			string(watch.Added):    1,
 			string(watch.Modified): 1,
 			string(watch.Deleted):  1,
 		}
