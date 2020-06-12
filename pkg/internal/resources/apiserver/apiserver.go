@@ -139,11 +139,6 @@ func Manifests(c Config) ([]unstructured.Unstructured, error) {
 					},
 				)
 				supportedAuth = append(supportedAuth, "Htpasswd")
-				for j, env := range containers[i].Env {
-					if env.Name == AuthModeEnv {
-						containers[i].Env[j].Value = strings.Join(supportedAuth, ",")
-					}
-				}
 			}
 		}
 	}
@@ -212,11 +207,6 @@ func Manifests(c Config) ([]unstructured.Unstructured, error) {
 				})
 
 				supportedAuth = append(supportedAuth, "OIDC")
-				for j, env := range containers[i].Env {
-					if env.Name == AuthModeEnv {
-						containers[i].Env[j].Value = strings.Join(supportedAuth, ",")
-					}
-				}
 			}
 		}
 		deploymentPatch.Spec.Template.Spec.Volumes = append(deploymentPatch.Spec.Template.Spec.Volumes, corev1.Volume{
@@ -230,13 +220,13 @@ func Manifests(c Config) ([]unstructured.Unstructured, error) {
 	}
 	if len(supportedAuth) == 0 {
 		supportedAuth = append(supportedAuth, "Anonymous")
-		containers := deploymentPatch.Spec.Template.Spec.Containers
-		for i, container := range containers {
-			if container.Name == "manager" {
-				for j, env := range containers[i].Env {
-					if env.Name == AuthModeEnv {
-						containers[i].Env[j].Value = strings.Join(supportedAuth, ",")
-					}
+	}
+	containers := deploymentPatch.Spec.Template.Spec.Containers
+	for i, container := range containers {
+		if container.Name == "manager" {
+			for j, env := range containers[i].Env {
+				if env.Name == AuthModeEnv {
+					containers[i].Env[j].Value = strings.Join(supportedAuth, ",")
 				}
 			}
 		}
