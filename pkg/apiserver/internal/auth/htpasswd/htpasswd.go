@@ -64,7 +64,6 @@ func init() {
 
 func (h *HtpasswdAuthenticator) AddFlags(fs *pflag.FlagSet) {
 	fs.StringVar(&h.htpasswdSecretName, "htpasswd-secret-name", "ht-secret", "the secret of htpasswd file.")
-	fmt.Printf("Add %s", h.htpasswdSecretName)
 }
 
 func (h *HtpasswdAuthenticator) Init() error {
@@ -75,7 +74,6 @@ func (h *HtpasswdAuthenticator) Init() error {
 
 func (h *HtpasswdAuthenticator) Authenticate(ctx context.Context) (user.Info, error) {
 	token, err := grpc_auth.AuthFromMD(ctx, "Basic")
-	fmt.Println(token)
 	if err != nil {
 		h.Error(err, "cannot extract token")
 		return nil, err
@@ -86,7 +84,6 @@ func (h *HtpasswdAuthenticator) Authenticate(ctx context.Context) (user.Info, er
 		return nil, err
 	}
 	secret := &corev1.Secret{}
-	fmt.Printf("Auth %s", h.htpasswdSecretName)
 	if err := h.client.Get(ctx, types.NamespacedName{
 		Name:      h.htpasswdSecretName,
 		Namespace: constants.KubeCarrierDefaultNamespace,
@@ -98,12 +95,9 @@ func (h *HtpasswdAuthenticator) Authenticate(ctx context.Context) (user.Info, er
 		return nil, status.Error(codes.Unauthenticated, "cannot find auth data in htpasswd secret")
 	}
 	passwordMap, err := htpasswd.ParseHtpasswd(htpasswdBytes)
-	fmt.Println(passwordMap)
 	if err != nil {
 		return nil, status.Error(codes.Unauthenticated, "cannot parse htpasswd in bytes")
 	}
-	fmt.Println(password)
-	fmt.Println(passwordMap[username])
 	if passwordMap[username] != password {
 		return nil, status.Error(codes.Unauthenticated, "username or password doesn't match")
 	}
@@ -119,12 +113,10 @@ func (h *HtpasswdAuthenticator) parseUserInfo(token string) (username string, pa
 	if err != nil {
 		return
 	}
-	fmt.Println(string(data))
 	userInfo := strings.Split(string(data), ":")
 	if len(userInfo) != 2 {
 		err = fmt.Errorf("can not parse username and password")
 		return
 	}
-	fmt.Println(userInfo)
 	return userInfo[0], userInfo[1], nil
 }

@@ -125,6 +125,28 @@ func Manifests(c Config) ([]unstructured.Unstructured, error) {
 			},
 		},
 	}
+	if c.Spec.StaticUsers != nil {
+		containers := deploymentPatch.Spec.Template.Spec.Containers
+		for i, container := range containers {
+			if container.Name == "manager" {
+				containers[i].Args = append(containers[i].Args,
+					"--htpasswd-secret-name=$(HTPASSWD_SECRET_NAME)",
+				)
+				containers[i].Env = append(containers[i].Env,
+					corev1.EnvVar{
+						Name:  "HTPASSWD_SECRET_NAME",
+						Value: c.Spec.StaticUsers.HtpasswdSecret.Name,
+					},
+				)
+				supportedAuth = append(supportedAuth, "Htpasswd")
+				for j, env := range containers[i].Env {
+					if env.Name == AuthModeEnv {
+						containers[i].Env[j].Value = strings.Join(supportedAuth, ",")
+					}
+				}
+			}
+		}
+	}
 	if c.Spec.OIDC != nil {
 		extraArgs := make([]string, 0)
 		if len(c.Spec.OIDC.RequiredClaims) > 0 {
