@@ -142,8 +142,9 @@ statik-gen elevator config/internal/elevator
 $CONTROLLER_GEN rbac:roleName=manager-role paths="./pkg/apiserver/..." output:rbac:artifacts:config=config/internal/apiserver/rbac
 statik-gen apiserver config/internal/apiserver
 
+# Docs
 tmp_dir=$(mktemp -d)
-cp docs/api_reference/_index.md ${tmp_dir}/
+cp config/swagger/* ${tmp_dir}/
 cp pkg/apiserver/api/v1/apidocs.swagger.json ${tmp_dir}/
 
 statik -m -src ${tmp_dir} -p v1 -dest pkg/apiserver/internal/ -f -c ''

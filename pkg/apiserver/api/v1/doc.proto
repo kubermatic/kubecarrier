@@ -22,15 +22,29 @@ import "google/api/httpbody.proto";
 import "google/api/annotations.proto";
 import "google/protobuf/empty.proto";
 
+message DocStaticRequest {
+	string path = 1;
+}
+
 service Doc {
+	// Returns the openapi spec for this API.
 	rpc OpenAPI(google.protobuf.Empty) returns (google.api.HttpBody) {
 		option (google.api.http) = {
 			get: "/v1/openapi"
 		};
 	}
+
+	// Returns the swagger UI to browse the openapi spec.
 	rpc Swagger(google.protobuf.Empty) returns (google.api.HttpBody) {
 		option (google.api.http) = {
 			get: "/v1/swagger"
+		};
+	}
+
+	// static swagger UI resources
+	rpc SwaggerStatic(DocStaticRequest) returns (google.api.HttpBody) {
+		option (google.api.http) = {
+			get: "/v1/swagger/{path}"
 		};
 	}
 }

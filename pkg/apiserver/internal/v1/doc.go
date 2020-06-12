@@ -19,19 +19,26 @@ package v1
 import (
 	"context"
 	"io/ioutil"
+	"mime"
+	"os"
 
 	"github.com/golang/protobuf/ptypes/empty"
 	"google.golang.org/genproto/googleapis/api/httpbody"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 
 	v1 "github.com/kubermatic/kubecarrier/pkg/apiserver/api/v1"
 )
 
-type docServer struct {
-}
+type docServer struct{}
 
 var _ v1.DocServer = (*docServer)(nil)
 
-func (o docServer) Swagger(context.Context, *empty.Empty) (*httpbody.HttpBody, error) {
+func NewDocServiceServer() v1.DocServer {
+	return &docServer{}
+}
+
+func (o docServer) OpenAPI(context.Context, *empty.Empty) (*httpbody.HttpBody, error) {
 	r, err := vfs.Open("/apidocs.swagger.json")
 	if err != nil {
 		return nil, err
@@ -47,22 +54,31 @@ func (o docServer) Swagger(context.Context, *empty.Empty) (*httpbody.HttpBody, e
 	}, nil
 }
 
-func (o docServer) OpenAPI(context.Context, *empty.Empty) (*httpbody.HttpBody, error) {
-	r, err := vfs.Open("/_index.md")
+func (o docServer) SwaggerStatic(ctx context.Context, req *v1.DocStaticRequest) (*httpbody.HttpBody, error) {
+	return o.serveStatic(req.Path)
+}
+
+func (o docServer) Swagger(context.Context, *empty.Empty) (*httpbody.HttpBody, error) {
+	return o.serveStatic("/index.html")
+}
+
+func (o docServer) serveStatic(path string) (*httpbody.HttpBody, error) {
+	r, err := vfs.Open(path)
 	if err != nil {
+		if err == os.ErrNotExist {
+			return nil, status.Error(codes.NotFound, "file not found")
+		}
 		return nil, err
 	}
 	defer r.Close()
+
 	contents, err := ioutil.ReadAll(r)
 	if err != nil {
 		return nil, err
 	}
+
 	return &httpbody.HttpBody{
-		ContentType: "text/markdown",
+		ContentType: mime.TypeByExtension(path),
 		Data:        contents,
 	}, nil
-}
-
-func NewDocServiceServer() v1.DocServer {
-	return &docServer{}
 }

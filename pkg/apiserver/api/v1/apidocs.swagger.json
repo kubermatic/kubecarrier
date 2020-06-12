@@ -1155,6 +1155,36 @@
         ]
       }
     },
+    "/v1/swagger/{path}": {
+      "get": {
+        "operationId": "SwaggerStatic",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/google.api.HttpBody"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response",
+            "schema": {
+              "$ref": "#/definitions/grpc.gateway.runtime.Error"
+            }
+          }
+        },
+        "tags": [
+          "Doc"
+        ]
+      }
+    },
     "/v1/version": {
       "get": {
         "operationId": "Version",
