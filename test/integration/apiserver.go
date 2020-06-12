@@ -665,7 +665,7 @@ func offeringService(ctx context.Context, conn *grpc.ClientConn, account *catalo
 		require.NoError(t, managementClient.Create(ctx, offering2))
 
 		client := apiserverv1.NewOfferingServiceClient(conn)
-		offeringCtx, cancel := context.WithTimeout(ctx, 30*time.Second)
+		offeringCtx, cancel := context.WithTimeout(ctx, 60*time.Second)
 		t.Cleanup(cancel)
 		// list offerings with limit and continuation token.
 		require.NoError(t, wait.PollUntil(time.Second, func() (done bool, err error) {
