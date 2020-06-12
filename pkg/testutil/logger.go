@@ -54,6 +54,7 @@ func NewZapLogger(t *testing.T) *zap.Logger {
 func LoggingContext(t *testing.T, ctx context.Context) (context.Context, *zap.Logger) {
 	logger := NewZapLogger(t)
 	ctx = util.InjectLogger(ctx, logger)
+	ctx = util.InjectTesting(ctx, t)
 	ctx, cancel := context.WithCancel(ctx)
 	t.Cleanup(cancel)
 	return ctx, logger

@@ -19,6 +19,7 @@ package util
 import (
 	"context"
 	"fmt"
+	"testing"
 	"time"
 
 	"github.com/go-logr/logr"
@@ -134,6 +135,10 @@ func (cw *ClientWatcher) init(ctx context.Context, obj runtime.Object, options [
 //
 // condition function should operate on the passed object in a closure and should not modify the obj
 func (cw *ClientWatcher) WaitUntil(ctx context.Context, obj runtime.Object, cond func() (done bool, err error), options ...ClientWatcherOption) error {
+	if t := ctx.Value(testingKey); t != nil {
+		t.(*testing.T).Helper()
+	}
+
 	ctx, closeFn, err := cw.init(ctx, obj, options)
 	if err != nil {
 		return err
@@ -176,6 +181,9 @@ func (cw *ClientWatcher) WaitUntil(ctx context.Context, obj runtime.Object, cond
 
 // WaitUntilNotFound waits until the object is not found or the context deadline is exceeded
 func (cw *ClientWatcher) WaitUntilNotFound(ctx context.Context, obj runtime.Object, options ...ClientWatcherOption) error {
+	if t := ctx.Value(testingKey); t != nil {
+		t.(*testing.T).Helper()
+	}
 	ctx, closeFn, err := cw.init(ctx, obj, options)
 	if err != nil {
 		return err
