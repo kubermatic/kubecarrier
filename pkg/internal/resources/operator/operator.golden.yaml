@@ -10,6 +10,8 @@
   spec:
     group: operator.kubecarrier.io
     names:
+      categories:
+      - all
       kind: APIServer
       listKind: APIServerList
       plural: apiservers
@@ -216,6 +218,8 @@
   spec:
     group: operator.kubecarrier.io
     names:
+      categories:
+      - all
       kind: Catapult
       listKind: CatapultList
       plural: catapults
@@ -389,6 +393,8 @@
   spec:
     group: operator.kubecarrier.io
     names:
+      categories:
+      - all
       kind: Elevator
       listKind: ElevatorList
       plural: elevators
@@ -550,6 +556,8 @@
   spec:
     group: operator.kubecarrier.io
     names:
+      categories:
+      - all
       kind: Ferry
       listKind: FerryList
       plural: ferries
@@ -681,6 +689,8 @@
   spec:
     group: operator.kubecarrier.io
     names:
+      categories:
+      - all
       kind: KubeCarrier
       listKind: KubeCarrierList
       plural: kubecarriers

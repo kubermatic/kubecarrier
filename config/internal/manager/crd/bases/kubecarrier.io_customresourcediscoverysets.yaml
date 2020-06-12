@@ -11,6 +11,7 @@ spec:
   group: kubecarrier.io
   names:
     categories:
+    - all
     - kubecarrier-provider
     kind: CustomResourceDiscoverySet
     listKind: CustomResourceDiscoverySetList
