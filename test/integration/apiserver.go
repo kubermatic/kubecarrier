@@ -67,13 +67,17 @@ func newAPIServer(f *testutil.Framework) func(t *testing.T) {
 		const localAPIServerPort = 9443
 
 		// Enable OIDC and Htpasswd
+		username := "user1"
+		password := "mickey5"
+		md5password := `$apr1$gxNb79DX$6wi9QaGNM5TA0kBKiC4710`
+
 		htpasswdSecret := &corev1.Secret{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "htpasswd-user",
 				Namespace: ns.GetName(),
 			},
 			Data: map[string][]byte{
-				"auth": []byte("test-user:test-password"),
+				"auth": []byte(username + ":" + md5password),
 			},
 		}
 		require.NoError(t, managementClient.Create(ctx, htpasswdSecret))
@@ -158,11 +162,11 @@ func newAPIServer(f *testutil.Framework) func(t *testing.T) {
 		)
 		require.NoError(t, err)
 		client := apiserverv1.NewKubeCarrierClient(conn)
-		userInfo, err := client.WhoAmI(ctx, &empty.Empty{}, grpc.PerRPCCredentials(gRPCBasicAuthToken{username: "test-user", password: "test-password"}))
+		userInfo, err := client.WhoAmI(ctx, &empty.Empty{}, grpc.PerRPCCredentials(gRPCBasicAuthToken{username: username, password: password}))
 		if assert.NoError(t, err, "whoami gRPC") {
 			t.Log("User info:")
 			testutil.LogObject(t, userInfo)
-			assert.Equal(t, "test-user", userInfo.User)
+			assert.Equal(t, "user1", userInfo.User)
 		}
 
 		// OIDC

@@ -10,7 +10,6 @@ require (
 	github.com/Masterminds/sprig v2.22.0+incompatible
 	github.com/coreos/go-oidc v2.1.0+incompatible
 	github.com/desertbit/timer v0.0.0-20180107155436-c41aec40b27f // indirect
-	github.com/foomo/htpasswd v0.0.0-20200116085101-e3a90e78da9c
 	github.com/gernest/wow v0.1.0
 	github.com/ghodss/yaml v1.0.0
 	github.com/go-logr/logr v0.1.0
@@ -29,6 +28,7 @@ require (
 	github.com/spf13/cobra v0.0.5
 	github.com/spf13/pflag v1.0.5
 	github.com/stretchr/testify v1.4.0
+	github.com/tg123/go-htpasswd v1.0.0
 	github.com/thetechnick/statik v0.1.8
 	go.uber.org/zap v1.10.0
 	golang.org/x/crypto v0.0.0-20200115085410-6d4e4cb37c7d

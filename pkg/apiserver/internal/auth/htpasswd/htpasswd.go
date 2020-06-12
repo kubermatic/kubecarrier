@@ -17,15 +17,16 @@ limitations under the License.
 package htpasswd
 
 import (
+	"bytes"
 	"context"
 	"encoding/base64"
 	"fmt"
 	"strings"
 
-	"github.com/foomo/htpasswd"
 	"github.com/go-logr/logr"
 	grpc_auth "github.com/grpc-ecosystem/go-grpc-middleware/auth"
 	"github.com/spf13/pflag"
+	"github.com/tg123/go-htpasswd"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	corev1 "k8s.io/api/core/v1"
@@ -90,16 +91,8 @@ func (h *HtpasswdAuthenticator) Authenticate(ctx context.Context) (user.Info, er
 	}, secret); err != nil {
 		return nil, status.Errorf(codes.Unauthenticated, "getting htpasswd secret: %s", err.Error())
 	}
-	htpasswdBytes, ok := secret.Data["auth"]
-	if !ok {
-		return nil, status.Error(codes.Unauthenticated, "cannot find auth data in htpasswd secret")
-	}
-	passwordMap, err := htpasswd.ParseHtpasswd(htpasswdBytes)
-	if err != nil {
-		return nil, status.Error(codes.Unauthenticated, "cannot parse htpasswd in bytes")
-	}
-	if passwordMap[username] != password {
-		return nil, status.Error(codes.Unauthenticated, "username or password doesn't match")
+	if err := h.verifyPassword(username, password, secret); err != nil {
+		return nil, status.Errorf(codes.Unauthenticated, "verifying username and password: %s", err.Error())
 	}
 	userInfo := &user.DefaultInfo{
 		Name:   username,
@@ -119,4 +112,20 @@ func (h *HtpasswdAuthenticator) parseUserInfo(token string) (username string, pa
 		return
 	}
 	return userInfo[0], userInfo[1], nil
+}
+
+func (h *HtpasswdAuthenticator) verifyPassword(username string, password string, secret *corev1.Secret) error {
+	htpasswdBytes, ok := secret.Data["auth"]
+	if !ok {
+		return status.Error(codes.Unauthenticated, "cannot find auth data in htpasswd secret")
+	}
+	reader := bytes.NewReader(htpasswdBytes)
+	htp, err := htpasswd.NewFromReader(reader, htpasswd.DefaultSystems, nil)
+	if err != nil {
+		return status.Error(codes.Unauthenticated, "cannot parse auth data in htpasswd secret")
+	}
+	if ok := htp.Match(username, password); !ok {
+		return status.Error(codes.Unauthenticated, "username or password doesn't match")
+	}
+	return nil
 }
