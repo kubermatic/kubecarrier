@@ -107,6 +107,7 @@ rules:
   resources:
   - apiservers
   verbs:
+  - create
   - get
   - list
   - patch

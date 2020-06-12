@@ -24,14 +24,13 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
+	"reflect"
 	"strings"
 	"testing"
 	"time"
 
 	"github.com/golang/protobuf/ptypes"
 	"github.com/golang/protobuf/ptypes/empty"
-	certmanagerv1alpha3 "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha3"
-	v1 "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc"
@@ -66,62 +65,14 @@ func newAPIServer(f *testutil.Framework) func(t *testing.T) {
 		ns.Name = "kubecarrier-system"
 		const localAPIServerPort = 9443
 
-		token := fetchUserToken(ctx, t, managementClient, f.Config().ManagementExternalKubeconfigPath)
-		t.Log("token", token)
-
-		servingTLSSecret := &corev1.Secret{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "foo-tls",
-				Namespace: ns.GetName(),
-			},
-		}
-
-		issuer := &certmanagerv1alpha3.Issuer{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "foo",
-				Namespace: ns.GetName(),
-			},
-			Spec: certmanagerv1alpha3.IssuerSpec{
-				IssuerConfig: certmanagerv1alpha3.IssuerConfig{
-					SelfSigned: &certmanagerv1alpha3.SelfSignedIssuer{},
-				},
-			},
-		}
-		cert := &certmanagerv1alpha3.Certificate{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "foo",
-				Namespace: ns.GetName(),
-			},
-			Spec: certmanagerv1alpha3.CertificateSpec{
-				SecretName: servingTLSSecret.GetName(),
-				DNSNames: []string{
-					strings.Join([]string{"kubecarrier-api-server-manager", servingTLSSecret.GetNamespace(), "svc"}, "."),
-					"kubecarrier-api-server-manager",
-					"localhost",
-				},
-				IsCA: true,
-				IssuerRef: v1.ObjectReference{
-					Name: issuer.GetName(),
-				},
-			},
-		}
-		require.NoError(t, managementClient.Create(ctx, issuer))
-		require.NoError(t, managementClient.Create(ctx, cert))
-		require.NoError(t, testutil.WaitUntilReady(ctx, managementClient, cert), "cert not ready")
-		require.NoError(t, managementClient.WaitUntil(ctx, servingTLSSecret, func() (done bool, err error) {
-			data, ok := servingTLSSecret.Data[corev1.TLSCertKey]
-			return ok && len(data) > 0, nil
-		}))
-
-		apiServer := &operatorv1alpha1.APIServer{ObjectMeta: metav1.ObjectMeta{
-			Name:      "foo",
-			Namespace: ns.GetName(),
-		},
-			Spec: operatorv1alpha1.APIServerSpec{
-				TLSSecretRef: operatorv1alpha1.ObjectReference{
-					Name: servingTLSSecret.GetName(),
-				},
-				OIDC: operatorv1alpha1.APIServerOIDCConfig{
+		// Enable OIDC
+		kubeCarrier := &operatorv1alpha1.KubeCarrier{}
+		require.NoError(t, managementClient.Get(ctx, types.NamespacedName{
+			Name: "kubecarrier",
+		}, kubeCarrier))
+		kubeCarrier.Spec = operatorv1alpha1.KubeCarrierSpec{
+			API: operatorv1alpha1.APIServerSpec{
+				OIDC: &operatorv1alpha1.APIServerOIDCConfig{
 					// from test/testdata/dex_values.yaml
 					IssuerURL:     "https://dex.kubecarrier-system.svc",
 					ClientID:      "e2e-client-id",
@@ -132,16 +83,27 @@ func newAPIServer(f *testutil.Framework) func(t *testing.T) {
 				},
 			},
 		}
-		require.NoError(t, managementClient.Create(ctx, apiServer))
-		require.NoError(t, testutil.WaitUntilReady(ctx, managementClient, apiServer))
-
-		ctx, cancel = context.WithCancel(ctx)
+		require.NoError(t, managementClient.Update(ctx, kubeCarrier))
+		apiServer := &operatorv1alpha1.APIServer{}
+		oidcCtx, cancel := context.WithTimeout(ctx, 60*time.Second)
 		t.Cleanup(cancel)
+		require.NoError(t, wait.PollUntil(time.Second, func() (done bool, err error) {
+			if err := managementClient.Get(oidcCtx, types.NamespacedName{
+				Name:      "kubecarrier",
+				Namespace: ns.GetName(),
+			}, apiServer); err != nil {
+				return true, err
+			}
+			return reflect.DeepEqual(kubeCarrier.Spec.API, apiServer.Spec) && apiServer.IsReady(), nil
+		}, oidcCtx.Done()))
+		require.NoError(t, testutil.WaitUntilReady(ctx, managementClient, kubeCarrier))
+		// Wait for API server new pod to start and to be able to receive request with OIDC token.
+		time.Sleep(10 * time.Second)
 
 		pfCmd := exec.CommandContext(ctx,
 			"kubectl",
 			"--kubeconfig", f.Config().ManagementExternalKubeconfigPath,
-			"--namespace", apiServer.GetNamespace(),
+			"--namespace", ns.GetName(),
 			"port-forward",
 			// well known service name since it's assumed only one API server shall be deployed
 			"service/kubecarrier-api-server-manager",
@@ -151,10 +113,23 @@ func newAPIServer(f *testutil.Framework) func(t *testing.T) {
 		pfCmd.Stderr = os.Stderr
 		require.NoError(t, pfCmd.Start())
 
+		token := fetchUserToken(ctx, t, managementClient, f.Config().ManagementExternalKubeconfigPath)
+		t.Log("token", token)
+		servingTLSSecret := &corev1.Secret{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "apiserver-tls-cert",
+				Namespace: ns.GetName(),
+			},
+		}
+
+		require.NoError(t, managementClient.WaitUntil(ctx, servingTLSSecret, func() (done bool, err error) {
+			data, ok := servingTLSSecret.Data[corev1.TLSCertKey]
+			return ok && len(data) > 0, nil
+		}))
+
 		certPool := x509.NewCertPool()
 		require.True(t, certPool.AppendCertsFromPEM(servingTLSSecret.Data["ca.crt"]))
 		require.True(t, certPool.AppendCertsFromPEM(servingTLSSecret.Data[corev1.TLSCertKey]))
-
 		conn, err := grpc.DialContext(
 			ctx,
 			fmt.Sprintf("localhost:%d", localAPIServerPort),
@@ -192,10 +167,11 @@ func newAPIServer(f *testutil.Framework) func(t *testing.T) {
 			return false, err
 		}, versionCtx.Done()), "client version gRPC call")
 
-		userinfo, err := client.WhoAmI(ctx, &empty.Empty{})
+		userInfo, err := client.WhoAmI(ctx, &empty.Empty{})
 		if assert.NoError(t, err, "whoami gRPC") {
 			t.Log("User info:")
-			testutil.LogObject(t, userinfo)
+			testutil.LogObject(t, userInfo)
+			assert.Equal(t, "admin@kubecarrier.io", userInfo.User)
 		}
 
 		for name, testFn := range map[string]func(ctx context.Context, conn *grpc.ClientConn, managementClient *testutil.RecordingClient, f *testutil.Framework) func(t *testing.T){

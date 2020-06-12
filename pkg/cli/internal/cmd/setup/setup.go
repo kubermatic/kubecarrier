@@ -203,6 +203,6 @@ func deployKubeCarrier(ctx context.Context, conf *rest.Config) func() error {
 		}
 		return w.WaitUntil(ctx, kubeCarrier, func() (done bool, err error) {
 			return kubeCarrier.IsReady(), nil
-		})
+		}, util.WithClientWatcherTimeout(40*time.Second))
 	}
 }
