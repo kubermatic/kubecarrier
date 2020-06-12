@@ -136,9 +136,6 @@ spec:
                 required:
                 - name
                 type: object
-            required:
-            - oidc
-            - tlsSecretRef
             type: object
           status:
             description: APIServerStatus defines the observed state of APIServer
