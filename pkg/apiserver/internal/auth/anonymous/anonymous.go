@@ -14,24 +14,34 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-syntax = "proto3";
-package kubecarrier.api.v1;
-option go_package = "v1";
+package anonymous
 
-message GetRequest {
-  string name = 1;
-  string account = 2;
+import (
+	"context"
+
+	"github.com/spf13/pflag"
+	"k8s.io/apiserver/pkg/authentication/user"
+
+	"github.com/kubermatic/kubecarrier/pkg/apiserver/auth"
+)
+
+type Auth struct{}
+
+var _ auth.Provider = (*Auth)(nil)
+
+func init() {
+	auth.RegisterAuthProvider("Anonymous", &Auth{})
 }
 
-message ListRequest {
-  string account = 1;
-  string labelSelector = 2;
-  int64 limit = 3;
-  string continue = 4;
+func (a Auth) AddFlags(fs *pflag.FlagSet) {}
+
+func (a Auth) Init() error {
+	return nil
 }
 
-message WatchRequest {
-  string account = 1;
-  string labelSelector = 2;
-  string resourceVersion = 3;
+func (a Auth) Authenticate(ctx context.Context) (user.Info, error) {
+	return &user.DefaultInfo{
+		Name:   "system:anonymous",
+		Groups: []string{"system:unauthenticated"},
+	}, nil
 }

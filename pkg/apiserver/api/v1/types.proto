@@ -38,3 +38,7 @@ message Image {
   string mediaType = 1;
   bytes data = 2;
 }
+
+message ConditionStatus {
+  string status = 1;
+}

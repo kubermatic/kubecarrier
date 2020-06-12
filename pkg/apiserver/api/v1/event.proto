@@ -18,20 +18,9 @@ syntax = "proto3";
 package kubecarrier.api.v1;
 option go_package = "v1";
 
-message GetRequest {
-  string name = 1;
-  string account = 2;
-}
+import "google/protobuf/any.proto";
 
-message ListRequest {
-  string account = 1;
-  string labelSelector = 2;
-  int64 limit = 3;
-  string continue = 4;
-}
-
-message WatchRequest {
-  string account = 1;
-  string labelSelector = 2;
-  string resourceVersion = 3;
+message WatchEvent {
+  google.protobuf.Any object = 1;
+  string type = 2;
 }

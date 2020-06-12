@@ -110,3 +110,45 @@ func TestValidateListRequest(t *testing.T) {
 		})
 	}
 }
+
+func TestValidateWatchRequest(t *testing.T) {
+	tests := []struct {
+		name          string
+		req           *v1.WatchRequest
+		expectedError error
+	}{
+		{
+			name: "missing namespace",
+			req: &v1.WatchRequest{
+				Account: "",
+			},
+			expectedError: fmt.Errorf("missing namespace"),
+		},
+		{
+			name: "invalid label selector",
+			req: &v1.WatchRequest{
+				Account:       "test-namespace",
+				LabelSelector: "test-label=====name1",
+			},
+			expectedError: fmt.Errorf("invalid LabelSelector: unable to parse requirement: found '==', expected: identifier"),
+		},
+		{
+			name: "valid request",
+			req: &v1.WatchRequest{
+				Account:       "test-namespace",
+				LabelSelector: "test-label==name1",
+			},
+			expectedError: nil,
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			_, err := validateWatchRequest(test.req)
+			if err == nil {
+				assert.Equal(t, test.expectedError, err)
+			} else {
+				assert.EqualError(t, err, test.expectedError.Error())
+			}
+		})
+	}
+}

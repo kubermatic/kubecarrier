@@ -18,32 +18,46 @@ package apiserver
 
 import (
 	"context"
+	"crypto/tls"
+	"crypto/x509"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"net/http"
 	"strings"
 
 	"github.com/go-logr/logr"
 	"github.com/gorilla/handlers"
+	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
+	grpc_auth "github.com/grpc-ecosystem/go-grpc-middleware/auth"
+	grpc_zap "github.com/grpc-ecosystem/go-grpc-middleware/logging/zap"
+	grpc_ctxtags "github.com/grpc-ecosystem/go-grpc-middleware/tags"
+	grpc_opentracing "github.com/grpc-ecosystem/go-grpc-middleware/tracing/opentracing"
+	grpc_prometheus "github.com/grpc-ecosystem/go-grpc-prometheus"
 	gwruntime "github.com/grpc-ecosystem/grpc-gateway/runtime"
 	"github.com/improbable-eng/grpc-web/go/grpcweb"
 	"github.com/spf13/cobra"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/status"
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
-	k8soidc "k8s.io/apiserver/plugin/pkg/authenticator/token/oidc"
+	"k8s.io/cli-runtime/pkg/genericclioptions"
+	"k8s.io/client-go/dynamic"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/cache"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/apiutil"
-	"sigs.k8s.io/controller-runtime/pkg/client/config"
+	"sigs.k8s.io/controller-runtime/pkg/runtime/inject"
 
 	catalogv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/catalog/v1alpha1"
 	apiserverv1 "github.com/kubermatic/kubecarrier/pkg/apiserver/api/v1"
+	"github.com/kubermatic/kubecarrier/pkg/apiserver/auth"
+	_ "github.com/kubermatic/kubecarrier/pkg/apiserver/internal/auth/anonymous"
+	_ "github.com/kubermatic/kubecarrier/pkg/apiserver/internal/auth/oidc"
 	"github.com/kubermatic/kubecarrier/pkg/apiserver/internal/authorizer"
-	"github.com/kubermatic/kubecarrier/pkg/apiserver/internal/oidc"
 	v1 "github.com/kubermatic/kubecarrier/pkg/apiserver/internal/v1"
 	"github.com/kubermatic/kubecarrier/pkg/internal/util"
 )
@@ -62,12 +76,15 @@ type flags struct {
 	TLSCertFile        string
 	TLSPrivateKeyFile  string
 	CORSAllowedOrigins []string
-	OIDCOptions        k8soidc.Options
+	AuthenticationMode []string
+	*genericclioptions.ConfigFlags
 }
 
 func NewAPIServer() *cobra.Command {
 	log := ctrl.Log.WithName("apiserver")
-	flags := &flags{}
+	flags := &flags{
+		ConfigFlags: genericclioptions.NewConfigFlags(false),
+	}
 	cmd := &cobra.Command{
 		Args:  cobra.NoArgs,
 		Use:   "apiserver",
@@ -76,22 +93,92 @@ func NewAPIServer() *cobra.Command {
 			return runE(flags, log)
 		},
 	}
+	flags.ConfigFlags.AddFlags(cmd.Flags())
 	cmd.Flags().StringVar(&flags.address, "address", "0.0.0.0:8080", "Address to bind this API server on.")
 	cmd.Flags().StringVar(&flags.TLSCertFile, "tls-cert-file", "", "File containing the default x509 Certificate for HTTPS. If not provided no TLS security shall be enabled")
 	cmd.Flags().StringVar(&flags.TLSPrivateKeyFile, "tls-private-key-file", "", "File containing the default x509 private key matching --tls-cert-file.")
 	cmd.Flags().StringArrayVar(&flags.CORSAllowedOrigins, "cors-allowed-origins", []string{"*"}, "List of allowed origins for CORS, comma separated. An allowed origin can be a regular expression to support subdomain matching. If this list is empty CORS will not be enabled.")
-	oidc.AddOIDCPFlags(&flags.OIDCOptions, cmd.Flags())
+	cmd.Flags().StringArrayVar(&flags.AuthenticationMode, "authentication-mode", []string{"OIDC"}, "Ordered list of plug-ins to do authentication on secure port. Comma-delimited list of: "+strings.Join(auth.RegisteredAuthProviders(), ","))
+	auth.RegisterPFlags(cmd.Flags())
 	return util.CmdLogMixin(cmd)
 }
 
 func runE(flags *flags, log logr.Logger) error {
+	ctx := context.Background()
+	cfg, err := flags.ToRESTConfig()
+	if err != nil {
+		return err
+	}
+	mapper, err := apiutil.NewDynamicRESTMapper(cfg)
+	if err != nil {
+		return fmt.Errorf("creating rest mapper: %w", err)
+	}
+	c, err := client.New(cfg, client.Options{
+		Scheme: scheme,
+		Mapper: mapper,
+	})
+	if err != nil {
+		return fmt.Errorf("creating client: %w", err)
+	}
+	dynamicClient, err := dynamic.NewForConfig(cfg)
+	if err != nil {
+		return fmt.Errorf("creating dynamic client: %w", err)
+	}
 	// Validation
 	if flags.TLSCertFile == "" || flags.TLSPrivateKeyFile == "" {
 		return fmt.Errorf("--tls-cert-file or --tls-private-key-file not specified, cannot start")
 	}
 
-	// Startup
-	grpcServer := grpc.NewServer()
+	authProviders := make([]auth.Provider, 0, len(flags.AuthenticationMode))
+	for _, mode := range flags.AuthenticationMode {
+		authProvider, err := auth.GetAuthProvider(mode)
+		if err != nil {
+			return err
+		}
+		if injector, ok := authProvider.(inject.Client); ok {
+			if err := injector.InjectClient(c); err != nil {
+				return fmt.Errorf("cannot inject client into auth provider %s: %w", mode, err)
+			}
+		}
+		if injector, ok := authProvider.(inject.Logger); ok {
+			if err := injector.InjectLogger(ctrl.Log.WithName("authentication").WithValues("mode", mode)); err != nil {
+				return fmt.Errorf("cannot inject logger into auth provider %s: %w", mode, err)
+			}
+		}
+		if injector, ok := authProvider.(inject.Scheme); ok {
+			if err := injector.InjectScheme(scheme); err != nil {
+				return fmt.Errorf("cannot inject scheme into auth provider %s: %w", mode, err)
+			}
+		}
+		if injector, ok := authProvider.(inject.Mapper); ok {
+			if err := injector.InjectMapper(mapper); err != nil {
+				return fmt.Errorf("cannot inject mapper into auth provider %s: %w", mode, err)
+			}
+		}
+		if err := authProvider.Init(); err != nil {
+			return fmt.Errorf("cannot init auth provider: %s: %w", mode, err)
+		}
+		authProviders = append(authProviders, authProvider)
+	}
+
+	authFunc := auth.CreateAuthFunction(authProviders)
+	grpc_zap.ReplaceGrpcLoggerV2(util.ZapLogger)
+	grpcServer := grpc.NewServer(
+		grpc.StreamInterceptor(grpc_middleware.ChainStreamServer(
+			grpc_ctxtags.StreamServerInterceptor(),
+			grpc_opentracing.StreamServerInterceptor(),
+			grpc_prometheus.StreamServerInterceptor,
+			grpc_zap.StreamServerInterceptor(util.ZapLogger),
+			grpc_auth.StreamServerInterceptor(authFunc),
+		)),
+		grpc.UnaryInterceptor(grpc_middleware.ChainUnaryServer(
+			grpc_ctxtags.UnaryServerInterceptor(),
+			grpc_opentracing.UnaryServerInterceptor(),
+			grpc_prometheus.UnaryServerInterceptor,
+			grpc_zap.UnaryServerInterceptor(util.ZapLogger),
+			grpc_auth.UnaryServerInterceptor(authFunc),
+		)),
+	)
 	wrappedGrpc := grpcweb.WrapServer(grpcServer)
 	grpcGatewayMux := gwruntime.NewServeMux(
 		gwruntime.WithProtoErrorHandler(func(ctx context.Context, serveMux *gwruntime.ServeMux, marshaler gwruntime.Marshaler, writer http.ResponseWriter, request *http.Request, err error) {
@@ -114,44 +201,75 @@ func runE(flags *flags, log logr.Logger) error {
 			_, _ = writer.Write(buf)
 		}),
 	)
-	// Create Kubernetes Client
-	cfg := config.GetConfigOrDie()
-	mapper, err := apiutil.NewDynamicRESTMapper(cfg)
+	grpcClient, err := createInternalGRPCClient(ctx, flags)
 	if err != nil {
-		return fmt.Errorf("creating rest mapper: %w", err)
+		return err
 	}
-	c, err := client.New(cfg, client.Options{
+
+	// Set up cache for account
+	accountCache, err := cache.New(cfg, cache.Options{
 		Scheme: scheme,
 		Mapper: mapper,
 	})
 	if err != nil {
-		return fmt.Errorf("creating client: %w", err)
+		return fmt.Errorf("creating cache for account: %w", err)
+	}
+	if err := v1.RegisterAccountUsernameFieldIndex(accountCache); err != nil {
+		return fmt.Errorf("fail to register field index for Account Username: %w", err)
+	}
+	accountClient := &client.DelegatingClient{
+		Reader:       accountCache,
+		Writer:       c,
+		StatusClient: c,
+	}
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	log.Info("start cache")
+	go func() {
+		if err := accountCache.Start(ctrl.SetupSignalHandler()); err != nil {
+			log.Error(err, "starting cache")
+			cancel()
+		}
+	}()
+	if isSynced := accountCache.WaitForCacheSync(ctx.Done()); !isSynced {
+		return fmt.Errorf("cache is outdated")
+	}
+
+	accountServer := v1.NewAccountServiceServer(accountClient)
+	apiserverv1.RegisterAccountServiceServer(grpcServer, accountServer)
+	if err := apiserverv1.RegisterAccountServiceHandler(ctx, grpcGatewayMux, grpcClient); err != nil {
+		return err
 	}
 
 	authorizer := authorizer.NewAuthorizer(log, scheme, c, mapper)
 
 	apiserverv1.RegisterKubeCarrierServer(grpcServer, &v1.KubeCarrierServer{})
-	if err := apiserverv1.RegisterKubeCarrierHandlerServer(context.Background(), grpcGatewayMux, &v1.KubeCarrierServer{}); err != nil {
+	if err := apiserverv1.RegisterKubeCarrierHandler(ctx, grpcGatewayMux, grpcClient); err != nil {
 		return err
 	}
-	offeringServer := v1.NewOfferingServiceServer(c, authorizer)
+	offeringServer, err := v1.NewOfferingServiceServer(c, authorizer, dynamicClient, mapper, scheme)
+	if err != nil {
+		return err
+	}
 	apiserverv1.RegisterOfferingServiceServer(grpcServer, offeringServer)
-	if err := apiserverv1.RegisterOfferingServiceHandlerServer(context.Background(), grpcGatewayMux, offeringServer); err != nil {
+	if err := apiserverv1.RegisterOfferingServiceHandler(ctx, grpcGatewayMux, grpcClient); err != nil {
 		return err
 	}
+
+	instanceServer := v1.NewInstancesServer(c, mapper)
+	apiserverv1.RegisterInstancesServiceServer(grpcServer, instanceServer)
+	if err := apiserverv1.RegisterInstancesServiceHandler(ctx, grpcGatewayMux, grpcClient); err != nil {
+		return err
+	}
+
 	regionServer := v1.NewRegionServiceServer(c, authorizer)
 	apiserverv1.RegisterRegionServiceServer(grpcServer, regionServer)
-	if err := apiserverv1.RegisterRegionServiceHandlerServer(context.Background(), grpcGatewayMux, regionServer); err != nil {
+	if err := apiserverv1.RegisterRegionServiceHandler(ctx, grpcGatewayMux, grpcClient); err != nil {
 		return err
 	}
 	providerServer := v1.NewProviderServiceServer(c, authorizer)
 	apiserverv1.RegisterProviderServiceServer(grpcServer, providerServer)
-	if err := apiserverv1.RegisterProviderServiceHandlerServer(context.Background(), grpcGatewayMux, providerServer); err != nil {
-		return err
-	}
-	instanceServer := v1.NewInstancesServer(c, mapper)
-	apiserverv1.RegisterInstancesServiceServer(grpcServer, instanceServer)
-	if err := apiserverv1.RegisterInstancesServiceHandlerServer(context.Background(), grpcGatewayMux, instanceServer); err != nil {
+	if err := apiserverv1.RegisterProviderServiceHandler(ctx, grpcGatewayMux, grpcClient); err != nil {
 		return err
 	}
 
@@ -163,13 +281,6 @@ func runE(flags *flags, log logr.Logger) error {
 			grpcGatewayMux.ServeHTTP(writer, request)
 		}
 	})
-
-	log.Info("setting up OIDC auth middleware", "iss", flags.OIDCOptions.IssuerURL)
-	oidcMiddleware, err := oidc.NewOIDCMiddleware(log, flags.OIDCOptions)
-	if err != nil {
-		return fmt.Errorf("init OIDC Middleware: %w", err)
-	}
-	handler = oidcMiddleware(handler)
 
 	if len(flags.CORSAllowedOrigins) > 0 {
 		handler = handlers.CORS(
@@ -192,4 +303,22 @@ func runE(flags *flags, log logr.Logger) error {
 
 	log.Info("serving serving API-server", "address", flags.address)
 	return server.ListenAndServeTLS(flags.TLSCertFile, flags.TLSPrivateKeyFile)
+}
+
+func createInternalGRPCClient(ctx context.Context, flags *flags) (*grpc.ClientConn, error) {
+	certPool := x509.NewCertPool()
+	certs, err := ioutil.ReadFile(flags.TLSCertFile)
+	if err != nil {
+		return nil, err
+	}
+	certPool.AppendCertsFromPEM(certs)
+	// Create grpc client for watch api
+	grpcClient, err := grpc.DialContext(ctx, flags.address, grpc.WithTransportCredentials(credentials.NewTLS(&tls.Config{
+		InsecureSkipVerify: true,
+		RootCAs:            certPool,
+	})))
+	if err != nil {
+		return nil, err
+	}
+	return grpcClient, nil
 }

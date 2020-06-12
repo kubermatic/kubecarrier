@@ -18,13 +18,12 @@ package v1
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/golang/protobuf/ptypes/empty"
 	"github.com/golang/protobuf/ptypes/timestamp"
 
 	v1 "github.com/kubermatic/kubecarrier/pkg/apiserver/api/v1"
-	"github.com/kubermatic/kubecarrier/pkg/apiserver/internal/oidc"
+	"github.com/kubermatic/kubecarrier/pkg/apiserver/auth"
 	"github.com/kubermatic/kubecarrier/pkg/internal/version"
 )
 
@@ -47,12 +46,12 @@ func (v KubeCarrierServer) Version(context.Context, *v1.VersionRequest) (*v1.API
 }
 
 func (v KubeCarrierServer) WhoAmI(ctx context.Context, _ *empty.Empty) (*v1.UserInfo, error) {
-	user, present := oidc.ExtractUserInfo(ctx)
-	if !present {
-		return nil, fmt.Errorf("unauthorized")
+	userInfo, err := auth.ExtractUserInfo(ctx)
+	if err != nil {
+		return nil, err
 	}
 	return &v1.UserInfo{
-		User:   user.GetName(),
-		Groups: user.GetGroups(),
+		User:   userInfo.GetName(),
+		Groups: userInfo.GetGroups(),
 	}, nil
 }

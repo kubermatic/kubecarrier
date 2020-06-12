@@ -37,7 +37,7 @@ endif
 
 # Dev Image to use
 # Always bump this version, when changing ANY component version below.
-DEV_IMAGE_TAG=v3
+DEV_IMAGE_TAG=v4
 
 # Versions used to build DEV image:
 export GOLANGCI_LINT_VERSION=1.26.0
@@ -104,7 +104,7 @@ e2e-test-clean:
 
 clean: e2e-test-clean
 	rm -rf bin/$*
-.PHONEY: clean
+.PHONY: clean
 
 # ---------------
 # Code Generators
@@ -145,7 +145,7 @@ generate: generate-grpc generate-config
 # Create API Reference docs
 docs: bin/docgen
 	@hack/docgen.sh
-.PHONEY: docs
+.PHONY: docs
 
 # ------------
 # Test Runners
@@ -168,7 +168,8 @@ MANAGEMENT_KIND_CLUSTER?=kubecarrier-${TEST_ID}
 SVC_KIND_CLUSTER?=kubecarrier-svc-${TEST_ID}
 
 e2e-setup: install require-docker
-	@bash -c "kind create cluster --kubeconfig=${HOME}/.kube/kind-config-${MANAGEMENT_KIND_CLUSTER} --name=${MANAGEMENT_KIND_CLUSTER} --image=${KIND_NODE_IMAGE} & kind create cluster --kubeconfig=${HOME}/.kube/kind-config-${SVC_KIND_CLUSTER} --name=${SVC_KIND_CLUSTER} --image=${KIND_NODE_IMAGE} & wait < <(jobs -p)"
+	@kind create cluster --kubeconfig=${HOME}/.kube/kind-config-${MANAGEMENT_KIND_CLUSTER} --name=${MANAGEMENT_KIND_CLUSTER} --image=${KIND_NODE_IMAGE}
+	@kind create cluster --kubeconfig=${HOME}/.kube/kind-config-${SVC_KIND_CLUSTER} --name=${SVC_KIND_CLUSTER} --image=${KIND_NODE_IMAGE}
 	@kind get kubeconfig --internal --name=${MANAGEMENT_KIND_CLUSTER} | sed "s/kubecarrier-${TEST_ID}-control-plane/$$(docker  network inspect kind  | jq '.[0].Containers | to_entries | map(.value) | map(select(.Name == "kubecarrier-${TEST_ID}-control-plane"))[0].IPv4Address[:-3]' -r)/g" > "${HOME}/.kube/internal-kind-config-${MANAGEMENT_KIND_CLUSTER}"
 	@kind get kubeconfig --name=${MANAGEMENT_KIND_CLUSTER} > "${HOME}/.kube/kind-config-${MANAGEMENT_KIND_CLUSTER}"
 	@echo "Deploy cert-manger in management cluster"
@@ -215,7 +216,7 @@ tidy:
 require-docker:
 	@docker ps > /dev/null 2>&1 || start-docker.sh || (echo "cannot find running docker daemon nor can start new one" && false)
 	@[[ -z "${QUAY_IO_USERNAME}" ]] || ( echo "logging in to ${QUAY_IO_USERNAME}" && docker login -u ${QUAY_IO_USERNAME} -p ${QUAY_IO_PASSWORD} quay.io )
-.PHONEY: require-docker
+.PHONY: require-docker
 
 generate-ide-tasks:
 	@go run ./hack/gen-tasks.go -ldflags "${LD_FLAGS}"

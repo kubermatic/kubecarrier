@@ -18,14 +18,40 @@ package v1
 
 import (
 	"github.com/golang/protobuf/ptypes"
+	"google.golang.org/grpc/status"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	catalogv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/catalog/v1alpha1"
 	v1 "github.com/kubermatic/kubecarrier/pkg/apiserver/api/v1"
 	"github.com/kubermatic/kubecarrier/pkg/apiserver/internal/util"
 )
+
+const (
+	accountUserFieldIndex = "account.kubecarrier.io/user"
+)
+
+// RegisterAccountUsernameFieldIndex adds a field index for user names in Account.Spec.Subjects.
+func RegisterAccountUsernameFieldIndex(indexer client.FieldIndexer) error {
+	return indexer.IndexField(
+		&catalogv1alpha1.Account{}, accountUserFieldIndex,
+		func(obj runtime.Object) (values []string) {
+			account := obj.(*catalogv1alpha1.Account)
+			for _, subject := range account.Spec.Subjects {
+				values = append(values, subject.Name)
+			}
+			return
+		})
+}
+
+func accountByUsernameListOption(username string) client.ListOption {
+	return client.MatchingFields{
+		accountUserFieldIndex: username,
+	}
+}
 
 func ToMetav1(obj *v1.ObjectMeta) (*metav1.ObjectMeta, error) {
 
@@ -132,4 +158,8 @@ func convertListMeta(in metav1.ListMeta) (out *v1.ListMeta) {
 		ResourceVersion: in.ResourceVersion,
 	}
 	return
+}
+
+type toGRPCStatus interface {
+	GRPCStatus() *status.Status
 }

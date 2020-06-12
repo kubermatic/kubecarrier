@@ -19,10 +19,19 @@
   - apiGroups:
     - catalog.kubecarrier.io
     resources:
+    - accounts
+    verbs:
+    - get
+    - list
+    - watch
+  - apiGroups:
+    - catalog.kubecarrier.io
+    resources:
     - offerings
     verbs:
     - get
     - list
+    - watch
   - apiGroups:
     - catalog.kubecarrier.io
     resources:

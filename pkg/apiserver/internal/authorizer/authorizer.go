@@ -27,7 +27,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/apiutil"
 
-	"github.com/kubermatic/kubecarrier/pkg/apiserver/internal/oidc"
+	"github.com/kubermatic/kubecarrier/pkg/apiserver/auth"
 )
 
 type Authorizer struct {
@@ -53,9 +53,9 @@ func (a Authorizer) Authorize(
 	objType runtime.Object,
 	option AuthorizationOption,
 ) error {
-	user, present := oidc.ExtractUserInfo(ctx)
-	if !present {
-		return fmt.Errorf("cannot get user info from OIDC")
+	user, err := auth.ExtractUserInfo(ctx)
+	if err != nil {
+		return err
 	}
 	gvk, err := apiutil.GVKForObject(objType, a.scheme)
 	if err != nil {

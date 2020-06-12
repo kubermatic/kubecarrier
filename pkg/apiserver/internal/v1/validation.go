@@ -19,6 +19,7 @@ package v1
 import (
 	"fmt"
 
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -57,5 +58,21 @@ func validateListRequest(req *v1.ListRequest) ([]client.ListOption, error) {
 	if req.Continue != "" {
 		listOptions = append(listOptions, client.Continue(req.Continue))
 	}
+	return listOptions, nil
+}
+
+func validateWatchRequest(req *v1.WatchRequest) (metav1.ListOptions, error) {
+	var listOptions metav1.ListOptions
+	if req.Account == "" {
+		return listOptions, fmt.Errorf("missing namespace")
+	}
+	if req.LabelSelector != "" {
+		_, err := labels.Parse(req.LabelSelector)
+		if err != nil {
+			return listOptions, fmt.Errorf("invalid LabelSelector: %w", err)
+		}
+		listOptions.LabelSelector = req.LabelSelector
+	}
+	listOptions.ResourceVersion = req.ResourceVersion
 	return listOptions, nil
 }

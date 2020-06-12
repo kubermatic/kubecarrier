@@ -50,6 +50,9 @@ func NewInstancesServer(c client.Client, mapper meta.RESTMapper) v1.InstancesSer
 	}
 }
 func (o instanceServer) Create(ctx context.Context, req *v1.InstanceCreateRequest) (res *v1.Instance, err error) {
+	if err = o.validateCreateRequest(req); err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+	}
 	obj := &unstructured.Unstructured{}
 
 	gvk, err := o.gvkFromInstance(o.mapper, req.Offering, req.Version)
@@ -146,6 +149,9 @@ func (o instanceServer) Get(ctx context.Context, req *v1.InstanceGetRequest) (re
 }
 
 func (o instanceServer) Delete(ctx context.Context, req *v1.InstanceDeleteRequest) (*empty.Empty, error) {
+	if err := o.validateDeleteRequest(req); err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+	}
 	obj := &unstructured.Unstructured{}
 	gvk, err := o.gvkFromInstance(o.mapper, req.Offering, req.Version)
 	if err != nil {
@@ -158,6 +164,25 @@ func (o instanceServer) Delete(ctx context.Context, req *v1.InstanceDeleteReques
 		return nil, status.Errorf(codes.Internal, fmt.Sprintf("delete instance: %s", err.Error()))
 	}
 	return &empty.Empty{}, nil
+}
+
+func (o instanceServer) validateDeleteRequest(req *v1.InstanceDeleteRequest) error {
+	if req.Name == "" {
+		return fmt.Errorf("missing name")
+	}
+	if req.Offering == "" {
+		return fmt.Errorf("missing offering")
+	}
+	if len(strings.SplitN(req.Offering, ".", 2)) < 2 {
+		return fmt.Errorf("offering should have format: {kind}.{apiGroup}")
+	}
+	if req.Version == "" {
+		return fmt.Errorf("missing version")
+	}
+	if req.Account == "" {
+		return fmt.Errorf("missing namespace")
+	}
+	return nil
 }
 
 func (o instanceServer) validateListRequest(req *v1.InstanceListRequest) ([]client.ListOption, error) {
@@ -210,6 +235,29 @@ func (o instanceServer) validateGetRequest(req *v1.InstanceGetRequest) error {
 	if req.Account == "" {
 		return fmt.Errorf("missing namespace")
 	}
+	return nil
+}
+
+func (o instanceServer) validateCreateRequest(req *v1.InstanceCreateRequest) error {
+	if req.Offering == "" {
+		return fmt.Errorf("missing offering")
+	}
+	if len(strings.SplitN(req.Offering, ".", 2)) < 2 {
+		return fmt.Errorf("offering should have format: {kind}.{apiGroup}")
+	}
+	if req.Version == "" {
+		return fmt.Errorf("missing version")
+	}
+	if req.Account == "" {
+		return fmt.Errorf("missing namespace")
+	}
+	if req.Spec == nil {
+		return fmt.Errorf("missing spec")
+	}
+	if req.Spec.Metadata == nil && req.Spec.Metadata.Name == "" {
+		return fmt.Errorf("missing metadata name")
+	}
+
 	return nil
 }
 

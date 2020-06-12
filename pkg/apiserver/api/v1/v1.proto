@@ -18,20 +18,23 @@ syntax = "proto3";
 package kubecarrier.api.v1;
 option go_package = "v1";
 
-message GetRequest {
-  string name = 1;
-  string account = 2;
-}
+import "protoc-gen-swagger/options/annotations.proto";
 
-message ListRequest {
-  string account = 1;
-  string labelSelector = 2;
-  int64 limit = 3;
-  string continue = 4;
-}
-
-message WatchRequest {
-  string account = 1;
-  string labelSelector = 2;
-  string resourceVersion = 3;
-}
+option (grpc.gateway.protoc_gen_swagger.options.openapiv2_swagger) = {
+  info: {
+    title: "KubeCarrier API";
+    version: "1.0";
+    contact: {
+      name: "KubeCarrier Authors";
+      url: "https://kubermatic.com";
+    }
+    license: {
+      name: "Apache License 2.0";
+      url: "https://github.com/kubermatic/kubecarrier/blob/master/LICENSE";
+    }
+  }
+  external_docs: {
+    url: "https://docs.kubermatic.com/kubecarrier";
+    description: "KubeCarrier Documentation";
+  }
+};
