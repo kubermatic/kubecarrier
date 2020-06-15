@@ -26,23 +26,47 @@ import (
 
 	catalogv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/catalog/v1alpha1"
 	v1 "github.com/kubermatic/kubecarrier/pkg/apiserver/api/v1"
+	"github.com/kubermatic/kubecarrier/pkg/apiserver/internal/authorizer"
 )
 
 type regionServer struct {
-	client client.Client
+	client     client.Client
+	authorizer authorizer.Authorizer
 }
 
 var _ v1.RegionServiceServer = (*regionServer)(nil)
 
 // +kubebuilder:rbac:groups=catalog.kubecarrier.io,resources=regions,verbs=get;list
 
-func NewRegionServiceServer(c client.Client) v1.RegionServiceServer {
+func NewRegionServiceServer(c client.Client, authorizer authorizer.Authorizer) v1.RegionServiceServer {
 	return &regionServer{
-		client: c,
+		client:     c,
+		authorizer: authorizer,
 	}
 }
 
 func (o regionServer) List(ctx context.Context, req *v1.ListRequest) (res *v1.RegionList, err error) {
+	if err := o.authorizer.Authorize(ctx, &catalogv1alpha1.Region{}, authorizer.AuthorizationOption{
+		Namespace: req.Account,
+		Verb:      authorizer.RequestList,
+	}); err != nil {
+		return nil, status.Error(codes.Unauthenticated, err.Error())
+	}
+	return o.handleListRequest(ctx, req)
+}
+
+func (o regionServer) Get(ctx context.Context, req *v1.GetRequest) (res *v1.Region, err error) {
+	if err := o.authorizer.Authorize(ctx, &catalogv1alpha1.Region{}, authorizer.AuthorizationOption{
+		Name:      req.Name,
+		Namespace: req.Account,
+		Verb:      authorizer.RequestGet,
+	}); err != nil {
+		return nil, status.Error(codes.Unauthenticated, err.Error())
+	}
+	return o.handleGetRequest(ctx, req)
+}
+
+func (o regionServer) handleListRequest(ctx context.Context, req *v1.ListRequest) (res *v1.RegionList, err error) {
 	var listOptions []client.ListOption
 	listOptions, err = validateListRequest(req)
 	if err != nil {
@@ -60,7 +84,7 @@ func (o regionServer) List(ctx context.Context, req *v1.ListRequest) (res *v1.Re
 	return
 }
 
-func (o regionServer) Get(ctx context.Context, req *v1.GetRequest) (res *v1.Region, err error) {
+func (o regionServer) handleGetRequest(ctx context.Context, req *v1.GetRequest) (res *v1.Region, err error) {
 	if err = validateGetRequest(req); err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}

@@ -15,6 +15,12 @@ rules:
   - list
   - watch
 - apiGroups:
+  - authorization.k8s.io
+  resources:
+  - subjectaccessreviews
+  verbs:
+  - create
+- apiGroups:
   - catalog.kubecarrier.io
   resources:
   - accounts
