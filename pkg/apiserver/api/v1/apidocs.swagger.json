@@ -611,7 +611,7 @@
   "paths": {
     "/v1/accounts": {
       "get": {
-        "operationId": "List",
+        "operationId": "AccountService_List",
         "parameters": [
           {
             "in": "query",
@@ -641,7 +641,7 @@
     },
     "/v1/accounts/{account}/instances/{offering}/{version}": {
       "get": {
-        "operationId": "List",
+        "operationId": "InstancesService_List",
         "parameters": [
           {
             "description": "Account indicate namespace of the project/account",
@@ -703,7 +703,7 @@
         ]
       },
       "post": {
-        "operationId": "Create",
+        "operationId": "InstancesService_Create",
         "parameters": [
           {
             "description": "Account indicate namespace of the project/account",
@@ -756,7 +756,7 @@
     },
     "/v1/accounts/{account}/instances/{offering}/{version}/{name}": {
       "delete": {
-        "operationId": "Delete",
+        "operationId": "InstancesService_Delete",
         "parameters": [
           {
             "description": "Account indicate namespace of the project/account",
@@ -806,7 +806,7 @@
         ]
       },
       "get": {
-        "operationId": "Get",
+        "operationId": "InstancesService_Get",
         "parameters": [
           {
             "description": "Account indicate namespace of the project/account",
@@ -858,7 +858,7 @@
     },
     "/v1/accounts/{account}/offerings": {
       "get": {
-        "operationId": "List",
+        "operationId": "OfferingService_List",
         "parameters": [
           {
             "in": "path",
@@ -907,7 +907,7 @@
     },
     "/v1/accounts/{account}/offerings/{name}": {
       "get": {
-        "operationId": "Get",
+        "operationId": "OfferingService_Get",
         "parameters": [
           {
             "in": "path",
@@ -943,7 +943,7 @@
     },
     "/v1/accounts/{account}/providers": {
       "get": {
-        "operationId": "List",
+        "operationId": "ProviderService_List",
         "parameters": [
           {
             "in": "path",
@@ -992,7 +992,7 @@
     },
     "/v1/accounts/{account}/providers/{name}": {
       "get": {
-        "operationId": "Get",
+        "operationId": "ProviderService_Get",
         "parameters": [
           {
             "in": "path",
@@ -1028,7 +1028,7 @@
     },
     "/v1/accounts/{account}/regions": {
       "get": {
-        "operationId": "List",
+        "operationId": "RegionService_List",
         "parameters": [
           {
             "in": "path",
@@ -1077,7 +1077,7 @@
     },
     "/v1/accounts/{account}/regions/{name}": {
       "get": {
-        "operationId": "Get",
+        "operationId": "RegionService_Get",
         "parameters": [
           {
             "in": "path",
@@ -1113,29 +1113,7 @@
     },
     "/v1/openapi": {
       "get": {
-        "operationId": "OpenAPI",
-        "responses": {
-          "200": {
-            "description": "A successful response.",
-            "schema": {
-              "$ref": "#/definitions/google.api.HttpBody"
-            }
-          },
-          "default": {
-            "description": "An unexpected error response",
-            "schema": {
-              "$ref": "#/definitions/grpc.gateway.runtime.Error"
-            }
-          }
-        },
-        "tags": [
-          "Doc"
-        ]
-      }
-    },
-    "/v1/swagger": {
-      "get": {
-        "operationId": "Swagger",
+        "operationId": "Doc_OpenAPI",
         "responses": {
           "200": {
             "description": "A successful response.",
@@ -1157,7 +1135,7 @@
     },
     "/v1/swagger/{path}": {
       "get": {
-        "operationId": "SwaggerStatic",
+        "operationId": "Doc_Swagger",
         "parameters": [
           {
             "in": "path",
@@ -1180,6 +1158,7 @@
             }
           }
         },
+        "summary": "Serves the Swagger UI and it's resources. Path defaults to index.html.",
         "tags": [
           "Doc"
         ]
@@ -1187,7 +1166,7 @@
     },
     "/v1/version": {
       "get": {
-        "operationId": "Version",
+        "operationId": "KubeCarrier_Version",
         "responses": {
           "200": {
             "description": "A successful response.",
@@ -1209,7 +1188,7 @@
     },
     "/v1/watch/accounts/{account}/offerings": {
       "get": {
-        "operationId": "Watch",
+        "operationId": "OfferingService_Watch",
         "parameters": [
           {
             "in": "path",
@@ -1260,7 +1239,7 @@
     },
     "/v1/whoami": {
       "get": {
-        "operationId": "WhoAmI",
+        "operationId": "KubeCarrier_WhoAmI",
         "responses": {
           "200": {
             "description": "A successful response.",
