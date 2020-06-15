@@ -37,7 +37,7 @@ endif
 
 # Dev Image to use
 # Always bump this version, when changing ANY component version below.
-DEV_IMAGE_TAG=v4
+DEV_IMAGE_TAG=v5
 
 # Versions used to build DEV image:
 export GOLANGCI_LINT_VERSION=1.26.0
@@ -45,7 +45,7 @@ export STATIK_VERSION=0.1.8
 export CONTROLLER_GEN_VERSION=0.2.9
 export PROTOC_VERSION=3.11.4
 export PROTOC_GEN_GO_VERSION=1.3.5
-export PROTOC_GRPC_GATEWAY_VERSION=1.14.3
+export PROTOC_GRPC_GATEWAY_VERSION=1.14.5
 export TESTIFY_VERSION=1.4.0
 
 # every makefile operation should have explicit kubeconfig
