@@ -21,6 +21,9 @@ import (
 	"fmt"
 
 	"github.com/go-logr/logr"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 	authv1 "k8s.io/api/authorization/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -44,6 +47,45 @@ func NewAuthorizer(log logr.Logger, scheme *runtime.Scheme, client client.Client
 		client:     client,
 		restMapper: restMapper,
 	}
+}
+
+type authorizer interface {
+	Authorize(context.Context, Authorizer) error
+}
+
+func (a Authorizer) UnaryServerInterceptor() grpc.UnaryServerInterceptor {
+	return func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
+		if v, ok := req.(authorizer); ok {
+			if err := v.Authorize(ctx, a); err != nil {
+				return nil, status.Error(codes.Unauthenticated, err.Error())
+			}
+		}
+		return handler(ctx, req)
+	}
+}
+
+func (a Authorizer) StreamServerInterceptor() grpc.StreamServerInterceptor {
+	return func(srv interface{}, stream grpc.ServerStream, info *grpc.StreamServerInfo, handler grpc.StreamHandler) error {
+		wrapper := &recvWrapper{stream, a}
+		return handler(srv, wrapper)
+	}
+}
+
+type recvWrapper struct {
+	grpc.ServerStream
+	a Authorizer
+}
+
+func (s *recvWrapper) RecvMsg(m interface{}) error {
+	if err := s.ServerStream.RecvMsg(m); err != nil {
+		return err
+	}
+	if v, ok := m.(authorizer); ok {
+		if err := v.Authorize(s.Context(), s.a); err != nil {
+			return status.Error(codes.Unauthenticated, err.Error())
+		}
+	}
+	return nil
 }
 
 // +kubebuilder:rbac:groups=authorization.k8s.io,resources=subjectaccessreviews,verbs=create

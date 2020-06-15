@@ -69,27 +69,6 @@ func NewOfferingServiceServer(c client.Client, authorizer authorizer.Authorizer,
 }
 
 func (o offeringServer) List(ctx context.Context, req *v1.ListRequest) (res *v1.OfferingList, err error) {
-	if err := o.authorizer.Authorize(ctx, &catalogv1alpha1.Offering{}, authorizer.AuthorizationOption{
-		Namespace: req.Account,
-		Verb:      authorizer.RequestList,
-	}); err != nil {
-		return nil, status.Error(codes.Unauthenticated, err.Error())
-	}
-	return o.handleListRequest(ctx, req)
-}
-
-func (o offeringServer) Get(ctx context.Context, req *v1.GetRequest) (res *v1.Offering, err error) {
-	if err := o.authorizer.Authorize(ctx, &catalogv1alpha1.Offering{}, authorizer.AuthorizationOption{
-		Name:      req.Name,
-		Namespace: req.Account,
-		Verb:      authorizer.RequestGet,
-	}); err != nil {
-		return nil, status.Error(codes.Unauthenticated, err.Error())
-	}
-	return o.handleGetRequest(ctx, req)
-}
-
-func (o offeringServer) handleListRequest(ctx context.Context, req *v1.ListRequest) (res *v1.OfferingList, err error) {
 	listOptions, err := req.GetListOptions()
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
@@ -106,7 +85,7 @@ func (o offeringServer) handleListRequest(ctx context.Context, req *v1.ListReque
 	return
 }
 
-func (o offeringServer) handleGetRequest(ctx context.Context, req *v1.GetRequest) (res *v1.Offering, err error) {
+func (o offeringServer) Get(ctx context.Context, req *v1.GetRequest) (res *v1.Offering, err error) {
 	offering := &catalogv1alpha1.Offering{}
 	if err = o.client.Get(ctx, types.NamespacedName{
 		Name:      req.Name,
