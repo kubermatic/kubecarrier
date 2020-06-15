@@ -28,9 +28,10 @@ require (
 	github.com/spf13/cobra v0.0.5
 	github.com/spf13/pflag v1.0.5
 	github.com/stretchr/testify v1.4.0
+	github.com/tg123/go-htpasswd v1.0.0
 	github.com/thetechnick/statik v0.1.8
 	go.uber.org/zap v1.10.0
-	golang.org/x/crypto v0.0.0-20191206172530-e9b2fee46413
+	golang.org/x/crypto v0.0.0-20200115085410-6d4e4cb37c7d
 	google.golang.org/genproto v0.0.0-20200424135956-bca184e23272
 	google.golang.org/grpc v1.28.0
 	k8s.io/api v0.17.3

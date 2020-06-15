@@ -38,6 +38,11 @@ func TestManifests(t *testing.T) {
 		Name:      "foo",
 		Spec: operatorv1alpha1.APIServerSpec{
 			OIDC: &operatorv1alpha1.APIServerOIDCConfig{},
+			StaticUsers: &operatorv1alpha1.StaticUsers{
+				HtpasswdSecret: operatorv1alpha1.ObjectReference{
+					Name: "test-secret",
+				},
+			},
 		},
 	}
 

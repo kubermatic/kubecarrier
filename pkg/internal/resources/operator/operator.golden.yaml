@@ -128,6 +128,22 @@
                   - clientID
                   - issuerURL
                   type: object
+                staticUsers:
+                  description: StaticUsers specifies static users configuration for
+                    API Server authentication
+                  properties:
+                    htpasswdSecret:
+                      description: HtpassswdSecret specifies the htpasswd secret to
+                        use for static user authentication.
+                      properties:
+                        name:
+                          type: string
+                      required:
+                      - name
+                      type: object
+                  required:
+                  - htpasswdSecret
+                  type: object
                 tlsSecretRef:
                   description: TLSSecretRef references the TLS certificate and private
                     key for serving the KubeCarrier API.
@@ -800,6 +816,22 @@
                       - certificateAuthority
                       - clientID
                       - issuerURL
+                      type: object
+                    staticUsers:
+                      description: StaticUsers specifies static users configuration
+                        for API Server authentication
+                      properties:
+                        htpasswdSecret:
+                          description: HtpassswdSecret specifies the htpasswd secret
+                            to use for static user authentication.
+                          properties:
+                            name:
+                              type: string
+                          required:
+                          - name
+                          type: object
+                      required:
+                      - htpasswdSecret
                       type: object
                     tlsSecretRef:
                       description: TLSSecretRef references the TLS certificate and
