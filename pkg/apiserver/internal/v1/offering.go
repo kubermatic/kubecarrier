@@ -33,12 +33,14 @@ import (
 
 	catalogv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/catalog/v1alpha1"
 	v1 "github.com/kubermatic/kubecarrier/pkg/apiserver/api/v1"
+	"github.com/kubermatic/kubecarrier/pkg/apiserver/internal/authorizer"
 )
 
 type offeringServer struct {
 	client        client.Client
 	dynamicClient dynamic.Interface
 	scheme        *runtime.Scheme
+	authorizer    authorizer.Authorizer
 
 	gvr schema.GroupVersionResource
 }
@@ -47,11 +49,12 @@ var _ v1.OfferingServiceServer = (*offeringServer)(nil)
 
 // +kubebuilder:rbac:groups=catalog.kubecarrier.io,resources=offerings,verbs=get;list;watch
 
-func NewOfferingServiceServer(c client.Client, dynamicClient dynamic.Interface, restMapper meta.RESTMapper, scheme *runtime.Scheme) (v1.OfferingServiceServer, error) {
+func NewOfferingServiceServer(c client.Client, authorizer authorizer.Authorizer, dynamicClient dynamic.Interface, restMapper meta.RESTMapper, scheme *runtime.Scheme) (v1.OfferingServiceServer, error) {
 	offeringServer := &offeringServer{
 		client:        c,
 		dynamicClient: dynamicClient,
 		scheme:        scheme,
+		authorizer:    authorizer,
 	}
 	objGVK, err := apiutil.GVKForObject(&catalogv1alpha1.Offering{}, offeringServer.scheme)
 	if err != nil {
@@ -66,6 +69,27 @@ func NewOfferingServiceServer(c client.Client, dynamicClient dynamic.Interface, 
 }
 
 func (o offeringServer) List(ctx context.Context, req *v1.ListRequest) (res *v1.OfferingList, err error) {
+	if err := o.authorizer.Authorize(ctx, &catalogv1alpha1.Offering{}, authorizer.AuthorizationOption{
+		Namespace: req.Account,
+		Verb:      authorizer.RequestList,
+	}); err != nil {
+		return nil, status.Error(codes.Unauthenticated, err.Error())
+	}
+	return o.handleListRequest(ctx, req)
+}
+
+func (o offeringServer) Get(ctx context.Context, req *v1.GetRequest) (res *v1.Offering, err error) {
+	if err := o.authorizer.Authorize(ctx, &catalogv1alpha1.Offering{}, authorizer.AuthorizationOption{
+		Name:      req.Name,
+		Namespace: req.Account,
+		Verb:      authorizer.RequestGet,
+	}); err != nil {
+		return nil, status.Error(codes.Unauthenticated, err.Error())
+	}
+	return o.handleGetRequest(ctx, req)
+}
+
+func (o offeringServer) handleListRequest(ctx context.Context, req *v1.ListRequest) (res *v1.OfferingList, err error) {
 	var listOptions []client.ListOption
 	listOptions, err = validateListRequest(req)
 	if err != nil {
@@ -83,7 +107,7 @@ func (o offeringServer) List(ctx context.Context, req *v1.ListRequest) (res *v1.
 	return
 }
 
-func (o offeringServer) Get(ctx context.Context, req *v1.GetRequest) (res *v1.Offering, err error) {
+func (o offeringServer) handleGetRequest(ctx context.Context, req *v1.GetRequest) (res *v1.Offering, err error) {
 	if err = validateGetRequest(req); err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
@@ -102,6 +126,12 @@ func (o offeringServer) Get(ctx context.Context, req *v1.GetRequest) (res *v1.Of
 }
 
 func (o offeringServer) Watch(req *v1.WatchRequest, stream v1.OfferingService_WatchServer) error {
+	if err := o.authorizer.Authorize(stream.Context(), &catalogv1alpha1.Offering{}, authorizer.AuthorizationOption{
+		Namespace: req.Account,
+		Verb:      authorizer.RequestWatch,
+	}); err != nil {
+		return status.Error(codes.Unauthenticated, err.Error())
+	}
 	listOptions, err := validateWatchRequest(req)
 	if err != nil {
 		return status.Error(codes.InvalidArgument, err.Error())
