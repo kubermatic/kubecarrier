@@ -233,6 +233,7 @@ func (s *APIServerStatus) SetCondition(condition APIServerCondition) {
 // APIServer manages the deployment of the KubeCarrier central API server.
 // +kubebuilder:object:root=true
 // +kubebuilder:subresource:status
+// +kubebuilder:resource:categories=all
 // +kubebuilder:printcolumn:name="Status",type="string",JSONPath=".status.phase"
 // +kubebuilder:printcolumn:name="Age",type="date",JSONPath=".metadata.creationTimestamp"
 type APIServer struct {

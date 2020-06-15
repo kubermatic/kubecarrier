@@ -9,6 +9,7 @@ spec:
   group: catalog.kubecarrier.io
   names:
     categories:
+      - all
       - kubecarrier-provider
     kind: CatalogEntry
     listKind: CatalogEntryList
