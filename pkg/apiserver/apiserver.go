@@ -172,6 +172,7 @@ func runE(flags *flags, log logr.Logger) error {
 			grpc_prometheus.StreamServerInterceptor,
 			grpc_zap.StreamServerInterceptor(util.ZapLogger),
 			grpc_auth.StreamServerInterceptor(authFunc),
+			authz.StreamServerInterceptor(),
 			grpc_validator.StreamServerInterceptor(),
 		)),
 		grpc.UnaryInterceptor(grpc_middleware.ChainUnaryServer(
@@ -250,7 +251,7 @@ func runE(flags *flags, log logr.Logger) error {
 	if err := apiserverv1.RegisterKubeCarrierHandler(ctx, grpcGatewayMux, grpcClient); err != nil {
 		return err
 	}
-	offeringServer, err := v1.NewOfferingServiceServer(c, authz, dynamicClient, mapper, scheme)
+	offeringServer, err := v1.NewOfferingServiceServer(c, dynamicClient, mapper, scheme)
 	if err != nil {
 		return err
 	}
@@ -265,12 +266,12 @@ func runE(flags *flags, log logr.Logger) error {
 		return err
 	}
 
-	regionServer := v1.NewRegionServiceServer(c, authz)
+	regionServer := v1.NewRegionServiceServer(c)
 	apiserverv1.RegisterRegionServiceServer(grpcServer, regionServer)
 	if err := apiserverv1.RegisterRegionServiceHandler(ctx, grpcGatewayMux, grpcClient); err != nil {
 		return err
 	}
-	providerServer := v1.NewProviderServiceServer(c, authz)
+	providerServer := v1.NewProviderServiceServer(c)
 	apiserverv1.RegisterProviderServiceServer(grpcServer, providerServer)
 	if err := apiserverv1.RegisterProviderServiceHandler(ctx, grpcGatewayMux, grpcClient); err != nil {
 		return err
