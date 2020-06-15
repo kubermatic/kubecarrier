@@ -26,23 +26,47 @@ import (
 
 	catalogv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/catalog/v1alpha1"
 	v1 "github.com/kubermatic/kubecarrier/pkg/apiserver/api/v1"
+	"github.com/kubermatic/kubecarrier/pkg/apiserver/internal/authorizer"
 )
 
 type providerServer struct {
-	client client.Client
+	client     client.Client
+	authorizer authorizer.Authorizer
 }
 
 var _ v1.ProviderServiceServer = (*providerServer)(nil)
 
 // +kubebuilder:rbac:groups=catalog.kubecarrier.io,resources=providers,verbs=get;list
 
-func NewProviderServiceServer(c client.Client) v1.ProviderServiceServer {
+func NewProviderServiceServer(c client.Client, authorizer authorizer.Authorizer) v1.ProviderServiceServer {
 	return &providerServer{
-		client: c,
+		client:     c,
+		authorizer: authorizer,
 	}
 }
 
 func (o providerServer) List(ctx context.Context, req *v1.ListRequest) (res *v1.ProviderList, err error) {
+	if err := o.authorizer.Authorize(ctx, &catalogv1alpha1.Provider{}, authorizer.AuthorizationOption{
+		Namespace: req.Account,
+		Verb:      authorizer.RequestList,
+	}); err != nil {
+		return nil, status.Error(codes.Unauthenticated, err.Error())
+	}
+	return o.handleListRequest(ctx, req)
+}
+
+func (o providerServer) Get(ctx context.Context, req *v1.GetRequest) (res *v1.Provider, err error) {
+	if err := o.authorizer.Authorize(ctx, &catalogv1alpha1.Provider{}, authorizer.AuthorizationOption{
+		Name:      req.Name,
+		Namespace: req.Account,
+		Verb:      authorizer.RequestGet,
+	}); err != nil {
+		return nil, status.Error(codes.Unauthenticated, err.Error())
+	}
+	return o.handleGetRequest(ctx, req)
+}
+
+func (o providerServer) handleListRequest(ctx context.Context, req *v1.ListRequest) (res *v1.ProviderList, err error) {
 	listOptions, err := req.GetListOptions()
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
@@ -59,7 +83,7 @@ func (o providerServer) List(ctx context.Context, req *v1.ListRequest) (res *v1.
 	return
 }
 
-func (o providerServer) Get(ctx context.Context, req *v1.GetRequest) (res *v1.Provider, err error) {
+func (o providerServer) handleGetRequest(ctx context.Context, req *v1.GetRequest) (res *v1.Provider, err error) {
 	provider := &catalogv1alpha1.Provider{}
 	if err = o.client.Get(ctx, types.NamespacedName{
 		Name:      req.Name,

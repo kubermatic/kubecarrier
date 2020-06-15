@@ -290,7 +290,7 @@ func TestListOffering(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			offerings, err := offeringServer.List(ctx, test.req)
+			offerings, err := offeringServer.handleListRequest(ctx, test.req)
 			assert.Equal(t, test.expectedError, err)
 			assert.Equal(t, test.expectedResult, offerings)
 		})
@@ -389,7 +389,7 @@ func TestGetOffering(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			offering, err := offeringServer.Get(ctx, test.req)
+			offering, err := offeringServer.handleGetRequest(ctx, test.req)
 			assert.Equal(t, test.expectedError, err)
 			assert.Equal(t, test.expectedResult, offering)
 		})
