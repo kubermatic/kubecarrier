@@ -56,7 +56,9 @@ import (
 	apiserverv1 "github.com/kubermatic/kubecarrier/pkg/apiserver/api/v1"
 	"github.com/kubermatic/kubecarrier/pkg/apiserver/auth"
 	_ "github.com/kubermatic/kubecarrier/pkg/apiserver/internal/auth/anonymous"
+	_ "github.com/kubermatic/kubecarrier/pkg/apiserver/internal/auth/htpasswd"
 	_ "github.com/kubermatic/kubecarrier/pkg/apiserver/internal/auth/oidc"
+	"github.com/kubermatic/kubecarrier/pkg/apiserver/internal/authorizer"
 	v1 "github.com/kubermatic/kubecarrier/pkg/apiserver/internal/v1"
 	"github.com/kubermatic/kubecarrier/pkg/internal/util"
 )
@@ -240,11 +242,13 @@ func runE(flags *flags, log logr.Logger) error {
 		return err
 	}
 
+	authorizer := authorizer.NewAuthorizer(log, scheme, c, mapper)
+
 	apiserverv1.RegisterKubeCarrierServer(grpcServer, &v1.KubeCarrierServer{})
 	if err := apiserverv1.RegisterKubeCarrierHandler(ctx, grpcGatewayMux, grpcClient); err != nil {
 		return err
 	}
-	offeringServer, err := v1.NewOfferingServiceServer(c, dynamicClient, mapper, scheme)
+	offeringServer, err := v1.NewOfferingServiceServer(c, authorizer, dynamicClient, mapper, scheme)
 	if err != nil {
 		return err
 	}
@@ -259,12 +263,12 @@ func runE(flags *flags, log logr.Logger) error {
 		return err
 	}
 
-	regionServer := v1.NewRegionServiceServer(c)
+	regionServer := v1.NewRegionServiceServer(c, authorizer)
 	apiserverv1.RegisterRegionServiceServer(grpcServer, regionServer)
 	if err := apiserverv1.RegisterRegionServiceHandler(ctx, grpcGatewayMux, grpcClient); err != nil {
 		return err
 	}
-	providerServer := v1.NewProviderServiceServer(c)
+	providerServer := v1.NewProviderServiceServer(c, authorizer)
 	apiserverv1.RegisterProviderServiceServer(grpcServer, providerServer)
 	if err := apiserverv1.RegisterProviderServiceHandler(ctx, grpcGatewayMux, grpcClient); err != nil {
 		return err

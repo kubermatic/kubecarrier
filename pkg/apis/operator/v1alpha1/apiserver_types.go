@@ -29,6 +29,14 @@ type APIServerSpec struct {
 	// OIDC specifies OpenID Connect configuration for API Server authentication
 	// +optional
 	OIDC *APIServerOIDCConfig `json:"oidc,omitempty"`
+	// StaticUsers specifies static users configuration for API Server authentication
+	// +optional
+	StaticUsers *StaticUsers `json:"staticUsers,omitempty"`
+}
+
+type StaticUsers struct {
+	// HtpassswdSecret specifies the htpasswd secret to use for static user authentication.
+	HtpasswdSecret ObjectReference `json:"htpasswdSecret"`
 }
 
 type APIServerOIDCConfig struct {

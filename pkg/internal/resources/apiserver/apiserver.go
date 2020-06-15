@@ -125,6 +125,23 @@ func Manifests(c Config) ([]unstructured.Unstructured, error) {
 			},
 		},
 	}
+	if c.Spec.StaticUsers != nil {
+		containers := deploymentPatch.Spec.Template.Spec.Containers
+		for i, container := range containers {
+			if container.Name == "manager" {
+				containers[i].Args = append(containers[i].Args,
+					"--htpasswd-secret-name=$(HTPASSWD_SECRET_NAME)",
+				)
+				containers[i].Env = append(containers[i].Env,
+					corev1.EnvVar{
+						Name:  "HTPASSWD_SECRET_NAME",
+						Value: c.Spec.StaticUsers.HtpasswdSecret.Name,
+					},
+				)
+				supportedAuth = append(supportedAuth, "Htpasswd")
+			}
+		}
+	}
 	if c.Spec.OIDC != nil {
 		extraArgs := make([]string, 0)
 		if len(c.Spec.OIDC.RequiredClaims) > 0 {
@@ -190,11 +207,6 @@ func Manifests(c Config) ([]unstructured.Unstructured, error) {
 				})
 
 				supportedAuth = append(supportedAuth, "OIDC")
-				for j, env := range containers[i].Env {
-					if env.Name == AuthModeEnv {
-						containers[i].Env[j].Value = strings.Join(supportedAuth, ",")
-					}
-				}
 			}
 		}
 		deploymentPatch.Spec.Template.Spec.Volumes = append(deploymentPatch.Spec.Template.Spec.Volumes, corev1.Volume{
@@ -208,17 +220,18 @@ func Manifests(c Config) ([]unstructured.Unstructured, error) {
 	}
 	if len(supportedAuth) == 0 {
 		supportedAuth = append(supportedAuth, "Anonymous")
-		containers := deploymentPatch.Spec.Template.Spec.Containers
-		for i, container := range containers {
-			if container.Name == "manager" {
-				for j, env := range containers[i].Env {
-					if env.Name == AuthModeEnv {
-						containers[i].Env[j].Value = strings.Join(supportedAuth, ",")
-					}
+	}
+	containers := deploymentPatch.Spec.Template.Spec.Containers
+	for i, container := range containers {
+		if container.Name == "manager" {
+			for j, env := range containers[i].Env {
+				if env.Name == AuthModeEnv {
+					containers[i].Env[j].Value = strings.Join(supportedAuth, ",")
 				}
 			}
 		}
 	}
+
 	managerEnvBytes, err := yaml.Marshal(deploymentPatch)
 	if err != nil {
 		return nil, fmt.Errorf("marshalling manager env patch: %w", err)
