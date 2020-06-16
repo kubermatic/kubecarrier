@@ -161,6 +161,12 @@ func newAPIServer(f *testutil.Framework) func(t *testing.T) {
 			authModes(ctx, certPool, managementClient, f)(t)
 		})
 
+		docClient := apiserverv1.NewDocClient(conn)
+		_, err = docClient.Swagger(ctx, &apiserverv1.DocStaticRequest{Path: "/"})
+		if assert.NoError(t, err, "docs gRPC") {
+			t.Log("Docs")
+		}
+
 		// Create an account to test authorization
 		accountName := "kubecarrier-admin"
 		account := testutil.NewTenantAccount(accountName, rbacv1.Subject{
