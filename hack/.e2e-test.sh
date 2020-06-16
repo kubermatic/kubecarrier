@@ -25,6 +25,7 @@ function cleanup() {
   kind export logs --name ${SVC_KIND_CLUSTER} ${workdir}/svc
   docker cp ${MANAGEMENT_KIND_CLUSTER}-control-plane:/var/log/kube-apiserver-audit.log ${workdir}/management/audit.log
   docker cp ${SVC_KIND_CLUSTER}-control-plane:/var/log/kube-apiserver-audit.log ${workdir}/svc/audit.log
+  echo "find all logs in ${workdir}"
 
   # https://github.com/kubernetes/test-infra/blob/master/prow/jobs.md#job-environment-variables
   local JOB_LOG=${PULL_NUMBER:-}-${JOB_NAME:-}-${BUILD_ID:-}
