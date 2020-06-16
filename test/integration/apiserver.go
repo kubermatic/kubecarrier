@@ -50,6 +50,7 @@ import (
 	corev1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/core/v1alpha1"
 	operatorv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/operator/v1alpha1"
 	apiserverv1 "github.com/kubermatic/kubecarrier/pkg/apiserver/api/v1"
+	v1 "github.com/kubermatic/kubecarrier/pkg/apiserver/api/v1"
 	"github.com/kubermatic/kubecarrier/pkg/testutil"
 )
 
@@ -212,6 +213,11 @@ func newAPIServer(f *testutil.Framework) func(t *testing.T) {
 			t.Log("User info:")
 			testutil.LogObject(t, userInfo)
 			assert.Equal(t, "admin@kubecarrier.io", userInfo.User)
+		}
+		docClient := apiserverv1.NewDocClient(conn)
+		_, err = docClient.Swagger(ctx, &v1.DocStaticRequest{Path: "/"})
+		if assert.NoError(t, err, "docs gRPC") {
+			t.Log("Docs")
 		}
 
 		// Create an account to test authorization
