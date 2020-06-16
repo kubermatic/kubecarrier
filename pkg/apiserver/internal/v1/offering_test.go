@@ -21,8 +21,6 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	fakeclient "sigs.k8s.io/controller-runtime/pkg/client/fake"
@@ -131,32 +129,6 @@ func TestListOffering(t *testing.T) {
 		expectedError  error
 		expectedResult *v1.OfferingList
 	}{
-		{
-			name: "missing namespace",
-			req: &v1.ListRequest{
-				Account: "",
-			},
-			expectedError:  status.Errorf(codes.InvalidArgument, "missing namespace"),
-			expectedResult: nil,
-		},
-		{
-			name: "invalid limit",
-			req: &v1.ListRequest{
-				Account: "test-namespace",
-				Limit:   -1,
-			},
-			expectedError:  status.Errorf(codes.InvalidArgument, "invalid limit: should not be negative number"),
-			expectedResult: nil,
-		},
-		{
-			name: "invalid label selector",
-			req: &v1.ListRequest{
-				Account:       "test-namespace",
-				LabelSelector: "test-label=====offering1",
-			},
-			expectedError:  status.Errorf(codes.InvalidArgument, "invalid LabelSelector: unable to parse requirement: found '==', expected: identifier"),
-			expectedResult: nil,
-		},
 		{
 			name: "valid request",
 			req: &v1.ListRequest{

@@ -200,7 +200,7 @@ func (req *ListRequest) Validate() error {
 		return err
 	}
 	if err := validateLabelSelector(req); err != nil {
-		return err
+		return fmt.Errorf("invalid LabelSelector: %w", err)
 	}
 	if err := validateLimit(req); err != nil {
 		return err
@@ -213,7 +213,7 @@ func (req *WatchRequest) Validate() error {
 		return err
 	}
 	if err := validateLabelSelector(req); err != nil {
-		return err
+		return fmt.Errorf("invalid LabelSelector: %w", err)
 	}
 	return nil
 }

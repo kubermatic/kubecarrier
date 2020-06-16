@@ -21,6 +21,7 @@ import (
 	"errors"
 	fmt "fmt"
 
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/yaml"
@@ -138,16 +139,12 @@ func (req *AccountListRequest) GetListOptions() (*client.ListOptions, error) {
 
 func (req *WatchRequest) GetListOptions() (*client.ListOptions, error) {
 	listOptions := &client.ListOptions{}
-	namespace, err := GetInNamespaceOption(req)
-	if err != nil {
-		return nil, err
-	}
-	namespace.ApplyToList(listOptions)
 	ls, err := GetLabelsSelectorOption(req)
 	if err != nil {
 		return nil, err
 	}
 	ls.ApplyToList(listOptions)
+	listOptions.Raw = &metav1.ListOptions{ResourceVersion: req.ResourceVersion}
 	return listOptions, nil
 }
 

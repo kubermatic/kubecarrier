@@ -99,7 +99,7 @@ func TestValidateListRequest(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			_, err := test.req.GetListOptions()
+			err := test.req.Validate()
 			if err == nil {
 				assert.Equal(t, test.expectedError, err)
 			} else {
@@ -141,7 +141,7 @@ func TestValidateWatchRequest(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			_, err := test.req.GetListOptions()
+			err := test.req.Validate()
 			if err == nil {
 				assert.Equal(t, test.expectedError, err)
 			} else {
