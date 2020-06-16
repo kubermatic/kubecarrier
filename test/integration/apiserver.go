@@ -156,43 +156,7 @@ func newAPIServer(f *testutil.Framework) func(t *testing.T) {
 
 		conn, err := newGRPCConn(ctx, certPool, gRPCWithAuthToken{token: token})
 		require.NoError(t, err)
-		client := apiserverv1.NewKubeCarrierClient(conn)
-		userInfo, err := client.WhoAmI(ctx, &empty.Empty{}, grpc.PerRPCCredentials(gRPCBasicAuthToken{username: username, password: password}))
-		if assert.NoError(t, err, "whoami gRPC") {
-			t.Log("User info:")
-			testutil.LogObject(t, userInfo)
-			assert.Equal(t, "user1", userInfo.User)
-		}
-
-		require.NoError(t, err)
-		client = apiserverv1.NewKubeCarrierClient(conn)
-		versionCtx, cancel := context.WithTimeout(ctx, 30*time.Second)
-		t.Cleanup(cancel)
-		require.NoError(t, wait.PollUntil(time.Second, func() (done bool, err error) {
-			version, err := client.Version(versionCtx, &apiserverv1.VersionRequest{})
-			if err == nil {
-				assert.NotEmpty(t, version.Version)
-				assert.NotEmpty(t, version.Branch)
-				assert.NotEmpty(t, version.BuildDate)
-				assert.NotEmpty(t, version.GoVersion)
-				t.Log("got response for gRPC server version")
-				return true, nil
-			}
-			if grpcStatus, ok := status.FromError(err); ok {
-				if grpcStatus.Code() == codes.Unavailable {
-					t.Log("gRPC server temporary unavailable, retrying")
-					return false, nil
-				}
-				t.Logf("gRPC server errored out, retrying : %d %v %v",
-					grpcStatus.Code(),
-					grpcStatus.Message(),
-					grpcStatus.Err(),
-				)
-				return false, nil
-			}
-			return false, err
-		}, versionCtx.Done()), "client version gRPC call")
-
+		testRunningAPIServer(t, ctx, conn)
 		t.Run("auth-modes", func(t *testing.T) {
 			authModes(ctx, certPool, managementClient, f)(t)
 		})
@@ -223,6 +187,36 @@ func newAPIServer(f *testutil.Framework) func(t *testing.T) {
 			})
 		}
 	}
+}
+
+func testRunningAPIServer(t *testing.T, ctx context.Context, conn *grpc.ClientConn) {
+	client := apiserverv1.NewKubeCarrierClient(conn)
+	versionCtx, cancel := context.WithTimeout(ctx, 30*time.Second)
+	t.Cleanup(cancel)
+	require.NoError(t, wait.PollUntil(time.Second, func() (done bool, err error) {
+		version, err := client.Version(versionCtx, &apiserverv1.VersionRequest{})
+		if err == nil {
+			assert.NotEmpty(t, version.Version)
+			assert.NotEmpty(t, version.Branch)
+			assert.NotEmpty(t, version.BuildDate)
+			assert.NotEmpty(t, version.GoVersion)
+			t.Log("got response for gRPC server version")
+			return true, nil
+		}
+		if grpcStatus, ok := status.FromError(err); ok {
+			if grpcStatus.Code() == codes.Unavailable {
+				t.Log("gRPC server temporary unavailable, retrying")
+				return false, nil
+			}
+			t.Logf("gRPC server errored out, retrying : %d %v %v",
+				grpcStatus.Code(),
+				grpcStatus.Message(),
+				grpcStatus.Err(),
+			)
+			return false, nil
+		}
+		return false, err
+	}, versionCtx.Done()), "client version gRPC call")
 }
 
 func newGRPCConn(ctx context.Context, certPool *x509.CertPool, creds credentials.PerRPCCredentials) (*grpc.ClientConn, error) {
@@ -269,6 +263,7 @@ func authModes(ctx context.Context, certPool *x509.CertPool, managementClient *t
 		})
 
 		t.Run("htpasswd", func(t *testing.T) {
+			t.Parallel()
 			userInfo := fetchUserInfo(gRPCBasicAuthToken{username: username, password: password})
 			assert.Equal(t, "user1", userInfo.User)
 		})
