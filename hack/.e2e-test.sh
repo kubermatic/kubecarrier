@@ -23,11 +23,13 @@ function cleanup() {
   mkdir -p ${workdir}/svc
   kind export logs --name ${MANAGEMENT_KIND_CLUSTER} ${workdir}/management
   kind export logs --name ${SVC_KIND_CLUSTER} ${workdir}/svc
+  docker cp ${MANAGEMENT_KIND_CLUSTER}-control-plane:/var/log/kube-apiserver-audit.log ${workdir}/management/audit.log
+  docker cp ${SVC_KIND_CLUSTER}-control-plane:/var/log/kube-apiserver-audit.log ${workdir}/svc/audit.log
 
   # https://github.com/kubernetes/test-infra/blob/master/prow/jobs.md#job-environment-variables
   local JOB_LOG=${PULL_NUMBER:-}-${JOB_NAME:-}-${BUILD_ID:-}
   if [[ "${JOB_LOG}" != "--" ]]; then
-    zip -r "${workdir}/${JOB_LOG}.zip" "${workdir}/management" "${workdir}/svc"
+    zip --quiet -r "${workdir}/${JOB_LOG}.zip" "${workdir}/management" "${workdir}/svc"
     aws s3 cp "${workdir}/${JOB_LOG}.zip" "s3://e2elogs.kubecarrier.io/${JOB_LOG}.zip"
   fi
 }
