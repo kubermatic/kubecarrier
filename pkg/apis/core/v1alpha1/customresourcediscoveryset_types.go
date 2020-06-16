@@ -162,7 +162,7 @@ type CustomResourceDiscoverySetCondition struct {
 // +kubebuilder:subresource:status
 // +kubebuilder:printcolumn:name="CustomResourceDefinition",type="string",JSONPath=".spec.crd.name"
 // +kubebuilder:printcolumn:name="Status",type="string",JSONPath=".status.phase"
-// +kubebuilder:resource:categories=kubecarrier-provider,shortName=crdisset
+// +kubebuilder:resource:categories=all;kubecarrier-provider,shortName=crdisset
 type CustomResourceDiscoverySet struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`

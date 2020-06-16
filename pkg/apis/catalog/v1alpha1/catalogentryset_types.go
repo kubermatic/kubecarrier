@@ -202,7 +202,7 @@ func (s *CatalogEntrySetStatus) SetCondition(condition CatalogEntrySetCondition)
 // +kubebuilder:printcolumn:name="Status",type="string",JSONPath=".status.phase"
 // +kubebuilder:printcolumn:name="CRD",type="string",JSONPath=".spec.discover.crd.name"
 // +kubebuilder:printcolumn:name="Age",type="date",JSONPath=".metadata.creationTimestamp"
-// +kubebuilder:resource:categories=kubecarrier-provider,shortName=ces
+// +kubebuilder:resource:categories=all;kubecarrier-provider,shortName=ces
 type CatalogEntrySet struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`

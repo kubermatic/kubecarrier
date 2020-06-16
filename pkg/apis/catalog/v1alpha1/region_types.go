@@ -38,7 +38,7 @@ type RegionSpec struct {
 // +kubebuilder:printcolumn:name="Provider",type="string",JSONPath=".spec.provider.name"
 // +kubebuilder:printcolumn:name="Display Name",type="string",JSONPath=".spec.metadata.displayName"
 // +kubebuilder:printcolumn:name="Age",type="date",JSONPath=".metadata.creationTimestamp"
-// +kubebuilder:resource:categories=kubecarrier-tenant,shortName=scr
+// +kubebuilder:resource:categories=all;kubecarrier-tenant,shortName=scr
 type Region struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`

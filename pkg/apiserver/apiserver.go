@@ -56,8 +56,10 @@ import (
 	apiserverv1 "github.com/kubermatic/kubecarrier/pkg/apiserver/api/v1"
 	"github.com/kubermatic/kubecarrier/pkg/apiserver/auth"
 	_ "github.com/kubermatic/kubecarrier/pkg/apiserver/internal/auth/anonymous"
+	_ "github.com/kubermatic/kubecarrier/pkg/apiserver/internal/auth/htpasswd"
 	_ "github.com/kubermatic/kubecarrier/pkg/apiserver/internal/auth/oidc"
 	_ "github.com/kubermatic/kubecarrier/pkg/apiserver/internal/auth/token"
+	"github.com/kubermatic/kubecarrier/pkg/apiserver/internal/authorizer"
 	v1 "github.com/kubermatic/kubecarrier/pkg/apiserver/internal/v1"
 	"github.com/kubermatic/kubecarrier/pkg/internal/util"
 )
@@ -97,8 +99,8 @@ func NewAPIServer() *cobra.Command {
 	cmd.Flags().StringVar(&flags.address, "address", "0.0.0.0:8080", "Address to bind this API server on.")
 	cmd.Flags().StringVar(&flags.TLSCertFile, "tls-cert-file", "", "File containing the default x509 Certificate for HTTPS. If not provided no TLS security shall be enabled")
 	cmd.Flags().StringVar(&flags.TLSPrivateKeyFile, "tls-private-key-file", "", "File containing the default x509 private key matching --tls-cert-file.")
-	cmd.Flags().StringArrayVar(&flags.CORSAllowedOrigins, "cors-allowed-origins", []string{"*"}, "List of allowed origins for CORS, comma separated. An allowed origin can be a regular expression to support subdomain matching. If this list is empty CORS will not be enabled.")
-	cmd.Flags().StringArrayVar(&flags.AuthenticationMode, "authentication-mode", []string{"OIDC", "Token"}, "Ordered list of plug-ins to do authentication on secure port. Comma-delimited list of: "+strings.Join(auth.RegisteredAuthProviders(), ","))
+	cmd.Flags().StringSliceVar(&flags.CORSAllowedOrigins, "cors-allowed-origins", []string{"*"}, "List of allowed origins for CORS, comma separated. An allowed origin can be a regular expression to support subdomain matching. If this list is empty CORS will not be enabled.")
+	cmd.Flags().StringSliceVar(&flags.AuthenticationMode, "authentication-mode", []string{"OIDC"}, "Ordered list of plug-ins to do authentication on secure port. Comma-delimited list of: "+strings.Join(auth.RegisteredAuthProviders(), ","))
 	auth.RegisterPFlags(cmd.Flags())
 	return util.CmdLogMixin(cmd)
 }
@@ -241,11 +243,13 @@ func runE(flags *flags, log logr.Logger) error {
 		return err
 	}
 
+	authorizer := authorizer.NewAuthorizer(log, scheme, c, mapper)
+
 	apiserverv1.RegisterKubeCarrierServer(grpcServer, &v1.KubeCarrierServer{})
 	if err := apiserverv1.RegisterKubeCarrierHandler(ctx, grpcGatewayMux, grpcClient); err != nil {
 		return err
 	}
-	offeringServer, err := v1.NewOfferingServiceServer(c, dynamicClient, mapper, scheme)
+	offeringServer, err := v1.NewOfferingServiceServer(c, authorizer, dynamicClient, mapper, scheme)
 	if err != nil {
 		return err
 	}
@@ -260,12 +264,12 @@ func runE(flags *flags, log logr.Logger) error {
 		return err
 	}
 
-	regionServer := v1.NewRegionServiceServer(c)
+	regionServer := v1.NewRegionServiceServer(c, authorizer)
 	apiserverv1.RegisterRegionServiceServer(grpcServer, regionServer)
 	if err := apiserverv1.RegisterRegionServiceHandler(ctx, grpcGatewayMux, grpcClient); err != nil {
 		return err
 	}
-	providerServer := v1.NewProviderServiceServer(c)
+	providerServer := v1.NewProviderServiceServer(c, authorizer)
 	apiserverv1.RegisterProviderServiceServer(grpcServer, providerServer)
 	if err := apiserverv1.RegisterProviderServiceHandler(ctx, grpcGatewayMux, grpcClient); err != nil {
 		return err
