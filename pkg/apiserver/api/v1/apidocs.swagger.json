@@ -1188,7 +1188,7 @@
     },
     "/v1/watch/accounts/{account}/instances/{offering}/{version}": {
       "get": {
-        "operationId": "Watch",
+        "operationId": "InstancesService_Watch",
         "parameters": [
           {
             "in": "path",
