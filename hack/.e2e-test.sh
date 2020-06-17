@@ -36,4 +36,4 @@ function cleanup() {
 }
 
 trap cleanup EXIT
-kubectl kubecarrier e2e-test run --test.v --test.failfast --test-id=${TEST_ID} | richgo testfilter
+kubectl kubecarrier e2e-test run --test.v --test.failfast --test-id=${TEST_ID}
