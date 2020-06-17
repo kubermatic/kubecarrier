@@ -33,6 +33,7 @@ import (
 	grpc_zap "github.com/grpc-ecosystem/go-grpc-middleware/logging/zap"
 	grpc_ctxtags "github.com/grpc-ecosystem/go-grpc-middleware/tags"
 	grpc_opentracing "github.com/grpc-ecosystem/go-grpc-middleware/tracing/opentracing"
+	grpc_validator "github.com/grpc-ecosystem/go-grpc-middleware/validator"
 	grpc_prometheus "github.com/grpc-ecosystem/go-grpc-prometheus"
 	gwruntime "github.com/grpc-ecosystem/grpc-gateway/runtime"
 	"github.com/improbable-eng/grpc-web/go/grpcweb"
@@ -171,6 +172,7 @@ func runE(flags *flags, log logr.Logger) error {
 			grpc_prometheus.StreamServerInterceptor,
 			grpc_zap.StreamServerInterceptor(util.ZapLogger),
 			grpc_auth.StreamServerInterceptor(authFunc),
+			grpc_validator.StreamServerInterceptor(),
 		)),
 		grpc.UnaryInterceptor(grpc_middleware.ChainUnaryServer(
 			grpc_ctxtags.UnaryServerInterceptor(),
@@ -178,6 +180,7 @@ func runE(flags *flags, log logr.Logger) error {
 			grpc_prometheus.UnaryServerInterceptor,
 			grpc_zap.UnaryServerInterceptor(util.ZapLogger),
 			grpc_auth.UnaryServerInterceptor(authFunc),
+			grpc_validator.UnaryServerInterceptor(),
 		)),
 	)
 	wrappedGrpc := grpcweb.WrapServer(grpcServer)

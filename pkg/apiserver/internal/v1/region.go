@@ -67,13 +67,12 @@ func (o regionServer) Get(ctx context.Context, req *v1.GetRequest) (res *v1.Regi
 }
 
 func (o regionServer) handleListRequest(ctx context.Context, req *v1.ListRequest) (res *v1.RegionList, err error) {
-	var listOptions []client.ListOption
-	listOptions, err = validateListRequest(req)
+	listOptions, err := req.GetListOptions()
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 	regionList := &catalogv1alpha1.RegionList{}
-	if err := o.client.List(ctx, regionList, listOptions...); err != nil {
+	if err := o.client.List(ctx, regionList, listOptions); err != nil {
 		return nil, status.Errorf(codes.Internal, "listing regions: %s", err.Error())
 	}
 
@@ -85,9 +84,6 @@ func (o regionServer) handleListRequest(ctx context.Context, req *v1.ListRequest
 }
 
 func (o regionServer) handleGetRequest(ctx context.Context, req *v1.GetRequest) (res *v1.Region, err error) {
-	if err = validateGetRequest(req); err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
-	}
 	region := &catalogv1alpha1.Region{}
 	if err = o.client.Get(ctx, types.NamespacedName{
 		Name:      req.Name,
