@@ -32,7 +32,7 @@ type ProviderSpec struct {
 // +kubebuilder:object:root=true
 // +kubebuilder:printcolumn:name="Display Name",type="string",JSONPath=".spec.metadata.displayName"
 // +kubebuilder:printcolumn:name="Age",type="date",JSONPath=".metadata.creationTimestamp"
-// +kubebuilder:resource:categories=kubecarrier-tenant,shortName=pr
+// +kubebuilder:resource:categories=all;kubecarrier-tenant,shortName=pr
 type Provider struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`

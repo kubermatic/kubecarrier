@@ -33,6 +33,7 @@ import (
 	grpc_zap "github.com/grpc-ecosystem/go-grpc-middleware/logging/zap"
 	grpc_ctxtags "github.com/grpc-ecosystem/go-grpc-middleware/tags"
 	grpc_opentracing "github.com/grpc-ecosystem/go-grpc-middleware/tracing/opentracing"
+	grpc_validator "github.com/grpc-ecosystem/go-grpc-middleware/validator"
 	grpc_prometheus "github.com/grpc-ecosystem/go-grpc-prometheus"
 	gwruntime "github.com/grpc-ecosystem/grpc-gateway/runtime"
 	"github.com/improbable-eng/grpc-web/go/grpcweb"
@@ -56,6 +57,7 @@ import (
 	apiserverv1 "github.com/kubermatic/kubecarrier/pkg/apiserver/api/v1"
 	"github.com/kubermatic/kubecarrier/pkg/apiserver/auth"
 	_ "github.com/kubermatic/kubecarrier/pkg/apiserver/internal/auth/anonymous"
+	_ "github.com/kubermatic/kubecarrier/pkg/apiserver/internal/auth/htpasswd"
 	_ "github.com/kubermatic/kubecarrier/pkg/apiserver/internal/auth/oidc"
 	"github.com/kubermatic/kubecarrier/pkg/apiserver/internal/authorizer"
 	v1 "github.com/kubermatic/kubecarrier/pkg/apiserver/internal/v1"
@@ -170,6 +172,7 @@ func runE(flags *flags, log logr.Logger) error {
 			grpc_prometheus.StreamServerInterceptor,
 			grpc_zap.StreamServerInterceptor(util.ZapLogger),
 			grpc_auth.StreamServerInterceptor(authFunc),
+			grpc_validator.StreamServerInterceptor(),
 		)),
 		grpc.UnaryInterceptor(grpc_middleware.ChainUnaryServer(
 			grpc_ctxtags.UnaryServerInterceptor(),
@@ -177,6 +180,7 @@ func runE(flags *flags, log logr.Logger) error {
 			grpc_prometheus.UnaryServerInterceptor,
 			grpc_zap.UnaryServerInterceptor(util.ZapLogger),
 			grpc_auth.UnaryServerInterceptor(authFunc),
+			grpc_validator.UnaryServerInterceptor(),
 		)),
 	)
 	wrappedGrpc := grpcweb.WrapServer(grpcServer)
@@ -270,6 +274,13 @@ func runE(flags *flags, log logr.Logger) error {
 	providerServer := v1.NewProviderServiceServer(c, authorizer)
 	apiserverv1.RegisterProviderServiceServer(grpcServer, providerServer)
 	if err := apiserverv1.RegisterProviderServiceHandler(ctx, grpcGatewayMux, grpcClient); err != nil {
+		return err
+	}
+
+	docServer := v1.NewDocServiceServer()
+	apiserverv1.RegisterDocServer(grpcServer, docServer)
+	gwruntime.SetHTTPBodyMarshaler(grpcGatewayMux)
+	if err := apiserverv1.RegisterDocHandlerServer(ctx, grpcGatewayMux, docServer); err != nil {
 		return err
 	}
 

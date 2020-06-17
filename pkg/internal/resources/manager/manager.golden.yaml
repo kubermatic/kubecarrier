@@ -16,6 +16,7 @@
     group: catalog.kubecarrier.io
     names:
       categories:
+      - all
       - kubecarrier-admin
       kind: Account
       listKind: AccountList
@@ -258,6 +259,7 @@
     group: catalog.kubecarrier.io
     names:
       categories:
+      - all
       - kubecarrier-provider
       kind: CatalogEntry
       listKind: CatalogEntryList
@@ -596,6 +598,7 @@
     group: catalog.kubecarrier.io
     names:
       categories:
+      - all
       - kubecarrier-provider
       kind: CatalogEntrySet
       listKind: CatalogEntrySetList
@@ -903,6 +906,7 @@
     group: catalog.kubecarrier.io
     names:
       categories:
+      - all
       - kubecarrier-provider
       kind: Catalog
       listKind: CatalogList
@@ -1144,6 +1148,7 @@
     group: catalog.kubecarrier.io
     names:
       categories:
+      - all
       - kubecarrier-provider
       kind: DerivedCustomResource
       listKind: DerivedCustomResourceList
@@ -1329,6 +1334,7 @@
     group: catalog.kubecarrier.io
     names:
       categories:
+      - all
       - kubecarrier-tenant
       kind: Offering
       listKind: OfferingList
@@ -1512,6 +1518,7 @@
     group: catalog.kubecarrier.io
     names:
       categories:
+      - all
       - kubecarrier-tenant
       kind: Provider
       listKind: ProviderList
@@ -1635,6 +1642,7 @@
     group: catalog.kubecarrier.io
     names:
       categories:
+      - all
       - kubecarrier-tenant
       kind: Region
       listKind: RegionList
@@ -1731,6 +1739,7 @@
     group: catalog.kubecarrier.io
     names:
       categories:
+      - all
       - kubecarrier-provider
       kind: Tenant
       listKind: TenantList
@@ -1980,6 +1989,7 @@
     group: kubecarrier.io
     names:
       categories:
+      - all
       - kubecarrier-provider
       kind: CustomResourceDiscoverySet
       listKind: CustomResourceDiscoverySetList
@@ -2362,6 +2372,7 @@
     group: kubecarrier.io
     names:
       categories:
+      - all
       - kubecarrier-provider
       kind: ServiceCluster
       listKind: ServiceClusterList

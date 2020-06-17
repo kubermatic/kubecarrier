@@ -90,13 +90,12 @@ func (o offeringServer) Get(ctx context.Context, req *v1.GetRequest) (res *v1.Of
 }
 
 func (o offeringServer) handleListRequest(ctx context.Context, req *v1.ListRequest) (res *v1.OfferingList, err error) {
-	var listOptions []client.ListOption
-	listOptions, err = validateListRequest(req)
+	listOptions, err := req.GetListOptions()
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 	offeringList := &catalogv1alpha1.OfferingList{}
-	if err := o.client.List(ctx, offeringList, listOptions...); err != nil {
+	if err := o.client.List(ctx, offeringList, listOptions); err != nil {
 		return nil, status.Errorf(codes.Internal, "listing offerings: %s", err.Error())
 	}
 
@@ -108,9 +107,6 @@ func (o offeringServer) handleListRequest(ctx context.Context, req *v1.ListReque
 }
 
 func (o offeringServer) handleGetRequest(ctx context.Context, req *v1.GetRequest) (res *v1.Offering, err error) {
-	if err = validateGetRequest(req); err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
-	}
 	offering := &catalogv1alpha1.Offering{}
 	if err = o.client.Get(ctx, types.NamespacedName{
 		Name:      req.Name,
@@ -126,17 +122,17 @@ func (o offeringServer) handleGetRequest(ctx context.Context, req *v1.GetRequest
 }
 
 func (o offeringServer) Watch(req *v1.WatchRequest, stream v1.OfferingService_WatchServer) error {
+	listOptions, err := req.GetListOptions()
+	if err != nil {
+		return status.Error(codes.InvalidArgument, err.Error())
+	}
 	if err := o.authorizer.Authorize(stream.Context(), &catalogv1alpha1.Offering{}, authorizer.AuthorizationOption{
 		Namespace: req.Account,
 		Verb:      authorizer.RequestWatch,
 	}); err != nil {
 		return status.Error(codes.Unauthenticated, err.Error())
 	}
-	listOptions, err := validateWatchRequest(req)
-	if err != nil {
-		return status.Error(codes.InvalidArgument, err.Error())
-	}
-	watcher, err := o.dynamicClient.Resource(o.gvr).Namespace(req.Account).Watch(listOptions)
+	watcher, err := o.dynamicClient.Resource(o.gvr).Namespace(req.Account).Watch(*listOptions.AsListOptions())
 	if err != nil {
 		return status.Errorf(codes.Internal, "watching offerings: %s", err.Error())
 	}

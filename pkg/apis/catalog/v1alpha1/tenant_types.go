@@ -28,7 +28,7 @@ type TenantSpec struct{}
 // Tenant objects will be created for all Accounts with the role "Tenant" in all Account Namespaces with the role "Provider".
 // +kubebuilder:object:root=true
 // +kubebuilder:printcolumn:name="Age",type="date",JSONPath=".metadata.creationTimestamp"
-// +kubebuilder:resource:categories=kubecarrier-provider,shortName=tr
+// +kubebuilder:resource:categories=all;kubecarrier-provider,shortName=tr
 type Tenant struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`

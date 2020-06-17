@@ -163,10 +163,11 @@ func (r *CustomResourceDiscoveryReconciler) reconcileCRD(
 		Spec: apiextensionsv1.CustomResourceDefinitionSpec{
 			Group: group,
 			Names: apiextensionsv1.CustomResourceDefinitionNames{
-				Plural:   plural,
-				Singular: strings.ToLower(kind),
-				Kind:     kind,
-				ListKind: kind + "List",
+				Plural:     plural,
+				Singular:   strings.ToLower(kind),
+				Kind:       kind,
+				ListKind:   kind + "List",
+				Categories: []string{"all"},
 			},
 			Scope:    apiextensionsv1.NamespaceScoped,
 			Versions: crDiscovery.Status.CRD.Spec.Versions,

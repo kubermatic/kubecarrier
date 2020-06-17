@@ -4,6 +4,7 @@ repos:
   rev: v2.4.0
   hooks:
   - id: check-added-large-files
+    exclude: "config/swagger/.*"
   - id: check-case-conflict
   - id: check-json
   - id: check-merge-conflict

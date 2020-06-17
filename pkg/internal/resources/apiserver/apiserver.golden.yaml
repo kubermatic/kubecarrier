@@ -11,6 +11,14 @@
     name: kubecarrier-api-server-manager-role
   rules:
   - apiGroups:
+    - ""
+    resources:
+    - secrets
+    verbs:
+    - get
+    - list
+    - watch
+  - apiGroups:
     - authorization.k8s.io
     resources:
     - subjectaccessreviews
@@ -197,6 +205,7 @@
           - --tls-cert-file=$(API_SERVER_TLS_CERT_FILE)
           - --tls-private-key-file=$(API_SERVER_TLS_PRIVATE_KEY_FILE)
           - --authentication-mode=$(AUTHENTICATION_MODE)
+          - --htpasswd-secret-name=$(HTPASSWD_SECRET_NAME)
           - --oidc-issuer-url=$(API_SERVER_OIDC_ISSUER_URL)
           - --oidc-client-id=$(API_SERVER_OIDC_CLIENT_ID)
           - --oidc-ca-file=$(API_SERVER_OIDC_CA_FILE)
@@ -213,7 +222,9 @@
           - name: API_SERVER_TLS_PRIVATE_KEY_FILE
             value: /run/serving-certs/tls.key
           - name: AUTHENTICATION_MODE
-            value: OIDC
+            value: Htpasswd,OIDC
+          - name: HTPASSWD_SECRET_NAME
+            value: test-secret
           - name: API_SERVER_OIDC_ISSUER_URL
           - name: API_SERVER_OIDC_CLIENT_ID
           - name: API_SERVER_OIDC_CA_FILE

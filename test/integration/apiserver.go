@@ -20,6 +20,7 @@ import (
 	"context"
 	"crypto/tls"
 	"crypto/x509"
+	"encoding/base64"
 	"fmt"
 	"net/http"
 	"os"
@@ -49,6 +50,7 @@ import (
 	corev1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/core/v1alpha1"
 	operatorv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/operator/v1alpha1"
 	apiserverv1 "github.com/kubermatic/kubecarrier/pkg/apiserver/api/v1"
+	v1 "github.com/kubermatic/kubecarrier/pkg/apiserver/api/v1"
 	"github.com/kubermatic/kubecarrier/pkg/testutil"
 )
 
@@ -65,7 +67,21 @@ func newAPIServer(f *testutil.Framework) func(t *testing.T) {
 		ns.Name = "kubecarrier-system"
 		const localAPIServerPort = 9443
 
-		// Enable OIDC
+		// Enable OIDC and Htpasswd
+		username := "user1"
+		password := "mickey5"
+		md5password := `$apr1$gxNb79DX$6wi9QaGNM5TA0kBKiC4710`
+
+		htpasswdSecret := &corev1.Secret{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "htpasswd-user",
+				Namespace: ns.GetName(),
+			},
+			Data: map[string][]byte{
+				"auth": []byte(username + ":" + md5password),
+			},
+		}
+		require.NoError(t, managementClient.Create(ctx, htpasswdSecret))
 		kubeCarrier := &operatorv1alpha1.KubeCarrier{}
 		require.NoError(t, managementClient.Get(ctx, types.NamespacedName{
 			Name: "kubecarrier",
@@ -79,6 +95,12 @@ func newAPIServer(f *testutil.Framework) func(t *testing.T) {
 					UsernameClaim: "name",
 					CertificateAuthority: operatorv1alpha1.ObjectReference{
 						Name: "dex-web-server",
+					},
+				},
+
+				StaticUsers: &operatorv1alpha1.StaticUsers{
+					HtpasswdSecret: operatorv1alpha1.ObjectReference{
+						Name: htpasswdSecret.Name,
 					},
 				},
 			},
@@ -130,7 +152,26 @@ func newAPIServer(f *testutil.Framework) func(t *testing.T) {
 		certPool := x509.NewCertPool()
 		require.True(t, certPool.AppendCertsFromPEM(servingTLSSecret.Data["ca.crt"]))
 		require.True(t, certPool.AppendCertsFromPEM(servingTLSSecret.Data[corev1.TLSCertKey]))
+
+		// Htpasswd
 		conn, err := grpc.DialContext(
+			ctx,
+			fmt.Sprintf("localhost:%d", localAPIServerPort),
+			grpc.WithTransportCredentials(
+				credentials.NewClientTLSFromCert(certPool, ""),
+			),
+		)
+		require.NoError(t, err)
+		client := apiserverv1.NewKubeCarrierClient(conn)
+		userInfo, err := client.WhoAmI(ctx, &empty.Empty{}, grpc.PerRPCCredentials(gRPCBasicAuthToken{username: username, password: password}))
+		if assert.NoError(t, err, "whoami gRPC") {
+			t.Log("User info:")
+			testutil.LogObject(t, userInfo)
+			assert.Equal(t, "user1", userInfo.User)
+		}
+
+		// OIDC
+		conn, err = grpc.DialContext(
 			ctx,
 			fmt.Sprintf("localhost:%d", localAPIServerPort),
 			grpc.WithTransportCredentials(
@@ -139,7 +180,7 @@ func newAPIServer(f *testutil.Framework) func(t *testing.T) {
 			grpc.WithPerRPCCredentials(gRPCWithAuthToken{token: token}),
 		)
 		require.NoError(t, err)
-		client := apiserverv1.NewKubeCarrierClient(conn)
+		client = apiserverv1.NewKubeCarrierClient(conn)
 		versionCtx, cancel := context.WithTimeout(ctx, 30*time.Second)
 		t.Cleanup(cancel)
 		require.NoError(t, wait.PollUntil(time.Second, func() (done bool, err error) {
@@ -167,11 +208,16 @@ func newAPIServer(f *testutil.Framework) func(t *testing.T) {
 			return false, err
 		}, versionCtx.Done()), "client version gRPC call")
 
-		userInfo, err := client.WhoAmI(ctx, &empty.Empty{})
+		userInfo, err = client.WhoAmI(ctx, &empty.Empty{})
 		if assert.NoError(t, err, "whoami gRPC") {
 			t.Log("User info:")
 			testutil.LogObject(t, userInfo)
 			assert.Equal(t, "admin@kubecarrier.io", userInfo.User)
+		}
+		docClient := apiserverv1.NewDocClient(conn)
+		_, err = docClient.Swagger(ctx, &v1.DocStaticRequest{Path: "/"})
+		if assert.NoError(t, err, "docs gRPC") {
+			t.Log("Docs")
 		}
 
 		// Create an account to test authorization
@@ -429,6 +475,24 @@ func instanceService(ctx context.Context, conn *grpc.ClientConn, account *catalo
 	}
 }
 
+type gRPCBasicAuthToken struct {
+	username string
+	password string
+}
+
+var _ credentials.PerRPCCredentials = gRPCBasicAuthToken{}
+
+func (w gRPCBasicAuthToken) GetRequestMetadata(ctx context.Context, uri ...string) (map[string]string, error) {
+	token := base64.StdEncoding.EncodeToString([]byte(w.username + ":" + w.password))
+	return map[string]string{
+		"Authorization": "Basic " + token,
+	}, nil
+}
+
+func (w gRPCBasicAuthToken) RequireTransportSecurity() bool {
+	return true
+}
+
 func accountService(ctx context.Context, conn *grpc.ClientConn, account *catalogv1alpha1.Account, managementClient *testutil.RecordingClient, f *testutil.Framework) func(t *testing.T) {
 	return func(t *testing.T) {
 		testName := strings.Replace(strings.ToLower(t.Name()), "/", "-", -1)
@@ -665,7 +729,7 @@ func offeringService(ctx context.Context, conn *grpc.ClientConn, account *catalo
 		require.NoError(t, managementClient.Create(ctx, offering2))
 
 		client := apiserverv1.NewOfferingServiceClient(conn)
-		offeringCtx, cancel := context.WithTimeout(ctx, 60*time.Second)
+		offeringCtx, cancel := context.WithTimeout(ctx, 3*time.Minute)
 		t.Cleanup(cancel)
 		// list offerings with limit and continuation token.
 		require.NoError(t, wait.PollUntil(time.Second, func() (done bool, err error) {
