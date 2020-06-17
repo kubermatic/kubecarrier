@@ -19,9 +19,11 @@ package controllers
 import (
 	"context"
 	"fmt"
+	"sync/atomic"
 
 	"github.com/go-logr/logr"
 	certv1alpha2 "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
+	"golang.org/x/sync/errgroup"
 	adminv1beta1 "k8s.io/api/admissionregistration/v1beta1"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -105,7 +107,6 @@ func (r *KubeCarrierReconciler) handleDeletion(ctx context.Context, kubeCarrier 
 }
 
 func (r *KubeCarrierReconciler) reconcileManager(kubeCarrier *operatorv1alpha1.KubeCarrier, ctx context.Context, log logr.Logger) error {
-	var kubecarrierManagerDeploymentReady bool
 	objects, err := manager.Manifests(
 		manager.Config{
 			Name:      kubeCarrier.Name,
@@ -114,21 +115,32 @@ func (r *KubeCarrierReconciler) reconcileManager(kubeCarrier *operatorv1alpha1.K
 	if err != nil {
 		return fmt.Errorf("creating manager manifests: %w", err)
 	}
+	g, ctx := errgroup.WithContext(ctx)
+	var kubecarrierManagerDeploymentReady int32
 	for _, object := range objects {
-		if err := controllerutil.SetControllerReference(kubeCarrier, &object, r.Scheme); err != nil {
-			return err
-		}
-		curObj, err := reconcile.Unstructured(ctx, log, r.Client, &object)
-		if err != nil {
-			return fmt.Errorf("reconcile kind: %s, err: %w", object.GroupVersionKind().Kind, err)
-		}
-		switch ctr := curObj.(type) {
-		case *appsv1.Deployment:
-			kubecarrierManagerDeploymentReady = util.DeploymentIsAvailable(ctr)
-		}
+		object := object
+		g.Go(func() error {
+			if err := controllerutil.SetControllerReference(kubeCarrier, &object, r.Scheme); err != nil {
+				return err
+			}
+			curObj, err := reconcile.Unstructured(ctx, log, r.Client, &object)
+			if err != nil {
+				return fmt.Errorf("reconcile kind: %s, err: %w", object.GroupVersionKind().Kind, err)
+			}
+			switch ctr := curObj.(type) {
+			case *appsv1.Deployment:
+				if util.DeploymentIsAvailable(ctr) {
+					atomic.AddInt32(&kubecarrierManagerDeploymentReady, 1)
+				}
+			}
+			return nil
+		})
+	}
+	if err := g.Wait(); err != nil {
+		return err
 	}
 
-	if kubecarrierManagerDeploymentReady {
+	if kubecarrierManagerDeploymentReady > 0 {
 		kubeCarrier.Status.SetCondition(operatorv1alpha1.KubeCarrierCondition{
 			Type:    operatorv1alpha1.KubeCarrierDeploymentReady,
 			Status:  operatorv1alpha1.ConditionTrue,
