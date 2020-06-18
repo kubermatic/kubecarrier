@@ -17,30 +17,98 @@ limitations under the License.
 package v1
 
 import (
-	context "context"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 
-	catalogv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/catalog/v1alpha1"
 	"github.com/kubermatic/kubecarrier/pkg/apiserver/internal/authorizer"
 )
 
-func (req *ListRequest) Authorize(ctx context.Context, a authorizer.Authorizer) error {
-	return a.Authorize(ctx, &catalogv1alpha1.Offering{}, authorizer.AuthorizationOption{
-		Namespace: req.Account,
-		Verb:      authorizer.RequestList,
-	})
+type ServerGVRGetter interface {
+	GetGVR() schema.GroupVersionResource
 }
 
-func (req *GetRequest) Authorize(ctx context.Context, a authorizer.Authorizer) error {
-	return a.Authorize(ctx, &catalogv1alpha1.Offering{}, authorizer.AuthorizationOption{
+func (req *ListRequest) GetAuthOption() authorizer.AuthorizationOption {
+	return authorizer.AuthorizationOption{
+		Namespace: req.Account,
+		Verb:      authorizer.RequestList,
+	}
+}
+
+func (req *ListRequest) GetGVR(server ServerGVRGetter) schema.GroupVersionResource {
+	if gvrSrv, ok := server.(ServerGVRGetter); ok {
+		return gvrSrv.GetGVR()
+	}
+	return schema.GroupVersionResource{}
+}
+
+func (req *GetRequest) GetAuthOption() authorizer.AuthorizationOption {
+	return authorizer.AuthorizationOption{
 		Name:      req.Name,
 		Namespace: req.Account,
 		Verb:      authorizer.RequestGet,
-	})
+	}
 }
 
-func (req *WatchRequest) Authorize(ctx context.Context, a authorizer.Authorizer) error {
-	return a.Authorize(ctx, &catalogv1alpha1.Offering{}, authorizer.AuthorizationOption{
+func (req *GetRequest) GetGVR(server ServerGVRGetter) schema.GroupVersionResource {
+	if gvrSrv, ok := server.(ServerGVRGetter); ok {
+		return gvrSrv.GetGVR()
+	}
+	return schema.GroupVersionResource{}
+}
+
+func (req *WatchRequest) GetAuthOption() authorizer.AuthorizationOption {
+	return authorizer.AuthorizationOption{
 		Namespace: req.Account,
 		Verb:      authorizer.RequestWatch,
-	})
+	}
+}
+
+func (req *WatchRequest) GetGVR(server ServerGVRGetter) schema.GroupVersionResource {
+	if gvrSrv, ok := server.(ServerGVRGetter); ok {
+		return gvrSrv.GetGVR()
+	}
+	return schema.GroupVersionResource{}
+}
+
+func (req *InstanceCreateRequest) GetAuthOption() authorizer.AuthorizationOption {
+	return authorizer.AuthorizationOption{
+		Namespace: req.Account,
+		Verb:      authorizer.RequestCreate,
+	}
+}
+
+func (req *InstanceCreateRequest) GetGVR(server interface{}) schema.GroupVersionResource {
+	return GetOfferingGVR(req)
+}
+
+func (req *InstanceDeleteRequest) GetAuthOption() authorizer.AuthorizationOption {
+	return authorizer.AuthorizationOption{
+		Namespace: req.Account,
+		Name:      req.Name,
+		Verb:      authorizer.RequestDelete,
+	}
+}
+func (req *InstanceDeleteRequest) GetGVR(server interface{}) schema.GroupVersionResource {
+	return GetOfferingGVR(req)
+}
+
+func (req *InstanceGetRequest) GetAuthOption() authorizer.AuthorizationOption {
+	return authorizer.AuthorizationOption{
+		Namespace: req.Account,
+		Name:      req.Name,
+		Verb:      authorizer.RequestGet,
+	}
+}
+func (req *InstanceGetRequest) GetGVR(server interface{}) schema.GroupVersionResource {
+	return GetOfferingGVR(req)
+}
+
+func (req *InstanceListRequest) GetAuthOption() authorizer.AuthorizationOption {
+	return authorizer.AuthorizationOption{
+		Namespace: req.Account,
+		Verb:      authorizer.RequestList,
+	}
+}
+
+func (req *InstanceListRequest) GetGVR(server interface{}) schema.GroupVersionResource {
+	return GetOfferingGVR(req)
 }

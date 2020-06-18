@@ -157,7 +157,7 @@ func TestListProvider(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			providers, err := providerServer.handleListRequest(ctx, test.req)
+			providers, err := providerServer.List(ctx, test.req)
 			assert.Equal(t, test.expectedError, err)
 			assert.Equal(t, test.expectedResult, providers)
 		})
@@ -213,7 +213,7 @@ func TestGetProvider(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			provider, err := providerServer.handleGetRequest(ctx, test.req)
+			provider, err := providerServer.Get(ctx, test.req)
 			assert.Equal(t, test.expectedError, err)
 			assert.Equal(t, test.expectedResult, provider)
 		})

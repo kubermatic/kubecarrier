@@ -169,7 +169,7 @@ func TestListRegion(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			regions, err := regionServer.handleListRequest(ctx, test.req)
+			regions, err := regionServer.List(ctx, test.req)
 			assert.Equal(t, test.expectedError, err)
 			assert.Equal(t, test.expectedResult, regions)
 		})
@@ -229,7 +229,7 @@ func TestGetRegion(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			region, err := regionServer.handleGetRequest(ctx, test.req)
+			region, err := regionServer.Get(ctx, test.req)
 			assert.Equal(t, test.expectedError, err)
 			assert.Equal(t, test.expectedResult, region)
 		})

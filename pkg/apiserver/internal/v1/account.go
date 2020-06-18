@@ -21,6 +21,7 @@ import (
 
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	catalogv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/catalog/v1alpha1"
@@ -40,6 +41,14 @@ var _ v1.AccountServiceServer = (*accountServer)(nil)
 func NewAccountServiceServer(c client.Client) v1.AccountServiceServer {
 	return &accountServer{
 		client: c,
+	}
+}
+
+func (o accountServer) GetGVR() schema.GroupVersionResource {
+	return schema.GroupVersionResource{
+		Group:    catalogv1alpha1.GroupVersion.Group,
+		Version:  catalogv1alpha1.GroupVersion.Version,
+		Resource: "accounts",
 	}
 }
 

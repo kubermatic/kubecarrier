@@ -65,6 +65,14 @@ func NewOfferingServiceServer(c client.Client, dynamicClient dynamic.Interface, 
 	return offeringServer, nil
 }
 
+func (o offeringServer) GetGVR() schema.GroupVersionResource {
+	return schema.GroupVersionResource{
+		Group:    catalogv1alpha1.GroupVersion.Group,
+		Version:  catalogv1alpha1.GroupVersion.Version,
+		Resource: "offerings",
+	}
+}
+
 func (o offeringServer) List(ctx context.Context, req *v1.ListRequest) (res *v1.OfferingList, err error) {
 	listOptions, err := req.GetListOptions()
 	if err != nil {

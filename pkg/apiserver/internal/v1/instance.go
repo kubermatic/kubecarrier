@@ -20,7 +20,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"strings"
 
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -51,7 +50,7 @@ func NewInstancesServer(c client.Client, mapper meta.RESTMapper) v1.InstancesSer
 func (o instanceServer) Create(ctx context.Context, req *v1.InstanceCreateRequest) (res *v1.Instance, err error) {
 	obj := &unstructured.Unstructured{}
 
-	gvk, err := o.gvkFromInstance(o.mapper, req.Offering, req.Version)
+	gvk, err := o.getGVK(req)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, "creating instance: unable to get Kind: %s", err.Error())
 	}
@@ -89,7 +88,7 @@ func (o instanceServer) List(ctx context.Context, req *v1.InstanceListRequest) (
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
 	obj := &unstructured.UnstructuredList{}
-	gvk, err := o.gvkFromInstance(o.mapper, req.Offering, req.Version)
+	gvk, err := o.getGVK(req)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "listing instance: unable to get Kind: %s", err.Error())
 	}
@@ -105,23 +104,18 @@ func (o instanceServer) List(ctx context.Context, req *v1.InstanceListRequest) (
 	return
 }
 
-func (o instanceServer) gvkFromInstance(mapper meta.RESTMapper, instance string, version string) (schema.GroupVersionKind, error) {
-	parts := strings.SplitN(instance, ".", 2)
-	gvr := schema.GroupVersionResource{
-		Resource: parts[0],
-		Group:    parts[1],
-	}
+func (o instanceServer) getGVK(req v1.OfferingVersionGetter) (schema.GroupVersionKind, error) {
+	gvr := v1.GetOfferingGVR(req)
 	kind, err := o.mapper.KindFor(gvr)
 	if err != nil {
 		return schema.GroupVersionKind{}, err
 	}
-	kind.Version = version
 	return kind, nil
 }
 
 func (o instanceServer) Get(ctx context.Context, req *v1.InstanceGetRequest) (res *v1.Instance, err error) {
 	obj := &unstructured.Unstructured{}
-	gvk, err := o.gvkFromInstance(o.mapper, req.Offering, req.Version)
+	gvk, err := o.getGVK(req)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "getting instance: unable to get Kind: %s", err.Error())
 	}
@@ -142,7 +136,7 @@ func (o instanceServer) Get(ctx context.Context, req *v1.InstanceGetRequest) (re
 
 func (o instanceServer) Delete(ctx context.Context, req *v1.InstanceDeleteRequest) (*empty.Empty, error) {
 	obj := &unstructured.Unstructured{}
-	gvk, err := o.gvkFromInstance(o.mapper, req.Offering, req.Version)
+	gvk, err := o.getGVK(req)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "deleting instance: unable to get Kind: %s", err.Error())
 	}

@@ -21,6 +21,7 @@ import (
 
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -39,6 +40,14 @@ var _ v1.ProviderServiceServer = (*providerServer)(nil)
 func NewProviderServiceServer(c client.Client) v1.ProviderServiceServer {
 	return &providerServer{
 		client: c,
+	}
+}
+
+func (o providerServer) GetGVR() schema.GroupVersionResource {
+	return schema.GroupVersionResource{
+		Group:    catalogv1alpha1.GroupVersion.Group,
+		Version:  catalogv1alpha1.GroupVersion.Version,
+		Resource: "providers",
 	}
 }
 
