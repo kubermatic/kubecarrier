@@ -17,8 +17,11 @@
 # This file should ONLY be called from within Makefile!!!
 set -euo pipefail
 
+workdir=$(mktemp -d)
+
 function cleanup() {
-  local workdir=$(mktemp -d)
+  cat ${workdir}/test.out | grep -E "(PASS|FAIL)"
+  echo "starting cleanup & log upload"
   mkdir -p ${workdir}/management
   mkdir -p ${workdir}/svc
   kind export logs --name ${MANAGEMENT_KIND_CLUSTER} ${workdir}/management
@@ -36,4 +39,4 @@ function cleanup() {
 }
 
 trap cleanup EXIT
-kubectl kubecarrier e2e-test run --test.v --test.failfast --test-id=${TEST_ID}
+kubectl kubecarrier e2e-test run --test.timeout=10m --test.v --test.failfast --test-id=${TEST_ID} | tee /dev/stderr | tee ${workdir}/test.out | go tool test2json | tee ${workdir}/test.json | go run ./hack/testjsonformat
