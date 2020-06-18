@@ -248,7 +248,7 @@ func newAPIServer(f *testutil.Framework) func(t *testing.T) {
 	}
 }
 
-func instanceService(ctx context.Context, conn *grpc.ClientConn, account *catalogv1alpha1.Account, managementClient *testutil.RecordingClient, f *testutil.Framework) func(t *testing.T) {
+func instanceService(ctx context.Context, conn *grpc.ClientConn, tenantAccount *catalogv1alpha1.Account, managementClient *testutil.RecordingClient, f *testutil.Framework) func(t *testing.T) {
 	return func(t *testing.T) {
 		serviceClient, err := f.ServiceClient(t)
 		require.NoError(t, err, "creating service client")
@@ -263,15 +263,9 @@ func instanceService(ctx context.Context, conn *grpc.ClientConn, account *catalo
 			APIGroup: "rbac.authorization.k8s.io",
 			Name:     "providerAccount",
 		})
-		tenantAccount := testutil.NewTenantAccount(testName, rbacv1.Subject{
-			Kind:     rbacv1.GroupKind,
-			APIGroup: "rbac.authorization.k8s.io",
-			Name:     "tenantAccount",
-		})
 		require.NoError(t, managementClient.Create(ctx, providerAccount), "creating providerAccount")
 		require.NoError(t, testutil.WaitUntilReady(ctx, managementClient, providerAccount))
 
-		require.NoError(t, managementClient.Create(ctx, tenantAccount), "creating tenantAccount")
 		require.NoError(t, testutil.WaitUntilReady(ctx, managementClient, tenantAccount))
 
 		serviceCluster := f.SetupServiceCluster(ctx, managementClient, t, "eu-west-1", providerAccount)
