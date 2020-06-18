@@ -23,7 +23,6 @@ import (
 	"encoding/base64"
 	"fmt"
 	"net/http"
-	"os"
 	"os/exec"
 	"strings"
 	"testing"
@@ -78,8 +77,8 @@ func newAPIServer(f *testutil.Framework) func(t *testing.T) {
 			"service/kubecarrier-api-server-manager",
 			fmt.Sprintf("%d:https", localAPIServerPort),
 		)
-		pfCmd.Stdout = os.Stdout
-		pfCmd.Stderr = os.Stderr
+		pfCmd.Stdout = &testutil.TestingLogWriter{T: t}
+		pfCmd.Stderr = &testutil.TestingLogWriter{T: t}
 		require.NoError(t, pfCmd.Start())
 
 		token := fetchUserToken(ctx, t, managementClient, f.Config().ManagementExternalKubeconfigPath)
@@ -349,8 +348,9 @@ func fetchUserToken(ctx context.Context, t *testing.T, managementClient *testuti
 		"service/dex",
 		fmt.Sprintf("%d:https", localDexServerPort),
 	)
-	pfDex.Stdout = os.Stdout
-	pfDex.Stderr = os.Stderr
+
+	pfDex.Stdout = &testutil.TestingLogWriter{T: t}
+	pfDex.Stderr = &testutil.TestingLogWriter{T: t}
 
 	require.NoError(t, pfDex.Start())
 	certPool := x509.NewCertPool()

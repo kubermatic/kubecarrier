@@ -20,6 +20,7 @@ set -euo pipefail
 workdir=$(mktemp -d)
 
 function cleanup() {
+  cat ${workdir}/test.out | go tool test2json | tee ${workdir}/test.json | go run ./hack/testjsonformat
   cat ${workdir}/test.out | grep -E "(PASS|FAIL)"
   echo "starting cleanup & log upload"
   mkdir -p ${workdir}/management
@@ -39,4 +40,4 @@ function cleanup() {
 }
 
 trap cleanup EXIT
-kubectl kubecarrier e2e-test run --test.timeout=10m --test.v --test.failfast --test-id=${TEST_ID} | tee /dev/stderr | tee ${workdir}/test.out | go tool test2json | tee ${workdir}/test.json | go run ./hack/testjsonformat
+kubectl kubecarrier e2e-test run --test.timeout=10m --test.v --test.failfast --test-id=${TEST_ID} | tee ${workdir}/test.out

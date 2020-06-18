@@ -17,6 +17,7 @@ limitations under the License.
 package testutil
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -482,3 +483,17 @@ func LoadTestDataObject(t *testing.T, fname string, obj runtime.Object) {
 	defer file.Close()
 	require.NoError(t, yaml.NewYAMLOrJSONDecoder(file, 4096).Decode(obj))
 }
+
+type TestingLogWriter struct {
+	T *testing.T
+}
+
+func (ls *TestingLogWriter) Write(p []byte) (n int, err error) {
+	ls.T.Helper()
+	for _, line := range bytes.Split(p, []byte("\n")) {
+		ls.T.Log(string(line))
+	}
+	return len(p), nil
+}
+
+var _ io.Writer = (*TestingLogWriter)(nil)
