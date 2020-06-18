@@ -23,6 +23,8 @@
         - v1beta1
     group: fake.kubecarrier.io
     names:
+      categories:
+      - all
       kind: DB
       listKind: DBList
       plural: dbs
@@ -335,6 +337,8 @@
   spec:
     group: fake.kubecarrier.io
     names:
+      categories:
+      - all
       kind: Snapshot
       listKind: SnapshotList
       plural: snapshots
@@ -452,6 +456,8 @@
   spec:
     group: fake.kubecarrier.io
     names:
+      categories:
+      - all
       kind: Backup
       listKind: BackupList
       plural: backups

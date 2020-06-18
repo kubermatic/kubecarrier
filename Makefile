@@ -37,7 +37,7 @@ endif
 
 # Dev Image to use
 # Always bump this version, when changing ANY component version below.
-DEV_IMAGE_TAG=v4
+DEV_IMAGE_TAG=v5
 
 # Versions used to build DEV image:
 export GOLANGCI_LINT_VERSION=1.26.0
@@ -45,7 +45,7 @@ export STATIK_VERSION=0.1.8
 export CONTROLLER_GEN_VERSION=0.2.9
 export PROTOC_VERSION=3.11.4
 export PROTOC_GEN_GO_VERSION=1.3.5
-export PROTOC_GRPC_GATEWAY_VERSION=1.14.3
+export PROTOC_GRPC_GATEWAY_VERSION=1.14.5
 export TESTIFY_VERSION=1.4.0
 
 # every makefile operation should have explicit kubeconfig
@@ -168,8 +168,10 @@ MANAGEMENT_KIND_CLUSTER?=kubecarrier-${TEST_ID}
 SVC_KIND_CLUSTER?=kubecarrier-svc-${TEST_ID}
 
 e2e-setup: install require-docker
-	@kind create cluster --kubeconfig=${HOME}/.kube/kind-config-${MANAGEMENT_KIND_CLUSTER} --name=${MANAGEMENT_KIND_CLUSTER} --image=${KIND_NODE_IMAGE}
-	@kind create cluster --kubeconfig=${HOME}/.kube/kind-config-${SVC_KIND_CLUSTER} --name=${SVC_KIND_CLUSTER} --image=${KIND_NODE_IMAGE}
+	@mkdir -p /tmp/kubecarrier-hack
+	@cp ./hack/audit.yaml /tmp/kubecarrier-hack
+	@kind create cluster --retain --config=./hack/kind-config.yaml --kubeconfig=${HOME}/.kube/kind-config-${MANAGEMENT_KIND_CLUSTER} --name=${MANAGEMENT_KIND_CLUSTER} --image=${KIND_NODE_IMAGE} || true
+	@kind create cluster --config=./hack/kind-config.yaml --kubeconfig=${HOME}/.kube/kind-config-${SVC_KIND_CLUSTER} --name=${SVC_KIND_CLUSTER} --image=${KIND_NODE_IMAGE} || true
 	@kind get kubeconfig --internal --name=${MANAGEMENT_KIND_CLUSTER} | sed "s/kubecarrier-${TEST_ID}-control-plane/$$(docker  network inspect kind  | jq '.[0].Containers | to_entries | map(.value) | map(select(.Name == "kubecarrier-${TEST_ID}-control-plane"))[0].IPv4Address[:-3]' -r)/g" > "${HOME}/.kube/internal-kind-config-${MANAGEMENT_KIND_CLUSTER}"
 	@kind get kubeconfig --name=${MANAGEMENT_KIND_CLUSTER} > "${HOME}/.kube/kind-config-${MANAGEMENT_KIND_CLUSTER}"
 	@echo "Deploy cert-manger in management cluster"

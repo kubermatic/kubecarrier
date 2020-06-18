@@ -10,6 +10,8 @@
   spec:
     group: operator.kubecarrier.io
     names:
+      categories:
+      - all
       kind: APIServer
       listKind: APIServerList
       plural: apiservers
@@ -128,6 +130,22 @@
                   - clientID
                   - issuerURL
                   type: object
+                staticUsers:
+                  description: StaticUsers specifies static users configuration for
+                    API Server authentication
+                  properties:
+                    htpasswdSecret:
+                      description: HtpassswdSecret specifies the htpasswd secret to
+                        use for static user authentication.
+                      properties:
+                        name:
+                          type: string
+                      required:
+                      - name
+                      type: object
+                  required:
+                  - htpasswdSecret
+                  type: object
                 tlsSecretRef:
                   description: TLSSecretRef references the TLS certificate and private
                     key for serving the KubeCarrier API.
@@ -213,6 +231,8 @@
   spec:
     group: operator.kubecarrier.io
     names:
+      categories:
+      - all
       kind: Catapult
       listKind: CatapultList
       plural: catapults
@@ -386,6 +406,8 @@
   spec:
     group: operator.kubecarrier.io
     names:
+      categories:
+      - all
       kind: Elevator
       listKind: ElevatorList
       plural: elevators
@@ -547,6 +569,8 @@
   spec:
     group: operator.kubecarrier.io
     names:
+      categories:
+      - all
       kind: Ferry
       listKind: FerryList
       plural: ferries
@@ -678,6 +702,8 @@
   spec:
     group: operator.kubecarrier.io
     names:
+      categories:
+      - all
       kind: KubeCarrier
       listKind: KubeCarrierList
       plural: kubecarriers
@@ -800,6 +826,22 @@
                       - certificateAuthority
                       - clientID
                       - issuerURL
+                      type: object
+                    staticUsers:
+                      description: StaticUsers specifies static users configuration
+                        for API Server authentication
+                      properties:
+                        htpasswdSecret:
+                          description: HtpassswdSecret specifies the htpasswd secret
+                            to use for static user authentication.
+                          properties:
+                            name:
+                              type: string
+                          required:
+                          - name
+                          type: object
+                      required:
+                      - htpasswdSecret
                       type: object
                     tlsSecretRef:
                       description: TLSSecretRef references the TLS certificate and

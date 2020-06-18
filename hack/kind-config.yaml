@@ -1,0 +1,26 @@
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+nodes:
+  - role: control-plane
+    kubeadmConfigPatches:
+      - |
+        kind: ClusterConfiguration
+        apiServer:
+          extraArgs:
+            audit-log-path: "/var/log/kube-apiserver-audit.log"
+            audit-policy-file: /var/run/hack/audit.yaml
+          extraVolumes:
+            - name: "hack"
+              hostPath: "/var/run/hack"
+              mountPath: "/var/run/hack"
+              readOnly: true
+              pathType: Directory
+            - name: "log"
+              hostPath: "/var/log"
+              mountPath: "/var/log"
+              readOnly: false
+              pathType: Directory
+    extraMounts:
+      - containerPath: /var/run/hack
+        hostPath: /tmp/kubecarrier-hack
+        readOnly: true

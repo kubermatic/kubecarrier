@@ -127,7 +127,7 @@ func (a Authorizer) Authorize(
 		return fmt.Errorf("creating SubjectAccessReview: %s", err)
 	}
 	if !review.Status.Allowed {
-		return fmt.Errorf("permission denied: %s", review)
+		return fmt.Errorf("permission denied")
 	}
 	return nil
 }

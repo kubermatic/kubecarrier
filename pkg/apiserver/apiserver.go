@@ -57,6 +57,7 @@ import (
 	apiserverv1 "github.com/kubermatic/kubecarrier/pkg/apiserver/api/v1"
 	"github.com/kubermatic/kubecarrier/pkg/apiserver/auth"
 	_ "github.com/kubermatic/kubecarrier/pkg/apiserver/internal/auth/anonymous"
+	_ "github.com/kubermatic/kubecarrier/pkg/apiserver/internal/auth/htpasswd"
 	_ "github.com/kubermatic/kubecarrier/pkg/apiserver/internal/auth/oidc"
 	"github.com/kubermatic/kubecarrier/pkg/apiserver/internal/authorizer"
 	v1 "github.com/kubermatic/kubecarrier/pkg/apiserver/internal/v1"
@@ -274,6 +275,13 @@ func runE(flags *flags, log logr.Logger) error {
 	providerServer := v1.NewProviderServiceServer(c)
 	apiserverv1.RegisterProviderServiceServer(grpcServer, providerServer)
 	if err := apiserverv1.RegisterProviderServiceHandler(ctx, grpcGatewayMux, grpcClient); err != nil {
+		return err
+	}
+
+	docServer := v1.NewDocServiceServer()
+	apiserverv1.RegisterDocServer(grpcServer, docServer)
+	gwruntime.SetHTTPBodyMarshaler(grpcGatewayMux)
+	if err := apiserverv1.RegisterDocHandlerServer(ctx, grpcGatewayMux, docServer); err != nil {
 		return err
 	}
 

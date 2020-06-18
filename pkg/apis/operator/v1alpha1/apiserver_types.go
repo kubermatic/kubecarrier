@@ -29,6 +29,14 @@ type APIServerSpec struct {
 	// OIDC specifies OpenID Connect configuration for API Server authentication
 	// +optional
 	OIDC *APIServerOIDCConfig `json:"oidc,omitempty"`
+	// StaticUsers specifies static users configuration for API Server authentication
+	// +optional
+	StaticUsers *StaticUsers `json:"staticUsers,omitempty"`
+}
+
+type StaticUsers struct {
+	// HtpassswdSecret specifies the htpasswd secret to use for static user authentication.
+	HtpasswdSecret ObjectReference `json:"htpasswdSecret"`
 }
 
 type APIServerOIDCConfig struct {
@@ -225,6 +233,7 @@ func (s *APIServerStatus) SetCondition(condition APIServerCondition) {
 // APIServer manages the deployment of the KubeCarrier central API server.
 // +kubebuilder:object:root=true
 // +kubebuilder:subresource:status
+// +kubebuilder:resource:categories=all
 // +kubebuilder:printcolumn:name="Status",type="string",JSONPath=".status.phase"
 // +kubebuilder:printcolumn:name="Age",type="date",JSONPath=".metadata.creationTimestamp"
 type APIServer struct {
