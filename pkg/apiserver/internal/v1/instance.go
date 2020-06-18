@@ -33,19 +33,22 @@ import (
 	"github.com/golang/protobuf/ptypes/empty"
 
 	v1 "github.com/kubermatic/kubecarrier/pkg/apiserver/api/v1"
+	"github.com/kubermatic/kubecarrier/pkg/apiserver/internal/authorizer"
 )
 
 type instanceServer struct {
-	client client.Client
-	mapper meta.RESTMapper
+	client     client.Client
+	mapper     meta.RESTMapper
+	authorizer authorizer.Authorizer
 }
 
 var _ v1.InstancesServiceServer = (*instanceServer)(nil)
 
-func NewInstancesServer(c client.Client, mapper meta.RESTMapper) v1.InstancesServiceServer {
+func NewInstancesServer(c client.Client, authorizer authorizer.Authorizer, mapper meta.RESTMapper) v1.InstancesServiceServer {
 	return &instanceServer{
-		client: c,
-		mapper: mapper,
+		client:     c,
+		mapper:     mapper,
+		authorizer: authorizer,
 	}
 }
 func (o instanceServer) Create(ctx context.Context, req *v1.InstanceCreateRequest) (res *v1.Instance, err error) {
@@ -56,6 +59,13 @@ func (o instanceServer) Create(ctx context.Context, req *v1.InstanceCreateReques
 		return nil, status.Errorf(codes.InvalidArgument, "creating instance: unable to get Kind: %s", err.Error())
 	}
 	obj.SetGroupVersionKind(gvk)
+
+	if err := o.authorizer.Authorize(ctx, obj, authorizer.AuthorizationOption{
+		Namespace: req.Account,
+		Verb:      authorizer.RequestCreate,
+	}); err != nil {
+		return nil, status.Error(codes.Unauthenticated, err.Error())
+	}
 	val := map[string]interface{}{}
 	rawObject, err := v1.NewRawObject(req.Spec.Spec.Encoding, req.Spec.Spec.Data)
 	if err != nil {
@@ -94,6 +104,14 @@ func (o instanceServer) List(ctx context.Context, req *v1.InstanceListRequest) (
 		return nil, status.Errorf(codes.Internal, "listing instance: unable to get Kind: %s", err.Error())
 	}
 	obj.SetGroupVersionKind(gvk)
+
+	if err := o.authorizer.Authorize(ctx, obj, authorizer.AuthorizationOption{
+		Namespace: req.Account,
+		Verb:      authorizer.RequestList,
+	}); err != nil {
+		return nil, status.Error(codes.Unauthenticated, err.Error())
+	}
+
 	if err := o.client.List(ctx, obj, listOptions); err != nil {
 		return nil, status.Errorf(codes.Internal, fmt.Sprintf("listing instances: %s", err.Error()))
 	}
@@ -126,6 +144,13 @@ func (o instanceServer) Get(ctx context.Context, req *v1.InstanceGetRequest) (re
 		return nil, status.Errorf(codes.Internal, "getting instance: unable to get Kind: %s", err.Error())
 	}
 	obj.SetGroupVersionKind(gvk)
+	if err := o.authorizer.Authorize(ctx, obj, authorizer.AuthorizationOption{
+		Namespace: req.Account,
+		Name:      req.Name,
+		Verb:      authorizer.RequestGet,
+	}); err != nil {
+		return nil, status.Error(codes.Unauthenticated, err.Error())
+	}
 	if err = o.client.Get(ctx, types.NamespacedName{
 		Name:      req.Name,
 		Namespace: req.Account,
@@ -147,6 +172,15 @@ func (o instanceServer) Delete(ctx context.Context, req *v1.InstanceDeleteReques
 		return nil, status.Errorf(codes.Internal, "deleting instance: unable to get Kind: %s", err.Error())
 	}
 	obj.SetGroupVersionKind(gvk)
+
+	if err := o.authorizer.Authorize(ctx, obj, authorizer.AuthorizationOption{
+		Namespace: req.Account,
+		Name:      req.Name,
+		Verb:      authorizer.RequestDelete,
+	}); err != nil {
+		return nil, status.Error(codes.Unauthenticated, err.Error())
+	}
+
 	obj.SetNamespace(req.Account)
 	obj.SetName(req.Name)
 	if err := o.client.Delete(ctx, obj); err != nil {
