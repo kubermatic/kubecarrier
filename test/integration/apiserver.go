@@ -25,7 +25,6 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
-	"reflect"
 	"strings"
 	"testing"
 	"time"
@@ -48,7 +47,6 @@ import (
 
 	catalogv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/catalog/v1alpha1"
 	corev1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/core/v1alpha1"
-	operatorv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/operator/v1alpha1"
 	apiserverv1 "github.com/kubermatic/kubecarrier/pkg/apiserver/api/v1"
 	v1 "github.com/kubermatic/kubecarrier/pkg/apiserver/api/v1"
 	"github.com/kubermatic/kubecarrier/pkg/testutil"
@@ -70,57 +68,6 @@ func newAPIServer(f *testutil.Framework) func(t *testing.T) {
 		// Enable OIDC and Htpasswd
 		username := "user1"
 		password := "mickey5"
-		md5password := `$apr1$gxNb79DX$6wi9QaGNM5TA0kBKiC4710`
-
-		htpasswdSecret := &corev1.Secret{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "htpasswd-user",
-				Namespace: ns.GetName(),
-			},
-			Data: map[string][]byte{
-				"auth": []byte(username + ":" + md5password),
-			},
-		}
-		require.NoError(t, managementClient.Create(ctx, htpasswdSecret))
-		kubeCarrier := &operatorv1alpha1.KubeCarrier{}
-		require.NoError(t, managementClient.Get(ctx, types.NamespacedName{
-			Name: "kubecarrier",
-		}, kubeCarrier))
-		kubeCarrier.Spec = operatorv1alpha1.KubeCarrierSpec{
-			API: operatorv1alpha1.APIServerSpec{
-				OIDC: &operatorv1alpha1.APIServerOIDCConfig{
-					// from test/testdata/dex_values.yaml
-					IssuerURL:     "https://dex.kubecarrier-system.svc",
-					ClientID:      "e2e-client-id",
-					UsernameClaim: "name",
-					CertificateAuthority: operatorv1alpha1.ObjectReference{
-						Name: "dex-web-server",
-					},
-				},
-
-				StaticUsers: &operatorv1alpha1.StaticUsers{
-					HtpasswdSecret: operatorv1alpha1.ObjectReference{
-						Name: htpasswdSecret.Name,
-					},
-				},
-			},
-		}
-		require.NoError(t, managementClient.Update(ctx, kubeCarrier))
-		apiServer := &operatorv1alpha1.APIServer{}
-		oidcCtx, cancel := context.WithTimeout(ctx, 60*time.Second)
-		t.Cleanup(cancel)
-		require.NoError(t, wait.PollUntil(time.Second, func() (done bool, err error) {
-			if err := managementClient.Get(oidcCtx, types.NamespacedName{
-				Name:      "kubecarrier",
-				Namespace: ns.GetName(),
-			}, apiServer); err != nil {
-				return true, err
-			}
-			return reflect.DeepEqual(kubeCarrier.Spec.API, apiServer.Spec) && apiServer.IsReady(), nil
-		}, oidcCtx.Done()))
-		require.NoError(t, testutil.WaitUntilReady(ctx, managementClient, kubeCarrier))
-		// Wait for API server new pod to start and to be able to receive request with OIDC token.
-		time.Sleep(10 * time.Second)
 
 		pfCmd := exec.CommandContext(ctx,
 			"kubectl",
