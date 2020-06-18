@@ -1255,7 +1255,12 @@
           kubecarrier.io/role: operator
       spec:
         containers:
-        - image: quay.io/kubecarrier/operator:was not build properly
+        - args:
+          - --cert-dir=$(CERT_DIR)
+          env:
+          - name: CERT_DIR
+            value: /tmp/k8s-webhook-server/serving-certs
+          image: quay.io/kubecarrier/operator:was not build properly
           livenessProbe:
             httpGet:
               path: /healthz
@@ -1274,10 +1279,10 @@
               port: readiness-port
           resources:
             limits:
-              cpu: 100m
+              cpu: "1"
               memory: 100Mi
             requests:
-              cpu: 100m
+              cpu: "1"
               memory: 100Mi
           volumeMounts:
           - mountPath: /tmp/k8s-webhook-server/serving-certs
