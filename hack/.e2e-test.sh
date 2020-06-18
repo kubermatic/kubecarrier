@@ -20,7 +20,7 @@ set -euo pipefail
 workdir=$(mktemp -d)
 
 function cleanup() {
-  cat ${workdir}/test.out | go tool test2json | tee ${workdir}/test.json | go run ./hack/testjsonformat
+  cat ${workdir}/test.out | go tool test2json | tee ${workdir}/test.json | go run ./hack/testjsonformat | tee ${workdir}/test.inorder.out
   echo "starting cleanup & log upload"
   mkdir -p ${workdir}/management
   mkdir -p ${workdir}/svc
