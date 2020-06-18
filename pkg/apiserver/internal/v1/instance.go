@@ -51,7 +51,8 @@ func NewInstancesServer(c client.Client, authorizer authorizer.Authorizer, mappe
 		authorizer: authorizer,
 	}
 }
-func (o instanceServer) Create(ctx context.Context, req *v1.InstanceCreateRequest) (res *v1.Instance, err error) {
+
+func (o instanceServer) handleCreateRequest(ctx context.Context, req *v1.InstanceCreateRequest) (res *v1.Instance, err error) {
 	obj := &unstructured.Unstructured{}
 
 	gvk, err := o.gvkFromInstance(o.mapper, req.Offering, req.Version)
@@ -59,13 +60,6 @@ func (o instanceServer) Create(ctx context.Context, req *v1.InstanceCreateReques
 		return nil, status.Errorf(codes.InvalidArgument, "creating instance: unable to get Kind: %s", err.Error())
 	}
 	obj.SetGroupVersionKind(gvk)
-
-	if err := o.authorizer.Authorize(ctx, obj, authorizer.AuthorizationOption{
-		Namespace: req.Account,
-		Verb:      authorizer.RequestCreate,
-	}); err != nil {
-		return nil, status.Error(codes.Unauthenticated, err.Error())
-	}
 	val := map[string]interface{}{}
 	rawObject, err := v1.NewRawObject(req.Spec.Spec.Encoding, req.Spec.Spec.Data)
 	if err != nil {
@@ -93,11 +87,24 @@ func (o instanceServer) Create(ctx context.Context, req *v1.InstanceCreateReques
 	return
 }
 
-func (o instanceServer) List(ctx context.Context, req *v1.InstanceListRequest) (res *v1.InstanceList, err error) {
-	listOptions, err := req.GetListOptions()
+func (o instanceServer) Create(ctx context.Context, req *v1.InstanceCreateRequest) (res *v1.Instance, err error) {
+	obj := &unstructured.Unstructured{}
+
+	gvk, err := o.gvkFromInstance(o.mapper, req.Offering, req.Version)
 	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+		return nil, status.Errorf(codes.InvalidArgument, "creating instance: unable to get Kind: %s", err.Error())
 	}
+	obj.SetGroupVersionKind(gvk)
+
+	if err := o.authorizer.Authorize(ctx, obj, authorizer.AuthorizationOption{
+		Namespace: req.Account,
+		Verb:      authorizer.RequestCreate,
+	}); err != nil {
+		return nil, status.Error(codes.Unauthenticated, err.Error())
+	}
+	return o.handleCreateRequest(ctx, req)
+}
+func (o instanceServer) List(ctx context.Context, req *v1.InstanceListRequest) (res *v1.InstanceList, err error) {
 	obj := &unstructured.UnstructuredList{}
 	gvk, err := o.gvkFromInstance(o.mapper, req.Offering, req.Version)
 	if err != nil {
@@ -111,7 +118,21 @@ func (o instanceServer) List(ctx context.Context, req *v1.InstanceListRequest) (
 	}); err != nil {
 		return nil, status.Error(codes.Unauthenticated, err.Error())
 	}
+	return o.handleListRequest(ctx, req)
 
+}
+
+func (o instanceServer) handleListRequest(ctx context.Context, req *v1.InstanceListRequest) (res *v1.InstanceList, err error) {
+	listOptions, err := req.GetListOptions()
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+	}
+	obj := &unstructured.UnstructuredList{}
+	gvk, err := o.gvkFromInstance(o.mapper, req.Offering, req.Version)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "listing instance: unable to get Kind: %s", err.Error())
+	}
+	obj.SetGroupVersionKind(gvk)
 	if err := o.client.List(ctx, obj, listOptions); err != nil {
 		return nil, status.Errorf(codes.Internal, fmt.Sprintf("listing instances: %s", err.Error()))
 	}
@@ -122,21 +143,6 @@ func (o instanceServer) List(ctx context.Context, req *v1.InstanceListRequest) (
 	}
 	return
 }
-
-func (o instanceServer) gvkFromInstance(mapper meta.RESTMapper, instance string, version string) (schema.GroupVersionKind, error) {
-	parts := strings.SplitN(instance, ".", 2)
-	gvr := schema.GroupVersionResource{
-		Resource: parts[0],
-		Group:    parts[1],
-	}
-	kind, err := o.mapper.KindFor(gvr)
-	if err != nil {
-		return schema.GroupVersionKind{}, err
-	}
-	kind.Version = version
-	return kind, nil
-}
-
 func (o instanceServer) Get(ctx context.Context, req *v1.InstanceGetRequest) (res *v1.Instance, err error) {
 	obj := &unstructured.Unstructured{}
 	gvk, err := o.gvkFromInstance(o.mapper, req.Offering, req.Version)
@@ -151,6 +157,16 @@ func (o instanceServer) Get(ctx context.Context, req *v1.InstanceGetRequest) (re
 	}); err != nil {
 		return nil, status.Error(codes.Unauthenticated, err.Error())
 	}
+	return o.handleGetRequest(ctx, req)
+}
+
+func (o instanceServer) handleGetRequest(ctx context.Context, req *v1.InstanceGetRequest) (res *v1.Instance, err error) {
+	obj := &unstructured.Unstructured{}
+	gvk, err := o.gvkFromInstance(o.mapper, req.Offering, req.Version)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "getting instance: unable to get Kind: %s", err.Error())
+	}
+	obj.SetGroupVersionKind(gvk)
 	if err = o.client.Get(ctx, types.NamespacedName{
 		Name:      req.Name,
 		Namespace: req.Account,
@@ -180,13 +196,36 @@ func (o instanceServer) Delete(ctx context.Context, req *v1.InstanceDeleteReques
 	}); err != nil {
 		return nil, status.Error(codes.Unauthenticated, err.Error())
 	}
+	return o.handleDeleteRequest(ctx, req)
+}
 
+func (o instanceServer) handleDeleteRequest(ctx context.Context, req *v1.InstanceDeleteRequest) (*empty.Empty, error) {
+	obj := &unstructured.Unstructured{}
+	gvk, err := o.gvkFromInstance(o.mapper, req.Offering, req.Version)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "deleting instance: unable to get Kind: %s", err.Error())
+	}
+	obj.SetGroupVersionKind(gvk)
 	obj.SetNamespace(req.Account)
 	obj.SetName(req.Name)
 	if err := o.client.Delete(ctx, obj); err != nil {
 		return nil, status.Errorf(codes.Internal, fmt.Sprintf("delete instance: %s", err.Error()))
 	}
 	return &empty.Empty{}, nil
+}
+
+func (o instanceServer) gvkFromInstance(mapper meta.RESTMapper, instance string, version string) (schema.GroupVersionKind, error) {
+	parts := strings.SplitN(instance, ".", 2)
+	gvr := schema.GroupVersionResource{
+		Resource: parts[0],
+		Group:    parts[1],
+	}
+	kind, err := o.mapper.KindFor(gvr)
+	if err != nil {
+		return schema.GroupVersionKind{}, err
+	}
+	kind.Version = version
+	return kind, nil
 }
 
 func (o instanceServer) convertInstance(in *unstructured.Unstructured) (out *v1.Instance, err error) {

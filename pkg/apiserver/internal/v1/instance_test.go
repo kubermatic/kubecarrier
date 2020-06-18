@@ -89,7 +89,10 @@ func TestGetInstance(t *testing.T) {
 	assert.Nil(t, err)
 
 	client := fakeclient.NewFakeClientWithScheme(testScheme, instance)
-	instanceServer := NewInstancesServer(client, newFakeRESTMapper("CouchDB"))
+	instanceServer := &instanceServer{
+		client: client,
+		mapper: newFakeRESTMapper("CouchDB"),
+	}
 	ctx := context.Background()
 	tests := []struct {
 		name           string
@@ -120,7 +123,7 @@ func TestGetInstance(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			instance, err := instanceServer.Get(ctx, test.req)
+			instance, err := instanceServer.handleGetRequest(ctx, test.req)
 			assert.Equal(t, test.expectedError, err)
 			assert.Equal(t, test.expectedResult, instance)
 		})
@@ -130,7 +133,10 @@ func TestGetInstance(t *testing.T) {
 func TestCreateInstance(t *testing.T) {
 	spec := v1.NewJSONRawObject([]byte("{\"password\":\"password\",\"username\":\"username\"}"))
 	client := fakeclient.NewFakeClientWithScheme(testScheme)
-	instanceServer := NewInstancesServer(client, newFakeRESTMapper("CouchDB"))
+	instanceServer := &instanceServer{
+		client: client,
+		mapper: newFakeRESTMapper("CouchDB"),
+	}
 	ctx := context.Background()
 	tests := []struct {
 		name           string
@@ -163,7 +169,7 @@ func TestCreateInstance(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			instance, err := instanceServer.Create(ctx, test.req)
+			instance, err := instanceServer.handleCreateRequest(ctx, test.req)
 			assert.Equal(t, test.expectedError, err)
 			assert.Equal(t, test.expectedResult, instance)
 		})
@@ -176,7 +182,10 @@ func TestDeleteInstance(t *testing.T) {
 		map[string]string{"status": "ready"}, map[string]string{})
 	assert.Nil(t, err)
 	client := fakeclient.NewFakeClientWithScheme(testScheme)
-	instanceServer := NewInstancesServer(client, newFakeRESTMapper("CouchDB"))
+	instanceServer := &instanceServer{
+		client: client,
+		mapper: newFakeRESTMapper("CouchDB"),
+	}
 	ctx := context.Background()
 	err = client.Create(ctx, instance)
 	assert.Nil(t, err)
@@ -200,7 +209,7 @@ func TestDeleteInstance(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			empty, err := instanceServer.Delete(ctx, test.req)
+			empty, err := instanceServer.handleDeleteRequest(ctx, test.req)
 			assert.Equal(t, test.expectedError, err)
 			assert.Equal(t, test.expectedResult, empty)
 		})
@@ -227,7 +236,10 @@ func TestListInstance(t *testing.T) {
 
 	client := fakeclient.NewFakeClientWithScheme(testScheme, instances)
 	testScheme.AddKnownTypeWithName(instanceListGVK, instances)
-	instanceServer := NewInstancesServer(client, newFakeRESTMapper("CouchDBList"))
+	instanceServer := &instanceServer{
+		client: client,
+		mapper: newFakeRESTMapper("CouchDBList"),
+	}
 	ctx := context.Background()
 	tests := []struct {
 		name           string
@@ -341,7 +353,7 @@ func TestListInstance(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			instances, err := instanceServer.List(ctx, test.req)
+			instances, err := instanceServer.handleListRequest(ctx, test.req)
 			assert.Equal(t, test.expectedError, err)
 			assert.Equal(t, test.expectedResult, instances)
 		})
