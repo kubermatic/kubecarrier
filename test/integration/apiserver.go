@@ -427,6 +427,7 @@ func instanceService(ctx context.Context, conn *grpc.ClientConn, account *catalo
 		}
 		_, err = client.Create(ctx, createReq)
 		require.NoError(t, err, "creating instance")
+		nextEventType(t, watchClient, watch.Added)
 
 		fakeDB := testutil.NewFakeDB("fakedb", serviceClusterAssignment.Status.ServiceClusterNamespace.Name)
 		require.NoError(t, testutil.WaitUntilFound(ctx, serviceClient, fakeDB))
@@ -457,21 +458,7 @@ func instanceService(ctx context.Context, conn *grpc.ClientConn, account *catalo
 		_, err = client.Delete(ctx, delReq)
 		require.NoError(t, err, "deleting instance")
 		require.NoError(t, testutil.WaitUntilNotFound(ctx, serviceClient, fakeDB))
-
-		// validate watch result
-		expectedEventNum := map[string]int{
-			string(watch.Added):   1,
-			string(watch.Deleted): 1,
-		}
-		eventCounters := make(map[string]int)
-		for {
-			event, err := watchClient.Recv()
-			if err != nil || event == nil {
-				assert.Equal(t, expectedEventNum, eventCounters)
-				break
-			}
-			eventCounters[event.Type]++
-		}
+		nextEventType(t, watchClient, watch.Deleted)
 	}
 }
 
