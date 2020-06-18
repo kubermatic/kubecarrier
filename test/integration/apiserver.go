@@ -813,26 +813,23 @@ func offeringService(ctx context.Context, conn *grpc.ClientConn, account *catalo
 			LabelSelector: "test-label==offering1",
 		})
 		require.NoError(t, err)
+		nextEventType(t, watchClient, watch.Added)
+
 		// Update an offering object to get Modified event.
 		offering1.Spec.Metadata.ShortDescription = "test offering update"
 		require.NoError(t, managementClient.Update(ctx, offering1))
+		nextEventType(t, watchClient, watch.Modified)
+
 		// Delete an offering object to get Delete event.
 		require.NoError(t, managementClient.Delete(ctx, offering1))
-		expectedEventNum := map[string]int{
-			string(watch.Added):    1,
-			string(watch.Modified): 1,
-			string(watch.Deleted):  1,
-		}
-		eventCounters := make(map[string]int)
-		for {
-			event, err := watchClient.Recv()
-			if err != nil || event == nil {
-				assert.Equal(t, expectedEventNum, eventCounters)
-				break
-			}
-			eventCounters[event.Type]++
-		}
+		nextEventType(t, watchClient, watch.Deleted)
 	}
+}
+
+func nextEventType(t *testing.T, watchClient v1.OfferingService_WatchClient, eventType watch.EventType) {
+	event, err := watchClient.Recv()
+	require.NoError(t, err)
+	assert.Equal(t, string(eventType), event.Type)
 }
 
 func regionService(ctx context.Context, conn *grpc.ClientConn, account *catalogv1alpha1.Account, managementClient *testutil.RecordingClient, f *testutil.Framework) func(t *testing.T) {
