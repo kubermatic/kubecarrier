@@ -20,6 +20,7 @@ import (
 	"context"
 	"crypto/tls"
 	"crypto/x509"
+	"encoding/base64"
 	"fmt"
 	"net/http"
 	"os/exec"
@@ -250,6 +251,24 @@ func (w gRPCWithAuthToken) GetRequestMetadata(ctx context.Context, uri ...string
 }
 
 func (w gRPCWithAuthToken) RequireTransportSecurity() bool {
+	return true
+}
+
+type gRPCBasicAuthToken struct {
+	username string
+	password string
+}
+
+var _ credentials.PerRPCCredentials = gRPCBasicAuthToken{}
+
+func (w gRPCBasicAuthToken) GetRequestMetadata(ctx context.Context, uri ...string) (map[string]string, error) {
+	token := base64.StdEncoding.EncodeToString([]byte(w.username + ":" + w.password))
+	return map[string]string{
+		"Authorization": "Basic " + token,
+	}, nil
+}
+
+func (w gRPCBasicAuthToken) RequireTransportSecurity() bool {
 	return true
 }
 
