@@ -21,52 +21,37 @@ import (
 
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	catalogv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/catalog/v1alpha1"
 	v1 "github.com/kubermatic/kubecarrier/pkg/apiserver/api/v1"
-	"github.com/kubermatic/kubecarrier/pkg/apiserver/internal/authorizer"
 )
 
 type regionServer struct {
-	client     client.Client
-	authorizer authorizer.Authorizer
+	client client.Client
 }
 
 var _ v1.RegionServiceServer = (*regionServer)(nil)
 
 // +kubebuilder:rbac:groups=catalog.kubecarrier.io,resources=regions,verbs=get;list
 
-func NewRegionServiceServer(c client.Client, authorizer authorizer.Authorizer) v1.RegionServiceServer {
+func NewRegionServiceServer(c client.Client) v1.RegionServiceServer {
 	return &regionServer{
-		client:     c,
-		authorizer: authorizer,
+		client: c,
+	}
+}
+
+func (o regionServer) GetGVR() schema.GroupVersionResource {
+	return schema.GroupVersionResource{
+		Group:    catalogv1alpha1.GroupVersion.Group,
+		Version:  catalogv1alpha1.GroupVersion.Version,
+		Resource: "regions",
 	}
 }
 
 func (o regionServer) List(ctx context.Context, req *v1.ListRequest) (res *v1.RegionList, err error) {
-	if err := o.authorizer.Authorize(ctx, &catalogv1alpha1.Region{}, authorizer.AuthorizationOption{
-		Namespace: req.Account,
-		Verb:      authorizer.RequestList,
-	}); err != nil {
-		return nil, status.Error(codes.Unauthenticated, err.Error())
-	}
-	return o.handleListRequest(ctx, req)
-}
-
-func (o regionServer) Get(ctx context.Context, req *v1.GetRequest) (res *v1.Region, err error) {
-	if err := o.authorizer.Authorize(ctx, &catalogv1alpha1.Region{}, authorizer.AuthorizationOption{
-		Name:      req.Name,
-		Namespace: req.Account,
-		Verb:      authorizer.RequestGet,
-	}); err != nil {
-		return nil, status.Error(codes.Unauthenticated, err.Error())
-	}
-	return o.handleGetRequest(ctx, req)
-}
-
-func (o regionServer) handleListRequest(ctx context.Context, req *v1.ListRequest) (res *v1.RegionList, err error) {
 	listOptions, err := req.GetListOptions()
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
@@ -83,7 +68,7 @@ func (o regionServer) handleListRequest(ctx context.Context, req *v1.ListRequest
 	return
 }
 
-func (o regionServer) handleGetRequest(ctx context.Context, req *v1.GetRequest) (res *v1.Region, err error) {
+func (o regionServer) Get(ctx context.Context, req *v1.GetRequest) (res *v1.Region, err error) {
 	region := &catalogv1alpha1.Region{}
 	if err = o.client.Get(ctx, types.NamespacedName{
 		Name:      req.Name,
