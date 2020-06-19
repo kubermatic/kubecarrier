@@ -17,7 +17,12 @@
 # This file should ONLY be called from within Makefile!!!
 set -euo pipefail
 
+JOB_LOG=${PULL_NUMBER:-}-${JOB_NAME:-}-${BUILD_ID:-}
 workdir=$(mktemp -d)
+if [[ "${JOB_LOG}" != "--" ]]; then
+  workdir=${workdir}/${JOB_LOG}
+  mkdir -p ${workdir}
+fi
 
 function cleanup() {
   cat ${workdir}/test.out | go tool test2json | tee ${workdir}/test.json | go run ./hack/testjsonformat | tee ${workdir}/test.inorder.out
@@ -31,10 +36,10 @@ function cleanup() {
   echo "find all logs in ${workdir}"
 
   # https://github.com/kubernetes/test-infra/blob/master/prow/jobs.md#job-environment-variables
-  local JOB_LOG=${PULL_NUMBER:-}-${JOB_NAME:-}-${BUILD_ID:-}
   if [[ "${JOB_LOG}" != "--" ]]; then
-    zip --quiet -r "${workdir}/${JOB_LOG}.zip" "${workdir}/management" "${workdir}/svc"
-    aws s3 cp "${workdir}/${JOB_LOG}.zip" "s3://e2elogs.kubecarrier.io/${JOB_LOG}.zip"
+    tmpdir=$(mktemp -d)
+    zip --junk-paths --quiet -r "${tmpdir}/${JOB_LOG}.zip" "${workdir}"
+    aws s3 cp "${tmpdir}/${JOB_LOG}.zip" "s3://e2elogs.kubecarrier.io/${JOB_LOG}.zip"
     echo "https://s3.eu-central-1.amazonaws.com/e2elogs.kubecarrier.io/${JOB_LOG}.zip"
   fi
 }
