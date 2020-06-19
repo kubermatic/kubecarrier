@@ -35,6 +35,7 @@ function cleanup() {
   if [[ "${JOB_LOG}" != "--" ]]; then
     zip --quiet -r "${workdir}/${JOB_LOG}.zip" "${workdir}/management" "${workdir}/svc"
     aws s3 cp "${workdir}/${JOB_LOG}.zip" "s3://e2elogs.kubecarrier.io/${JOB_LOG}.zip"
+    echo "https://s3.eu-central-1.amazonaws.com/e2elogs.kubecarrier.io/${JOB_LOG}.zip"
   fi
 }
 
