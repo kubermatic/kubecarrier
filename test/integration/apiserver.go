@@ -211,9 +211,7 @@ func instanceService(ctx context.Context, conn *grpc.ClientConn, tenantAccount *
 		})
 		require.NoError(t, managementClient.Create(ctx, providerAccount), "creating providerAccount")
 		require.NoError(t, testutil.WaitUntilReady(ctx, managementClient, providerAccount))
-
 		require.NoError(t, testutil.WaitUntilReady(ctx, managementClient, tenantAccount))
-
 		serviceCluster := f.SetupServiceCluster(ctx, managementClient, t, "eu-west-1", providerAccount)
 
 		catalogEntrySet := &catalogv1alpha1.CatalogEntrySet{
@@ -256,7 +254,7 @@ func instanceService(ctx context.Context, conn *grpc.ClientConn, tenantAccount *
 			},
 		}
 		require.NoError(t, managementClient.Create(ctx, catalogEntrySet))
-		require.NoError(t, testutil.WaitUntilReady(ctx, managementClient, catalogEntrySet, testutil.WithTimeout(time.Minute*2)))
+		require.NoError(t, testutil.WaitUntilReady(ctx, managementClient, catalogEntrySet, testutil.WithTimeout(2*time.Minute)))
 
 		catalog := testutil.NewCatalog("test-catalog", providerAccount.Status.Namespace.Name, &metav1.LabelSelector{}, &metav1.LabelSelector{})
 		require.NoError(t, managementClient.Create(ctx, catalog), "creating Catalog error")
@@ -272,13 +270,7 @@ func instanceService(ctx context.Context, conn *grpc.ClientConn, tenantAccount *
 				Name:      strings.Join([]string{"dbs", serviceCluster.Name, providerAccount.Name}, "."),
 			},
 		}
-
 		require.NoError(t, testutil.WaitUntilFound(ctx, managementClient, offering))
-		require.NoError(t, managementClient.Get(ctx, types.NamespacedName{
-			Namespace: tenantAccount.Status.Namespace.Name,
-			Name:      strings.Join([]string{"dbs", serviceCluster.Name, providerAccount.Name}, "."),
-		}, offering), "getting Offering error")
-
 		serviceClusterAssignment := &corev1alpha1.ServiceClusterAssignment{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      tenantAccount.Status.Namespace.Name + "." + serviceCluster.Name,

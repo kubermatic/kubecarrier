@@ -76,12 +76,10 @@ func (h *HtpasswdAuthenticator) Init() error {
 func (h *HtpasswdAuthenticator) Authenticate(ctx context.Context) (user.Info, error) {
 	token, err := grpc_auth.AuthFromMD(ctx, "Basic")
 	if err != nil {
-		h.Error(err, "cannot extract token")
 		return nil, err
 	}
 	username, password, err := h.parseUserInfo(token)
 	if err != nil {
-		h.Error(err, "cannot parse username and password from authentication token")
 		return nil, err
 	}
 	secret := &corev1.Secret{}

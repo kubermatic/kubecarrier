@@ -133,15 +133,25 @@ func ClusterRole(
 		return desiredClusterRole, nil
 	}
 
-	if !equality.Semantic.DeepEqual(desiredClusterRole.Rules, currentClusterRole.Rules) {
-		// desired and current ClusterRole .ClusterRoles are not equal -> trigger an update
-		log.V(1).Info("updating", "ClusterRole", name.String())
-		currentClusterRole.Rules = desiredClusterRole.Rules
-		if err = c.Update(ctx, currentClusterRole); err != nil {
-			return nil, fmt.Errorf("updating ClusterRole: %w", err)
+	if desiredClusterRole.AggregationRule != nil {
+		if !equality.Semantic.DeepEqual(desiredClusterRole.AggregationRule, currentClusterRole.AggregationRule) {
+			// desired and current ClusterRole .ClusterRoles are not equal -> trigger an update
+			log.V(1).Info("updating", "ClusterRole", name.String())
+			currentClusterRole.AggregationRule = desiredClusterRole.AggregationRule
+			if err = c.Update(ctx, currentClusterRole); err != nil {
+				return nil, fmt.Errorf("updating ClusterRole: %w", err)
+			}
+		}
+	} else {
+		if !equality.Semantic.DeepEqual(desiredClusterRole.Rules, currentClusterRole.Rules) {
+			// desired and current ClusterRole .ClusterRoles are not equal -> trigger an update
+			log.V(1).Info("updating", "ClusterRole", name.String())
+			currentClusterRole.Rules = desiredClusterRole.Rules
+			if err = c.Update(ctx, currentClusterRole); err != nil {
+				return nil, fmt.Errorf("updating ClusterRole: %w", err)
+			}
 		}
 	}
-
 	return currentClusterRole, nil
 }
 
