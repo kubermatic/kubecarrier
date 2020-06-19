@@ -13,10 +13,10 @@ rules:
     resources:
       - group: "rbac.authorization.k8s.io"
   - level: RequestResponse
-    namespaces:
-      - "kubecarrier-system"
     resources:
       - group: "authorization.k8s.io"
+        resources:
+          - "subjectaccessreviews"
     omitStages:
       - "RequestReceived"
   # ignore all kube-system namespace originating requests

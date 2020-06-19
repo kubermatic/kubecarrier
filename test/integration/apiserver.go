@@ -287,6 +287,8 @@ func instanceService(ctx context.Context, conn *grpc.ClientConn, tenantAccount *
 		}
 		require.NoError(t, testutil.WaitUntilReady(ctx, managementClient, serviceClusterAssignment), "service cluster assignment not ready")
 
+		// TODO: replace someday, wait until the admin@kubecarrier.io user gets the required create permissions
+		time.Sleep(5 * time.Second)
 		client := apiserverv1.NewInstancesServiceClient(conn)
 		createReq := &apiserverv1.InstanceCreateRequest{
 			Offering: offering.Name,
