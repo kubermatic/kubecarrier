@@ -20,12 +20,9 @@ import (
 	"context"
 	"crypto/tls"
 	"crypto/x509"
-	"encoding/base64"
 	"fmt"
 	"net/http"
-	"os"
 	"os/exec"
-	"reflect"
 	"strings"
 	"testing"
 	"time"
@@ -48,7 +45,6 @@ import (
 
 	catalogv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/catalog/v1alpha1"
 	corev1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/core/v1alpha1"
-	operatorv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/operator/v1alpha1"
 	apiserverv1 "github.com/kubermatic/kubecarrier/pkg/apiserver/api/v1"
 	v1 "github.com/kubermatic/kubecarrier/pkg/apiserver/api/v1"
 	"github.com/kubermatic/kubecarrier/pkg/testutil"
@@ -70,57 +66,6 @@ func newAPIServer(f *testutil.Framework) func(t *testing.T) {
 		// Enable OIDC and Htpasswd
 		username := "user1"
 		password := "mickey5"
-		md5password := `$apr1$gxNb79DX$6wi9QaGNM5TA0kBKiC4710`
-
-		htpasswdSecret := &corev1.Secret{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "htpasswd-user",
-				Namespace: ns.GetName(),
-			},
-			Data: map[string][]byte{
-				"auth": []byte(username + ":" + md5password),
-			},
-		}
-		require.NoError(t, managementClient.Create(ctx, htpasswdSecret))
-		kubeCarrier := &operatorv1alpha1.KubeCarrier{}
-		require.NoError(t, managementClient.Get(ctx, types.NamespacedName{
-			Name: "kubecarrier",
-		}, kubeCarrier))
-		kubeCarrier.Spec = operatorv1alpha1.KubeCarrierSpec{
-			API: operatorv1alpha1.APIServerSpec{
-				OIDC: &operatorv1alpha1.APIServerOIDCConfig{
-					// from test/testdata/dex_values.yaml
-					IssuerURL:     "https://dex.kubecarrier-system.svc",
-					ClientID:      "e2e-client-id",
-					UsernameClaim: "name",
-					CertificateAuthority: operatorv1alpha1.ObjectReference{
-						Name: "dex-web-server",
-					},
-				},
-
-				StaticUsers: &operatorv1alpha1.StaticUsers{
-					HtpasswdSecret: operatorv1alpha1.ObjectReference{
-						Name: htpasswdSecret.Name,
-					},
-				},
-			},
-		}
-		require.NoError(t, managementClient.Update(ctx, kubeCarrier))
-		apiServer := &operatorv1alpha1.APIServer{}
-		oidcCtx, cancel := context.WithTimeout(ctx, 60*time.Second)
-		t.Cleanup(cancel)
-		require.NoError(t, wait.PollUntil(time.Second, func() (done bool, err error) {
-			if err := managementClient.Get(oidcCtx, types.NamespacedName{
-				Name:      "kubecarrier",
-				Namespace: ns.GetName(),
-			}, apiServer); err != nil {
-				return true, err
-			}
-			return reflect.DeepEqual(kubeCarrier.Spec.API, apiServer.Spec) && apiServer.IsReady(), nil
-		}, oidcCtx.Done()))
-		require.NoError(t, testutil.WaitUntilReady(ctx, managementClient, kubeCarrier))
-		// Wait for API server new pod to start and to be able to receive request with OIDC token.
-		time.Sleep(10 * time.Second)
 
 		pfCmd := exec.CommandContext(ctx,
 			"kubectl",
@@ -131,8 +76,8 @@ func newAPIServer(f *testutil.Framework) func(t *testing.T) {
 			"service/kubecarrier-api-server-manager",
 			fmt.Sprintf("%d:https", localAPIServerPort),
 		)
-		pfCmd.Stdout = os.Stdout
-		pfCmd.Stderr = os.Stderr
+		pfCmd.Stdout = &testutil.TestingLogWriter{T: t}
+		pfCmd.Stderr = &testutil.TestingLogWriter{T: t}
 		require.NoError(t, pfCmd.Start())
 
 		token := fetchUserToken(ctx, t, managementClient, f.Config().ManagementExternalKubeconfigPath)
@@ -258,8 +203,9 @@ func fetchUserToken(ctx context.Context, t *testing.T, managementClient *testuti
 		"service/dex",
 		fmt.Sprintf("%d:https", localDexServerPort),
 	)
-	pfDex.Stdout = os.Stdout
-	pfDex.Stderr = os.Stderr
+
+	pfDex.Stdout = &testutil.TestingLogWriter{T: t}
+	pfDex.Stderr = &testutil.TestingLogWriter{T: t}
 
 	require.NoError(t, pfDex.Start())
 	certPool := x509.NewCertPool()
@@ -307,7 +253,7 @@ func (w gRPCWithAuthToken) RequireTransportSecurity() bool {
 	return true
 }
 
-func instanceService(ctx context.Context, conn *grpc.ClientConn, account *catalogv1alpha1.Account, managementClient *testutil.RecordingClient, f *testutil.Framework) func(t *testing.T) {
+func instanceService(ctx context.Context, conn *grpc.ClientConn, tenantAccount *catalogv1alpha1.Account, managementClient *testutil.RecordingClient, f *testutil.Framework) func(t *testing.T) {
 	return func(t *testing.T) {
 		serviceClient, err := f.ServiceClient(t)
 		require.NoError(t, err, "creating service client")
@@ -322,15 +268,9 @@ func instanceService(ctx context.Context, conn *grpc.ClientConn, account *catalo
 			APIGroup: "rbac.authorization.k8s.io",
 			Name:     "providerAccount",
 		})
-		tenantAccount := testutil.NewTenantAccount(testName, rbacv1.Subject{
-			Kind:     rbacv1.GroupKind,
-			APIGroup: "rbac.authorization.k8s.io",
-			Name:     "tenantAccount",
-		})
 		require.NoError(t, managementClient.Create(ctx, providerAccount), "creating providerAccount")
 		require.NoError(t, testutil.WaitUntilReady(ctx, managementClient, providerAccount))
 
-		require.NoError(t, managementClient.Create(ctx, tenantAccount), "creating tenantAccount")
 		require.NoError(t, testutil.WaitUntilReady(ctx, managementClient, tenantAccount))
 
 		serviceCluster := f.SetupServiceCluster(ctx, managementClient, t, "eu-west-1", providerAccount)
@@ -460,24 +400,6 @@ func instanceService(ctx context.Context, conn *grpc.ClientConn, account *catalo
 		require.NoError(t, testutil.WaitUntilNotFound(ctx, serviceClient, fakeDB))
 		nextEventType(t, watchClient, watch.Deleted)
 	}
-}
-
-type gRPCBasicAuthToken struct {
-	username string
-	password string
-}
-
-var _ credentials.PerRPCCredentials = gRPCBasicAuthToken{}
-
-func (w gRPCBasicAuthToken) GetRequestMetadata(ctx context.Context, uri ...string) (map[string]string, error) {
-	token := base64.StdEncoding.EncodeToString([]byte(w.username + ":" + w.password))
-	return map[string]string{
-		"Authorization": "Basic " + token,
-	}, nil
-}
-
-func (w gRPCBasicAuthToken) RequireTransportSecurity() bool {
-	return true
 }
 
 func accountService(ctx context.Context, conn *grpc.ClientConn, account *catalogv1alpha1.Account, managementClient *testutil.RecordingClient, f *testutil.Framework) func(t *testing.T) {

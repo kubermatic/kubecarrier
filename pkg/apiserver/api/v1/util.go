@@ -20,9 +20,11 @@ import (
 	"encoding/json"
 	"errors"
 	fmt "fmt"
+	"strings"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/yaml"
 )
@@ -148,6 +150,17 @@ func (req *WatchRequest) GetListOptions() (*client.ListOptions, error) {
 	return listOptions, nil
 }
 
+func (req *InstanceWatchRequest) GetListOptions() (*client.ListOptions, error) {
+	listOptions := &client.ListOptions{}
+	ls, err := GetLabelsSelectorOption(req)
+	if err != nil {
+		return nil, err
+	}
+	ls.ApplyToList(listOptions)
+	listOptions.Raw = &metav1.ListOptions{ResourceVersion: req.ResourceVersion}
+	return listOptions, nil
+}
+
 func (req *InstanceListRequest) GetListOptions() (*client.ListOptions, error) {
 	listOptions := &client.ListOptions{}
 	// Namespace
@@ -175,4 +188,14 @@ func (req *InstanceListRequest) GetListOptions() (*client.ListOptions, error) {
 	}
 	ls.ApplyToList(listOptions)
 	return listOptions, nil
+}
+
+func GetOfferingGVR(req OfferingVersionGetter) schema.GroupVersionResource {
+	parts := strings.SplitN(req.GetOffering(), ".", 2)
+	gvr := schema.GroupVersionResource{
+		Resource: parts[0],
+		Group:    parts[1],
+		Version:  req.GetVersion(),
+	}
+	return gvr
 }

@@ -37,7 +37,13 @@ if [[  ${CONTROLLER_GEN_VERSION} != ${CONTROLLER_GEN_WANT_VERSION} ]]; then
   exit 1
 fi
 
-function statik-gen {
+# test data statik gen
+statik -m -f -c '' -p "testdata" -src "test/testdata" -dest "test" '-include=*.yaml'
+cat hack/boilerplate/boilerplate.generatego.txt | sed s/YEAR/$(date +%Y)/ | cat - test/testdata/statik.go >test/testdata/statik.go.tmp
+mv test/testdata/statik.go.tmp test/testdata/statik.go
+go fmt test/testdata/statik.go
+
+function statik-gen() {
   local component=$1
   local package=${1//-/}
   local src=$2

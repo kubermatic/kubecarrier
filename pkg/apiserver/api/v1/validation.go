@@ -23,6 +23,11 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 )
 
+type OfferingVersionGetter interface {
+	GetOffering() string
+	GetVersion() string
+}
+
 type OfferingGetter interface {
 	GetOffering() string
 }

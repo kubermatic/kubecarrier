@@ -33,14 +33,12 @@ import (
 
 	catalogv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/catalog/v1alpha1"
 	v1 "github.com/kubermatic/kubecarrier/pkg/apiserver/api/v1"
-	"github.com/kubermatic/kubecarrier/pkg/apiserver/internal/authorizer"
 )
 
 type offeringServer struct {
 	client        client.Client
 	dynamicClient dynamic.Interface
 	scheme        *runtime.Scheme
-	authorizer    authorizer.Authorizer
 
 	gvr schema.GroupVersionResource
 }
@@ -49,12 +47,11 @@ var _ v1.OfferingServiceServer = (*offeringServer)(nil)
 
 // +kubebuilder:rbac:groups=catalog.kubecarrier.io,resources=offerings,verbs=get;list;watch
 
-func NewOfferingServiceServer(c client.Client, authorizer authorizer.Authorizer, dynamicClient dynamic.Interface, restMapper meta.RESTMapper, scheme *runtime.Scheme) (v1.OfferingServiceServer, error) {
+func NewOfferingServiceServer(c client.Client, dynamicClient dynamic.Interface, restMapper meta.RESTMapper, scheme *runtime.Scheme) (v1.OfferingServiceServer, error) {
 	offeringServer := &offeringServer{
 		client:        c,
 		dynamicClient: dynamicClient,
 		scheme:        scheme,
-		authorizer:    authorizer,
 	}
 	objGVK, err := apiutil.GVKForObject(&catalogv1alpha1.Offering{}, offeringServer.scheme)
 	if err != nil {
@@ -68,28 +65,15 @@ func NewOfferingServiceServer(c client.Client, authorizer authorizer.Authorizer,
 	return offeringServer, nil
 }
 
+func (o offeringServer) GetGVR() schema.GroupVersionResource {
+	return schema.GroupVersionResource{
+		Group:    catalogv1alpha1.GroupVersion.Group,
+		Version:  catalogv1alpha1.GroupVersion.Version,
+		Resource: "offerings",
+	}
+}
+
 func (o offeringServer) List(ctx context.Context, req *v1.ListRequest) (res *v1.OfferingList, err error) {
-	if err := o.authorizer.Authorize(ctx, &catalogv1alpha1.Offering{}, authorizer.AuthorizationOption{
-		Namespace: req.Account,
-		Verb:      authorizer.RequestList,
-	}); err != nil {
-		return nil, status.Error(codes.Unauthenticated, err.Error())
-	}
-	return o.handleListRequest(ctx, req)
-}
-
-func (o offeringServer) Get(ctx context.Context, req *v1.GetRequest) (res *v1.Offering, err error) {
-	if err := o.authorizer.Authorize(ctx, &catalogv1alpha1.Offering{}, authorizer.AuthorizationOption{
-		Name:      req.Name,
-		Namespace: req.Account,
-		Verb:      authorizer.RequestGet,
-	}); err != nil {
-		return nil, status.Error(codes.Unauthenticated, err.Error())
-	}
-	return o.handleGetRequest(ctx, req)
-}
-
-func (o offeringServer) handleListRequest(ctx context.Context, req *v1.ListRequest) (res *v1.OfferingList, err error) {
 	listOptions, err := req.GetListOptions()
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
@@ -106,7 +90,7 @@ func (o offeringServer) handleListRequest(ctx context.Context, req *v1.ListReque
 	return
 }
 
-func (o offeringServer) handleGetRequest(ctx context.Context, req *v1.GetRequest) (res *v1.Offering, err error) {
+func (o offeringServer) Get(ctx context.Context, req *v1.GetRequest) (res *v1.Offering, err error) {
 	offering := &catalogv1alpha1.Offering{}
 	if err = o.client.Get(ctx, types.NamespacedName{
 		Name:      req.Name,
@@ -125,12 +109,6 @@ func (o offeringServer) Watch(req *v1.WatchRequest, stream v1.OfferingService_Wa
 	listOptions, err := req.GetListOptions()
 	if err != nil {
 		return status.Error(codes.InvalidArgument, err.Error())
-	}
-	if err := o.authorizer.Authorize(stream.Context(), &catalogv1alpha1.Offering{}, authorizer.AuthorizationOption{
-		Namespace: req.Account,
-		Verb:      authorizer.RequestWatch,
-	}); err != nil {
-		return status.Error(codes.Unauthenticated, err.Error())
 	}
 	watcher, err := o.dynamicClient.Resource(o.gvr).Namespace(req.Account).Watch(*listOptions.AsListOptions())
 	if err != nil {

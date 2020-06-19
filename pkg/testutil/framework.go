@@ -29,6 +29,7 @@ import (
 	"github.com/stretchr/testify/require"
 	corev1 "k8s.io/api/core/v1"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
+	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
@@ -301,6 +302,23 @@ func (rc *RecordingClient) Create(ctx context.Context, obj runtime.Object, opts 
 	rc.t.Logf("creating %s", util.MustLogLine(obj, rc.scheme))
 	rc.RegisterForCleanup(obj)
 	return rc.ClientWatcher.Create(ctx, obj, opts...)
+}
+
+func (rc *RecordingClient) EnsureCreated(ctx context.Context, obj runtime.Object, opts ...client.CreateOption) error {
+	rc.t.Helper()
+	rc.t.Logf("creating %s", util.MustLogLine(obj, rc.scheme))
+	rc.RegisterForCleanup(obj)
+	oldObj := obj.DeepCopyObject()
+	err := rc.ClientWatcher.Create(ctx, obj, opts...)
+	if err != nil && errors.IsAlreadyExists(err) {
+		rc.t.Logf("alreadyExists, update %s", util.MustLogLine(obj, rc.scheme))
+		updateErr := rc.ClientWatcher.Update(ctx, oldObj)
+		if err := rc.scheme.Convert(oldObj, obj, nil); err != nil {
+			return err
+		}
+		return updateErr
+	}
+	return nil
 }
 
 func (rc *RecordingClient) Delete(ctx context.Context, obj runtime.Object, opts ...client.DeleteOption) error {
