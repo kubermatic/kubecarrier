@@ -21,12 +21,15 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/golang/protobuf/ptypes"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/client-go/dynamic"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/golang/protobuf/ptypes/empty"
@@ -35,16 +38,20 @@ import (
 )
 
 type instanceServer struct {
-	client client.Client
-	mapper meta.RESTMapper
+	client        client.Client
+	mapper        meta.RESTMapper
+	dynamicClient dynamic.Interface
+	scheme        *runtime.Scheme
 }
 
 var _ v1.InstancesServiceServer = (*instanceServer)(nil)
 
-func NewInstancesServer(c client.Client, mapper meta.RESTMapper) v1.InstancesServiceServer {
+func NewInstancesServer(c client.Client, dynamicClient dynamic.Interface, mapper meta.RESTMapper, scheme *runtime.Scheme) v1.InstancesServiceServer {
 	return &instanceServer{
-		client: c,
-		mapper: mapper,
+		client:        c,
+		dynamicClient: dynamicClient,
+		mapper:        mapper,
+		scheme:        scheme,
 	}
 }
 func (o instanceServer) Create(ctx context.Context, req *v1.InstanceCreateRequest) (res *v1.Instance, err error) {
@@ -147,6 +154,48 @@ func (o instanceServer) Delete(ctx context.Context, req *v1.InstanceDeleteReques
 		return nil, status.Errorf(codes.Internal, fmt.Sprintf("delete instance: %s", err.Error()))
 	}
 	return &empty.Empty{}, nil
+}
+
+func (o instanceServer) Watch(req *v1.InstanceWatchRequest, stream v1.InstancesService_WatchServer) error {
+	listOptions, err := req.GetListOptions()
+	if err != nil {
+		return status.Error(codes.InvalidArgument, err.Error())
+	}
+	gvr := v1.GetOfferingGVR(req)
+	watcher, err := o.dynamicClient.Resource(gvr).Namespace(req.Account).Watch(*listOptions.AsListOptions())
+	if err != nil {
+		return status.Errorf(codes.Internal, "watching service instances: %s", err.Error())
+	}
+	defer watcher.Stop()
+	for {
+		select {
+		case <-stream.Context().Done():
+			return stream.Context().Err()
+		case event, ok := <-watcher.ResultChan():
+			if !ok {
+				return status.Error(codes.Internal, "watch event channel was closed")
+			}
+			obj := &unstructured.Unstructured{}
+			if err := o.scheme.Convert(event.Object, obj, nil); err != nil {
+				return status.Errorf(codes.Internal, "converting event.Object to service instance: %s", err.Error())
+			}
+			instance, err := o.convertInstance(obj)
+			if err != nil {
+				return status.Errorf(codes.Internal, "converting instance: %s", err.Error())
+			}
+			any, err := ptypes.MarshalAny(instance)
+			if err != nil {
+				return status.Errorf(codes.Internal, "marshalling instance to Any: %s", err.Error())
+			}
+			err = stream.Send(&v1.WatchEvent{
+				Type:   string(event.Type),
+				Object: any,
+			})
+			if grpcStatus, _ := status.FromError(err); grpcStatus != nil && grpcStatus.Err() != nil {
+				return status.Errorf(codes.Internal, "sending instance stream: %s", grpcStatus.Err())
+			}
+		}
+	}
 }
 
 func (o instanceServer) convertInstance(in *unstructured.Unstructured) (out *v1.Instance, err error) {

@@ -139,10 +139,8 @@ func (o offeringServer) Watch(req *v1.WatchRequest, stream v1.OfferingService_Wa
 				Type:   string(event.Type),
 				Object: any,
 			})
-			if grpcStatus, ok := err.(toGRPCStatus); ok {
-				return status.Error(grpcStatus.GRPCStatus().Code(), grpcStatus.GRPCStatus().Message())
-			} else if err != nil {
-				return status.Errorf(codes.Internal, "sending Offering stream: %s", err.Error())
+			if grpcStatus, _ := status.FromError(err); grpcStatus != nil && grpcStatus.Err() != nil {
+				return status.Errorf(codes.Internal, "sending Offering stream: %s", grpcStatus.Err())
 			}
 		}
 	}

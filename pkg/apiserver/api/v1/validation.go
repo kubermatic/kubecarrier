@@ -183,6 +183,22 @@ func (req *InstanceCreateRequest) Validate() error {
 	return nil
 }
 
+func (req *InstanceWatchRequest) Validate() error {
+	if err := validateAccount(req); err != nil {
+		return err
+	}
+	if err := validateOffering(req); err != nil {
+		return err
+	}
+	if err := validateVersion(req); err != nil {
+		return err
+	}
+	if err := validateLabelSelector(req); err != nil {
+		return err
+	}
+	return nil
+}
+
 func (req *AccountListRequest) Validate() error {
 	if err := validateLabelSelector(req); err != nil {
 		return err

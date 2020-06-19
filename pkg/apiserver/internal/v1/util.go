@@ -18,7 +18,6 @@ package v1
 
 import (
 	"github.com/golang/protobuf/ptypes"
-	"google.golang.org/grpc/status"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -158,8 +157,4 @@ func convertListMeta(in metav1.ListMeta) (out *v1.ListMeta) {
 		ResourceVersion: in.ResourceVersion,
 	}
 	return
-}
-
-type toGRPCStatus interface {
-	GRPCStatus() *status.Status
 }

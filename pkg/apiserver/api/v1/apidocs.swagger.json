@@ -1186,6 +1186,71 @@
         ]
       }
     },
+    "/v1/watch/accounts/{account}/instances/{offering}/{version}": {
+      "get": {
+        "operationId": "InstancesService_Watch",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "account",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "description": "Offering name, i.e. couchdb.eu-west-1.team-a",
+            "in": "path",
+            "name": "offering",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "description": "Version of the resource",
+            "in": "path",
+            "name": "version",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "in": "query",
+            "name": "labelSelector",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "in": "query",
+            "name": "resourceVersion",
+            "required": false,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A successful response.(streaming responses)",
+            "schema": {
+              "properties": {
+                "error": {
+                  "$ref": "#/definitions/grpc.gateway.runtime.StreamError"
+                },
+                "result": {
+                  "$ref": "#/definitions/kubecarrier.api.v1.WatchEvent"
+                }
+              },
+              "title": "Stream result of kubecarrier.api.v1.WatchEvent",
+              "type": "object"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response",
+            "schema": {
+              "$ref": "#/definitions/grpc.gateway.runtime.Error"
+            }
+          }
+        },
+        "tags": [
+          "InstancesService"
+        ]
+      }
+    },
     "/v1/watch/accounts/{account}/offerings": {
       "get": {
         "operationId": "OfferingService_Watch",

@@ -150,6 +150,17 @@ func (req *WatchRequest) GetListOptions() (*client.ListOptions, error) {
 	return listOptions, nil
 }
 
+func (req *InstanceWatchRequest) GetListOptions() (*client.ListOptions, error) {
+	listOptions := &client.ListOptions{}
+	ls, err := GetLabelsSelectorOption(req)
+	if err != nil {
+		return nil, err
+	}
+	ls.ApplyToList(listOptions)
+	listOptions.Raw = &metav1.ListOptions{ResourceVersion: req.ResourceVersion}
+	return listOptions, nil
+}
+
 func (req *InstanceListRequest) GetListOptions() (*client.ListOptions, error) {
 	listOptions := &client.ListOptions{}
 	// Namespace
