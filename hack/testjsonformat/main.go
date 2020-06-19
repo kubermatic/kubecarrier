@@ -70,6 +70,7 @@ func main() {
 					if ev.Action == "output" {
 						if strings.HasPrefix(strings.TrimSpace(ev.Output), "--- PASS:") ||
 							strings.HasPrefix(strings.TrimSpace(ev.Output), "--- FAIL:") {
+							keys = append(keys, ev.Test)
 							pf = append(pf, ev.Output)
 							continue
 						}
@@ -89,7 +90,6 @@ func main() {
 							panic("only single " + ev.Output + " should be here")
 						}
 						output[ev.Test] = new(strings.Builder)
-						keys = append(keys, ev.Test)
 					}
 
 					switch ev.Action {

@@ -60,7 +60,7 @@ func (a Authorizer) UnaryServerInterceptor() grpc.UnaryServerInterceptor {
 			opts := authReq.GetAuthOption()
 			if gvr := authReq.GetGVR(info.Server); !gvr.Empty() {
 				if err := a.Authorize(ctx, gvr, opts); err != nil {
-					return nil, status.Error(codes.Unauthenticated, err.Error())
+					return nil, status.Error(codes.PermissionDenied, err.Error())
 				}
 			}
 		}
@@ -89,7 +89,7 @@ func (s *recvWrapper) RecvMsg(m interface{}) error {
 		opts := authReq.GetAuthOption()
 		gvr := authReq.GetGVR(s.srv)
 		if err := s.a.Authorize(s.Context(), gvr, opts); err != nil {
-			return status.Error(codes.Unauthenticated, err.Error())
+			return status.Error(codes.PermissionDenied, err.Error())
 		}
 	}
 	return nil

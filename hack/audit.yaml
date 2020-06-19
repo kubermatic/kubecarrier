@@ -5,14 +5,24 @@ rules:
   # ignore pod log requests
   - level: None
     resources:
-    - group: ""
-      resources:
-      - "pods/log"
-      - "pods/status"
+      - group: ""
+        resources:
+          - "pods/log"
+          - "pods/status"
+  - level: Request
+    resources:
+      - group: "rbac.authorization.k8s.io"
+  - level: RequestResponse
+    resources:
+      - group: "authorization.k8s.io"
+        resources:
+          - "subjectaccessreviews"
+    omitStages:
+      - "RequestReceived"
   # ignore all kube-system namespace originating requests
   - level: None
     namespaces:
-    - "kube-system"
+      - "kube-system"
   - level: Metadata
     # A bit quality of life, only log completed requests with their reponse
     omitStages:
