@@ -112,3 +112,14 @@ func (req *InstanceListRequest) GetAuthOption() authorizer.AuthorizationOption {
 func (req *InstanceListRequest) GetGVR(server interface{}) schema.GroupVersionResource {
 	return GetOfferingGVR(req)
 }
+
+func (req *InstanceWatchRequest) GetAuthOption() authorizer.AuthorizationOption {
+	return authorizer.AuthorizationOption{
+		Namespace: req.Account,
+		Verb:      authorizer.RequestWatch,
+	}
+}
+
+func (req *InstanceWatchRequest) GetGVR(server interface{}) schema.GroupVersionResource {
+	return GetOfferingGVR(req)
+}
