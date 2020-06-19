@@ -38,7 +38,10 @@ function cleanup() {
   # https://github.com/kubernetes/test-infra/blob/master/prow/jobs.md#job-environment-variables
   if [[ "${JOB_LOG}" != "--" ]]; then
     tmpdir=$(mktemp -d)
-    zip --junk-paths --quiet -r "${tmpdir}/${JOB_LOG}.zip" "${workdir}/*"
+    pushd ${workdir};
+    zip --quiet -r "${tmpdir}/${JOB_LOG}.zip" .
+    popd;
+
     aws s3 cp "${tmpdir}/${JOB_LOG}.zip" "s3://e2elogs.kubecarrier.io/${JOB_LOG}.zip"
     echo "https://s3.eu-central-1.amazonaws.com/e2elogs.kubecarrier.io/${JOB_LOG}.zip"
   fi
