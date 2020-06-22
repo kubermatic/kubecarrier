@@ -32,6 +32,7 @@ import (
 	"k8s.io/client-go/dynamic"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
+	"github.com/golang/protobuf/ptypes/any"
 	"github.com/golang/protobuf/ptypes/empty"
 
 	v1 "github.com/kubermatic/kubecarrier/pkg/apiserver/api/v1"
@@ -156,46 +157,29 @@ func (o instanceServer) Delete(ctx context.Context, req *v1.InstanceDeleteReques
 	return &empty.Empty{}, nil
 }
 
+func (o instanceServer) convertEvent(event runtime.Object) (*any.Any, error) {
+	obj := &unstructured.Unstructured{}
+	if err := o.scheme.Convert(event, obj, nil); err != nil {
+		return nil, status.Errorf(codes.Internal, "converting event.Object to service instance: %s", err.Error())
+	}
+	instance, err := o.convertInstance(obj)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "converting Offering: %s", err.Error())
+	}
+	any, err := ptypes.MarshalAny(instance)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "marshalling instance to Any: %s", err.Error())
+	}
+	return any, nil
+}
+
 func (o instanceServer) Watch(req *v1.InstanceWatchRequest, stream v1.InstancesService_WatchServer) error {
 	listOptions, err := req.GetListOptions()
 	if err != nil {
 		return status.Error(codes.InvalidArgument, err.Error())
 	}
 	gvr := v1.GetOfferingGVR(req)
-	watcher, err := o.dynamicClient.Resource(gvr).Namespace(req.Account).Watch(*listOptions.AsListOptions())
-	if err != nil {
-		return status.Errorf(codes.Internal, "watching service instances: %s", err.Error())
-	}
-	defer watcher.Stop()
-	for {
-		select {
-		case <-stream.Context().Done():
-			return stream.Context().Err()
-		case event, ok := <-watcher.ResultChan():
-			if !ok {
-				return status.Error(codes.Internal, "watch event channel was closed")
-			}
-			obj := &unstructured.Unstructured{}
-			if err := o.scheme.Convert(event.Object, obj, nil); err != nil {
-				return status.Errorf(codes.Internal, "converting event.Object to service instance: %s", err.Error())
-			}
-			instance, err := o.convertInstance(obj)
-			if err != nil {
-				return status.Errorf(codes.Internal, "converting instance: %s", err.Error())
-			}
-			any, err := ptypes.MarshalAny(instance)
-			if err != nil {
-				return status.Errorf(codes.Internal, "marshalling instance to Any: %s", err.Error())
-			}
-			err = stream.Send(&v1.WatchEvent{
-				Type:   string(event.Type),
-				Object: any,
-			})
-			if grpcStatus, _ := status.FromError(err); grpcStatus != nil && grpcStatus.Err() != nil {
-				return status.Errorf(codes.Internal, "sending instance stream: %s", grpcStatus.Err())
-			}
-		}
-	}
+	return watch(stream.Context(), o.dynamicClient, gvr, req.Account, *listOptions.AsListOptions(), stream.Send, o.convertEvent)
 }
 
 func (o instanceServer) convertInstance(in *unstructured.Unstructured) (out *v1.Instance, err error) {

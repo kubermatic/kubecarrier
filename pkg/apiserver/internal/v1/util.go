@@ -17,11 +17,18 @@ limitations under the License.
 package v1
 
 import (
+	"context"
+
 	"github.com/golang/protobuf/ptypes"
+	"github.com/golang/protobuf/ptypes/any"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/client-go/dynamic"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	catalogv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/catalog/v1alpha1"
@@ -157,4 +164,36 @@ func convertListMeta(in metav1.ListMeta) (out *v1.ListMeta) {
 		ResourceVersion: in.ResourceVersion,
 	}
 	return
+}
+
+type ConvertFunc func(runtime.Object) (*any.Any, error)
+type SendFunc func(*v1.WatchEvent) error
+
+func watch(ctx context.Context, client dynamic.Interface, gvr schema.GroupVersionResource, namespace string, opts metav1.ListOptions, sendFunc SendFunc, convertFunc ConvertFunc) error {
+	watcher, err := client.Resource(gvr).Namespace(namespace).Watch(opts)
+	if err != nil {
+		return status.Errorf(codes.Internal, "watching %s: %s", gvr.Resource, err.Error())
+	}
+	defer watcher.Stop()
+	for {
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		case event, ok := <-watcher.ResultChan():
+			if !ok {
+				return status.Error(codes.Internal, "watch event channel was closed")
+			}
+			any, err := convertFunc(event.Object)
+			if err != nil {
+				return err
+			}
+			err = sendFunc(&v1.WatchEvent{
+				Type:   string(event.Type),
+				Object: any,
+			})
+			if grpcStatus, _ := status.FromError(err); grpcStatus != nil && grpcStatus.Err() != nil {
+				return status.Errorf(codes.Internal, "sending %s stream: %s", gvr.Resource, grpcStatus.Err())
+			}
+		}
+	}
 }
