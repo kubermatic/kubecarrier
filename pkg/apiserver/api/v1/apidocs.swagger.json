@@ -1328,5 +1328,20 @@
   "produces": [
     "application/json"
   ],
+  "security": [
+    {
+      "ApiKeyAuth": [],
+      "BasicAuth": []
+    }
+  ],
+  "securityDefinitions": {
+    "ApiKeyAuth": {
+      "name": "Authorization",
+      "type": "apiKey"
+    },
+    "BasicAuth": {
+      "type": "basic"
+    }
+  },
   "swagger": "2.0"
 }
