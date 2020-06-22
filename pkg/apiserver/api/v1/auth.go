@@ -19,7 +19,18 @@ package v1
 import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
-	"github.com/kubermatic/kubecarrier/pkg/apiserver/internal/authorizer"
+	"github.com/kubermatic/kubecarrier/pkg/apiserver/authorizer"
+)
+
+var (
+	_ authorizer.AuthRequest = (*ListRequest)(nil)
+	_ authorizer.AuthRequest = (*GetRequest)(nil)
+	_ authorizer.AuthRequest = (*WatchRequest)(nil)
+	_ authorizer.AuthRequest = (*InstanceListRequest)(nil)
+	_ authorizer.AuthRequest = (*InstanceGetRequest)(nil)
+	_ authorizer.AuthRequest = (*InstanceCreateRequest)(nil)
+	_ authorizer.AuthRequest = (*InstanceDeleteRequest)(nil)
+	_ authorizer.AuthRequest = (*InstanceWatchRequest)(nil)
 )
 
 type ServerGVRGetter interface {
@@ -33,7 +44,7 @@ func (req *ListRequest) GetAuthOption() authorizer.AuthorizationOption {
 	}
 }
 
-func (req *ListRequest) GetGVR(server ServerGVRGetter) schema.GroupVersionResource {
+func (req *ListRequest) GetGVR(server interface{}) schema.GroupVersionResource {
 	if gvrSrv, ok := server.(ServerGVRGetter); ok {
 		return gvrSrv.GetGVR()
 	}
@@ -48,7 +59,7 @@ func (req *GetRequest) GetAuthOption() authorizer.AuthorizationOption {
 	}
 }
 
-func (req *GetRequest) GetGVR(server ServerGVRGetter) schema.GroupVersionResource {
+func (req *GetRequest) GetGVR(server interface{}) schema.GroupVersionResource {
 	if gvrSrv, ok := server.(ServerGVRGetter); ok {
 		return gvrSrv.GetGVR()
 	}
@@ -62,7 +73,7 @@ func (req *WatchRequest) GetAuthOption() authorizer.AuthorizationOption {
 	}
 }
 
-func (req *WatchRequest) GetGVR(server ServerGVRGetter) schema.GroupVersionResource {
+func (req *WatchRequest) GetGVR(server interface{}) schema.GroupVersionResource {
 	if gvrSrv, ok := server.(ServerGVRGetter); ok {
 		return gvrSrv.GetGVR()
 	}

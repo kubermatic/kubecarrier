@@ -31,6 +31,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/kubermatic/kubecarrier/pkg/apiserver/auth"
+	"github.com/kubermatic/kubecarrier/pkg/apiserver/authorizer"
 )
 
 type Authorizer struct {
@@ -49,14 +50,9 @@ func NewAuthorizer(log logr.Logger, scheme *runtime.Scheme, client client.Client
 	}
 }
 
-type authRequest interface {
-	GetAuthOption() AuthorizationOption
-	GetGVR(server interface{}) schema.GroupVersionResource
-}
-
 func (a Authorizer) UnaryServerInterceptor() grpc.UnaryServerInterceptor {
 	return func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
-		if authReq, ok := req.(authRequest); ok {
+		if authReq, ok := req.(authorizer.AuthRequest); ok {
 			opts := authReq.GetAuthOption()
 			if gvr := authReq.GetGVR(info.Server); !gvr.Empty() {
 				if err := a.Authorize(ctx, gvr, opts); err != nil {
@@ -85,7 +81,7 @@ func (s *recvWrapper) RecvMsg(m interface{}) error {
 	if err := s.ServerStream.RecvMsg(m); err != nil {
 		return err
 	}
-	if authReq, ok := m.(authRequest); ok {
+	if authReq, ok := m.(authorizer.AuthRequest); ok {
 		opts := authReq.GetAuthOption()
 		gvr := authReq.GetGVR(s.srv)
 		if err := s.a.Authorize(s.Context(), gvr, opts); err != nil {
@@ -100,7 +96,7 @@ func (s *recvWrapper) RecvMsg(m interface{}) error {
 func (a Authorizer) Authorize(
 	ctx context.Context,
 	gvr schema.GroupVersionResource,
-	option AuthorizationOption,
+	option authorizer.AuthorizationOption,
 ) error {
 	user, err := auth.ExtractUserInfo(ctx)
 	if err != nil {
@@ -122,7 +118,7 @@ func (a Authorizer) Authorize(
 	for key, val := range user.GetExtra() {
 		review.Spec.Extra[key] = val
 	}
-	option.apply(review)
+	option.Apply(review)
 	if err := a.client.Create(ctx, review); err != nil {
 		return fmt.Errorf("creating SubjectAccessReview: %s", err)
 	}
@@ -130,26 +126,4 @@ func (a Authorizer) Authorize(
 		return fmt.Errorf("permission denied")
 	}
 	return nil
-}
-
-type RequestOperation string
-
-const (
-	RequestGet    RequestOperation = "get"
-	RequestList   RequestOperation = "list"
-	RequestWatch  RequestOperation = "watch"
-	RequestCreate RequestOperation = "create"
-	RequestDelete RequestOperation = "delete"
-)
-
-type AuthorizationOption struct {
-	Name      string
-	Namespace string
-	Verb      RequestOperation
-}
-
-func (a AuthorizationOption) apply(review *authv1.SubjectAccessReview) {
-	review.Spec.ResourceAttributes.Name = a.Name
-	review.Spec.ResourceAttributes.Namespace = a.Namespace
-	review.Spec.ResourceAttributes.Verb = string(a.Verb)
 }
