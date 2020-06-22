@@ -167,9 +167,13 @@ func convertListMeta(in metav1.ListMeta) (out *v1.ListMeta) {
 }
 
 type ConvertFunc func(runtime.Object) (*any.Any, error)
-type SendFunc func(*v1.WatchEvent) error
 
-func watch(ctx context.Context, client dynamic.Interface, gvr schema.GroupVersionResource, namespace string, opts metav1.ListOptions, sendFunc SendFunc, convertFunc ConvertFunc) error {
+type streamer interface {
+	Send(*v1.WatchEvent) error
+	Context() context.Context
+}
+
+func watch(client dynamic.Interface, gvr schema.GroupVersionResource, namespace string, opts metav1.ListOptions, stream streamer, convertFunc ConvertFunc) error {
 	watcher, err := client.Resource(gvr).Namespace(namespace).Watch(opts)
 	if err != nil {
 		return status.Errorf(codes.Internal, "watching %s: %s", gvr.Resource, err.Error())
@@ -177,8 +181,8 @@ func watch(ctx context.Context, client dynamic.Interface, gvr schema.GroupVersio
 	defer watcher.Stop()
 	for {
 		select {
-		case <-ctx.Done():
-			return ctx.Err()
+		case <-stream.Context().Done():
+			return stream.Context().Err()
 		case event, ok := <-watcher.ResultChan():
 			if !ok {
 				return status.Error(codes.Internal, "watch event channel was closed")
@@ -187,7 +191,7 @@ func watch(ctx context.Context, client dynamic.Interface, gvr schema.GroupVersio
 			if err != nil {
 				return err
 			}
-			err = sendFunc(&v1.WatchEvent{
+			err = stream.Send(&v1.WatchEvent{
 				Type:   string(event.Type),
 				Object: any,
 			})

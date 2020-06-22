@@ -179,7 +179,7 @@ func (o instanceServer) Watch(req *v1.InstanceWatchRequest, stream v1.InstancesS
 		return status.Error(codes.InvalidArgument, err.Error())
 	}
 	gvr := v1.GetOfferingGVR(req)
-	return watch(stream.Context(), o.dynamicClient, gvr, req.Account, *listOptions.AsListOptions(), stream.Send, o.convertEvent)
+	return watch(o.dynamicClient, gvr, req.Account, *listOptions.AsListOptions(), stream, o.convertEvent)
 }
 
 func (o instanceServer) convertInstance(in *unstructured.Unstructured) (out *v1.Instance, err error) {

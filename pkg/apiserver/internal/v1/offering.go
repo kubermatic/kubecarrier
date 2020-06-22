@@ -127,7 +127,7 @@ func (o offeringServer) Watch(req *v1.WatchRequest, stream v1.OfferingService_Wa
 	if err != nil {
 		return status.Error(codes.InvalidArgument, err.Error())
 	}
-	return watch(stream.Context(), o.dynamicClient, o.gvr, req.Account, *listOptions.AsListOptions(), stream.Send, o.convertEvent)
+	return watch(o.dynamicClient, o.gvr, req.Account, *listOptions.AsListOptions(), stream, o.convertEvent)
 }
 
 func (o offeringServer) convertOffering(in *catalogv1alpha1.Offering) (out *v1.Offering, err error) {
