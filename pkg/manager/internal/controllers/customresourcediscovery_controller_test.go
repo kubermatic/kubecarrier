@@ -64,7 +64,7 @@ func TestCustomResourceDiscoveryReconciler(t *testing.T) {
 			},
 		},
 	}
-	owner.SetOwnerReference(provider, ns, testScheme)
+	_, _ = owner.SetOwnerReference(provider, ns, testScheme)
 
 	crDiscovery := &corev1alpha1.CustomResourceDiscovery{
 		ObjectMeta: metav1.ObjectMeta{
