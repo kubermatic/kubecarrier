@@ -185,7 +185,9 @@ func (r *DerivedCustomResourceReconciler) Reconcile(req ctrl.Request) (ctrl.Resu
 	derivedCR.Spec.Group = group
 	derivedCR.Spec.Names = names
 	r.ensureAllCategoryPresent(derivedCR)
-	owner.SetOwnerReference(dcr, derivedCR, r.Scheme)
+	if _, err := owner.SetOwnerReference(dcr, derivedCR, r.Scheme); err != nil {
+		return result, fmt.Errorf("setting owner reference: %w", err)
+	}
 
 	// the future created derived CRD name is written to this object
 	// before the CRD is created. This is due to derivedCustromResouce webhook.

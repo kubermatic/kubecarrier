@@ -54,7 +54,7 @@ func Test_DerivedCustomResourceReconciler(t *testing.T) {
 	}
 
 	providerNS := &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: provider.Name}}
-	owner.SetOwnerReference(provider, providerNS, testScheme)
+	_, _ = owner.SetOwnerReference(provider, providerNS, testScheme)
 	baseCRD := &apiextensionsv1.CustomResourceDefinition{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "catapults.test.kubecarrier.io",
