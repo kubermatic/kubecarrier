@@ -46,7 +46,7 @@ type providerServer struct {
 
 var _ v1.ProviderServiceServer = (*providerServer)(nil)
 
-// +kubebuilder:rbac:groups=catalog.kubecarrier.io,resources=providers,verbs=get;list
+// +kubebuilder:rbac:groups=catalog.kubecarrier.io,resources=providers,verbs=get;list;watch
 
 func NewProviderServiceServer(c client.Client, dynamicClient dynamic.Interface, restMapper meta.RESTMapper, scheme *runtime.Scheme) (v1.ProviderServiceServer, error) {
 	providerServer := &providerServer{

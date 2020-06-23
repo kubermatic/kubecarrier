@@ -46,7 +46,7 @@ type regionServer struct {
 
 var _ v1.RegionServiceServer = (*regionServer)(nil)
 
-// +kubebuilder:rbac:groups=catalog.kubecarrier.io,resources=regions,verbs=get;list
+// +kubebuilder:rbac:groups=catalog.kubecarrier.io,resources=regions,verbs=get;list;watch
 
 func NewRegionServiceServer(c client.Client, dynamicClient dynamic.Interface, restMapper meta.RESTMapper, scheme *runtime.Scheme) (v1.RegionServiceServer, error) {
 	regionServer := &regionServer{
