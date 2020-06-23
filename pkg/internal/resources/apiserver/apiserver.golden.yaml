@@ -19,6 +19,12 @@
     - list
     - watch
   - apiGroups:
+    - authentication.k8s.io
+    resources:
+    - tokenreviews
+    verbs:
+    - create
+  - apiGroups:
     - authorization.k8s.io
     resources:
     - subjectaccessreviews
@@ -224,7 +230,7 @@
           - name: API_SERVER_TLS_PRIVATE_KEY_FILE
             value: /run/serving-certs/tls.key
           - name: AUTHENTICATION_MODE
-            value: Htpasswd,OIDC
+            value: Htpasswd,OIDC,Token,Anonymous
           - name: HTPASSWD_SECRET_NAME
             value: test-secret
           - name: API_SERVER_OIDC_ISSUER_URL

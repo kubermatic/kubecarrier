@@ -59,6 +59,7 @@ import (
 	_ "github.com/kubermatic/kubecarrier/pkg/apiserver/internal/auth/anonymous"
 	_ "github.com/kubermatic/kubecarrier/pkg/apiserver/internal/auth/htpasswd"
 	_ "github.com/kubermatic/kubecarrier/pkg/apiserver/internal/auth/oidc"
+	_ "github.com/kubermatic/kubecarrier/pkg/apiserver/internal/auth/token"
 	"github.com/kubermatic/kubecarrier/pkg/apiserver/internal/authorizer"
 	v1 "github.com/kubermatic/kubecarrier/pkg/apiserver/internal/v1"
 	"github.com/kubermatic/kubecarrier/pkg/internal/util"

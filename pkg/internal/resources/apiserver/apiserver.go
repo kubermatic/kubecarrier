@@ -218,9 +218,7 @@ func Manifests(c Config) ([]unstructured.Unstructured, error) {
 			},
 		})
 	}
-	if len(supportedAuth) == 0 {
-		supportedAuth = append(supportedAuth, "Anonymous")
-	}
+	supportedAuth = append(supportedAuth, "Token", "Anonymous")
 	containers := deploymentPatch.Spec.Template.Spec.Containers
 	for i, container := range containers {
 		if container.Name == "manager" {

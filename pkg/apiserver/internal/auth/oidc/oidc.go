@@ -38,6 +38,7 @@ func init() {
 }
 
 type OIDCAuthenticator struct {
+	APIAudiences  []string
 	opts          oidc.Options
 	authenticator *oidc.Authenticator
 	logr.Logger
@@ -52,6 +53,7 @@ func (O *OIDCAuthenticator) InjectLogger(l logr.Logger) error {
 }
 
 func (O *OIDCAuthenticator) Init() error {
+	O.opts.APIAudiences = O.APIAudiences
 	authenticator, err := newAuthenticator(O.Logger, O.opts)
 	if err != nil {
 		return err
@@ -81,6 +83,10 @@ func (O *OIDCAuthenticator) Authenticate(ctx context.Context) (user.Info, error)
 
 func (O *OIDCAuthenticator) AddFlags(fs *pflag.FlagSet) {
 	opts := &O.opts
+	fs.StringArrayVar(&O.APIAudiences, "oidc-api-audiences ", opts.APIAudiences,
+		"Identifiers of the API. The OIDC account token authenticator will validate that tokens used "+
+			"against the API are bound to at least one of these audiences.",
+	)
 	fs.StringVar(&opts.IssuerURL, "oidc-issuer-url", opts.IssuerURL, ""+
 		"The URL of the OpenID issuer, only HTTPS scheme will be accepted. "+
 		"If set, it will be used to verify the OIDC JSON Web Token (JWT).")

@@ -47,8 +47,14 @@ import (
 	catalogv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/catalog/v1alpha1"
 	corev1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/core/v1alpha1"
 	apiserverv1 "github.com/kubermatic/kubecarrier/pkg/apiserver/api/v1"
-	v1 "github.com/kubermatic/kubecarrier/pkg/apiserver/api/v1"
 	"github.com/kubermatic/kubecarrier/pkg/testutil"
+)
+
+const (
+	localAPIServerPort = 9443
+	// Htpasswd
+	username = "user1"
+	password = "mickey5"
 )
 
 func newAPIServer(f *testutil.Framework) func(t *testing.T) {
@@ -62,11 +68,6 @@ func newAPIServer(f *testutil.Framework) func(t *testing.T) {
 
 		ns := &corev1.Namespace{}
 		ns.Name = "kubecarrier-system"
-		const localAPIServerPort = 9443
-
-		// Enable OIDC and Htpasswd
-		username := "user1"
-		password := "mickey5"
 
 		pfCmd := exec.CommandContext(ctx,
 			"kubectl",
@@ -99,69 +100,15 @@ func newAPIServer(f *testutil.Framework) func(t *testing.T) {
 		require.True(t, certPool.AppendCertsFromPEM(servingTLSSecret.Data["ca.crt"]))
 		require.True(t, certPool.AppendCertsFromPEM(servingTLSSecret.Data[corev1.TLSCertKey]))
 
-		// Htpasswd
-		conn, err := grpc.DialContext(
-			ctx,
-			fmt.Sprintf("localhost:%d", localAPIServerPort),
-			grpc.WithTransportCredentials(
-				credentials.NewClientTLSFromCert(certPool, ""),
-			),
-		)
+		conn, err := newGRPCConn(ctx, certPool, gRPCWithAuthToken{token: token})
 		require.NoError(t, err)
-		client := apiserverv1.NewKubeCarrierClient(conn)
-		userInfo, err := client.WhoAmI(ctx, &empty.Empty{}, grpc.PerRPCCredentials(gRPCBasicAuthToken{username: username, password: password}))
-		if assert.NoError(t, err, "whoami gRPC") {
-			t.Log("User info:")
-			testutil.LogObject(t, userInfo)
-			assert.Equal(t, "user1", userInfo.User)
-		}
+		testRunningAPIServer(t, ctx, conn)
+		t.Run("auth-modes", func(t *testing.T) {
+			authModes(ctx, certPool, managementClient, f)(t)
+		})
 
-		// OIDC
-		conn, err = grpc.DialContext(
-			ctx,
-			fmt.Sprintf("localhost:%d", localAPIServerPort),
-			grpc.WithTransportCredentials(
-				credentials.NewClientTLSFromCert(certPool, ""),
-			),
-			grpc.WithPerRPCCredentials(gRPCWithAuthToken{token: token}),
-		)
-		require.NoError(t, err)
-		client = apiserverv1.NewKubeCarrierClient(conn)
-		versionCtx, cancel := context.WithTimeout(ctx, 30*time.Second)
-		t.Cleanup(cancel)
-		require.NoError(t, wait.PollUntil(time.Second, func() (done bool, err error) {
-			version, err := client.Version(versionCtx, &apiserverv1.VersionRequest{})
-			if err == nil {
-				assert.NotEmpty(t, version.Version)
-				assert.NotEmpty(t, version.Branch)
-				assert.NotEmpty(t, version.BuildDate)
-				assert.NotEmpty(t, version.GoVersion)
-				t.Log("got response for gRPC server version")
-				return true, nil
-			}
-			if grpcStatus, ok := err.(toGRPCStatus); ok {
-				if grpcStatus.GRPCStatus().Code() == codes.Unavailable {
-					t.Log("gRPC server temporary unavailable, retrying")
-					return false, nil
-				}
-				t.Logf("gRPC server errored out, retrying : %d %v %v",
-					grpcStatus.GRPCStatus().Code(),
-					grpcStatus.GRPCStatus().Message(),
-					grpcStatus.GRPCStatus().Err(),
-				)
-				return false, nil
-			}
-			return false, err
-		}, versionCtx.Done()), "client version gRPC call")
-
-		userInfo, err = client.WhoAmI(ctx, &empty.Empty{})
-		if assert.NoError(t, err, "whoami gRPC") {
-			t.Log("User info:")
-			testutil.LogObject(t, userInfo)
-			assert.Equal(t, "admin@kubecarrier.io", userInfo.User)
-		}
 		docClient := apiserverv1.NewDocClient(conn)
-		_, err = docClient.Swagger(ctx, &v1.DocStaticRequest{Path: "/"})
+		_, err = docClient.Swagger(ctx, &apiserverv1.DocStaticRequest{Path: "/"})
 		if assert.NoError(t, err, "docs gRPC") {
 			t.Log("Docs")
 		}
@@ -191,6 +138,87 @@ func newAPIServer(f *testutil.Framework) func(t *testing.T) {
 				testFn(ctx, conn, account, managementClient, f)(t)
 			})
 		}
+	}
+}
+
+func testRunningAPIServer(t *testing.T, ctx context.Context, conn *grpc.ClientConn) {
+	client := apiserverv1.NewKubeCarrierClient(conn)
+	versionCtx, cancel := context.WithTimeout(ctx, 30*time.Second)
+	t.Cleanup(cancel)
+	require.NoError(t, wait.PollUntil(time.Second, func() (done bool, err error) {
+		version, err := client.Version(versionCtx, &apiserverv1.VersionRequest{})
+		if err == nil {
+			assert.NotEmpty(t, version.Version)
+			assert.NotEmpty(t, version.Branch)
+			assert.NotEmpty(t, version.BuildDate)
+			assert.NotEmpty(t, version.GoVersion)
+			t.Log("got response for gRPC server version")
+			return true, nil
+		}
+		if grpcStatus, ok := status.FromError(err); ok {
+			if grpcStatus.Code() == codes.Unavailable {
+				t.Log("gRPC server temporary unavailable, retrying")
+				return false, nil
+			}
+			t.Logf("gRPC server errored out, retrying : %d %v %v",
+				grpcStatus.Code(),
+				grpcStatus.Message(),
+				grpcStatus.Err(),
+			)
+			return false, nil
+		}
+		return false, err
+	}, versionCtx.Done()), "client version gRPC call")
+}
+
+func newGRPCConn(ctx context.Context, certPool *x509.CertPool, creds credentials.PerRPCCredentials) (*grpc.ClientConn, error) {
+	return grpc.DialContext(
+		ctx,
+		fmt.Sprintf("localhost:%d", localAPIServerPort),
+		grpc.WithTransportCredentials(
+			credentials.NewClientTLSFromCert(certPool, ""),
+		),
+		grpc.WithPerRPCCredentials(creds),
+	)
+}
+
+func authModes(ctx context.Context, certPool *x509.CertPool, managementClient *testutil.RecordingClient, f *testutil.Framework) func(t *testing.T) {
+	return func(t *testing.T) {
+		fetchUserInfo := func(creds credentials.PerRPCCredentials) *apiserverv1.UserInfo {
+			t.Helper()
+			conn, err := newGRPCConn(ctx, certPool, creds)
+			require.NoError(t, err)
+			client := apiserverv1.NewKubeCarrierClient(conn)
+			userInfo, err := client.WhoAmI(ctx, &empty.Empty{})
+			require.NoError(t, err)
+			t.Log("userInfo")
+			testutil.LogObject(t, userInfo)
+			return userInfo
+		}
+
+		t.Run("OIDC", func(t *testing.T) {
+			t.Parallel()
+			token := fetchUserToken(ctx, t, managementClient, f.Config().ManagementExternalKubeconfigPath)
+			userInfo := fetchUserInfo(gRPCWithAuthToken{token: token})
+			assert.Equal(t, "admin@kubecarrier.io", userInfo.User)
+		})
+
+		t.Run("Token", func(t *testing.T) {
+			t.Parallel()
+			sa := &corev1.ServiceAccount{}
+			require.NoError(t, managementClient.Get(ctx, types.NamespacedName{Namespace: "default", Name: "default"}, sa))
+			secret := &corev1.Secret{}
+			require.NoError(t, managementClient.Get(ctx, types.NamespacedName{Namespace: "default", Name: sa.Secrets[0].Name}, secret))
+			token := string(secret.Data["token"])
+			userInfo := fetchUserInfo(gRPCWithAuthToken{token: token})
+			assert.Equal(t, "system:serviceaccount:default:default", userInfo.User)
+		})
+
+		t.Run("htpasswd", func(t *testing.T) {
+			t.Parallel()
+			userInfo := fetchUserInfo(gRPCBasicAuthToken{username: username, password: password})
+			assert.Equal(t, "user1", userInfo.User)
+		})
 	}
 }
 
@@ -232,10 +260,6 @@ func fetchUserToken(ctx context.Context, t *testing.T, managementClient *testuti
 	)
 	require.NoError(t, err, "getting token from internal dex instance")
 	return token
-}
-
-type toGRPCStatus interface {
-	GRPCStatus() *status.Status
 }
 
 type gRPCWithAuthToken struct {
@@ -774,7 +798,7 @@ func offeringService(ctx context.Context, conn *grpc.ClientConn, account *catalo
 	}
 }
 
-func nextEventType(t *testing.T, watchClient v1.OfferingService_WatchClient, eventType watch.EventType) {
+func nextEventType(t *testing.T, watchClient apiserverv1.OfferingService_WatchClient, eventType watch.EventType) {
 	event, err := watchClient.Recv()
 	require.NoError(t, err)
 	assert.Equal(t, string(eventType), event.Type)
