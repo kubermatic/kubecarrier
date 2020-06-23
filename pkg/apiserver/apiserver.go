@@ -267,12 +267,18 @@ func runE(flags *flags, log logr.Logger) error {
 		return err
 	}
 
-	regionServer := v1.NewRegionServiceServer(c)
+	regionServer, err := v1.NewRegionServiceServer(c, dynamicClient, mapper, scheme)
+	if err != nil {
+		return err
+	}
 	apiserverv1.RegisterRegionServiceServer(grpcServer, regionServer)
 	if err := apiserverv1.RegisterRegionServiceHandler(ctx, grpcGatewayMux, grpcClient); err != nil {
 		return err
 	}
-	providerServer := v1.NewProviderServiceServer(c)
+	providerServer, err := v1.NewProviderServiceServer(c, dynamicClient, mapper, scheme)
+	if err != nil {
+		return err
+	}
 	apiserverv1.RegisterProviderServiceServer(grpcServer, providerServer)
 	if err := apiserverv1.RegisterProviderServiceHandler(ctx, grpcGatewayMux, grpcClient); err != nil {
 		return err

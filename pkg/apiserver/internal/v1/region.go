@@ -19,36 +19,54 @@ package v1
 import (
 	"context"
 
+	"github.com/golang/protobuf/ptypes"
+	"github.com/golang/protobuf/ptypes/any"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"k8s.io/apimachinery/pkg/api/meta"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/client-go/dynamic"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/client/apiutil"
 
 	catalogv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/catalog/v1alpha1"
 	v1 "github.com/kubermatic/kubecarrier/pkg/apiserver/api/v1"
 )
 
 type regionServer struct {
-	client client.Client
+	client        client.Client
+	dynamicClient dynamic.Interface
+	scheme        *runtime.Scheme
+
+	gvr schema.GroupVersionResource
 }
 
 var _ v1.RegionServiceServer = (*regionServer)(nil)
 
-// +kubebuilder:rbac:groups=catalog.kubecarrier.io,resources=regions,verbs=get;list
+// +kubebuilder:rbac:groups=catalog.kubecarrier.io,resources=regions,verbs=get;list;watch
 
-func NewRegionServiceServer(c client.Client) v1.RegionServiceServer {
-	return &regionServer{
-		client: c,
+func NewRegionServiceServer(c client.Client, dynamicClient dynamic.Interface, restMapper meta.RESTMapper, scheme *runtime.Scheme) (v1.RegionServiceServer, error) {
+	regionServer := &regionServer{
+		client:        c,
+		dynamicClient: dynamicClient,
+		scheme:        scheme,
 	}
+	objGVK, err := apiutil.GVKForObject(&catalogv1alpha1.Region{}, regionServer.scheme)
+	if err != nil {
+		return nil, err
+	}
+	restMapping, err := restMapper.RESTMapping(objGVK.GroupKind(), objGVK.Version)
+	if err != nil {
+		return nil, err
+	}
+	regionServer.gvr = restMapping.Resource
+	return regionServer, nil
 }
 
 func (o regionServer) GetGVR() schema.GroupVersionResource {
-	return schema.GroupVersionResource{
-		Group:    catalogv1alpha1.GroupVersion.Group,
-		Version:  catalogv1alpha1.GroupVersion.Version,
-		Resource: "regions",
-	}
+	return o.gvr
 }
 
 func (o regionServer) List(ctx context.Context, req *v1.ListRequest) (res *v1.RegionList, err error) {
@@ -81,6 +99,30 @@ func (o regionServer) Get(ctx context.Context, req *v1.GetRequest) (res *v1.Regi
 		return nil, status.Errorf(codes.Internal, "converting Region: %s", err.Error())
 	}
 	return
+}
+
+func (o regionServer) convertEvent(event runtime.Object) (*any.Any, error) {
+	catalogRegion := &catalogv1alpha1.Region{}
+	if err := o.scheme.Convert(event, catalogRegion, nil); err != nil {
+		return nil, status.Errorf(codes.Internal, "converting event.Object to Region: %s", err.Error())
+	}
+	region, err := o.convertRegion(catalogRegion)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "converting Region: %s", err.Error())
+	}
+	any, err := ptypes.MarshalAny(region)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "marshalling Region to Any: %s", err.Error())
+	}
+	return any, nil
+}
+
+func (o regionServer) Watch(req *v1.WatchRequest, stream v1.RegionService_WatchServer) error {
+	listOptions, err := req.GetListOptions()
+	if err != nil {
+		return status.Error(codes.InvalidArgument, err.Error())
+	}
+	return watch(o.dynamicClient, o.gvr, req.Account, *listOptions.AsListOptions(), stream, o.convertEvent)
 }
 
 func (o regionServer) convertRegion(in *catalogv1alpha1.Region) (out *v1.Region, err error) {

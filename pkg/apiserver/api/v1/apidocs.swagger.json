@@ -1302,6 +1302,108 @@
         ]
       }
     },
+    "/v1/watch/accounts/{account}/providers": {
+      "get": {
+        "operationId": "ProviderService_Watch",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "account",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "in": "query",
+            "name": "labelSelector",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "in": "query",
+            "name": "resourceVersion",
+            "required": false,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A successful response.(streaming responses)",
+            "schema": {
+              "properties": {
+                "error": {
+                  "$ref": "#/definitions/grpc.gateway.runtime.StreamError"
+                },
+                "result": {
+                  "$ref": "#/definitions/kubecarrier.api.v1.WatchEvent"
+                }
+              },
+              "title": "Stream result of kubecarrier.api.v1.WatchEvent",
+              "type": "object"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response",
+            "schema": {
+              "$ref": "#/definitions/grpc.gateway.runtime.Error"
+            }
+          }
+        },
+        "tags": [
+          "ProviderService"
+        ]
+      }
+    },
+    "/v1/watch/accounts/{account}/regions": {
+      "get": {
+        "operationId": "RegionService_Watch",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "account",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "in": "query",
+            "name": "labelSelector",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "in": "query",
+            "name": "resourceVersion",
+            "required": false,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A successful response.(streaming responses)",
+            "schema": {
+              "properties": {
+                "error": {
+                  "$ref": "#/definitions/grpc.gateway.runtime.StreamError"
+                },
+                "result": {
+                  "$ref": "#/definitions/kubecarrier.api.v1.WatchEvent"
+                }
+              },
+              "title": "Stream result of kubecarrier.api.v1.WatchEvent",
+              "type": "object"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response",
+            "schema": {
+              "$ref": "#/definitions/grpc.gateway.runtime.Error"
+            }
+          }
+        },
+        "tags": [
+          "RegionService"
+        ]
+      }
+    },
     "/v1/whoami": {
       "get": {
         "operationId": "KubeCarrier_WhoAmI",
