@@ -72,15 +72,13 @@ func ReconcileOwnedObjects(ctx context.Context, cl client.Client, log logr.Logge
 	}
 
 	for _, obj := range desired {
-		SetOwnerReference(ownerObj, obj, scheme)
-
 		// ctrl.CreateOrUpdate shall override obj with the current k8s value, thus we're performing a
 		// deep copy to preserve wanted object data
 		wantedObj := obj.DeepCopyObject()
 		op, err := controllerruntime.CreateOrUpdate(ctx, cl, obj, func() error {
-			SetOwnerReference(ownerObj, obj, scheme)
+			_, err := SetOwnerReference(ownerObj, obj, scheme)
 			if err != nil {
-				return fmt.Errorf("inserting owner ref %v: %w", obj, err)
+				return fmt.Errorf("setting owner ref %v: %w", obj, err)
 			}
 			if updateFn != nil {
 				return updateFn(obj, wantedObj)
