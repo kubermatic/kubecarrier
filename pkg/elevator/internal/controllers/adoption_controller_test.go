@@ -21,13 +21,18 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 	fakeclient "sigs.k8s.io/controller-runtime/pkg/client/fake"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
+	"github.com/kubermatic/kubecarrier/pkg/internal/owner"
 	"github.com/kubermatic/kubecarrier/pkg/testutil"
+	"github.com/kubermatic/kubecarrier/pkg/testutil/mockclient"
 )
 
 func TestAdoptionReconciler(t *testing.T) {
@@ -46,6 +51,88 @@ func TestAdoptionReconciler(t *testing.T) {
 		},
 	}
 	providerObj.SetGroupVersionKind(providerGVK)
+
+	t.Run("is skipping deleted objects", func(t *testing.T) {
+		now := metav1.Now()
+		deletedProviderObj := providerObj.DeepCopy()
+		deletedProviderObj.SetDeletionTimestamp(&now)
+
+		log := testutil.NewLogger(t)
+		client := mockclient.NewClient()
+
+		r := AdoptionReconciler{
+			Client:           client,
+			NamespacedClient: client,
+			Log:              log,
+			Scheme:           testScheme,
+
+			ProviderGVK: providerGVK,
+			TenantGVK:   tenantGVK,
+
+			DerivedCRName:     dcr.Name,
+			ProviderNamespace: providerNamespace,
+		}
+
+		nn := types.NamespacedName{
+			Name:      deletedProviderObj.GetName(),
+			Namespace: deletedProviderObj.GetNamespace(),
+		}
+
+		client.On("Get", mock.Anything, nn, mock.Anything).Run(func(args mock.Arguments) {
+			obj := args.Get(2).(*unstructured.Unstructured)
+			deletedProviderObj.DeepCopyInto(obj)
+		}).Return(*new(error))
+
+		_, err := r.Reconcile(reconcile.Request{
+			NamespacedName: nn,
+		})
+		require.NoError(t, err)
+	})
+
+	t.Run("is skipping deleted objects", func(t *testing.T) {
+		ownerObj := &unstructured.Unstructured{}
+		ownerObj.SetGroupVersionKind(schema.GroupVersionKind{
+			Group:   "test.kubecarrier.io",
+			Kind:    "Test",
+			Version: "v1alpha1",
+		})
+		ownerObj.SetName("hans")
+		ownerObj.SetNamespace("default")
+
+		ownedProviderObj := providerObj.DeepCopy()
+		owner.SetOwnerReference(ownerObj, ownedProviderObj, testScheme)
+
+		log := testutil.NewLogger(t)
+		client := mockclient.NewClient()
+
+		r := AdoptionReconciler{
+			Client:           client,
+			NamespacedClient: client,
+			Log:              log,
+			Scheme:           testScheme,
+
+			ProviderGVK: providerGVK,
+			TenantGVK:   tenantGVK,
+
+			DerivedCRName:     dcr.Name,
+			ProviderNamespace: providerNamespace,
+		}
+
+		nn := types.NamespacedName{
+			Name:      ownedProviderObj.GetName(),
+			Namespace: ownedProviderObj.GetNamespace(),
+		}
+
+		client.On("Get", mock.Anything, nn, mock.Anything).Run(func(args mock.Arguments) {
+			obj := args.Get(2).(*unstructured.Unstructured)
+			ownedProviderObj.DeepCopyInto(obj)
+		}).Return(*new(error))
+
+		_, err := r.Reconcile(reconcile.Request{
+			NamespacedName: nn,
+		})
+		require.NoError(t, err)
+	})
 
 	t.Run("creates tenant object", func(t *testing.T) {
 		log := testutil.NewLogger(t)

@@ -63,6 +63,12 @@ func (r *AdoptionReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	if err := r.ServiceClusterClient.Get(ctx, req.NamespacedName, serviceClusterObj); err != nil {
 		return result, client.IgnoreNotFound(err)
 	}
+	if owner.IsOwned(serviceClusterObj) ||
+		!serviceClusterObj.GetDeletionTimestamp().IsZero() {
+		// the object is already owned or was deleted, so we don't want to do anything.
+		// otherwise we might recreate the owning object preventing the deletion of this instance.
+		return result, nil
+	}
 
 	// Lookup SCA to see where we need to put this in the management cluster.
 	sca, err := corev1alpha1.GetServiceClusterAssignmentByServiceClusterNamespace(ctx, r.NamespacedClient, serviceClusterObj.GetNamespace())
