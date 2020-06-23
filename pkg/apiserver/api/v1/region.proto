@@ -22,6 +22,7 @@ import "google/api/annotations.proto";
 
 import "types.proto";
 import "meta.proto";
+import "event.proto";
 import "request.proto";
 
 message Region {
@@ -53,6 +54,11 @@ service RegionService {
   rpc Get(GetRequest) returns (Region) {
     option (google.api.http) = {
       get : "/v1/accounts/{account}/regions/{name}"
+    };
+  };
+  rpc Watch(WatchRequest) returns (stream WatchEvent) {
+    option (google.api.http) = {
+      get : "/v1/watch/accounts/{account}/regions"
     };
   };
 }

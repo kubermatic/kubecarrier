@@ -564,6 +564,24 @@ func providerService(ctx context.Context, conn *grpc.ClientConn, account *catalo
 			assert.EqualValues(t, provider, expectedResult)
 			return true, nil
 		}, providerCtx.Done()))
+
+		// watch providers
+		watchClient, err := client.Watch(providerCtx, &apiserverv1.WatchRequest{
+			Account:       namespaceName,
+			LabelSelector: "test-label==provider1",
+		})
+		require.NoError(t, err)
+		nextEventType(t, watchClient, watch.Added)
+
+		// Update an provider object to get Modified event.
+		provider1.Spec.Metadata.ShortDescription = "test provider update"
+		require.NoError(t, managementClient.Update(ctx, provider1))
+		nextEventType(t, watchClient, watch.Modified)
+
+		// Delete an provider object to get Delete event.
+		require.NoError(t, managementClient.Delete(ctx, provider1))
+		nextEventType(t, watchClient, watch.Deleted)
+
 	}
 }
 
@@ -868,5 +886,23 @@ func regionService(ctx context.Context, conn *grpc.ClientConn, account *catalogv
 			assert.Equal(t, expectedResult, region)
 			return true, nil
 		}, regionCtx.Done()))
+
+		// watch regions
+		watchClient, err := client.Watch(regionCtx, &apiserverv1.WatchRequest{
+			Account:       namespaceName,
+			LabelSelector: "test-label==region1",
+		})
+		require.NoError(t, err)
+		nextEventType(t, watchClient, watch.Added)
+
+		// Update an region object to get Modified event.
+		region1.Spec.Metadata.Description = "test region update"
+		require.NoError(t, managementClient.Update(ctx, region1))
+		nextEventType(t, watchClient, watch.Modified)
+
+		// Delete an region object to get Delete event.
+		require.NoError(t, managementClient.Delete(ctx, region1))
+		nextEventType(t, watchClient, watch.Deleted)
+
 	}
 }
