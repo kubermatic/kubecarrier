@@ -22,6 +22,7 @@ import "google/api/annotations.proto";
 import "google/protobuf/empty.proto";
 
 import "meta.proto";
+import "event.proto";
 
 message Instance {
   // Metadata - common metadata
@@ -90,6 +91,16 @@ message RawObject {
   bytes data = 2;
 }
 
+message InstanceWatchRequest {
+  // Offering name, i.e. couchdb.eu-west-1.team-a
+  string offering = 1;
+  // Version of the resource
+  string version = 2;
+  string account = 3;
+  string labelSelector = 4;
+  string resourceVersion = 5;
+}
+
 service InstancesService {
   rpc List(InstanceListRequest) returns (InstanceList) {
     option (google.api.http) = {
@@ -110,6 +121,11 @@ service InstancesService {
     option (google.api.http) = {
       post : "/v1/accounts/{account}/instances/{offering}/{version}"
       body: "spec"
+    };
+  };
+  rpc Watch(InstanceWatchRequest) returns (stream WatchEvent) {
+    option (google.api.http) = {
+      get : "/v1/watch/accounts/{account}/instances/{offering}/{version}"
     };
   };
 }

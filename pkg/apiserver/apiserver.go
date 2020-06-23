@@ -33,6 +33,7 @@ import (
 	grpc_zap "github.com/grpc-ecosystem/go-grpc-middleware/logging/zap"
 	grpc_ctxtags "github.com/grpc-ecosystem/go-grpc-middleware/tags"
 	grpc_opentracing "github.com/grpc-ecosystem/go-grpc-middleware/tracing/opentracing"
+	grpc_validator "github.com/grpc-ecosystem/go-grpc-middleware/validator"
 	grpc_prometheus "github.com/grpc-ecosystem/go-grpc-prometheus"
 	gwruntime "github.com/grpc-ecosystem/grpc-gateway/runtime"
 	"github.com/improbable-eng/grpc-web/go/grpcweb"
@@ -163,6 +164,7 @@ func runE(flags *flags, log logr.Logger) error {
 		authProviders = append(authProviders, authProvider)
 	}
 
+	authz := authorizer.NewAuthorizer(log, scheme, c, mapper)
 	authFunc := auth.CreateAuthFunction(authProviders)
 	grpc_zap.ReplaceGrpcLoggerV2(util.ZapLogger)
 	grpcServer := grpc.NewServer(
@@ -172,6 +174,8 @@ func runE(flags *flags, log logr.Logger) error {
 			grpc_prometheus.StreamServerInterceptor,
 			grpc_zap.StreamServerInterceptor(util.ZapLogger),
 			grpc_auth.StreamServerInterceptor(authFunc),
+			authz.StreamServerInterceptor(),
+			grpc_validator.StreamServerInterceptor(),
 		)),
 		grpc.UnaryInterceptor(grpc_middleware.ChainUnaryServer(
 			grpc_ctxtags.UnaryServerInterceptor(),
@@ -179,6 +183,8 @@ func runE(flags *flags, log logr.Logger) error {
 			grpc_prometheus.UnaryServerInterceptor,
 			grpc_zap.UnaryServerInterceptor(util.ZapLogger),
 			grpc_auth.UnaryServerInterceptor(authFunc),
+			authz.UnaryServerInterceptor(),
+			grpc_validator.UnaryServerInterceptor(),
 		)),
 	)
 	wrappedGrpc := grpcweb.WrapServer(grpcServer)
@@ -243,13 +249,11 @@ func runE(flags *flags, log logr.Logger) error {
 		return err
 	}
 
-	authorizer := authorizer.NewAuthorizer(log, scheme, c, mapper)
-
 	apiserverv1.RegisterKubeCarrierServer(grpcServer, &v1.KubeCarrierServer{})
 	if err := apiserverv1.RegisterKubeCarrierHandler(ctx, grpcGatewayMux, grpcClient); err != nil {
 		return err
 	}
-	offeringServer, err := v1.NewOfferingServiceServer(c, authorizer, dynamicClient, mapper, scheme)
+	offeringServer, err := v1.NewOfferingServiceServer(c, dynamicClient, mapper, scheme)
 	if err != nil {
 		return err
 	}
@@ -258,18 +262,24 @@ func runE(flags *flags, log logr.Logger) error {
 		return err
 	}
 
-	instanceServer := v1.NewInstancesServer(c, mapper)
+	instanceServer := v1.NewInstancesServer(c, dynamicClient, mapper, scheme)
 	apiserverv1.RegisterInstancesServiceServer(grpcServer, instanceServer)
 	if err := apiserverv1.RegisterInstancesServiceHandler(ctx, grpcGatewayMux, grpcClient); err != nil {
 		return err
 	}
 
-	regionServer := v1.NewRegionServiceServer(c, authorizer)
+	regionServer, err := v1.NewRegionServiceServer(c, dynamicClient, mapper, scheme)
+	if err != nil {
+		return err
+	}
 	apiserverv1.RegisterRegionServiceServer(grpcServer, regionServer)
 	if err := apiserverv1.RegisterRegionServiceHandler(ctx, grpcGatewayMux, grpcClient); err != nil {
 		return err
 	}
-	providerServer := v1.NewProviderServiceServer(c, authorizer)
+	providerServer, err := v1.NewProviderServiceServer(c, dynamicClient, mapper, scheme)
+	if err != nil {
+		return err
+	}
 	apiserverv1.RegisterProviderServiceServer(grpcServer, providerServer)
 	if err := apiserverv1.RegisterProviderServiceHandler(ctx, grpcGatewayMux, grpcClient); err != nil {
 		return err

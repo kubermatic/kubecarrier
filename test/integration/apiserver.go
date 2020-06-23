@@ -23,9 +23,7 @@ import (
 	"encoding/base64"
 	"fmt"
 	"net/http"
-	"os"
 	"os/exec"
-	"reflect"
 	"strings"
 	"testing"
 	"time"
@@ -48,7 +46,6 @@ import (
 
 	catalogv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/catalog/v1alpha1"
 	corev1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/core/v1alpha1"
-	operatorv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/operator/v1alpha1"
 	apiserverv1 "github.com/kubermatic/kubecarrier/pkg/apiserver/api/v1"
 	"github.com/kubermatic/kubecarrier/pkg/testutil"
 )
@@ -73,56 +70,6 @@ func newAPIServer(f *testutil.Framework) func(t *testing.T) {
 		ns := &corev1.Namespace{}
 		ns.Name = "kubecarrier-system"
 
-		htpasswdSecret := &corev1.Secret{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "htpasswd-user",
-				Namespace: ns.GetName(),
-			},
-			Data: map[string][]byte{
-				"auth": []byte(username + ":" + md5password),
-			},
-		}
-		require.NoError(t, managementClient.Create(ctx, htpasswdSecret))
-		kubeCarrier := &operatorv1alpha1.KubeCarrier{}
-		require.NoError(t, managementClient.Get(ctx, types.NamespacedName{
-			Name: "kubecarrier",
-		}, kubeCarrier))
-		kubeCarrier.Spec = operatorv1alpha1.KubeCarrierSpec{
-			API: operatorv1alpha1.APIServerSpec{
-				OIDC: &operatorv1alpha1.APIServerOIDCConfig{
-					// from test/testdata/dex_values.yaml
-					IssuerURL:     "https://dex.kubecarrier-system.svc",
-					ClientID:      "e2e-client-id",
-					UsernameClaim: "name",
-					CertificateAuthority: operatorv1alpha1.ObjectReference{
-						Name: "dex-web-server",
-					},
-				},
-
-				StaticUsers: &operatorv1alpha1.StaticUsers{
-					HtpasswdSecret: operatorv1alpha1.ObjectReference{
-						Name: htpasswdSecret.Name,
-					},
-				},
-			},
-		}
-		require.NoError(t, managementClient.Update(ctx, kubeCarrier))
-		apiServer := &operatorv1alpha1.APIServer{}
-		oidcCtx, cancel := context.WithTimeout(ctx, 60*time.Second)
-		t.Cleanup(cancel)
-		require.NoError(t, wait.PollUntil(time.Second, func() (done bool, err error) {
-			if err := managementClient.Get(oidcCtx, types.NamespacedName{
-				Name:      "kubecarrier",
-				Namespace: ns.GetName(),
-			}, apiServer); err != nil {
-				return true, err
-			}
-			return reflect.DeepEqual(kubeCarrier.Spec.API, apiServer.Spec) && apiServer.IsReady(), nil
-		}, oidcCtx.Done()))
-		require.NoError(t, testutil.WaitUntilReady(ctx, managementClient, kubeCarrier))
-		// Wait for API server new pod to start and to be able to receive request with OIDC token.
-		time.Sleep(10 * time.Second)
-
 		pfCmd := exec.CommandContext(ctx,
 			"kubectl",
 			"--kubeconfig", f.Config().ManagementExternalKubeconfigPath,
@@ -132,8 +79,8 @@ func newAPIServer(f *testutil.Framework) func(t *testing.T) {
 			"service/kubecarrier-api-server-manager",
 			fmt.Sprintf("%d:https", localAPIServerPort),
 		)
-		pfCmd.Stdout = os.Stdout
-		pfCmd.Stderr = os.Stderr
+		pfCmd.Stdout = &testutil.TestingLogWriter{T: t}
+		pfCmd.Stderr = &testutil.TestingLogWriter{T: t}
 		require.NoError(t, pfCmd.Start())
 
 		token := fetchUserToken(ctx, t, managementClient, f.Config().ManagementExternalKubeconfigPath)
@@ -286,8 +233,9 @@ func fetchUserToken(ctx context.Context, t *testing.T, managementClient *testuti
 		"service/dex",
 		fmt.Sprintf("%d:https", localDexServerPort),
 	)
-	pfDex.Stdout = os.Stdout
-	pfDex.Stderr = os.Stderr
+
+	pfDex.Stdout = &testutil.TestingLogWriter{T: t}
+	pfDex.Stderr = &testutil.TestingLogWriter{T: t}
 
 	require.NoError(t, pfDex.Start())
 	certPool := x509.NewCertPool()
@@ -349,7 +297,7 @@ func (w gRPCBasicAuthToken) RequireTransportSecurity() bool {
 	return true
 }
 
-func instanceService(ctx context.Context, conn *grpc.ClientConn, account *catalogv1alpha1.Account, managementClient *testutil.RecordingClient, f *testutil.Framework) func(t *testing.T) {
+func instanceService(ctx context.Context, conn *grpc.ClientConn, tenantAccount *catalogv1alpha1.Account, managementClient *testutil.RecordingClient, f *testutil.Framework) func(t *testing.T) {
 	return func(t *testing.T) {
 		serviceClient, err := f.ServiceClient(t)
 		require.NoError(t, err, "creating service client")
@@ -364,15 +312,9 @@ func instanceService(ctx context.Context, conn *grpc.ClientConn, account *catalo
 			APIGroup: "rbac.authorization.k8s.io",
 			Name:     "providerAccount",
 		})
-		tenantAccount := testutil.NewTenantAccount(testName, rbacv1.Subject{
-			Kind:     rbacv1.GroupKind,
-			APIGroup: "rbac.authorization.k8s.io",
-			Name:     "tenantAccount",
-		})
 		require.NoError(t, managementClient.Create(ctx, providerAccount), "creating providerAccount")
 		require.NoError(t, testutil.WaitUntilReady(ctx, managementClient, providerAccount))
 
-		require.NoError(t, managementClient.Create(ctx, tenantAccount), "creating tenantAccount")
 		require.NoError(t, testutil.WaitUntilReady(ctx, managementClient, tenantAccount))
 
 		serviceCluster := f.SetupServiceCluster(ctx, managementClient, t, "eu-west-1", providerAccount)
@@ -448,7 +390,18 @@ func instanceService(ctx context.Context, conn *grpc.ClientConn, account *catalo
 		}
 		require.NoError(t, testutil.WaitUntilReady(ctx, managementClient, serviceClusterAssignment), "service cluster assignment not ready")
 
+		// TODO: replace someday, wait until the admin@kubecarrier.io user gets the required create permissions
+		time.Sleep(5 * time.Second)
 		client := apiserverv1.NewInstancesServiceClient(conn)
+		// watch instances
+		watchCtx, cancel := context.WithTimeout(ctx, 30*time.Second)
+		t.Cleanup(cancel)
+		watchClient, err := client.Watch(watchCtx, &apiserverv1.InstanceWatchRequest{
+			Offering: offering.Name,
+			Version:  "v1",
+			Account:  tenantAccount.Status.Namespace.Name,
+		})
+		require.NoError(t, err)
 		createReq := &apiserverv1.InstanceCreateRequest{
 			Offering: offering.Name,
 			Version:  "v1",
@@ -460,6 +413,7 @@ func instanceService(ctx context.Context, conn *grpc.ClientConn, account *catalo
 		}
 		_, err = client.Create(ctx, createReq)
 		require.NoError(t, err, "creating instance")
+		nextEventType(t, watchClient, watch.Added)
 
 		fakeDB := testutil.NewFakeDB("fakedb", serviceClusterAssignment.Status.ServiceClusterNamespace.Name)
 		require.NoError(t, testutil.WaitUntilFound(ctx, serviceClient, fakeDB))
@@ -490,6 +444,7 @@ func instanceService(ctx context.Context, conn *grpc.ClientConn, account *catalo
 		_, err = client.Delete(ctx, delReq)
 		require.NoError(t, err, "deleting instance")
 		require.NoError(t, testutil.WaitUntilNotFound(ctx, serviceClient, fakeDB))
+		nextEventType(t, watchClient, watch.Deleted)
 	}
 }
 
@@ -634,6 +589,24 @@ func providerService(ctx context.Context, conn *grpc.ClientConn, account *catalo
 			assert.EqualValues(t, provider, expectedResult)
 			return true, nil
 		}, providerCtx.Done()))
+
+		// watch providers
+		watchClient, err := client.Watch(providerCtx, &apiserverv1.WatchRequest{
+			Account:       namespaceName,
+			LabelSelector: "test-label==provider1",
+		})
+		require.NoError(t, err)
+		nextEventType(t, watchClient, watch.Added)
+
+		// Update an provider object to get Modified event.
+		provider1.Spec.Metadata.ShortDescription = "test provider update"
+		require.NoError(t, managementClient.Update(ctx, provider1))
+		nextEventType(t, watchClient, watch.Modified)
+
+		// Delete an provider object to get Delete event.
+		require.NoError(t, managementClient.Delete(ctx, provider1))
+		nextEventType(t, watchClient, watch.Deleted)
+
 	}
 }
 
@@ -729,7 +702,7 @@ func offeringService(ctx context.Context, conn *grpc.ClientConn, account *catalo
 		require.NoError(t, managementClient.Create(ctx, offering2))
 
 		client := apiserverv1.NewOfferingServiceClient(conn)
-		offeringCtx, cancel := context.WithTimeout(ctx, 60*time.Second)
+		offeringCtx, cancel := context.WithTimeout(ctx, 3*time.Minute)
 		t.Cleanup(cancel)
 		// list offerings with limit and continuation token.
 		require.NoError(t, wait.PollUntil(time.Second, func() (done bool, err error) {
@@ -813,26 +786,23 @@ func offeringService(ctx context.Context, conn *grpc.ClientConn, account *catalo
 			LabelSelector: "test-label==offering1",
 		})
 		require.NoError(t, err)
+		nextEventType(t, watchClient, watch.Added)
+
 		// Update an offering object to get Modified event.
 		offering1.Spec.Metadata.ShortDescription = "test offering update"
 		require.NoError(t, managementClient.Update(ctx, offering1))
+		nextEventType(t, watchClient, watch.Modified)
+
 		// Delete an offering object to get Delete event.
 		require.NoError(t, managementClient.Delete(ctx, offering1))
-		expectedEventNum := map[string]int{
-			string(watch.Added):    1,
-			string(watch.Modified): 1,
-			string(watch.Deleted):  1,
-		}
-		eventCounters := make(map[string]int)
-		for {
-			event, err := watchClient.Recv()
-			if err != nil || event == nil {
-				assert.Equal(t, expectedEventNum, eventCounters)
-				break
-			}
-			eventCounters[event.Type]++
-		}
+		nextEventType(t, watchClient, watch.Deleted)
 	}
+}
+
+func nextEventType(t *testing.T, watchClient apiserverv1.OfferingService_WatchClient, eventType watch.EventType) {
+	event, err := watchClient.Recv()
+	require.NoError(t, err)
+	assert.Equal(t, string(eventType), event.Type)
 }
 
 func regionService(ctx context.Context, conn *grpc.ClientConn, account *catalogv1alpha1.Account, managementClient *testutil.RecordingClient, f *testutil.Framework) func(t *testing.T) {
@@ -941,5 +911,23 @@ func regionService(ctx context.Context, conn *grpc.ClientConn, account *catalogv
 			assert.Equal(t, expectedResult, region)
 			return true, nil
 		}, regionCtx.Done()))
+
+		// watch regions
+		watchClient, err := client.Watch(regionCtx, &apiserverv1.WatchRequest{
+			Account:       namespaceName,
+			LabelSelector: "test-label==region1",
+		})
+		require.NoError(t, err)
+		nextEventType(t, watchClient, watch.Added)
+
+		// Update an region object to get Modified event.
+		region1.Spec.Metadata.Description = "test region update"
+		require.NoError(t, managementClient.Update(ctx, region1))
+		nextEventType(t, watchClient, watch.Modified)
+
+		// Delete an region object to get Delete event.
+		require.NoError(t, managementClient.Delete(ctx, region1))
+		nextEventType(t, watchClient, watch.Deleted)
+
 	}
 }

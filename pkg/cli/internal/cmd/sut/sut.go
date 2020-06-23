@@ -59,11 +59,11 @@ the tool shall pause and print the telepresence command you ought to run in sepa
 
 	cmd.AddCommand(
 		newSUTSubcommand(log, "apiserver"),
-		newSUTSubcommand(log, "catapult"),
-		newSUTSubcommand(log, "elevator"),
-		newSUTSubcommand(log, "ferry"),
-		newSUTSubcommand(log, "manager"),
-		newSUTSubcommand(log, "operator"),
+		newSUTSubcommand(log, "catapult", "--enable-leader-election=false"),
+		newSUTSubcommand(log, "elevator", "--enable-leader-election=false"),
+		newSUTSubcommand(log, "ferry", "--enable-leader-election=false"),
+		newSUTSubcommand(log, "manager", "--enable-leader-election=false"),
+		newSUTSubcommand(log, "operator", "--enable-leader-election=false"),
 	)
 	return cmd
 }

@@ -19,6 +19,7 @@ package setup
 import (
 	"context"
 	"fmt"
+	"os"
 	"time"
 
 	"github.com/gernest/wow"
@@ -26,6 +27,7 @@ import (
 	"github.com/go-logr/logr"
 	certv1alpha2 "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
 	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
@@ -34,6 +36,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
+	"k8s.io/apimachinery/pkg/util/yaml"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
@@ -61,9 +64,22 @@ func init() {
 	utilruntime.Must(certv1alpha2.AddToScheme(scheme))
 }
 
+type flags struct {
+	*genericclioptions.ConfigFlags
+	ConfigFile    string
+	skipPreflight bool
+}
+
+func (f *flags) AddFlags(flagSet *pflag.FlagSet) {
+	f.ConfigFlags.AddFlags(flagSet)
+	flagSet.StringVar(&f.ConfigFile, "config", "", "config file")
+	flagSet.BoolVar(&f.skipPreflight, "skip-preflight-checks", false, "If true, preflight checks will be skipped")
+}
+
 func NewCommand(log logr.Logger) *cobra.Command {
-	var skipPreflight bool
-	flags := genericclioptions.NewConfigFlags(false)
+	flags := &flags{
+		ConfigFlags: genericclioptions.NewConfigFlags(false),
+	}
 	cmd := &cobra.Command{
 		Args:  cobra.NoArgs,
 		Use:   "setup",
@@ -78,15 +94,14 @@ $ kubectl kubecarrier setup --kubeconfig=<kubeconfig path>
 			if err != nil {
 				return err
 			}
-			return runE(cfg, log, cmd, skipPreflight)
+			return runE(cfg, log, cmd, flags)
 		},
 	}
-	cmd.Flags().BoolVar(&skipPreflight, "skip-preflight-checks", false, "If true, preflight checks will be skipped")
 	flags.AddFlags(cmd.Flags())
 	return cmd
 }
 
-func runE(conf *rest.Config, log logr.Logger, cmd *cobra.Command, skipPreflight bool) error {
+func runE(conf *rest.Config, log logr.Logger, cmd *cobra.Command, flags *flags) error {
 	stopCh := ctrl.SetupSignalHandler()
 	ctx, cancelContext := context.WithTimeout(context.Background(), 60*time.Second)
 	go func() {
@@ -97,7 +112,7 @@ func runE(conf *rest.Config, log logr.Logger, cmd *cobra.Command, skipPreflight 
 	s := wow.New(cmd.OutOrStdout(), spin.Get(spin.Dots), "")
 	startTime := time.Now()
 
-	if !skipPreflight {
+	if !flags.skipPreflight {
 		if err := checkers.RunChecks(conf, s, startTime, log); err != nil {
 			return err
 		}
@@ -121,7 +136,7 @@ func runE(conf *rest.Config, log logr.Logger, cmd *cobra.Command, skipPreflight 
 		return fmt.Errorf("deploying KubeCarrier operator: %w", err)
 	}
 
-	if err := spinner.AttachSpinnerTo(s, startTime, "Deploy KubeCarrier", deployKubeCarrier(ctx, conf)); err != nil {
+	if err := spinner.AttachSpinnerTo(s, startTime, "Deploy KubeCarrier", deployKubeCarrier(ctx, conf, flags.ConfigFile)); err != nil {
 		return fmt.Errorf("deploying KubeCarrier controller manager: %w", err)
 	}
 
@@ -179,7 +194,7 @@ func reconcileOperator(ctx context.Context, log logr.Logger, c *util.ClientWatch
 }
 
 // deployKubeCarrier deploys the KubeCarrier Object in a kubernetes cluster.
-func deployKubeCarrier(ctx context.Context, conf *rest.Config) func() error {
+func deployKubeCarrier(ctx context.Context, conf *rest.Config, configFile string) func() error {
 	return func() error {
 		// Create another client due to some issues about the restmapper.
 		// The issue is that if you use the client that created before, and here try to create the kubeCarrier,
@@ -187,11 +202,21 @@ func deployKubeCarrier(ctx context.Context, conf *rest.Config) func() error {
 		// but actually, the scheme is already added to the runtime scheme.
 		// And in the following, reinitializing the client solves the issue.
 
-		kubeCarrier := &operatorv1alpha1.KubeCarrier{
-			ObjectMeta: metav1.ObjectMeta{
-				Name: constants.KubeCarrierDefaultName,
-			},
+		kubeCarrier := &operatorv1alpha1.KubeCarrier{}
+		if configFile != "" {
+			f, err := os.Open(configFile)
+			if err != nil {
+				return err
+			}
+			yamlErr := yaml.NewYAMLOrJSONDecoder(f, 4*1024).Decode(kubeCarrier)
+			if err := f.Close(); err != nil {
+				return err
+			}
+			if yamlErr != nil {
+				return err
+			}
 		}
+		kubeCarrier.Name = constants.KubeCarrierDefaultName
 		w, err := util.NewClientWatcher(conf, scheme, ctrl.Log)
 		if err != nil {
 			return err
@@ -203,6 +228,6 @@ func deployKubeCarrier(ctx context.Context, conf *rest.Config) func() error {
 		}
 		return w.WaitUntil(ctx, kubeCarrier, func() (done bool, err error) {
 			return kubeCarrier.IsReady(), nil
-		}, util.WithClientWatcherTimeout(40*time.Second))
+		}, util.WithClientWatcherTimeout(60*time.Second))
 	}
 }

@@ -20,42 +20,45 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"strings"
 
+	"github.com/golang/protobuf/ptypes"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/client-go/dynamic"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
+	"github.com/golang/protobuf/ptypes/any"
 	"github.com/golang/protobuf/ptypes/empty"
 
 	v1 "github.com/kubermatic/kubecarrier/pkg/apiserver/api/v1"
 )
 
 type instanceServer struct {
-	client client.Client
-	mapper meta.RESTMapper
+	client        client.Client
+	mapper        meta.RESTMapper
+	dynamicClient dynamic.Interface
+	scheme        *runtime.Scheme
 }
 
 var _ v1.InstancesServiceServer = (*instanceServer)(nil)
 
-func NewInstancesServer(c client.Client, mapper meta.RESTMapper) v1.InstancesServiceServer {
+func NewInstancesServer(c client.Client, dynamicClient dynamic.Interface, mapper meta.RESTMapper, scheme *runtime.Scheme) v1.InstancesServiceServer {
 	return &instanceServer{
-		client: c,
-		mapper: mapper,
+		client:        c,
+		dynamicClient: dynamicClient,
+		mapper:        mapper,
+		scheme:        scheme,
 	}
 }
 func (o instanceServer) Create(ctx context.Context, req *v1.InstanceCreateRequest) (res *v1.Instance, err error) {
-	if err = o.validateCreateRequest(req); err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, err.Error())
-	}
 	obj := &unstructured.Unstructured{}
 
-	gvk, err := o.gvkFromInstance(o.mapper, req.Offering, req.Version)
+	gvk, err := o.getGVK(req)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, "creating instance: unable to get Kind: %s", err.Error())
 	}
@@ -88,18 +91,17 @@ func (o instanceServer) Create(ctx context.Context, req *v1.InstanceCreateReques
 }
 
 func (o instanceServer) List(ctx context.Context, req *v1.InstanceListRequest) (res *v1.InstanceList, err error) {
-	var listOptions []client.ListOption
-	listOptions, err = o.validateListRequest(req)
+	listOptions, err := req.GetListOptions()
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
 	obj := &unstructured.UnstructuredList{}
-	gvk, err := o.gvkFromInstance(o.mapper, req.Offering, req.Version)
+	gvk, err := o.getGVK(req)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "listing instance: unable to get Kind: %s", err.Error())
 	}
 	obj.SetGroupVersionKind(gvk)
-	if err := o.client.List(ctx, obj, listOptions...); err != nil {
+	if err := o.client.List(ctx, obj, listOptions); err != nil {
 		return nil, status.Errorf(codes.Internal, fmt.Sprintf("listing instances: %s", err.Error()))
 	}
 
@@ -110,26 +112,18 @@ func (o instanceServer) List(ctx context.Context, req *v1.InstanceListRequest) (
 	return
 }
 
-func (o instanceServer) gvkFromInstance(mapper meta.RESTMapper, instance string, version string) (schema.GroupVersionKind, error) {
-	parts := strings.SplitN(instance, ".", 2)
-	gvr := schema.GroupVersionResource{
-		Resource: parts[0],
-		Group:    parts[1],
-	}
+func (o instanceServer) getGVK(req v1.OfferingVersionGetter) (schema.GroupVersionKind, error) {
+	gvr := v1.GetOfferingGVR(req)
 	kind, err := o.mapper.KindFor(gvr)
 	if err != nil {
 		return schema.GroupVersionKind{}, err
 	}
-	kind.Version = version
 	return kind, nil
 }
 
 func (o instanceServer) Get(ctx context.Context, req *v1.InstanceGetRequest) (res *v1.Instance, err error) {
-	if err = o.validateGetRequest(req); err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, err.Error())
-	}
 	obj := &unstructured.Unstructured{}
-	gvk, err := o.gvkFromInstance(o.mapper, req.Offering, req.Version)
+	gvk, err := o.getGVK(req)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "getting instance: unable to get Kind: %s", err.Error())
 	}
@@ -149,11 +143,8 @@ func (o instanceServer) Get(ctx context.Context, req *v1.InstanceGetRequest) (re
 }
 
 func (o instanceServer) Delete(ctx context.Context, req *v1.InstanceDeleteRequest) (*empty.Empty, error) {
-	if err := o.validateDeleteRequest(req); err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, err.Error())
-	}
 	obj := &unstructured.Unstructured{}
-	gvk, err := o.gvkFromInstance(o.mapper, req.Offering, req.Version)
+	gvk, err := o.getGVK(req)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "deleting instance: unable to get Kind: %s", err.Error())
 	}
@@ -166,99 +157,29 @@ func (o instanceServer) Delete(ctx context.Context, req *v1.InstanceDeleteReques
 	return &empty.Empty{}, nil
 }
 
-func (o instanceServer) validateDeleteRequest(req *v1.InstanceDeleteRequest) error {
-	if req.Name == "" {
-		return fmt.Errorf("missing name")
+func (o instanceServer) convertEvent(event runtime.Object) (*any.Any, error) {
+	obj := &unstructured.Unstructured{}
+	if err := o.scheme.Convert(event, obj, nil); err != nil {
+		return nil, status.Errorf(codes.Internal, "converting event.Object to service instance: %s", err.Error())
 	}
-	if req.Offering == "" {
-		return fmt.Errorf("missing offering")
+	instance, err := o.convertInstance(obj)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "converting Offering: %s", err.Error())
 	}
-	if len(strings.SplitN(req.Offering, ".", 2)) < 2 {
-		return fmt.Errorf("offering should have format: {kind}.{apiGroup}")
+	any, err := ptypes.MarshalAny(instance)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "marshalling instance to Any: %s", err.Error())
 	}
-	if req.Version == "" {
-		return fmt.Errorf("missing version")
-	}
-	if req.Account == "" {
-		return fmt.Errorf("missing namespace")
-	}
-	return nil
+	return any, nil
 }
 
-func (o instanceServer) validateListRequest(req *v1.InstanceListRequest) ([]client.ListOption, error) {
-	var listOptions []client.ListOption
-	if req.Account == "" {
-		return listOptions, fmt.Errorf("missing namespace")
+func (o instanceServer) Watch(req *v1.InstanceWatchRequest, stream v1.InstancesService_WatchServer) error {
+	listOptions, err := req.GetListOptions()
+	if err != nil {
+		return status.Error(codes.InvalidArgument, err.Error())
 	}
-	if req.Version == "" {
-		return listOptions, fmt.Errorf("missing version")
-	}
-	if req.Offering == "" {
-		return listOptions, fmt.Errorf("missing offering")
-	}
-	if len(strings.SplitN(req.Offering, ".", 2)) < 2 {
-		return listOptions, fmt.Errorf("offering should have format: {kind}.{apiGroup}")
-	}
-	listOptions = append(listOptions, client.InNamespace(req.Account))
-	if req.Limit < 0 {
-		return listOptions, fmt.Errorf("invalid limit: should not be negative number")
-	}
-	listOptions = append(listOptions, client.Limit(req.Limit))
-	if req.LabelSelector != "" {
-		selector, err := labels.Parse(req.LabelSelector)
-		if err != nil {
-			return listOptions, fmt.Errorf("invalid LabelSelector: %w", err)
-		}
-		listOptions = append(listOptions, client.MatchingLabelsSelector{
-			Selector: selector,
-		})
-	}
-	if req.Continue != "" {
-		listOptions = append(listOptions, client.Continue(req.Continue))
-	}
-	return listOptions, nil
-}
-
-func (o instanceServer) validateGetRequest(req *v1.InstanceGetRequest) error {
-	if req.Name == "" {
-		return fmt.Errorf("missing name")
-	}
-	if req.Offering == "" {
-		return fmt.Errorf("missing offering")
-	}
-	if len(strings.SplitN(req.Offering, ".", 2)) < 2 {
-		return fmt.Errorf("offering should have format: {kind}.{apiGroup}")
-	}
-	if req.Version == "" {
-		return fmt.Errorf("missing version")
-	}
-	if req.Account == "" {
-		return fmt.Errorf("missing namespace")
-	}
-	return nil
-}
-
-func (o instanceServer) validateCreateRequest(req *v1.InstanceCreateRequest) error {
-	if req.Offering == "" {
-		return fmt.Errorf("missing offering")
-	}
-	if len(strings.SplitN(req.Offering, ".", 2)) < 2 {
-		return fmt.Errorf("offering should have format: {kind}.{apiGroup}")
-	}
-	if req.Version == "" {
-		return fmt.Errorf("missing version")
-	}
-	if req.Account == "" {
-		return fmt.Errorf("missing namespace")
-	}
-	if req.Spec == nil {
-		return fmt.Errorf("missing spec")
-	}
-	if req.Spec.Metadata == nil && req.Spec.Metadata.Name == "" {
-		return fmt.Errorf("missing metadata name")
-	}
-
-	return nil
+	gvr := v1.GetOfferingGVR(req)
+	return watch(o.dynamicClient, gvr, req.Account, *listOptions.AsListOptions(), stream, o.convertEvent)
 }
 
 func (o instanceServer) convertInstance(in *unstructured.Unstructured) (out *v1.Instance, err error) {

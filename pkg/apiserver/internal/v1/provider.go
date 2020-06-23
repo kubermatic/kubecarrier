@@ -19,60 +19,63 @@ package v1
 import (
 	"context"
 
+	"github.com/golang/protobuf/ptypes"
+	"github.com/golang/protobuf/ptypes/any"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"k8s.io/apimachinery/pkg/api/meta"
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/client-go/dynamic"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/client/apiutil"
 
 	catalogv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/catalog/v1alpha1"
 	v1 "github.com/kubermatic/kubecarrier/pkg/apiserver/api/v1"
-	"github.com/kubermatic/kubecarrier/pkg/apiserver/internal/authorizer"
 )
 
 type providerServer struct {
-	client     client.Client
-	authorizer authorizer.Authorizer
+	client        client.Client
+	dynamicClient dynamic.Interface
+	scheme        *runtime.Scheme
+
+	gvr schema.GroupVersionResource
 }
 
 var _ v1.ProviderServiceServer = (*providerServer)(nil)
 
-// +kubebuilder:rbac:groups=catalog.kubecarrier.io,resources=providers,verbs=get;list
+// +kubebuilder:rbac:groups=catalog.kubecarrier.io,resources=providers,verbs=get;list;watch
 
-func NewProviderServiceServer(c client.Client, authorizer authorizer.Authorizer) v1.ProviderServiceServer {
-	return &providerServer{
-		client:     c,
-		authorizer: authorizer,
+func NewProviderServiceServer(c client.Client, dynamicClient dynamic.Interface, restMapper meta.RESTMapper, scheme *runtime.Scheme) (v1.ProviderServiceServer, error) {
+	providerServer := &providerServer{
+		client:        c,
+		dynamicClient: dynamicClient,
+		scheme:        scheme,
 	}
+	objGVK, err := apiutil.GVKForObject(&catalogv1alpha1.Provider{}, providerServer.scheme)
+	if err != nil {
+		return nil, err
+	}
+	restMapping, err := restMapper.RESTMapping(objGVK.GroupKind(), objGVK.Version)
+	if err != nil {
+		return nil, err
+	}
+	providerServer.gvr = restMapping.Resource
+	return providerServer, nil
+}
+
+func (o providerServer) GetGVR() schema.GroupVersionResource {
+	return o.gvr
 }
 
 func (o providerServer) List(ctx context.Context, req *v1.ListRequest) (res *v1.ProviderList, err error) {
-	if err := o.authorizer.Authorize(ctx, &catalogv1alpha1.Provider{}, authorizer.AuthorizationOption{
-		Namespace: req.Account,
-		Verb:      authorizer.RequestList,
-	}); err != nil {
-		return nil, status.Error(codes.Unauthenticated, err.Error())
-	}
-	return o.handleListRequest(ctx, req)
-}
-
-func (o providerServer) Get(ctx context.Context, req *v1.GetRequest) (res *v1.Provider, err error) {
-	if err := o.authorizer.Authorize(ctx, &catalogv1alpha1.Provider{}, authorizer.AuthorizationOption{
-		Name:      req.Name,
-		Namespace: req.Account,
-		Verb:      authorizer.RequestGet,
-	}); err != nil {
-		return nil, status.Error(codes.Unauthenticated, err.Error())
-	}
-	return o.handleGetRequest(ctx, req)
-}
-
-func (o providerServer) handleListRequest(ctx context.Context, req *v1.ListRequest) (res *v1.ProviderList, err error) {
-	listOptions, err := validateListRequest(req)
+	listOptions, err := req.GetListOptions()
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 	providerList := &catalogv1alpha1.ProviderList{}
-	if err := o.client.List(ctx, providerList, listOptions...); err != nil {
+	if err := o.client.List(ctx, providerList, listOptions); err != nil {
 		return nil, status.Errorf(codes.Internal, "listing providers: %s", err.Error())
 	}
 
@@ -83,10 +86,7 @@ func (o providerServer) handleListRequest(ctx context.Context, req *v1.ListReque
 	return
 }
 
-func (o providerServer) handleGetRequest(ctx context.Context, req *v1.GetRequest) (res *v1.Provider, err error) {
-	if err := validateGetRequest(req); err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
-	}
+func (o providerServer) Get(ctx context.Context, req *v1.GetRequest) (res *v1.Provider, err error) {
 	provider := &catalogv1alpha1.Provider{}
 	if err = o.client.Get(ctx, types.NamespacedName{
 		Name:      req.Name,
@@ -99,6 +99,30 @@ func (o providerServer) handleGetRequest(ctx context.Context, req *v1.GetRequest
 		return nil, status.Errorf(codes.Internal, "converting Provider: %s", err.Error())
 	}
 	return
+}
+
+func (o providerServer) convertEvent(event runtime.Object) (*any.Any, error) {
+	catalogProvider := &catalogv1alpha1.Provider{}
+	if err := o.scheme.Convert(event, catalogProvider, nil); err != nil {
+		return nil, status.Errorf(codes.Internal, "converting event.Object to Provider: %s", err.Error())
+	}
+	provider, err := o.convertProvider(catalogProvider)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "converting Provider: %s", err.Error())
+	}
+	any, err := ptypes.MarshalAny(provider)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "marshalling Provider to Any: %s", err.Error())
+	}
+	return any, nil
+}
+
+func (o providerServer) Watch(req *v1.WatchRequest, stream v1.ProviderService_WatchServer) error {
+	listOptions, err := req.GetListOptions()
+	if err != nil {
+		return status.Error(codes.InvalidArgument, err.Error())
+	}
+	return watch(o.dynamicClient, o.gvr, req.Account, *listOptions.AsListOptions(), stream, o.convertEvent)
 }
 
 func (o providerServer) convertProvider(in *catalogv1alpha1.Provider) (out *v1.Provider, err error) {

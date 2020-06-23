@@ -89,7 +89,7 @@ func TestGetInstance(t *testing.T) {
 	assert.Nil(t, err)
 
 	client := fakeclient.NewFakeClientWithScheme(testScheme, instance)
-	instanceServer := NewInstancesServer(client, newFakeRESTMapper("CouchDB"))
+	instanceServer := NewInstancesServer(client, nil, newFakeRESTMapper("CouchDB"), testScheme)
 	ctx := context.Background()
 	tests := []struct {
 		name           string
@@ -97,58 +97,6 @@ func TestGetInstance(t *testing.T) {
 		expectedError  error
 		expectedResult *v1.Instance
 	}{
-		{
-			name: "missing namespace",
-			req: &v1.InstanceGetRequest{
-				Name:     "test-instance",
-				Account:  "",
-				Offering: "couchdb.eu-west-1.team-a",
-				Version:  "v1alpha1",
-			},
-			expectedError:  status.Errorf(codes.InvalidArgument, "missing namespace"),
-			expectedResult: nil,
-		},
-		{
-			name: "missing name",
-			req: &v1.InstanceGetRequest{
-				Account:  "test-namespace",
-				Offering: "couchdb.eu-west-1.team-a",
-				Version:  "v1alpha1",
-			},
-			expectedError:  status.Errorf(codes.InvalidArgument, "missing name"),
-			expectedResult: nil,
-		},
-		{
-			name: "missing offering name",
-			req: &v1.InstanceGetRequest{
-				Name:    "test-instance",
-				Account: "test-namespace",
-				Version: "v1alpha1",
-			},
-			expectedError:  status.Errorf(codes.InvalidArgument, "missing offering"),
-			expectedResult: nil,
-		},
-		{
-			name: "missing version",
-			req: &v1.InstanceGetRequest{
-				Name:     "test-instance",
-				Account:  "test-namespace",
-				Offering: "couchdb.eu-west-1.team-a",
-			},
-			expectedError:  status.Errorf(codes.InvalidArgument, "missing version"),
-			expectedResult: nil,
-		},
-		{
-			name: "wrong offering name",
-			req: &v1.InstanceGetRequest{
-				Name:     "test-instance",
-				Account:  "test-namespace",
-				Offering: "couchdb",
-				Version:  "v1alpha1",
-			},
-			expectedError:  status.Errorf(codes.InvalidArgument, "offering should have format: {kind}.{apiGroup}"),
-			expectedResult: nil,
-		},
 		{
 			name: "valid request",
 			req: &v1.InstanceGetRequest{
@@ -182,7 +130,7 @@ func TestGetInstance(t *testing.T) {
 func TestCreateInstance(t *testing.T) {
 	spec := v1.NewJSONRawObject([]byte("{\"password\":\"password\",\"username\":\"username\"}"))
 	client := fakeclient.NewFakeClientWithScheme(testScheme)
-	instanceServer := NewInstancesServer(client, newFakeRESTMapper("CouchDB"))
+	instanceServer := NewInstancesServer(client, nil, newFakeRESTMapper("CouchDB"), testScheme)
 	ctx := context.Background()
 	tests := []struct {
 		name           string
@@ -228,7 +176,7 @@ func TestDeleteInstance(t *testing.T) {
 		map[string]string{"status": "ready"}, map[string]string{})
 	assert.Nil(t, err)
 	client := fakeclient.NewFakeClientWithScheme(testScheme)
-	instanceServer := NewInstancesServer(client, newFakeRESTMapper("CouchDB"))
+	instanceServer := NewInstancesServer(client, nil, newFakeRESTMapper("CouchDB"), testScheme)
 	ctx := context.Background()
 	err = client.Create(ctx, instance)
 	assert.Nil(t, err)
@@ -279,7 +227,7 @@ func TestListInstance(t *testing.T) {
 
 	client := fakeclient.NewFakeClientWithScheme(testScheme, instances)
 	testScheme.AddKnownTypeWithName(instanceListGVK, instances)
-	instanceServer := NewInstancesServer(client, newFakeRESTMapper("CouchDBList"))
+	instanceServer := NewInstancesServer(client, nil, newFakeRESTMapper("CouchDBList"), testScheme)
 	ctx := context.Background()
 	tests := []struct {
 		name           string

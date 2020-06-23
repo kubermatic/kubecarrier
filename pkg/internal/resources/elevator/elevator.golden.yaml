@@ -390,3 +390,4 @@
     - delete
     - get
     - list
+    - watch

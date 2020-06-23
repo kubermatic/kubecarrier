@@ -21,13 +21,17 @@ import (
 	"fmt"
 
 	"github.com/go-logr/logr"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 	authv1 "k8s.io/api/authorization/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/client/apiutil"
 
 	"github.com/kubermatic/kubecarrier/pkg/apiserver/auth"
+	"github.com/kubermatic/kubecarrier/pkg/apiserver/authorizer"
 )
 
 type Authorizer struct {
@@ -46,32 +50,64 @@ func NewAuthorizer(log logr.Logger, scheme *runtime.Scheme, client client.Client
 	}
 }
 
+func (a Authorizer) UnaryServerInterceptor() grpc.UnaryServerInterceptor {
+	return func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
+		if authReq, ok := req.(authorizer.AuthRequest); ok {
+			opts := authReq.GetAuthOption()
+			if gvr := authReq.GetGVR(info.Server); !gvr.Empty() {
+				if err := a.Authorize(ctx, gvr, opts); err != nil {
+					return nil, status.Error(codes.PermissionDenied, err.Error())
+				}
+			}
+		}
+		return handler(ctx, req)
+	}
+}
+
+func (a Authorizer) StreamServerInterceptor() grpc.StreamServerInterceptor {
+	return func(srv interface{}, stream grpc.ServerStream, info *grpc.StreamServerInfo, handler grpc.StreamHandler) error {
+		wrapper := &recvWrapper{stream, a, srv}
+		return handler(srv, wrapper)
+	}
+}
+
+type recvWrapper struct {
+	grpc.ServerStream
+	a   Authorizer
+	srv interface{}
+}
+
+func (s *recvWrapper) RecvMsg(m interface{}) error {
+	if err := s.ServerStream.RecvMsg(m); err != nil {
+		return err
+	}
+	if authReq, ok := m.(authorizer.AuthRequest); ok {
+		opts := authReq.GetAuthOption()
+		gvr := authReq.GetGVR(s.srv)
+		if err := s.a.Authorize(s.Context(), gvr, opts); err != nil {
+			return status.Error(codes.PermissionDenied, err.Error())
+		}
+	}
+	return nil
+}
+
 // +kubebuilder:rbac:groups=authorization.k8s.io,resources=subjectaccessreviews,verbs=create
 
 func (a Authorizer) Authorize(
 	ctx context.Context,
-	objType runtime.Object,
-	option AuthorizationOption,
+	gvr schema.GroupVersionResource,
+	option authorizer.AuthorizationOption,
 ) error {
 	user, err := auth.ExtractUserInfo(ctx)
 	if err != nil {
 		return err
 	}
-	gvk, err := apiutil.GVKForObject(objType, a.scheme)
-	if err != nil {
-		return fmt.Errorf("cannot get GVK for %T: %w", objType, err)
-	}
-	restMapping, err := a.restMapper.RESTMapping(gvk.GroupKind(), gvk.Version)
-	if err != nil {
-		return fmt.Errorf("cannot get resources for %T: %w", objType, err)
-	}
-
 	review := &authv1.SubjectAccessReview{
 		Spec: authv1.SubjectAccessReviewSpec{
 			ResourceAttributes: &authv1.ResourceAttributes{
-				Group:    restMapping.Resource.Group,
-				Version:  restMapping.Resource.Version,
-				Resource: restMapping.Resource.Resource,
+				Group:    gvr.Group,
+				Version:  gvr.Version,
+				Resource: gvr.Resource,
 			},
 			User:   user.GetName(),
 			Groups: user.GetGroups(),
@@ -82,7 +118,7 @@ func (a Authorizer) Authorize(
 	for key, val := range user.GetExtra() {
 		review.Spec.Extra[key] = val
 	}
-	option.apply(review)
+	option.Apply(review)
 	if err := a.client.Create(ctx, review); err != nil {
 		return fmt.Errorf("creating SubjectAccessReview: %s", err)
 	}
@@ -90,26 +126,4 @@ func (a Authorizer) Authorize(
 		return fmt.Errorf("permission denied")
 	}
 	return nil
-}
-
-type RequestOperation string
-
-const (
-	RequestGet    RequestOperation = "get"
-	RequestList   RequestOperation = "list"
-	RequestWatch  RequestOperation = "watch"
-	RequestCreate RequestOperation = "create"
-	RequestDelete RequestOperation = "delete"
-)
-
-type AuthorizationOption struct {
-	Name      string
-	Namespace string
-	Verb      RequestOperation
-}
-
-func (a AuthorizationOption) apply(review *authv1.SubjectAccessReview) {
-	review.Spec.ResourceAttributes.Name = a.Name
-	review.Spec.ResourceAttributes.Namespace = a.Namespace
-	review.Spec.ResourceAttributes.Verb = string(a.Verb)
 }
