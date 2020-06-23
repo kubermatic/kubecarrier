@@ -53,9 +53,8 @@ import (
 const (
 	localAPIServerPort = 9443
 	// Htpasswd
-	username    = "user1"
-	password    = "mickey5"
-	md5password = `$apr1$gxNb79DX$6wi9QaGNM5TA0kBKiC4710`
+	username = "user1"
+	password = "mickey5"
 )
 
 func newAPIServer(f *testutil.Framework) func(t *testing.T) {
