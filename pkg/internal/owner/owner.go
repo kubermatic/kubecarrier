@@ -44,7 +44,7 @@ type generalizedListOption interface {
 }
 
 // SetOwnerReference sets a the owner as owner of object.
-func SetOwnerReference(owner, object runtime.Object, scheme *runtime.Scheme) (changed bool) {
+func SetOwnerReference(owner, object runtime.Object, scheme *runtime.Scheme) (changed bool, err error) {
 	objectAccessor, err := meta.Accessor(object)
 	if err != nil {
 		panic(fmt.Errorf("cannot get accessor for %T :%w", object, err))
@@ -57,8 +57,12 @@ func SetOwnerReference(owner, object runtime.Object, scheme *runtime.Scheme) (ch
 
 	ownerLabels := labelsForOwner(owner, scheme)
 	for k, v := range ownerLabels {
-		if labels[k] != v {
+		if labels[k] == "" {
+			// label was not set before.
 			changed = true
+		} else if labels[k] != v {
+			// label is overriden.
+			return changed, fmt.Errorf("tried to override owner reference: %s=%s to =%s", k, labels[k], v)
 		}
 		labels[k] = v
 	}

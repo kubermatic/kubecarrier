@@ -20,6 +20,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	corev1 "k8s.io/api/core/v1"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -47,28 +48,54 @@ func init() {
 }
 
 func TestSetOwnerReference(t *testing.T) {
-	owner := &unstructured.Unstructured{}
-	owner.SetName("hans")
-	owner.SetNamespace("hans-playground")
-	owner.SetGroupVersionKind(schema.GroupVersionKind{
-		Group:   "test.kubecarrier.io",
-		Kind:    "Test",
-		Version: "v1alpha1",
+	t.Run("set new", func(t *testing.T) {
+		owner := &unstructured.Unstructured{}
+		owner.SetName("hans")
+		owner.SetNamespace("hans-playground")
+		owner.SetGroupVersionKind(schema.GroupVersionKind{
+			Group:   "test.kubecarrier.io",
+			Kind:    "Test",
+			Version: "v1alpha1",
+		})
+
+		obj := &unstructured.Unstructured{}
+
+		changed, err := SetOwnerReference(owner, obj, testScheme)
+		require.NoError(t, err)
+
+		assert.True(t, changed)
+		assert.Equal(t, map[string]string{
+			OwnerNameLabel:      "hans",
+			OwnerNamespaceLabel: "hans-playground",
+			OwnerTypeLabel:      "Test.test.kubecarrier.io",
+		}, obj.GetLabels())
+		// this is the kubernetes regex that validates label values
+		assert.Regexp(
+			t, `(([A-Za-z0-9][-A-Za-z0-9_.]*)?[A-Za-z0-9])?`,
+			obj.GetLabels()[OwnerTypeLabel])
 	})
 
-	obj := &unstructured.Unstructured{}
+	t.Run("override protection", func(t *testing.T) {
+		owner := &unstructured.Unstructured{}
+		owner.SetName("hans")
+		owner.SetNamespace("hans-playground")
+		owner.SetGroupVersionKind(schema.GroupVersionKind{
+			Group:   "test.kubecarrier.io",
+			Kind:    "Test",
+			Version: "v1alpha1",
+		})
 
-	changed := SetOwnerReference(owner, obj, testScheme)
-	assert.True(t, changed)
-	assert.Equal(t, map[string]string{
-		OwnerNameLabel:      "hans",
-		OwnerNamespaceLabel: "hans-playground",
-		OwnerTypeLabel:      "Test.test.kubecarrier.io",
-	}, obj.GetLabels())
-	// this is the kubernetes regex that validates label values
-	assert.Regexp(
-		t, `(([A-Za-z0-9][-A-Za-z0-9_.]*)?[A-Za-z0-9])?`,
-		obj.GetLabels()[OwnerTypeLabel])
+		obj := &unstructured.Unstructured{}
+		obj.SetLabels(map[string]string{
+			OwnerNameLabel:      "sepp",
+			OwnerNamespaceLabel: "hans-playground",
+			OwnerTypeLabel:      "Test.test.kubecarrier.io",
+		})
+
+		_, err := SetOwnerReference(owner, obj, testScheme)
+		require.Error(t, err)
+		assert.Equal(t, "tried to override owner reference: owner.kubecarrier.io/name=sepp to =hans", err.Error())
+	})
 }
 
 func Test_requestHandlerForOwner(t *testing.T) {
