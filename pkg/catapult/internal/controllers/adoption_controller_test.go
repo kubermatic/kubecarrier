@@ -21,15 +21,19 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 	fakeclient "sigs.k8s.io/controller-runtime/pkg/client/fake"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	corev1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/core/v1alpha1"
+	"github.com/kubermatic/kubecarrier/pkg/internal/owner"
 	"github.com/kubermatic/kubecarrier/pkg/testutil"
+	"github.com/kubermatic/kubecarrier/pkg/testutil/mockclient"
 )
 
 func TestAdoptionReconciler(t *testing.T) {
@@ -74,6 +78,86 @@ func TestAdoptionReconciler(t *testing.T) {
 			},
 		},
 	}
+
+	t.Run("is skipping deleted objects", func(t *testing.T) {
+		now := metav1.Now()
+		deletedServiceClusterObj := serviceClusterObj.DeepCopy()
+		deletedServiceClusterObj.SetDeletionTimestamp(&now)
+
+		log := testutil.NewLogger(t)
+		managementClient := mockclient.NewClient()
+		serviceClient := mockclient.NewClient()
+
+		r := AdoptionReconciler{
+			Client:               managementClient,
+			NamespacedClient:     managementClient,
+			Log:                  log,
+			ServiceClusterClient: serviceClient,
+
+			ServiceClusterGVK:    serviceClusterGVK,
+			ManagementClusterGVK: managementClusterGVK,
+			ProviderNamespace:    providerNamespace,
+		}
+
+		nn := types.NamespacedName{
+			Name:      deletedServiceClusterObj.GetName(),
+			Namespace: deletedServiceClusterObj.GetNamespace(),
+		}
+
+		serviceClient.On("Get", mock.Anything, nn, mock.Anything).Run(func(args mock.Arguments) {
+			obj := args.Get(2).(*unstructured.Unstructured)
+			deletedServiceClusterObj.DeepCopyInto(obj)
+		}).Return(*new(error))
+
+		_, err := r.Reconcile(reconcile.Request{
+			NamespacedName: nn,
+		})
+		require.NoError(t, err)
+	})
+
+	t.Run("is skipping owned objects", func(t *testing.T) {
+		ownerObj := &unstructured.Unstructured{}
+		ownerObj.SetGroupVersionKind(schema.GroupVersionKind{
+			Group:   "test.kubecarrier.io",
+			Kind:    "Test",
+			Version: "v1alpha1",
+		})
+		ownerObj.SetName("hans")
+		ownerObj.SetNamespace("default")
+
+		ownedServiceClusterObj := serviceClusterObj.DeepCopy()
+		owner.SetOwnerReference(ownerObj, ownedServiceClusterObj, testScheme)
+
+		log := testutil.NewLogger(t)
+		managementClient := mockclient.NewClient()
+		serviceClient := mockclient.NewClient()
+
+		r := AdoptionReconciler{
+			Client:               managementClient,
+			NamespacedClient:     managementClient,
+			Log:                  log,
+			ServiceClusterClient: serviceClient,
+
+			ServiceClusterGVK:    serviceClusterGVK,
+			ManagementClusterGVK: managementClusterGVK,
+			ProviderNamespace:    providerNamespace,
+		}
+
+		nn := types.NamespacedName{
+			Name:      ownedServiceClusterObj.GetName(),
+			Namespace: ownedServiceClusterObj.GetNamespace(),
+		}
+
+		serviceClient.On("Get", mock.Anything, nn, mock.Anything).Run(func(args mock.Arguments) {
+			obj := args.Get(2).(*unstructured.Unstructured)
+			ownedServiceClusterObj.DeepCopyInto(obj)
+		}).Return(*new(error))
+
+		_, err := r.Reconcile(reconcile.Request{
+			NamespacedName: nn,
+		})
+		require.NoError(t, err)
+	})
 
 	t.Run("creates management cluster object", func(t *testing.T) {
 		log := testutil.NewLogger(t)

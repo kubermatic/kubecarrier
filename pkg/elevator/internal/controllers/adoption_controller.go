@@ -32,6 +32,7 @@ import (
 
 	catalogv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/catalog/v1alpha1"
 	elevatorutil "github.com/kubermatic/kubecarrier/pkg/elevator/internal/util"
+	"github.com/kubermatic/kubecarrier/pkg/internal/owner"
 	"github.com/kubermatic/kubecarrier/pkg/internal/util"
 )
 
@@ -58,6 +59,12 @@ func (r *AdoptionReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	providerObj := r.newProviderObject()
 	if err := r.Get(ctx, req.NamespacedName, providerObj); err != nil {
 		return result, client.IgnoreNotFound(err)
+	}
+	if owner.IsOwned(providerObj) ||
+		!providerObj.GetDeletionTimestamp().IsZero() {
+		// the object is already owned or was deleted, so we don't want to do anything.
+		// otherwise we might recreate the owning object preventing the deletion of this instance.
+		return result, nil
 	}
 
 	// Get DerivedCustomResource field configs
