@@ -66,7 +66,7 @@ func TestCatalogReconciler(t *testing.T) {
 			Name: provider.Name,
 		},
 	}
-	owner.SetOwnerReference(provider, providerNamespace, testScheme)
+	_, _ = owner.SetOwnerReference(provider, providerNamespace, testScheme)
 
 	tenantAccount := &catalogv1alpha1.Account{
 		ObjectMeta: metav1.ObjectMeta{

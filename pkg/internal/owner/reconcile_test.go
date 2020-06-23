@@ -110,7 +110,8 @@ func TestOwnedObjectReconciler_Reconcile(t *testing.T) {
 			cl := fakeclient.NewFakeClientWithScheme(testScheme, ownerObj)
 			ctx := context.Background()
 			for _, obj := range testCase.existingState {
-				SetOwnerReference(ownerObj, obj, testScheme)
+				_, err := SetOwnerReference(ownerObj, obj, testScheme)
+				require.NoError(t, err)
 				require.NoError(t, cl.Create(ctx, obj))
 			}
 			changed, err := ReconcileOwnedObjects(ctx, cl, testutil.NewLogger(t), testScheme, ownerObj, testCase.wantedState, &corev1.ConfigMap{}, testCase.muateFn)
