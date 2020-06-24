@@ -100,8 +100,8 @@ presubmits:
             privileged: true
           resources:
             requests:
-              cpu: 6
-              memory: 8Gi
+              cpu: 2
+              memory: 4Gi
   - name: pull-kubecarrier-e2e-v1.16
     always_run: true
     decorate: true
@@ -146,8 +146,8 @@ presubmits:
             privileged: true
           resources:
             requests:
-              cpu: 6
-              memory: 8Gi
+              cpu: 2
+              memory: 4Gi
 postsubmits:
   - name: post-kubecarrier-test-image
     decorate: true
