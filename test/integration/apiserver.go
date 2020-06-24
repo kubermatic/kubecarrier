@@ -298,10 +298,16 @@ func (w gRPCBasicAuthToken) RequireTransportSecurity() bool {
 
 func instanceService(ctx context.Context, conn *grpc.ClientConn, tenantAccount *catalogv1alpha1.Account, managementClient *testutil.RecordingClient, f *testutil.Framework) func(t *testing.T) {
 	return func(t *testing.T) {
+		ctx, cancel := context.WithCancel(context.Background())
+		t.Cleanup(cancel)
+
 		serviceClient, err := f.ServiceClient(t)
 		require.NoError(t, err, "creating service client")
+		t.Cleanup(managementClient.CleanUpFunc(ctx))
+
 		managementClient, err := f.ManagementClient(t)
 		require.NoError(t, err, "creating management client")
+		t.Cleanup(serviceClient.CleanUpFunc(ctx))
 
 		// we hit length limit of 63 chars, so we need a shorter name
 		testName := "instsvc"

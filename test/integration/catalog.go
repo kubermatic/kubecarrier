@@ -41,12 +41,15 @@ func newCatalogSuite(
 	return func(t *testing.T) {
 		ctx, cancel := context.WithCancel(context.Background())
 		t.Cleanup(cancel)
+
 		managementClient, err := f.ManagementClient(t)
 		require.NoError(t, err, "creating management client")
 		t.Cleanup(managementClient.CleanUpFunc(ctx))
+
 		serviceClient, err := f.ServiceClient(t)
 		require.NoError(t, err, "creating service client")
 		t.Cleanup(serviceClient.CleanUpFunc(ctx))
+
 		testName := strings.Replace(strings.ToLower(t.Name()), "/", "-", -1)
 
 		// Create a Tenant to execute our tests in
