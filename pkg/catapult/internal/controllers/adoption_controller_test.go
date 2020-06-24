@@ -126,7 +126,7 @@ func TestAdoptionReconciler(t *testing.T) {
 		ownerObj.SetNamespace("default")
 
 		ownedServiceClusterObj := serviceClusterObj.DeepCopy()
-		owner.SetOwnerReference(ownerObj, ownedServiceClusterObj, testScheme)
+		_, _ = owner.SetOwnerReference(ownerObj, ownedServiceClusterObj, testScheme)
 
 		log := testutil.NewLogger(t)
 		managementClient := mockclient.NewClient()

@@ -100,7 +100,7 @@ func TestAdoptionReconciler(t *testing.T) {
 		ownerObj.SetNamespace("default")
 
 		ownedProviderObj := providerObj.DeepCopy()
-		owner.SetOwnerReference(ownerObj, ownedProviderObj, testScheme)
+		_, _ = owner.SetOwnerReference(ownerObj, ownedProviderObj, testScheme)
 
 		log := testutil.NewLogger(t)
 		client := mockclient.NewClient()

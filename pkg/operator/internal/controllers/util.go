@@ -81,7 +81,9 @@ func reconcileOwnedObjectsForNamespacedOwner(
 					return err
 				}
 			case meta.RESTScopeNameRoot:
-				owner.SetOwnerReference(ownerObj, &object, scheme)
+				if _, err := owner.SetOwnerReference(ownerObj, &object, scheme); err != nil {
+					return err
+				}
 			default:
 				return fmt.Errorf("unknown REST scope: %s", restMapping.Scope.Name())
 			}

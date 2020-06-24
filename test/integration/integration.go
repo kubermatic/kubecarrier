@@ -39,6 +39,7 @@ func NewIntegrationSuite(f *testutil.Framework) func(t *testing.T) {
 			testFn := testFn
 
 			t.Run(name, func(t *testing.T) {
+				t.Helper()
 				t.Parallel()
 				testFn(f)(t)
 			})

@@ -62,6 +62,7 @@ func newAPIServer(f *testutil.Framework) func(t *testing.T) {
 		t.Log("testing how API Server works")
 		ctx, cancel := context.WithCancel(context.Background())
 		t.Cleanup(cancel)
+
 		managementClient, err := f.ManagementClient(t)
 		require.NoError(t, err, "creating management client")
 		t.Cleanup(managementClient.CleanUpFunc(ctx))
@@ -123,7 +124,7 @@ func newAPIServer(f *testutil.Framework) func(t *testing.T) {
 		require.NoError(t, managementClient.Create(ctx, account))
 		require.NoError(t, testutil.WaitUntilReady(ctx, managementClient, account), "account not ready")
 
-		for name, testFn := range map[string]func(ctx context.Context, conn *grpc.ClientConn, account *catalogv1alpha1.Account, managementClient *testutil.RecordingClient, f *testutil.Framework) func(t *testing.T){
+		for name, testFn := range map[string]func(ctx context.Context, conn *grpc.ClientConn, account *catalogv1alpha1.Account, f *testutil.Framework) func(t *testing.T){
 			"account-service":  accountService,
 			"offering-service": offeringService,
 			"region-service":   regionService,
@@ -135,7 +136,7 @@ func newAPIServer(f *testutil.Framework) func(t *testing.T) {
 
 			t.Run(name, func(t *testing.T) {
 				t.Parallel()
-				testFn(ctx, conn, account, managementClient, f)(t)
+				testFn(ctx, conn, account, f)(t)
 			})
 		}
 	}
@@ -296,12 +297,18 @@ func (w gRPCBasicAuthToken) RequireTransportSecurity() bool {
 	return true
 }
 
-func instanceService(ctx context.Context, conn *grpc.ClientConn, tenantAccount *catalogv1alpha1.Account, managementClient *testutil.RecordingClient, f *testutil.Framework) func(t *testing.T) {
+func instanceService(ctx context.Context, conn *grpc.ClientConn, tenantAccount *catalogv1alpha1.Account, f *testutil.Framework) func(t *testing.T) {
 	return func(t *testing.T) {
+		ctx, cancel := context.WithCancel(context.Background())
+		t.Cleanup(cancel)
+
 		serviceClient, err := f.ServiceClient(t)
 		require.NoError(t, err, "creating service client")
+		t.Cleanup(serviceClient.CleanUpFunc(ctx))
+
 		managementClient, err := f.ManagementClient(t)
 		require.NoError(t, err, "creating management client")
+		t.Cleanup(managementClient.CleanUpFunc(ctx))
 
 		// we hit length limit of 63 chars, so we need a shorter name
 		testName := "instsvc"
@@ -447,8 +454,12 @@ func instanceService(ctx context.Context, conn *grpc.ClientConn, tenantAccount *
 	}
 }
 
-func accountService(ctx context.Context, conn *grpc.ClientConn, account *catalogv1alpha1.Account, managementClient *testutil.RecordingClient, f *testutil.Framework) func(t *testing.T) {
+func accountService(ctx context.Context, conn *grpc.ClientConn, account *catalogv1alpha1.Account, f *testutil.Framework) func(t *testing.T) {
 	return func(t *testing.T) {
+		managementClient, err := f.ManagementClient(t)
+		require.NoError(t, err, "creating management client")
+		t.Cleanup(managementClient.CleanUpFunc(ctx))
+
 		testName := strings.Replace(strings.ToLower(t.Name()), "/", "-", -1)
 		providerAccount := testutil.NewProviderAccount(testName, rbacv1.Subject{
 			Kind:     rbacv1.GroupKind,
@@ -487,8 +498,12 @@ func accountService(ctx context.Context, conn *grpc.ClientConn, account *catalog
 	}
 }
 
-func providerService(ctx context.Context, conn *grpc.ClientConn, account *catalogv1alpha1.Account, managementClient *testutil.RecordingClient, f *testutil.Framework) func(t *testing.T) {
+func providerService(ctx context.Context, conn *grpc.ClientConn, account *catalogv1alpha1.Account, f *testutil.Framework) func(t *testing.T) {
 	return func(t *testing.T) {
+		managementClient, err := f.ManagementClient(t)
+		require.NoError(t, err, "creating management client")
+		t.Cleanup(managementClient.CleanUpFunc(ctx))
+
 		namespaceName := account.Status.Namespace.Name
 		// Create providers objects in the management cluster.
 		provider1 := &catalogv1alpha1.Provider{
@@ -609,8 +624,12 @@ func providerService(ctx context.Context, conn *grpc.ClientConn, account *catalo
 	}
 }
 
-func offeringService(ctx context.Context, conn *grpc.ClientConn, account *catalogv1alpha1.Account, managementClient *testutil.RecordingClient, f *testutil.Framework) func(t *testing.T) {
+func offeringService(ctx context.Context, conn *grpc.ClientConn, account *catalogv1alpha1.Account, f *testutil.Framework) func(t *testing.T) {
 	return func(t *testing.T) {
+		managementClient, err := f.ManagementClient(t)
+		require.NoError(t, err, "creating management client")
+		t.Cleanup(managementClient.CleanUpFunc(ctx))
+
 		namespaceName := account.Status.Namespace.Name
 		// Create offering objects in the management cluster.
 		offering1 := &catalogv1alpha1.Offering{
@@ -804,8 +823,12 @@ func nextEventType(t *testing.T, watchClient apiserverv1.OfferingService_WatchCl
 	assert.Equal(t, string(eventType), event.Type)
 }
 
-func regionService(ctx context.Context, conn *grpc.ClientConn, account *catalogv1alpha1.Account, managementClient *testutil.RecordingClient, f *testutil.Framework) func(t *testing.T) {
+func regionService(ctx context.Context, conn *grpc.ClientConn, account *catalogv1alpha1.Account, f *testutil.Framework) func(t *testing.T) {
 	return func(t *testing.T) {
+		managementClient, err := f.ManagementClient(t)
+		require.NoError(t, err, "creating management client")
+		t.Cleanup(managementClient.CleanUpFunc(ctx))
+
 		namespaceName := account.Status.Namespace.Name
 		// Create region objects in the management cluster.
 		region1 := &catalogv1alpha1.Region{

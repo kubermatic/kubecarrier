@@ -222,7 +222,9 @@ func (r *AccountReconciler) reconcileTenants(ctx context.Context, log logr.Logge
 					Namespace: providerAccount.Status.Namespace.Name,
 				},
 			}
-			owner.SetOwnerReference(account, tenant, r.Scheme)
+			if _, err := owner.SetOwnerReference(account, tenant, r.Scheme); err != nil {
+				return fmt.Errorf("setting owner reference on %v: %w", providerAccount, err)
+			}
 			wantedRefs = append(wantedRefs, tenant)
 		}
 	}
