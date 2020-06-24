@@ -104,7 +104,11 @@ func (r *CustomResourceDiscoveryReconciler) Reconcile(req ctrl.Request) (ctrl.Re
 		return ctrl.Result{Requeue: true}, nil
 	case err == nil:
 		// Add owner ref on CRD in the service cluster
-		if owner.SetOwnerReference(crDiscovery, crd, r.ManagementScheme) {
+		changed, err := owner.SetOwnerReference(crDiscovery, crd, r.ManagementScheme)
+		if err != nil {
+			return ctrl.Result{}, fmt.Errorf("setting owner reference: %w", err)
+		}
+		if changed {
 			if err := r.ServiceClient.Update(ctx, crd); err != nil {
 				return ctrl.Result{}, fmt.Errorf("updating CRD: %w", err)
 			}

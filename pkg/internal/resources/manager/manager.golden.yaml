@@ -16,6 +16,7 @@
     group: catalog.kubecarrier.io
     names:
       categories:
+      - all
       - kubecarrier-admin
       kind: Account
       listKind: AccountList
@@ -71,15 +72,53 @@
                     details."
                   properties:
                     description:
-                      description: Description is the human-readable description of
-                        this Account.
+                      description: Description is the long and detailed description
+                        of the Service.
                       minLength: 1
                       type: string
                     displayName:
                       description: DisplayName is the human-readable name of this
-                        Account.
+                        Service.
                       minLength: 1
                       type: string
+                    icon:
+                      description: Icon is a small squared logo of the service.
+                      properties:
+                        data:
+                          description: Data is the image data.
+                          format: byte
+                          type: string
+                        mediaType:
+                          description: MediaType of the included image in data. e.g.
+                            image/png, image/jpeg, image/svg
+                          type: string
+                      required:
+                      - data
+                      - mediaType
+                      type: object
+                    logo:
+                      description: Logo is the full sized logo of the service.
+                      properties:
+                        data:
+                          description: Data is the image data.
+                          format: byte
+                          type: string
+                        mediaType:
+                          description: MediaType of the included image in data. e.g.
+                            image/png, image/jpeg, image/svg
+                          type: string
+                      required:
+                      - data
+                      - mediaType
+                      type: object
+                    shortDescription:
+                      description: ShortDescription is a single line short description
+                        of the Service.
+                      minLength: 1
+                      type: string
+                  required:
+                  - displayName
+                  - shortDescription
                   type: object
                 roles:
                   description: Roles this account uses.
@@ -220,6 +259,7 @@
     group: catalog.kubecarrier.io
     names:
       categories:
+      - all
       - kubecarrier-provider
       kind: CatalogEntry
       listKind: CatalogEntryList
@@ -336,18 +376,53 @@
                     for the Service Catalog.
                   properties:
                     description:
-                      description: Description shows the human-readable description
-                        of this CatalogEntry.
+                      description: Description is the long and detailed description
+                        of the Service.
                       minLength: 1
                       type: string
                     displayName:
-                      description: DisplayName shows the human-readable name of this
-                        CatalogEntry.
+                      description: DisplayName is the human-readable name of this
+                        Service.
+                      minLength: 1
+                      type: string
+                    icon:
+                      description: Icon is a small squared logo of the service.
+                      properties:
+                        data:
+                          description: Data is the image data.
+                          format: byte
+                          type: string
+                        mediaType:
+                          description: MediaType of the included image in data. e.g.
+                            image/png, image/jpeg, image/svg
+                          type: string
+                      required:
+                      - data
+                      - mediaType
+                      type: object
+                    logo:
+                      description: Logo is the full sized logo of the service.
+                      properties:
+                        data:
+                          description: Data is the image data.
+                          format: byte
+                          type: string
+                        mediaType:
+                          description: MediaType of the included image in data. e.g.
+                            image/png, image/jpeg, image/svg
+                          type: string
+                      required:
+                      - data
+                      - mediaType
+                      type: object
+                    shortDescription:
+                      description: ShortDescription is a single line short description
+                        of the Service.
                       minLength: 1
                       type: string
                   required:
-                  - description
                   - displayName
+                  - shortDescription
                   type: object
               required:
               - baseCRD
@@ -523,6 +598,7 @@
     group: catalog.kubecarrier.io
     names:
       categories:
+      - all
       - kubecarrier-provider
       kind: CatalogEntrySet
       listKind: CatalogEntrySetList
@@ -698,18 +774,53 @@
                     for the Service Catalog.
                   properties:
                     description:
-                      description: Description shows the human-readable description
-                        of this CatalogEntrySet.
+                      description: Description is the long and detailed description
+                        of the Service.
                       minLength: 1
                       type: string
                     displayName:
-                      description: DisplayName shows the human-readable name of this
-                        CatalogEntrySet.
+                      description: DisplayName is the human-readable name of this
+                        Service.
+                      minLength: 1
+                      type: string
+                    icon:
+                      description: Icon is a small squared logo of the service.
+                      properties:
+                        data:
+                          description: Data is the image data.
+                          format: byte
+                          type: string
+                        mediaType:
+                          description: MediaType of the included image in data. e.g.
+                            image/png, image/jpeg, image/svg
+                          type: string
+                      required:
+                      - data
+                      - mediaType
+                      type: object
+                    logo:
+                      description: Logo is the full sized logo of the service.
+                      properties:
+                        data:
+                          description: Data is the image data.
+                          format: byte
+                          type: string
+                        mediaType:
+                          description: MediaType of the included image in data. e.g.
+                            image/png, image/jpeg, image/svg
+                          type: string
+                      required:
+                      - data
+                      - mediaType
+                      type: object
+                    shortDescription:
+                      description: ShortDescription is a single line short description
+                        of the Service.
                       minLength: 1
                       type: string
                   required:
-                  - description
                   - displayName
+                  - shortDescription
                   type: object
               required:
               - discover
@@ -795,6 +906,7 @@
     group: catalog.kubecarrier.io
     names:
       categories:
+      - all
       - kubecarrier-provider
       kind: Catalog
       listKind: CatalogList
@@ -1036,6 +1148,7 @@
     group: catalog.kubecarrier.io
     names:
       categories:
+      - all
       - kubecarrier-provider
       kind: DerivedCustomResource
       listKind: DerivedCustomResourceList
@@ -1221,6 +1334,7 @@
     group: catalog.kubecarrier.io
     names:
       categories:
+      - all
       - kubecarrier-tenant
       kind: Offering
       listKind: OfferingList
@@ -1315,18 +1429,53 @@
                     description, etc) of the Offering.
                   properties:
                     description:
-                      description: Description shows the human-readable description
-                        of this Offering.
+                      description: Description is the long and detailed description
+                        of the Service.
                       minLength: 1
                       type: string
                     displayName:
-                      description: DisplayName shows the human-readable name of this
-                        Offering.
+                      description: DisplayName is the human-readable name of this
+                        Service.
+                      minLength: 1
+                      type: string
+                    icon:
+                      description: Icon is a small squared logo of the service.
+                      properties:
+                        data:
+                          description: Data is the image data.
+                          format: byte
+                          type: string
+                        mediaType:
+                          description: MediaType of the included image in data. e.g.
+                            image/png, image/jpeg, image/svg
+                          type: string
+                      required:
+                      - data
+                      - mediaType
+                      type: object
+                    logo:
+                      description: Logo is the full sized logo of the service.
+                      properties:
+                        data:
+                          description: Data is the image data.
+                          format: byte
+                          type: string
+                        mediaType:
+                          description: MediaType of the included image in data. e.g.
+                            image/png, image/jpeg, image/svg
+                          type: string
+                      required:
+                      - data
+                      - mediaType
+                      type: object
+                    shortDescription:
+                      description: ShortDescription is a single line short description
+                        of the Service.
                       minLength: 1
                       type: string
                   required:
-                  - description
                   - displayName
+                  - shortDescription
                   type: object
                 provider:
                   description: Provider references the Provider managing this Offering.
@@ -1369,6 +1518,7 @@
     group: catalog.kubecarrier.io
     names:
       categories:
+      - all
       - kubecarrier-tenant
       kind: Provider
       listKind: ProviderList
@@ -1413,15 +1563,53 @@
                     etc) of the Provider.
                   properties:
                     description:
-                      description: Description is the human-readable description of
-                        this Account.
+                      description: Description is the long and detailed description
+                        of the Service.
                       minLength: 1
                       type: string
                     displayName:
                       description: DisplayName is the human-readable name of this
-                        Account.
+                        Service.
                       minLength: 1
                       type: string
+                    icon:
+                      description: Icon is a small squared logo of the service.
+                      properties:
+                        data:
+                          description: Data is the image data.
+                          format: byte
+                          type: string
+                        mediaType:
+                          description: MediaType of the included image in data. e.g.
+                            image/png, image/jpeg, image/svg
+                          type: string
+                      required:
+                      - data
+                      - mediaType
+                      type: object
+                    logo:
+                      description: Logo is the full sized logo of the service.
+                      properties:
+                        data:
+                          description: Data is the image data.
+                          format: byte
+                          type: string
+                        mediaType:
+                          description: MediaType of the included image in data. e.g.
+                            image/png, image/jpeg, image/svg
+                          type: string
+                      required:
+                      - data
+                      - mediaType
+                      type: object
+                    shortDescription:
+                      description: ShortDescription is a single line short description
+                        of the Service.
+                      minLength: 1
+                      type: string
+                  required:
+                  - displayName
+                  - shortDescription
                   type: object
               required:
               - metadata
@@ -1454,6 +1642,7 @@
     group: catalog.kubecarrier.io
     names:
       categories:
+      - all
       - kubecarrier-tenant
       kind: Region
       listKind: RegionList
@@ -1550,6 +1739,7 @@
     group: catalog.kubecarrier.io
     names:
       categories:
+      - all
       - kubecarrier-provider
       kind: Tenant
       listKind: TenantList
@@ -1799,6 +1989,7 @@
     group: kubecarrier.io
     names:
       categories:
+      - all
       - kubecarrier-provider
       kind: CustomResourceDiscoverySet
       listKind: CustomResourceDiscoverySetList
@@ -2181,6 +2372,7 @@
     group: kubecarrier.io
     names:
       categories:
+      - all
       - kubecarrier-provider
       kind: ServiceCluster
       listKind: ServiceClusterList
@@ -2830,10 +3022,10 @@
               port: readiness-port
           resources:
             limits:
-              cpu: 100m
+              cpu: "1"
               memory: 100Mi
             requests:
-              cpu: 100m
+              cpu: "1"
               memory: 100Mi
           volumeMounts:
           - mountPath: /tmp/k8s-webhook-server/serving-certs

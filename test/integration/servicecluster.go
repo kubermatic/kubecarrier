@@ -45,15 +45,18 @@ func newServiceClusterSuite(
 	return func(t *testing.T) {
 		ctx, cancel := context.WithCancel(context.Background())
 		t.Cleanup(cancel)
+
 		managementClient, err := f.ManagementClient(t)
 		require.NoError(t, err, "creating management client")
 		t.Cleanup(managementClient.CleanUpFunc(ctx))
+
 		serviceClient, err := f.ServiceClient(t)
 		require.NoError(t, err, "creating service client")
 		t.Cleanup(serviceClient.CleanUpFunc(ctx))
+
 		testName := strings.Replace(strings.ToLower(t.Name()), "/", "-", -1)
 
-		provider := f.NewProviderAccount(testName, rbacv1.Subject{
+		provider := testutil.NewProviderAccount(testName, rbacv1.Subject{
 			Kind:     rbacv1.GroupKind,
 			APIGroup: "rbac.authorization.k8s.io",
 			Name:     "provider",
@@ -107,8 +110,10 @@ func newServiceClusterSuite(
 			},
 			Spec: catalogv1alpha1.CatalogEntrySetSpec{
 				Metadata: catalogv1alpha1.CatalogEntrySetMetadata{
-					DisplayName: "Test CatalogEntrySet",
-					Description: "Test CatalogEntrySet",
+					CommonMetadata: catalogv1alpha1.CommonMetadata{
+						DisplayName:      "Test CatalogEntrySet",
+						ShortDescription: "Test CatalogEntrySet",
+					},
 				},
 				Discover: catalogv1alpha1.CustomResourceDiscoverySetConfig{
 					CRD: catalogv1alpha1.ObjectReference{
@@ -212,7 +217,7 @@ ServiceClusterAssignment.kubecarrier.io/v1alpha1: %s.eu-west-1
 
 		// service cluster -> management cluster
 		//
-		serviceClusterObj2 := f.NewFakeDB("test-instance-2", serviceClusterAssignment.Status.ServiceClusterNamespace.Name)
+		serviceClusterObj2 := testutil.NewFakeDB("test-instance-2", serviceClusterAssignment.Status.ServiceClusterNamespace.Name)
 		require.NoError(t, serviceClient.Create(ctx, serviceClusterObj2))
 		// we need to unregister this object,
 		// as the management cluster takes control and will just recreate it.

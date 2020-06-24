@@ -33,6 +33,7 @@ func newFakeDB(f *testutil.Framework) func(t *testing.T) {
 		t.Log("testing if we can create FakeDB in service cluster")
 		ctx, cancel := context.WithCancel(context.Background())
 		t.Cleanup(cancel)
+
 		serviceClient, err := f.ServiceClient(t)
 		require.NoError(t, err, "creating service client")
 		t.Cleanup(serviceClient.CleanUpFunc(ctx))
@@ -46,7 +47,7 @@ func newFakeDB(f *testutil.Framework) func(t *testing.T) {
 		}
 		require.NoError(
 			t, serviceClient.Create(ctx, someNamespace), "creating a Namespace")
-		fakeDB := f.NewFakeDB(testName, testNamespace)
+		fakeDB := testutil.NewFakeDB(testName, testNamespace)
 		t.Log("adding fakeDB")
 		require.NoError(t, serviceClient.Create(ctx, fakeDB), "creating FakeDB")
 		require.NoError(t, testutil.WaitUntilReady(ctx, serviceClient, fakeDB))

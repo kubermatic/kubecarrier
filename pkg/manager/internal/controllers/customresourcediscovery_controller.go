@@ -163,17 +163,20 @@ func (r *CustomResourceDiscoveryReconciler) reconcileCRD(
 		Spec: apiextensionsv1.CustomResourceDefinitionSpec{
 			Group: group,
 			Names: apiextensionsv1.CustomResourceDefinitionNames{
-				Plural:   plural,
-				Singular: strings.ToLower(kind),
-				Kind:     kind,
-				ListKind: kind + "List",
+				Plural:     plural,
+				Singular:   strings.ToLower(kind),
+				Kind:       kind,
+				ListKind:   kind + "List",
+				Categories: []string{"all"},
 			},
 			Scope:    apiextensionsv1.NamespaceScoped,
 			Versions: crDiscovery.Status.CRD.Spec.Versions,
 		},
 		Status: apiextensionsv1.CustomResourceDefinitionStatus{},
 	}
-	owner.SetOwnerReference(crDiscovery, desiredCRD, r.Scheme)
+	if _, err := owner.SetOwnerReference(crDiscovery, desiredCRD, r.Scheme); err != nil {
+		return nil, fmt.Errorf("setting owner reference: %w", err)
+	}
 
 	// `ManagementClusterCRD name is written to the CustomResourceDiscovery.Status before the CRD is created.
 	// The reason is that in the CustomResourceDiscovery deletion webhook, the deletion will be allowed if the

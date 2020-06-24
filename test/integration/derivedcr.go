@@ -41,14 +41,15 @@ func newDerivedCR(
 	f *testutil.Framework,
 ) func(t *testing.T) {
 	return func(t *testing.T) {
-		managementClient, err := f.ManagementClient(t)
-		require.NoError(t, err, "creating management client")
 		ctx, cancel := context.WithCancel(context.Background())
 		t.Cleanup(cancel)
+
+		managementClient, err := f.ManagementClient(t)
+		require.NoError(t, err, "creating management client")
 		t.Cleanup(managementClient.CleanUpFunc(ctx))
 
 		testName := strings.Replace(strings.ToLower(t.Name()), "/", "-", -1)
-		provider := f.NewProviderAccount(testName, rbacv1.Subject{
+		provider := testutil.NewProviderAccount(testName, rbacv1.Subject{
 			Kind:     rbacv1.GroupKind,
 			APIGroup: "rbac.authorization.k8s.io",
 			Name:     "provider",
@@ -56,7 +57,7 @@ func newDerivedCR(
 		require.NoError(t, managementClient.Create(ctx, provider))
 		require.NoError(t, testutil.WaitUntilReady(ctx, managementClient, provider))
 
-		baseCRD := f.NewFakeCouchDBCRD(testName + "test.kubecarrier.io")
+		baseCRD := testutil.NewFakeCouchDBCRD(testName + "test.kubecarrier.io")
 		baseCRD.Labels = map[string]string{
 			"kubecarrier.io/service-cluster":  "eu-west-1",
 			"kubecarrier.io/origin-namespace": provider.Status.Namespace.Name,

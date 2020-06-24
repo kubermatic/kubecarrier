@@ -40,12 +40,7 @@ type DerivedConfig struct {
 
 // CatalogEntryMetadata contains metadata of the CatalogEntry.
 type CatalogEntryMetadata struct {
-	// DisplayName shows the human-readable name of this CatalogEntry.
-	// +kubebuilder:validation:MinLength=1
-	DisplayName string `json:"displayName"`
-	// Description shows the human-readable description of this CatalogEntry.
-	// +kubebuilder:validation:MinLength=1
-	Description string `json:"description"`
+	CommonMetadata `json:",inline"`
 }
 
 // CatalogEntryStatus represents the observed state of CatalogEntry.
@@ -223,7 +218,7 @@ func (s *CatalogEntryStatus) SetCondition(condition CatalogEntryCondition) {
 // +kubebuilder:printcolumn:name="Base CRD",type="string",JSONPath=".spec.baseCRD.name"
 // +kubebuilder:printcolumn:name="Tenant CRD",type="string",JSONPath=".status.tenantCRD.name"
 // +kubebuilder:printcolumn:name="Age",type="date",JSONPath=".metadata.creationTimestamp"
-// +kubebuilder:resource:categories=kubecarrier-provider,shortName=ce
+// +kubebuilder:resource:categories=all;kubecarrier-provider,shortName=ce
 type CatalogEntry struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`

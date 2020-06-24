@@ -55,6 +55,20 @@ func main() {
 	fmt.Printf("service-cluster-name=%s [use flag or env %s to configure]\n", *serviceClusterName, ServiceClusterENV)
 	var tasks = []ide.Task{
 		{
+			Name:    "API Server",
+			Program: "cmd/apiserver",
+			LDFlags: *ldFlags,
+			Args: []string{
+				"--address=:8090",
+				"--oidc-issuer-url=https://accounts.google.com",
+				"--oidc-client-id=640570493642-p10tov8pbr0b5kplri6to2fumbkrf397.apps.googleusercontent.com",
+				"--oidc-username-claim=email",
+			},
+			Env: map[string]string{
+				"KUBECONFIG": managementKubeconfigPath,
+			},
+		},
+		{
 			Name:    "Kubecarrier version",
 			Program: "cmd/kubectl-kubecarrier",
 			LDFlags: *ldFlags,
@@ -131,15 +145,16 @@ func main() {
 	for _, test := range []string{
 		"",
 		"InstallationSuite",
-		"VerifySuite",
 		"Integration",
+		"Integration/account",
+		"Integration/api-server",
+		"Integration/catalog",
+		"Integration/cli",
 		"Integration/derivedCR",
 		"Integration/serviceCluster",
-		"Integration/catalog",
-		"Integration/account",
-		"Integration/cli",
 		"Scenarios",
 		"Scenarios/simple",
+		"VerifySuite",
 	} {
 		tasks = append(tasks, ide.Task{
 			Name:    "e2e:" + test,

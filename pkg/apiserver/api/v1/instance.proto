@@ -1,0 +1,131 @@
+/*
+Copyright 2019 The KubeCarrier Authors.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
+syntax = "proto3";
+package kubecarrier.api.v1;
+option go_package = "v1";
+
+import "google/api/annotations.proto";
+import "google/protobuf/empty.proto";
+
+import "meta.proto";
+import "event.proto";
+
+message Instance {
+  // Metadata - common metadata
+  ObjectMeta metadata = 1;
+  // Offering name, i.e. couchdb.eu-west-1.team-a
+  string offering = 2;
+  // Spec - instance spec
+  RawObject spec = 3;
+  // Status - instance status
+  RawObject status = 4;
+}
+
+message InstanceList {
+  ListMeta metadata = 1;
+  repeated Instance items = 2;
+}
+
+message InstanceGetRequest {
+  // Offering name, i.e. couchdb.eu-west-1.team-a
+  string offering = 1;
+  // Version of the resource
+  string version = 2;
+  // Name of the offering instance
+  string name = 3;
+  // Account indicate namespace of the project/account
+  string account = 4;
+}
+
+message InstanceDeleteRequest {
+  // Offering name, i.e. couchdb.eu-west-1.team-a
+  string offering = 1;
+  // Version of the resource
+  string version = 2;
+  // Name of the offering instance
+  string name = 3;
+  // Account indicate namespace of the project/account
+  string account = 4;
+}
+
+message InstanceListRequest {
+  // Offering name, i.e. couchdb.eu-west-1.team-a
+  string offering = 1;
+  // Version of the resource
+  string version = 2;
+  // Account indicate namespace of the project/account
+  string account = 3;
+  string labelSelector = 4;
+  int64 limit = 5;
+  string continue = 6;
+}
+
+message InstanceCreateRequest {
+  // Offering name, i.e. couchdb.eu-west-1.team-a
+  string offering = 1;
+  // Version of the resource
+  string version = 2;
+  Instance spec = 3;
+  // Account indicate namespace of the project/account
+  string account = 4;
+}
+
+message RawObject {
+  // Encoding of the object data
+  string encoding = 1;
+  // Data - actual data
+  bytes data = 2;
+}
+
+message InstanceWatchRequest {
+  // Offering name, i.e. couchdb.eu-west-1.team-a
+  string offering = 1;
+  // Version of the resource
+  string version = 2;
+  string account = 3;
+  string labelSelector = 4;
+  string resourceVersion = 5;
+}
+
+service InstancesService {
+  rpc List(InstanceListRequest) returns (InstanceList) {
+    option (google.api.http) = {
+      get : "/v1/accounts/{account}/instances/{offering}/{version}"
+    };
+  };
+  rpc Get(InstanceGetRequest) returns (Instance) {
+    option (google.api.http) = {
+      get : "/v1/accounts/{account}/instances/{offering}/{version}/{name}"
+    };
+  };
+  rpc Delete(InstanceDeleteRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      delete : "/v1/accounts/{account}/instances/{offering}/{version}/{name}"
+    };
+  };
+  rpc Create(InstanceCreateRequest) returns (Instance) {
+    option (google.api.http) = {
+      post : "/v1/accounts/{account}/instances/{offering}/{version}"
+      body: "spec"
+    };
+  };
+  rpc Watch(InstanceWatchRequest) returns (stream WatchEvent) {
+    option (google.api.http) = {
+      get : "/v1/watch/accounts/{account}/instances/{offering}/{version}"
+    };
+  };
+}

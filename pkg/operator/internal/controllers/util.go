@@ -19,8 +19,10 @@ package controllers
 import (
 	"context"
 	"fmt"
+	"sync/atomic"
 
 	"github.com/go-logr/logr"
+	"golang.org/x/sync/errgroup"
 	appsv1 "k8s.io/api/apps/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -56,39 +58,52 @@ func reconcileOwnedObjectsForNamespacedOwner(
 	client client.Client,
 	ownerObj object,
 	objects []unstructured.Unstructured) (bool, error) {
-	var deploymentIsReady bool
+	var deploymentIsReady int32
+	g, ctx := errgroup.WithContext(ctx)
 	for _, object := range objects {
-		gvk, err := apiutil.GVKForObject(&object, scheme)
-		if err != nil {
-			return false, err
-		}
-		restMapping, err := restMapper.RESTMapping(schema.GroupKind{
-			Group: gvk.Group,
-			Kind:  gvk.Kind,
-		}, gvk.Version)
-		if err != nil {
-			return false, err
-		}
-
-		switch restMapping.Scope.Name() {
-		case meta.RESTScopeNameNamespace:
-			if err := controllerutil.SetControllerReference(ownerObj, &object, scheme); err != nil {
-				return false, err
+		object := object
+		g.Go(func() error {
+			gvk, err := apiutil.GVKForObject(&object, scheme)
+			if err != nil {
+				return err
 			}
-		case meta.RESTScopeNameRoot:
-			owner.SetOwnerReference(ownerObj, &object, scheme)
-		default:
-			return false, fmt.Errorf("unknown REST scope: %s", restMapping.Scope.Name())
-		}
-		curObj, err := reconcile.Unstructured(ctx, log, client, &object)
-		if err != nil {
-			return false, fmt.Errorf("reconcile kind: %s, err: %w", object.GroupVersionKind().Kind, err)
-		}
+			restMapping, err := restMapper.RESTMapping(schema.GroupKind{
+				Group: gvk.Group,
+				Kind:  gvk.Kind,
+			}, gvk.Version)
+			if err != nil {
+				return err
+			}
 
-		switch ctr := curObj.(type) {
-		case *appsv1.Deployment:
-			deploymentIsReady = util.DeploymentIsAvailable(ctr)
-		}
+			switch restMapping.Scope.Name() {
+			case meta.RESTScopeNameNamespace:
+				if err := controllerutil.SetControllerReference(ownerObj, &object, scheme); err != nil {
+					return err
+				}
+			case meta.RESTScopeNameRoot:
+				if _, err := owner.SetOwnerReference(ownerObj, &object, scheme); err != nil {
+					return err
+				}
+			default:
+				return fmt.Errorf("unknown REST scope: %s", restMapping.Scope.Name())
+			}
+			curObj, err := reconcile.Unstructured(ctx, log, client, &object)
+			if err != nil {
+				return fmt.Errorf("reconcile kind: %s, err: %w", object.GroupVersionKind().Kind, err)
+			}
+
+			switch ctr := curObj.(type) {
+			case *appsv1.Deployment:
+				if util.DeploymentIsAvailable(ctr) {
+					atomic.AddInt32(&deploymentIsReady, 1)
+				}
+			}
+			return nil
+		})
 	}
-	return deploymentIsReady, nil
+	err := g.Wait()
+	if err != nil {
+		return false, err
+	}
+	return deploymentIsReady > 0, nil
 }

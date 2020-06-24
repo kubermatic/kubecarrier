@@ -31,6 +31,7 @@ SUT is the primary KubeCarrier debugging utility.
 
 Upon running it "replaces" a running deployment with telepresence and prepares the necessary IDE tasks for its proper running with approximately similar config (mounts are remapped due to different mount points, i.e. containers root isn't your host's root). Currently, the following components should work:
 
+* [x] apiserver
 * [x] catapult
 * [x] ferry
 * [x] eleveator
@@ -57,11 +58,12 @@ the tool shall pause and print the telepresence command you ought to run in sepa
 	}
 
 	cmd.AddCommand(
-		newSUTSubcommand(log, "catapult"),
-		newSUTSubcommand(log, "elevator"),
-		newSUTSubcommand(log, "ferry"),
-		newSUTSubcommand(log, "manager"),
-		newSUTSubcommand(log, "operator"),
+		newSUTSubcommand(log, "apiserver"),
+		newSUTSubcommand(log, "catapult", "--enable-leader-election=false"),
+		newSUTSubcommand(log, "elevator", "--enable-leader-election=false"),
+		newSUTSubcommand(log, "ferry", "--enable-leader-election=false"),
+		newSUTSubcommand(log, "manager", "--enable-leader-election=false"),
+		newSUTSubcommand(log, "operator", "--enable-leader-election=false"),
 	)
 	return cmd
 }

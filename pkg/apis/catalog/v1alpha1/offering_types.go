@@ -31,12 +31,7 @@ type OfferingSpec struct {
 
 // OfferingMetadata contains the metadata (display name, description, etc) of the Offering.
 type OfferingMetadata struct {
-	// DisplayName shows the human-readable name of this Offering.
-	// +kubebuilder:validation:MinLength=1
-	DisplayName string `json:"displayName"`
-	// Description shows the human-readable description of this Offering.
-	// +kubebuilder:validation:MinLength=1
-	Description string `json:"description"`
+	CommonMetadata `json:",inline"`
 }
 
 // Offering is used for Tenants to discover services that have been made available to them.
@@ -46,7 +41,7 @@ type OfferingMetadata struct {
 // +kubebuilder:printcolumn:name="Display Name",type="string",JSONPath=".spec.metadata.displayName"
 // +kubebuilder:printcolumn:name="Provider",type="string",JSONPath=".spec.provider.name"
 // +kubebuilder:printcolumn:name="Age",type="date",JSONPath=".metadata.creationTimestamp"
-// +kubebuilder:resource:categories=kubecarrier-tenant,shortName=off
+// +kubebuilder:resource:categories=all;kubecarrier-tenant,shortName=off
 type Offering struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`

@@ -11,6 +11,7 @@ spec:
   group: catalog.kubecarrier.io
   names:
     categories:
+    - all
     - kubecarrier-provider
     kind: DerivedCustomResource
     listKind: DerivedCustomResourceList

@@ -107,8 +107,10 @@ func (r *ManagementClusterObjReconciler) Reconcile(req ctrl.Request) (ctrl.Resul
 	desiredServiceClusterObj.SetGroupVersionKind(r.ServiceClusterGVK)
 	desiredServiceClusterObj.SetName(managementClusterObj.GetName())
 	desiredServiceClusterObj.SetNamespace(sca.Status.ServiceClusterNamespace.Name)
-	owner.SetOwnerReference(
-		managementClusterObj, desiredServiceClusterObj, r.Scheme)
+	if _, err := owner.SetOwnerReference(
+		managementClusterObj, desiredServiceClusterObj, r.Scheme); err != nil {
+		return result, fmt.Errorf("setting owner reference: %w", err)
+	}
 
 	// Reconcile
 	currentServiceClusterObj := r.newServiceObject()
@@ -132,8 +134,10 @@ func (r *ManagementClusterObjReconciler) Reconcile(req ctrl.Request) (ctrl.Resul
 
 	// Make sure we take ownership of the service cluster instance,
 	// if the OwnerReference is not yet set.
-	owner.SetOwnerReference(
-		managementClusterObj, currentServiceClusterObj, r.Scheme)
+	if _, err := owner.SetOwnerReference(
+		managementClusterObj, currentServiceClusterObj, r.Scheme); err != nil {
+		return result, fmt.Errorf("setting owner reference: %w", err)
+	}
 
 	// Update existing service cluster instance
 	// This is a bit complicated, because we want to support arbitrary fields and not only .spec.

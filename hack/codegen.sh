@@ -37,10 +37,21 @@ if [[  ${CONTROLLER_GEN_VERSION} != ${CONTROLLER_GEN_WANT_VERSION} ]]; then
   exit 1
 fi
 
-function statik-gen {
+# test data statik gen
+statik -m -f -c '' -p "testdata" -src "test/testdata" -dest "test" '-include=*.yaml'
+cat hack/boilerplate/boilerplate.generatego.txt | sed s/YEAR/$(date +%Y)/ | cat - test/testdata/statik.go >test/testdata/statik.go.tmp
+mv test/testdata/statik.go.tmp test/testdata/statik.go
+go fmt test/testdata/statik.go
+
+function statik-gen() {
   local component=$1
+  local package=${1//-/}
   local src=$2
-  statik -m -src=${src} -p ${component} -dest pkg/internal/resources -f -c ''
+  statik -m -src=${src} -p "${package}" -dest pkg/internal/resources -f -c ''
+  if [[ "${component}" != "${package}" ]]; then
+    mv pkg/internal/resources/${package}/statik.go pkg/internal/resources/${component}/statik.go
+    rmdir pkg/internal/resources/${package}
+  fi
   cat hack/boilerplate/boilerplate.generatego.txt | sed s/YEAR/$(date +%Y)/ | cat - pkg/internal/resources/${component}/statik.go > pkg/internal/resources/${component}/statik.go.tmp
   mv pkg/internal/resources/${component}/statik.go.tmp pkg/internal/resources/${component}/statik.go
   go fmt pkg/internal/resources/${component}/statik.go
@@ -130,6 +141,23 @@ ed config/internal/elevator/rbac/role.yaml <<EOF || true
 w
 EOF
 statik-gen elevator config/internal/elevator
+
+# API server
+# -------
+# RBAC
+$CONTROLLER_GEN rbac:roleName=manager-role paths="./pkg/apiserver/..." output:rbac:artifacts:config=config/internal/apiserver/rbac
+statik-gen apiserver config/internal/apiserver
+
+# Docs
+tmp_dir=$(mktemp -d)
+cp config/swagger/* ${tmp_dir}/
+cp pkg/apiserver/api/v1/apidocs.swagger.json ${tmp_dir}/
+
+statik -m -src ${tmp_dir} -p v1 -dest pkg/apiserver/internal/ -f -c ''
+rm -rf ${tmp_dir}
+cat hack/boilerplate/boilerplate.generatego.txt | sed s/YEAR/$(date +%Y)/ | cat - pkg/apiserver/internal/v1/statik.go > pkg/apiserver/internal/v1/statik.go.tmp
+mv pkg/apiserver/internal/v1/statik.go.tmp pkg/apiserver/internal/v1/statik.go
+go fmt pkg/apiserver/internal/v1/statik.go
 
 #Service cluster RBAC
 serviceClusterDir=tmp

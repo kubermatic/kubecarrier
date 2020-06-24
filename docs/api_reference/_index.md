@@ -1096,6 +1096,12 @@ ObjectReference describes the link to another object in the same namespace.
 
 The `operator.kubecarrier.io` API group contains objects to interact with the KubeCarrier installation.
 
+* [APIServer.operator.kubecarrier.io/v1alpha1](#apiserver.operator.kubecarrier.io/v1alpha1)
+* [APIServerCondition.operator.kubecarrier.io/v1alpha1](#apiservercondition.operator.kubecarrier.io/v1alpha1)
+* [APIServerList.operator.kubecarrier.io/v1alpha1](#apiserverlist.operator.kubecarrier.io/v1alpha1)
+* [APIServerOIDCConfig.operator.kubecarrier.io/v1alpha1](#apiserveroidcconfig.operator.kubecarrier.io/v1alpha1)
+* [APIServerSpec.operator.kubecarrier.io/v1alpha1](#apiserverspec.operator.kubecarrier.io/v1alpha1)
+* [APIServerStatus.operator.kubecarrier.io/v1alpha1](#apiserverstatus.operator.kubecarrier.io/v1alpha1)
 * [Catapult.operator.kubecarrier.io/v1alpha1](#catapult.operator.kubecarrier.io/v1alpha1)
 * [CatapultCondition.operator.kubecarrier.io/v1alpha1](#catapultcondition.operator.kubecarrier.io/v1alpha1)
 * [CatapultList.operator.kubecarrier.io/v1alpha1](#catapultlist.operator.kubecarrier.io/v1alpha1)
@@ -1118,6 +1124,85 @@ The `operator.kubecarrier.io` API group contains objects to interact with the Ku
 * [KubeCarrierStatus.operator.kubecarrier.io/v1alpha1](#kubecarrierstatus.operator.kubecarrier.io/v1alpha1)
 * [CRDReference.operator.kubecarrier.io/v1alpha1](#crdreference.operator.kubecarrier.io/v1alpha1)
 * [ObjectReference.operator.kubecarrier.io/v1alpha1](#objectreference.operator.kubecarrier.io/v1alpha1)
+
+### APIServer.operator.kubecarrier.io/v1alpha1
+
+APIServer manages the deployment of the KubeCarrier central API server.
+
+| Field | Description | Scheme | Required |
+| ----- | ----------- | ------ | -------- |
+| metadata |  | [metav1.ObjectMeta](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.14/#objectmeta-v1-meta) | false |
+| spec |  | operator.kubecarrier.io/v1alpha1.APIServerSpec | false |
+| status |  | operator.kubecarrier.io/v1alpha1.APIServerStatus | false |
+
+[Back to Group](#operator)
+
+### APIServerCondition.operator.kubecarrier.io/v1alpha1
+
+APIServerCondition contains details for the current condition of this APIServer.
+
+| Field | Description | Scheme | Required |
+| ----- | ----------- | ------ | -------- |
+| type | Type is the type of the APIServer condition, currently ('Ready'). | operator.kubecarrier.io/v1alpha1.APIServerConditionType | true |
+| status | Status is the status of the condition, one of ('True', 'False', 'Unknown'). | operator.kubecarrier.io/v1alpha1.ConditionStatus | true |
+| lastTransitionTime | LastTransitionTime is the last time the condition transits from one status to another. | metav1.Time | true |
+| reason | Reason is the (brief) reason for the condition's last transition. | string | true |
+| message | Message is the human readable message indicating details about last transition. | string | true |
+
+[Back to Group](#operator)
+
+### APIServerList.operator.kubecarrier.io/v1alpha1
+
+APIServerList contains a list of APIServer
+
+| Field | Description | Scheme | Required |
+| ----- | ----------- | ------ | -------- |
+| metadata |  | [metav1.ListMeta](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.14/#listmeta-v1-meta) | false |
+| items |  | []operator.kubecarrier.io/v1alpha1.APIServer | true |
+
+[Back to Group](#operator)
+
+### APIServerOIDCConfig.operator.kubecarrier.io/v1alpha1
+
+
+
+| Field | Description | Scheme | Required |
+| ----- | ----------- | ------ | -------- |
+| issuerURL | IssuerURL is the URL the provider signs ID Tokens as. This will be the \"iss\" field of all tokens produced by the provider and is used for configuration discovery.\n\nThe URL is usually the provider's URL without a path, for example \"https://accounts.google.com\" or \"https://login.salesforce.com\".\n\nThe provider must implement configuration discovery. See: https://openid.net/specs/openid-connect-discovery-1_0.html#ProviderConfig | string | true |
+| clientID | ClientID the JWT must be issued for, the \"sub\" field. This plugin only trusts a single client to ensure the plugin can be used with public providers.\n\nThe plugin supports the \"authorized party\" OpenID Connect claim, which allows specialized providers to issue tokens to a client for a different client. See: https://openid.net/specs/openid-connect-core-1_0.html#IDToken | string | true |
+| apiAudiences | APIAudiences are the audiences that the API server identitifes as. The (API audiences unioned with the ClientIDs) should have a non-empty intersection with the request's target audience. This preserves the behavior of the OIDC authenticator pre-introduction of API audiences. | authenticator.Audiences | false |
+| certificateAuthority | CertificateAuthority references the secret containing issuer's CA in a PEM encoded root certificate of the provider. | operator.kubecarrier.io/v1alpha1.ObjectReference | true |
+| usernameClaim | UsernameClaim is the JWT field to use as the user's username. | string | true |
+| usernamePrefix | UsernamePrefix, if specified, causes claims mapping to username to be prefix with the provided value. A value \"oidc:\" would result in usernames like \"oidc:john\". | string | false |
+| groupsClaim | GroupsClaim, if specified, causes the OIDCAuthenticator to try to populate the user's groups with an ID Token field. If the GroupsClaim field is present in an ID Token the value must be a string or list of strings. | string | false |
+| groupsPrefix | GroupsPrefix, if specified, causes claims mapping to group names to be prefixed with the value. A value \"oidc:\" would result in groups like \"oidc:engineering\" and \"oidc:marketing\". | string | false |
+| supportedSigningAlgs | SupportedSigningAlgs sets the accepted set of JOSE signing algorithms that can be used by the provider to sign tokens.\n\nhttps://tools.ietf.org/html/rfc7518#section-3.1\n\nThis value defaults to RS256, the value recommended by the OpenID Connect spec:\n\nhttps://openid.net/specs/openid-connect-core-1_0.html#IDTokenValidation | []string | false |
+| requiredClaims | RequiredClaims, if specified, causes the OIDCAuthenticator to verify that all the required claims key value pairs are present in the ID Token. | map[string]string | false |
+
+[Back to Group](#operator)
+
+### APIServerSpec.operator.kubecarrier.io/v1alpha1
+
+APIServerSpec defines the desired state of APIServer
+
+| Field | Description | Scheme | Required |
+| ----- | ----------- | ------ | -------- |
+| tlsSecretRef | TLSSecretRef references the TLS certificate and private key for serving the KubeCarrier API. | operator.kubecarrier.io/v1alpha1.ObjectReference | true |
+| oidc | OIDC specifies OpenID Connect configuration for API Server authentication | operator.kubecarrier.io/v1alpha1.APIServerOIDCConfig | true |
+
+[Back to Group](#operator)
+
+### APIServerStatus.operator.kubecarrier.io/v1alpha1
+
+APIServerStatus defines the observed state of APIServer
+
+| Field | Description | Scheme | Required |
+| ----- | ----------- | ------ | -------- |
+| observedGeneration | ObservedGeneration is the most recent generation observed for this APIServer by the controller. | operator.kubecarrier.io/v1alpha1.int64 | false |
+| conditions | Conditions represents the latest available observations of a APIServer's current state. | []operator.kubecarrier.io/v1alpha1.APIServerCondition | false |
+| phase | DEPRECATED. Phase represents the current lifecycle state of this object. Consider this field DEPRECATED, it will be removed as soon as there is a mechanism to map conditions to strings when printing the property. This is only for display purpose, for everything else use conditions. | operator.kubecarrier.io/v1alpha1.APIServerPhaseType | false |
+
+[Back to Group](#operator)
 
 ### Catapult.operator.kubecarrier.io/v1alpha1
 

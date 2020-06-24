@@ -18,6 +18,9 @@ package operator
 
 import (
 	"fmt"
+	"log"
+	"net/http"
+	_ "net/http/pprof"
 
 	"github.com/go-logr/logr"
 	certv1alpha2 "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
@@ -40,6 +43,7 @@ import (
 type flags struct {
 	metricsAddr, healthAddr string
 	enableLeaderElection    bool
+	certDir                 string
 }
 
 var (
@@ -51,6 +55,9 @@ func init() {
 	utilruntime.Must(apiextensionsv1.AddToScheme(scheme))
 	utilruntime.Must(certv1alpha2.AddToScheme(scheme))
 	utilruntime.Must(operatorv1alpha1.AddToScheme(scheme))
+	go func() {
+		log.Println(http.ListenAndServe("localhost:6060", nil))
+	}()
 }
 
 const (
@@ -70,6 +77,7 @@ func NewOperatorCommand() *cobra.Command {
 	}
 	cmd.Flags().StringVar(&flags.metricsAddr, "metrics-addr", ":8080", "The address the metric endpoint binds to.")
 	cmd.Flags().StringVar(&flags.healthAddr, "health-addr", ":9440", "The address the health endpoint binds to.")
+	cmd.Flags().StringVar(&flags.certDir, "cert-dir", "/tmp/k8s-webhook-server/serving-certs", "The webhook TLS certificates directory")
 	cmd.Flags().BoolVar(&flags.enableLeaderElection, "enable-leader-election", false,
 		"Enable leader election for operator. Enabling this will ensure there is only one active controller manager.")
 	return util.CmdLogMixin(cmd)
@@ -82,6 +90,7 @@ func run(flags *flags, log logr.Logger) error {
 		LeaderElection:         flags.enableLeaderElection,
 		Port:                   9443,
 		HealthProbeBindAddress: flags.healthAddr,
+		CertDir:                flags.certDir,
 	})
 	if err != nil {
 		return fmt.Errorf("starting manager: %w", err)
@@ -120,6 +129,15 @@ func run(flags *flags, log logr.Logger) error {
 		Scheme: mgr.GetScheme(),
 	}).SetupWithManager(mgr); err != nil {
 		return fmt.Errorf("creating KubeCarrier controller: %w", err)
+	}
+
+	if err = (&controllers.APIServerReconciler{
+		Client:     mgr.GetClient(),
+		Log:        log.WithName("controllers").WithName("APIServer"),
+		Scheme:     mgr.GetScheme(),
+		RESTMapper: mgr.GetRESTMapper(),
+	}).SetupWithManager(mgr); err != nil {
+		return fmt.Errorf("creating APIServer controller: %w", err)
 	}
 
 	// Register webhooks as handlers

@@ -66,7 +66,7 @@ func TestCatalogReconciler(t *testing.T) {
 			Name: provider.Name,
 		},
 	}
-	owner.SetOwnerReference(provider, providerNamespace, testScheme)
+	_, _ = owner.SetOwnerReference(provider, providerNamespace, testScheme)
 
 	tenantAccount := &catalogv1alpha1.Account{
 		ObjectMeta: metav1.ObjectMeta{
@@ -107,7 +107,7 @@ func TestCatalogReconciler(t *testing.T) {
 			Name: tenant.Name,
 		},
 	}
-	owner.SetOwnerReference(tenant, tenantNamespace, testScheme)
+	_, _ = owner.SetOwnerReference(tenant, tenantNamespace, testScheme)
 
 	catalogEntry := &catalogv1alpha1.CatalogEntry{
 		ObjectMeta: metav1.ObjectMeta{
@@ -116,8 +116,10 @@ func TestCatalogReconciler(t *testing.T) {
 		},
 		Spec: catalogv1alpha1.CatalogEntrySpec{
 			Metadata: catalogv1alpha1.CatalogEntryMetadata{
-				DisplayName: "Test CatalogEntry",
-				Description: "Test CatalogEntry",
+				CommonMetadata: catalogv1alpha1.CommonMetadata{
+					DisplayName: "Test CatalogEntry",
+					Description: "Test CatalogEntry",
+				},
 			},
 		},
 		Status: catalogv1alpha1.CatalogEntryStatus{

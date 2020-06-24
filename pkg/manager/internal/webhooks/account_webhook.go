@@ -133,9 +133,9 @@ func (r *AccountWebhookHandler) validateMetadataAndRoles(account *catalogv1alpha
 
 	if _, ok := roles[catalogv1alpha1.ProviderRole]; ok {
 		// Account has the Provider Role
-		if account.Spec.Metadata.Description == "" ||
+		if account.Spec.Metadata.ShortDescription == "" ||
 			account.Spec.Metadata.DisplayName == "" {
-			return fmt.Errorf("the description or the display name of an Account with Provider role cannot be empty")
+			return fmt.Errorf("the short description or the display name of an Account with Provider role cannot be empty")
 		}
 	}
 
@@ -150,7 +150,7 @@ func (r *AccountWebhookHandler) validateDelete(ctx context.Context, obj *catalog
 	// if no namespace was created for the object, we are safe to delete it
 	// there's unlikely race condition here if the namespace was created, but not propagated to the account and
 	// deletion blocking objects were created in the namespace
-	if obj.Status.Namespace.Name == "" {
+	if obj.Status.Namespace == nil || obj.Status.Namespace.Name == "" {
 		return nil
 	}
 

@@ -41,21 +41,24 @@ func newCatalogSuite(
 	return func(t *testing.T) {
 		ctx, cancel := context.WithCancel(context.Background())
 		t.Cleanup(cancel)
+
 		managementClient, err := f.ManagementClient(t)
 		require.NoError(t, err, "creating management client")
 		t.Cleanup(managementClient.CleanUpFunc(ctx))
+
 		serviceClient, err := f.ServiceClient(t)
 		require.NoError(t, err, "creating service client")
 		t.Cleanup(serviceClient.CleanUpFunc(ctx))
+
 		testName := strings.Replace(strings.ToLower(t.Name()), "/", "-", -1)
 
 		// Create a Tenant to execute our tests in
-		tenantAccount := f.NewTenantAccount(testName, rbacv1.Subject{
+		tenantAccount := testutil.NewTenantAccount(testName, rbacv1.Subject{
 			Kind:     rbacv1.GroupKind,
 			APIGroup: "rbac.authorization.k8s.io",
 			Name:     "admin",
 		})
-		provider := f.NewProviderAccount(testName, rbacv1.Subject{
+		provider := testutil.NewProviderAccount(testName, rbacv1.Subject{
 			Kind:     rbacv1.GroupKind,
 			APIGroup: "rbac.authorization.k8s.io",
 			Name:     "provider",
@@ -125,63 +128,20 @@ func newCatalogSuite(
 			t, managementClient.Create(ctx, crd), fmt.Sprintf("creating CRD: %s error", crd.Name))
 
 		// Create a CatalogEntry to execute our tests in
-		catalogEntry := &catalogv1alpha1.CatalogEntry{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "couchdbs",
-				Namespace: provider.Status.Namespace.Name,
-				Labels: map[string]string{
-					"kubecarrier.io/test": "label",
-				},
-			},
-			Spec: catalogv1alpha1.CatalogEntrySpec{
-				Metadata: catalogv1alpha1.CatalogEntryMetadata{
-					DisplayName: "Couch DB",
-					Description: "The comfy nosql database",
-				},
-				BaseCRD: catalogv1alpha1.ObjectReference{
-					Name: crd.Name,
-				},
-			},
-		}
+		catalogEntry := testutil.NewCatalogEntry("couchdbs", provider.Status.Namespace.Name, crd.Name)
 		require.NoError(
 			t, managementClient.Create(ctx, catalogEntry), "could not create CatalogEntry")
 		require.NoError(t, testutil.WaitUntilReady(ctx, managementClient, catalogEntry))
 
 		// Create a ServiceCluster to execute our tests in
-		serviceCluster := &corev1alpha1.ServiceCluster{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "eu-west-1",
-				Namespace: provider.Status.Namespace.Name,
-			},
-			Spec: corev1alpha1.ServiceClusterSpec{
-				Metadata: corev1alpha1.ServiceClusterMetadata{
-					DisplayName: "eu-west-1",
-					Description: "eu-west-1 service cluster!",
-				},
-				KubeconfigSecret: corev1alpha1.ObjectReference{
-					Name: "eu-west-1-secret",
-				},
-			},
-		}
+		serviceCluster := testutil.NewServiceCluster("eu-west-1", provider.Status.Namespace.Name, "eu-west-1-secret")
 		require.NoError(
 			t, managementClient.Create(ctx, serviceCluster), "could not create ServiceCluster")
 
 		// Catalog
 		// Test case
-		catalog := &catalogv1alpha1.Catalog{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "test-catalog",
-				Namespace: provider.Status.Namespace.Name,
-			},
-			Spec: catalogv1alpha1.CatalogSpec{
-				CatalogEntrySelector: &metav1.LabelSelector{
-					MatchLabels: map[string]string{
-						"kubecarrier.io/test": "label",
-					},
-				},
-				TenantSelector: &metav1.LabelSelector{},
-			},
-		}
+
+		catalog := testutil.NewCatalog("test-catalog", provider.Status.Namespace.Name, &metav1.LabelSelector{MatchLabels: map[string]string{"kubecarrier.io/test": "label"}}, &metav1.LabelSelector{})
 		require.NoError(t, managementClient.Create(ctx, catalog), "creating Catalog error")
 
 		// Check the status of the Catalog.
@@ -295,7 +255,7 @@ func newCatalogSuite(
 		}))
 
 		// Recreate the tenant
-		tenantAccount = f.NewTenantAccount(testName, rbacv1.Subject{
+		tenantAccount = testutil.NewTenantAccount(testName, rbacv1.Subject{
 			Kind:     rbacv1.GroupKind,
 			APIGroup: "rbac.authorization.k8s.io",
 			Name:     "admin",

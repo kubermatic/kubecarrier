@@ -184,7 +184,10 @@ func (r *DerivedCustomResourceReconciler) Reconcile(req ctrl.Request) (ctrl.Resu
 	}
 	derivedCR.Spec.Group = group
 	derivedCR.Spec.Names = names
-	owner.SetOwnerReference(dcr, derivedCR, r.Scheme)
+	r.ensureAllCategoryPresent(derivedCR)
+	if _, err := owner.SetOwnerReference(dcr, derivedCR, r.Scheme); err != nil {
+		return result, fmt.Errorf("setting owner reference: %w", err)
+	}
 
 	// the future created derived CRD name is written to this object
 	// before the CRD is created. This is due to derivedCustromResouce webhook.
@@ -315,6 +318,15 @@ func (r *DerivedCustomResourceReconciler) Reconcile(req ctrl.Request) (ctrl.Resu
 		return result, fmt.Errorf("updating status: %w", err)
 	}
 	return result, nil
+}
+
+func (r *DerivedCustomResourceReconciler) ensureAllCategoryPresent(crd *apiextensionsv1.CustomResourceDefinition) {
+	for _, category := range crd.Spec.Names.Categories {
+		if category == "all" {
+			return
+		}
+	}
+	crd.Spec.Names.Categories = append(crd.Spec.Names.Categories, "all")
 }
 
 func (r *DerivedCustomResourceReconciler) SetupWithManager(mgr ctrl.Manager) error {

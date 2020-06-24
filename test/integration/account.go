@@ -39,6 +39,7 @@ func newAccount(f *testutil.Framework) func(t *testing.T) {
 		t.Log("testing how account handles tenants")
 		ctx, cancel := context.WithCancel(context.Background())
 		t.Cleanup(cancel)
+
 		managementClient, err := f.ManagementClient(t)
 		require.NoError(t, err, "creating management client")
 		t.Cleanup(managementClient.CleanUpFunc(ctx))
@@ -46,12 +47,12 @@ func newAccount(f *testutil.Framework) func(t *testing.T) {
 		testName := strings.Replace(strings.ToLower(t.Name()), "/", "-", -1)
 
 		var (
-			provider = f.NewProviderAccount(testName, rbacv1.Subject{
+			provider = testutil.NewProviderAccount(testName, rbacv1.Subject{
 				Kind:     rbacv1.GroupKind,
 				APIGroup: "rbac.authorization.k8s.io",
 				Name:     "provider1",
 			})
-			tenantAccount = f.NewTenantAccount(testName, rbacv1.Subject{
+			tenantAccount = testutil.NewTenantAccount(testName, rbacv1.Subject{
 				Kind:     rbacv1.GroupKind,
 				APIGroup: "rbac.authorization.k8s.io",
 				Name:     "tenantAccount",
@@ -62,8 +63,10 @@ func newAccount(f *testutil.Framework) func(t *testing.T) {
 				},
 				Spec: catalogv1alpha1.AccountSpec{
 					Metadata: catalogv1alpha1.AccountMetadata{
-						DisplayName: "metadata name",
-						Description: "metadata desc",
+						CommonMetadata: catalogv1alpha1.CommonMetadata{
+							DisplayName:      "metadata name",
+							ShortDescription: "metadata desc",
+						},
 					},
 					Roles: []catalogv1alpha1.AccountRole{
 						catalogv1alpha1.TenantRole,

@@ -40,7 +40,7 @@ import (
 	"github.com/kubermatic/kubecarrier/pkg/ide"
 )
 
-func newSUTSubcommand(log logr.Logger, component string) *cobra.Command {
+func newSUTSubcommand(log logr.Logger, component string, defaultExtraArgs ...string) *cobra.Command {
 	var (
 		extraArgs    []string
 		ldFlags      string
@@ -149,7 +149,7 @@ func newSUTSubcommand(log logr.Logger, component string) *cobra.Command {
 	cmd.Flags().StringVar(&ldFlags, "ld-flags", "", "ld-flags to pass to go compiler upon running this")
 	cmd.Flags().StringVar(&deploymentNN, "deployment-nn", "", "deployment-nn signal the deployement namespace name which should be selected. If none (default) a fzf based picker shall be shown")
 	cmd.Flags().StringVar(&workdir, "workdir", "", "sut working for logs, rootfs mountpoints, etc. default to new temp dir")
-	cmd.Flags().StringArrayVar(&extraArgs, "extra-flags", nil, "extra flags to pass to the running task")
+	cmd.Flags().StringArrayVar(&extraArgs, "extra-flags", defaultExtraArgs, "extra flags to pass to the running task")
 	configFlags.AddFlags(cmd.Flags())
 	return cmd
 }

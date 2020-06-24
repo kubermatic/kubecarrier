@@ -25,10 +25,11 @@ import (
 	"testing"
 	"time"
 
+	certmanagerv1alpha2 "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
 	"github.com/stretchr/testify/require"
 	corev1 "k8s.io/api/core/v1"
-	rbacv1 "k8s.io/api/rbac/v1"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
+	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
@@ -114,6 +115,9 @@ func New(c FrameworkConfig) (f *Framework, err error) {
 	if err = corev1alpha1.AddToScheme(f.ManagementScheme); err != nil {
 		return nil, fmt.Errorf("adding corev1alpha1 scheme to management scheme: %w", err)
 	}
+	if err = certmanagerv1alpha2.AddToScheme(f.ManagementScheme); err != nil {
+		return nil, fmt.Errorf("adding certmanagerv1alpha3 scheme to management scheme: %w", err)
+	}
 
 	f.managementConfig, err = clientcmd.BuildConfigFromFlags("", f.config.ManagementExternalKubeconfigPath)
 	if err != nil {
@@ -170,111 +174,6 @@ func (f *Framework) ServiceClient(t *testing.T, options ...func(config *restclie
 	return recordingClient(c, f.ServiceScheme, t, f.config.CleanUpStrategy), nil
 }
 
-func (f *Framework) NewProviderAccount(name string, subjects ...rbacv1.Subject) *catalogv1alpha1.Account {
-	return &catalogv1alpha1.Account{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: name + "-provider",
-			Labels: map[string]string{
-				"test-case": name,
-			},
-		},
-		Spec: catalogv1alpha1.AccountSpec{
-			Metadata: catalogv1alpha1.AccountMetadata{
-				DisplayName: name + " provider",
-				Description: name + " provider desc",
-			},
-			Roles: []catalogv1alpha1.AccountRole{
-				catalogv1alpha1.ProviderRole,
-			},
-			Subjects: subjects,
-		},
-	}
-}
-
-func (f *Framework) NewTenantAccount(name string, subjects ...rbacv1.Subject) *catalogv1alpha1.Account {
-	return &catalogv1alpha1.Account{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: name + "-tenant",
-		},
-		Spec: catalogv1alpha1.AccountSpec{
-			Metadata: catalogv1alpha1.AccountMetadata{
-				DisplayName: name + " tenant",
-				Description: name + " tenant desc",
-			},
-			Roles: []catalogv1alpha1.AccountRole{
-				catalogv1alpha1.TenantRole,
-			},
-			Subjects: subjects,
-		},
-	}
-}
-
-func (f *Framework) NewFakeDB(name, namespace string) *fakev1alpha1.DB {
-	return &fakev1alpha1.DB{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      name,
-			Namespace: namespace,
-		},
-		Spec: fakev1alpha1.DBSpec{
-			DatabaseName: "fakeDB",
-			DatabaseUser: "user",
-			Config: fakev1alpha1.Config{
-				Create: fakev1alpha1.OperationFlagEnabled,
-			}},
-	}
-}
-
-func (f *Framework) NewFakeCouchDBCRD(group string) *apiextensionsv1.CustomResourceDefinition {
-	return &apiextensionsv1.CustomResourceDefinition{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: "couchdbs." + group,
-		},
-		Spec: apiextensionsv1.CustomResourceDefinitionSpec{
-			Group: group,
-			Names: apiextensionsv1.CustomResourceDefinitionNames{
-				Plural: "couchdbs",
-				Kind:   "CouchDB",
-			},
-			Versions: []apiextensionsv1.CustomResourceDefinitionVersion{
-				{
-					Name:    "v1alpha1",
-					Storage: true,
-					Served:  true,
-					Schema: &apiextensionsv1.CustomResourceValidation{
-						OpenAPIV3Schema: &apiextensionsv1.JSONSchemaProps{
-							Properties: map[string]apiextensionsv1.JSONSchemaProps{
-								"apiVersion": {Type: "string"},
-								"kind":       {Type: "string"},
-								"metadata":   {Type: "object"},
-								"spec": {
-									Type: "object",
-									Properties: map[string]apiextensionsv1.JSONSchemaProps{
-										"prop1": {Type: "string"},
-										"prop2": {Type: "string"},
-									},
-								},
-								"status": {
-									Type: "object",
-									Properties: map[string]apiextensionsv1.JSONSchemaProps{
-										"observedGeneration": {Type: "integer"},
-										"prop1":              {Type: "string"},
-										"prop2":              {Type: "string"},
-									},
-								},
-							},
-							Type: "object",
-						},
-					},
-					Subresources: &apiextensionsv1.CustomResourceSubresources{
-						Status: &apiextensionsv1.CustomResourceSubresourceStatus{},
-					},
-				},
-			},
-			Scope: apiextensionsv1.NamespaceScoped,
-		},
-	}
-}
-
 func (f *Framework) SetupServiceCluster(ctx context.Context, cl *RecordingClient, t *testing.T, name string, account *catalogv1alpha1.Account) *corev1alpha1.ServiceCluster {
 	// Setup
 	serviceKubeconfig, err := ioutil.ReadFile(f.Config().ServiceInternalKubeconfigPath)
@@ -290,21 +189,7 @@ func (f *Framework) SetupServiceCluster(ctx context.Context, cl *RecordingClient
 		},
 	}
 
-	serviceCluster := &corev1alpha1.ServiceCluster{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      name,
-			Namespace: account.Status.Namespace.Name,
-		},
-		Spec: corev1alpha1.ServiceClusterSpec{
-			Metadata: corev1alpha1.ServiceClusterMetadata{
-				DisplayName: name,
-				Description: name + "service cluster",
-			},
-			KubeconfigSecret: corev1alpha1.ObjectReference{
-				Name: serviceClusterSecret.Name,
-			},
-		},
-	}
+	serviceCluster := NewServiceCluster(name, account.Status.Namespace.Name, serviceClusterSecret.Name)
 
 	require.NoError(t, cl.Create(ctx, serviceClusterSecret))
 	require.NoError(t, cl.Create(ctx, serviceCluster))
@@ -403,7 +288,7 @@ func (rc *RecordingClient) CleanUpFunc(ctx context.Context) func() {
 				continue
 			}
 
-			err := DeleteAndWaitUntilNotFound(ctx, rc, obj)
+			err := DeleteAndWaitUntilNotFound(ctx, rc, obj, WithTimeout(time.Minute))
 			if err != nil {
 				err = fmt.Errorf("cleanup %s: %w", key, err)
 			}
@@ -417,6 +302,23 @@ func (rc *RecordingClient) Create(ctx context.Context, obj runtime.Object, opts 
 	rc.t.Logf("creating %s", util.MustLogLine(obj, rc.scheme))
 	rc.RegisterForCleanup(obj)
 	return rc.ClientWatcher.Create(ctx, obj, opts...)
+}
+
+func (rc *RecordingClient) EnsureCreated(ctx context.Context, obj runtime.Object, opts ...client.CreateOption) error {
+	rc.t.Helper()
+	rc.t.Logf("creating %s", util.MustLogLine(obj, rc.scheme))
+	rc.RegisterForCleanup(obj)
+	oldObj := obj.DeepCopyObject()
+	err := rc.ClientWatcher.Create(ctx, obj, opts...)
+	if err != nil && errors.IsAlreadyExists(err) {
+		rc.t.Logf("alreadyExists, update %s", util.MustLogLine(obj, rc.scheme))
+		updateErr := rc.ClientWatcher.Update(ctx, oldObj)
+		if err := rc.scheme.Convert(oldObj, obj, nil); err != nil {
+			return err
+		}
+		return updateErr
+	}
+	return nil
 }
 
 func (rc *RecordingClient) Delete(ctx context.Context, obj runtime.Object, opts ...client.DeleteOption) error {

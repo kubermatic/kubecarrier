@@ -19,12 +19,17 @@ spec:
       containers:
       - image: quay.io/kubecarrier/operator:lastest
         name: manager
+        args:
+          - "--cert-dir=$(CERT_DIR)"
+        env:
+          - name: CERT_DIR
+            value: "/tmp/k8s-webhook-server/serving-certs"
         resources:
           limits:
-            cpu: 100m
+            cpu: "1"
             memory: 100Mi
           requests:
-            cpu: 100m
+            cpu: "1"
             memory: 100Mi
         ports:
           - name: readiness-port

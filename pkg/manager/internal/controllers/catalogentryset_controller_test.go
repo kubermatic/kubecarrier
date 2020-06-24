@@ -85,8 +85,10 @@ func TestCatalogEntrySetReconciler(t *testing.T) {
 		},
 		Spec: catalogv1alpha1.CatalogEntrySetSpec{
 			Metadata: catalogv1alpha1.CatalogEntrySetMetadata{
-				DisplayName: "Test CatalogEntrySet",
-				Description: "Test CatalogEntrySet",
+				CommonMetadata: catalogv1alpha1.CommonMetadata{
+					DisplayName: "Test CatalogEntrySet",
+					Description: "Test CatalogEntrySet",
+				},
 			},
 			Derive: &catalogv1alpha1.DerivedConfig{
 				KindOverride: "CatapultTenant",

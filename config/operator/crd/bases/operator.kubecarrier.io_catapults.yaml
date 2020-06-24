@@ -10,6 +10,8 @@ metadata:
 spec:
   group: operator.kubecarrier.io
   names:
+    categories:
+    - all
     kind: Catapult
     listKind: CatapultList
     plural: catapults

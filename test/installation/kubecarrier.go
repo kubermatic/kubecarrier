@@ -24,6 +24,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	operatorv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/operator/v1alpha1"
@@ -34,14 +35,22 @@ func newKubeCarrier(f *testutil.Framework) func(t *testing.T) {
 	return func(t *testing.T) {
 		ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 		t.Cleanup(cancel)
+		managementClient, err := f.ManagementClient(t)
+		require.NoError(t, err)
+		t.Cleanup(managementClient.CleanUpFunc(ctx))
 
-		c := exec.CommandContext(ctx, "kubectl", "kubecarrier", "setup", "--kubeconfig", f.Config().ManagementExternalKubeconfigPath)
+		htpasswd := &corev1.Secret{}
+		testutil.LoadTestDataObject(t, "/htpassword-secret.yaml", htpasswd)
+		require.NoError(t, managementClient.EnsureCreated(ctx, htpasswd), "create htpasswd")
+		managementClient.UnregisterForCleanup(htpasswd)
+
+		c := exec.CommandContext(ctx, "kubectl", "kubecarrier", "setup",
+			"--kubeconfig", f.Config().ManagementExternalKubeconfigPath,
+			"--config", testutil.LoadTestDataFile(t, "/kubecarrier-config.yaml"),
+		)
 		out, err := c.CombinedOutput()
 		t.Log(string(out))
 		require.NoError(t, err)
-
-		managementClient, err := f.ManagementClient(t)
-		require.NoError(t, err, "creating management client")
 
 		testutil.KubeCarrierOperatorCheck(ctx, t, managementClient, f.ManagementScheme)
 
@@ -60,6 +69,7 @@ func newKubeCarrier(f *testutil.Framework) func(t *testing.T) {
 				"KubeCarrier creation webhook should error out on incorrect KubeCarrier object name",
 			)
 		}
+		kubeCarrier = kubeCarrier.DeepCopy()
 		kubeCarrier.Name = "kubecarrier"
 		require.NoError(t, testutil.WaitUntilReady(ctx, managementClient, kubeCarrier))
 		testutil.KubeCarrierCheck(ctx, t, managementClient, f.ManagementScheme)

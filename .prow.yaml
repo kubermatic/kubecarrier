@@ -43,7 +43,7 @@ presubmits:
     clone_uri: ssh://git@github.com/kubermatic/kubecarrier.git
     spec:
       containers:
-        - image: quay.io/kubecarrier/test
+        - image: quay.io/kubecarrier/dev:v5
           imagePullPolicy: Always
           command:
             - go-init
@@ -100,7 +100,7 @@ presubmits:
             privileged: true
           resources:
             requests:
-              cpu: 5
+              cpu: 3
               memory: 4Gi
   - name: pull-kubecarrier-e2e-v1.16
     always_run: true
@@ -146,7 +146,7 @@ presubmits:
             privileged: true
           resources:
             requests:
-              cpu: 5
+              cpu: 3
               memory: 4Gi
 postsubmits:
   - name: post-kubecarrier-test-image

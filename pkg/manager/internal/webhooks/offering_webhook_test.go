@@ -38,8 +38,10 @@ func TestOfferingValidatingUpdate(t *testing.T) {
 		},
 		Spec: catalogv1alpha1.OfferingSpec{
 			Metadata: catalogv1alpha1.OfferingMetadata{
-				Description: "Test Offering",
-				DisplayName: "Test Offering",
+				CommonMetadata: catalogv1alpha1.CommonMetadata{
+					Description: "Test Offering",
+					DisplayName: "Test Offering",
+				},
 			},
 			Provider: catalogv1alpha1.ObjectReference{
 				Name: "Provider",
@@ -61,8 +63,10 @@ func TestOfferingValidatingUpdate(t *testing.T) {
 				},
 				Spec: catalogv1alpha1.OfferingSpec{
 					Metadata: catalogv1alpha1.OfferingMetadata{
-						Description: "Test Offering",
-						DisplayName: "Test Offering",
+						CommonMetadata: catalogv1alpha1.CommonMetadata{
+							Description: "Test Offering",
+							DisplayName: "Test Offering",
+						},
 					},
 					Provider: catalogv1alpha1.ObjectReference{
 						Name: "Provider2",
@@ -80,8 +84,10 @@ func TestOfferingValidatingUpdate(t *testing.T) {
 				},
 				Spec: catalogv1alpha1.OfferingSpec{
 					Metadata: catalogv1alpha1.OfferingMetadata{
-						Description: "Test Offering",
-						DisplayName: "Test Offering new displayName",
+						CommonMetadata: catalogv1alpha1.CommonMetadata{
+							Description: "Test Offering",
+							DisplayName: "Test Offering new displayName",
+						},
 					},
 					Provider: catalogv1alpha1.ObjectReference{
 						Name: "Provider",

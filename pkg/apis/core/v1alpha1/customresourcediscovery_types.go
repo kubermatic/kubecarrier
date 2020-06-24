@@ -187,6 +187,7 @@ func (c CustomResourceDiscoveryCondition) True() bool {
 // +kubebuilder:printcolumn:name="CustomResourceDefinition",type="string",JSONPath=".spec.crd.name"
 // +kubebuilder:printcolumn:name="ServiceCluster",type="string",JSONPath=".spec.serviceCluster.name"
 // +kubebuilder:printcolumn:name="Status",type="string",JSONPath=".status.phase"
+// +kubebuilder:resource:categories=all
 // +kubebuilder:resource:shortName=crdis
 type CustomResourceDiscovery struct {
 	metav1.TypeMeta   `json:",inline"`

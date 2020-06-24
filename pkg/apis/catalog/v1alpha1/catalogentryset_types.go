@@ -49,12 +49,7 @@ type CustomResourceDiscoverySetConfig struct {
 
 // CatalogEntrySetMetadata contains the metadata (display name, description, etc) of the CatalogEntrySet.
 type CatalogEntrySetMetadata struct {
-	// DisplayName shows the human-readable name of this CatalogEntrySet.
-	// +kubebuilder:validation:MinLength=1
-	DisplayName string `json:"displayName"`
-	// Description shows the human-readable description of this CatalogEntrySet.
-	// +kubebuilder:validation:MinLength=1
-	Description string `json:"description"`
+	CommonMetadata `json:",inline"`
 }
 
 // CatalogEntrySetStatus defines the observed state of CatalogEntrySet.
@@ -207,7 +202,7 @@ func (s *CatalogEntrySetStatus) SetCondition(condition CatalogEntrySetCondition)
 // +kubebuilder:printcolumn:name="Status",type="string",JSONPath=".status.phase"
 // +kubebuilder:printcolumn:name="CRD",type="string",JSONPath=".spec.discover.crd.name"
 // +kubebuilder:printcolumn:name="Age",type="date",JSONPath=".metadata.creationTimestamp"
-// +kubebuilder:resource:categories=kubecarrier-provider,shortName=ces
+// +kubebuilder:resource:categories=all;kubecarrier-provider,shortName=ces
 type CatalogEntrySet struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`

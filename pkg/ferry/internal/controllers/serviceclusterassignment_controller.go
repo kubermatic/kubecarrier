@@ -194,7 +194,9 @@ func ensureUniqueNamespace(ctx context.Context, c client.Client, ownerObj runtim
 				GenerateName: prefix + "-",
 			},
 		}
-		owner.SetOwnerReference(ownerObj, namespace, scheme)
+		if _, err := owner.SetOwnerReference(ownerObj, namespace, scheme); err != nil {
+			return nil, fmt.Errorf("setting owner reference: %w", err)
+		}
 		if err := c.Create(ctx, namespace); err != nil {
 			return nil, fmt.Errorf("creating Namespace: %w", err)
 		}

@@ -105,6 +105,25 @@ rules:
 - apiGroups:
   - operator.kubecarrier.io
   resources:
+  - apiservers
+  verbs:
+  - create
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - operator.kubecarrier.io
+  resources:
+  - apiservers/status
+  verbs:
+  - get
+  - patch
+  - update
+- apiGroups:
+  - operator.kubecarrier.io
+  resources:
   - catapults
   verbs:
   - get
