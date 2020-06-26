@@ -49,16 +49,18 @@ var (
 	selfLinks = map[string]string{}
 )
 
-func toSectionLink(name string) string {
-	name = strings.ToLower(name)
-	name = strings.Replace(name, " ", "-", -1)
-	return name
+func sanitizeSectionLink(link string) string {
+	link = strings.ToLower(link)
+	link = strings.Replace(link, " ", "-", -1)
+	link = strings.Replace(link, "/", "", -1)
+	link = strings.Replace(link, ".", "", -1)
+	return link
 }
 
 func printTOC(types []KubeTypes) {
 	for _, t := range types {
 		strukt := t[0]
-		fmt.Printf("* [%s](#%s)\n", strukt.Name, toSectionLink(strukt.Name))
+		fmt.Printf("* [%s](#%s)\n", strukt.Name, sanitizeSectionLink(strukt.Name))
 	}
 }
 
@@ -222,6 +224,10 @@ func toLink(typeName string) string {
 }
 
 func wrapInLink(text, link string) string {
+	if strings.HasPrefix(link, "#") {
+		link = sanitizeSectionLink(link)
+	}
+
 	return fmt.Sprintf("[%s](%s)", text, link)
 }
 
@@ -261,9 +267,12 @@ func fieldType(typ ast.Expr, gv string) string {
 	switch astType := typ.(type) {
 	case *ast.Ident:
 		name := astType.Name
-		if name != "string" {
-			name = gv + "." + name
+		switch name {
+		case "string", "int64", "bool":
+			return name
 		}
+
+		name = name + "." + gv
 		return toLink(name)
 	case *ast.StarExpr:
 		return "*" + toLink(fieldType(astType.X, gv))
@@ -304,8 +313,14 @@ func printAPIDocs(paths []string, sectionLink string) {
 		fmt.Println("| Field | Description | Scheme | Required |")
 		fmt.Println("| ----- | ----------- | ------ | -------- |")
 		fields := t[1:]
+
 		for _, f := range fields {
-			fmt.Println("|", f.Name, "|", f.Doc, "|", f.Type, "|", f.Mandatory, "|")
+			scheme := f.Type
+			// if !strings.HasPrefix(scheme, "[") {
+			// 	scheme = fmt.Sprintf("[%s](#%s)", f.Type, sanitizeSectionLink(scheme))
+			// }
+
+			fmt.Println("|", f.Name, "|", f.Doc, "|", scheme, "|", f.Mandatory, "|")
 		}
 		fmt.Println("")
 		fmt.Printf("[Back to Group](%s)\n", sectionLink)
