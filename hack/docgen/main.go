@@ -315,12 +315,7 @@ func printAPIDocs(paths []string, sectionLink string) {
 		fields := t[1:]
 
 		for _, f := range fields {
-			scheme := f.Type
-			// if !strings.HasPrefix(scheme, "[") {
-			// 	scheme = fmt.Sprintf("[%s](#%s)", f.Type, sanitizeSectionLink(scheme))
-			// }
-
-			fmt.Println("|", f.Name, "|", f.Doc, "|", scheme, "|", f.Mandatory, "|")
+			fmt.Println("|", f.Name, "|", f.Doc, "|", f.Type, "|", f.Mandatory, "|")
 		}
 		fmt.Println("")
 		fmt.Printf("[Back to Group](%s)\n", sectionLink)
