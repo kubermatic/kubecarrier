@@ -54,7 +54,7 @@ builds:
   - <<: *build
     id: api-server
     binary: api-server
-    main: cmd/api-server/main.go
+    main: cmd/apiserver/main.go
 archives:
   - id: kubecarrier
     builds:
