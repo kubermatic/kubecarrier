@@ -52,8 +52,8 @@ builds:
     binary: elevator
     main: cmd/elevator/main.go
   - <<: *build
-    id: api-server
-    binary: api-server
+    id: apiserver
+    binary: apiserver
     main: cmd/apiserver/main.go
 archives:
   - id: kubecarrier
