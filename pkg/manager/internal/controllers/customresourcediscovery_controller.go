@@ -276,6 +276,8 @@ func (r *CustomResourceDiscoveryReconciler) reconcileCatapult(
 		return desiredCatapult, nil
 	}
 
+	// leave `Paused` flag as is
+	desiredCatapult.Spec.Paused = currentCatapult.Spec.Paused
 	// Update Catapult
 	currentCatapult.Spec = desiredCatapult.Spec
 	if err = r.Update(ctx, currentCatapult); err != nil {

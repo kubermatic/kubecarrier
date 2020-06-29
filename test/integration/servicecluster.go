@@ -35,6 +35,7 @@ import (
 	catalogv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/catalog/v1alpha1"
 	corev1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/core/v1alpha1"
 	fakev1 "github.com/kubermatic/kubecarrier/pkg/apis/fake/v1"
+	operatorv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/operator/v1alpha1"
 	"github.com/kubermatic/kubecarrier/pkg/testutil"
 )
 
@@ -152,6 +153,24 @@ func newServiceClusterSuite(
 		}, catalogEntry), "getting CatalogEntry")
 
 		t.Log("CatalogEntry & CustomResourceDiscoverySet exists")
+
+		// Check Catapult
+		catapult := &operatorv1alpha1.Catapult{}
+		require.NoError(t, managementClient.Get(ctx, types.NamespacedName{
+			Name:      catalogEntrySet.Name + "." + serviceCluster.Name,
+			Namespace: catalogEntrySet.Namespace,
+		}, catapult), "getting catapult")
+
+		t.Log("Catapult exists")
+		catapult.Spec.Paused = true
+		require.NoError(t, managementClient.Update(ctx, catapult), "set catapult paused flag to true")
+		testutil.WaitUntilCondition(ctx, managementClient, catapult, operatorv1alpha1.CatapultPaused, operatorv1alpha1.ConditionTrue)
+		testutil.WaitUntilReady(ctx, managementClient, catapult)
+		require.Equal(t, operatorv1alpha1.CatapultPhasePaused, catapult.Status.Phase)
+		catapult.Spec.Paused = false
+		require.NoError(t, managementClient.Update(ctx, catapult), "set catapult paused flag to true")
+		testutil.WaitUntilCondition(ctx, managementClient, catapult, operatorv1alpha1.CatapultPaused, operatorv1alpha1.ConditionFalse)
+		require.Equal(t, operatorv1alpha1.CatapultPhaseReady, catapult.Status.Phase)
 
 		// Check the Catapult dynamic webhook service is deployed.
 		webhookService := &corev1.Service{}

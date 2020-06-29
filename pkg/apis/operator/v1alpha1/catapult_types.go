@@ -36,6 +36,8 @@ type CatapultSpec struct {
 	// ServiceCluster: Webhook will call webhooks of the CRD in the ServiceCluster with dry-run flag.
 	// +kubebuilder:default:=None
 	WebhookStrategy corev1alpha1.WebhookStrategyType `json:"webhookStrategy,omitempty"`
+	// Paused tell controller to pause reconciliation process and assume that Catapult is ready
+	Paused bool `json:"paused,omitempty"`
 }
 
 // CatapultStatus defines the observed state of Catapult.
@@ -58,6 +60,7 @@ type CatapultPhaseType string
 // Values of CatapultPhaseType.
 const (
 	CatapultPhaseReady       CatapultPhaseType = "Ready"
+	CatapultPhasePaused      CatapultPhaseType = "Paused"
 	CatapultPhaseNotReady    CatapultPhaseType = "NotReady"
 	CatapultPhaseUnknown     CatapultPhaseType = "Unknown"
 	CatapultPhaseTerminating CatapultPhaseType = "Terminating"
@@ -72,26 +75,28 @@ const (
 func (s *CatapultStatus) updatePhase() {
 
 	for _, condition := range s.Conditions {
-		if condition.Type != CatapultReady {
-			continue
+
+		if condition.Type == CatapultPaused && condition.Status == ConditionTrue {
+			s.Phase = CatapultPhasePaused
+			return
 		}
 
-		switch condition.Status {
-		case ConditionTrue:
-			s.Phase = CatapultPhaseReady
-		case ConditionFalse:
-			if condition.Reason == CatapultTerminatingReason {
-				s.Phase = CatapultPhaseTerminating
-			} else {
-				s.Phase = CatapultPhaseNotReady
+		if condition.Type == CatapultReady {
+
+			switch condition.Status {
+			case ConditionTrue:
+				s.Phase = CatapultPhaseReady
+			case ConditionFalse:
+				if condition.Reason == CatapultTerminatingReason {
+					s.Phase = CatapultPhaseTerminating
+				} else {
+					s.Phase = CatapultPhaseNotReady
+				}
+			case ConditionUnknown:
+				s.Phase = CatapultPhaseUnknown
 			}
-		case ConditionUnknown:
-			s.Phase = CatapultPhaseUnknown
 		}
-		return
 	}
-
-	s.Phase = CatapultPhaseUnknown
 }
 
 // CatapultConditionType represents a CatapultCondition value.
@@ -100,6 +105,8 @@ type CatapultConditionType string
 const (
 	// CatapultReady represents a Catapult condition is in ready state.
 	CatapultReady CatapultConditionType = "Ready"
+	// CatapultPaused represents a Catapult condition is in paused state.
+	CatapultPaused CatapultConditionType = "Paused"
 )
 
 // CatapultCondition contains details for the current condition of this Catapult.
@@ -191,6 +198,21 @@ func (s *Catapult) IsReady() bool {
 	return false
 }
 
+// IsPaused returns if the Catapult is paused.
+func (s *Catapult) IsPaused() bool {
+	if s.Generation != s.Status.ObservedGeneration {
+		return false
+	}
+
+	for _, condition := range s.Status.Conditions {
+		if condition.Type == CatapultPaused &&
+			condition.Status == ConditionTrue {
+			return true
+		}
+	}
+	return false
+}
+
 func (s *Catapult) SetReadyCondition() bool {
 	if !s.IsReady() {
 		s.Status.ObservedGeneration = s.Generation
@@ -204,6 +226,47 @@ func (s *Catapult) SetReadyCondition() bool {
 	}
 	return false
 }
+
+func (s *Catapult) SetPausedCondition() bool {
+	var changed bool
+	if !s.IsReady() {
+		changed = true
+		s.Status.ObservedGeneration = s.Generation
+		s.Status.SetCondition(CatapultCondition{
+			Type:    CatapultReady,
+			Status:  ConditionTrue,
+			Reason:  "Paused",
+			Message: "Reconcilation is paused, assuming component is ready.",
+		})
+		return true
+	}
+	if !s.IsPaused() {
+		changed = true
+		s.Status.ObservedGeneration = s.Generation
+		s.Status.SetCondition(CatapultCondition{
+			Type:    CatapultPaused,
+			Status:  ConditionTrue,
+			Reason:  "Paused",
+			Message: "Reconcilation is paused",
+		})
+	}
+	return changed
+}
+
+func (s *Catapult) SetUnPausedCondition() bool {
+	if s.IsPaused() {
+		s.Status.ObservedGeneration = s.Generation
+		s.Status.SetCondition(CatapultCondition{
+			Type:    CatapultPaused,
+			Status:  ConditionFalse,
+			Reason:  "UnPaused",
+			Message: "Reconcilation is resumed",
+		})
+		return true
+	}
+	return false
+}
+
 func (s *Catapult) SetUnReadyCondition() bool {
 	readyCondition, _ := s.Status.GetCondition(CatapultReady)
 	if readyCondition.Status != ConditionFalse {
