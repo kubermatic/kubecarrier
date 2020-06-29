@@ -164,12 +164,12 @@ func newServiceClusterSuite(
 		t.Log("Catapult exists")
 		catapult.Spec.Paused = true
 		require.NoError(t, managementClient.Update(ctx, catapult), "set catapult paused flag to true")
-		testutil.WaitUntilCondition(ctx, managementClient, catapult, operatorv1alpha1.CatapultPaused, operatorv1alpha1.ConditionTrue)
-		testutil.WaitUntilReady(ctx, managementClient, catapult)
+		require.NoError(t, testutil.WaitUntilCondition(ctx, managementClient, catapult, operatorv1alpha1.CatapultPaused, operatorv1alpha1.ConditionTrue))
+		require.NoError(t, testutil.WaitUntilReady(ctx, managementClient, catapult))
 		require.Equal(t, operatorv1alpha1.CatapultPhasePaused, catapult.Status.Phase)
 		catapult.Spec.Paused = false
 		require.NoError(t, managementClient.Update(ctx, catapult), "set catapult paused flag to true")
-		testutil.WaitUntilCondition(ctx, managementClient, catapult, operatorv1alpha1.CatapultPaused, operatorv1alpha1.ConditionFalse)
+		require.NoError(t, testutil.WaitUntilCondition(ctx, managementClient, catapult, operatorv1alpha1.CatapultPaused, operatorv1alpha1.ConditionFalse))
 		require.Equal(t, operatorv1alpha1.CatapultPhaseReady, catapult.Status.Phase)
 
 		// Check the Catapult dynamic webhook service is deployed.

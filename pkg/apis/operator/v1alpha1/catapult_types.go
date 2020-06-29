@@ -238,7 +238,7 @@ func (s *Catapult) SetPausedCondition() bool {
 			Reason:  "Paused",
 			Message: "Reconcilation is paused, assuming component is ready.",
 		})
-		return true
+		return changed
 	}
 	if !s.IsPaused() {
 		changed = true
