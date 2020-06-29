@@ -49,8 +49,8 @@ func (o PausedFlagType) IsPaused() bool {
 
 // Values of PausedFlagType.
 const (
-	PausedFlagTrue  PausedFlagType = "true"
-	PausedFlagFalse PausedFlagType = "false"
+	PausedFlagTrue  PausedFlagType = "True"
+	PausedFlagFalse PausedFlagType = "False"
 )
 
 // CatapultStatus defines the observed state of Catapult.

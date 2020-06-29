@@ -162,13 +162,13 @@ func newServiceClusterSuite(
 		}, catapult), "getting catapult")
 
 		t.Log("Catapult exists")
-		catapult.Spec.Paused = "true"
+		catapult.Spec.Paused = operatorv1alpha1.PausedFlagTrue
 		require.NoError(t, managementClient.Update(ctx, catapult), "set catapult paused flag to true")
 		require.NoError(t, testutil.WaitUntilCondition(ctx, managementClient, catapult, operatorv1alpha1.CatapultPaused, operatorv1alpha1.ConditionTrue))
 		require.NoError(t, testutil.WaitUntilReady(ctx, managementClient, catapult))
 		require.Equal(t, operatorv1alpha1.CatapultPhasePaused, catapult.Status.Phase)
 
-		catapult.Spec.Paused = "false"
+		catapult.Spec.Paused = operatorv1alpha1.PausedFlagFalse
 		require.NoError(t, managementClient.Update(ctx, catapult), "set catapult paused flag to true")
 		require.NoError(t, testutil.WaitUntilCondition(ctx, managementClient, catapult, operatorv1alpha1.CatapultPaused, operatorv1alpha1.ConditionFalse))
 		require.Equal(t, operatorv1alpha1.CatapultPhaseReady, catapult.Status.Phase)
