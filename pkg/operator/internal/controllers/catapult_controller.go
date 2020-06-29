@@ -73,14 +73,14 @@ func (r *CatapultReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	if err := r.Get(ctx, req.NamespacedName, catapult); err != nil {
 		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
-	if catapult.Spec.Paused {
+	if catapult.Spec.Paused.IsPaused() {
 		if catapult.SetPausedCondition() {
 			if err := r.Client.Status().Update(ctx, catapult); err != nil {
 				return ctrl.Result{}, fmt.Errorf("updating %s status: %w", catapult.Name, err)
 			}
-			// reconciliation paused, skip all other handlers
-			return ctrl.Result{}, nil
 		}
+		// reconciliation paused, skip all other handlers
+		return ctrl.Result{}, nil
 	}
 
 	if !catapult.DeletionTimestamp.IsZero() {
@@ -186,7 +186,7 @@ func (r *CatapultReconciler) handleDeletion(ctx context.Context, catapult *opera
 func (r *CatapultReconciler) updateStatus(ctx context.Context, catapult *operatorv1alpha1.Catapult, deploymentIsReady bool) error {
 	var pausedChanged, readyChanged bool
 
-	if !catapult.Spec.Paused {
+	if !catapult.Spec.Paused.IsPaused() {
 		pausedChanged = catapult.SetUnPausedCondition()
 	}
 

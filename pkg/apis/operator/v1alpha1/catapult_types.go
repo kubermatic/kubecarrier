@@ -37,8 +37,21 @@ type CatapultSpec struct {
 	// +kubebuilder:default:=None
 	WebhookStrategy corev1alpha1.WebhookStrategyType `json:"webhookStrategy,omitempty"`
 	// Paused tell controller to pause reconciliation process and assume that Catapult is ready
-	Paused bool `json:"paused,omitempty"`
+	Paused PausedFlagType `json:"paused,omitempty"`
 }
+
+// PausedFlagType represents a enable/disable flag
+type PausedFlagType string
+
+func (o PausedFlagType) IsPaused() bool {
+	return o == PausedFlagTrue
+}
+
+// Values of PausedFlagType.
+const (
+	PausedFlagTrue  PausedFlagType = "true"
+	PausedFlagFalse PausedFlagType = "false"
+)
 
 // CatapultStatus defines the observed state of Catapult.
 type CatapultStatus struct {

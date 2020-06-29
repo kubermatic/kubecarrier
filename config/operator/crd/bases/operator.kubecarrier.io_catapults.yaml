@@ -67,7 +67,7 @@ spec:
               paused:
                 description: Paused tell controller to pause reconciliation process
                   and assume that Catapult is ready
-                type: boolean
+                type: string
               serviceCluster:
                 description: References the ServiceCluster object that this object
                   belongs to.
