@@ -31,6 +31,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/types"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	catalogv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/catalog/v1alpha1"
 	corev1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/core/v1alpha1"
@@ -54,6 +55,27 @@ func newServiceClusterSuite(
 		serviceClient, err := f.ServiceClient(t)
 		require.NoError(t, err, "creating service client")
 		t.Cleanup(serviceClient.CleanUpFunc(ctx))
+
+		// Check KubeCarrier
+		kubeCarrier := &operatorv1alpha1.KubeCarrier{ObjectMeta: metav1.ObjectMeta{
+			Name: "kubecarrier",
+		}}
+		key, err := client.ObjectKeyFromObject(kubeCarrier)
+		require.NoError(t, err)
+		require.NoError(t, managementClient.Get(ctx, key, kubeCarrier), "getting kubecarrier")
+
+		t.Log("KubaCarrier exists")
+
+		kubeCarrier.Spec.Paused = operatorv1alpha1.PausedFlagTrue
+		require.NoError(t, managementClient.Update(ctx, kubeCarrier), "set kubeCarrier paused flag to true")
+		require.NoError(t, testutil.WaitUntilCondition(ctx, managementClient, kubeCarrier, operatorv1alpha1.KubeCarrierPaused, operatorv1alpha1.ConditionTrue))
+		require.NoError(t, testutil.WaitUntilReady(ctx, managementClient, kubeCarrier))
+		require.Equal(t, operatorv1alpha1.KubeCarrierPhasePaused, kubeCarrier.Status.Phase)
+
+		kubeCarrier.Spec.Paused = operatorv1alpha1.PausedFlagFalse
+		require.NoError(t, managementClient.Update(ctx, kubeCarrier), "set kubeCarrier paused flag to false")
+		require.NoError(t, testutil.WaitUntilCondition(ctx, managementClient, kubeCarrier, operatorv1alpha1.KubeCarrierPaused, operatorv1alpha1.ConditionFalse))
+		require.NoError(t, testutil.WaitUntilReady(ctx, managementClient, kubeCarrier))
 
 		testName := strings.Replace(strings.ToLower(t.Name()), "/", "-", -1)
 

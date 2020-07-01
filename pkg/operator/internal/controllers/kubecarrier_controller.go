@@ -75,6 +75,16 @@ func (r *KubeCarrierReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error)
 		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
 
+	if kubeCarrier.Spec.Paused.IsPaused() {
+		if kubeCarrier.SetPausedCondition() {
+			if err := r.Client.Status().Update(ctx, kubeCarrier); err != nil {
+				return ctrl.Result{}, fmt.Errorf("updating %s status: %w", kubeCarrier.Name, err)
+			}
+		}
+		// reconciliation paused, skip all other handlers
+		return ctrl.Result{}, nil
+	}
+
 	if !kubeCarrier.DeletionTimestamp.IsZero() {
 		if err := r.handleDeletion(ctx, kubeCarrier); err != nil {
 			return ctrl.Result{}, fmt.Errorf("handle deletion: %w", err)
@@ -235,6 +245,9 @@ func (r *KubeCarrierReconciler) updateStatus(ctx context.Context, kubeCarrier *o
 			Reason:  "APIServerUnReady",
 			Message: "API Server is not ready.",
 		})
+	}
+	if !kubeCarrier.Spec.Paused.IsPaused() {
+		kubeCarrier.SetUnPausedCondition()
 	}
 
 	if err := r.Client.Status().Update(ctx, kubeCarrier); err != nil {
