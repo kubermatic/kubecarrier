@@ -24,6 +24,8 @@ import (
 type FerrySpec struct {
 	// KubeconfigSecret specifies the Kubeconfig to use when connecting to the ServiceCluster.
 	KubeconfigSecret ObjectReference `json:"kubeconfigSecret"`
+	// Paused tell controller to pause reconciliation process and assume that Ferry is ready
+	Paused PausedFlagType `json:"paused,omitempty"`
 }
 
 // FerryStatus defines the observed state of Ferry.
@@ -46,6 +48,7 @@ type FerryPhaseType string
 // Values of FerryPhaseType.
 const (
 	FerryPhaseReady       FerryPhaseType = "Ready"
+	FerryPhasePaused      FerryPhaseType = "Paused"
 	FerryPhaseNotReady    FerryPhaseType = "NotReady"
 	FerryPhaseTerminating FerryPhaseType = "Terminating"
 	FerryPhaseUnknown     FerryPhaseType = "Unknown"
@@ -57,6 +60,8 @@ type FerryConditionType string
 const (
 	// FerryReady represents a Ferry condition is in ready state.
 	FerryReady FerryConditionType = "Ready"
+	// FerryPaused represents a Ferry condition is in paused state.
+	FerryPaused FerryConditionType = "Paused"
 )
 
 const (
@@ -86,23 +91,26 @@ func (c FerryCondition) True() bool {
 // this method should be called everytime the conditions are updated.
 func (s *FerryStatus) updatePhase() {
 	for _, condition := range s.Conditions {
-		if condition.Type != FerryReady {
-			continue
+		if condition.Type == FerryPaused && condition.Status == ConditionTrue {
+			s.Phase = FerryPhasePaused
+			return
 		}
 
-		switch condition.Status {
-		case ConditionTrue:
-			s.Phase = FerryPhaseReady
-		case ConditionFalse:
-			if condition.Reason == FerryTerminatingReason {
-				s.Phase = FerryPhaseTerminating
-			} else {
-				s.Phase = FerryPhaseNotReady
+		if condition.Type == FerryReady {
+
+			switch condition.Status {
+			case ConditionTrue:
+				s.Phase = FerryPhaseReady
+			case ConditionFalse:
+				if condition.Reason == FerryTerminatingReason {
+					s.Phase = FerryPhaseTerminating
+				} else {
+					s.Phase = FerryPhaseNotReady
+				}
+			case ConditionUnknown:
+				s.Phase = FerryPhaseUnknown
 			}
-		case ConditionUnknown:
-			s.Phase = FerryPhaseUnknown
 		}
-		return
 	}
 	s.Phase = FerryPhaseUnknown
 }
@@ -203,6 +211,61 @@ func (s *Ferry) SetUnReadyCondition() bool {
 			Status:  ConditionFalse,
 			Reason:  "DeploymentUnready",
 			Message: "the deployment of the Ferry controller manager is not ready",
+		})
+		return true
+	}
+	return false
+}
+
+// IsPaused returns if the Ferry is paused.
+func (s *Ferry) IsPaused() bool {
+	if s.Generation != s.Status.ObservedGeneration {
+		return false
+	}
+
+	for _, condition := range s.Status.Conditions {
+		if condition.Type == FerryPaused &&
+			condition.Status == ConditionTrue {
+			return true
+		}
+	}
+	return false
+}
+
+func (s *Ferry) SetPausedCondition() bool {
+	var changed bool
+	if !s.IsReady() {
+		changed = true
+		s.Status.ObservedGeneration = s.Generation
+		s.Status.SetCondition(FerryCondition{
+			Type:    FerryReady,
+			Status:  ConditionTrue,
+			Reason:  "Paused",
+			Message: "Reconcilation is paused, assuming component is ready.",
+		})
+		return changed
+	}
+	if !s.IsPaused() {
+		changed = true
+		s.Status.ObservedGeneration = s.Generation
+		s.Status.SetCondition(FerryCondition{
+			Type:    FerryPaused,
+			Status:  ConditionTrue,
+			Reason:  "Paused",
+			Message: "Reconcilation is paused",
+		})
+	}
+	return changed
+}
+
+func (s *Ferry) SetUnPausedCondition() bool {
+	if s.IsPaused() {
+		s.Status.ObservedGeneration = s.Generation
+		s.Status.SetCondition(FerryCondition{
+			Type:    FerryPaused,
+			Status:  ConditionFalse,
+			Reason:  "UnPaused",
+			Message: "Reconcilation is resumed",
 		})
 		return true
 	}

@@ -65,6 +65,10 @@ spec:
                 required:
                 - name
                 type: object
+              paused:
+                description: Paused tell controller to pause reconciliation process
+                  and assume that Ferry is ready
+                type: string
             required:
             - kubeconfigSecret
             type: object

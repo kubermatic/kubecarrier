@@ -28,6 +28,8 @@ type ElevatorSpec struct {
 	TenantCRD CRDReference `json:"tenantCRD"`
 	// References the DerivedCustomResource controlling the Tenant-side CRD.
 	DerivedCR ObjectReference `json:"derivedCR"`
+	// Paused tell controller to pause reconciliation process and assume that Catapult is ready
+	Paused PausedFlagType `json:"paused,omitempty"`
 }
 
 // ElevatorStatus defines the observed state of Elevator.
@@ -50,6 +52,7 @@ type ElevatorPhaseType string
 // Values of ElevatorPhaseType.
 const (
 	ElevatorPhaseReady       ElevatorPhaseType = "Ready"
+	ElevatorPhasePaused      ElevatorPhaseType = "Paused"
 	ElevatorPhaseNotReady    ElevatorPhaseType = "NotReady"
 	ElevatorPhaseUnknown     ElevatorPhaseType = "Unknown"
 	ElevatorPhaseTerminating ElevatorPhaseType = "Terminating"
@@ -64,23 +67,26 @@ const (
 func (s *ElevatorStatus) updatePhase() {
 
 	for _, condition := range s.Conditions {
-		if condition.Type != ElevatorReady {
-			continue
-		}
 
-		switch condition.Status {
-		case ConditionTrue:
-			s.Phase = ElevatorPhaseReady
-		case ConditionFalse:
-			if condition.Reason == ElevatorTerminatingReason {
-				s.Phase = ElevatorPhaseTerminating
-			} else {
-				s.Phase = ElevatorPhaseNotReady
-			}
-		case ConditionUnknown:
-			s.Phase = ElevatorPhaseUnknown
+		if condition.Type == ElevatorPaused && condition.Status == ConditionTrue {
+			s.Phase = ElevatorPhasePaused
+			return
 		}
-		return
+		if condition.Type == ElevatorReady {
+
+			switch condition.Status {
+			case ConditionTrue:
+				s.Phase = ElevatorPhaseReady
+			case ConditionFalse:
+				if condition.Reason == ElevatorTerminatingReason {
+					s.Phase = ElevatorPhaseTerminating
+				} else {
+					s.Phase = ElevatorPhaseNotReady
+				}
+			case ConditionUnknown:
+				s.Phase = ElevatorPhaseUnknown
+			}
+		}
 	}
 
 	s.Phase = ElevatorPhaseUnknown
@@ -92,6 +98,8 @@ type ElevatorConditionType string
 const (
 	// ElevatorReady represents a Elevator condition is in ready state.
 	ElevatorReady ElevatorConditionType = "Ready"
+	// ElevatorPaused represents a Elevator condition is in paused state.
+	ElevatorPaused ElevatorConditionType = "Paused"
 )
 
 // ElevatorCondition contains details for the current condition of this Elevator.
@@ -205,6 +213,61 @@ func (s *Elevator) SetUnReadyCondition() bool {
 			Status:  ConditionFalse,
 			Reason:  "DeploymentUnready",
 			Message: "the deployment of the Elevator controller manager is not ready",
+		})
+		return true
+	}
+	return false
+}
+
+// IsPaused returns if the Elevator is paused.
+func (s *Elevator) IsPaused() bool {
+	if s.Generation != s.Status.ObservedGeneration {
+		return false
+	}
+
+	for _, condition := range s.Status.Conditions {
+		if condition.Type == ElevatorPaused &&
+			condition.Status == ConditionTrue {
+			return true
+		}
+	}
+	return false
+}
+
+func (s *Elevator) SetPausedCondition() bool {
+	var changed bool
+	if !s.IsReady() {
+		changed = true
+		s.Status.ObservedGeneration = s.Generation
+		s.Status.SetCondition(ElevatorCondition{
+			Type:    ElevatorReady,
+			Status:  ConditionTrue,
+			Reason:  "Paused",
+			Message: "Reconcilation is paused, assuming component is ready.",
+		})
+		return changed
+	}
+	if !s.IsPaused() {
+		changed = true
+		s.Status.ObservedGeneration = s.Generation
+		s.Status.SetCondition(ElevatorCondition{
+			Type:    ElevatorPaused,
+			Status:  ConditionTrue,
+			Reason:  "Paused",
+			Message: "Reconcilation is paused",
+		})
+	}
+	return changed
+}
+
+func (s *Elevator) SetUnPausedCondition() bool {
+	if s.IsPaused() {
+		s.Status.ObservedGeneration = s.Generation
+		s.Status.SetCondition(ElevatorCondition{
+			Type:    ElevatorPaused,
+			Status:  ConditionFalse,
+			Reason:  "UnPaused",
+			Message: "Reconcilation is resumed",
 		})
 		return true
 	}

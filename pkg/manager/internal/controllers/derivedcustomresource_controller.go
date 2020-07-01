@@ -291,6 +291,8 @@ func (r *DerivedCustomResourceReconciler) Reconcile(req ctrl.Request) (ctrl.Resu
 		return result, nil
 	}
 
+	// leave `Paused` flag as is
+	desiredElevator.Spec.Paused = currentElevator.Spec.Paused
 	// Update Elevator
 	currentElevator.Spec = desiredElevator.Spec
 	if err = r.Update(ctx, currentElevator); err != nil {

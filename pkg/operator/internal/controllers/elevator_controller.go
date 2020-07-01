@@ -68,6 +68,15 @@ func (r *ElevatorReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	if err := r.Get(ctx, req.NamespacedName, elevator); err != nil {
 		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
+	if elevator.Spec.Paused.IsPaused() {
+		if elevator.SetPausedCondition() {
+			if err := r.Client.Status().Update(ctx, elevator); err != nil {
+				return ctrl.Result{}, fmt.Errorf("updating %s status: %w", elevator.Name, err)
+			}
+		}
+		// reconciliation paused, skip all other handlers
+		return ctrl.Result{}, nil
+	}
 
 	if !elevator.DeletionTimestamp.IsZero() {
 		if err := r.handleDeletion(ctx, elevator); err != nil {
@@ -159,15 +168,19 @@ func (r *ElevatorReconciler) handleDeletion(ctx context.Context, elevator *opera
 }
 
 func (r *ElevatorReconciler) updateStatus(ctx context.Context, elevator *operatorv1alpha1.Elevator, deploymentIsReady bool) error {
-	var statusChanged bool
+	var pausedChanged, readyChanged bool
 
-	if deploymentIsReady {
-		statusChanged = elevator.SetReadyCondition()
-	} else {
-		statusChanged = elevator.SetUnReadyCondition()
+	if !elevator.Spec.Paused.IsPaused() {
+		pausedChanged = elevator.SetUnPausedCondition()
 	}
 
-	if statusChanged {
+	if deploymentIsReady {
+		readyChanged = elevator.SetReadyCondition()
+	} else {
+		readyChanged = elevator.SetUnReadyCondition()
+	}
+
+	if readyChanged || pausedChanged {
 		if err := r.Client.Status().Update(ctx, elevator); err != nil {
 			return fmt.Errorf("updating %s status: %w", elevator.Name, err)
 		}

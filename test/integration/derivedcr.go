@@ -34,6 +34,7 @@ import (
 	"sigs.k8s.io/yaml"
 
 	catalogv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/catalog/v1alpha1"
+	operatorv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/operator/v1alpha1"
 	"github.com/kubermatic/kubecarrier/pkg/testutil"
 )
 
@@ -93,6 +94,26 @@ func newDerivedCR(
 
 		require.NoError(t, managementClient.Create(ctx, dcr))
 		require.NoError(t, testutil.WaitUntilReady(ctx, managementClient, dcr, testutil.WithTimeout(60*time.Second)))
+
+		// Check Elevator
+		elevator := &operatorv1alpha1.Elevator{}
+		require.NoError(t, managementClient.Get(ctx, types.NamespacedName{
+			Name:      "test",
+			Namespace: provider.Status.Namespace.Name,
+		}, elevator), "getting elevator")
+		t.Log("Elevator exists")
+		require.NoError(t, testutil.WaitUntilReady(ctx, managementClient, elevator))
+
+		elevator.Spec.Paused = operatorv1alpha1.PausedFlagTrue
+		require.NoError(t, managementClient.Update(ctx, elevator), "set elevator paused flag to true")
+		require.NoError(t, testutil.WaitUntilCondition(ctx, managementClient, elevator, operatorv1alpha1.ElevatorPaused, operatorv1alpha1.ConditionTrue))
+		require.NoError(t, testutil.WaitUntilReady(ctx, managementClient, elevator))
+		require.Equal(t, operatorv1alpha1.ElevatorPhasePaused, elevator.Status.Phase)
+
+		elevator.Spec.Paused = operatorv1alpha1.PausedFlagFalse
+		require.NoError(t, managementClient.Update(ctx, elevator), "set elevator paused flag to false")
+		require.NoError(t, testutil.WaitUntilCondition(ctx, managementClient, elevator, operatorv1alpha1.ElevatorPaused, operatorv1alpha1.ConditionFalse))
+		require.NoError(t, testutil.WaitUntilReady(ctx, managementClient, elevator))
 
 		// Check the Elevator dynamic webhook service is deployed.
 		webhookService := &corev1.Service{}

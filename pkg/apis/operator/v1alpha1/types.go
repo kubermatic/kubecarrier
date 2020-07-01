@@ -46,3 +46,16 @@ type CRDReference struct {
 	Group   string `json:"group"`
 	Plural  string `json:"plural"`
 }
+
+// PausedFlagType represents a enable/disable flag
+type PausedFlagType string
+
+func (o PausedFlagType) IsPaused() bool {
+	return o == PausedFlagTrue
+}
+
+// Values of PausedFlagType.
+const (
+	PausedFlagTrue  PausedFlagType = "True"
+	PausedFlagFalse PausedFlagType = "False"
+)
