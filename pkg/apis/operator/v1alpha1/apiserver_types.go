@@ -26,12 +26,21 @@ type APIServerSpec struct {
 	// TLSSecretRef references the TLS certificate and private key for serving the KubeCarrier API.
 	// +optional
 	TLSSecretRef *ObjectReference `json:"tlsSecretRef,omitempty"`
+	// +optional
+	// Authentication configuration
+	Authentication *Authentication `json:"authentication,omitempty"`
+}
+
+type Authentication struct {
 	// OIDC specifies OpenID Connect configuration for API Server authentication
 	// +optional
 	OIDC *APIServerOIDCConfig `json:"oidc,omitempty"`
 	// StaticUsers specifies static users configuration for API Server authentication
 	// +optional
 	StaticUsers *StaticUsers `json:"staticUsers,omitempty"`
+	// Order in which auth providers executed. Available values: Anonymous, Htpasswd, OIDC, Token
+	// +optional
+	Order []string `json:"order,omitempty"`
 }
 
 type StaticUsers struct {

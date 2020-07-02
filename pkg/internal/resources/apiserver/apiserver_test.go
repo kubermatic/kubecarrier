@@ -37,10 +37,13 @@ func TestManifests(t *testing.T) {
 		Namespace: "kubecarrier-system-10",
 		Name:      "foo",
 		Spec: operatorv1alpha1.APIServerSpec{
-			OIDC: &operatorv1alpha1.APIServerOIDCConfig{},
-			StaticUsers: &operatorv1alpha1.StaticUsers{
-				HtpasswdSecret: operatorv1alpha1.ObjectReference{
-					Name: "test-secret",
+			Authentication: &operatorv1alpha1.Authentication{
+				Order: []string{"Htpasswd", "OIDC", "Token", "Anonymous"},
+				OIDC:  &operatorv1alpha1.APIServerOIDCConfig{},
+				StaticUsers: &operatorv1alpha1.StaticUsers{
+					HtpasswdSecret: operatorv1alpha1.ObjectReference{
+						Name: "test-secret",
+					},
 				},
 			},
 		},
