@@ -35,6 +35,7 @@ RUN curl -fsSL https://get.docker.com | sh
 RUN curl -sL --output /usr/local/bin/kubectl https://storage.googleapis.com/kubernetes-release/release/v1.16.0/bin/linux/amd64/kubectl && chmod a+x /usr/local/bin/kubectl
 RUN curl -sL https://get.helm.sh/helm-v3.1.2-linux-amd64.tar.gz | tar -C /tmp -xz && mv /tmp/linux-amd64/helm /usr/bin/helm && rm -Rf /tmp/linux-amd64 && helm repo add stable https://kubernetes-charts.storage.googleapis.com/ && helm repo update
 RUN curl -sL https://dl.google.com/go/go1.14.linux-amd64.tar.gz | tar -C /usr/local -xz
+RUN curl -sL --output /tmp/boilerplate.zip https://github.com/kubermatic-labs/boilerplate/releases/download/v0.1.1/boilerplate_0.1.1_linux_amd64.zip && unzip /tmp/boilerplate.zip -d /usr/local/bin && rm -Rf /tmp/boilerplate.zip
 ENV PATH=${PATH}:/usr/local/go/bin:/root/go/bin
 # This LC_ALL is needed for yq. https://stackoverflow.com/questions/18649512/unicodedecodeerror-ascii-codec-cant-decode-byte-0xe2-in-position-13-ordinal
 ENV LC_ALL=C.UTF-8
