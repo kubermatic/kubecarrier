@@ -40,6 +40,19 @@ type CatapultSpec struct {
 	Paused PausedFlagType `json:"paused,omitempty"`
 }
 
+// PausedFlagType represents a enable/disable flag
+type PausedFlagType string
+
+func (o PausedFlagType) IsPaused() bool {
+	return o == PausedFlagTrue
+}
+
+// Values of PausedFlagType.
+const (
+	PausedFlagTrue  PausedFlagType = "True"
+	PausedFlagFalse PausedFlagType = "False"
+)
+
 // CatapultStatus defines the observed state of Catapult.
 type CatapultStatus struct {
 	// ObservedGeneration is the most recent generation observed for this Catapult by the controller.
