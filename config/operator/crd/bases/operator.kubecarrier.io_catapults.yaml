@@ -64,6 +64,10 @@ spec:
                 - plural
                 - version
                 type: object
+              paused:
+                description: Paused tell controller to pause reconciliation process
+                  and assume that Catapult is ready
+                type: string
               serviceCluster:
                 description: References the ServiceCluster object that this object
                   belongs to.
