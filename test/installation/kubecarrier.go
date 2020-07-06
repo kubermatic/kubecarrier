@@ -71,6 +71,21 @@ func newKubeCarrier(f *testutil.Framework) func(t *testing.T) {
 		}
 		kubeCarrier = kubeCarrier.DeepCopy()
 		kubeCarrier.Name = "kubecarrier"
+		kubeCarrier.Spec.API.Authentication = append(kubeCarrier.Spec.API.Authentication, operatorv1alpha1.Authentication{Anonymous: &operatorv1alpha1.Anonymous{}})
+		kubeCarrier.Spec.API.Authentication = append(kubeCarrier.Spec.API.Authentication, operatorv1alpha1.Authentication{Anonymous: &operatorv1alpha1.Anonymous{}})
+		err = managementClient.Create(ctx, kubeCarrier)
+		if assert.Error(t, err,
+			"Duplicate Anonymous configuration",
+		) {
+			assert.Contains(
+				t,
+				err.Error(),
+				"Duplicate Anonymous configuration",
+				"KubeCarrier creation webhook should error out on incorrect KubeCarrier API configuration",
+			)
+		}
+
+		kubeCarrier = kubeCarrier.DeepCopy()
 		require.NoError(t, testutil.WaitUntilReady(ctx, managementClient, kubeCarrier))
 		testutil.KubeCarrierCheck(ctx, t, managementClient, f.ManagementScheme)
 	}

@@ -18,6 +18,7 @@ package webhooks
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 
@@ -69,6 +70,34 @@ func (r *KubeCarrierWebhookHandler) validateCreate(kubeCarrier *operatorv1alpha1
 	r.Log.Info("validate create", "name", kubeCarrier.Name)
 	if kubeCarrier.Name != constants.KubeCarrierDefaultName {
 		return fmt.Errorf("KubeCarrier object name should be 'kubecarrier', found: %s", kubeCarrier.Name)
+	}
+	auth := map[string]bool{}
+	for _, a := range kubeCarrier.Spec.API.Authentication {
+		if a.OIDC != nil {
+			if auth["OIDC"] {
+				return errors.New("Duplicate OIDC configuration")
+			}
+			auth["OIDC"] = true
+		}
+		if a.StaticUsers != nil {
+			if auth["Htpasswd"] {
+				return errors.New("Duplicate StaticUsers configuration")
+			}
+			auth["Htpasswd"] = true
+		}
+		if a.ServiceAccount != nil {
+			if auth["Token"] {
+				return errors.New("Duplicate ServiceAccount configuration")
+			}
+			auth["Token"] = true
+		}
+		if a.Anonymous != nil {
+			if auth["Anonymous"] {
+				return errors.New("Duplicate Anonymous configuration")
+			}
+			auth["Anonymous"] = true
+		}
+
 	}
 	return nil
 }

@@ -28,7 +28,7 @@ type APIServerSpec struct {
 	TLSSecretRef *ObjectReference `json:"tlsSecretRef,omitempty"`
 	// +optional
 	// Authentication configuration
-	Authentication *Authentication `json:"authentication,omitempty"`
+	Authentication []Authentication `json:"authentication,omitempty"`
 }
 
 type Authentication struct {
@@ -38,10 +38,16 @@ type Authentication struct {
 	// StaticUsers specifies static users configuration for API Server authentication
 	// +optional
 	StaticUsers *StaticUsers `json:"staticUsers,omitempty"`
-	// Order in which auth providers executed. Available values: Anonymous, Htpasswd, OIDC, Token
+	// ServiceAccount specifies whether service account auth provider enabled
 	// +optional
-	Order []string `json:"order,omitempty"`
+	ServiceAccount *ServiceAccount `json:"serviceAccount,omitempty"`
+	// Anonymous specifies whether anonymous auth provider enabled
+	// +optional
+	Anonymous *Anonymous `json:"anonymous,omitempty"`
 }
+
+type ServiceAccount struct{}
+type Anonymous struct{}
 
 type StaticUsers struct {
 	// HtpassswdSecret specifies the htpasswd secret to use for static user authentication.
