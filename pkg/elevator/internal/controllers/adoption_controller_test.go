@@ -30,9 +30,10 @@ import (
 	fakeclient "sigs.k8s.io/controller-runtime/pkg/client/fake"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
-	"github.com/kubermatic/kubecarrier/pkg/testutil/mockclient"
 	"github.com/kubermatic/utils/pkg/owner"
 	"github.com/kubermatic/utils/pkg/testutil"
+
+	"github.com/kubermatic/kubecarrier/pkg/testutil/mockclient"
 )
 
 func TestAdoptionReconciler(t *testing.T) {

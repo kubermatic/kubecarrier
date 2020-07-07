@@ -29,12 +29,13 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
 
+	"github.com/kubermatic/utils/pkg/util"
+
 	fakev1 "github.com/kubermatic/kubecarrier/pkg/apis/fake/v1"
 	fakev1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/fake/v1alpha1"
 	"github.com/kubermatic/kubecarrier/pkg/fakeoperator/internal/controllers"
 	"github.com/kubermatic/kubecarrier/pkg/fakeoperator/internal/webhooks"
 	utilwebhook "github.com/kubermatic/kubecarrier/pkg/internal/util/webhook"
-	"github.com/kubermatic/utils/pkg/util"
 )
 
 type flags struct {

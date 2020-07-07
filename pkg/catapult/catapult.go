@@ -36,10 +36,11 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
 
+	"github.com/kubermatic/utils/pkg/util"
+
 	corev1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/core/v1alpha1"
 	"github.com/kubermatic/kubecarrier/pkg/catapult/internal/controllers"
 	"github.com/kubermatic/kubecarrier/pkg/catapult/internal/webhooks"
-	"github.com/kubermatic/utils/pkg/util"
 )
 
 type flags struct {

@@ -26,8 +26,9 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	fakev1 "github.com/kubermatic/kubecarrier/pkg/apis/fake/v1"
 	"github.com/kubermatic/utils/pkg/util"
+
+	fakev1 "github.com/kubermatic/kubecarrier/pkg/apis/fake/v1"
 )
 
 const finalizer = "fake.kubecarrier.io/controller"

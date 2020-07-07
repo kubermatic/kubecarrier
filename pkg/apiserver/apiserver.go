@@ -53,6 +53,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client/apiutil"
 	"sigs.k8s.io/controller-runtime/pkg/runtime/inject"
 
+	"github.com/kubermatic/utils/pkg/util"
+
 	catalogv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/catalog/v1alpha1"
 	apiserverv1 "github.com/kubermatic/kubecarrier/pkg/apiserver/api/v1"
 	"github.com/kubermatic/kubecarrier/pkg/apiserver/auth"
@@ -62,7 +64,6 @@ import (
 	_ "github.com/kubermatic/kubecarrier/pkg/apiserver/internal/auth/token"
 	"github.com/kubermatic/kubecarrier/pkg/apiserver/internal/authorizer"
 	v1 "github.com/kubermatic/kubecarrier/pkg/apiserver/internal/v1"
-	"github.com/kubermatic/utils/pkg/util"
 )
 
 var (

@@ -33,7 +33,7 @@ import (
 )
 
 func main() {
-	//https://github.com/goreleaser/goreleaser/issues/1375
+	// https://github.com/goreleaser/goreleaser/issues/1375
 	version := flag.String("version", "v0.1.0", "kubecarrier version")
 	flag.Parse()
 

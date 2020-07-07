@@ -20,13 +20,14 @@ import (
 	"github.com/spf13/cobra"
 	ctrl "sigs.k8s.io/controller-runtime"
 
+	"github.com/kubermatic/utils/pkg/util"
+
 	deletecmd "github.com/kubermatic/kubecarrier/pkg/cli/internal/cmd/delete"
 	e2e_test "github.com/kubermatic/kubecarrier/pkg/cli/internal/cmd/e2e-test"
 	"github.com/kubermatic/kubecarrier/pkg/cli/internal/cmd/preflight"
 	"github.com/kubermatic/kubecarrier/pkg/cli/internal/cmd/setup"
 	"github.com/kubermatic/kubecarrier/pkg/cli/internal/cmd/sut"
 	"github.com/kubermatic/kubecarrier/pkg/cli/internal/cmd/version"
-	"github.com/kubermatic/utils/pkg/util"
 )
 
 // NewKubecarrierCLI creates the root command for the KubeCarrier CLI.

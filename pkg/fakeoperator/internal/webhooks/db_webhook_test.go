@@ -26,8 +26,9 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	fakeclient "sigs.k8s.io/controller-runtime/pkg/client/fake"
 
-	fakev1 "github.com/kubermatic/kubecarrier/pkg/apis/fake/v1"
 	"github.com/kubermatic/utils/pkg/testutil"
+
+	fakev1 "github.com/kubermatic/kubecarrier/pkg/apis/fake/v1"
 )
 
 func TestDBValidatingCreate(t *testing.T) {

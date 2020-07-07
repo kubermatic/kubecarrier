@@ -20,8 +20,9 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/spf13/cobra"
 
-	"github.com/kubermatic/kubecarrier/pkg/testutil"
 	kubermatictestutil "github.com/kubermatic/utils/pkg/testutil"
+
+	"github.com/kubermatic/kubecarrier/pkg/testutil"
 )
 
 func NewCommand(log logr.Logger) *cobra.Command {
