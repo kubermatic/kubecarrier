@@ -176,11 +176,11 @@ e2e-setup: install require-docker
 	@kind get kubeconfig --name=${MANAGEMENT_KIND_CLUSTER} > "${HOME}/.kube/kind-config-${MANAGEMENT_KIND_CLUSTER}"
 	@echo "Deploy cert-manger in management cluster"
 	# Deploy cert-manager right after the creation of the management cluster, since the deployments of cert-manger take some time to get ready.
-	@$(MAKE) KIND_CLUSTER=${MANAGEMENT_KIND_CLUSTER} KUBECONFIG=${HOME}/.kube/kind-config-${MANAGEMENT_KIND_CLUSTER} cert-manager
+	@$(MAKE) KUBECONFIG=${HOME}/.kube/kind-config-${MANAGEMENT_KIND_CLUSTER} cert-manager
 	@$(MAKE) KUBECONFIG=${HOME}/.kube/kind-config-${MANAGEMENT_KIND_CLUSTER} dex
 	@kind get kubeconfig --internal --name=${SVC_KIND_CLUSTER} | sed "s/kubecarrier-svc-${TEST_ID}-control-plane/$$(docker  network inspect kind  | jq '.[0].Containers | to_entries | map(.value) | map(select(.Name == "kubecarrier-svc-${TEST_ID}-control-plane"))[0].IPv4Address[:-3]' -r)/g"  > "${HOME}/.kube/internal-kind-config-${SVC_KIND_CLUSTER}"
 	@kind get kubeconfig --name=${SVC_KIND_CLUSTER} > "${HOME}/.kube/kind-config-${SVC_KIND_CLUSTER}"
-	@$(MAKE) KIND_CLUSTER=${SVC_KIND_CLUSTER} KUBECONFIG=${HOME}/.kube/kind-config-${SVC_KIND_CLUSTER} cert-manager
+	@$(MAKE) KUBECONFIG=${HOME}/.kube/kind-config-${SVC_KIND_CLUSTER} cert-manager
 	@echo "kind clusters created"
 	@kubectl --kubeconfig=${HOME}/.kube/kind-config-${SVC_KIND_CLUSTER} apply -n default -f ./config/serviceCluster
 	@kubectl --kubeconfig=${HOME}/.kube/kind-config-${SVC_KIND_CLUSTER} create serviceaccount kubecarrier -n default --dry-run -o yaml | kubectl apply --kubeconfig=${HOME}/.kube/kind-config-${SVC_KIND_CLUSTER} -f -
@@ -231,11 +231,7 @@ install-git-hooks:
 
 # Install cert-manager in the configured Kubernetes cluster
 cert-manager:
-	kind load docker-image quay.io/jetstack/cert-manager-controller:v0.14.0 --name=${KIND_CLUSTER}
-	kind load docker-image quay.io/jetstack/cert-manager-cainjector:v0.14.0 --name=${KIND_CLUSTER}
-	kind load docker-image quay.io/jetstack/cert-manager-webhook:v0.14.0 --name=${KIND_CLUSTER}
-	kind load docker-image quay.io/dexidp/dex:v2.23.0 --name=${KIND_CLUSTER}
-	kubectl apply -f ../samples/cert-manager.yaml
+	kubectl apply -f https://github.com/jetstack/cert-manager/releases/download/v0.14.0/cert-manager.yaml
 	kubectl wait --for=condition=available deployment/cert-manager -n cert-manager --timeout=240s
 	kubectl wait --for=condition=available deployment/cert-manager-cainjector -n cert-manager --timeout=240s
 	kubectl wait --for=condition=available deployment/cert-manager-webhook -n cert-manager --timeout=240s
