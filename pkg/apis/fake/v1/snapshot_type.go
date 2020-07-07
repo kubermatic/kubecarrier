@@ -22,7 +22,7 @@ import (
 
 // SnapshotSpec defines the desired state of Snapshot
 type SnapshotSpec struct {
-	//DBName is the name of the source DB
+	// DBName is the name of the source DB
 	DBName string `json:"dbName,omitempty"`
 }
 

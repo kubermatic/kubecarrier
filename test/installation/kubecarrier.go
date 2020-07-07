@@ -29,6 +29,8 @@ import (
 
 	operatorv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/operator/v1alpha1"
 	"github.com/kubermatic/kubecarrier/pkg/testutil"
+
+	kubermatictestutil "github.com/kubermatic/utils/pkg/testutil"
 )
 
 func newKubeCarrier(f *testutil.Framework) func(t *testing.T) {
@@ -71,7 +73,7 @@ func newKubeCarrier(f *testutil.Framework) func(t *testing.T) {
 		}
 		kubeCarrier = kubeCarrier.DeepCopy()
 		kubeCarrier.Name = "kubecarrier"
-		require.NoError(t, testutil.WaitUntilReady(ctx, managementClient, kubeCarrier))
+		require.NoError(t, kubermatictestutil.WaitUntilReady(ctx, managementClient, kubeCarrier))
 		testutil.KubeCarrierCheck(ctx, t, managementClient, f.ManagementScheme)
 	}
 }
