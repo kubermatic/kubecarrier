@@ -51,6 +51,8 @@ spec:
                 items:
                   properties:
                     anonymous:
+                      description: Anonymous specifies whether anonymous auth provider
+                        enabled
                       type: object
                     oidc:
                       description: OIDC specifies OpenID Connect configuration for
@@ -138,6 +140,8 @@ spec:
                       - issuerURL
                       type: object
                     serviceAccount:
+                      description: ServiceAccount specifies whether service account
+                        auth provider enabled
                       type: object
                     staticUsers:
                       description: StaticUsers specifies static users configuration
