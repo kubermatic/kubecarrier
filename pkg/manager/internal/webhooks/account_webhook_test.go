@@ -30,7 +30,7 @@ import (
 
 	catalogv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/catalog/v1alpha1"
 	corev1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/core/v1alpha1"
-	"github.com/kubermatic/kubecarrier/pkg/testutil"
+	"github.com/kubermatic/utils/pkg/testutil"
 )
 
 func TestAccountValidatingCreate(t *testing.T) {

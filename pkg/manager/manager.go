@@ -35,11 +35,11 @@ import (
 	catalogv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/catalog/v1alpha1"
 	corev1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/core/v1alpha1"
 	operatorv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/operator/v1alpha1"
-	"github.com/kubermatic/kubecarrier/pkg/internal/multiowner"
-	"github.com/kubermatic/kubecarrier/pkg/internal/util"
 	utilwebhook "github.com/kubermatic/kubecarrier/pkg/internal/util/webhook"
 	"github.com/kubermatic/kubecarrier/pkg/manager/internal/controllers"
 	"github.com/kubermatic/kubecarrier/pkg/manager/internal/webhooks"
+	"github.com/kubermatic/utils/pkg/multiowner"
+	"github.com/kubermatic/utils/pkg/util"
 )
 
 type flags struct {

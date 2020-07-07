@@ -26,7 +26,7 @@ import (
 	"github.com/kubermatic/kubecarrier/pkg/cli/internal/cmd/setup"
 	"github.com/kubermatic/kubecarrier/pkg/cli/internal/cmd/sut"
 	"github.com/kubermatic/kubecarrier/pkg/cli/internal/cmd/version"
-	"github.com/kubermatic/kubecarrier/pkg/internal/util"
+	"github.com/kubermatic/utils/pkg/util"
 )
 
 // NewKubecarrierCLI creates the root command for the KubeCarrier CLI.

@@ -28,8 +28,10 @@ import (
 	fakeclient "sigs.k8s.io/controller-runtime/pkg/client/fake"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
+	"github.com/kubermatic/utils/pkg/owner"
+
 	corev1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/core/v1alpha1"
-	"github.com/kubermatic/kubecarrier/pkg/testutil"
+	"github.com/kubermatic/utils/pkg/testutil"
 )
 
 func TestManagementClusterObjReconciler(t *testing.T) {
@@ -136,9 +138,9 @@ func TestManagementClusterObjReconciler(t *testing.T) {
 			"kind":       "CouchDB",
 			"metadata": map[string]interface{}{
 				"labels": map[string]interface{}{
-					"owner.kubecarrier.io/name":      "test-1",
-					"owner.kubecarrier.io/namespace": "another-namespace",
-					"owner.kubecarrier.io/type":      "CouchDBInternal.eu-west-1.provider",
+					owner.OwnerNameLabel:      "test-1",
+					owner.OwnerNamespaceLabel: "another-namespace",
+					owner.OwnerTypeLabel:      "CouchDBInternal.eu-west-1.provider",
 				},
 				"name":            "test-1",
 				"namespace":       "sc-test-123",
@@ -237,9 +239,9 @@ func TestManagementClusterObjReconciler(t *testing.T) {
 			"kind":       "CouchDB",
 			"metadata": map[string]interface{}{
 				"labels": map[string]interface{}{
-					"owner.kubecarrier.io/name":      "test-1",
-					"owner.kubecarrier.io/namespace": "another-namespace",
-					"owner.kubecarrier.io/type":      "CouchDBInternal.eu-west-1.provider",
+					owner.OwnerNameLabel:      "test-1",
+					owner.OwnerNamespaceLabel: "another-namespace",
+					owner.OwnerTypeLabel:      "CouchDBInternal.eu-west-1.provider",
 				},
 				"name":            "test-1",
 				"namespace":       "sc-test-123",

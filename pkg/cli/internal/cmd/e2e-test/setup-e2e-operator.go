@@ -43,7 +43,7 @@ import (
 	"github.com/kubermatic/kubecarrier/pkg/cli/internal/spinner"
 	"github.com/kubermatic/kubecarrier/pkg/internal/reconcile"
 	"github.com/kubermatic/kubecarrier/pkg/internal/resources/fakeoperator"
-	"github.com/kubermatic/kubecarrier/pkg/internal/util"
+	"github.com/kubermatic/utils/pkg/util"
 )
 
 var (

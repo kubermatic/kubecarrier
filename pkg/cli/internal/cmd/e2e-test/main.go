@@ -21,6 +21,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/kubermatic/kubecarrier/pkg/testutil"
+	kubermatictestutil "github.com/kubermatic/utils/pkg/testutil"
 )
 
 func NewCommand(log logr.Logger) *cobra.Command {
@@ -53,6 +54,6 @@ func NewCommand(log logr.Logger) *cobra.Command {
 	cmd.PersistentFlags().StringVar(&cfg.ManagementInternalKubeconfigPath, "management-internal-kubeconfig", "", "management cluster internal (reachable within cluster/docker) kubeconfig file")
 	cmd.PersistentFlags().StringVar(&cfg.ServiceExternalKubeconfigPath, "service-external-kubeconfig", "", "service cluster external (reachable outside cluster/docker) kubeconfig file")
 	cmd.PersistentFlags().StringVar(&cfg.ServiceInternalKubeconfigPath, "service-internal-kubeconfig", "", "service cluster internal (reachable within cluster/docker) kubeconfig file")
-	cmd.PersistentFlags().StringVar((*string)(&cfg.CleanUpStrategy), "clean-up-strategy", string(testutil.CleanupOnSuccess), "cleanup strategy after the test ends. Valid values are always, on-success and never")
+	cmd.PersistentFlags().StringVar((*string)(&cfg.CleanUpStrategy), "clean-up-strategy", string(kubermatictestutil.CleanupOnSuccess), "cleanup strategy after the test ends. Valid values are always, on-success and never")
 	return cmd
 }

@@ -31,9 +31,9 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/source"
 
 	operatorv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/operator/v1alpha1"
-	"github.com/kubermatic/kubecarrier/pkg/internal/owner"
 	"github.com/kubermatic/kubecarrier/pkg/internal/resources/apiserver"
-	"github.com/kubermatic/kubecarrier/pkg/internal/util"
+	"github.com/kubermatic/utils/pkg/owner"
+	"github.com/kubermatic/utils/pkg/util"
 )
 
 const (

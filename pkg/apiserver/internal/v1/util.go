@@ -41,8 +41,8 @@ const (
 )
 
 // RegisterAccountUsernameFieldIndex adds a field index for user names in Account.Spec.Subjects.
-func RegisterAccountUsernameFieldIndex(indexer client.FieldIndexer) error {
-	return indexer.IndexField(
+func RegisterAccountUsernameFieldIndex(ctx context.Context, indexer client.FieldIndexer) error {
+	return indexer.IndexField(ctx,
 		&catalogv1alpha1.Account{}, accountUserFieldIndex,
 		func(obj runtime.Object) (values []string) {
 			account := obj.(*catalogv1alpha1.Account)
@@ -174,7 +174,7 @@ type streamer interface {
 }
 
 func watch(client dynamic.Interface, gvr schema.GroupVersionResource, namespace string, opts metav1.ListOptions, stream streamer, convertFunc ConvertFunc) error {
-	watcher, err := client.Resource(gvr).Namespace(namespace).Watch(opts)
+	watcher, err := client.Resource(gvr).Namespace(namespace).Watch(stream.Context(), opts)
 	if err != nil {
 		return status.Errorf(codes.Internal, "watching %s: %s", gvr.Resource, err.Error())
 	}

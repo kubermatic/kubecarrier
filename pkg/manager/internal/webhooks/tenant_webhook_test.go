@@ -23,7 +23,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	catalogv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/catalog/v1alpha1"
-	"github.com/kubermatic/kubecarrier/pkg/testutil"
+	"github.com/kubermatic/utils/pkg/testutil"
 )
 
 func TestTenantValidatingCreate(t *testing.T) {

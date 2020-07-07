@@ -33,8 +33,8 @@ import (
 
 	catalogv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/catalog/v1alpha1"
 	corev1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/core/v1alpha1"
-	"github.com/kubermatic/kubecarrier/pkg/internal/owner"
-	"github.com/kubermatic/kubecarrier/pkg/testutil"
+	"github.com/kubermatic/utils/pkg/owner"
+	"github.com/kubermatic/utils/pkg/testutil"
 )
 
 func TestCatalogReconciler(t *testing.T) {
@@ -124,6 +124,7 @@ func TestCatalogReconciler(t *testing.T) {
 		},
 		Status: catalogv1alpha1.CatalogEntryStatus{
 			TenantCRD: &catalogv1alpha1.CRDInformation{
+				Name:     "tenant.crd",
 				APIGroup: "tenant.apigroup",
 				Plural:   "tenant.plural",
 				Region: catalogv1alpha1.ObjectReference{

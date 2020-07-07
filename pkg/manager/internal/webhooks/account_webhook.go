@@ -34,8 +34,8 @@ import (
 
 	catalogv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/catalog/v1alpha1"
 	corev1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/core/v1alpha1"
-	"github.com/kubermatic/kubecarrier/pkg/internal/util"
 	"github.com/kubermatic/kubecarrier/pkg/internal/util/webhook"
+	"github.com/kubermatic/utils/pkg/util"
 )
 
 // AccountWebhookHandler handles mutating/validating of Accounts.

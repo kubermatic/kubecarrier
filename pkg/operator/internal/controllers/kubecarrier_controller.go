@@ -41,7 +41,7 @@ import (
 	"github.com/kubermatic/kubecarrier/pkg/internal/constants"
 	"github.com/kubermatic/kubecarrier/pkg/internal/reconcile"
 	"github.com/kubermatic/kubecarrier/pkg/internal/resources/manager"
-	"github.com/kubermatic/kubecarrier/pkg/internal/util"
+	"github.com/kubermatic/utils/pkg/util"
 )
 
 // KubeCarrierReconciler reconciles a KubeCarrier object

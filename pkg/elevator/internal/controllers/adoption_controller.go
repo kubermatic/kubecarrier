@@ -32,8 +32,8 @@ import (
 
 	catalogv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/catalog/v1alpha1"
 	elevatorutil "github.com/kubermatic/kubecarrier/pkg/elevator/internal/util"
-	"github.com/kubermatic/kubecarrier/pkg/internal/owner"
-	"github.com/kubermatic/kubecarrier/pkg/internal/util"
+	"github.com/kubermatic/utils/pkg/owner"
+	"github.com/kubermatic/utils/pkg/util"
 )
 
 // AdoptionReconciler reconciles Provider objects, that are not owned by a Tenant by creating the Tenant instance.

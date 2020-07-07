@@ -51,15 +51,6 @@
                   description: OIDC specifies OpenID Connect configuration for API
                     Server authentication
                   properties:
-                    apiAudiences:
-                      description: APIAudiences are the audiences that the API server
-                        identitifes as. The (API audiences unioned with the ClientIDs)
-                        should have a non-empty intersection with the request's target
-                        audience. This preserves the behavior of the OIDC authenticator
-                        pre-introduction of API audiences.
-                      items:
-                        type: string
-                      type: array
                     certificateAuthority:
                       description: CertificateAuthority references the secret containing
                         issuer's CA in a PEM encoded root certificate of the provider.
@@ -750,15 +741,6 @@
                       description: OIDC specifies OpenID Connect configuration for
                         API Server authentication
                       properties:
-                        apiAudiences:
-                          description: APIAudiences are the audiences that the API
-                            server identitifes as. The (API audiences unioned with
-                            the ClientIDs) should have a non-empty intersection with
-                            the request's target audience. This preserves the behavior
-                            of the OIDC authenticator pre-introduction of API audiences.
-                          items:
-                            type: string
-                          type: array
                         certificateAuthority:
                           description: CertificateAuthority references the secret
                             containing issuer's CA in a PEM encoded root certificate

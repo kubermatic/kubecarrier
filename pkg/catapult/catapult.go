@@ -17,6 +17,7 @@ limitations under the License.
 package catapult
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"strings"
@@ -38,7 +39,7 @@ import (
 	corev1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/core/v1alpha1"
 	"github.com/kubermatic/kubecarrier/pkg/catapult/internal/controllers"
 	"github.com/kubermatic/kubecarrier/pkg/catapult/internal/webhooks"
-	"github.com/kubermatic/kubecarrier/pkg/internal/util"
+	"github.com/kubermatic/utils/pkg/util"
 )
 
 type flags struct {
@@ -254,7 +255,7 @@ func run(flags *flags, log logr.Logger) error {
 	}
 
 	// Setup field indexes
-	if err := corev1alpha1.RegisterServiceClusterAssignmentNamespaceFieldIndex(namespacedCache); err != nil {
+	if err := corev1alpha1.RegisterServiceClusterAssignmentNamespaceFieldIndex(context.Background(), namespacedCache); err != nil {
 		return fmt.Errorf("registering ServiceClusterAssignment ServiceClusterNamespace field index: %w", err)
 	}
 

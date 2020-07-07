@@ -48,6 +48,8 @@ import (
 	corev1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/core/v1alpha1"
 	apiserverv1 "github.com/kubermatic/kubecarrier/pkg/apiserver/api/v1"
 	"github.com/kubermatic/kubecarrier/pkg/testutil"
+
+	kubermatictestutil "github.com/kubermatic/utils/pkg/testutil"
 )
 
 const (
@@ -79,8 +81,8 @@ func newAPIServer(f *testutil.Framework) func(t *testing.T) {
 			"service/kubecarrier-api-server-manager",
 			fmt.Sprintf("%d:https", localAPIServerPort),
 		)
-		pfCmd.Stdout = &testutil.TestingLogWriter{T: t}
-		pfCmd.Stderr = &testutil.TestingLogWriter{T: t}
+		pfCmd.Stdout = &kubermatictestutil.TestingLogWriter{T: t}
+		pfCmd.Stderr = &kubermatictestutil.TestingLogWriter{T: t}
 		require.NoError(t, pfCmd.Start())
 
 		token := fetchUserToken(ctx, t, managementClient, f.Config().ManagementExternalKubeconfigPath)
@@ -122,7 +124,7 @@ func newAPIServer(f *testutil.Framework) func(t *testing.T) {
 			Name:     "admin@kubecarrier.io",
 		})
 		require.NoError(t, managementClient.Create(ctx, account))
-		require.NoError(t, testutil.WaitUntilReady(ctx, managementClient, account), "account not ready")
+		require.NoError(t, kubermatictestutil.WaitUntilReady(ctx, managementClient, account), "account not ready")
 
 		for name, testFn := range map[string]func(ctx context.Context, conn *grpc.ClientConn, account *catalogv1alpha1.Account, f *testutil.Framework) func(t *testing.T){
 			"account-service":  accountService,
@@ -183,7 +185,7 @@ func newGRPCConn(ctx context.Context, certPool *x509.CertPool, creds credentials
 	)
 }
 
-func authModes(ctx context.Context, certPool *x509.CertPool, managementClient *testutil.RecordingClient, f *testutil.Framework) func(t *testing.T) {
+func authModes(ctx context.Context, certPool *x509.CertPool, managementClient *kubermatictestutil.RecordingClient, f *testutil.Framework) func(t *testing.T) {
 	return func(t *testing.T) {
 		fetchUserInfo := func(creds credentials.PerRPCCredentials) *apiserverv1.UserInfo {
 			t.Helper()
@@ -193,7 +195,7 @@ func authModes(ctx context.Context, certPool *x509.CertPool, managementClient *t
 			userInfo, err := client.WhoAmI(ctx, &empty.Empty{})
 			require.NoError(t, err)
 			t.Log("userInfo")
-			testutil.LogObject(t, userInfo)
+			kubermatictestutil.LogObject(t, userInfo)
 			return userInfo
 		}
 
@@ -223,7 +225,7 @@ func authModes(ctx context.Context, certPool *x509.CertPool, managementClient *t
 	}
 }
 
-func fetchUserToken(ctx context.Context, t *testing.T, managementClient *testutil.RecordingClient, kubeconfig string) string {
+func fetchUserToken(ctx context.Context, t *testing.T, managementClient *kubermatictestutil.RecordingClient, kubeconfig string) string {
 	const localDexServerPort = 10443
 	pfDex := exec.CommandContext(ctx,
 		"kubectl",
@@ -234,8 +236,8 @@ func fetchUserToken(ctx context.Context, t *testing.T, managementClient *testuti
 		fmt.Sprintf("%d:https", localDexServerPort),
 	)
 
-	pfDex.Stdout = &testutil.TestingLogWriter{T: t}
-	pfDex.Stderr = &testutil.TestingLogWriter{T: t}
+	pfDex.Stdout = &kubermatictestutil.TestingLogWriter{T: t}
+	pfDex.Stderr = &kubermatictestutil.TestingLogWriter{T: t}
 
 	require.NoError(t, pfDex.Start())
 	certPool := x509.NewCertPool()
@@ -243,9 +245,9 @@ func fetchUserToken(ctx context.Context, t *testing.T, managementClient *testuti
 	require.NoError(t, managementClient.Get(ctx, types.NamespacedName{Name: "dex-web-server", Namespace: "kubecarrier-system"}, dexTLSSecret))
 	require.True(t, certPool.AppendCertsFromPEM(dexTLSSecret.Data["ca.crt"]))
 	require.True(t, certPool.AppendCertsFromPEM(dexTLSSecret.Data[corev1.TLSCertKey]))
-	token, err := testutil.DexFakeClientCredentialsGrant(
+	token, err := kubermatictestutil.DexFakeClientCredentialsGrant(
 		ctx,
-		testutil.NewLogger(t),
+		kubermatictestutil.NewLogger(t),
 		&http.Client{
 			Transport: &http.Transport{
 				TLSClientConfig: &tls.Config{
@@ -319,9 +321,9 @@ func instanceService(ctx context.Context, conn *grpc.ClientConn, tenantAccount *
 			Name:     "providerAccount",
 		})
 		require.NoError(t, managementClient.Create(ctx, providerAccount), "creating providerAccount")
-		require.NoError(t, testutil.WaitUntilReady(ctx, managementClient, providerAccount))
+		require.NoError(t, kubermatictestutil.WaitUntilReady(ctx, managementClient, providerAccount))
 
-		require.NoError(t, testutil.WaitUntilReady(ctx, managementClient, tenantAccount))
+		require.NoError(t, kubermatictestutil.WaitUntilReady(ctx, managementClient, tenantAccount))
 
 		serviceCluster := f.SetupServiceCluster(ctx, managementClient, t, "eu-west-1", providerAccount)
 
@@ -365,7 +367,7 @@ func instanceService(ctx context.Context, conn *grpc.ClientConn, tenantAccount *
 			},
 		}
 		require.NoError(t, managementClient.Create(ctx, catalogEntrySet))
-		require.NoError(t, testutil.WaitUntilReady(ctx, managementClient, catalogEntrySet, testutil.WithTimeout(time.Minute*2)))
+		require.NoError(t, kubermatictestutil.WaitUntilReady(ctx, managementClient, catalogEntrySet, kubermatictestutil.WithTimeout(time.Minute*2)))
 
 		catalog := testutil.NewCatalog("test-catalog", providerAccount.Status.Namespace.Name, &metav1.LabelSelector{}, &metav1.LabelSelector{})
 		require.NoError(t, managementClient.Create(ctx, catalog), "creating Catalog error")
@@ -382,7 +384,7 @@ func instanceService(ctx context.Context, conn *grpc.ClientConn, tenantAccount *
 			},
 		}
 
-		require.NoError(t, testutil.WaitUntilFound(ctx, managementClient, offering))
+		require.NoError(t, kubermatictestutil.WaitUntilFound(ctx, managementClient, offering))
 		require.NoError(t, managementClient.Get(ctx, types.NamespacedName{
 			Namespace: tenantAccount.Status.Namespace.Name,
 			Name:      strings.Join([]string{"dbs", serviceCluster.Name, providerAccount.Name}, "."),
@@ -394,7 +396,7 @@ func instanceService(ctx context.Context, conn *grpc.ClientConn, tenantAccount *
 				Namespace: providerAccount.Status.Namespace.Name,
 			},
 		}
-		require.NoError(t, testutil.WaitUntilReady(ctx, managementClient, serviceClusterAssignment), "service cluster assignment not ready")
+		require.NoError(t, kubermatictestutil.WaitUntilReady(ctx, managementClient, serviceClusterAssignment), "service cluster assignment not ready")
 
 		// TODO: replace someday, wait until the admin@kubecarrier.io user gets the required create permissions
 		time.Sleep(5 * time.Second)
@@ -422,7 +424,7 @@ func instanceService(ctx context.Context, conn *grpc.ClientConn, tenantAccount *
 		nextEventType(t, watchClient, watch.Added)
 
 		fakeDB := testutil.NewFakeDB("fakedb", serviceClusterAssignment.Status.ServiceClusterNamespace.Name)
-		require.NoError(t, testutil.WaitUntilFound(ctx, serviceClient, fakeDB))
+		require.NoError(t, kubermatictestutil.WaitUntilFound(ctx, serviceClient, fakeDB))
 
 		getReq := &apiserverv1.InstanceGetRequest{
 			Offering: offering.Name,
@@ -449,7 +451,7 @@ func instanceService(ctx context.Context, conn *grpc.ClientConn, tenantAccount *
 		}
 		_, err = client.Delete(ctx, delReq)
 		require.NoError(t, err, "deleting instance")
-		require.NoError(t, testutil.WaitUntilNotFound(ctx, serviceClient, fakeDB))
+		require.NoError(t, kubermatictestutil.WaitUntilNotFound(ctx, serviceClient, fakeDB))
 		nextEventType(t, watchClient, watch.Deleted)
 	}
 }

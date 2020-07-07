@@ -50,7 +50,7 @@ import (
 	"github.com/kubermatic/kubecarrier/pkg/internal/constants"
 	"github.com/kubermatic/kubecarrier/pkg/internal/reconcile"
 	"github.com/kubermatic/kubecarrier/pkg/internal/resources/operator"
-	"github.com/kubermatic/kubecarrier/pkg/internal/util"
+	"github.com/kubermatic/utils/pkg/util"
 )
 
 var (

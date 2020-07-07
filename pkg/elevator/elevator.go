@@ -36,7 +36,7 @@ import (
 	catalogv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/catalog/v1alpha1"
 	"github.com/kubermatic/kubecarrier/pkg/elevator/internal/controllers"
 	"github.com/kubermatic/kubecarrier/pkg/elevator/internal/webhooks"
-	"github.com/kubermatic/kubecarrier/pkg/internal/util"
+	"github.com/kubermatic/utils/pkg/util"
 )
 
 type flags struct {

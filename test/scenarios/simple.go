@@ -37,6 +37,8 @@ import (
 	corev1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/core/v1alpha1"
 	fakev1 "github.com/kubermatic/kubecarrier/pkg/apis/fake/v1"
 	"github.com/kubermatic/kubecarrier/pkg/testutil"
+
+	kubermatictestutil "github.com/kubermatic/utils/pkg/testutil"
 )
 
 func newSimpleScenario(f *testutil.Framework) func(t *testing.T) {
@@ -73,8 +75,8 @@ func newSimpleScenario(f *testutil.Framework) func(t *testing.T) {
 
 		require.NoError(t, managementClient.Create(ctx, tenantAccount), "creating tenant error")
 		require.NoError(t, managementClient.Create(ctx, provider), "creating provider error")
-		require.NoError(t, testutil.WaitUntilReady(ctx, managementClient, tenantAccount))
-		require.NoError(t, testutil.WaitUntilReady(ctx, managementClient, provider))
+		require.NoError(t, kubermatictestutil.WaitUntilReady(ctx, managementClient, tenantAccount))
+		require.NoError(t, kubermatictestutil.WaitUntilReady(ctx, managementClient, provider))
 		require.NotEmpty(t, tenantAccount.Status.Namespace.Name)
 		require.NotEmpty(t, provider.Status.Namespace.Name)
 
@@ -85,7 +87,7 @@ func newSimpleScenario(f *testutil.Framework) func(t *testing.T) {
 				Namespace: provider.Status.Namespace.Name,
 			},
 		}
-		require.NoError(t, testutil.WaitUntilFound(ctx, managementClient, tenant))
+		require.NoError(t, kubermatictestutil.WaitUntilFound(ctx, managementClient, tenant))
 
 		t.Log("===== creating service cluster =====")
 		serviceCluster := f.SetupServiceCluster(ctx, managementClient, t, "eu-east-1", provider)
@@ -138,7 +140,7 @@ func newSimpleScenario(f *testutil.Framework) func(t *testing.T) {
 			},
 		}
 		require.NoError(t, managementClient.Create(ctx, catalogEntrySet))
-		require.NoError(t, testutil.WaitUntilReady(ctx, managementClient, catalogEntrySet, testutil.WithTimeout(2*time.Minute)))
+		require.NoError(t, kubermatictestutil.WaitUntilReady(ctx, managementClient, catalogEntrySet, kubermatictestutil.WithTimeout(2*time.Minute)))
 
 		internalCRD := &apiextensionsv1.CustomResourceDefinition{}
 		require.NoError(t, managementClient.Get(ctx, types.NamespacedName{
@@ -151,7 +153,7 @@ func newSimpleScenario(f *testutil.Framework) func(t *testing.T) {
 
 		catalog := testutil.NewCatalog("default", provider.Status.Namespace.Name, &metav1.LabelSelector{}, &metav1.LabelSelector{})
 		require.NoError(t, managementClient.Create(ctx, catalog))
-		require.NoError(t, testutil.WaitUntilReady(ctx, managementClient, catalog))
+		require.NoError(t, kubermatictestutil.WaitUntilReady(ctx, managementClient, catalog))
 
 		tenantClient, err := f.ManagementClient(t, func(config *rest.Config) error {
 			config.Impersonate = rest.ImpersonationConfig{
@@ -210,7 +212,7 @@ func newSimpleScenario(f *testutil.Framework) func(t *testing.T) {
 				internalObj.SetNamespace(tenantAccount.Status.Namespace.Name)
 				internalObj.SetName(externalObj.GetName())
 				assert.NoError(t,
-					testutil.WaitUntilFound(ctx, providerClient, internalObj, testutil.WithTimeout(15*time.Second)),
+					kubermatictestutil.WaitUntilFound(ctx, providerClient, internalObj, kubermatictestutil.WithTimeout(15*time.Second)),
 					"cannot find the CRD on the service cluster within the time limit",
 				)
 
@@ -228,9 +230,9 @@ func newSimpleScenario(f *testutil.Framework) func(t *testing.T) {
 						Namespace: sca.Status.ServiceClusterNamespace.Name,
 					},
 				}
-				require.NoError(t, testutil.WaitUntilFound(ctx, serviceClient, svcObj), "cannot find the CRD on the service cluster within the time limit")
-				assert.NoError(t, testutil.DeleteAndWaitUntilNotFound(ctx, tenantClient, externalObj))
-				assert.NoError(t, testutil.WaitUntilNotFound(ctx, serviceClient, svcObj))
+				require.NoError(t, kubermatictestutil.WaitUntilFound(ctx, serviceClient, svcObj), "cannot find the CRD on the service cluster within the time limit")
+				assert.NoError(t, kubermatictestutil.DeleteAndWaitUntilNotFound(ctx, tenantClient, externalObj))
+				assert.NoError(t, kubermatictestutil.WaitUntilNotFound(ctx, serviceClient, svcObj))
 			}
 
 			providerList := &catalogv1alpha1.ProviderList{}

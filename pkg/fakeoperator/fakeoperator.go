@@ -33,8 +33,8 @@ import (
 	fakev1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/fake/v1alpha1"
 	"github.com/kubermatic/kubecarrier/pkg/fakeoperator/internal/controllers"
 	"github.com/kubermatic/kubecarrier/pkg/fakeoperator/internal/webhooks"
-	"github.com/kubermatic/kubecarrier/pkg/internal/util"
 	utilwebhook "github.com/kubermatic/kubecarrier/pkg/internal/util/webhook"
+	"github.com/kubermatic/utils/pkg/util"
 )
 
 type flags struct {

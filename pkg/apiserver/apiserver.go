@@ -62,7 +62,7 @@ import (
 	_ "github.com/kubermatic/kubecarrier/pkg/apiserver/internal/auth/token"
 	"github.com/kubermatic/kubecarrier/pkg/apiserver/internal/authorizer"
 	v1 "github.com/kubermatic/kubecarrier/pkg/apiserver/internal/v1"
-	"github.com/kubermatic/kubecarrier/pkg/internal/util"
+	"github.com/kubermatic/utils/pkg/util"
 )
 
 var (
@@ -222,7 +222,7 @@ func runE(flags *flags, log logr.Logger) error {
 	if err != nil {
 		return fmt.Errorf("creating cache for account: %w", err)
 	}
-	if err := v1.RegisterAccountUsernameFieldIndex(accountCache); err != nil {
+	if err := v1.RegisterAccountUsernameFieldIndex(ctx, accountCache); err != nil {
 		return fmt.Errorf("fail to register field index for Account Username: %w", err)
 	}
 	accountClient := &client.DelegatingClient{

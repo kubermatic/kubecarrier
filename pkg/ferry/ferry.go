@@ -34,7 +34,7 @@ import (
 
 	corev1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/core/v1alpha1"
 	"github.com/kubermatic/kubecarrier/pkg/ferry/internal/controllers"
-	"github.com/kubermatic/kubecarrier/pkg/internal/util"
+	"github.com/kubermatic/utils/pkg/util"
 )
 
 var (
