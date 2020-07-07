@@ -86,6 +86,7 @@ func newKubeCarrier(f *testutil.Framework) func(t *testing.T) {
 		}
 
 		kubeCarrier = kubeCarrier.DeepCopy()
+		kubeCarrier.Spec.API.Authentication = []operatorv1alpha1.Authentication{}
 		require.NoError(t, testutil.WaitUntilReady(ctx, managementClient, kubeCarrier))
 		testutil.KubeCarrierCheck(ctx, t, managementClient, f.ManagementScheme)
 	}

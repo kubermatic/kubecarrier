@@ -73,31 +73,38 @@ func (r *KubeCarrierWebhookHandler) validateCreate(kubeCarrier *operatorv1alpha1
 	}
 	auth := map[string]bool{}
 	for _, a := range kubeCarrier.Spec.API.Authentication {
+		var enabled int
 		if a.OIDC != nil {
+			enabled++
 			if auth["OIDC"] {
 				return errors.New("Duplicate OIDC configuration")
 			}
 			auth["OIDC"] = true
 		}
 		if a.StaticUsers != nil {
+			enabled++
 			if auth["Htpasswd"] {
 				return errors.New("Duplicate StaticUsers configuration")
 			}
 			auth["Htpasswd"] = true
 		}
 		if a.ServiceAccount != nil {
+			enabled++
 			if auth["Token"] {
 				return errors.New("Duplicate ServiceAccount configuration")
 			}
 			auth["Token"] = true
 		}
 		if a.Anonymous != nil {
+			enabled++
 			if auth["Anonymous"] {
 				return errors.New("Duplicate Anonymous configuration")
 			}
 			auth["Anonymous"] = true
 		}
-
+		if enabled != 1 {
+			return errors.New("Authentication item should have one and only one configuration")
+		}
 	}
 	return nil
 }
