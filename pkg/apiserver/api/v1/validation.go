@@ -106,7 +106,7 @@ func validateSpec(req SpecGetter) error {
 	if req.GetSpec() == nil {
 		return fmt.Errorf("missing spec")
 	}
-	if req.GetSpec().Metadata == nil && req.GetSpec().Metadata.Name == "" {
+	if req.GetSpec().Metadata == nil || req.GetSpec().Metadata.Name == "" {
 		return fmt.Errorf("missing metadata name")
 	}
 	return nil
