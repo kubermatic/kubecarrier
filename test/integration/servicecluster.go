@@ -37,6 +37,8 @@ import (
 	fakev1 "github.com/kubermatic/kubecarrier/pkg/apis/fake/v1"
 	operatorv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/operator/v1alpha1"
 	"github.com/kubermatic/kubecarrier/pkg/testutil"
+
+	kubermatictestutil "github.com/kubermatic/utils/pkg/testutil"
 )
 
 // ServiceClusterSuite registers a ServiceCluster and tests apis interacting with it.
@@ -63,7 +65,7 @@ func newServiceClusterSuite(
 			Name:     "provider",
 		})
 		require.NoError(t, managementClient.Create(ctx, provider))
-		require.NoError(t, testutil.WaitUntilReady(ctx, managementClient, provider))
+		require.NoError(t, kubermatictestutil.WaitUntilReady(ctx, managementClient, provider))
 
 		// Setup
 		serviceCluster := f.SetupServiceCluster(ctx, managementClient, t, "eu-west-1", provider)
@@ -100,7 +102,7 @@ func newServiceClusterSuite(
 
 		require.NoError(t, managementClient.Create(ctx, serviceNamespace))
 		require.NoError(t, managementClient.Create(ctx, serviceClusterAssignment))
-		require.NoError(t, testutil.WaitUntilReady(ctx, managementClient, serviceClusterAssignment))
+		require.NoError(t, kubermatictestutil.WaitUntilReady(ctx, managementClient, serviceClusterAssignment))
 		t.Log("service cluster successfully created")
 
 		// Test CatalogEntrySet
@@ -127,7 +129,7 @@ func newServiceClusterSuite(
 			},
 		}
 		require.NoError(t, managementClient.Create(ctx, catalogEntrySet))
-		require.NoError(t, testutil.WaitUntilReady(ctx, managementClient, catalogEntrySet, testutil.WithTimeout(2*time.Minute)))
+		require.NoError(t, kubermatictestutil.WaitUntilReady(ctx, managementClient, catalogEntrySet, kubermatictestutil.WithTimeout(2*time.Minute)))
 		t.Log("CatalogEntrySet successfully created")
 
 		// Check the CustomResourceDiscoverySet
@@ -164,13 +166,13 @@ func newServiceClusterSuite(
 		t.Log("Catapult exists")
 		catapult.Spec.Paused = operatorv1alpha1.PausedFlagTrue
 		require.NoError(t, managementClient.Update(ctx, catapult), "set catapult paused flag to true")
-		require.NoError(t, testutil.WaitUntilCondition(ctx, managementClient, catapult, operatorv1alpha1.CatapultPaused, operatorv1alpha1.ConditionTrue))
-		require.NoError(t, testutil.WaitUntilReady(ctx, managementClient, catapult))
+		require.NoError(t, kubermatictestutil.WaitUntilCondition(ctx, managementClient, catapult, operatorv1alpha1.CatapultPaused, operatorv1alpha1.ConditionTrue))
+		require.NoError(t, kubermatictestutil.WaitUntilReady(ctx, managementClient, catapult))
 		require.Equal(t, operatorv1alpha1.CatapultPhasePaused, catapult.Status.Phase)
 
 		catapult.Spec.Paused = operatorv1alpha1.PausedFlagFalse
 		require.NoError(t, managementClient.Update(ctx, catapult), "set catapult paused flag to true")
-		require.NoError(t, testutil.WaitUntilCondition(ctx, managementClient, catapult, operatorv1alpha1.CatapultPaused, operatorv1alpha1.ConditionFalse))
+		require.NoError(t, kubermatictestutil.WaitUntilCondition(ctx, managementClient, catapult, operatorv1alpha1.CatapultPaused, operatorv1alpha1.ConditionFalse))
 		require.Equal(t, operatorv1alpha1.CatapultPhaseReady, catapult.Status.Phase)
 
 		// Check the Catapult dynamic webhook service is deployed.
@@ -233,7 +235,7 @@ ServiceClusterAssignment.kubecarrier.io/v1alpha1: %s.eu-west-1
 			},
 		}
 		require.NoError(
-			t, testutil.WaitUntilFound(ctx, serviceClient, serviceClusterObj))
+			t, kubermatictestutil.WaitUntilFound(ctx, serviceClient, serviceClusterObj))
 
 		// service cluster -> management cluster
 		//
@@ -256,6 +258,6 @@ ServiceClusterAssignment.kubecarrier.io/v1alpha1: %s.eu-west-1
 		}
 		managementClient.RegisterForCleanup(managementClusterObj2)
 		require.NoError(
-			t, testutil.WaitUntilFound(ctx, managementClient, managementClusterObj2))
+			t, kubermatictestutil.WaitUntilFound(ctx, managementClient, managementClusterObj2))
 	}
 }

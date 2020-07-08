@@ -24,8 +24,9 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"github.com/kubermatic/utils/pkg/testutil"
+
 	"github.com/kubermatic/kubecarrier/pkg/internal/version"
-	"github.com/kubermatic/kubecarrier/pkg/testutil"
 )
 
 func TestNewCommand(t *testing.T) {

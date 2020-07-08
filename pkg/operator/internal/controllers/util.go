@@ -33,9 +33,10 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client/apiutil"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
-	"github.com/kubermatic/kubecarrier/pkg/internal/owner"
+	"github.com/kubermatic/utils/pkg/owner"
+	"github.com/kubermatic/utils/pkg/util"
+
 	"github.com/kubermatic/kubecarrier/pkg/internal/reconcile"
-	"github.com/kubermatic/kubecarrier/pkg/internal/util"
 )
 
 // object generic k8s object with metav1 and runtime Object interfaces implemented

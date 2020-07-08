@@ -17,9 +17,7 @@ limitations under the License.
 package testutil
 
 import (
-	"bytes"
 	"context"
-	"encoding/json"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -35,97 +33,21 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/yaml"
-	"k8s.io/client-go/util/jsonpath"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/apiutil"
+
+	"github.com/kubermatic/utils/pkg/testutil"
 
 	catalogv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/catalog/v1alpha1"
 	corev1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/core/v1alpha1"
 	fakev1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/fake/v1alpha1"
 	"github.com/kubermatic/kubecarrier/pkg/internal/constants"
-	"github.com/kubermatic/kubecarrier/pkg/internal/util"
 	"github.com/kubermatic/kubecarrier/test/testdata"
 )
-
-func ConditionStatusEqual(obj runtime.Object, ConditionType, ConditionStatus interface{}) error {
-	jp := jsonpath.New("condition")
-	if err := jp.Parse(fmt.Sprintf(`{.status.conditions[?(@.type=="%s")].status}`, ConditionType)); err != nil {
-		return err
-	}
-	res, err := jp.FindResults(obj)
-	if err != nil {
-		return fmt.Errorf("cannot find results: %w", err)
-	}
-	if len(res) != 1 {
-		return fmt.Errorf("found %d matching conditions, expected 1", len(res))
-	}
-	rr := res[0]
-	if len(rr) != 1 {
-		return fmt.Errorf("found %d matching conditions, expected 1", len(rr))
-	}
-	status := rr[0].String()
-	if status != fmt.Sprint(ConditionStatus) {
-		return fmt.Errorf("expected condition status %s, got %s", ConditionStatus, status)
-	}
-	return nil
-}
-
-func LogObject(t *testing.T, obj interface{}) {
-	t.Helper()
-	b, err := json.MarshalIndent(obj, "", "\t")
-	require.NoError(t, err)
-	t.Log("\n", string(b))
-}
-
-var (
-	WithTimeout = util.WithClientWatcherTimeout
-)
-
-func WaitUntilNotFound(ctx context.Context, c *RecordingClient, obj runtime.Object, options ...util.ClientWatcherOption) error {
-	c.t.Helper()
-	return c.WaitUntilNotFound(ctx, obj, options...)
-}
-
-func WaitUntilFound(ctx context.Context, c *RecordingClient, obj runtime.Object, options ...util.ClientWatcherOption) error {
-	c.t.Helper()
-	return c.WaitUntil(ctx, obj, func() (done bool, err error) {
-		return true, nil
-	}, options...)
-}
-
-func WaitUntilCondition(ctx context.Context, c *RecordingClient, obj runtime.Object, ConditionType, conditionStatus interface{}, options ...util.ClientWatcherOption) error {
-	c.t.Helper()
-	err := c.WaitUntil(ctx, obj, func() (done bool, err error) {
-		return ConditionStatusEqual(obj, ConditionType, conditionStatus) == nil, nil
-	}, options...)
-
-	if err != nil {
-		b, marshallErr := json.MarshalIndent(obj, "", "\t")
-		if marshallErr != nil {
-			return fmt.Errorf("cannot marshall indent obj!!! %v %w", marshallErr, err)
-		}
-		return fmt.Errorf("%w\n%s", err, string(b))
-	}
-	return nil
-}
-
-func WaitUntilReady(ctx context.Context, c *RecordingClient, obj runtime.Object, options ...util.ClientWatcherOption) error {
-	c.t.Helper()
-	return WaitUntilCondition(ctx, c, obj, "Ready", "True", options...)
-}
-
-func DeleteAndWaitUntilNotFound(ctx context.Context, c *RecordingClient, obj runtime.Object, options ...util.ClientWatcherOption) error {
-	c.t.Helper()
-	if err := c.Delete(ctx, obj); client.IgnoreNotFound(err) != nil {
-		return err
-	}
-	return WaitUntilNotFound(ctx, c, obj, options...)
-}
 
 func KubeCarrierOperatorCheck(
 	ctx context.Context,
 	t *testing.T,
-	managementClient *RecordingClient,
+	managementClient *testutil.RecordingClient,
 	managementScheme *runtime.Scheme,
 ) {
 	namePrefix := constants.KubeCarrierDefaultName + "-operator"
@@ -187,7 +109,7 @@ func KubeCarrierOperatorCheck(
 func E2EOperatorCheck(
 	ctx context.Context,
 	t *testing.T,
-	serviceClient *RecordingClient,
+	serviceClient *testutil.RecordingClient,
 	serviceScheme *runtime.Scheme,
 ) {
 	namePrefix := "e2e-operator"
@@ -228,7 +150,7 @@ func E2EOperatorCheck(
 func KubeCarrierCheck(
 	ctx context.Context,
 	t *testing.T,
-	managementClient *RecordingClient,
+	managementClient *testutil.RecordingClient,
 	managementScheme *runtime.Scheme,
 ) {
 	namePrefix := constants.KubeCarrierDefaultName + "-manager"
@@ -284,7 +206,7 @@ func KubeCarrierCheck(
 
 func componentCheck(
 	ctx context.Context,
-	cli *RecordingClient,
+	cli *testutil.RecordingClient,
 	scheme *runtime.Scheme,
 	t *testing.T,
 	componentName string,
@@ -294,7 +216,7 @@ func componentCheck(
 	for _, ownedObject := range ownedObjects {
 		gvk, err := apiutil.GVKForObject(ownedObject, scheme)
 		require.NoError(t, err, fmt.Sprintf("cannot get GVK for %T", ownedObject))
-		require.NoError(t, WaitUntilFound(ctx, cli, ownedObject), fmt.Sprintf("%s: getting %s failed", componentName, gvk.Kind))
+		require.NoError(t, testutil.WaitUntilFound(ctx, cli, ownedObject), fmt.Sprintf("%s: getting %s failed", componentName, gvk.Kind))
 	}
 	t.Logf(fmt.Sprintf("%s is ready", componentName))
 }
@@ -483,17 +405,3 @@ func LoadTestDataObject(t *testing.T, fname string, obj runtime.Object) {
 	defer file.Close()
 	require.NoError(t, yaml.NewYAMLOrJSONDecoder(file, 4096).Decode(obj))
 }
-
-type TestingLogWriter struct {
-	T *testing.T
-}
-
-func (ls *TestingLogWriter) Write(p []byte) (n int, err error) {
-	ls.T.Helper()
-	for _, line := range bytes.Split(p, []byte("\n")) {
-		ls.T.Log(string(line))
-	}
-	return len(p), nil
-}
-
-var _ io.Writer = (*TestingLogWriter)(nil)

@@ -33,8 +33,9 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
 
+	"github.com/kubermatic/utils/pkg/util"
+
 	operatorv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/operator/v1alpha1"
-	"github.com/kubermatic/kubecarrier/pkg/internal/util"
 	utilwebhook "github.com/kubermatic/kubecarrier/pkg/internal/util/webhook"
 	"github.com/kubermatic/kubecarrier/pkg/operator/internal/controllers"
 	"github.com/kubermatic/kubecarrier/pkg/operator/internal/webhooks"

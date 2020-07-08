@@ -25,8 +25,9 @@ import (
 	"github.com/stretchr/testify/require"
 	"sigs.k8s.io/yaml"
 
+	"github.com/kubermatic/utils/pkg/testutil"
+
 	operatorv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/operator/v1alpha1"
-	"github.com/kubermatic/kubecarrier/pkg/testutil"
 )
 
 func TestManifests(t *testing.T) {

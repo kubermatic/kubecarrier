@@ -35,6 +35,8 @@ import (
 
 	catalogv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/catalog/v1alpha1"
 	"github.com/kubermatic/kubecarrier/pkg/testutil"
+
+	kubermatictestutil "github.com/kubermatic/utils/pkg/testutil"
 )
 
 func newDerivedCR(
@@ -55,7 +57,7 @@ func newDerivedCR(
 			Name:     "provider",
 		})
 		require.NoError(t, managementClient.Create(ctx, provider))
-		require.NoError(t, testutil.WaitUntilReady(ctx, managementClient, provider))
+		require.NoError(t, kubermatictestutil.WaitUntilReady(ctx, managementClient, provider))
 
 		baseCRD := testutil.NewFakeCouchDBCRD(testName + "test.kubecarrier.io")
 		baseCRD.Labels = map[string]string{
@@ -92,7 +94,7 @@ func newDerivedCR(
 		}
 
 		require.NoError(t, managementClient.Create(ctx, dcr))
-		require.NoError(t, testutil.WaitUntilReady(ctx, managementClient, dcr, testutil.WithTimeout(60*time.Second)))
+		require.NoError(t, kubermatictestutil.WaitUntilReady(ctx, managementClient, dcr, kubermatictestutil.WithTimeout(60*time.Second)))
 
 		// Check the Elevator dynamic webhook service is deployed.
 		webhookService := &corev1.Service{}
@@ -181,7 +183,7 @@ type: object
 				},
 			},
 		}
-		require.NoError(t, testutil.WaitUntilFound(ctx, managementClient, providerObj))
+		require.NoError(t, kubermatictestutil.WaitUntilFound(ctx, managementClient, providerObj))
 
 		err = managementClient.Delete(ctx, dcr)
 		if assert.Error(t, err,
@@ -226,6 +228,6 @@ type: object
 				},
 			},
 		}
-		require.NoError(t, testutil.WaitUntilFound(ctx, managementClient, tenantObj2))
+		require.NoError(t, kubermatictestutil.WaitUntilFound(ctx, managementClient, tenantObj2))
 	}
 }
