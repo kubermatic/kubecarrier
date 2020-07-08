@@ -104,18 +104,18 @@ func newDerivedCR(
 			Namespace: provider.Status.Namespace.Name,
 		}, elevator), "getting elevator")
 		t.Log("Elevator exists")
-		require.NoError(t, testutil.WaitUntilReady(ctx, managementClient, elevator))
+		require.NoError(t, kubermatictestutil.WaitUntilReady(ctx, managementClient, elevator))
 
 		elevator.Spec.Paused = operatorv1alpha1.PausedFlagTrue
 		require.NoError(t, managementClient.Update(ctx, elevator), "set elevator paused flag to true")
-		require.NoError(t, testutil.WaitUntilCondition(ctx, managementClient, elevator, operatorv1alpha1.ElevatorPaused, operatorv1alpha1.ConditionTrue))
-		require.NoError(t, testutil.WaitUntilReady(ctx, managementClient, elevator))
+		require.NoError(t, kubermatictestutil.WaitUntilCondition(ctx, managementClient, elevator, operatorv1alpha1.ElevatorPaused, operatorv1alpha1.ConditionTrue))
+		require.NoError(t, kubermatictestutil.WaitUntilReady(ctx, managementClient, elevator))
 		require.Equal(t, operatorv1alpha1.ElevatorPhasePaused, elevator.Status.Phase)
 
 		elevator.Spec.Paused = operatorv1alpha1.PausedFlagFalse
 		require.NoError(t, managementClient.Update(ctx, elevator), "set elevator paused flag to false")
-		require.NoError(t, testutil.WaitUntilCondition(ctx, managementClient, elevator, operatorv1alpha1.ElevatorPaused, operatorv1alpha1.ConditionFalse))
-		require.NoError(t, testutil.WaitUntilReady(ctx, managementClient, elevator))
+		require.NoError(t, kubermatictestutil.WaitUntilCondition(ctx, managementClient, elevator, operatorv1alpha1.ElevatorPaused, operatorv1alpha1.ConditionFalse))
+		require.NoError(t, kubermatictestutil.WaitUntilReady(ctx, managementClient, elevator))
 
 		// Check the Elevator dynamic webhook service is deployed.
 		webhookService := &corev1.Service{}

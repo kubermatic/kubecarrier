@@ -70,14 +70,14 @@ func newServiceClusterSuite(
 
 		kubeCarrier.Spec.Paused = operatorv1alpha1.PausedFlagTrue
 		require.NoError(t, managementClient.Update(ctx, kubeCarrier), "set kubeCarrier paused flag to true")
-		require.NoError(t, testutil.WaitUntilCondition(ctx, managementClient, kubeCarrier, operatorv1alpha1.KubeCarrierPaused, operatorv1alpha1.ConditionTrue))
-		require.NoError(t, testutil.WaitUntilReady(ctx, managementClient, kubeCarrier))
+		require.NoError(t, kubermatictestutil.WaitUntilCondition(ctx, managementClient, kubeCarrier, operatorv1alpha1.KubeCarrierPaused, operatorv1alpha1.ConditionTrue))
+		require.NoError(t, kubermatictestutil.WaitUntilReady(ctx, managementClient, kubeCarrier))
 		require.Equal(t, operatorv1alpha1.KubeCarrierPhasePaused, kubeCarrier.Status.Phase)
 
 		kubeCarrier.Spec.Paused = operatorv1alpha1.PausedFlagFalse
 		require.NoError(t, managementClient.Update(ctx, kubeCarrier), "set kubeCarrier paused flag to false")
-		require.NoError(t, testutil.WaitUntilCondition(ctx, managementClient, kubeCarrier, operatorv1alpha1.KubeCarrierPaused, operatorv1alpha1.ConditionFalse))
-		require.NoError(t, testutil.WaitUntilReady(ctx, managementClient, kubeCarrier))
+		require.NoError(t, kubermatictestutil.WaitUntilCondition(ctx, managementClient, kubeCarrier, operatorv1alpha1.KubeCarrierPaused, operatorv1alpha1.ConditionFalse))
+		require.NoError(t, kubermatictestutil.WaitUntilReady(ctx, managementClient, kubeCarrier))
 
 		testName := strings.Replace(strings.ToLower(t.Name()), "/", "-", -1)
 
@@ -99,18 +99,18 @@ func newServiceClusterSuite(
 			Namespace: provider.Status.Namespace.Name,
 		}, ferry), "getting ferry")
 		t.Log("Ferry exists")
-		require.NoError(t, testutil.WaitUntilReady(ctx, managementClient, ferry))
+		require.NoError(t, kubermatictestutil.WaitUntilReady(ctx, managementClient, ferry))
 
 		ferry.Spec.Paused = operatorv1alpha1.PausedFlagTrue
 		require.NoError(t, managementClient.Update(ctx, ferry), "set ferry paused flag to true")
-		require.NoError(t, testutil.WaitUntilCondition(ctx, managementClient, ferry, operatorv1alpha1.FerryPaused, operatorv1alpha1.ConditionTrue))
-		require.NoError(t, testutil.WaitUntilReady(ctx, managementClient, ferry))
+		require.NoError(t, kubermatictestutil.WaitUntilCondition(ctx, managementClient, ferry, operatorv1alpha1.FerryPaused, operatorv1alpha1.ConditionTrue))
+		require.NoError(t, kubermatictestutil.WaitUntilReady(ctx, managementClient, ferry))
 		require.Equal(t, operatorv1alpha1.FerryPhasePaused, ferry.Status.Phase)
 
 		ferry.Spec.Paused = operatorv1alpha1.PausedFlagFalse
 		require.NoError(t, managementClient.Update(ctx, ferry), "set ferry paused flag to false")
-		require.NoError(t, testutil.WaitUntilCondition(ctx, managementClient, ferry, operatorv1alpha1.FerryPaused, operatorv1alpha1.ConditionFalse))
-		require.NoError(t, testutil.WaitUntilReady(ctx, managementClient, ferry))
+		require.NoError(t, kubermatictestutil.WaitUntilCondition(ctx, managementClient, ferry, operatorv1alpha1.FerryPaused, operatorv1alpha1.ConditionFalse))
+		require.NoError(t, kubermatictestutil.WaitUntilReady(ctx, managementClient, ferry))
 
 		crd := &apiextensionsv1.CustomResourceDefinition{
 			ObjectMeta: metav1.ObjectMeta{
@@ -214,8 +214,8 @@ func newServiceClusterSuite(
 
 		catapult.Spec.Paused = operatorv1alpha1.PausedFlagFalse
 		require.NoError(t, managementClient.Update(ctx, catapult), "set catapult paused flag to false")
-		require.NoError(t, testutil.WaitUntilCondition(ctx, managementClient, catapult, operatorv1alpha1.CatapultPaused, operatorv1alpha1.ConditionFalse))
-		require.NoError(t, testutil.WaitUntilReady(ctx, managementClient, catapult))
+		require.NoError(t, kubermatictestutil.WaitUntilCondition(ctx, managementClient, catapult, operatorv1alpha1.CatapultPaused, operatorv1alpha1.ConditionFalse))
+		require.NoError(t, kubermatictestutil.WaitUntilReady(ctx, managementClient, catapult))
 
 		// Check the Catapult dynamic webhook service is deployed.
 		webhookService := &corev1.Service{}
