@@ -26,6 +26,8 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/kubermatic/kubecarrier/pkg/testutil"
+
+	kubermatictestutil "github.com/kubermatic/utils/pkg/testutil"
 )
 
 func newFakeDB(f *testutil.Framework) func(t *testing.T) {
@@ -50,8 +52,8 @@ func newFakeDB(f *testutil.Framework) func(t *testing.T) {
 		fakeDB := testutil.NewFakeDB(testName, testNamespace)
 		t.Log("adding fakeDB")
 		require.NoError(t, serviceClient.Create(ctx, fakeDB), "creating FakeDB")
-		require.NoError(t, testutil.WaitUntilReady(ctx, serviceClient, fakeDB))
+		require.NoError(t, kubermatictestutil.WaitUntilReady(ctx, serviceClient, fakeDB))
 		t.Log("deleting fakeDB")
-		require.NoError(t, testutil.DeleteAndWaitUntilNotFound(ctx, serviceClient, fakeDB))
+		require.NoError(t, kubermatictestutil.DeleteAndWaitUntilNotFound(ctx, serviceClient, fakeDB))
 	}
 }

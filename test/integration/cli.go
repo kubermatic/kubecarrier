@@ -29,6 +29,8 @@ import (
 
 	corev1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/core/v1alpha1"
 	"github.com/kubermatic/kubecarrier/pkg/testutil"
+
+	kubermatictestutil "github.com/kubermatic/utils/pkg/testutil"
 )
 
 func newCLI(f *testutil.Framework) func(t *testing.T) {
@@ -46,7 +48,7 @@ func newCLI(f *testutil.Framework) func(t *testing.T) {
 			Name:     "admin",
 		})
 		require.NoError(t, managementClient.Create(ctx, account))
-		require.NoError(t, testutil.WaitUntilReady(ctx, managementClient, account))
+		require.NoError(t, kubermatictestutil.WaitUntilReady(ctx, managementClient, account))
 
 		serviceCluster := f.SetupServiceCluster(ctx, managementClient, t, "eu-west-1", account)
 
@@ -66,7 +68,7 @@ func newCLI(f *testutil.Framework) func(t *testing.T) {
 		}
 
 		require.NoError(t, managementClient.Create(ctx, sca))
-		require.NoError(t, testutil.WaitUntilReady(ctx, managementClient, sca))
+		require.NoError(t, kubermatictestutil.WaitUntilReady(ctx, managementClient, sca))
 		require.Error(t, managementClient.Delete(ctx, account))
 
 		c := exec.CommandContext(ctx, "kubectl", "kubecarrier", "delete", "--kubeconfig", f.Config().ManagementExternalKubeconfigPath, "account", "--force", account.Name)
@@ -74,6 +76,6 @@ func newCLI(f *testutil.Framework) func(t *testing.T) {
 		t.Log(string(out))
 		require.NoError(t, err)
 
-		require.NoError(t, testutil.WaitUntilNotFound(ctx, managementClient, account, testutil.WithTimeout(5*time.Second)))
+		require.NoError(t, kubermatictestutil.WaitUntilNotFound(ctx, managementClient, account, kubermatictestutil.WithTimeout(5*time.Second)))
 	}
 }

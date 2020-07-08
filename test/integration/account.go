@@ -32,6 +32,8 @@ import (
 
 	catalogv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/catalog/v1alpha1"
 	"github.com/kubermatic/kubecarrier/pkg/testutil"
+
+	kubermatictestutil "github.com/kubermatic/utils/pkg/testutil"
 )
 
 func newAccount(f *testutil.Framework) func(t *testing.T) {
@@ -85,7 +87,7 @@ func newAccount(f *testutil.Framework) func(t *testing.T) {
 		// simple single account operations
 		t.Log("creating single provider")
 		require.NoError(t, managementClient.Create(ctx, provider), "creating provider")
-		require.NoError(t, testutil.WaitUntilReady(ctx, managementClient, provider))
+		require.NoError(t, kubermatictestutil.WaitUntilReady(ctx, managementClient, provider))
 		ns := &corev1.Namespace{}
 		assert.NoError(t, managementClient.Get(ctx, types.NamespacedName{
 			Name: provider.Status.Namespace.Name,
@@ -95,7 +97,7 @@ func newAccount(f *testutil.Framework) func(t *testing.T) {
 
 		t.Log("adding single tenantAccount")
 		require.NoError(t, managementClient.Create(ctx, tenantAccount), "creating tenantAccount")
-		require.NoError(t, testutil.WaitUntilReady(ctx, managementClient, tenantAccount))
+		require.NoError(t, kubermatictestutil.WaitUntilReady(ctx, managementClient, tenantAccount))
 		assert.NoError(t, managementClient.Get(ctx, types.NamespacedName{
 			Name: tenantAccount.Status.Namespace.Name,
 		}, ns))
@@ -107,7 +109,7 @@ func newAccount(f *testutil.Framework) func(t *testing.T) {
 
 		t.Log("adding providerTenant")
 		require.NoError(t, managementClient.Create(ctx, providerTenant), "creating providerTenant")
-		require.NoError(t, testutil.WaitUntilReady(ctx, managementClient, providerTenant))
+		require.NoError(t, kubermatictestutil.WaitUntilReady(ctx, managementClient, providerTenant))
 		assert.NoError(t, managementClient.Get(ctx, types.NamespacedName{
 			Name: providerTenant.Status.Namespace.Name,
 		}, ns))
@@ -127,7 +129,7 @@ func newAccount(f *testutil.Framework) func(t *testing.T) {
 		tenantPresent(t, managementClient, ctx, providerTenant, tenantAccount, false)
 
 		t.Log("deleting tenantAccount")
-		require.NoError(t, testutil.DeleteAndWaitUntilNotFound(ctx, managementClient, tenantAccount))
+		require.NoError(t, kubermatictestutil.DeleteAndWaitUntilNotFound(ctx, managementClient, tenantAccount))
 		assert.True(t, errors.IsNotFound(managementClient.Get(ctx, types.NamespacedName{
 			Name: tenantAccount.Status.Namespace.Name,
 		}, ns)), "namespace should also be deleted.")
@@ -147,7 +149,7 @@ func newAccount(f *testutil.Framework) func(t *testing.T) {
 		tenantPresent(t, managementClient, ctx, providerTenant, tenantAccount, false)
 
 		t.Log("deleting provider")
-		require.NoError(t, testutil.DeleteAndWaitUntilNotFound(ctx, managementClient, provider))
+		require.NoError(t, kubermatictestutil.DeleteAndWaitUntilNotFound(ctx, managementClient, provider))
 		assert.True(t, errors.IsNotFound(managementClient.Get(ctx, types.NamespacedName{
 			Name: provider.Status.Namespace.Name,
 		}, ns)), "namespace should also be deleted.")
@@ -155,7 +157,7 @@ func newAccount(f *testutil.Framework) func(t *testing.T) {
 		tenantRoleAndRoleBindingPresent(t, managementClient, ctx, provider, false)
 
 		t.Log("deleting providerTenant")
-		require.NoError(t, testutil.DeleteAndWaitUntilNotFound(ctx, managementClient, providerTenant))
+		require.NoError(t, kubermatictestutil.DeleteAndWaitUntilNotFound(ctx, managementClient, providerTenant))
 		assert.True(t, errors.IsNotFound(managementClient.Get(ctx, types.NamespacedName{
 			Name: providerTenant.Status.Namespace.Name,
 		}, ns)), "namespace should also be deleted.")
@@ -164,7 +166,7 @@ func newAccount(f *testutil.Framework) func(t *testing.T) {
 	}
 }
 
-func tenantPresent(t *testing.T, cl *testutil.RecordingClient, ctx context.Context, tenant *catalogv1alpha1.Account, provider *catalogv1alpha1.Account, expected bool) {
+func tenantPresent(t *testing.T, cl *kubermatictestutil.RecordingClient, ctx context.Context, tenant *catalogv1alpha1.Account, provider *catalogv1alpha1.Account, expected bool) {
 	tenantObj := &catalogv1alpha1.Tenant{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      tenant.Name,
@@ -176,13 +178,13 @@ func tenantPresent(t *testing.T, cl *testutil.RecordingClient, ctx context.Conte
 	defer cancel()
 
 	if expected {
-		assert.NoError(t, testutil.WaitUntilFound(ctx, cl, tenantObj), "tenant object %s not found in provider %s", tenant.Name, provider.Name)
+		assert.NoError(t, kubermatictestutil.WaitUntilFound(ctx, cl, tenantObj), "tenant object %s not found in provider %s", tenant.Name, provider.Name)
 	} else {
-		assert.NoError(t, testutil.WaitUntilNotFound(ctx, cl, tenantObj), "tenant object %s found in provider %s", tenant.Name, provider.Name)
+		assert.NoError(t, kubermatictestutil.WaitUntilNotFound(ctx, cl, tenantObj), "tenant object %s found in provider %s", tenant.Name, provider.Name)
 	}
 }
 
-func providerRoleAndRoleBindingPresent(t *testing.T, cl *testutil.RecordingClient, ctx context.Context, account *catalogv1alpha1.Account, expected bool) {
+func providerRoleAndRoleBindingPresent(t *testing.T, cl *kubermatictestutil.RecordingClient, ctx context.Context, account *catalogv1alpha1.Account, expected bool) {
 	var found bool
 	role := &rbacv1.Role{}
 	roleBinding := &rbacv1.RoleBinding{}
@@ -203,7 +205,7 @@ func providerRoleAndRoleBindingPresent(t *testing.T, cl *testutil.RecordingClien
 	assert.Equalf(t, expected, found, "provider RoleBinding of account %s", account.Name)
 }
 
-func tenantRoleAndRoleBindingPresent(t *testing.T, cl *testutil.RecordingClient, ctx context.Context, account *catalogv1alpha1.Account, expected bool) {
+func tenantRoleAndRoleBindingPresent(t *testing.T, cl *kubermatictestutil.RecordingClient, ctx context.Context, account *catalogv1alpha1.Account, expected bool) {
 	var found bool
 	role := &rbacv1.Role{}
 	roleBinding := &rbacv1.RoleBinding{}

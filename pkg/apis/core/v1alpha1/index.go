@@ -29,8 +29,8 @@ const (
 )
 
 // RegisterServiceClusterAssignmentNamespaceFieldIndex adds a field index for ServiceClusterAssignment.Status.ServiceClusterNamespace.Name.
-func RegisterServiceClusterAssignmentNamespaceFieldIndex(indexer client.FieldIndexer) error {
-	return indexer.IndexField(
+func RegisterServiceClusterAssignmentNamespaceFieldIndex(ctx context.Context, indexer client.FieldIndexer) error {
+	return indexer.IndexField(ctx,
 		&ServiceClusterAssignment{}, ServiceClusterAssignmentNamespaceFieldIndex,
 		func(obj runtime.Object) (vals []string) {
 			sca := obj.(*ServiceClusterAssignment)

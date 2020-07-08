@@ -18,7 +18,6 @@ package v1alpha1
 
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apiserver/pkg/authentication/authenticator"
 )
 
 // APIServerSpec defines the desired state of APIServer
@@ -58,13 +57,6 @@ type APIServerOIDCConfig struct {
 	// specialized providers to issue tokens to a client for a different client.
 	// See: https://openid.net/specs/openid-connect-core-1_0.html#IDToken
 	ClientID string `json:"clientID"`
-
-	// APIAudiences are the audiences that the API server identitifes as. The
-	// (API audiences unioned with the ClientIDs) should have a non-empty
-	// intersection with the request's target audience. This preserves the
-	// behavior of the OIDC authenticator pre-introduction of API audiences.
-	// +optional
-	APIAudiences authenticator.Audiences `json:"apiAudiences,omitempty"`
 
 	// CertificateAuthority references the secret containing issuer's CA in a PEM encoded root certificate of the provider.
 	CertificateAuthority ObjectReference `json:"certificateAuthority"`

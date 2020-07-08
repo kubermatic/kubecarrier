@@ -33,6 +33,8 @@ import (
 	catalogv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/catalog/v1alpha1"
 	corev1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/core/v1alpha1"
 	"github.com/kubermatic/kubecarrier/pkg/testutil"
+
+	kubermatictestutil "github.com/kubermatic/utils/pkg/testutil"
 )
 
 func newCatalogSuite(
@@ -66,11 +68,11 @@ func newCatalogSuite(
 		require.NoError(t, managementClient.Create(ctx, tenantAccount), "creating Tenant error")
 		require.NoError(t, managementClient.Create(ctx, provider), "creating Tenant error")
 
-		require.NoError(t, testutil.WaitUntilReady(ctx, managementClient, tenantAccount))
-		require.NoError(t, testutil.WaitUntilReady(ctx, managementClient, provider))
+		require.NoError(t, kubermatictestutil.WaitUntilReady(ctx, managementClient, tenantAccount))
+		require.NoError(t, kubermatictestutil.WaitUntilReady(ctx, managementClient, provider))
 
 		// wait for the Tenant to be created.
-		require.NoError(t, testutil.WaitUntilFound(ctx, managementClient, &catalogv1alpha1.Tenant{ObjectMeta: metav1.ObjectMeta{
+		require.NoError(t, kubermatictestutil.WaitUntilFound(ctx, managementClient, &catalogv1alpha1.Tenant{ObjectMeta: metav1.ObjectMeta{
 			Name:      tenantAccount.Name,
 			Namespace: provider.Status.Namespace.Name,
 		}}))
@@ -131,7 +133,7 @@ func newCatalogSuite(
 		catalogEntry := testutil.NewCatalogEntry("couchdbs", provider.Status.Namespace.Name, crd.Name)
 		require.NoError(
 			t, managementClient.Create(ctx, catalogEntry), "could not create CatalogEntry")
-		require.NoError(t, testutil.WaitUntilReady(ctx, managementClient, catalogEntry))
+		require.NoError(t, kubermatictestutil.WaitUntilReady(ctx, managementClient, catalogEntry))
 
 		// Create a ServiceCluster to execute our tests in
 		serviceCluster := testutil.NewServiceCluster("eu-west-1", provider.Status.Namespace.Name, "eu-west-1-secret")
@@ -156,7 +158,7 @@ func newCatalogSuite(
 				Namespace: tenantAccount.Status.Namespace.Name,
 			},
 		}
-		assert.NoError(t, testutil.WaitUntilFound(ctx, managementClient, offeringFound))
+		assert.NoError(t, kubermatictestutil.WaitUntilFound(ctx, managementClient, offeringFound))
 
 		// Check the Provider object is created.
 		providerFound := &catalogv1alpha1.Provider{
@@ -165,7 +167,7 @@ func newCatalogSuite(
 				Namespace: tenantAccount.Status.Namespace.Name,
 			},
 		}
-		require.NoError(t, testutil.WaitUntilFound(ctx, managementClient, providerFound), "getting the Provider error")
+		require.NoError(t, kubermatictestutil.WaitUntilFound(ctx, managementClient, providerFound), "getting the Provider error")
 		assert.Equal(t, providerFound.Spec.Metadata.DisplayName, provider.Spec.Metadata.DisplayName)
 		assert.Equal(t, providerFound.Spec.Metadata.Description, provider.Spec.Metadata.Description)
 
@@ -176,7 +178,7 @@ func newCatalogSuite(
 				Namespace: tenantAccount.Status.Namespace.Name,
 			},
 		}
-		require.NoError(t, testutil.WaitUntilFound(ctx, managementClient, regionFound), "getting the Region error")
+		require.NoError(t, kubermatictestutil.WaitUntilFound(ctx, managementClient, regionFound), "getting the Region error")
 		assert.Equal(t, regionFound.Spec.Provider.Name, provider.Name)
 		assert.Equal(t, regionFound.Spec.Metadata.Description, serviceCluster.Spec.Metadata.Description)
 
@@ -187,7 +189,7 @@ func newCatalogSuite(
 				Namespace: provider.Status.Namespace.Name,
 			},
 		}
-		require.NoError(t, testutil.WaitUntilFound(ctx, managementClient, serviceClusterAssignmentFound), "getting the ServiceClusterAssignment error")
+		require.NoError(t, kubermatictestutil.WaitUntilFound(ctx, managementClient, serviceClusterAssignmentFound), "getting the ServiceClusterAssignment error")
 		assert.Equal(t, serviceClusterAssignmentFound.Spec.ServiceCluster.Name, serviceCluster.Name)
 		assert.Equal(t, serviceClusterAssignmentFound.Spec.ManagementClusterNamespace.Name, tenantAccount.Status.Namespace.Name)
 
@@ -198,7 +200,7 @@ func newCatalogSuite(
 				Namespace: tenantAccount.Status.Namespace.Name,
 			},
 		}
-		require.NoError(t, testutil.WaitUntilFound(ctx, managementClient, providerRoleFound), "getting Provider Role error")
+		require.NoError(t, kubermatictestutil.WaitUntilFound(ctx, managementClient, providerRoleFound), "getting Provider Role error")
 		assert.Contains(t, providerRoleFound.Rules, rbacv1.PolicyRule{
 			Verbs:     []string{rbacv1.VerbAll},
 			APIGroups: []string{catalogEntry.Status.ProviderCRD.APIGroup},
@@ -212,7 +214,7 @@ func newCatalogSuite(
 				Namespace: tenantAccount.Status.Namespace.Name,
 			},
 		}
-		require.NoError(t, testutil.WaitUntilFound(ctx, managementClient, providerRoleBindingFound), "getting Provider RoleBinding error")
+		require.NoError(t, kubermatictestutil.WaitUntilFound(ctx, managementClient, providerRoleBindingFound), "getting Provider RoleBinding error")
 		assert.Equal(t, providerRoleBindingFound.Subjects, provider.Spec.Subjects, "Subjects is different")
 
 		// Check Tenant Role
@@ -222,7 +224,7 @@ func newCatalogSuite(
 				Namespace: tenantAccount.Status.Namespace.Name,
 			},
 		}
-		require.NoError(t, testutil.WaitUntilFound(ctx, managementClient, tenantRoleFound), "getting Tenant Role error")
+		require.NoError(t, kubermatictestutil.WaitUntilFound(ctx, managementClient, tenantRoleFound), "getting Tenant Role error")
 		assert.Contains(t, tenantRoleFound.Rules, rbacv1.PolicyRule{
 			Verbs:     []string{rbacv1.VerbAll},
 			APIGroups: []string{catalogEntry.Status.TenantCRD.APIGroup},
@@ -236,14 +238,14 @@ func newCatalogSuite(
 				Namespace: tenantAccount.Status.Namespace.Name,
 			},
 		}
-		require.NoError(t, testutil.WaitUntilFound(ctx, managementClient, tenantRoleBindingFound), "getting Tenant RoleBinding error")
+		require.NoError(t, kubermatictestutil.WaitUntilFound(ctx, managementClient, tenantRoleBindingFound), "getting Tenant RoleBinding error")
 		assert.Equal(t, tenantRoleBindingFound.Subjects, tenantAccount.Spec.Subjects, "Subjects is different")
 
 		// Check if the status will be updated when tenant is removed.
 		t.Log("===== Catalog status updates when adding and removing Tenant =====")
 		// Remove the tenant
 		require.NoError(t, managementClient.Delete(ctx, tenantAccount), "deleting Tenant")
-		require.NoError(t, testutil.WaitUntilNotFound(ctx, managementClient, tenantAccount))
+		require.NoError(t, kubermatictestutil.WaitUntilNotFound(ctx, managementClient, tenantAccount))
 
 		assert.NoError(t, managementClient.WaitUntil(ctx, catalog, func() (b bool, err error) {
 			for _, t := range catalog.Status.Tenants {
@@ -261,7 +263,7 @@ func newCatalogSuite(
 			Name:     "admin",
 		})
 		require.NoError(t, managementClient.Create(ctx, tenantAccount), "creating tenant error")
-		require.NoError(t, testutil.WaitUntilReady(ctx, managementClient, tenantAccount))
+		require.NoError(t, kubermatictestutil.WaitUntilReady(ctx, managementClient, tenantAccount))
 
 		assert.NoError(t, managementClient.WaitUntil(ctx, catalog, func() (done bool, err error) {
 			for _, t := range catalog.Status.Tenants {
@@ -275,7 +277,7 @@ func newCatalogSuite(
 		t.Log("===== cleanup =====")
 
 		require.NoError(t, managementClient.Delete(ctx, catalog), "deleting Catalog")
-		require.NoError(t, testutil.WaitUntilNotFound(ctx, managementClient, catalog))
+		require.NoError(t, kubermatictestutil.WaitUntilNotFound(ctx, managementClient, catalog))
 
 		// Offering object should also be removed
 		offeringCheck := &catalogv1alpha1.Offering{}

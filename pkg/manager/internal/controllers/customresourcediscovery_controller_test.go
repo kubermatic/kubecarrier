@@ -31,11 +31,12 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	fakeclient "sigs.k8s.io/controller-runtime/pkg/client/fake"
 
+	"github.com/kubermatic/utils/pkg/owner"
+	"github.com/kubermatic/utils/pkg/testutil"
+
 	catalogv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/catalog/v1alpha1"
 	corev1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/core/v1alpha1"
 	operatorv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/operator/v1alpha1"
-	"github.com/kubermatic/kubecarrier/pkg/internal/owner"
-	"github.com/kubermatic/kubecarrier/pkg/testutil"
 )
 
 func TestCustomResourceDiscoveryReconciler(t *testing.T) {
@@ -139,9 +140,9 @@ func TestCustomResourceDiscoveryReconciler(t *testing.T) {
 	assert.Equal(t, map[string]string{
 		"kubecarrier.io/origin-namespace": crDiscovery.Namespace,
 		"kubecarrier.io/service-cluster":  crDiscovery.Spec.ServiceCluster.Name,
-		"owner.kubecarrier.io/name":       "redis.cloud",
-		"owner.kubecarrier.io/namespace":  "extreme-cloud",
-		"owner.kubecarrier.io/type":       "CustomResourceDiscovery.kubecarrier.io",
+		owner.OwnerNameLabel:              "redis.cloud",
+		owner.OwnerNamespaceLabel:         "extreme-cloud",
+		owner.OwnerTypeLabel:              "CustomResourceDiscovery.kubecarrier.io",
 	}, internalCRD.Labels)
 
 	internalCRD.Status.Conditions = []apiextensionsv1.CustomResourceDefinitionCondition{

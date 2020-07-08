@@ -44,13 +44,14 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
+	"github.com/kubermatic/utils/pkg/util"
+
 	operatorv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/operator/v1alpha1"
 	"github.com/kubermatic/kubecarrier/pkg/cli/internal/cmd/preflight/checkers"
 	"github.com/kubermatic/kubecarrier/pkg/cli/internal/spinner"
 	"github.com/kubermatic/kubecarrier/pkg/internal/constants"
 	"github.com/kubermatic/kubecarrier/pkg/internal/reconcile"
 	"github.com/kubermatic/kubecarrier/pkg/internal/resources/operator"
-	"github.com/kubermatic/kubecarrier/pkg/internal/util"
 )
 
 var (
