@@ -27,6 +27,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
 	operatorv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/operator/v1alpha1"
+	"github.com/kubermatic/kubecarrier/pkg/apiserver/auth"
 	"github.com/kubermatic/kubecarrier/pkg/internal/constants"
 )
 
@@ -71,36 +72,36 @@ func (r *KubeCarrierWebhookHandler) validateCreate(kubeCarrier *operatorv1alpha1
 	if kubeCarrier.Name != constants.KubeCarrierDefaultName {
 		return fmt.Errorf("KubeCarrier object name should be 'kubecarrier', found: %s", kubeCarrier.Name)
 	}
-	auth := map[string]bool{}
+	authEnabled := map[string]bool{}
 	for _, a := range kubeCarrier.Spec.API.Authentication {
 		var enabled int
 		if a.OIDC != nil {
 			enabled++
-			if auth["OIDC"] {
+			if authEnabled[auth.ProviderOIDC] {
 				return errors.New("Duplicate OIDC configuration")
 			}
-			auth["OIDC"] = true
+			authEnabled[auth.ProviderOIDC] = true
 		}
 		if a.StaticUsers != nil {
 			enabled++
-			if auth["Htpasswd"] {
+			if authEnabled[auth.ProviderHtpasswd] {
 				return errors.New("Duplicate StaticUsers configuration")
 			}
-			auth["Htpasswd"] = true
+			authEnabled[auth.ProviderHtpasswd] = true
 		}
 		if a.ServiceAccount != nil {
 			enabled++
-			if auth["Token"] {
+			if authEnabled[auth.ProviderToken] {
 				return errors.New("Duplicate ServiceAccount configuration")
 			}
-			auth["Token"] = true
+			authEnabled[auth.ProviderToken] = true
 		}
 		if a.Anonymous != nil {
 			enabled++
-			if auth["Anonymous"] {
+			if authEnabled["Anonymous"] {
 				return errors.New("Duplicate Anonymous configuration")
 			}
-			auth["Anonymous"] = true
+			authEnabled["Anonymous"] = true
 		}
 		if enabled != 1 {
 			return errors.New("Authentication item should have one and only one configuration")
