@@ -24,6 +24,9 @@ import (
 type KubeCarrierSpec struct {
 	// +optional
 	API APIServerSpec `json:"api,omitempty"`
+	// Paused tell controller to pause reconciliation process and assume that KubaCarrier is ready
+	// +optional
+	Paused PausedFlagType `json:"paused,omitempty"`
 }
 
 // KubeCarrierStatus defines the observed state of KubeCarrier
@@ -46,6 +49,7 @@ type KubeCarrierPhaseType string
 // Values of KubeCarrierPhaseType.
 const (
 	KubeCarrierPhaseReady       KubeCarrierPhaseType = "Ready"
+	KubeCarrierPhasePaused      KubeCarrierPhaseType = "Paused"
 	KubeCarrierPhaseNotReady    KubeCarrierPhaseType = "NotReady"
 	KubeCarrierPhaseUnknown     KubeCarrierPhaseType = "Unknown"
 	KubeCarrierPhaseTerminating KubeCarrierPhaseType = "Terminating"
@@ -60,23 +64,25 @@ const (
 func (s *KubeCarrierStatus) updatePhase() {
 
 	for _, condition := range s.Conditions {
-		if condition.Type != KubeCarrierReady {
-			continue
+		if condition.Type == KubeCarrierPaused && condition.Status == ConditionTrue {
+			s.Phase = KubeCarrierPhasePaused
+			return
 		}
 
-		switch condition.Status {
-		case ConditionTrue:
-			s.Phase = KubeCarrierPhaseReady
-		case ConditionFalse:
-			if condition.Reason == KubeCarrierTerminatingReason {
-				s.Phase = KubeCarrierPhaseTerminating
-			} else {
-				s.Phase = KubeCarrierPhaseNotReady
+		if condition.Type != KubeCarrierReady {
+			switch condition.Status {
+			case ConditionTrue:
+				s.Phase = KubeCarrierPhaseReady
+			case ConditionFalse:
+				if condition.Reason == KubeCarrierTerminatingReason {
+					s.Phase = KubeCarrierPhaseTerminating
+				} else {
+					s.Phase = KubeCarrierPhaseNotReady
+				}
+			case ConditionUnknown:
+				s.Phase = KubeCarrierPhaseUnknown
 			}
-		case ConditionUnknown:
-			s.Phase = KubeCarrierPhaseUnknown
 		}
-		return
 	}
 
 	s.Phase = KubeCarrierPhaseUnknown
@@ -90,6 +96,8 @@ const (
 	KubeCarrierReady           KubeCarrierConditionType = "Ready"
 	KubeCarrierDeploymentReady KubeCarrierConditionType = "DeploymentReady"
 	KubeCarrierAPIServerReady  KubeCarrierConditionType = "APIServerReady"
+	// KubeCarrierPaused represents a KubeCarrier condition is in paused state.
+	KubeCarrierPaused KubeCarrierConditionType = "Paused"
 )
 
 // KubeCarrierCondition contains details for the current condition of this KubeCarrier.
@@ -121,6 +129,61 @@ func (s *KubeCarrierStatus) GetCondition(t KubeCarrierConditionType) (condition 
 		}
 	}
 	return
+}
+
+// IsPaused returns if the KubeCarrier is paused.
+func (s *KubeCarrier) IsPaused() bool {
+	if s.Generation != s.Status.ObservedGeneration {
+		return false
+	}
+
+	for _, condition := range s.Status.Conditions {
+		if condition.Type == KubeCarrierPaused &&
+			condition.Status == ConditionTrue {
+			return true
+		}
+	}
+	return false
+}
+
+func (s *KubeCarrier) SetPausedCondition() bool {
+	var changed bool
+	if !s.IsReady() {
+		changed = true
+		s.Status.ObservedGeneration = s.Generation
+		s.Status.SetCondition(KubeCarrierCondition{
+			Type:    KubeCarrierReady,
+			Status:  ConditionTrue,
+			Reason:  "Paused",
+			Message: "Reconcilation is paused, assuming component is ready.",
+		})
+		return changed
+	}
+	if !s.IsPaused() {
+		changed = true
+		s.Status.ObservedGeneration = s.Generation
+		s.Status.SetCondition(KubeCarrierCondition{
+			Type:    KubeCarrierPaused,
+			Status:  ConditionTrue,
+			Reason:  "Paused",
+			Message: "Reconcilation is paused",
+		})
+	}
+	return changed
+}
+
+func (s *KubeCarrier) SetUnPausedCondition() bool {
+	if s.IsPaused() {
+		s.Status.ObservedGeneration = s.Generation
+		s.Status.SetCondition(KubeCarrierCondition{
+			Type:    KubeCarrierPaused,
+			Status:  ConditionFalse,
+			Reason:  "UnPaused",
+			Message: "Reconcilation is resumed",
+		})
+		return true
+	}
+	return false
 }
 
 // SetCondition replaces or adds the given condition.

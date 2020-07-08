@@ -149,6 +149,10 @@ spec:
                     - name
                     type: object
                 type: object
+              paused:
+                description: Paused tell controller to pause reconciliation process
+                  and assume that KubaCarrier is ready
+                type: string
             type: object
           status:
             description: KubeCarrierStatus defines the observed state of KubeCarrier

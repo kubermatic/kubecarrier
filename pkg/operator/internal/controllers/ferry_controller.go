@@ -58,6 +58,16 @@ func (r *FerryReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
 
+	if ferry.Spec.Paused.IsPaused() {
+		if ferry.SetPausedCondition() {
+			if err := r.Client.Status().Update(ctx, ferry); err != nil {
+				return ctrl.Result{}, fmt.Errorf("updating %s status: %w", ferry.Name, err)
+			}
+		}
+		// reconciliation paused, skip all other handlers
+		return ctrl.Result{}, nil
+	}
+
 	if !ferry.DeletionTimestamp.IsZero() {
 		if err := r.handleDeletion(ctx, ferry); err != nil {
 			return ctrl.Result{}, fmt.Errorf("handle deletion: %w", err)
@@ -109,15 +119,19 @@ func (r *FerryReconciler) handleDeletion(ctx context.Context, ferry *operatorv1a
 }
 
 func (r *FerryReconciler) updateStatus(ctx context.Context, ferry *operatorv1alpha1.Ferry, deploymentIsReady bool) error {
-	var statusChanged bool
+	var pausedChanged, readyChanged bool
 
-	if deploymentIsReady {
-		statusChanged = ferry.SetReadyCondition()
-	} else {
-		statusChanged = ferry.SetUnReadyCondition()
+	if !ferry.Spec.Paused.IsPaused() {
+		pausedChanged = ferry.SetUnPausedCondition()
 	}
 
-	if statusChanged {
+	if deploymentIsReady {
+		readyChanged = ferry.SetReadyCondition()
+	} else {
+		readyChanged = ferry.SetUnReadyCondition()
+	}
+
+	if readyChanged || pausedChanged {
 		if err := r.Client.Status().Update(ctx, ferry); err != nil {
 			return fmt.Errorf("updating %s status: %w", ferry.Name, err)
 		}
