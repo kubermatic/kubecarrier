@@ -55,9 +55,9 @@ func TestKubeCarrierValidatingCreate(t *testing.T) {
 				},
 				Spec: operatorv1alpha1.KubeCarrierSpec{
 					API: operatorv1alpha1.APIServerSpec{
-						Authentication: []operatorv1alpha1.Authentication{
-							operatorv1alpha1.Authentication{Anonymous: &operatorv1alpha1.Anonymous{}},
-							operatorv1alpha1.Authentication{Anonymous: &operatorv1alpha1.Anonymous{}},
+						Authentication: operatorv1alpha1.Authentication{
+							operatorv1alpha1.AuthenticationConfig{Anonymous: &operatorv1alpha1.Anonymous{}},
+							operatorv1alpha1.AuthenticationConfig{Anonymous: &operatorv1alpha1.Anonymous{}},
 						},
 					},
 				},
@@ -72,8 +72,8 @@ func TestKubeCarrierValidatingCreate(t *testing.T) {
 				},
 				Spec: operatorv1alpha1.KubeCarrierSpec{
 					API: operatorv1alpha1.APIServerSpec{
-						Authentication: []operatorv1alpha1.Authentication{
-							operatorv1alpha1.Authentication{
+						Authentication: operatorv1alpha1.Authentication{
+							operatorv1alpha1.AuthenticationConfig{
 								ServiceAccount: &operatorv1alpha1.ServiceAccount{},
 								Anonymous:      &operatorv1alpha1.Anonymous{},
 							},
@@ -81,13 +81,22 @@ func TestKubeCarrierValidatingCreate(t *testing.T) {
 					},
 				},
 			},
-			expectedError: fmt.Errorf("Authentication item should have one and only one configuration"),
+			expectedError: fmt.Errorf("Authentication should have one and only one configuration"),
 		},
 		{
 			name: "can pass validate create",
 			object: &operatorv1alpha1.KubeCarrier{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "kubecarrier",
+				},
+				Spec: operatorv1alpha1.KubeCarrierSpec{
+					API: operatorv1alpha1.APIServerSpec{
+						Authentication: operatorv1alpha1.Authentication{
+							operatorv1alpha1.AuthenticationConfig{
+								Anonymous: &operatorv1alpha1.Anonymous{},
+							},
+						},
+					},
 				},
 			},
 			expectedError: nil,

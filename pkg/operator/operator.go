@@ -145,7 +145,7 @@ func run(flags *flags, log logr.Logger) error {
 	wbh := mgr.GetWebhookServer()
 
 	// validating webhooks
-	wbh.Register(utilwebhook.GenerateValidateWebhookPath(&operatorv1alpha1.KubeCarrier{}, mgr.GetScheme()),
+	wbh.Register(utilwebhook.GenerateMutateWebhookPath(&operatorv1alpha1.KubeCarrier{}, mgr.GetScheme()),
 		&webhook.Admission{Handler: &webhooks.KubeCarrierWebhookHandler{
 			Log: log.WithName("validating webhooks").WithName("KubeCarrier"),
 		}})

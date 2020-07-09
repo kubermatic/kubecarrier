@@ -18,7 +18,7 @@ package webhooks
 
 import (
 	"context"
-	"errors"
+	"encoding/json"
 	"fmt"
 	"net/http"
 
@@ -27,7 +27,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
 	operatorv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/operator/v1alpha1"
-	"github.com/kubermatic/kubecarrier/pkg/apiserver/auth"
 	"github.com/kubermatic/kubecarrier/pkg/internal/constants"
 )
 
@@ -39,7 +38,7 @@ type KubeCarrierWebhookHandler struct {
 
 var _ admission.Handler = (*KubeCarrierWebhookHandler)(nil)
 
-// +kubebuilder:webhook:path=/validate-operator-kubecarrier-io-v1alpha1-kubecarrier,mutating=false,failurePolicy=fail,groups=operator.kubecarrier.io,resources=kubecarriers,verbs=create,versions=v1alpha1,name=vkubecarrier.kubecarrier.io
+// +kubebuilder:webhook:path=/mutate-operator-kubecarrier-io-v1alpha1-kubecarrier,mutating=true,failurePolicy=fail,groups=operator.kubecarrier.io,resources=kubecarriers,verbs=create,versions=v1alpha1,name=mkubecarrier.kubecarrier.io
 
 // Handle is the function to handle create requests of KubeCarriers.
 func (r *KubeCarrierWebhookHandler) Handle(ctx context.Context, req admission.Request) admission.Response {
@@ -50,8 +49,17 @@ func (r *KubeCarrierWebhookHandler) Handle(ctx context.Context, req admission.Re
 
 	switch req.Operation {
 	case adminv1beta1.Create:
+		changed := obj.Spec.API.Default()
 		if err := r.validateCreate(obj); err != nil {
 			return admission.Denied(err.Error())
+		}
+		if changed {
+			marshalledObj, err := json.Marshal(obj)
+			if err != nil {
+				return admission.Errored(http.StatusInternalServerError, err)
+			}
+			// Create the patch
+			return admission.PatchResponseFromRaw(req.Object.Raw, marshalledObj)
 		}
 	}
 	return admission.Allowed("allowed to commit the request")
@@ -72,40 +80,8 @@ func (r *KubeCarrierWebhookHandler) validateCreate(kubeCarrier *operatorv1alpha1
 	if kubeCarrier.Name != constants.KubeCarrierDefaultName {
 		return fmt.Errorf("KubeCarrier object name should be 'kubecarrier', found: %s", kubeCarrier.Name)
 	}
-	authEnabled := map[string]bool{}
-	for _, a := range kubeCarrier.Spec.API.Authentication {
-		var enabled int
-		if a.OIDC != nil {
-			enabled++
-			if authEnabled[auth.ProviderOIDC] {
-				return errors.New("Duplicate OIDC configuration")
-			}
-			authEnabled[auth.ProviderOIDC] = true
-		}
-		if a.StaticUsers != nil {
-			enabled++
-			if authEnabled[auth.ProviderHtpasswd] {
-				return errors.New("Duplicate StaticUsers configuration")
-			}
-			authEnabled[auth.ProviderHtpasswd] = true
-		}
-		if a.ServiceAccount != nil {
-			enabled++
-			if authEnabled[auth.ProviderToken] {
-				return errors.New("Duplicate ServiceAccount configuration")
-			}
-			authEnabled[auth.ProviderToken] = true
-		}
-		if a.Anonymous != nil {
-			enabled++
-			if authEnabled["Anonymous"] {
-				return errors.New("Duplicate Anonymous configuration")
-			}
-			authEnabled["Anonymous"] = true
-		}
-		if enabled != 1 {
-			return errors.New("Authentication item should have one and only one configuration")
-		}
+	if err := kubeCarrier.Spec.API.Validate(); err != nil {
+		return err
 	}
 	return nil
 }

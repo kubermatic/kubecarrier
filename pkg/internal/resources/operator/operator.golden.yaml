@@ -1316,23 +1316,23 @@
             defaultMode: 420
             secretName: kubecarrier-operator-webhook-service-webhook-service-cert
 - apiVersion: admissionregistration.k8s.io/v1beta1
-  kind: ValidatingWebhookConfiguration
+  kind: MutatingWebhookConfiguration
   metadata:
     annotations:
       cert-manager.io/inject-ca-from: test3000/kubecarrier-operator-serving-cert
     creationTimestamp: null
     labels:
       kubecarrier.io/role: operator
-    name: kubecarrier-operator-validating-webhook-configuration
+    name: kubecarrier-operator-mutating-webhook-configuration
   webhooks:
   - clientConfig:
       caBundle: Cg==
       service:
         name: kubecarrier-operator-webhook-service
         namespace: test3000
-        path: /validate-operator-kubecarrier-io-v1alpha1-kubecarrier
+        path: /mutate-operator-kubecarrier-io-v1alpha1-kubecarrier
     failurePolicy: Fail
-    name: vkubecarrier.kubecarrier.io
+    name: mkubecarrier.kubecarrier.io
     rules:
     - apiGroups:
       - operator.kubecarrier.io

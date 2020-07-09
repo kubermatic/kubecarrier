@@ -127,6 +127,9 @@ func Manifests(c Config) ([]unstructured.Unstructured, error) {
 	}
 	var supportedAuth []string
 	container := &deploymentPatch.Spec.Template.Spec.Containers[0]
+	if err := c.Spec.Authentication.Validate(); err != nil {
+		return nil, err
+	}
 	for _, config := range c.Spec.Authentication {
 		if config.StaticUsers != nil {
 			addStaticUsersConfig(&deploymentPatch.Spec.Template.Spec, config.StaticUsers)

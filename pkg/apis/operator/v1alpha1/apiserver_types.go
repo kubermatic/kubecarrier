@@ -17,8 +17,42 @@ limitations under the License.
 package v1alpha1
 
 import (
+	"errors"
+	"fmt"
+
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	"github.com/kubermatic/kubecarrier/pkg/apiserver/auth"
 )
+
+type Authentication []AuthenticationConfig
+
+func (a Authentication) Validate() error {
+	if len(a) == 0 {
+		return errors.New("at least one authentication configuration should be specified")
+	}
+	authEnabled := map[string]bool{}
+	for _, config := range a {
+		if err := config.Validate(); err != nil {
+			return err
+		}
+		provider := config.GetEnabledProvider()
+		if authEnabled[provider] {
+			return fmt.Errorf("Duplicate %s configuration", provider)
+		}
+		authEnabled[provider] = true
+	}
+	return nil
+}
+
+func (a *Authentication) Default() bool {
+	if len(*a) == 0 {
+		*a = append(*a, AuthenticationConfig{ServiceAccount: &ServiceAccount{}})
+		*a = append(*a, AuthenticationConfig{Anonymous: &Anonymous{}})
+		return true
+	}
+	return false
+}
 
 // APIServerSpec defines the desired state of APIServer
 type APIServerSpec struct {
@@ -27,10 +61,18 @@ type APIServerSpec struct {
 	TLSSecretRef *ObjectReference `json:"tlsSecretRef,omitempty"`
 	// +optional
 	// Authentication configuration
-	Authentication []Authentication `json:"authentication,omitempty"`
+	Authentication Authentication `json:"authentication,omitempty"`
 }
 
-type Authentication struct {
+func (a APIServerSpec) Validate() error {
+	return a.Authentication.Validate()
+}
+
+func (a *APIServerSpec) Default() bool {
+	return a.Authentication.Default()
+}
+
+type AuthenticationConfig struct {
 	// OIDC specifies OpenID Connect configuration for API Server authentication
 	// +optional
 	OIDC *APIServerOIDCConfig `json:"oidc,omitempty"`
@@ -47,6 +89,42 @@ type Authentication struct {
 
 type ServiceAccount struct{}
 type Anonymous struct{}
+
+func (s AuthenticationConfig) GetEnabledProvider() string {
+	if s.OIDC != nil {
+		return auth.ProviderOIDC
+	}
+	if s.StaticUsers != nil {
+		return auth.ProviderHtpasswd
+	}
+	if s.ServiceAccount != nil {
+		return auth.ProviderToken
+	}
+	if s.Anonymous != nil {
+		return auth.ProviderAnynymous
+	}
+	return ""
+}
+
+func (s AuthenticationConfig) Validate() error {
+	var enabled int
+	if s.OIDC != nil {
+		enabled++
+	}
+	if s.StaticUsers != nil {
+		enabled++
+	}
+	if s.ServiceAccount != nil {
+		enabled++
+	}
+	if s.Anonymous != nil {
+		enabled++
+	}
+	if enabled != 1 {
+		return errors.New("Authentication should have one and only one configuration")
+	}
+	return nil
+}
 
 type StaticUsers struct {
 	// HtpassswdSecret specifies the htpasswd secret to use for static user authentication.
