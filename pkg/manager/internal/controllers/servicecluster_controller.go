@@ -140,6 +140,8 @@ func (r *ServiceClusterReconciler) reconcileFerry(
 		return desiredFerry, nil
 	}
 
+	// leave `Paused` flag as is
+	desiredFerry.Spec.Paused = currentFerry.Spec.Paused
 	// Update Ferry
 	currentFerry.Spec = desiredFerry.Spec
 	if err = r.Update(ctx, currentFerry); err != nil {

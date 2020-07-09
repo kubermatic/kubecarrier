@@ -465,6 +465,10 @@
                   required:
                   - name
                   type: object
+                paused:
+                  description: Paused tell controller to pause reconciliation process
+                    and assume that Catapult is ready
+                  type: string
                 providerCRD:
                   description: References the provider or internal CRD, that should
                     be created in the provider namespace.
@@ -637,6 +641,10 @@
                   required:
                   - name
                   type: object
+                paused:
+                  description: Paused tell controller to pause reconciliation process
+                    and assume that Ferry is ready
+                  type: string
               required:
               - kubeconfigSecret
               type: object
@@ -873,6 +881,10 @@
                       - name
                       type: object
                   type: object
+                paused:
+                  description: Paused tell controller to pause reconciliation process
+                    and assume that KubaCarrier is ready
+                  type: string
               type: object
             status:
               description: KubeCarrierStatus defines the observed state of KubeCarrier

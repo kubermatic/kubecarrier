@@ -56,6 +56,10 @@ spec:
                 required:
                 - name
                 type: object
+              paused:
+                description: Paused tell controller to pause reconciliation process
+                  and assume that Catapult is ready
+                type: string
               providerCRD:
                 description: References the provider or internal CRD, that should
                   be created in the provider namespace.
