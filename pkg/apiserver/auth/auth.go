@@ -63,7 +63,11 @@ func GetAuthProvider(name string) (Provider, error) {
 }
 
 const (
-	userInfoKey contextKey = "userinfo.kubecarrier.io"
+	userInfoKey       contextKey = "userinfo.kubecarrier.io"
+	ProviderHtpasswd  string     = "Htpasswd"
+	ProviderAnynymous string     = "Anonymous"
+	ProviderOIDC      string     = "OIDC"
+	ProviderToken     string     = "Token"
 )
 
 // ExtractUserInfo extracts the user info from context

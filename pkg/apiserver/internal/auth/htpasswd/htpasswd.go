@@ -60,7 +60,7 @@ func (h *HtpasswdAuthenticator) InjectClient(c client.Client) error {
 }
 
 func init() {
-	auth.RegisterAuthProvider("Htpasswd", &HtpasswdAuthenticator{})
+	auth.RegisterAuthProvider(auth.ProviderHtpasswd, &HtpasswdAuthenticator{})
 }
 
 func (h *HtpasswdAuthenticator) AddFlags(fs *pflag.FlagSet) {

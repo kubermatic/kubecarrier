@@ -30,7 +30,7 @@ type Auth struct{}
 var _ auth.Provider = (*Auth)(nil)
 
 func init() {
-	auth.RegisterAuthProvider("Anonymous", &Auth{})
+	auth.RegisterAuthProvider(auth.ProviderAnynymous, &Auth{})
 }
 
 func (a Auth) AddFlags(fs *pflag.FlagSet) {}

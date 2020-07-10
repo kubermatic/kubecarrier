@@ -2,12 +2,15 @@ apiVersion: operator.kubecarrier.io/v1alpha1
 kind: KubeCarrier
 spec:
   api:
-    oidc:
-      certificateAuthority:
-        name: dex-web-server
-      clientID: e2e-client-id
-      usernameClaim: "name"
-      issuerURL: "https://dex.kubecarrier-system.svc"
-    staticUsers:
-      htpasswdSecret:
-        name: "htpasswd-user"
+    authentication:
+      - oidc:
+          certificateAuthority:
+            name: dex-web-server
+          clientID: e2e-client-id
+          usernameClaim: "name"
+          issuerURL: "https://dex.kubecarrier-system.svc"
+      - staticUsers:
+          htpasswdSecret:
+            name: "htpasswd-user"
+      - serviceAccount: {}
+      - anonymous: {}

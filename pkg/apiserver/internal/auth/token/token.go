@@ -39,7 +39,7 @@ type Auth struct {
 }
 
 func init() {
-	auth.RegisterAuthProvider("Token", &Auth{})
+	auth.RegisterAuthProvider(auth.ProviderToken, &Auth{})
 }
 
 var _ auth.Provider = (*Auth)(nil)
