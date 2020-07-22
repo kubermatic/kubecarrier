@@ -1,24 +1,4 @@
 presubmits:
-  - name: pull-kubermatic-kubecarrier-validate-prow-yaml
-    always_run: true
-    decorate: true
-    clone_uri: ssh://git@github.com/kubermatic/kubecarrier.git
-    extra_refs:
-      - org: kubermatic
-        repo: infra
-        base_ref: master
-        clone_uri: git@github.com:kubermatic/infra.git
-    spec:
-      containers:
-        - image: gcr.io/k8s-prow/checkconfig:v20200203-711d3732b
-          command:
-            - /app/prow/cmd/checkconfig/app.binary
-          args:
-            - --plugin-config=/home/prow/go/src/github.com/kubermatic/infra/prow/plugins.yaml
-            - --config-path=/home/prow/go/src/github.com/kubermatic/infra/prow/config.yaml
-            - --job-config-path=/home/prow/go/src/github.com/kubermatic/infra/prow/jobs
-            - --prow-yaml-repo-name=$(REPO_OWNER)/$(REPO_NAME)
-
   - name: pull-kubecarrier-test
     always_run: true
     decorate: true
