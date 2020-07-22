@@ -116,7 +116,7 @@ func (r *CustomResourceDiscoverySetReconciler) Reconcile(req ctrl.Request) (ctrl
 	// Cleanup uncontrolled CRDiscoveries
 	crDiscoveryList := &corev1alpha1.CustomResourceDiscoveryList{}
 	if err := r.List(ctx, crDiscoveryList, client.MatchingLabels{
-		crDiscoveriesLabel: crDiscoverySet.Namespace + "/" + crDiscoverySet.Name,
+		crDiscoveriesLabel: crDiscoverySet.Namespace + "." + crDiscoverySet.Name,
 	},
 		client.InNamespace(crDiscoverySet.Namespace),
 	); err != nil {
@@ -172,7 +172,7 @@ func (r *CustomResourceDiscoverySetReconciler) reconcileCRDiscovery(
 			Name:      crDiscoverySet.Name + "." + serviceCluster.Name,
 			Namespace: crDiscoverySet.Namespace,
 			Labels: map[string]string{
-				crDiscoveriesLabel: crDiscoverySet.Namespace + "/" + crDiscoverySet.Name,
+				crDiscoveriesLabel: crDiscoverySet.Namespace + "." + crDiscoverySet.Name,
 			},
 		},
 		Spec: corev1alpha1.CustomResourceDiscoverySpec{
