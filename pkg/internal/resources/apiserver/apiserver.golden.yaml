@@ -256,8 +256,8 @@
               port: https
           resources:
             limits:
-              cpu: 100m
-              memory: 100Mi
+              cpu: 1000m
+              memory: 200Mi
             requests:
               cpu: 100m
               memory: 100Mi
