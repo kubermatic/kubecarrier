@@ -69,7 +69,7 @@ func TestCustomResourceDiscoverySetReconciler(t *testing.T) {
 			Name:      "couchdb.us-east-1",
 			Namespace: "hans",
 			Labels: map[string]string{
-				crDiscoveriesLabel: crDiscoveries.Name,
+				crDiscoveriesLabel: crDiscoveries.Namespace + "/" + crDiscoveries.Name,
 			},
 		},
 	}
