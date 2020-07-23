@@ -50,3 +50,5 @@ RUN echo $PATH && go get github.com/golangci/golangci-lint/cmd/golangci-lint@v${
   mkdir -p /usr/local/protoc && \
   unzip /tmp/protoc.zip -d /usr/local/protoc && \
   rm /tmp/protoc.zip
+
+RUN curl -sL --output /tmp/boilerplate.zip https://github.com/kubermatic-labs/boilerplate/releases/download/v0.1.1/boilerplate_0.1.1_linux_amd64.zip && unzip /tmp/boilerplate.zip -d /usr/local/bin && rm -Rf /tmp/boilerplate.zip

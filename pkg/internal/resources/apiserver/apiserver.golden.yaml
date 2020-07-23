@@ -214,7 +214,6 @@
           - --tls-private-key-file=$(API_SERVER_TLS_PRIVATE_KEY_FILE)
           - --authentication-mode=$(AUTHENTICATION_MODE)
           - -v=$(VERBOSE)
-          - --htpasswd-secret-name=$(HTPASSWD_SECRET_NAME)
           - --oidc-issuer-url=$(API_SERVER_OIDC_ISSUER_URL)
           - --oidc-client-id=$(API_SERVER_OIDC_CLIENT_ID)
           - --oidc-ca-file=$(API_SERVER_OIDC_CA_FILE)
@@ -223,6 +222,7 @@
           - --oidc-groups-claim=$(API_SERVER_OIDC_GROUPS_CLAIM)
           - --oidc-groups-prefix=$(API_SERVER_OIDC_GROUPS_PREFIX)
           - --oidc-signing-algs=$(API_SERVER_OIDC_SIGNING_ALGS)
+          - --htpasswd-secret-name=$(HTPASSWD_SECRET_NAME)
           env:
           - name: API_SERVER_ADDR
             value: :8443
@@ -231,11 +231,9 @@
           - name: API_SERVER_TLS_PRIVATE_KEY_FILE
             value: /run/serving-certs/tls.key
           - name: AUTHENTICATION_MODE
-            value: Htpasswd,OIDC,Token,Anonymous
+            value: OIDC,Htpasswd,Token,Anonymous
           - name: VERBOSE
             value: "0"
-          - name: HTPASSWD_SECRET_NAME
-            value: test-secret
           - name: API_SERVER_OIDC_ISSUER_URL
           - name: API_SERVER_OIDC_CLIENT_ID
           - name: API_SERVER_OIDC_CA_FILE
@@ -245,6 +243,8 @@
           - name: API_SERVER_OIDC_GROUPS_CLAIM
           - name: API_SERVER_OIDC_GROUPS_PREFIX
           - name: API_SERVER_OIDC_SIGNING_ALGS
+          - name: HTPASSWD_SECRET_NAME
+            value: test-secret
           image: quay.io/kubecarrier/apiserver:was not build properly
           livenessProbe:
             tcpSocket:
@@ -259,8 +259,8 @@
               port: https
           resources:
             limits:
-              cpu: 100m
-              memory: 100Mi
+              cpu: 1000m
+              memory: 200Mi
             requests:
               cpu: 100m
               memory: 100Mi

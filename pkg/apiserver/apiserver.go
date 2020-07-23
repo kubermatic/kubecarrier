@@ -294,7 +294,6 @@ func runE(flags *flags, log logr.Logger) error {
 	}
 
 	var handler http.Handler = http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
-		log.Info("got request for", "path", request.URL.Path)
 		if strings.Contains(request.Header.Get("Content-Type"), "application/grpc") {
 			wrappedGrpc.ServeHTTP(writer, request)
 		} else {

@@ -18,6 +18,7 @@ package webhooks
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"net/http"
 
@@ -37,7 +38,7 @@ type KubeCarrierWebhookHandler struct {
 
 var _ admission.Handler = (*KubeCarrierWebhookHandler)(nil)
 
-// +kubebuilder:webhook:path=/validate-operator-kubecarrier-io-v1alpha1-kubecarrier,mutating=false,failurePolicy=fail,groups=operator.kubecarrier.io,resources=kubecarriers,verbs=create,versions=v1alpha1,name=vkubecarrier.kubecarrier.io
+// +kubebuilder:webhook:path=/mutate-operator-kubecarrier-io-v1alpha1-kubecarrier,mutating=true,failurePolicy=fail,groups=operator.kubecarrier.io,resources=kubecarriers,verbs=create,versions=v1alpha1,name=mkubecarrier.kubecarrier.io
 
 // Handle is the function to handle create requests of KubeCarriers.
 func (r *KubeCarrierWebhookHandler) Handle(ctx context.Context, req admission.Request) admission.Response {
@@ -48,8 +49,17 @@ func (r *KubeCarrierWebhookHandler) Handle(ctx context.Context, req admission.Re
 
 	switch req.Operation {
 	case adminv1beta1.Create:
+		changed := obj.Spec.API.Default()
 		if err := r.validateCreate(obj); err != nil {
 			return admission.Denied(err.Error())
+		}
+		if changed {
+			marshalledObj, err := json.Marshal(obj)
+			if err != nil {
+				return admission.Errored(http.StatusInternalServerError, err)
+			}
+			// Create the patch
+			return admission.PatchResponseFromRaw(req.Object.Raw, marshalledObj)
 		}
 	}
 	return admission.Allowed("allowed to commit the request")
@@ -69,6 +79,9 @@ func (r *KubeCarrierWebhookHandler) validateCreate(kubeCarrier *operatorv1alpha1
 	r.Log.Info("validate create", "name", kubeCarrier.Name)
 	if kubeCarrier.Name != constants.KubeCarrierDefaultName {
 		return fmt.Errorf("KubeCarrier object name should be 'kubecarrier', found: %s", kubeCarrier.Name)
+	}
+	if err := kubeCarrier.Spec.API.Validate(); err != nil {
+		return err
 	}
 	return nil
 }

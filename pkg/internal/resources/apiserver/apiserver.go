@@ -30,6 +30,7 @@ import (
 	"sigs.k8s.io/yaml"
 
 	operatorv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/operator/v1alpha1"
+	"github.com/kubermatic/kubecarrier/pkg/apiserver/auth"
 	"github.com/kubermatic/kubecarrier/pkg/internal/kustomize"
 	"github.com/kubermatic/kubecarrier/pkg/internal/resources/constants"
 	"github.com/kubermatic/kubecarrier/pkg/internal/version"
@@ -62,7 +63,6 @@ func Manifests(c Config) ([]unstructured.Unstructured, error) {
 	}
 	const AuthModeEnv = "AUTHENTICATION_MODE"
 
-	var supportedAuth []string
 	deploymentPatch := &appsv1.Deployment{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: "apps/v1",
@@ -131,108 +131,27 @@ func Manifests(c Config) ([]unstructured.Unstructured, error) {
 			},
 		},
 	}
-	if c.Spec.StaticUsers != nil {
-		containers := deploymentPatch.Spec.Template.Spec.Containers
-		for i, container := range containers {
-			if container.Name == "manager" {
-				containers[i].Args = append(containers[i].Args,
-					"--htpasswd-secret-name=$(HTPASSWD_SECRET_NAME)",
-				)
-				containers[i].Env = append(containers[i].Env,
-					corev1.EnvVar{
-						Name:  "HTPASSWD_SECRET_NAME",
-						Value: c.Spec.StaticUsers.HtpasswdSecret.Name,
-					},
-				)
-				supportedAuth = append(supportedAuth, "Htpasswd")
-			}
+	var supportedAuth []string
+	container := &deploymentPatch.Spec.Template.Spec.Containers[0]
+	if err := c.Spec.Authentication.Validate(); err != nil {
+		return nil, err
+	}
+	for _, config := range c.Spec.Authentication {
+		if config.StaticUsers != nil {
+			addStaticUsersConfig(&deploymentPatch.Spec.Template.Spec, config.StaticUsers)
+			supportedAuth = append(supportedAuth, auth.ProviderHtpasswd)
+		} else if config.OIDC != nil {
+			addOIDCConfig(&deploymentPatch.Spec.Template.Spec, config.OIDC)
+			supportedAuth = append(supportedAuth, auth.ProviderOIDC)
+		} else if config.ServiceAccount != nil {
+			supportedAuth = append(supportedAuth, auth.ProviderToken)
+		} else if config.Anonymous != nil {
+			supportedAuth = append(supportedAuth, auth.ProviderAnynymous)
 		}
 	}
-	if c.Spec.OIDC != nil {
-		extraArgs := make([]string, 0)
-		if len(c.Spec.OIDC.RequiredClaims) > 0 {
-			rclaims := make([]string, 0)
-			for k, v := range c.Spec.OIDC.RequiredClaims {
-				rclaims = append(rclaims, fmt.Sprintf("%s=%s", k, v))
-			}
-			extraArgs = append(extraArgs, "--oidc-required-claim="+strings.Join(rclaims, ","))
-		}
-
-		containers := deploymentPatch.Spec.Template.Spec.Containers
-		for i, container := range containers {
-			if container.Name == "manager" {
-				containers[i].Args = append(containers[i].Args, []string{
-					"--oidc-issuer-url=$(API_SERVER_OIDC_ISSUER_URL)",
-					"--oidc-client-id=$(API_SERVER_OIDC_CLIENT_ID)",
-					"--oidc-ca-file=$(API_SERVER_OIDC_CA_FILE)",
-					"--oidc-username-claim=$(API_SERVER_OIDC_USERNAME_CLAIM)",
-					"--oidc-username-prefix=$(API_SERVER_OIDC_USERNAME_PREFIX)",
-					"--oidc-groups-claim=$(API_SERVER_OIDC_GROUPS_CLAIM)",
-					"--oidc-groups-prefix=$(API_SERVER_OIDC_GROUPS_PREFIX)",
-					"--oidc-signing-algs=$(API_SERVER_OIDC_SIGNING_ALGS)",
-				}...)
-				containers[i].Args = append(containers[i].Args, extraArgs...)
-				containers[i].Env = append(containers[i].Env, []corev1.EnvVar{
-					{
-						Name:  "API_SERVER_OIDC_ISSUER_URL",
-						Value: c.Spec.OIDC.IssuerURL,
-					},
-					{
-						Name:  "API_SERVER_OIDC_CLIENT_ID",
-						Value: c.Spec.OIDC.ClientID,
-					},
-					{
-						Name:  "API_SERVER_OIDC_CA_FILE",
-						Value: "/run/oidc-certs/ca.crt",
-					},
-					{
-						Name:  "API_SERVER_OIDC_USERNAME_CLAIM",
-						Value: c.Spec.OIDC.UsernameClaim,
-					},
-					{
-						Name:  "API_SERVER_OIDC_USERNAME_PREFIX",
-						Value: c.Spec.OIDC.UsernamePrefix,
-					},
-					{
-						Name:  "API_SERVER_OIDC_GROUPS_CLAIM",
-						Value: c.Spec.OIDC.GroupsClaim,
-					},
-					{
-						Name:  "API_SERVER_OIDC_GROUPS_PREFIX",
-						Value: c.Spec.OIDC.GroupsPrefix,
-					},
-					{
-						Name:  "API_SERVER_OIDC_SIGNING_ALGS",
-						Value: strings.Join(c.Spec.OIDC.SupportedSigningAlgs, ","),
-					},
-				}...)
-				containers[i].VolumeMounts = append(containers[i].VolumeMounts, corev1.VolumeMount{
-					MountPath: "/run/oidc-certs",
-					ReadOnly:  true,
-					Name:      "oidc-cert",
-				})
-
-				supportedAuth = append(supportedAuth, "OIDC")
-			}
-		}
-		deploymentPatch.Spec.Template.Spec.Volumes = append(deploymentPatch.Spec.Template.Spec.Volumes, corev1.Volume{
-			Name: "oidc-cert",
-			VolumeSource: corev1.VolumeSource{
-				Secret: &corev1.SecretVolumeSource{
-					SecretName: c.Spec.OIDC.CertificateAuthority.Name,
-				},
-			},
-		})
-	}
-	supportedAuth = append(supportedAuth, "Token", "Anonymous")
-	containers := deploymentPatch.Spec.Template.Spec.Containers
-	for i, container := range containers {
-		if container.Name == "manager" {
-			for j, env := range containers[i].Env {
-				if env.Name == AuthModeEnv {
-					containers[i].Env[j].Value = strings.Join(supportedAuth, ",")
-				}
-			}
+	for j, env := range container.Env {
+		if env.Name == AuthModeEnv {
+			container.Env[j].Value = strings.Join(supportedAuth, ",")
 		}
 	}
 
@@ -278,4 +197,89 @@ func Manifests(c Config) ([]unstructured.Unstructured, error) {
 		obj.SetLabels(labels)
 	}
 	return objects, nil
+}
+
+func addOIDCConfig(spec *corev1.PodSpec, config *operatorv1alpha1.APIServerOIDCConfig) {
+	container := &spec.Containers[0]
+	extraArgs := make([]string, 0)
+	if len(config.RequiredClaims) > 0 {
+		rclaims := make([]string, 0)
+		for k, v := range config.RequiredClaims {
+			rclaims = append(rclaims, fmt.Sprintf("%s=%s", k, v))
+		}
+		extraArgs = append(extraArgs, "--oidc-required-claim="+strings.Join(rclaims, ","))
+	}
+
+	container.Args = append(container.Args, []string{
+		"--oidc-issuer-url=$(API_SERVER_OIDC_ISSUER_URL)",
+		"--oidc-client-id=$(API_SERVER_OIDC_CLIENT_ID)",
+		"--oidc-ca-file=$(API_SERVER_OIDC_CA_FILE)",
+		"--oidc-username-claim=$(API_SERVER_OIDC_USERNAME_CLAIM)",
+		"--oidc-username-prefix=$(API_SERVER_OIDC_USERNAME_PREFIX)",
+		"--oidc-groups-claim=$(API_SERVER_OIDC_GROUPS_CLAIM)",
+		"--oidc-groups-prefix=$(API_SERVER_OIDC_GROUPS_PREFIX)",
+		"--oidc-signing-algs=$(API_SERVER_OIDC_SIGNING_ALGS)",
+	}...)
+	container.Args = append(container.Args, extraArgs...)
+	container.Env = append(container.Env, []corev1.EnvVar{
+		{
+			Name:  "API_SERVER_OIDC_ISSUER_URL",
+			Value: config.IssuerURL,
+		},
+		{
+			Name:  "API_SERVER_OIDC_CLIENT_ID",
+			Value: config.ClientID,
+		},
+		{
+			Name:  "API_SERVER_OIDC_CA_FILE",
+			Value: "/run/oidc-certs/ca.crt",
+		},
+		{
+			Name:  "API_SERVER_OIDC_USERNAME_CLAIM",
+			Value: config.UsernameClaim,
+		},
+		{
+			Name:  "API_SERVER_OIDC_USERNAME_PREFIX",
+			Value: config.UsernamePrefix,
+		},
+		{
+			Name:  "API_SERVER_OIDC_GROUPS_CLAIM",
+			Value: config.GroupsClaim,
+		},
+		{
+			Name:  "API_SERVER_OIDC_GROUPS_PREFIX",
+			Value: config.GroupsPrefix,
+		},
+		{
+			Name:  "API_SERVER_OIDC_SIGNING_ALGS",
+			Value: strings.Join(config.SupportedSigningAlgs, ","),
+		},
+	}...)
+	container.VolumeMounts = append(container.VolumeMounts, corev1.VolumeMount{
+		MountPath: "/run/oidc-certs",
+		ReadOnly:  true,
+		Name:      "oidc-cert",
+	})
+
+	spec.Volumes = append(spec.Volumes, corev1.Volume{
+		Name: "oidc-cert",
+		VolumeSource: corev1.VolumeSource{
+			Secret: &corev1.SecretVolumeSource{
+				SecretName: config.CertificateAuthority.Name,
+			},
+		},
+	})
+}
+
+func addStaticUsersConfig(spec *corev1.PodSpec, config *operatorv1alpha1.StaticUsers) {
+	container := &spec.Containers[0]
+	container.Args = append(container.Args,
+		"--htpasswd-secret-name=$(HTPASSWD_SECRET_NAME)",
+	)
+	container.Env = append(container.Env,
+		corev1.EnvVar{
+			Name:  "HTPASSWD_SECRET_NAME",
+			Value: config.HtpasswdSecret.Name,
+		},
+	)
 }
