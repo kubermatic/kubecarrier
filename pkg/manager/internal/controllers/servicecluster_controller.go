@@ -22,6 +22,7 @@ import (
 	"time"
 
 	"github.com/go-logr/logr"
+	"github.com/spf13/viper"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -115,6 +116,7 @@ func (r *ServiceClusterReconciler) reconcileFerry(
 			KubeconfigSecret: operatorv1alpha1.ObjectReference{
 				Name: serviceCluster.Spec.KubeconfigSecret.Name,
 			},
+			LogLevel: viper.GetInt("verbose"),
 		},
 	}
 
@@ -140,8 +142,9 @@ func (r *ServiceClusterReconciler) reconcileFerry(
 		return desiredFerry, nil
 	}
 
-	// leave `Paused` flag as is
+	// leave `Paused` flag and `LogLevel` as is
 	desiredFerry.Spec.Paused = currentFerry.Spec.Paused
+	desiredFerry.Spec.LogLevel = currentFerry.Spec.LogLevel
 	// Update Ferry
 	currentFerry.Spec = desiredFerry.Spec
 	if err = r.Update(ctx, currentFerry); err != nil {

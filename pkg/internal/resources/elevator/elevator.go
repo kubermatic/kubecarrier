@@ -18,6 +18,7 @@ package elevator
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
 
 	adminv1beta1 "k8s.io/api/admissionregistration/v1beta1"
@@ -46,6 +47,7 @@ type Config struct {
 	ProviderKind, ProviderVersion, ProviderGroup, ProviderPlural string
 	TenantKind, TenantVersion, TenantGroup, TenantPlural         string
 	DerivedCRName                                                string
+	LogLevel                                                     int
 }
 
 var k = kustomize.NewDefaultKustomize()
@@ -129,6 +131,10 @@ func Manifests(c Config) ([]unstructured.Unstructured, error) {
 								{
 									"name":  "ELEVATOR_MUTATING_WEBHOOK_PATH",
 									"value": mutatingWebhookPath,
+								},
+								{
+									"name":  "VERBOSE",
+									"value": strconv.FormatInt(int64(c.LogLevel), 10),
 								},
 							},
 						},

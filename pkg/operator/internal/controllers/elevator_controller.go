@@ -108,6 +108,7 @@ func (r *ElevatorReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 			TenantPlural:  elevator.Spec.TenantCRD.Plural,
 
 			DerivedCRName: elevator.Spec.DerivedCR.Name,
+			LogLevel:      elevator.Spec.LogLevel,
 		})
 	if err != nil {
 		return ctrl.Result{}, fmt.Errorf("creating Elevator manifests: %w", err)

@@ -80,6 +80,7 @@ func (r *FerryReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 			ProviderNamespace:    ferry.Namespace,
 			Name:                 ferry.Name,
 			KubeconfigSecretName: ferry.Spec.KubeconfigSecret.Name,
+			LogLevel:             ferry.Spec.LogLevel,
 		})
 	if err != nil {
 		return ctrl.Result{}, fmt.Errorf("creating Ferry manifests: %w", err)

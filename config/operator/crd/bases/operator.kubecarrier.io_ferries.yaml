@@ -65,6 +65,9 @@ spec:
                 required:
                 - name
                 type: object
+              logLevel:
+                description: LogLevel
+                type: integer
               paused:
                 description: Paused tell controller to pause reconciliation process
                   and assume that Ferry is ready
