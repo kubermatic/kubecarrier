@@ -46,6 +46,9 @@ spec:
           spec:
             description: APIServerSpec defines the desired state of APIServer
             properties:
+              logLevel:
+                description: LogLevel
+                type: integer
               oidc:
                 description: OIDC specifies OpenID Connect configuration for API Server
                   authentication

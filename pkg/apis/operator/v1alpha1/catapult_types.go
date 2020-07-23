@@ -38,6 +38,9 @@ type CatapultSpec struct {
 	WebhookStrategy corev1alpha1.WebhookStrategyType `json:"webhookStrategy,omitempty"`
 	// Paused tell controller to pause reconciliation process and assume that Catapult is ready
 	Paused PausedFlagType `json:"paused,omitempty"`
+	// LogLevel
+	// +optional
+	LogLevel int `json:"logLevel,omitempty"`
 }
 
 // CatapultStatus defines the observed state of Catapult.

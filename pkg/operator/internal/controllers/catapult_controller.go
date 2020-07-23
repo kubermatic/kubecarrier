@@ -124,6 +124,7 @@ func (r *CatapultReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 			ServiceClusterName:   catapult.Spec.ServiceCluster.Name,
 			ServiceClusterSecret: ferry.Spec.KubeconfigSecret.Name,
 			WebhookStrategy:      string(catapult.Spec.WebhookStrategy),
+			LogLevel:             catapult.Spec.LogLevel,
 		})
 	if err != nil {
 		return ctrl.Result{}, fmt.Errorf("creating Catapult manifests: %w", err)

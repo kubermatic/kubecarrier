@@ -213,6 +213,7 @@
           - --tls-cert-file=$(API_SERVER_TLS_CERT_FILE)
           - --tls-private-key-file=$(API_SERVER_TLS_PRIVATE_KEY_FILE)
           - --authentication-mode=$(AUTHENTICATION_MODE)
+          - -v=$(VERBOSE)
           - --htpasswd-secret-name=$(HTPASSWD_SECRET_NAME)
           - --oidc-issuer-url=$(API_SERVER_OIDC_ISSUER_URL)
           - --oidc-client-id=$(API_SERVER_OIDC_CLIENT_ID)
@@ -231,6 +232,8 @@
             value: /run/serving-certs/tls.key
           - name: AUTHENTICATION_MODE
             value: Htpasswd,OIDC,Token,Anonymous
+          - name: VERBOSE
+            value: "0"
           - name: HTPASSWD_SECRET_NAME
             value: test-secret
           - name: API_SERVER_OIDC_ISSUER_URL

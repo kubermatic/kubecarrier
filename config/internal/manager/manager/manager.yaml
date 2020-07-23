@@ -21,6 +21,7 @@ spec:
         name: manager
         args:
           - "--cert-dir=$(CERT_DIR)"
+          - "-v=$(VERBOSE)"
         env:
           - name: KUBECARRIER_NAMESPACE
             valueFrom:

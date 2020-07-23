@@ -49,6 +49,9 @@ spec:
               api:
                 description: APIServerSpec defines the desired state of APIServer
                 properties:
+                  logLevel:
+                    description: LogLevel
+                    type: integer
                   oidc:
                     description: OIDC specifies OpenID Connect configuration for API
                       Server authentication
@@ -149,6 +152,9 @@ spec:
                     - name
                     type: object
                 type: object
+              logLevel:
+                description: LogLevel
+                type: integer
               paused:
                 description: Paused tell controller to pause reconciliation process
                   and assume that KubaCarrier is ready

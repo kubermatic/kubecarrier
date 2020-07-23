@@ -31,6 +31,9 @@ type APIServerSpec struct {
 	// StaticUsers specifies static users configuration for API Server authentication
 	// +optional
 	StaticUsers *StaticUsers `json:"staticUsers,omitempty"`
+	// LogLevel
+	// +optional
+	LogLevel int `json:"logLevel,omitempty"`
 }
 
 type StaticUsers struct {

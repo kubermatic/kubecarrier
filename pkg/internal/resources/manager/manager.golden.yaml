@@ -2996,7 +2996,10 @@
         containers:
         - args:
           - --cert-dir=$(CERT_DIR)
+          - -v=$(VERBOSE)
           env:
+          - name: VERBOSE
+            value: "0"
           - name: KUBECARRIER_NAMESPACE
             valueFrom:
               fieldRef:

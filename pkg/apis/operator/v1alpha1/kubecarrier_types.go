@@ -27,6 +27,9 @@ type KubeCarrierSpec struct {
 	// Paused tell controller to pause reconciliation process and assume that KubaCarrier is ready
 	// +optional
 	Paused PausedFlagType `json:"paused,omitempty"`
+	// LogLevel
+	// +optional
+	LogLevel int `json:"logLevel,omitempty"`
 }
 
 // KubeCarrierStatus defines the observed state of KubeCarrier

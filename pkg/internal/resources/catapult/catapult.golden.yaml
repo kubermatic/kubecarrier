@@ -189,6 +189,7 @@
         containers:
         - args:
           - --cert-dir=$(CERT_DIR)
+          - -v=$(VERBOSE)
           env:
           - name: CATAPULT_MANAGEMENT_CLUSTER_KIND
             value: CouchDBInternal
@@ -210,6 +211,8 @@
             value: /mutate-eu-west-1-provider-v1alpha1-couchdbinternal
           - name: CATAPULT_WEBHOOK_STRATEGY
             value: ""
+          - name: VERBOSE
+            value: "0"
           - name: KUBERNETES_NAMESPACE
             valueFrom:
               fieldRef:

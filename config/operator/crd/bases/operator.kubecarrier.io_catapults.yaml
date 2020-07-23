@@ -47,6 +47,9 @@ spec:
           spec:
             description: CatapultSpec defines the desired state of Catapult.
             properties:
+              logLevel:
+                description: LogLevel
+                type: integer
               managementClusterCRD:
                 description: References the CRD in the Management Cluster.
                 properties:

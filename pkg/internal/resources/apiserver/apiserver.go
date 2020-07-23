@@ -18,6 +18,7 @@ package apiserver
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
 
 	appsv1 "k8s.io/api/apps/v1"
@@ -83,6 +84,7 @@ func Manifests(c Config) ([]unstructured.Unstructured, error) {
 								"--tls-cert-file=$(API_SERVER_TLS_CERT_FILE)",
 								"--tls-private-key-file=$(API_SERVER_TLS_PRIVATE_KEY_FILE)",
 								"--authentication-mode=$(AUTHENTICATION_MODE)",
+								"-v=$(VERBOSE)",
 							},
 							Env: []corev1.EnvVar{
 								{
@@ -100,6 +102,10 @@ func Manifests(c Config) ([]unstructured.Unstructured, error) {
 								{
 									Name:  AuthModeEnv,
 									Value: "",
+								},
+								{
+									Name:  "VERBOSE",
+									Value: strconv.FormatInt(int64(c.Spec.LogLevel), 10),
 								},
 							},
 							VolumeMounts: []corev1.VolumeMount{
