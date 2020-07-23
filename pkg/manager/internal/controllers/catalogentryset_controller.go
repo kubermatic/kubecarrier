@@ -117,7 +117,7 @@ func (r *CatalogEntrySetReconciler) Reconcile(req ctrl.Request) (ctrl.Result, er
 	catalogEntryList := &catalogv1alpha1.CatalogEntryList{}
 	if err := r.List(ctx, catalogEntryList, client.MatchingLabels{
 		catalogEntriesLabel: catalogEntrySet.Name,
-	}); err != nil {
+	}, client.InNamespace(catalogEntrySet.Namespace)); err != nil {
 		return ctrl.Result{}, fmt.Errorf(
 			"listing all CatalogEntry for this CatalogEntrySet: %w", err)
 	}
