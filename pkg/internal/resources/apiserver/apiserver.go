@@ -88,7 +88,7 @@ func Manifests(c Config) ([]unstructured.Unstructured, error) {
 								"--tls-cert-file=$(API_SERVER_TLS_CERT_FILE)",
 								"--tls-private-key-file=$(API_SERVER_TLS_PRIVATE_KEY_FILE)",
 								"--authentication-mode=$(AUTHENTICATION_MODE)",
-								"-v=$(VERBOSE)",
+								"-v=$(LOG_LEVEL)",
 							},
 							Env: []corev1.EnvVar{
 								{
@@ -108,7 +108,7 @@ func Manifests(c Config) ([]unstructured.Unstructured, error) {
 									Value: "",
 								},
 								{
-									Name:  "VERBOSE",
+									Name:  "LOG_LEVEL",
 									Value: strconv.FormatInt(int64(logLevel), 10),
 								},
 							},

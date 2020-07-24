@@ -147,7 +147,7 @@ func Manifests(c Config) ([]unstructured.Unstructured, error) {
 									"value": c.WebhookStrategy,
 								},
 								{
-									"name":  "VERBOSE",
+									"name":  "LOG_LEVEL",
 									"value": strconv.FormatInt(int64(logLevel), 10),
 								},
 							},

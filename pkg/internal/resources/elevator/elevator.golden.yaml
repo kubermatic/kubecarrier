@@ -209,7 +209,7 @@
         containers:
         - args:
           - --cert-dir=$(CERT_DIR)
-          - -v=$(VERBOSE)
+          - -v=$(LOG_LEVEL)
           env:
           - name: ELEVATOR_DERIVED_CRD_NAME
             value: couchdbs.eu-west-1
@@ -227,7 +227,7 @@
             value: eu-west-1.provider
           - name: ELEVATOR_MUTATING_WEBHOOK_PATH
             value: /mutate-eu-west-1-provider-v1alpha1-couchdb
-          - name: VERBOSE
+          - name: LOG_LEVEL
             value: "0"
           - name: KUBERNETES_NAMESPACE
             valueFrom:

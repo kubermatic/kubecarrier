@@ -138,7 +138,7 @@ func Manifests(c Config) ([]unstructured.Unstructured, error) {
 									"value": mutatingWebhookPath,
 								},
 								{
-									"name":  "VERBOSE",
+									"name":  "LOG_LEVEL",
 									"value": strconv.FormatInt(int64(logLevel), 10),
 								},
 							},
