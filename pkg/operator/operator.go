@@ -151,19 +151,23 @@ func run(flags *flags, log logr.Logger) error {
 		}})
 	wbh.Register(utilwebhook.GenerateMutateWebhookPath(&operatorv1alpha1.APIServer{}, mgr.GetScheme()),
 		&webhook.Admission{Handler: &webhooks.APIServerWebhookHandler{
-			Log: log.WithName("validating webhooks").WithName("APIServer"),
+			Log:    log.WithName("validating webhooks").WithName("APIServer"),
+			Client: mgr.GetClient(),
 		}})
 	wbh.Register(utilwebhook.GenerateMutateWebhookPath(&operatorv1alpha1.Catapult{}, mgr.GetScheme()),
 		&webhook.Admission{Handler: &webhooks.CatapultWebhookHandler{
-			Log: log.WithName("validating webhooks").WithName("Catapult"),
+			Log:    log.WithName("validating webhooks").WithName("Catapult"),
+			Client: mgr.GetClient(),
 		}})
 	wbh.Register(utilwebhook.GenerateMutateWebhookPath(&operatorv1alpha1.Elevator{}, mgr.GetScheme()),
 		&webhook.Admission{Handler: &webhooks.ElevatorWebhookHandler{
-			Log: log.WithName("validating webhooks").WithName("Elevator"),
+			Log:    log.WithName("validating webhooks").WithName("Elevator"),
+			Client: mgr.GetClient(),
 		}})
 	wbh.Register(utilwebhook.GenerateMutateWebhookPath(&operatorv1alpha1.Ferry{}, mgr.GetScheme()),
 		&webhook.Admission{Handler: &webhooks.FerryWebhookHandler{
-			Log: log.WithName("validating webhooks").WithName("Ferry"),
+			Log:    log.WithName("validating webhooks").WithName("Ferry"),
+			Client: mgr.GetClient(),
 		}})
 
 	if err := mgr.AddReadyzCheck("ping", healthz.Ping); err != nil {

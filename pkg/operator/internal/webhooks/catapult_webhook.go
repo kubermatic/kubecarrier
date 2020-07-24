@@ -23,6 +23,7 @@ import (
 
 	"github.com/go-logr/logr"
 	adminv1beta1 "k8s.io/api/admission/v1beta1"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
 	operatorv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/operator/v1alpha1"
@@ -33,6 +34,7 @@ import (
 type CatapultWebhookHandler struct {
 	decoder *admission.Decoder
 	Log     logr.Logger
+	Client  client.Client
 }
 
 var _ admission.Handler = (*CatapultWebhookHandler)(nil)
@@ -48,10 +50,10 @@ func (r *CatapultWebhookHandler) Handle(ctx context.Context, req admission.Reque
 
 	switch req.Operation {
 	case adminv1beta1.Create:
-		r.Log.Info("creating catapult", "spec", obj.Spec)
 		if obj.Spec.LogLevel == nil {
-			webhook.SetDefaultLogLevel(webhook.LogLevelSetter(&obj.Spec))
-			r.Log.Info("after set default", "spec", obj.Spec)
+			if err := webhook.SetDefaultLogLevel(ctx, r.Client, &obj.Spec); err != nil {
+				return admission.Errored(http.StatusInternalServerError, err)
+			}
 			marshalledObj, err := json.Marshal(obj)
 			if err != nil {
 				return admission.Errored(http.StatusInternalServerError, err)

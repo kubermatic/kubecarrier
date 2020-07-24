@@ -73,7 +73,7 @@ webhooks:
     operations:
     - CREATE
     resources:
-    - ferrys
+    - ferries
 - clientConfig:
     caBundle: Cg==
     service:

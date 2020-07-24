@@ -23,6 +23,7 @@ import (
 
 	"github.com/go-logr/logr"
 	adminv1beta1 "k8s.io/api/admission/v1beta1"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
 	operatorv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/operator/v1alpha1"
@@ -33,6 +34,7 @@ import (
 type APIServerWebhookHandler struct {
 	decoder *admission.Decoder
 	Log     logr.Logger
+	Client  client.Client
 }
 
 var _ admission.Handler = (*APIServerWebhookHandler)(nil)
@@ -51,7 +53,9 @@ func (r *APIServerWebhookHandler) Handle(ctx context.Context, req admission.Requ
 		var changed bool
 		if obj.Spec.LogLevel == nil {
 			changed = true
-			webhook.SetDefaultLogLevel(webhook.LogLevelSetter(&obj.Spec))
+			if err := webhook.SetDefaultLogLevel(ctx, r.Client, &obj.Spec); err != nil {
+				return admission.Errored(http.StatusInternalServerError, err)
+			}
 		}
 		if err := r.validateCreate(obj); err != nil {
 			return admission.Denied(err.Error())

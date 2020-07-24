@@ -17,14 +17,19 @@ limitations under the License.
 package webhook
 
 import (
+	"context"
 	"fmt"
 	"regexp"
 	"strings"
 
-	"github.com/spf13/viper"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/apiutil"
+
+	"github.com/kubermatic/kubecarrier/pkg/internal/constants"
+
+	operatorv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/operator/v1alpha1"
 )
 
 const DNS1123LabelDescription = "A DNS-1123 label must consist of lower case alphanumeric characters or '-', and must start and end with an alphanumeric character. (e.g. 'my-name',  or '123-abc', regex used for validation is '[a-z0-9]([-a-z0-9]*[a-z0-9])?'"
@@ -41,8 +46,18 @@ type LogLevelSetter interface {
 	SetLogLevel(int)
 }
 
-func SetDefaultLogLevel(spec LogLevelSetter) {
-	spec.SetLogLevel(viper.GetInt("verbose"))
+func SetDefaultLogLevel(ctx context.Context, c client.Client, spec LogLevelSetter) error {
+	kubeCarrier := &operatorv1alpha1.KubeCarrier{}
+	kubeCarrier.Name = constants.KubeCarrierDefaultName
+	objKey, err := client.ObjectKeyFromObject(kubeCarrier)
+	if err != nil {
+		return err
+	}
+	if err := c.Get(ctx, objKey, kubeCarrier); err != nil {
+		return err
+	}
+	spec.SetLogLevel(kubeCarrier.Spec.LogLevel)
+	return nil
 }
 
 // GenerateMutateWebhookPath and GenerateValidatingWebhookPath are used to generate the Path to register webhooks for runtime.Object.

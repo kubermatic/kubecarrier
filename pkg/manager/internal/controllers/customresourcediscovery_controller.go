@@ -255,7 +255,6 @@ func (r *CustomResourceDiscoveryReconciler) reconcileCatapult(
 			WebhookStrategy: crDiscovery.Spec.WebhookStrategy,
 		},
 	}
-
 	if err := controllerutil.SetControllerReference(
 		crDiscovery, desiredCatapult, r.Scheme); err != nil {
 		return nil, fmt.Errorf("set controller reference: %w", err)

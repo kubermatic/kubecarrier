@@ -178,7 +178,6 @@ func (r *KubeCarrierReconciler) reconcileAPIServer(ctx context.Context, kubeCarr
 		},
 		Spec: kubeCarrier.Spec.API,
 	}
-	desiredAPIServer.Spec.LogLevel = kubeCarrier.Spec.LogLevel
 
 	if err := controllerutil.SetControllerReference(kubeCarrier, desiredAPIServer, r.Scheme); err != nil {
 		return fmt.Errorf("set controller reference for APIServer object: %w", err)

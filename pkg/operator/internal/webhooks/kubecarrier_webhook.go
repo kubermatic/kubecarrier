@@ -28,7 +28,6 @@ import (
 
 	operatorv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/operator/v1alpha1"
 	"github.com/kubermatic/kubecarrier/pkg/internal/constants"
-	"github.com/kubermatic/kubecarrier/pkg/internal/util/webhook"
 )
 
 // KubeCarrierWebhookHandler handles validating of KubeCarrier objects.
@@ -50,12 +49,7 @@ func (r *KubeCarrierWebhookHandler) Handle(ctx context.Context, req admission.Re
 
 	switch req.Operation {
 	case adminv1beta1.Create:
-		var changed bool
-		if obj.Spec.LogLevel == nil {
-			changed = true
-			webhook.SetDefaultLogLevel(webhook.LogLevelSetter(&obj.Spec))
-		}
-		changed = changed || obj.Spec.API.Default()
+		changed := obj.Spec.API.Default()
 		if err := r.validateCreate(obj); err != nil {
 			return admission.Denied(err.Error())
 		}
