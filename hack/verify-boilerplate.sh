@@ -22,4 +22,5 @@ cd $(dirname $0)/..
 
 boilerplate \
   -boilerplates hack/boilerplate/ \
-  -exclude hack/docgen
+  -exclude hack/docgen \
+  -verbose
