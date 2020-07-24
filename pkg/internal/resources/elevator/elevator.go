@@ -47,7 +47,7 @@ type Config struct {
 	ProviderKind, ProviderVersion, ProviderGroup, ProviderPlural string
 	TenantKind, TenantVersion, TenantGroup, TenantPlural         string
 	DerivedCRName                                                string
-	LogLevel                                                     int
+	LogLevel                                                     *int
 }
 
 var k = kustomize.NewDefaultKustomize()
@@ -80,6 +80,11 @@ func Manifests(c Config) ([]unstructured.Unstructured, error) {
 		Version: c.TenantVersion,
 		Kind:    c.TenantKind,
 	})
+
+	var logLevel int
+	if c.LogLevel != nil {
+		logLevel = *c.LogLevel
+	}
 
 	// Patch environment
 	// Note:
@@ -134,7 +139,7 @@ func Manifests(c Config) ([]unstructured.Unstructured, error) {
 								},
 								{
 									"name":  "VERBOSE",
-									"value": strconv.FormatInt(int64(c.LogLevel), 10),
+									"value": strconv.FormatInt(int64(logLevel), 10),
 								},
 							},
 						},

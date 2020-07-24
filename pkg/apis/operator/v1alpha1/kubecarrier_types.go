@@ -29,7 +29,11 @@ type KubeCarrierSpec struct {
 	Paused PausedFlagType `json:"paused,omitempty"`
 	// LogLevel
 	// +optional
-	LogLevel int `json:"logLevel,omitempty"`
+	LogLevel *int `json:"logLevel,omitempty"`
+}
+
+func (a *KubeCarrierSpec) SetLogLevel(logLevel int) {
+	a.LogLevel = &logLevel
 }
 
 // KubeCarrierStatus defines the observed state of KubeCarrier

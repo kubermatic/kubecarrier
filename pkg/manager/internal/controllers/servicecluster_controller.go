@@ -22,7 +22,6 @@ import (
 	"time"
 
 	"github.com/go-logr/logr"
-	"github.com/spf13/viper"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -116,7 +115,6 @@ func (r *ServiceClusterReconciler) reconcileFerry(
 			KubeconfigSecret: operatorv1alpha1.ObjectReference{
 				Name: serviceCluster.Spec.KubeconfigSecret.Name,
 			},
-			LogLevel: viper.GetInt("verbose"),
 		},
 	}
 

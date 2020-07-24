@@ -21,6 +21,7 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/spf13/viper"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"sigs.k8s.io/controller-runtime/pkg/client/apiutil"
@@ -34,6 +35,14 @@ var dns1123LabelRegex = regexp.MustCompile(`^[a-z0-9]([-a-z0-9]*[a-z0-9])?$`)
 // A DNS-1123 label must consist of lower case alphanumeric characters or '-', and must start and end with an alphanumeric character.
 func IsDNS1123Label(s string) bool {
 	return dns1123LabelRegex.MatchString(s)
+}
+
+type LogLevelSetter interface {
+	SetLogLevel(int)
+}
+
+func SetDefaultLogLevel(spec LogLevelSetter) {
+	spec.SetLogLevel(viper.GetInt("verbose"))
 }
 
 // GenerateMutateWebhookPath and GenerateValidatingWebhookPath are used to generate the Path to register webhooks for runtime.Object.

@@ -149,6 +149,22 @@ func run(flags *flags, log logr.Logger) error {
 		&webhook.Admission{Handler: &webhooks.KubeCarrierWebhookHandler{
 			Log: log.WithName("validating webhooks").WithName("KubeCarrier"),
 		}})
+	wbh.Register(utilwebhook.GenerateMutateWebhookPath(&operatorv1alpha1.APIServer{}, mgr.GetScheme()),
+		&webhook.Admission{Handler: &webhooks.APIServerWebhookHandler{
+			Log: log.WithName("validating webhooks").WithName("APIServer"),
+		}})
+	wbh.Register(utilwebhook.GenerateMutateWebhookPath(&operatorv1alpha1.Catapult{}, mgr.GetScheme()),
+		&webhook.Admission{Handler: &webhooks.CatapultWebhookHandler{
+			Log: log.WithName("validating webhooks").WithName("Catapult"),
+		}})
+	wbh.Register(utilwebhook.GenerateMutateWebhookPath(&operatorv1alpha1.Elevator{}, mgr.GetScheme()),
+		&webhook.Admission{Handler: &webhooks.ElevatorWebhookHandler{
+			Log: log.WithName("validating webhooks").WithName("Elevator"),
+		}})
+	wbh.Register(utilwebhook.GenerateMutateWebhookPath(&operatorv1alpha1.Ferry{}, mgr.GetScheme()),
+		&webhook.Admission{Handler: &webhooks.FerryWebhookHandler{
+			Log: log.WithName("validating webhooks").WithName("Ferry"),
+		}})
 
 	if err := mgr.AddReadyzCheck("ping", healthz.Ping); err != nil {
 		return fmt.Errorf("adding readyz checker: %w", err)

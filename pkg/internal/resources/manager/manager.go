@@ -36,7 +36,7 @@ type Config struct {
 	Namespace string
 	// Name of this KubeCarrier object
 	Name     string
-	LogLevel int
+	LogLevel *int
 }
 
 var k = kustomize.NewDefaultKustomize()
@@ -59,6 +59,10 @@ func Manifests(c Config) ([]unstructured.Unstructured, error) {
 	}); err != nil {
 		return nil, fmt.Errorf("cannot mkdir: %w", err)
 	}
+	var logLevel int
+	if c.LogLevel != nil {
+		logLevel = *c.LogLevel
+	}
 	managerEnv := map[string]interface{}{
 		"apiVersion": "apps/v1",
 		"kind":       "Deployment",
@@ -75,7 +79,7 @@ func Manifests(c Config) ([]unstructured.Unstructured, error) {
 							"env": []map[string]interface{}{
 								{
 									"name":  "VERBOSE",
-									"value": strconv.FormatInt(int64(c.LogLevel), 10),
+									"value": strconv.FormatInt(int64(logLevel), 10),
 								},
 							},
 						},

@@ -23,7 +23,6 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/gobuffalo/flect"
-	"github.com/spf13/viper"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -254,7 +253,6 @@ func (r *DerivedCustomResourceReconciler) Reconcile(req ctrl.Request) (ctrl.Resu
 			Namespace: dcr.Namespace,
 		},
 		Spec: operatorv1alpha1.ElevatorSpec{
-			LogLevel: viper.GetInt("verbose"),
 			DerivedCR: operatorv1alpha1.ObjectReference{
 				Name: dcr.Name,
 			},

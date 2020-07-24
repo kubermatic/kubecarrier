@@ -62,6 +62,10 @@ func Manifests(c Config) ([]unstructured.Unstructured, error) {
 		}
 	}
 	const AuthModeEnv = "AUTHENTICATION_MODE"
+	var logLevel int
+	if c.Spec.LogLevel != nil {
+		logLevel = *c.Spec.LogLevel
+	}
 
 	deploymentPatch := &appsv1.Deployment{
 		TypeMeta: metav1.TypeMeta{
@@ -105,7 +109,7 @@ func Manifests(c Config) ([]unstructured.Unstructured, error) {
 								},
 								{
 									Name:  "VERBOSE",
-									Value: strconv.FormatInt(int64(c.Spec.LogLevel), 10),
+									Value: strconv.FormatInt(int64(logLevel), 10),
 								},
 							},
 							VolumeMounts: []corev1.VolumeMount{

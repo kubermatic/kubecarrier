@@ -40,7 +40,11 @@ type CatapultSpec struct {
 	Paused PausedFlagType `json:"paused,omitempty"`
 	// LogLevel
 	// +optional
-	LogLevel int `json:"logLevel,omitempty"`
+	LogLevel *int `json:"logLevel,omitempty"`
+}
+
+func (a *CatapultSpec) SetLogLevel(logLevel int) {
+	a.LogLevel = &logLevel
 }
 
 // CatapultStatus defines the observed state of Catapult.

@@ -28,7 +28,11 @@ type FerrySpec struct {
 	Paused PausedFlagType `json:"paused,omitempty"`
 	// LogLevel
 	// +optional
-	LogLevel int `json:"logLevel,omitempty"`
+	LogLevel *int `json:"logLevel,omitempty"`
+}
+
+func (a *FerrySpec) SetLogLevel(logLevel int) {
+	a.LogLevel = &logLevel
 }
 
 // FerryStatus defines the observed state of Ferry.

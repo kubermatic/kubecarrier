@@ -175,7 +175,7 @@ func createNamespace(ctx context.Context, c client.Client, ns *corev1.Namespace)
 	}
 }
 
-func reconcileOperator(ctx context.Context, log logr.Logger, c *util.ClientWatcher, kubecarrierNamespace *corev1.Namespace, logLevel int) func() error {
+func reconcileOperator(ctx context.Context, log logr.Logger, c *util.ClientWatcher, kubecarrierNamespace *corev1.Namespace, logLevel *int) func() error {
 	return func() error {
 		// Kustomize Build
 		objects, err := operator.Manifests(

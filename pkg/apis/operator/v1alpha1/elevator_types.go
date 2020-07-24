@@ -32,7 +32,11 @@ type ElevatorSpec struct {
 	Paused PausedFlagType `json:"paused,omitempty"`
 	// LogLevel
 	// +optional
-	LogLevel int `json:"logLevel,omitempty"`
+	LogLevel *int `json:"logLevel,omitempty"`
+}
+
+func (a *ElevatorSpec) SetLogLevel(logLevel int) {
+	a.LogLevel = &logLevel
 }
 
 // ElevatorStatus defines the observed state of Elevator.

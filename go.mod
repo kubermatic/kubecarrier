@@ -5,6 +5,8 @@ go 1.14
 replace k8s.io/client-go => k8s.io/client-go v0.18.5
 
 require (
+	github.com/Masterminds/goutils v1.1.0 // indirect
+	github.com/Masterminds/semver v1.5.0 // indirect
 	github.com/Masterminds/sprig v2.22.0+incompatible
 	github.com/coreos/go-oidc v2.1.0+incompatible
 	github.com/desertbit/timer v0.0.0-20180107155436-c41aec40b27f // indirect
@@ -18,9 +20,10 @@ require (
 	github.com/grpc-ecosystem/go-grpc-middleware v1.2.0
 	github.com/grpc-ecosystem/go-grpc-prometheus v1.2.0
 	github.com/grpc-ecosystem/grpc-gateway v1.14.3
+	github.com/huandu/xstrings v1.3.2 // indirect
 	github.com/improbable-eng/grpc-web v0.12.0
 	github.com/jetstack/cert-manager v0.13.0
-	github.com/kubermatic/utils v0.0.0-20200723054356-b8a08f7abeb2
+	github.com/kubermatic/utils v0.1.0-DEBUG
 	github.com/rs/cors v1.7.0 // indirect
 	github.com/spf13/cobra v1.0.0
 	github.com/spf13/pflag v1.0.5
