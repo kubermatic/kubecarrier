@@ -119,9 +119,9 @@ ifdef CI
 	@hack/proto-codegen.sh
 else
 	@docker run --rm -e CI=true -w /src -v $(PWD):/src \
+		--user "$(id -u):$(id -g)" \
 		quay.io/kubecarrier/dev:${DEV_IMAGE_TAG} \
 		make generate-grpc
-	@sudo chown -R "$(shell id -u):$(shell id -g)" .
 endif
 .PHONY: generate-grpc
 
@@ -132,9 +132,9 @@ ifdef CI
 	@FIX_GOLDEN=1 go test ./pkg/internal/resources/...
 else
 	@docker run --rm -e CI=true -w /src -v $(PWD):/src \
+		--user "$(id -u):$(id -g)" \
 		quay.io/kubecarrier/dev:${DEV_IMAGE_TAG} \
 		make generate-config
-	@sudo chown -R "$(shell id -u):$(shell id -g)" .
 endif
 .PHONY: generate-config
 
