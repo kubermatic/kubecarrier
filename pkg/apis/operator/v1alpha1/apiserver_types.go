@@ -62,6 +62,13 @@ type APIServerSpec struct {
 	// +optional
 	// Authentication configuration
 	Authentication Authentication `json:"authentication,omitempty"`
+	// LogLevel
+	// +optional
+	LogLevel *int `json:"logLevel,omitempty"`
+}
+
+func (a *APIServerSpec) SetLogLevel(logLevel int) {
+	a.LogLevel = &logLevel
 }
 
 func (a APIServerSpec) Validate() error {

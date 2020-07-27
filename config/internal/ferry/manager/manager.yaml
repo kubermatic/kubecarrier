@@ -22,6 +22,7 @@ spec:
         - "--service-cluster-name=$(SERVICE_CLUSTER)"
         - "--service-cluster-kubeconfig=/kubeconfig/kubeconfig"
         - "--provider-namespace=$(KUBERNETES_NAMESPACE)"
+        - "-v=$(LOG_LEVEL)"
         name: manager
         env:
           # Inserted during manifest generation in resouce

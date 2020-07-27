@@ -129,15 +129,30 @@ func runE(conf *rest.Config, log logr.Logger, cmd *cobra.Command, flags *flags) 
 			Name: constants.KubeCarrierDefaultNamespace,
 		},
 	}
+
+	kubeCarrier := &operatorv1alpha1.KubeCarrier{}
+	if flags.ConfigFile != "" {
+		f, err := os.Open(flags.ConfigFile)
+		if err != nil {
+			return err
+		}
+		yamlErr := yaml.NewYAMLOrJSONDecoder(f, 4*1024).Decode(kubeCarrier)
+		if err := f.Close(); err != nil {
+			return err
+		}
+		if yamlErr != nil {
+			return err
+		}
+	}
 	if err := spinner.AttachSpinnerTo(s, startTime, fmt.Sprintf("Create %q Namespace", ns.Name), createNamespace(ctx, c, ns)); err != nil {
 		return fmt.Errorf("creating KubeCarrier system namespace: %w", err)
 	}
 
-	if err := spinner.AttachSpinnerTo(s, startTime, "Deploy KubeCarrier Operator", reconcileOperator(ctx, log, c, ns)); err != nil {
+	if err := spinner.AttachSpinnerTo(s, startTime, "Deploy KubeCarrier Operator", reconcileOperator(ctx, log, c, ns, kubeCarrier.Spec.LogLevel)); err != nil {
 		return fmt.Errorf("deploying KubeCarrier operator: %w", err)
 	}
 
-	if err := spinner.AttachSpinnerTo(s, startTime, "Deploy KubeCarrier", deployKubeCarrier(ctx, conf, flags.ConfigFile)); err != nil {
+	if err := spinner.AttachSpinnerTo(s, startTime, "Deploy KubeCarrier", deployKubeCarrier(ctx, conf, kubeCarrier)); err != nil {
 		return fmt.Errorf("deploying KubeCarrier controller manager: %w", err)
 	}
 
@@ -160,12 +175,13 @@ func createNamespace(ctx context.Context, c client.Client, ns *corev1.Namespace)
 	}
 }
 
-func reconcileOperator(ctx context.Context, log logr.Logger, c *util.ClientWatcher, kubecarrierNamespace *corev1.Namespace) func() error {
+func reconcileOperator(ctx context.Context, log logr.Logger, c *util.ClientWatcher, kubecarrierNamespace *corev1.Namespace, logLevel int) func() error {
 	return func() error {
 		// Kustomize Build
 		objects, err := operator.Manifests(
 			operator.Config{
 				Namespace: kubecarrierNamespace.Name,
+				LogLevel:  &logLevel,
 			})
 		if err != nil {
 			return fmt.Errorf("creating operator manifests: %w", err)
@@ -195,7 +211,7 @@ func reconcileOperator(ctx context.Context, log logr.Logger, c *util.ClientWatch
 }
 
 // deployKubeCarrier deploys the KubeCarrier Object in a kubernetes cluster.
-func deployKubeCarrier(ctx context.Context, conf *rest.Config, configFile string) func() error {
+func deployKubeCarrier(ctx context.Context, conf *rest.Config, kubeCarrier *operatorv1alpha1.KubeCarrier) func() error {
 	return func() error {
 		// Create another client due to some issues about the restmapper.
 		// The issue is that if you use the client that created before, and here try to create the kubeCarrier,
@@ -203,20 +219,6 @@ func deployKubeCarrier(ctx context.Context, conf *rest.Config, configFile string
 		// but actually, the scheme is already added to the runtime scheme.
 		// And in the following, reinitializing the client solves the issue.
 
-		kubeCarrier := &operatorv1alpha1.KubeCarrier{}
-		if configFile != "" {
-			f, err := os.Open(configFile)
-			if err != nil {
-				return err
-			}
-			yamlErr := yaml.NewYAMLOrJSONDecoder(f, 4*1024).Decode(kubeCarrier)
-			if err := f.Close(); err != nil {
-				return err
-			}
-			if yamlErr != nil {
-				return err
-			}
-		}
 		kubeCarrier.Name = constants.KubeCarrierDefaultName
 		w, err := util.NewClientWatcher(conf, scheme, ctrl.Log)
 		if err != nil {

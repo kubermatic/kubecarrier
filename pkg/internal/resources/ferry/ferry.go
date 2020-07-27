@@ -18,12 +18,14 @@ package ferry
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
 
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"sigs.k8s.io/kustomize/v3/pkg/gvk"
 	"sigs.k8s.io/kustomize/v3/pkg/image"
 	"sigs.k8s.io/kustomize/v3/pkg/types"
+	"sigs.k8s.io/yaml"
 
 	"github.com/kubermatic/kubecarrier/pkg/internal/kustomize"
 	"github.com/kubermatic/kubecarrier/pkg/internal/resources/constants"
@@ -40,6 +42,8 @@ type Config struct {
 
 	// KubeconfigSecretName of the secret holding the service cluster kubeconfig under the "kubeconfig" key
 	KubeconfigSecretName string
+	// LogLevel
+	LogLevel *int
 }
 
 var k = kustomize.NewDefaultKustomize()
@@ -57,6 +61,9 @@ func Manifests(c Config) ([]unstructured.Unstructured, error) {
 				Name:   "quay.io/kubecarrier/ferry",
 				NewTag: v.Version,
 			},
+		},
+		PatchesStrategicMerge: []types.PatchStrategicMerge{
+			"manager_env_patch.yaml",
 		},
 		PatchesJson6902: []types.PatchJson6902{{
 			Target: &types.PatchTarget{
@@ -78,6 +85,44 @@ func Manifests(c Config) ([]unstructured.Unstructured, error) {
 		Resources: []string{"../default"},
 	}); err != nil {
 		return nil, fmt.Errorf("cannot MkLayer: %w", err)
+	}
+
+	var logLevel int
+	if c.LogLevel != nil {
+		logLevel = *c.LogLevel
+	}
+
+	managerEnv := map[string]interface{}{
+		"apiVersion": "apps/v1",
+		"kind":       "Deployment",
+		"metadata": map[string]string{
+			"name":      "manager",
+			"namespace": "system",
+		},
+		"spec": map[string]interface{}{
+			"template": map[string]interface{}{
+				"spec": map[string]interface{}{
+					"containers": []map[string]interface{}{
+						{
+							"name": "manager",
+							"env": []map[string]interface{}{
+								{
+									"name":  "LOG_LEVEL",
+									"value": strconv.FormatInt(int64(logLevel), 10),
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+	managerEnvBytes, err := yaml.Marshal(managerEnv)
+	if err != nil {
+		return nil, fmt.Errorf("marshalling manager env patch: %w", err)
+	}
+	if err = kc.WriteFile("/man/manager_env_patch.yaml", managerEnvBytes); err != nil {
+		return nil, fmt.Errorf("writing manager_env_patch.yaml: %w", err)
 	}
 
 	// execute kustomize

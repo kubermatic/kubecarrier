@@ -157,6 +157,9 @@ spec:
                           type: object
                       type: object
                     type: array
+                  logLevel:
+                    description: LogLevel
+                    type: integer
                   tlsSecretRef:
                     description: TLSSecretRef references the TLS certificate and private
                       key for serving the KubeCarrier API.
@@ -167,6 +170,9 @@ spec:
                     - name
                     type: object
                 type: object
+              logLevel:
+                description: LogLevel
+                type: integer
               paused:
                 description: Paused tell controller to pause reconciliation process
                   and assume that KubaCarrier is ready

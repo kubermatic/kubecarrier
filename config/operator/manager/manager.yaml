@@ -21,6 +21,7 @@ spec:
         name: manager
         args:
           - "--cert-dir=$(CERT_DIR)"
+          - "-v=$(LOG_LEVEL)"
         env:
           - name: CERT_DIR
             value: "/tmp/k8s-webhook-server/serving-certs"

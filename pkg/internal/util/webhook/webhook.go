@@ -17,13 +17,20 @@ limitations under the License.
 package webhook
 
 import (
+	"context"
 	"fmt"
 	"regexp"
 	"strings"
 
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/apimachinery/pkg/types"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/apiutil"
+
+	"github.com/kubermatic/kubecarrier/pkg/internal/constants"
+
+	operatorv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/operator/v1alpha1"
 )
 
 const DNS1123LabelDescription = "A DNS-1123 label must consist of lower case alphanumeric characters or '-', and must start and end with an alphanumeric character. (e.g. 'my-name',  or '123-abc', regex used for validation is '[a-z0-9]([-a-z0-9]*[a-z0-9])?'"
@@ -34,6 +41,19 @@ var dns1123LabelRegex = regexp.MustCompile(`^[a-z0-9]([-a-z0-9]*[a-z0-9])?$`)
 // A DNS-1123 label must consist of lower case alphanumeric characters or '-', and must start and end with an alphanumeric character.
 func IsDNS1123Label(s string) bool {
 	return dns1123LabelRegex.MatchString(s)
+}
+
+type LogLevelSetter interface {
+	SetLogLevel(int)
+}
+
+func SetDefaultLogLevel(ctx context.Context, c client.Client, spec LogLevelSetter) error {
+	kubeCarrier := &operatorv1alpha1.KubeCarrier{}
+	if err := c.Get(ctx, types.NamespacedName{Name: constants.KubeCarrierDefaultName}, kubeCarrier); err != nil {
+		return err
+	}
+	spec.SetLogLevel(kubeCarrier.Spec.LogLevel)
+	return nil
 }
 
 // GenerateMutateWebhookPath and GenerateValidatingWebhookPath are used to generate the Path to register webhooks for runtime.Object.

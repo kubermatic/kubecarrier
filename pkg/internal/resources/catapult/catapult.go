@@ -18,6 +18,7 @@ package catapult
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
 
 	adminv1beta1 "k8s.io/api/admissionregistration/v1beta1"
@@ -50,6 +51,7 @@ type Config struct {
 	ServiceClusterName, ServiceClusterSecret string
 
 	WebhookStrategy string
+	LogLevel        *int
 }
 
 var k = kustomize.NewDefaultKustomize()
@@ -81,6 +83,10 @@ func Manifests(c Config) ([]unstructured.Unstructured, error) {
 		Kind:    c.ManagementClusterKind,
 	})
 
+	var logLevel int
+	if c.LogLevel != nil {
+		logLevel = *c.LogLevel
+	}
 	// Patch environment
 	// Note:
 	// we are not using *appsv1.Deployment here,
@@ -139,6 +145,10 @@ func Manifests(c Config) ([]unstructured.Unstructured, error) {
 								{
 									"name":  "CATAPULT_WEBHOOK_STRATEGY",
 									"value": c.WebhookStrategy,
+								},
+								{
+									"name":  "LOG_LEVEL",
+									"value": strconv.FormatInt(int64(logLevel), 10),
 								},
 							},
 							"volumeMounts": []map[string]interface{}{

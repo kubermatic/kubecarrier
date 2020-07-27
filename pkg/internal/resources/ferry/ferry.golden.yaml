@@ -184,9 +184,12 @@
           - --service-cluster-name=$(SERVICE_CLUSTER)
           - --service-cluster-kubeconfig=/kubeconfig/kubeconfig
           - --provider-namespace=$(KUBERNETES_NAMESPACE)
+          - -v=$(LOG_LEVEL)
           env:
           - name: SERVICE_CLUSTER
             value: hans
+          - name: LOG_LEVEL
+            value: "0"
           - name: KUBERNETES_NAMESPACE
             valueFrom:
               fieldRef:

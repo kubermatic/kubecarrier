@@ -26,6 +26,13 @@ type FerrySpec struct {
 	KubeconfigSecret ObjectReference `json:"kubeconfigSecret"`
 	// Paused tell controller to pause reconciliation process and assume that Ferry is ready
 	Paused PausedFlagType `json:"paused,omitempty"`
+	// LogLevel
+	// +optional
+	LogLevel *int `json:"logLevel,omitempty"`
+}
+
+func (a *FerrySpec) SetLogLevel(logLevel int) {
+	a.LogLevel = &logLevel
 }
 
 // FerryStatus defines the observed state of Ferry.

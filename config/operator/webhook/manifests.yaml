@@ -11,6 +11,74 @@ webhooks:
     service:
       name: webhook-service
       namespace: system
+      path: /mutate-operator-kubecarrier-io-v1alpha1-apiserver
+  failurePolicy: Fail
+  name: mapiserver.kubecarrier.io
+  rules:
+  - apiGroups:
+    - operator.kubecarrier.io
+    apiVersions:
+    - v1alpha1
+    operations:
+    - CREATE
+    resources:
+    - apiservers
+- clientConfig:
+    caBundle: Cg==
+    service:
+      name: webhook-service
+      namespace: system
+      path: /mutate-operator-kubecarrier-io-v1alpha1-catapult
+  failurePolicy: Fail
+  name: mcatapult.kubecarrier.io
+  rules:
+  - apiGroups:
+    - operator.kubecarrier.io
+    apiVersions:
+    - v1alpha1
+    operations:
+    - CREATE
+    resources:
+    - catapults
+- clientConfig:
+    caBundle: Cg==
+    service:
+      name: webhook-service
+      namespace: system
+      path: /mutate-operator-kubecarrier-io-v1alpha1-elevator
+  failurePolicy: Fail
+  name: melevator.kubecarrier.io
+  rules:
+  - apiGroups:
+    - operator.kubecarrier.io
+    apiVersions:
+    - v1alpha1
+    operations:
+    - CREATE
+    resources:
+    - elevators
+- clientConfig:
+    caBundle: Cg==
+    service:
+      name: webhook-service
+      namespace: system
+      path: /mutate-operator-kubecarrier-io-v1alpha1-ferry
+  failurePolicy: Fail
+  name: mferry.kubecarrier.io
+  rules:
+  - apiGroups:
+    - operator.kubecarrier.io
+    apiVersions:
+    - v1alpha1
+    operations:
+    - CREATE
+    resources:
+    - ferries
+- clientConfig:
+    caBundle: Cg==
+    service:
+      name: webhook-service
+      namespace: system
       path: /mutate-operator-kubecarrier-io-v1alpha1-kubecarrier
   failurePolicy: Fail
   name: mkubecarrier.kubecarrier.io

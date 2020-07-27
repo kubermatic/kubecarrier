@@ -18,10 +18,12 @@ package manager
 
 import (
 	"fmt"
+	"strconv"
 
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"sigs.k8s.io/kustomize/v3/pkg/image"
 	"sigs.k8s.io/kustomize/v3/pkg/types"
+	"sigs.k8s.io/yaml"
 
 	"github.com/kubermatic/kubecarrier/pkg/internal/kustomize"
 	"github.com/kubermatic/kubecarrier/pkg/internal/resources/constants"
@@ -33,7 +35,8 @@ type Config struct {
 	// Namespace is the KubeCarrier controller manager should be deployed into.
 	Namespace string
 	// Name of this KubeCarrier object
-	Name string
+	Name     string
+	LogLevel int
 }
 
 var k = kustomize.NewDefaultKustomize()
@@ -49,9 +52,44 @@ func Manifests(c Config) ([]unstructured.Unstructured, error) {
 				NewTag: v.Version,
 			},
 		},
+		PatchesStrategicMerge: []types.PatchStrategicMerge{
+			"manager_env_patch.yaml",
+		},
 		Resources: []string{"../default"},
 	}); err != nil {
 		return nil, fmt.Errorf("cannot mkdir: %w", err)
+	}
+	managerEnv := map[string]interface{}{
+		"apiVersion": "apps/v1",
+		"kind":       "Deployment",
+		"metadata": map[string]string{
+			"name":      "controller-manager",
+			"namespace": "system",
+		},
+		"spec": map[string]interface{}{
+			"template": map[string]interface{}{
+				"spec": map[string]interface{}{
+					"containers": []map[string]interface{}{
+						{
+							"name": "manager",
+							"env": []map[string]interface{}{
+								{
+									"name":  "LOG_LEVEL",
+									"value": strconv.FormatInt(int64(c.LogLevel), 10),
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+	managerEnvBytes, err := yaml.Marshal(managerEnv)
+	if err != nil {
+		return nil, fmt.Errorf("marshalling manager env patch: %w", err)
+	}
+	if err = kc.WriteFile("/man/manager_env_patch.yaml", managerEnvBytes); err != nil {
+		return nil, fmt.Errorf("writing manager_env_patch.yaml: %w", err)
 	}
 
 	// execute kustomize

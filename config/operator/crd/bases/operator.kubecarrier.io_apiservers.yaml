@@ -152,6 +152,9 @@ spec:
                       type: object
                   type: object
                 type: array
+              logLevel:
+                description: LogLevel
+                type: integer
               tlsSecretRef:
                 description: TLSSecretRef references the TLS certificate and private
                   key for serving the KubeCarrier API.

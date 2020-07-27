@@ -122,6 +122,7 @@ func (r *KubeCarrierReconciler) reconcileManager(kubeCarrier *operatorv1alpha1.K
 		manager.Config{
 			Name:      kubeCarrier.Name,
 			Namespace: constants.KubeCarrierDefaultNamespace,
+			LogLevel:  kubeCarrier.Spec.LogLevel,
 		})
 	if err != nil {
 		return fmt.Errorf("creating manager manifests: %w", err)
@@ -197,6 +198,7 @@ func (r *KubeCarrierReconciler) reconcileAPIServer(ctx context.Context, kubeCarr
 		return nil
 	}
 	// Update APIServer
+	desiredAPIServer.Spec.LogLevel = currentAPIServer.Spec.LogLevel
 	currentAPIServer.Spec = desiredAPIServer.Spec
 	if err := r.Update(ctx, currentAPIServer); err != nil {
 		return fmt.Errorf("updating APIServer: %w", err)

@@ -18,6 +18,7 @@ package apiserver
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
 
 	appsv1 "k8s.io/api/apps/v1"
@@ -61,6 +62,10 @@ func Manifests(c Config) ([]unstructured.Unstructured, error) {
 		}
 	}
 	const AuthModeEnv = "AUTHENTICATION_MODE"
+	var logLevel int
+	if c.Spec.LogLevel != nil {
+		logLevel = *c.Spec.LogLevel
+	}
 
 	deploymentPatch := &appsv1.Deployment{
 		TypeMeta: metav1.TypeMeta{
@@ -83,6 +88,7 @@ func Manifests(c Config) ([]unstructured.Unstructured, error) {
 								"--tls-cert-file=$(API_SERVER_TLS_CERT_FILE)",
 								"--tls-private-key-file=$(API_SERVER_TLS_PRIVATE_KEY_FILE)",
 								"--authentication-mode=$(AUTHENTICATION_MODE)",
+								"-v=$(LOG_LEVEL)",
 							},
 							Env: []corev1.EnvVar{
 								{
@@ -100,6 +106,10 @@ func Manifests(c Config) ([]unstructured.Unstructured, error) {
 								{
 									Name:  AuthModeEnv,
 									Value: "",
+								},
+								{
+									Name:  "LOG_LEVEL",
+									Value: strconv.FormatInt(int64(logLevel), 10),
 								},
 							},
 							VolumeMounts: []corev1.VolumeMount{

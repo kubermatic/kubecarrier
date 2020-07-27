@@ -154,6 +154,9 @@
                         type: object
                     type: object
                   type: array
+                logLevel:
+                  description: LogLevel
+                  type: integer
                 tlsSecretRef:
                   description: TLSSecretRef references the TLS certificate and private
                     key for serving the KubeCarrier API.
@@ -278,6 +281,9 @@
             spec:
               description: CatapultSpec defines the desired state of Catapult.
               properties:
+                logLevel:
+                  description: LogLevel
+                  type: integer
                 managementClusterCRD:
                   description: References the CRD in the Management Cluster.
                   properties:
@@ -465,6 +471,9 @@
                   required:
                   - name
                   type: object
+                logLevel:
+                  description: LogLevel
+                  type: integer
                 paused:
                   description: Paused tell controller to pause reconciliation process
                     and assume that Catapult is ready
@@ -641,6 +650,9 @@
                   required:
                   - name
                   type: object
+                logLevel:
+                  description: LogLevel
+                  type: integer
                 paused:
                   description: Paused tell controller to pause reconciliation process
                     and assume that Ferry is ready
@@ -871,6 +883,9 @@
                             type: object
                         type: object
                       type: array
+                    logLevel:
+                      description: LogLevel
+                      type: integer
                     tlsSecretRef:
                       description: TLSSecretRef references the TLS certificate and
                         private key for serving the KubeCarrier API.
@@ -881,6 +896,9 @@
                       - name
                       type: object
                   type: object
+                logLevel:
+                  description: LogLevel
+                  type: integer
                 paused:
                   description: Paused tell controller to pause reconciliation process
                     and assume that KubaCarrier is ready
@@ -1289,7 +1307,10 @@
         containers:
         - args:
           - --cert-dir=$(CERT_DIR)
+          - -v=$(LOG_LEVEL)
           env:
+          - name: LOG_LEVEL
+            value: "0"
           - name: CERT_DIR
             value: /tmp/k8s-webhook-server/serving-certs
           image: quay.io/kubecarrier/operator:was not build properly
@@ -1337,6 +1358,74 @@
       kubecarrier.io/role: operator
     name: kubecarrier-operator-mutating-webhook-configuration
   webhooks:
+  - clientConfig:
+      caBundle: Cg==
+      service:
+        name: kubecarrier-operator-webhook-service
+        namespace: test3000
+        path: /mutate-operator-kubecarrier-io-v1alpha1-apiserver
+    failurePolicy: Fail
+    name: mapiserver.kubecarrier.io
+    rules:
+    - apiGroups:
+      - operator.kubecarrier.io
+      apiVersions:
+      - v1alpha1
+      operations:
+      - CREATE
+      resources:
+      - apiservers
+  - clientConfig:
+      caBundle: Cg==
+      service:
+        name: kubecarrier-operator-webhook-service
+        namespace: test3000
+        path: /mutate-operator-kubecarrier-io-v1alpha1-catapult
+    failurePolicy: Fail
+    name: mcatapult.kubecarrier.io
+    rules:
+    - apiGroups:
+      - operator.kubecarrier.io
+      apiVersions:
+      - v1alpha1
+      operations:
+      - CREATE
+      resources:
+      - catapults
+  - clientConfig:
+      caBundle: Cg==
+      service:
+        name: kubecarrier-operator-webhook-service
+        namespace: test3000
+        path: /mutate-operator-kubecarrier-io-v1alpha1-elevator
+    failurePolicy: Fail
+    name: melevator.kubecarrier.io
+    rules:
+    - apiGroups:
+      - operator.kubecarrier.io
+      apiVersions:
+      - v1alpha1
+      operations:
+      - CREATE
+      resources:
+      - elevators
+  - clientConfig:
+      caBundle: Cg==
+      service:
+        name: kubecarrier-operator-webhook-service
+        namespace: test3000
+        path: /mutate-operator-kubecarrier-io-v1alpha1-ferry
+    failurePolicy: Fail
+    name: mferry.kubecarrier.io
+    rules:
+    - apiGroups:
+      - operator.kubecarrier.io
+      apiVersions:
+      - v1alpha1
+      operations:
+      - CREATE
+      resources:
+      - ferries
   - clientConfig:
       caBundle: Cg==
       service:

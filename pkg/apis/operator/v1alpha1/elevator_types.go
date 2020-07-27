@@ -30,6 +30,13 @@ type ElevatorSpec struct {
 	DerivedCR ObjectReference `json:"derivedCR"`
 	// Paused tell controller to pause reconciliation process and assume that Catapult is ready
 	Paused PausedFlagType `json:"paused,omitempty"`
+	// LogLevel
+	// +optional
+	LogLevel *int `json:"logLevel,omitempty"`
+}
+
+func (a *ElevatorSpec) SetLogLevel(logLevel int) {
+	a.LogLevel = &logLevel
 }
 
 // ElevatorStatus defines the observed state of Elevator.
