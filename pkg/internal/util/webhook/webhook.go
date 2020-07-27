@@ -24,6 +24,7 @@ import (
 
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/apiutil"
 
@@ -48,12 +49,7 @@ type LogLevelSetter interface {
 
 func SetDefaultLogLevel(ctx context.Context, c client.Client, spec LogLevelSetter) error {
 	kubeCarrier := &operatorv1alpha1.KubeCarrier{}
-	kubeCarrier.Name = constants.KubeCarrierDefaultName
-	objKey, err := client.ObjectKeyFromObject(kubeCarrier)
-	if err != nil {
-		return err
-	}
-	if err := c.Get(ctx, objKey, kubeCarrier); err != nil {
+	if err := c.Get(ctx, types.NamespacedName{Name: constants.KubeCarrierDefaultName}, kubeCarrier); err != nil {
 		return err
 	}
 	spec.SetLogLevel(kubeCarrier.Spec.LogLevel)
