@@ -163,14 +163,9 @@ func (r *CustomResourceDiscoveryReconciler) handleDeletion(ctx context.Context, 
 }
 
 func (r *CustomResourceDiscoveryReconciler) SetupWithManager(managementMgr ctrl.Manager) error {
-	crdSource := &source.Kind{Type: &apiextensionsv1.CustomResourceDefinition{}}
-	if err := crdSource.InjectCache(r.ServiceCache); err != nil {
-		return fmt.Errorf("injecting cache: %w", err)
-	}
-
 	return ctrl.NewControllerManagedBy(managementMgr).
 		For(&corev1alpha1.CustomResourceDiscovery{}).
-		Watches(source.Func(crdSource.Start), owner.EnqueueRequestForOwner(&corev1alpha1.CustomResourceDiscovery{}, r.ManagementScheme)).
+		Watches(source.NewKindWithCache(&apiextensionsv1.CustomResourceDefinition{}, r.ServiceCache), owner.EnqueueRequestForOwner(&corev1alpha1.CustomResourceDiscovery{}, r.ManagementScheme)).
 		WithEventFilter(util.PredicateFn(func(obj runtime.Object) bool {
 			if crDiscovery, ok := obj.(*corev1alpha1.CustomResourceDiscovery); ok {
 				// We are just interested in CustomResourceDiscovery objects assigned to this ServiceCluster.

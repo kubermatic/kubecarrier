@@ -107,11 +107,6 @@ func (r *AdoptionReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 }
 
 func (r *AdoptionReconciler) SetupWithManager(mgr ctrl.Manager) error {
-	serviceClusterSource := &source.Kind{Type: r.newServiceObject()}
-	if err := serviceClusterSource.InjectCache(r.ServiceClusterCache); err != nil {
-		return fmt.Errorf("injecting cache: %w", err)
-	}
-
 	c, err := controller.New(
 		strings.ToLower(r.ServiceClusterGVK.Kind),
 		mgr, controller.Options{
@@ -122,7 +117,7 @@ func (r *AdoptionReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	}
 
 	return c.Watch(
-		source.Func(serviceClusterSource.Start),
+		source.NewKindWithCache(r.newServiceObject(), r.ServiceClusterCache),
 		&handler.EnqueueRequestForObject{},
 		util.PredicateFn(func(obj runtime.Object) bool {
 			// we are only interested in unowned objects

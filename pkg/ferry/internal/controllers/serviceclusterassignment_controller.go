@@ -154,14 +154,9 @@ func (r *ServiceClusterAssignmentReconciler) handleDeletion(ctx context.Context,
 }
 
 func (r *ServiceClusterAssignmentReconciler) SetupWithManager(mgr ctrl.Manager) error {
-	namespaceSource := &source.Kind{Type: &corev1.Namespace{}}
-	if err := namespaceSource.InjectCache(r.ServiceCache); err != nil {
-		return fmt.Errorf("service cluster namespace source: %w", err)
-	}
-
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&corev1alpha1.ServiceClusterAssignment{}).
-		Watches(source.Func(namespaceSource.Start), owner.EnqueueRequestForOwner(&corev1alpha1.ServiceClusterAssignment{}, r.ManagementScheme)).
+		Watches(source.NewKindWithCache(&corev1.Namespace{}, r.ServiceCache), owner.EnqueueRequestForOwner(&corev1alpha1.ServiceClusterAssignment{}, r.ManagementScheme)).
 		WithEventFilter(util.PredicateFn(func(obj runtime.Object) bool {
 			if serviceClusterAssignment, ok := obj.(*corev1alpha1.ServiceClusterAssignment); ok {
 				if serviceClusterAssignment.Spec.ServiceCluster.Name == r.ServiceClusterName {
