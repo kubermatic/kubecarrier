@@ -182,15 +182,10 @@ func (r *ManagementClusterObjReconciler) Reconcile(req ctrl.Request) (ctrl.Resul
 }
 
 func (r *ManagementClusterObjReconciler) SetupWithManager(mgr ctrl.Manager) error {
-	serviceClusterSource := &source.Kind{Type: r.newServiceObject()}
-	if err := serviceClusterSource.InjectCache(r.ServiceClusterCache); err != nil {
-		return fmt.Errorf("injecting cache: %w", err)
-	}
-
 	return ctrl.NewControllerManagedBy(mgr).
 		For(r.newManagementObject()).
 		Watches(
-			source.Func(serviceClusterSource.Start),
+			source.NewKindWithCache(r.newServiceObject(), r.ServiceClusterCache),
 			owner.EnqueueRequestForOwner(r.newManagementObject(), mgr.GetScheme()),
 		).
 		Complete(r)
