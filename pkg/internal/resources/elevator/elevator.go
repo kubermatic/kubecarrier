@@ -65,6 +65,11 @@ func Manifests(c Config) ([]unstructured.Unstructured, error) {
 				NewTag: v.Version,
 			},
 		},
+		CommonLabels: map[string]string{
+			constants.NameLabel:      "elevator",
+			constants.InstanceLabel:  c.Name,
+			constants.ManagedbyLabel: constants.ManagedbyKubeCarrierOperator,
+		},
 		Resources: []string{
 			"../default",
 		},
@@ -303,9 +308,6 @@ func Manifests(c Config) ([]unstructured.Unstructured, error) {
 		if labels == nil {
 			labels = map[string]string{}
 		}
-		labels[constants.NameLabel] = "elevator"
-		labels[constants.InstanceLabel] = c.Name
-		labels[constants.ManagedbyLabel] = constants.ManagedbyKubeCarrierOperator
 		labels[constants.VersionLabel] = v.Version
 		obj.SetLabels(labels)
 	}

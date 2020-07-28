@@ -178,11 +178,17 @@
     replicas: 1
     selector:
       matchLabels:
+        app.kubernetes.io/instance: db.eu-west-1
+        app.kubernetes.io/managed-by: kubecarrier-operator
+        app.kubernetes.io/name: catapult
         control-plane: manager
         kubecarrier.io/role: catapult
     template:
       metadata:
         labels:
+          app.kubernetes.io/instance: db.eu-west-1
+          app.kubernetes.io/managed-by: kubecarrier-operator
+          app.kubernetes.io/name: catapult
           control-plane: manager
           kubecarrier.io/role: catapult
       spec:
@@ -309,6 +315,9 @@
     - port: 443
       targetPort: 9443
     selector:
+      app.kubernetes.io/instance: db.eu-west-1
+      app.kubernetes.io/managed-by: kubecarrier-operator
+      app.kubernetes.io/name: catapult
       control-plane: manager
       kubecarrier.io/role: catapult
 - apiVersion: cert-manager.io/v1alpha2
@@ -348,9 +357,6 @@
   metadata:
     creationTimestamp: null
     labels:
-      app.kubernetes.io/instance: db.eu-west-1
-      app.kubernetes.io/managed-by: kubecarrier-operator
-      app.kubernetes.io/name: catapult
       app.kubernetes.io/version: was not build properly
       kubecarrier.io/manager: "true"
     name: couchdbinternals.eu-west-1.provider-view-only
