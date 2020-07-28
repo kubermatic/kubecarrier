@@ -23,6 +23,7 @@ import "google/protobuf/empty.proto";
 
 import "meta.proto";
 import "event.proto";
+import "request.proto";
 
 message Instance {
   // Metadata - common metadata
@@ -105,6 +106,11 @@ service InstancesService {
   rpc List(InstanceListRequest) returns (InstanceList) {
     option (google.api.http) = {
       get : "/v1/accounts/{account}/instances/{offering}/{version}"
+    };
+  };
+  rpc ListAll(ListRequest) returns (InstanceList) {
+    option (google.api.http) = {
+      get : "/v1/accounts/{account}/instances"
     };
   };
   rpc Get(InstanceGetRequest) returns (Instance) {

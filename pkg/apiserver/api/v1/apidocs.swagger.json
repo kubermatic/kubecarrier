@@ -639,6 +639,55 @@
         ]
       }
     },
+    "/v1/accounts/{account}/instances": {
+      "get": {
+        "operationId": "InstancesService_ListAll",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "account",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "in": "query",
+            "name": "labelSelector",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "format": "int64",
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "in": "query",
+            "name": "continue",
+            "required": false,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/kubecarrier.api.v1.InstanceList"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response",
+            "schema": {
+              "$ref": "#/definitions/grpc.gateway.runtime.Error"
+            }
+          }
+        },
+        "tags": [
+          "InstancesService"
+        ]
+      }
+    },
     "/v1/accounts/{account}/instances/{offering}/{version}": {
       "get": {
         "operationId": "InstancesService_List",

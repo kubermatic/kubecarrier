@@ -90,6 +90,32 @@ func (o instanceServer) Create(ctx context.Context, req *v1.InstanceCreateReques
 	return
 }
 
+func (o instanceServer) ListAll(ctx context.Context, req *v1.ListRequest) (res *v1.InstanceList, err error) {
+	offeringServer, err := NewOfferingServiceServer(o.client, o.dynamicClient, o.mapper, o.scheme)
+	if err != nil {
+		return nil, err
+	}
+	offerings, err := offeringServer.List(ctx, req)
+	if err != nil {
+		return nil, err
+	}
+	instances := &v1.InstanceList{}
+	for _, offering := range offerings.Items {
+		version := offering.Spec.Crd.Versions[0].Name
+		instReq := &v1.InstanceListRequest{
+			Offering:      offering.Metadata.Name,
+			Version:       version,
+			Account:       req.Account,
+			LabelSelector: req.LabelSelector,
+		}
+		res, err := o.List(ctx, instReq)
+		if err != nil {
+			return nil, err
+		}
+		instances.Items = append(instances.Items, res.Items...)
+	}
+	return instances, nil
+}
 func (o instanceServer) List(ctx context.Context, req *v1.InstanceListRequest) (res *v1.InstanceList, err error) {
 	listOptions, err := req.GetListOptions()
 	if err != nil {
