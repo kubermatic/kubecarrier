@@ -131,8 +131,9 @@ func (o offeringServer) convertOffering(in *catalogv1alpha1.Offering) (out *v1.O
 	for _, catalogCRDVersion := range in.Spec.CRD.Versions {
 		schemaBytes, _ := json.Marshal(catalogCRDVersion.Schema)
 		versions = append(versions, &v1.CRDVersion{
-			Name:   catalogCRDVersion.Name,
-			Schema: string(schemaBytes),
+			Name:    catalogCRDVersion.Name,
+			Schema:  string(schemaBytes),
+			Storage: catalogCRDVersion.Storage,
 		})
 	}
 	metadata, err := convertObjectMeta(in.ObjectMeta)

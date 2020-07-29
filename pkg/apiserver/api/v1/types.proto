@@ -30,8 +30,13 @@ message CRDInformation {
 }
 
 message CRDVersion {
+  // name is the version name, e.g. “v1”, “v2beta1”, etc.
   string name = 1;
+  // schema describes the schema used for validation, pruning, and defaulting of this version of the custom resource.
   string schema = 2;
+  // storage indicates this version should be used when persisting custom resources to storage.
+  // There must be exactly one version with storage=true.
+  bool storage = 3;
 }
 
 message Image {

@@ -40,4 +40,8 @@ type CRDVersion struct {
 	// Schema of this CRD version.
 	// +kubebuilder:pruning:PreserveUnknownFields
 	Schema *apiextensionsv1.CustomResourceValidation `json:"schema,omitempty"`
+
+	// Storage indicates this version should be used when persisting custom resources to storage.
+	// There must be exactly one version with storage=true.
+	Storage bool `json:"storage,omitempty"`
 }

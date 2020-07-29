@@ -512,6 +512,11 @@
                             description: Schema of this CRD version.
                             type: object
                             x-kubernetes-preserve-unknown-fields: true
+                          storage:
+                            description: Storage indicates this version should be
+                              used when persisting custom resources to storage. There
+                              must be exactly one version with storage=true.
+                            type: boolean
                         required:
                         - name
                         type: object
@@ -557,6 +562,11 @@
                             description: Schema of this CRD version.
                             type: object
                             x-kubernetes-preserve-unknown-fields: true
+                          storage:
+                            description: Storage indicates this version should be
+                              used when persisting custom resources to storage. There
+                              must be exactly one version with storage=true.
+                            type: boolean
                         required:
                         - name
                         type: object
@@ -1412,6 +1422,11 @@
                             description: Schema of this CRD version.
                             type: object
                             x-kubernetes-preserve-unknown-fields: true
+                          storage:
+                            description: Storage indicates this version should be
+                              used when persisting custom resources to storage. There
+                              must be exactly one version with storage=true.
+                            type: boolean
                         required:
                         - name
                         type: object
