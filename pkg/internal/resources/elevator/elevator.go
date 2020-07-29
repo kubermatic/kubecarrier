@@ -309,6 +309,9 @@ func Manifests(c Config) ([]unstructured.Unstructured, error) {
 			labels = map[string]string{}
 		}
 		labels[constants.VersionLabel] = v.Version
+		labels[constants.NameLabel] = "elevator"
+		labels[constants.InstanceLabel] = c.Name
+		labels[constants.ManagedbyLabel] = constants.ManagedbyKubeCarrierOperator
 		obj.SetLabels(labels)
 	}
 	return objects, nil
