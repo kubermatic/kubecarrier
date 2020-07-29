@@ -196,7 +196,7 @@ func Manifests(c Config) ([]unstructured.Unstructured, error) {
 		}
 		labels[constants.NameLabel] = "apiserver"
 		labels[constants.InstanceLabel] = c.Name
-		labels[constants.ManagedbyLabel] = constants.ManagedbyKubeCarrierOperator
+		labels[constants.ManagedByLabel] = constants.ManagedByKubeCarrierOperator
 		labels[constants.VersionLabel] = v.Version
 		obj.SetLabels(labels)
 	}

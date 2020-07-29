@@ -72,7 +72,7 @@ func Manifests(c Config) ([]unstructured.Unstructured, error) {
 		CommonLabels: map[string]string{
 			constants.NameLabel:      "catapult",
 			constants.InstanceLabel:  c.Name,
-			constants.ManagedbyLabel: constants.ManagedbyKubeCarrierOperator,
+			constants.ManagedByLabel: constants.ManagedByKubeCarrierOperator,
 		},
 		Resources: []string{"../default"},
 		PatchesStrategicMerge: []types.PatchStrategicMerge{
@@ -302,7 +302,7 @@ func Manifests(c Config) ([]unstructured.Unstructured, error) {
 		labels[constants.VersionLabel] = v.Version
 		labels[constants.NameLabel] = "catapult"
 		labels[constants.InstanceLabel] = c.Name
-		labels[constants.ManagedbyLabel] = constants.ManagedbyKubeCarrierOperator
+		labels[constants.ManagedByLabel] = constants.ManagedByKubeCarrierOperator
 		obj.SetLabels(labels)
 	}
 	return objects, nil

@@ -21,7 +21,7 @@ const (
 	NameLabel      = "app.kubernetes.io/name"
 	InstanceLabel  = "app.kubernetes.io/instance"
 	VersionLabel   = "app.kubernetes.io/version"
-	ManagedbyLabel = "app.kubernetes.io/managed-by"
+	ManagedByLabel = "app.kubernetes.io/managed-by"
 
-	ManagedbyKubeCarrierOperator = "kubecarrier-operator"
+	ManagedByKubeCarrierOperator = "kubecarrier-operator"
 )
