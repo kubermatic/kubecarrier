@@ -357,6 +357,9 @@
   metadata:
     creationTimestamp: null
     labels:
+      app.kubernetes.io/instance: db.eu-west-1
+      app.kubernetes.io/managed-by: kubecarrier-operator
+      app.kubernetes.io/name: catapult
       app.kubernetes.io/version: was not build properly
       kubecarrier.io/manager: "true"
     name: couchdbinternals.eu-west-1.provider-view-only
