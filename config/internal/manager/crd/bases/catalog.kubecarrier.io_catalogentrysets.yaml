@@ -182,7 +182,7 @@ spec:
                 type: object
               metadata:
                 description: Metadata contains the metadata of each CatalogEntry for
-                  the Service Hub.
+                  the Service Catalog.
                 properties:
                   description:
                     description: Description is the long and detailed description
