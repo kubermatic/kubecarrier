@@ -44,7 +44,7 @@ func main() {
 			Description: strings.TrimSpace(`
 The kubecarrier plugin for installing, upgrading and performing management tasks in the Kubecarrier system.
 
-KubeCarrier is an open source system for managing applications and services across multiple Kubernetes Clusters; providing a framework to centralize the management of services and provide these services with external users in a self service catalog.,
+KubeCarrier is an open source system for managing applications and services across multiple Kubernetes Clusters; providing a framework to centralize the management of services and provide these services with external users in a self service hub.,
 
 Overview:
 	https://github.com/kubermatic/kubecarrier/

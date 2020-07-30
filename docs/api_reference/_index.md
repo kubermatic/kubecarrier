@@ -380,7 +380,7 @@ ObjectReference describes the link to another object in the same Namespace.
 [Back to Group](#core)
 ## Catalog
 
-The `catalog.kubecarrier.io` API group contains all objects that are used to setup service catalogs in KubeCarrier.
+The `catalog.kubecarrier.io` API group contains all objects that are used to setup service hubs in KubeCarrier.
 
 * [Account.catalog.kubecarrier.io/v1alpha1](#accountcatalogkubecarrieriov1alpha1)
 * [AccountCondition.catalog.kubecarrier.io/v1alpha1](#accountconditioncatalogkubecarrieriov1alpha1)
