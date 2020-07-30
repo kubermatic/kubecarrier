@@ -159,6 +159,9 @@ func newCatalogSuite(
 			},
 		}
 		assert.NoError(t, kubermatictestutil.WaitUntilFound(ctx, managementClient, offeringFound))
+		for i, v := range offeringFound.Spec.CRD.Versions {
+			assert.Equal(t, v.Storage, crd.Spec.Versions[i].Storage)
+		}
 
 		// Check the Provider object is created.
 		providerFound := &catalogv1alpha1.Provider{

@@ -233,6 +233,9 @@ func TestCatalogEntryReconciler(t *testing.T) {
 		assert.Equal(t, catalogEntry.Status.ProviderCRD.Region.Name, baseCRD.Labels[ServiceClusterLabel], "CRD Region is wrong")
 		assert.Equal(t, catalogEntry.Status.ProviderCRD.APIGroup, baseCRD.Spec.Group, "CRD APIGroup is wrong")
 		assert.Equal(t, catalogEntry.Status.ProviderCRD.Plural, baseCRD.Spec.Names.Plural, "CRD Plural is wrong")
+		for i, v := range catalogEntry.Status.ProviderCRD.Versions {
+			assert.Equal(t, v.Storage, baseCRD.Spec.Versions[i].Storage, "CRD Version Storage is wrong")
+		}
 
 		// Check CRDs Annotation
 		require.NoError(t, client.Get(ctx, types.NamespacedName{
