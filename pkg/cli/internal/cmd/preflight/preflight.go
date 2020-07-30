@@ -25,7 +25,7 @@ import (
 	"github.com/spf13/cobra"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 
-	"github.com/kubermatic/kubecarrier/pkg/cli/internal/cmd/preflight/checkers"
+	"k8c.io/kubecarrier/pkg/cli/internal/cmd/preflight/checkers"
 )
 
 // NewPreflightCommand returns the preflight checking subcommand for KubeCarrier CLI.

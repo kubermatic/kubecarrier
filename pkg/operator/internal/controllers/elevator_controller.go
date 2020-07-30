@@ -35,8 +35,8 @@ import (
 	"github.com/kubermatic/utils/pkg/owner"
 	"github.com/kubermatic/utils/pkg/util"
 
-	operatorv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/operator/v1alpha1"
-	resourceselevator "github.com/kubermatic/kubecarrier/pkg/internal/resources/elevator"
+	operatorv1alpha1 "k8c.io/kubecarrier/pkg/apis/operator/v1alpha1"
+	resourceselevator "k8c.io/kubecarrier/pkg/internal/resources/elevator"
 )
 
 const (

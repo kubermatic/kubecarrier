@@ -30,7 +30,7 @@ import (
 	cliflag "k8s.io/component-base/cli/flag"
 	"sigs.k8s.io/controller-runtime/pkg/runtime/inject"
 
-	"github.com/kubermatic/kubecarrier/pkg/apiserver/auth"
+	"k8c.io/kubecarrier/pkg/apiserver/auth"
 )
 
 func init() {

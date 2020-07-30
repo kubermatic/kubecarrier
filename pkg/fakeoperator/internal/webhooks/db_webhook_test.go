@@ -28,7 +28,7 @@ import (
 
 	"github.com/kubermatic/utils/pkg/testutil"
 
-	fakev1 "github.com/kubermatic/kubecarrier/pkg/apis/fake/v1"
+	fakev1 "k8c.io/kubecarrier/pkg/apis/fake/v1"
 )
 
 func TestDBValidatingCreate(t *testing.T) {

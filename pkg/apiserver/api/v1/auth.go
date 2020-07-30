@@ -19,7 +19,7 @@ package v1
 import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
-	"github.com/kubermatic/kubecarrier/pkg/apiserver/authorizer"
+	"k8c.io/kubecarrier/pkg/apiserver/authorizer"
 )
 
 var (

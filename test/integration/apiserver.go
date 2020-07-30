@@ -44,10 +44,10 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/apimachinery/pkg/watch"
 
-	catalogv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/catalog/v1alpha1"
-	corev1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/core/v1alpha1"
-	apiserverv1 "github.com/kubermatic/kubecarrier/pkg/apiserver/api/v1"
-	"github.com/kubermatic/kubecarrier/pkg/testutil"
+	catalogv1alpha1 "k8c.io/kubecarrier/pkg/apis/catalog/v1alpha1"
+	corev1alpha1 "k8c.io/kubecarrier/pkg/apis/core/v1alpha1"
+	apiserverv1 "k8c.io/kubecarrier/pkg/apiserver/api/v1"
+	"k8c.io/kubecarrier/pkg/testutil"
 
 	kubermatictestutil "github.com/kubermatic/utils/pkg/testutil"
 )

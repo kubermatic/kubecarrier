@@ -26,7 +26,7 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	fakev1 "github.com/kubermatic/kubecarrier/pkg/apis/fake/v1"
+	fakev1 "k8c.io/kubecarrier/pkg/apis/fake/v1"
 )
 
 // SnapshotReconciler reconciles a Snapshot object

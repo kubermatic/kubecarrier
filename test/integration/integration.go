@@ -19,7 +19,7 @@ package integration
 import (
 	"testing"
 
-	"github.com/kubermatic/kubecarrier/pkg/testutil"
+	"k8c.io/kubecarrier/pkg/testutil"
 )
 
 // AdminSuite tests administrator operations - notably the management of Tenants and Providers.

@@ -29,8 +29,8 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	operatorv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/operator/v1alpha1"
-	resourceferry "github.com/kubermatic/kubecarrier/pkg/internal/resources/ferry"
+	operatorv1alpha1 "k8c.io/kubecarrier/pkg/apis/operator/v1alpha1"
+	resourceferry "k8c.io/kubecarrier/pkg/internal/resources/ferry"
 )
 
 // FerryReconciler reconciles a Ferry object

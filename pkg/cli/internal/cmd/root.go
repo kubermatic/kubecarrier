@@ -22,12 +22,12 @@ import (
 
 	"github.com/kubermatic/utils/pkg/util"
 
-	deletecmd "github.com/kubermatic/kubecarrier/pkg/cli/internal/cmd/delete"
-	e2e_test "github.com/kubermatic/kubecarrier/pkg/cli/internal/cmd/e2e-test"
-	"github.com/kubermatic/kubecarrier/pkg/cli/internal/cmd/preflight"
-	"github.com/kubermatic/kubecarrier/pkg/cli/internal/cmd/setup"
-	"github.com/kubermatic/kubecarrier/pkg/cli/internal/cmd/sut"
-	"github.com/kubermatic/kubecarrier/pkg/cli/internal/cmd/version"
+	deletecmd "k8c.io/kubecarrier/pkg/cli/internal/cmd/delete"
+	e2e_test "k8c.io/kubecarrier/pkg/cli/internal/cmd/e2e-test"
+	"k8c.io/kubecarrier/pkg/cli/internal/cmd/preflight"
+	"k8c.io/kubecarrier/pkg/cli/internal/cmd/setup"
+	"k8c.io/kubecarrier/pkg/cli/internal/cmd/sut"
+	"k8c.io/kubecarrier/pkg/cli/internal/cmd/version"
 )
 
 // NewKubecarrierCLI creates the root command for the KubeCarrier CLI.

@@ -35,10 +35,10 @@ import (
 
 	"github.com/kubermatic/utils/pkg/util"
 
-	operatorv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/operator/v1alpha1"
-	utilwebhook "github.com/kubermatic/kubecarrier/pkg/internal/util/webhook"
-	"github.com/kubermatic/kubecarrier/pkg/operator/internal/controllers"
-	"github.com/kubermatic/kubecarrier/pkg/operator/internal/webhooks"
+	operatorv1alpha1 "k8c.io/kubecarrier/pkg/apis/operator/v1alpha1"
+	utilwebhook "k8c.io/kubecarrier/pkg/internal/util/webhook"
+	"k8c.io/kubecarrier/pkg/operator/internal/controllers"
+	"k8c.io/kubecarrier/pkg/operator/internal/webhooks"
 )
 
 type flags struct {

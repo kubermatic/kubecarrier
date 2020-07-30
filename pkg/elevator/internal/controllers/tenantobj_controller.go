@@ -32,8 +32,8 @@ import (
 
 	"github.com/kubermatic/utils/pkg/util"
 
-	catalogv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/catalog/v1alpha1"
-	elevatorutil "github.com/kubermatic/kubecarrier/pkg/elevator/internal/util"
+	catalogv1alpha1 "k8c.io/kubecarrier/pkg/apis/catalog/v1alpha1"
+	elevatorutil "k8c.io/kubecarrier/pkg/elevator/internal/util"
 )
 
 // TenantObjReconciler reconciles a tenant-side CRD by converting it into a provider-side object and syncing the status back:

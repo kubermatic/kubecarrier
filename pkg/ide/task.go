@@ -59,7 +59,7 @@ func GenerateIntelijJTasks(tasks []Task, root string) {
 {{- end }}
     <kind value="DIRECTORY" />
     <filePath value="$PROJECT_DIR/|$PROJECT_DIR$/{{ .Program }}" />
-    <package value="github.com/kubermatic/kubecarrier" />
+    <package value="k8c.io/kubecarrier" />
     <directory value="$PROJECT_DIR$/{{ .Program }}" />
     <method v="2" />
   </configuration>

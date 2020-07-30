@@ -29,7 +29,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	fakeclient "sigs.k8s.io/controller-runtime/pkg/client/fake"
 
-	v1 "github.com/kubermatic/kubecarrier/pkg/apiserver/api/v1"
+	v1 "k8c.io/kubecarrier/pkg/apiserver/api/v1"
 )
 
 var (

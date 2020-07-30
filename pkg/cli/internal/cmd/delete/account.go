@@ -30,8 +30,8 @@ import (
 
 	"github.com/kubermatic/utils/pkg/util"
 
-	catalogv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/catalog/v1alpha1"
-	corev1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/core/v1alpha1"
+	catalogv1alpha1 "k8c.io/kubecarrier/pkg/apis/catalog/v1alpha1"
+	corev1alpha1 "k8c.io/kubecarrier/pkg/apis/core/v1alpha1"
 )
 
 func newAccountCommand(log logr.Logger, cl *util.ClientWatcher) *cobra.Command {

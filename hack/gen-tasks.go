@@ -23,7 +23,7 @@ import (
 	"os"
 	"path"
 
-	"github.com/kubermatic/kubecarrier/pkg/ide"
+	"k8c.io/kubecarrier/pkg/ide"
 )
 
 const (

@@ -35,8 +35,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/runtime/inject"
 
-	"github.com/kubermatic/kubecarrier/pkg/apiserver/auth"
-	"github.com/kubermatic/kubecarrier/pkg/internal/constants"
+	"k8c.io/kubecarrier/pkg/apiserver/auth"
+	"k8c.io/kubecarrier/pkg/internal/constants"
 )
 
 type HtpasswdAuthenticator struct {

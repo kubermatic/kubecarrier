@@ -22,9 +22,9 @@ import (
 	"github.com/golang/protobuf/ptypes/empty"
 	"github.com/golang/protobuf/ptypes/timestamp"
 
-	v1 "github.com/kubermatic/kubecarrier/pkg/apiserver/api/v1"
-	"github.com/kubermatic/kubecarrier/pkg/apiserver/auth"
-	"github.com/kubermatic/kubecarrier/pkg/internal/version"
+	v1 "k8c.io/kubecarrier/pkg/apiserver/api/v1"
+	"k8c.io/kubecarrier/pkg/apiserver/auth"
+	"k8c.io/kubecarrier/pkg/internal/version"
 )
 
 type KubeCarrierServer struct{}

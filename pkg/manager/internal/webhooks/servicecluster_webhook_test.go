@@ -24,7 +24,7 @@ import (
 
 	"github.com/kubermatic/utils/pkg/testutil"
 
-	covev1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/core/v1alpha1"
+	covev1alpha1 "k8c.io/kubecarrier/pkg/apis/core/v1alpha1"
 )
 
 func TestServiceClusterValidatingCreate(t *testing.T) {

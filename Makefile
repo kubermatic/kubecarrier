@@ -22,7 +22,7 @@ SHORT_SHA=$(shell git rev-parse --short HEAD)
 VERSION?=${BRANCH}-${SHORT_SHA}
 BUILD_DATE=$(shell date +%s)
 IMAGE_ORG?=quay.io/kubecarrier
-MODULE=github.com/kubermatic/kubecarrier
+MODULE=k8c.io/kubecarrier
 LD_FLAGS=-X $(MODULE)/pkg/internal/version.Version=$(VERSION) -X $(MODULE)/pkg/internal/version.Branch=$(BRANCH) -X $(MODULE)/pkg/internal/version.Commit=$(SHORT_SHA) -X $(MODULE)/pkg/internal/version.BuildDate=$(BUILD_DATE)
 KIND_CLUSTER?=kubecarrier
 COMPONENTS = operator manager ferry catapult elevator apiserver

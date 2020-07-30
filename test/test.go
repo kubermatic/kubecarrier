@@ -20,11 +20,11 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/kubermatic/kubecarrier/pkg/testutil"
-	"github.com/kubermatic/kubecarrier/test/installation"
-	"github.com/kubermatic/kubecarrier/test/integration"
-	"github.com/kubermatic/kubecarrier/test/scenarios"
-	"github.com/kubermatic/kubecarrier/test/verify"
+	"k8c.io/kubecarrier/pkg/testutil"
+	"k8c.io/kubecarrier/test/installation"
+	"k8c.io/kubecarrier/test/integration"
+	"k8c.io/kubecarrier/test/scenarios"
+	"k8c.io/kubecarrier/test/verify"
 )
 
 func AllTests(config testutil.FrameworkConfig) ([]testing.InternalTest, error) {

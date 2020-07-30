@@ -25,8 +25,8 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/spf13/cobra"
 
-	"github.com/kubermatic/kubecarrier/pkg/testutil"
-	"github.com/kubermatic/kubecarrier/test"
+	"k8c.io/kubecarrier/pkg/testutil"
+	"k8c.io/kubecarrier/test"
 )
 
 func newRunCommand(log logr.Logger, cfg *testutil.FrameworkConfig) *cobra.Command {

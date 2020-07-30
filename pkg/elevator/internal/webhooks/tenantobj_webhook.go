@@ -32,8 +32,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
-	catalogv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/catalog/v1alpha1"
-	elevatorutil "github.com/kubermatic/kubecarrier/pkg/elevator/internal/util"
+	catalogv1alpha1 "k8c.io/kubecarrier/pkg/apis/catalog/v1alpha1"
+	elevatorutil "k8c.io/kubecarrier/pkg/elevator/internal/util"
 )
 
 // TenantObjWebhookHandler handles TenantObjs validation.

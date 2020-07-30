@@ -23,7 +23,7 @@ import (
 	"github.com/spf13/cobra"
 	"sigs.k8s.io/yaml"
 
-	"github.com/kubermatic/kubecarrier/pkg/internal/version"
+	"k8c.io/kubecarrier/pkg/internal/version"
 )
 
 type versionFlagpole struct {
