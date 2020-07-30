@@ -32,7 +32,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
-	corev1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/core/v1alpha1"
+	corev1alpha1 "k8c.io/kubecarrier/pkg/apis/core/v1alpha1"
 )
 
 // ManagementClusterObjWebhookHandler handles validating of ManagementClusterObjs.

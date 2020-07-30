@@ -31,9 +31,9 @@ import (
 	"k8s.io/client-go/dynamic"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	catalogv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/catalog/v1alpha1"
-	v1 "github.com/kubermatic/kubecarrier/pkg/apiserver/api/v1"
-	"github.com/kubermatic/kubecarrier/pkg/apiserver/internal/util"
+	catalogv1alpha1 "k8c.io/kubecarrier/pkg/apis/catalog/v1alpha1"
+	v1 "k8c.io/kubecarrier/pkg/apiserver/api/v1"
+	"k8c.io/kubecarrier/pkg/apiserver/internal/util"
 )
 
 const (

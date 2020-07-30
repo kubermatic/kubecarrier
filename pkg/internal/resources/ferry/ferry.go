@@ -27,9 +27,9 @@ import (
 	"sigs.k8s.io/kustomize/v3/pkg/types"
 	"sigs.k8s.io/yaml"
 
-	"github.com/kubermatic/kubecarrier/pkg/internal/kustomize"
-	"github.com/kubermatic/kubecarrier/pkg/internal/resources/constants"
-	"github.com/kubermatic/kubecarrier/pkg/internal/version"
+	"k8c.io/kubecarrier/pkg/internal/kustomize"
+	"k8c.io/kubecarrier/pkg/internal/resources/constants"
+	"k8c.io/kubecarrier/pkg/internal/version"
 )
 
 // Config holds the config information to generate the kubecarrier ferry setup.

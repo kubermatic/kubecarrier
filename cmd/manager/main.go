@@ -19,7 +19,7 @@ package main
 import (
 	"os"
 
-	"github.com/kubermatic/kubecarrier/pkg/manager"
+	"k8c.io/kubecarrier/pkg/manager"
 )
 
 func main() {

@@ -23,8 +23,8 @@ import (
 	"sigs.k8s.io/kustomize/v3/pkg/image"
 	"sigs.k8s.io/kustomize/v3/pkg/types"
 
-	"github.com/kubermatic/kubecarrier/pkg/internal/kustomize"
-	"github.com/kubermatic/kubecarrier/pkg/internal/version"
+	"k8c.io/kubecarrier/pkg/internal/kustomize"
+	"k8c.io/kubecarrier/pkg/internal/version"
 )
 
 // Config holds the config information to generate the kubecarrier operator setup.

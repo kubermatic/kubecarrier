@@ -19,7 +19,7 @@ package scenarios
 import (
 	"testing"
 
-	"github.com/kubermatic/kubecarrier/pkg/testutil"
+	"k8c.io/kubecarrier/pkg/testutil"
 )
 
 func NewSuite(f *testutil.Framework) func(t *testing.T) {

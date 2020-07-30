@@ -27,7 +27,7 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
-	v1 "github.com/kubermatic/kubecarrier/pkg/apiserver/api/v1"
+	v1 "k8c.io/kubecarrier/pkg/apiserver/api/v1"
 )
 
 type docServer struct{}

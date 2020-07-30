@@ -1,4 +1,4 @@
-module github.com/kubermatic/kubecarrier
+module k8c.io/kubecarrier
 
 go 1.14
 

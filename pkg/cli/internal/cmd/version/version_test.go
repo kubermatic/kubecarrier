@@ -26,7 +26,7 @@ import (
 
 	"github.com/kubermatic/utils/pkg/testutil"
 
-	"github.com/kubermatic/kubecarrier/pkg/internal/version"
+	"k8c.io/kubecarrier/pkg/internal/version"
 )
 
 func TestNewCommand(t *testing.T) {

@@ -30,8 +30,8 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	"github.com/kubermatic/kubecarrier/pkg/apiserver/auth"
-	"github.com/kubermatic/kubecarrier/pkg/apiserver/authorizer"
+	"k8c.io/kubecarrier/pkg/apiserver/auth"
+	"k8c.io/kubecarrier/pkg/apiserver/authorizer"
 )
 
 type Authorizer struct {

@@ -24,7 +24,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	"github.com/kubermatic/kubecarrier/pkg/testutil"
+	"k8c.io/kubecarrier/pkg/testutil"
 )
 
 func newE2EOperator(f *testutil.Framework) func(t *testing.T) {

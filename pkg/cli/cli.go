@@ -20,7 +20,7 @@ import (
 	// https://krew.sigs.k8s.io/docs/developer-guide/develop/best-practices/
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 
-	"github.com/kubermatic/kubecarrier/pkg/cli/internal/cmd"
+	"k8c.io/kubecarrier/pkg/cli/internal/cmd"
 )
 
 // NewKubecarrierCLI returns the KubeCarrier CLI root command with all subcommands initialized.

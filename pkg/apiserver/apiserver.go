@@ -55,15 +55,15 @@ import (
 
 	"github.com/kubermatic/utils/pkg/util"
 
-	catalogv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/catalog/v1alpha1"
-	apiserverv1 "github.com/kubermatic/kubecarrier/pkg/apiserver/api/v1"
-	"github.com/kubermatic/kubecarrier/pkg/apiserver/auth"
-	_ "github.com/kubermatic/kubecarrier/pkg/apiserver/internal/auth/anonymous"
-	_ "github.com/kubermatic/kubecarrier/pkg/apiserver/internal/auth/htpasswd"
-	_ "github.com/kubermatic/kubecarrier/pkg/apiserver/internal/auth/oidc"
-	_ "github.com/kubermatic/kubecarrier/pkg/apiserver/internal/auth/token"
-	"github.com/kubermatic/kubecarrier/pkg/apiserver/internal/authorizer"
-	v1 "github.com/kubermatic/kubecarrier/pkg/apiserver/internal/v1"
+	catalogv1alpha1 "k8c.io/kubecarrier/pkg/apis/catalog/v1alpha1"
+	apiserverv1 "k8c.io/kubecarrier/pkg/apiserver/api/v1"
+	"k8c.io/kubecarrier/pkg/apiserver/auth"
+	_ "k8c.io/kubecarrier/pkg/apiserver/internal/auth/anonymous"
+	_ "k8c.io/kubecarrier/pkg/apiserver/internal/auth/htpasswd"
+	_ "k8c.io/kubecarrier/pkg/apiserver/internal/auth/oidc"
+	_ "k8c.io/kubecarrier/pkg/apiserver/internal/auth/token"
+	"k8c.io/kubecarrier/pkg/apiserver/internal/authorizer"
+	v1 "k8c.io/kubecarrier/pkg/apiserver/internal/v1"
 )
 
 var (

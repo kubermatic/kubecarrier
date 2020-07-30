@@ -22,7 +22,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/kubermatic/kubecarrier/pkg/apiserver/auth"
+	"k8c.io/kubecarrier/pkg/apiserver/auth"
 )
 
 func TestKubeCarrierValidation(t *testing.T) {

@@ -20,7 +20,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/kubermatic/kubecarrier/pkg/cli"
+	"k8c.io/kubecarrier/pkg/cli"
 )
 
 func main() {

@@ -20,7 +20,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/kubermatic/kubecarrier/pkg/fakeoperator"
+	"k8c.io/kubecarrier/pkg/fakeoperator"
 )
 
 func main() {

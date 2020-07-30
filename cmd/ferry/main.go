@@ -22,7 +22,7 @@ import (
 
 	ctrl "sigs.k8s.io/controller-runtime"
 
-	"github.com/kubermatic/kubecarrier/pkg/ferry"
+	"k8c.io/kubecarrier/pkg/ferry"
 )
 
 func main() {

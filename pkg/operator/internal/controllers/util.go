@@ -36,7 +36,7 @@ import (
 	"github.com/kubermatic/utils/pkg/owner"
 	"github.com/kubermatic/utils/pkg/util"
 
-	"github.com/kubermatic/kubecarrier/pkg/internal/reconcile"
+	"k8c.io/kubecarrier/pkg/internal/reconcile"
 )
 
 // object generic k8s object with metav1 and runtime Object interfaces implemented
