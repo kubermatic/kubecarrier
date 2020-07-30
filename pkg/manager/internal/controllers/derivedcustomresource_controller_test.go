@@ -110,7 +110,6 @@ func Test_DerivedCustomResourceReconciler(t *testing.T) {
 			BaseCRD: catalogv1alpha1.ObjectReference{
 				Name: baseCRD.Name,
 			},
-			KindOverride: "TestResource",
 			Expose: []catalogv1alpha1.VersionExposeConfig{
 				{
 					Versions: []string{

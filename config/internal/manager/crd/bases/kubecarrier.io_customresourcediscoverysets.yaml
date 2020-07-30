@@ -63,9 +63,6 @@ spec:
                 required:
                 - name
                 type: object
-              kindOverride:
-                description: KindOverride overrides the kind of the discovered CRD.
-                type: string
               serviceClusterSelector:
                 description: ServiceClusterSelector references a set of ServiceClusters
                   to search the CustomResourceDefinition on.

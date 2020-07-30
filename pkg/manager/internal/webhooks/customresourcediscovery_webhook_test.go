@@ -44,7 +44,6 @@ func TestCustomResourceDiscoveryValidatingUpdate(t *testing.T) {
 			CRD: corev1alpha1.ObjectReference{
 				Name: "CRD",
 			},
-			KindOverride: "KindOverride",
 		},
 	}
 
@@ -67,7 +66,6 @@ func TestCustomResourceDiscoveryValidatingUpdate(t *testing.T) {
 					CRD: corev1alpha1.ObjectReference{
 						Name: "CRD",
 					},
-					KindOverride: "KindOverride2",
 				},
 			},
 			expectedError: true,
@@ -86,7 +84,6 @@ func TestCustomResourceDiscoveryValidatingUpdate(t *testing.T) {
 					CRD: corev1alpha1.ObjectReference{
 						Name: "CRD",
 					},
-					KindOverride: "KindOverride",
 				},
 			},
 			expectedError: true,
@@ -105,7 +102,6 @@ func TestCustomResourceDiscoveryValidatingUpdate(t *testing.T) {
 					CRD: corev1alpha1.ObjectReference{
 						Name: "CRD2",
 					},
-					KindOverride: "KindOverride",
 				},
 			},
 			expectedError: true,
@@ -124,7 +120,6 @@ func TestCustomResourceDiscoveryValidatingUpdate(t *testing.T) {
 					CRD: corev1alpha1.ObjectReference{
 						Name: "CRD",
 					},
-					KindOverride: "KindOverride",
 				},
 			},
 			expectedError: false,

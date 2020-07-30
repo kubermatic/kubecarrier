@@ -96,9 +96,6 @@ spec:
                       - versions
                       type: object
                     type: array
-                  kindOverride:
-                    description: overrides the kind of the derived CRD.
-                    type: string
                 required:
                 - expose
                 type: object
@@ -115,9 +112,6 @@ spec:
                     required:
                     - name
                     type: object
-                  kindOverride:
-                    description: KindOverride overrides resulting internal CRDs kind
-                    type: string
                   serviceClusterSelector:
                     description: ServiceClusterSelector references a set of ServiceClusters
                       to search the CustomResourceDefinition on.

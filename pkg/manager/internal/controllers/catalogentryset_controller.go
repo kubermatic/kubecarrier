@@ -172,7 +172,6 @@ func (r *CatalogEntrySetReconciler) reconcileCustomResourceDiscoverySet(
 				Name: catalogEntrySet.Spec.Discover.CRD.Name,
 			},
 			ServiceClusterSelector: catalogEntrySet.Spec.Discover.ServiceClusterSelector,
-			KindOverride:           catalogEntrySet.Spec.Discover.KindOverride,
 			WebhookStrategy:        catalogEntrySet.Spec.Discover.WebhookStrategy,
 		},
 	}

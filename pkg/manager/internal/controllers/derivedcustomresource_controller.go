@@ -163,14 +163,11 @@ func (r *DerivedCustomResourceReconciler) Reconcile(req ctrl.Request) (ctrl.Resu
 
 	// kindOverride
 	names := *baseCRD.Spec.Names.DeepCopy()
-	if dcr.Spec.KindOverride != "" {
-		// Analog to controller-gen:
-		// https://github.com/kubernetes-sigs/controller-tools/blob/v0.2.4/pkg/crd/spec.go#L58-L77
-		names.Kind = dcr.Spec.KindOverride
-		names.ListKind = names.Kind + "List"
-		names.Plural = flect.Pluralize(strings.ToLower(names.Kind))
-		names.Singular = strings.ToLower(names.Kind)
-	}
+	// Analog to controller-gen:
+	// https://github.com/kubernetes-sigs/controller-tools/blob/v0.2.4/pkg/crd/spec.go#L58-L77
+	names.ListKind = names.Kind + "List"
+	names.Plural = flect.Pluralize(strings.ToLower(names.Kind))
+	names.Singular = strings.ToLower(names.Kind)
 	group := serviceClusterName + "." + provider.Name
 
 	derivedCR := &apiextensionsv1.CustomResourceDefinition{

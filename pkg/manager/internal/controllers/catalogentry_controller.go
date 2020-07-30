@@ -269,9 +269,8 @@ func (r *CatalogEntryReconciler) reconcileDerivedCustomResource(ctx context.Cont
 			Namespace: catalogEntry.Namespace,
 		},
 		Spec: catalogv1alpha1.DerivedCustomResourceSpec{
-			BaseCRD:      catalogEntry.Spec.BaseCRD,
-			KindOverride: catalogEntry.Spec.Derive.KindOverride,
-			Expose:       catalogEntry.Spec.Derive.Expose,
+			BaseCRD: catalogEntry.Spec.BaseCRD,
+			Expose:  catalogEntry.Spec.Derive.Expose,
 		},
 	}
 

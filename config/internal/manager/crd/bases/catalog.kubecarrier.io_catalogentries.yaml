@@ -115,9 +115,6 @@ spec:
                           - versions
                         type: object
                       type: array
-                    kindOverride:
-                      description: overrides the kind of the derived CRD.
-                      type: string
                   required:
                     - expose
                   type: object

@@ -26,8 +26,6 @@ type CustomResourceDiscoverySetSpec struct {
 	CRD ObjectReference `json:"crd"`
 	// ServiceClusterSelector references a set of ServiceClusters to search the CustomResourceDefinition on.
 	ServiceClusterSelector metav1.LabelSelector `json:"serviceClusterSelector"`
-	// KindOverride overrides the kind of the discovered CRD.
-	KindOverride string `json:"kindOverride,omitempty"`
 	// WebhookStrategy configs the webhooks of the CRDs which are registered in the management cluster by this CustomResourceDiscoverySet.
 	// There are two possible values for this configuration {None (by default), ServiceCluster}
 	// None (by default): Webhook will only check if there is an available ServiceClusterAssignment in the current Namespace.

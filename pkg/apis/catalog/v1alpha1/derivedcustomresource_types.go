@@ -22,8 +22,6 @@ import metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 type DerivedCustomResourceSpec struct {
 	// CRD that should be used as a base to derive a new CRD from.
 	BaseCRD ObjectReference `json:"baseCRD"`
-	// overrides the kind of the derived CRD.
-	KindOverride string `json:"kindOverride,omitempty"`
 	// controls which fields will be present in the derived CRD.
 	// +kubebuilder:validation:MinItems=1
 	Expose []VersionExposeConfig `json:"expose"`

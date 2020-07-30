@@ -146,10 +146,7 @@ func (r *CustomResourceDiscoveryReconciler) reconcileCRD(
 	ctx context.Context, crDiscovery *corev1alpha1.CustomResourceDiscovery,
 ) (*apiextensionsv1.CustomResourceDefinition, error) {
 	// Build desired CRD
-	kind := crDiscovery.Spec.KindOverride
-	if kind == "" {
-		kind = crDiscovery.Status.CRD.Spec.Names.Kind
-	}
+	kind := crDiscovery.Status.CRD.Spec.Names.Kind
 	plural := flect.Pluralize(strings.ToLower(kind))
 	group := crDiscovery.Spec.ServiceCluster.Name + "." + crDiscovery.Namespace
 

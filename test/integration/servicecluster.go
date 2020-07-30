@@ -165,7 +165,6 @@ func newServiceClusterSuite(
 						Name: crd.Name,
 					},
 					ServiceClusterSelector: metav1.LabelSelector{},
-					KindOverride:           "DBInternal",
 					WebhookStrategy:        corev1alpha1.WebhookStrategyTypeServiceCluster,
 				},
 			},
