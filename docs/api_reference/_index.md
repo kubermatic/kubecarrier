@@ -260,7 +260,7 @@ ServiceClusterList contains a list of ServiceCluster.
 
 ### ServiceClusterMetadata.kubecarrier.io/v1alpha1
 
-ServiceClusterMetadata describes metadata of the ServiceCluster for the Service Catalog.
+ServiceClusterMetadata describes metadata of the ServiceCluster for the Service Hub.
 
 | Field | Description | Scheme | Required |
 | ----- | ----------- | ------ | -------- |
@@ -275,7 +275,7 @@ ServiceClusterSpec describes the desired state of a ServiceCluster.
 
 | Field | Description | Scheme | Required |
 | ----- | ----------- | ------ | -------- |
-| metadata | Metadata for display in the Service Catalog. | [ServiceClusterMetadata.kubecarrier.io/v1alpha1](#serviceclustermetadatakubecarrieriov1alpha1) | false |
+| metadata | Metadata for display in the Service Hub. | [ServiceClusterMetadata.kubecarrier.io/v1alpha1](#serviceclustermetadatakubecarrieriov1alpha1) | false |
 | kubeconfigSecret | KubeconfigSecret specifies the Kubeconfig to use when connecting to the ServiceCluster. | [ObjectReference.kubecarrier.io/v1alpha1](#objectreferencekubecarrieriov1alpha1) | true |
 
 [Back to Group](#core)
@@ -380,7 +380,7 @@ ObjectReference describes the link to another object in the same Namespace.
 [Back to Group](#core)
 ## Catalog
 
-The `catalog.kubecarrier.io` API group contains all objects that are used to setup service catalogs in KubeCarrier.
+The `catalog.kubecarrier.io` API group contains all objects that are used to setup service hubs in KubeCarrier.
 
 * [Account.catalog.kubecarrier.io/v1alpha1](#accountcatalogkubecarrieriov1alpha1)
 * [AccountCondition.catalog.kubecarrier.io/v1alpha1](#accountconditioncatalogkubecarrieriov1alpha1)
@@ -690,7 +690,7 @@ CatalogEntrySpec describes the desired state of CatalogEntry.
 
 | Field | Description | Scheme | Required |
 | ----- | ----------- | ------ | -------- |
-| metadata | Metadata contains the metadata of the CatalogEntry for the Service Catalog. | [CatalogEntryMetadata.catalog.kubecarrier.io/v1alpha1](#catalogentrymetadatacatalogkubecarrieriov1alpha1) | true |
+| metadata | Metadata contains the metadata of the CatalogEntry for the Service Hub. | [CatalogEntryMetadata.catalog.kubecarrier.io/v1alpha1](#catalogentrymetadatacatalogkubecarrieriov1alpha1) | true |
 | baseCRD | BaseCRD is the underlying BaseCRD objects that this CatalogEntry refers to. | [ObjectReference.catalog.kubecarrier.io/v1alpha1](#objectreferencecatalogkubecarrieriov1alpha1) | true |
 | derive | Derive contains the configuration to generate DerivedCustomResource from the BaseCRD of this CatalogEntry. | *[DerivedConfig.catalog.kubecarrier.io/v1alpha1](#derivedconfigcatalogkubecarrieriov1alpha1) | false |
 
@@ -790,7 +790,7 @@ CatalogEntrySetSpec defines the desired state of CatalogEntrySet.
 
 | Field | Description | Scheme | Required |
 | ----- | ----------- | ------ | -------- |
-| metadata | Metadata contains the metadata of each CatalogEntry for the Service Catalog. | [CatalogEntrySetMetadata.catalog.kubecarrier.io/v1alpha1](#catalogentrysetmetadatacatalogkubecarrieriov1alpha1) | true |
+| metadata | Metadata contains the metadata of each CatalogEntry for the Service Hub. | [CatalogEntrySetMetadata.catalog.kubecarrier.io/v1alpha1](#catalogentrysetmetadatacatalogkubecarrieriov1alpha1) | true |
 | derive | Derive contains the configuration to generate DerivedCustomResources from the BaseCRDs that are selected by this CatalogEntrySet. | *[DerivedConfig.catalog.kubecarrier.io/v1alpha1](#derivedconfigcatalogkubecarrieriov1alpha1) | false |
 | discover | Discover contains the configuration to create a CustomResourceDiscoverySet. | [CustomResourceDiscoverySetConfig.catalog.kubecarrier.io/v1alpha1](#customresourcediscoverysetconfigcatalogkubecarrieriov1alpha1) | true |
 

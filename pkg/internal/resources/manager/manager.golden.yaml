@@ -373,7 +373,7 @@
                   type: object
                 metadata:
                   description: Metadata contains the metadata of the CatalogEntry
-                    for the Service Catalog.
+                    for the Service Hub.
                   properties:
                     description:
                       description: Description is the long and detailed description
@@ -781,7 +781,7 @@
                   type: object
                 metadata:
                   description: Metadata contains the metadata of each CatalogEntry
-                    for the Service Catalog.
+                    for the Service Hub.
                   properties:
                     description:
                       description: Description is the long and detailed description
@@ -2448,7 +2448,7 @@
                   - name
                   type: object
                 metadata:
-                  description: Metadata for display in the Service Catalog.
+                  description: Metadata for display in the Service Hub.
                   properties:
                     description:
                       description: Description is the human-readable description of

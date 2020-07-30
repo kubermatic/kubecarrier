@@ -68,7 +68,7 @@ spec:
                 - name
                 type: object
               metadata:
-                description: Metadata for display in the Service Catalog.
+                description: Metadata for display in the Service Hub.
                 properties:
                   description:
                     description: Description is the human-readable description of

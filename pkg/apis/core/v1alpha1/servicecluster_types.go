@@ -23,13 +23,13 @@ import (
 
 // ServiceClusterSpec describes the desired state of a ServiceCluster.
 type ServiceClusterSpec struct {
-	// Metadata for display in the Service Catalog.
+	// Metadata for display in the Service Hub.
 	Metadata ServiceClusterMetadata `json:"metadata,omitempty"`
 	// KubeconfigSecret specifies the Kubeconfig to use when connecting to the ServiceCluster.
 	KubeconfigSecret ObjectReference `json:"kubeconfigSecret"`
 }
 
-// ServiceClusterMetadata describes metadata of the ServiceCluster for the Service Catalog.
+// ServiceClusterMetadata describes metadata of the ServiceCluster for the Service Hub.
 type ServiceClusterMetadata struct {
 	// DisplayName is the human-readable name of this ServiceCluster.
 	DisplayName string `json:"displayName,omitempty"`

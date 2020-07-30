@@ -22,7 +22,7 @@ import (
 
 // CatalogEntrySpec describes the desired state of CatalogEntry.
 type CatalogEntrySpec struct {
-	// Metadata contains the metadata of the CatalogEntry for the Service Catalog.
+	// Metadata contains the metadata of the CatalogEntry for the Service Hub.
 	Metadata CatalogEntryMetadata `json:"metadata"`
 	// BaseCRD is the underlying BaseCRD objects that this CatalogEntry refers to.
 	BaseCRD ObjectReference `json:"baseCRD"`

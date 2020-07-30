@@ -17,7 +17,7 @@
 
 ---
 
-KubeCarrier is an open source system for managing applications and services across multiple Kubernetes Clusters; providing a framework to centralize the management of services and provide these services with external users in a self service catalog.
+KubeCarrier is an open source system for managing applications and services across multiple Kubernetes Clusters; providing a framework to centralize the management of services and provide these services with external users in a self service hub.
 
 ---
 
@@ -40,7 +40,7 @@ KubeCarrier is currently in early development and is not ready for production us
 ## Features
 
 - Cross Cluster Management of CRD instances
-- Service Catalog
+- Service Hub
 - Multi Tenancy
 - Account Management
 - Integration with any existing operator

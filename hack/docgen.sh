@@ -50,7 +50,7 @@ echo -e "\nCatalog API"
 cat << 'EOF' >> ./docs/api_reference/_index.md
 ## Catalog
 
-The `catalog.kubecarrier.io` API group contains all objects that are used to setup service catalogs in KubeCarrier.
+The `catalog.kubecarrier.io` API group contains all objects that are used to setup service hubs in KubeCarrier.
 
 EOF
 find ./pkg/apis/catalog -name '*types.go' | xargs ./bin/docgen -section-link='#catalog' >> ./docs/api_reference/_index.md
