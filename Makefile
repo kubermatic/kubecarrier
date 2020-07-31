@@ -139,7 +139,7 @@ endif
 .PHONY: generate-config
 
 # Runs all code generators
-generate: generate-grpc generate-config
+generate: generate-grpc generate-config docs
 .PHONY: generate
 
 # Create API Reference docs
