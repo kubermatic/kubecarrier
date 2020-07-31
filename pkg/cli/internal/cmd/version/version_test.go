@@ -24,7 +24,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/kubermatic/utils/pkg/testutil"
+	"k8c.io/utils/pkg/testutil"
 
 	"k8c.io/kubecarrier/pkg/internal/version"
 )

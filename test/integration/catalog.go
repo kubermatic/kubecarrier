@@ -34,7 +34,7 @@ import (
 	corev1alpha1 "k8c.io/kubecarrier/pkg/apis/core/v1alpha1"
 	"k8c.io/kubecarrier/pkg/testutil"
 
-	kubermatictestutil "github.com/kubermatic/utils/pkg/testutil"
+	kubermatictestutil "k8c.io/utils/pkg/testutil"
 )
 
 func newCatalogSuite(

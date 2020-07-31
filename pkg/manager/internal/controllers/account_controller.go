@@ -32,8 +32,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/source"
 
-	"github.com/kubermatic/utils/pkg/owner"
-	"github.com/kubermatic/utils/pkg/util"
+	"k8c.io/utils/pkg/owner"
+	"k8c.io/utils/pkg/util"
 
 	catalogv1alpha1 "k8c.io/kubecarrier/pkg/apis/catalog/v1alpha1"
 )

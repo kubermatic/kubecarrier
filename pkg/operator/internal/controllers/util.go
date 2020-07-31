@@ -33,8 +33,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client/apiutil"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
-	"github.com/kubermatic/utils/pkg/owner"
-	"github.com/kubermatic/utils/pkg/util"
+	"k8c.io/utils/pkg/owner"
+	"k8c.io/utils/pkg/util"
 
 	"k8c.io/kubecarrier/pkg/internal/reconcile"
 )

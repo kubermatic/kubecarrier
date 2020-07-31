@@ -20,7 +20,7 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/spf13/cobra"
 
-	kubermatictestutil "github.com/kubermatic/utils/pkg/testutil"
+	kubermatictestutil "k8c.io/utils/pkg/testutil"
 
 	"k8c.io/kubecarrier/pkg/testutil"
 )
