@@ -20,4 +20,7 @@ const (
 	KubeCarrierDefaultName = "kubecarrier"
 
 	KubeCarrierDefaultNamespace = "kubecarrier-system"
+
+	InternalAPIGroupPrefix = "internal"
+	ExternalAPIGroupPrefix = "external"
 )

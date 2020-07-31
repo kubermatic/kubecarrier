@@ -239,8 +239,8 @@ ServiceClusterAssignment.kubecarrier.io/v1alpha1: %s.eu-west-1
 		//
 		managementClusterObj := &unstructured.Unstructured{
 			Object: map[string]interface{}{
-				"apiVersion": fmt.Sprintf("%s.%s/v1", serviceCluster.Name, provider.Name),
-				"kind":       "DBInternal",
+				"apiVersion": fmt.Sprintf("internal.%s.%s/v1", serviceCluster.Name, provider.Name),
+				"kind":       "DB",
 				"metadata": map[string]interface{}{
 					"name":      "test-instance-1",
 					"namespace": serviceNamespace.Name,
@@ -289,8 +289,8 @@ ServiceClusterAssignment.kubecarrier.io/v1alpha1: %s.eu-west-1
 		// a object on the management cluster should have been created
 		managementClusterObj2 := &unstructured.Unstructured{
 			Object: map[string]interface{}{
-				"apiVersion": fmt.Sprintf("%s.%s/v1", serviceCluster.Name, provider.Name),
-				"kind":       "DBInternal",
+				"apiVersion": fmt.Sprintf("internal.%s.%s/v1", serviceCluster.Name, provider.Name),
+				"kind":       "DB",
 				"metadata": map[string]interface{}{
 					"name":      serviceClusterObj2.GetName(),
 					"namespace": serviceNamespace.Name,

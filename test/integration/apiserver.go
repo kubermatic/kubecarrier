@@ -378,14 +378,14 @@ func instanceService(ctx context.Context, conn *grpc.ClientConn, tenantAccount *
 		offering := &catalogv1alpha1.Offering{
 			ObjectMeta: metav1.ObjectMeta{
 				Namespace: tenantAccount.Status.Namespace.Name,
-				Name:      strings.Join([]string{"dbs", serviceCluster.Name, providerAccount.Name}, "."),
+				Name:      strings.Join([]string{"dbs", "external", serviceCluster.Name, providerAccount.Name}, "."),
 			},
 		}
 
 		require.NoError(t, kubermatictestutil.WaitUntilFound(ctx, managementClient, offering))
 		require.NoError(t, managementClient.Get(ctx, types.NamespacedName{
 			Namespace: tenantAccount.Status.Namespace.Name,
-			Name:      strings.Join([]string{"dbs", serviceCluster.Name, providerAccount.Name}, "."),
+			Name:      strings.Join([]string{"dbs", "external", serviceCluster.Name, providerAccount.Name}, "."),
 		}, offering), "getting Offering error")
 
 		serviceClusterAssignment := &corev1alpha1.ServiceClusterAssignment{

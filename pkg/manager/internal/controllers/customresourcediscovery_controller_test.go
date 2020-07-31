@@ -135,7 +135,7 @@ func TestCustomResourceDiscoveryReconciler(t *testing.T) {
 
 	internalCRD := &apiextensionsv1.CustomResourceDefinition{}
 	require.NoError(t, r.Client.Get(ctx, types.NamespacedName{
-		Name: strings.Join([]string{"redis", serviceClusterName, crDiscovery.Namespace}, "."),
+		Name: strings.Join([]string{"redis", "internal", serviceClusterName, crDiscovery.Namespace}, "."),
 	}, internalCRD))
 	assert.Equal(t, map[string]string{
 		"kubecarrier.io/origin-namespace": crDiscovery.Namespace,

@@ -18,9 +18,7 @@ spec:
     crd:
       name: couchdbs.couchdb.io
     serviceClusterSelector: {}
-    kindOverride: CouchDBInternal
   derive:
-    kindOverride: CouchDB
     expose:
     - versions:
       - v1alpha1

@@ -53,24 +53,6 @@ func TestCustomResourceDiscoveryValidatingUpdate(t *testing.T) {
 		expectedError bool
 	}{
 		{
-			name: "kind override immutable",
-			object: &corev1alpha1.CustomResourceDiscovery{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "test-crdiscovery",
-					Namespace: "test-namespace",
-				},
-				Spec: corev1alpha1.CustomResourceDiscoverySpec{
-					ServiceCluster: corev1alpha1.ObjectReference{
-						Name: "ServiceCluster",
-					},
-					CRD: corev1alpha1.ObjectReference{
-						Name: "CRD",
-					},
-				},
-			},
-			expectedError: true,
-		},
-		{
 			name: "servicecluster immutable",
 			object: &corev1alpha1.CustomResourceDiscovery{
 				ObjectMeta: metav1.ObjectMeta{

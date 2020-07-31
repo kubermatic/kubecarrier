@@ -38,6 +38,7 @@ import (
 
 	corev1alpha1 "k8c.io/kubecarrier/pkg/apis/core/v1alpha1"
 	operatorv1alpha1 "k8c.io/kubecarrier/pkg/apis/operator/v1alpha1"
+	"k8c.io/kubecarrier/pkg/internal/constants"
 )
 
 const crDiscoveryControllerFinalizer string = "crdiscovery.kubecarrier.io/controller"
@@ -148,8 +149,7 @@ func (r *CustomResourceDiscoveryReconciler) reconcileCRD(
 	// Build desired CRD
 	kind := crDiscovery.Status.CRD.Spec.Names.Kind
 	plural := flect.Pluralize(strings.ToLower(kind))
-	group := crDiscovery.Spec.ServiceCluster.Name + "." + crDiscovery.Namespace
-
+	group := constants.InternalAPIGroupPrefix + "." + crDiscovery.Spec.ServiceCluster.Name + "." + crDiscovery.Namespace
 	desiredCRD := &apiextensionsv1.CustomResourceDefinition{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: plural + "." + group,
