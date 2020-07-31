@@ -44,7 +44,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
-	"github.com/kubermatic/utils/pkg/util"
+	"k8c.io/utils/pkg/util"
 
 	operatorv1alpha1 "k8c.io/kubecarrier/pkg/apis/operator/v1alpha1"
 	"k8c.io/kubecarrier/pkg/cli/internal/cmd/preflight/checkers"

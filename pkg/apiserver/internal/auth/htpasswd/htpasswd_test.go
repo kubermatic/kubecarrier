@@ -27,7 +27,7 @@ import (
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	fakeclient "sigs.k8s.io/controller-runtime/pkg/client/fake"
 
-	"github.com/kubermatic/utils/pkg/testutil"
+	"k8c.io/utils/pkg/testutil"
 )
 
 type testUser struct {

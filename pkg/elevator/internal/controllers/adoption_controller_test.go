@@ -30,8 +30,8 @@ import (
 	fakeclient "sigs.k8s.io/controller-runtime/pkg/client/fake"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
-	"github.com/kubermatic/utils/pkg/owner"
-	"github.com/kubermatic/utils/pkg/testutil"
+	"k8c.io/utils/pkg/owner"
+	"k8c.io/utils/pkg/testutil"
 
 	"k8c.io/kubecarrier/pkg/testutil/mockclient"
 )

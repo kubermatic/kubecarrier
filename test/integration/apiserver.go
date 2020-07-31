@@ -49,7 +49,7 @@ import (
 	apiserverv1 "k8c.io/kubecarrier/pkg/apiserver/api/v1"
 	"k8c.io/kubecarrier/pkg/testutil"
 
-	kubermatictestutil "github.com/kubermatic/utils/pkg/testutil"
+	kubermatictestutil "k8c.io/utils/pkg/testutil"
 )
 
 const (

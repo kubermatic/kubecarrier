@@ -20,7 +20,7 @@ import (
 	"github.com/spf13/cobra"
 	ctrl "sigs.k8s.io/controller-runtime"
 
-	"github.com/kubermatic/utils/pkg/util"
+	"k8c.io/utils/pkg/util"
 
 	deletecmd "k8c.io/kubecarrier/pkg/cli/internal/cmd/delete"
 	e2e_test "k8c.io/kubecarrier/pkg/cli/internal/cmd/e2e-test"

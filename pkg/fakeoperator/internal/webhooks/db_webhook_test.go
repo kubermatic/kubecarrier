@@ -26,7 +26,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	fakeclient "sigs.k8s.io/controller-runtime/pkg/client/fake"
 
-	"github.com/kubermatic/utils/pkg/testutil"
+	"k8c.io/utils/pkg/testutil"
 
 	fakev1 "k8c.io/kubecarrier/pkg/apis/fake/v1"
 )

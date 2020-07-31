@@ -53,7 +53,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client/apiutil"
 	"sigs.k8s.io/controller-runtime/pkg/runtime/inject"
 
-	"github.com/kubermatic/utils/pkg/util"
+	"k8c.io/utils/pkg/util"
 
 	catalogv1alpha1 "k8c.io/kubecarrier/pkg/apis/catalog/v1alpha1"
 	apiserverv1 "k8c.io/kubecarrier/pkg/apiserver/api/v1"

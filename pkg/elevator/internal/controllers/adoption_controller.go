@@ -30,8 +30,8 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	"github.com/kubermatic/utils/pkg/owner"
-	"github.com/kubermatic/utils/pkg/util"
+	"k8c.io/utils/pkg/owner"
+	"k8c.io/utils/pkg/util"
 
 	catalogv1alpha1 "k8c.io/kubecarrier/pkg/apis/catalog/v1alpha1"
 	elevatorutil "k8c.io/kubecarrier/pkg/elevator/internal/util"
