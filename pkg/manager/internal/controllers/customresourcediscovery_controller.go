@@ -33,8 +33,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/source"
 
-	"github.com/kubermatic/utils/pkg/owner"
-	"github.com/kubermatic/utils/pkg/util"
+	"k8c.io/utils/pkg/owner"
+	"k8c.io/utils/pkg/util"
 
 	corev1alpha1 "k8c.io/kubecarrier/pkg/apis/core/v1alpha1"
 	operatorv1alpha1 "k8c.io/kubecarrier/pkg/apis/operator/v1alpha1"
