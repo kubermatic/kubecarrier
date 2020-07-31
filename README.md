@@ -29,6 +29,7 @@ KubeCarrier is an open source system for managing applications and services acro
   - [Pull Requests](#pull-requests)
 - [FAQ](#faq)
 - [Changelog](#changelog)
+- [Roadmap](#roadmap)
 
 ---
 
