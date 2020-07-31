@@ -22,7 +22,7 @@ import (
 
 	"sigs.k8s.io/controller-runtime/pkg/conversion"
 
-	v1 "github.com/kubermatic/kubecarrier/pkg/apis/fake/v1"
+	v1 "k8c.io/kubecarrier/pkg/apis/fake/v1"
 )
 
 var _ conversion.Convertible = (*DB)(nil)

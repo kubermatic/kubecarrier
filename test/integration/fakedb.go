@@ -25,7 +25,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/kubermatic/kubecarrier/pkg/testutil"
+	"k8c.io/kubecarrier/pkg/testutil"
 
 	kubermatictestutil "github.com/kubermatic/utils/pkg/testutil"
 )

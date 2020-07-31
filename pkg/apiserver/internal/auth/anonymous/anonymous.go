@@ -22,7 +22,7 @@ import (
 	"github.com/spf13/pflag"
 	"k8s.io/apiserver/pkg/authentication/user"
 
-	"github.com/kubermatic/kubecarrier/pkg/apiserver/auth"
+	"k8c.io/kubecarrier/pkg/apiserver/auth"
 )
 
 type Auth struct{}

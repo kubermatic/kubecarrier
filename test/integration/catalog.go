@@ -30,9 +30,9 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 
-	catalogv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/catalog/v1alpha1"
-	corev1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/core/v1alpha1"
-	"github.com/kubermatic/kubecarrier/pkg/testutil"
+	catalogv1alpha1 "k8c.io/kubecarrier/pkg/apis/catalog/v1alpha1"
+	corev1alpha1 "k8c.io/kubecarrier/pkg/apis/core/v1alpha1"
+	"k8c.io/kubecarrier/pkg/testutil"
 
 	kubermatictestutil "github.com/kubermatic/utils/pkg/testutil"
 )

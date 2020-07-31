@@ -22,7 +22,7 @@ import (
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/kubermatic/kubecarrier/pkg/apiserver/auth"
+	"k8c.io/kubecarrier/pkg/apiserver/auth"
 )
 
 type Authentication []AuthenticationConfig

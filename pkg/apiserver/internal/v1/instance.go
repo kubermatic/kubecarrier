@@ -35,7 +35,7 @@ import (
 	"github.com/golang/protobuf/ptypes/any"
 	"github.com/golang/protobuf/ptypes/empty"
 
-	v1 "github.com/kubermatic/kubecarrier/pkg/apiserver/api/v1"
+	v1 "k8c.io/kubecarrier/pkg/apiserver/api/v1"
 )
 
 type instanceServer struct {

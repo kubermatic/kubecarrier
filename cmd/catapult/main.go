@@ -19,7 +19,7 @@ package main
 import (
 	"os"
 
-	"github.com/kubermatic/kubecarrier/pkg/catapult"
+	"k8c.io/kubecarrier/pkg/catapult"
 )
 
 func main() {

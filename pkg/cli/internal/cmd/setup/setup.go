@@ -46,12 +46,12 @@ import (
 
 	"github.com/kubermatic/utils/pkg/util"
 
-	operatorv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/operator/v1alpha1"
-	"github.com/kubermatic/kubecarrier/pkg/cli/internal/cmd/preflight/checkers"
-	"github.com/kubermatic/kubecarrier/pkg/cli/internal/spinner"
-	"github.com/kubermatic/kubecarrier/pkg/internal/constants"
-	"github.com/kubermatic/kubecarrier/pkg/internal/reconcile"
-	"github.com/kubermatic/kubecarrier/pkg/internal/resources/operator"
+	operatorv1alpha1 "k8c.io/kubecarrier/pkg/apis/operator/v1alpha1"
+	"k8c.io/kubecarrier/pkg/cli/internal/cmd/preflight/checkers"
+	"k8c.io/kubecarrier/pkg/cli/internal/spinner"
+	"k8c.io/kubecarrier/pkg/internal/constants"
+	"k8c.io/kubecarrier/pkg/internal/reconcile"
+	"k8c.io/kubecarrier/pkg/internal/resources/operator"
 )
 
 var (

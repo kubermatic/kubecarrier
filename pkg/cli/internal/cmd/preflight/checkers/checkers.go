@@ -28,7 +28,7 @@ import (
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/client-go/rest"
 
-	"github.com/kubermatic/kubecarrier/pkg/cli/internal/spinner"
+	"k8c.io/kubecarrier/pkg/cli/internal/spinner"
 )
 
 var (

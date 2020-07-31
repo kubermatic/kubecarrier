@@ -28,9 +28,9 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/apiutil"
 
-	"github.com/kubermatic/kubecarrier/pkg/internal/constants"
+	"k8c.io/kubecarrier/pkg/internal/constants"
 
-	operatorv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/operator/v1alpha1"
+	operatorv1alpha1 "k8c.io/kubecarrier/pkg/apis/operator/v1alpha1"
 )
 
 const DNS1123LabelDescription = "A DNS-1123 label must consist of lower case alphanumeric characters or '-', and must start and end with an alphanumeric character. (e.g. 'my-name',  or '123-abc', regex used for validation is '[a-z0-9]([-a-z0-9]*[a-z0-9])?'"

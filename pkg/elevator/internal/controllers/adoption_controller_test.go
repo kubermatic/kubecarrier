@@ -33,7 +33,7 @@ import (
 	"github.com/kubermatic/utils/pkg/owner"
 	"github.com/kubermatic/utils/pkg/testutil"
 
-	"github.com/kubermatic/kubecarrier/pkg/testutil/mockclient"
+	"k8c.io/kubecarrier/pkg/testutil/mockclient"
 )
 
 func TestAdoptionReconciler(t *testing.T) {

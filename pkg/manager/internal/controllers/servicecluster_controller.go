@@ -30,8 +30,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
-	corev1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/core/v1alpha1"
-	operatorv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/operator/v1alpha1"
+	corev1alpha1 "k8c.io/kubecarrier/pkg/apis/core/v1alpha1"
+	operatorv1alpha1 "k8c.io/kubecarrier/pkg/apis/operator/v1alpha1"
 )
 
 type ServiceClusterReconciler struct {

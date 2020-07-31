@@ -29,11 +29,11 @@ import (
 	"sigs.k8s.io/kustomize/v3/pkg/types"
 	"sigs.k8s.io/yaml"
 
-	operatorv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/operator/v1alpha1"
-	"github.com/kubermatic/kubecarrier/pkg/apiserver/auth"
-	"github.com/kubermatic/kubecarrier/pkg/internal/kustomize"
-	"github.com/kubermatic/kubecarrier/pkg/internal/resources/constants"
-	"github.com/kubermatic/kubecarrier/pkg/internal/version"
+	operatorv1alpha1 "k8c.io/kubecarrier/pkg/apis/operator/v1alpha1"
+	"k8c.io/kubecarrier/pkg/apiserver/auth"
+	"k8c.io/kubecarrier/pkg/internal/kustomize"
+	"k8c.io/kubecarrier/pkg/internal/resources/constants"
+	"k8c.io/kubecarrier/pkg/internal/version"
 )
 
 // Config holds the config information to generate the KubeCarrier master controller manager setup.

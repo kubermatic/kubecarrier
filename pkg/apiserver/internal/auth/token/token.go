@@ -29,7 +29,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/runtime/inject"
 
-	"github.com/kubermatic/kubecarrier/pkg/apiserver/auth"
+	"k8c.io/kubecarrier/pkg/apiserver/auth"
 )
 
 type Auth struct {

@@ -19,7 +19,7 @@ package main
 import (
 	"os"
 
-	"github.com/kubermatic/kubecarrier/pkg/apiserver"
+	"k8c.io/kubecarrier/pkg/apiserver"
 )
 
 func main() {

@@ -28,7 +28,7 @@ import (
 
 	"github.com/kubermatic/utils/pkg/util"
 
-	fakev1 "github.com/kubermatic/kubecarrier/pkg/apis/fake/v1"
+	fakev1 "k8c.io/kubecarrier/pkg/apis/fake/v1"
 )
 
 const finalizer = "fake.kubecarrier.io/controller"

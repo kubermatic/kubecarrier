@@ -22,7 +22,7 @@ import (
 
 	kubermatictestutil "github.com/kubermatic/utils/pkg/testutil"
 
-	"github.com/kubermatic/kubecarrier/pkg/testutil"
+	"k8c.io/kubecarrier/pkg/testutil"
 )
 
 func NewCommand(log logr.Logger) *cobra.Command {

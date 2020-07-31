@@ -25,8 +25,8 @@ import (
 	adminv1beta1 "k8s.io/api/admission/v1beta1"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
-	catalogv1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/catalog/v1alpha1"
-	"github.com/kubermatic/kubecarrier/pkg/internal/util/webhook"
+	catalogv1alpha1 "k8c.io/kubecarrier/pkg/apis/catalog/v1alpha1"
+	"k8c.io/kubecarrier/pkg/internal/util/webhook"
 )
 
 // ProviderWebhookHandler handles mutating/validating of Providers.

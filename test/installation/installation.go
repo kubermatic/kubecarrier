@@ -19,7 +19,7 @@ package installation
 import (
 	"testing"
 
-	"github.com/kubermatic/kubecarrier/pkg/testutil"
+	"k8c.io/kubecarrier/pkg/testutil"
 )
 
 func NewInstallationSuite(f *testutil.Framework) func(t *testing.T) {

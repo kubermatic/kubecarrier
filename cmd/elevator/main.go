@@ -19,7 +19,7 @@ package main
 import (
 	"os"
 
-	"github.com/kubermatic/kubecarrier/pkg/elevator"
+	"k8c.io/kubecarrier/pkg/elevator"
 )
 
 func main() {

@@ -38,9 +38,9 @@ import (
 
 	"github.com/kubermatic/utils/pkg/util"
 
-	corev1alpha1 "github.com/kubermatic/kubecarrier/pkg/apis/core/v1alpha1"
-	"github.com/kubermatic/kubecarrier/pkg/catapult/internal/controllers"
-	"github.com/kubermatic/kubecarrier/pkg/catapult/internal/webhooks"
+	corev1alpha1 "k8c.io/kubecarrier/pkg/apis/core/v1alpha1"
+	"k8c.io/kubecarrier/pkg/catapult/internal/controllers"
+	"k8c.io/kubecarrier/pkg/catapult/internal/webhooks"
 )
 
 type flags struct {

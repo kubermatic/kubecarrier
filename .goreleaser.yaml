@@ -22,10 +22,10 @@ builds:
     main: cmd/kubectl-kubecarrier/main.go
     ldflags: >
       -s -w
-      -X github.com/kubermatic/kubecarrier/pkg/internal/version.Version={{.Tag}}
-      -X github.com/kubermatic/kubecarrier/pkg/internal/version.Branch={{.Tag}}
-      -X github.com/kubermatic/kubecarrier/pkg/internal/version.Commit={{.ShortCommit}}
-      -X github.com/kubermatic/kubecarrier/pkg/internal/version.BuildDate={{.Timestamp}}
+      -X k8c.io/kubecarrier/pkg/internal/version.Version={{.Tag}}
+      -X k8c.io/kubecarrier/pkg/internal/version.Branch={{.Tag}}
+      -X k8c.io/kubecarrier/pkg/internal/version.Commit={{.ShortCommit}}
+      -X k8c.io/kubecarrier/pkg/internal/version.BuildDate={{.Timestamp}}
   - &build
     <<: *build-cli
     id: manager
