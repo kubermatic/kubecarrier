@@ -179,7 +179,7 @@ type: object
 		// Check Tenant -> Provider
 		tenantObj := &unstructured.Unstructured{
 			Object: map[string]interface{}{
-				"apiVersion": fmt.Sprintf("external.eu-west-1.%s/v1alpha1", provider.Status.Namespace.Name),
+				"apiVersion": fmt.Sprintf("eu-west-1.%s/v1alpha1", provider.Status.Namespace.Name),
 				"kind":       "CouchDB",
 				"metadata": map[string]interface{}{
 					"name":      "test-instance-1",

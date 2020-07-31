@@ -146,7 +146,7 @@ func newSimpleScenario(f *testutil.Framework) func(t *testing.T) {
 		}, internalCRD))
 		externalCRD := &apiextensionsv1.CustomResourceDefinition{}
 		require.NoError(t, managementClient.Get(ctx, types.NamespacedName{
-			Name: strings.Join([]string{"dbs", "external", serviceCluster.Name, provider.Name}, "."),
+			Name: strings.Join([]string{"dbs", serviceCluster.Name, provider.Name}, "."),
 		}, externalCRD))
 
 		catalog := testutil.NewCatalog("default", provider.Status.Namespace.Name, &metav1.LabelSelector{}, &metav1.LabelSelector{})
@@ -180,7 +180,7 @@ func newSimpleScenario(f *testutil.Framework) func(t *testing.T) {
 			offering := &catalogv1alpha1.Offering{}
 			if assert.NoError(t, tenantClient.Get(ctx, types.NamespacedName{
 				Namespace: tenantAccount.Status.Namespace.Name,
-				Name:      strings.Join([]string{"dbs", "external", serviceCluster.Name, provider.Name}, "."),
+				Name:      strings.Join([]string{"dbs", serviceCluster.Name, provider.Name}, "."),
 			}, offering), "tenant %s doesn't have the required offering", tenantAccount.Name) {
 				assert.Equal(t, externalCRD.Name, offering.Spec.CRD.Name)
 				externalObj := &unstructured.Unstructured{}

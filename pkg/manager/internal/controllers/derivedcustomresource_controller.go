@@ -41,7 +41,6 @@ import (
 
 	catalogv1alpha1 "k8c.io/kubecarrier/pkg/apis/catalog/v1alpha1"
 	operatorv1alpha1 "k8c.io/kubecarrier/pkg/apis/operator/v1alpha1"
-	"k8c.io/kubecarrier/pkg/internal/constants"
 	internalreconcile "k8c.io/kubecarrier/pkg/internal/reconcile"
 )
 
@@ -168,7 +167,7 @@ func (r *DerivedCustomResourceReconciler) Reconcile(req ctrl.Request) (ctrl.Resu
 	names.ListKind = names.Kind + "List"
 	names.Plural = flect.Pluralize(strings.ToLower(names.Kind))
 	names.Singular = strings.ToLower(names.Kind)
-	group := constants.ExternalAPIGroupPrefix + "." + serviceClusterName + "." + provider.Name
+	group := serviceClusterName + "." + provider.Name
 
 	derivedCR := &apiextensionsv1.CustomResourceDefinition{
 		ObjectMeta: metav1.ObjectMeta{

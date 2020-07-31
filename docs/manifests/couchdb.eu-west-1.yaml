@@ -1,4 +1,4 @@
-apiVersion: external.eu-west-1.team-a/v1alpha1
+apiVersion: eu-west-1.team-a/v1alpha1
 kind: CouchDB
 metadata:
   name: db1
