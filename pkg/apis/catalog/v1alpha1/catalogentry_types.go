@@ -198,7 +198,6 @@ func (s *CatalogEntryStatus) SetCondition(condition CatalogEntryCondition) {
 //   baseCRD:
 //     name: couchdbs.eu-west-1.loodse
 //   derive:
-//     kindOverride: CouchDBPublic
 //     expose:
 //     - versions:
 //       - v1alpha1
