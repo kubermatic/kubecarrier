@@ -61,7 +61,6 @@ func TestCustomResourceDiscoverySetReconciler(t *testing.T) {
 			CRD: corev1alpha1.ObjectReference{
 				Name: "couchdbs.couchdb.io",
 			},
-			KindOverride: "CouchDBInternal",
 		},
 	}
 	crds := &corev1alpha1.CustomResourceDiscovery{

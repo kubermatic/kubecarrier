@@ -294,11 +294,11 @@
             with limited fields** ```yaml apiVersion: catalog.kubecarrier.io/v1alpha1
             kind: CatalogEntry metadata:   name: couchdbs.eu-west-1 spec:   metadata:
             \    displayName: CouchDB     description: The compfy database   baseCRD:
-            \    name: couchdbs.eu-west-1.loodse   derive:     kindOverride: CouchDBPublic
-            \    expose:     - versions:       - v1alpha1       fields:       - jsonPath:
-            .spec.username       - jsonPath: .spec.password       - jsonPath: .status.phase
-            \      - jsonPath: .status.fauxtonAddress       - jsonPath: .status.address
-            \      - jsonPath: .status.observedGeneration ```"
+            \    name: couchdbs.eu-west-1.loodse   derive:     expose:     - versions:
+            \      - v1alpha1       fields:       - jsonPath: .spec.username       -
+            jsonPath: .spec.password       - jsonPath: .status.phase       - jsonPath:
+            .status.fauxtonAddress       - jsonPath: .status.address       - jsonPath:
+            .status.observedGeneration ```"
           properties:
             apiVersion:
               description: 'APIVersion defines the versioned schema of this representation
@@ -365,9 +365,6 @@
                         - versions
                         type: object
                       type: array
-                    kindOverride:
-                      description: overrides the kind of the derived CRD.
-                      type: string
                   required:
                   - expose
                   type: object
@@ -694,9 +691,6 @@
                         - versions
                         type: object
                       type: array
-                    kindOverride:
-                      description: overrides the kind of the derived CRD.
-                      type: string
                   required:
                   - expose
                   type: object
@@ -713,10 +707,6 @@
                       required:
                       - name
                       type: object
-                    kindOverride:
-                      description: KindOverride overrides resulting internal CRDs
-                        kind
-                      type: string
                     serviceClusterSelector:
                       description: ServiceClusterSelector references a set of ServiceClusters
                         to search the CustomResourceDefinition on.
@@ -1246,9 +1236,6 @@
                     type: object
                   minItems: 1
                   type: array
-                kindOverride:
-                  description: overrides the kind of the derived CRD.
-                  type: string
               required:
               - baseCRD
               - expose
@@ -1883,9 +1870,6 @@
                   required:
                   - name
                   type: object
-                kindOverride:
-                  description: KindOverride overrides the kind of the discovered CRD.
-                  type: string
                 serviceCluster:
                   description: ServiceCluster references a ServiceCluster to search
                     the CustomResourceDefinition on.
@@ -2060,9 +2044,6 @@
                   required:
                   - name
                   type: object
-                kindOverride:
-                  description: KindOverride overrides the kind of the discovered CRD.
-                  type: string
                 serviceClusterSelector:
                   description: ServiceClusterSelector references a set of ServiceClusters
                     to search the CustomResourceDefinition on.

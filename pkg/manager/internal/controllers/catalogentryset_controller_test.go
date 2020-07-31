@@ -92,7 +92,6 @@ func TestCatalogEntrySetReconciler(t *testing.T) {
 				},
 			},
 			Derive: &catalogv1alpha1.DerivedConfig{
-				KindOverride: "CatapultTenant",
 				Expose: []catalogv1alpha1.VersionExposeConfig{
 					{
 						Versions: []string{
@@ -109,7 +108,6 @@ func TestCatalogEntrySetReconciler(t *testing.T) {
 					Name: baseCRD.Name,
 				},
 				ServiceClusterSelector: metav1.LabelSelector{},
-				KindOverride:           "CatapultInternal",
 				WebhookStrategy:        corev1alpha1.WebhookStrategyTypeServiceCluster,
 			},
 		},

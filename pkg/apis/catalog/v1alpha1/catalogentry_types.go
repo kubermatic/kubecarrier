@@ -32,8 +32,6 @@ type CatalogEntrySpec struct {
 
 // DerivedConfig can be used to limit fields that should be exposed to a Tenant.
 type DerivedConfig struct {
-	// overrides the kind of the derived CRD.
-	KindOverride string `json:"kindOverride,omitempty"`
 	// controls which fields will be present in the derived CRD.
 	Expose []VersionExposeConfig `json:"expose"`
 }
@@ -200,7 +198,6 @@ func (s *CatalogEntryStatus) SetCondition(condition CatalogEntryCondition) {
 //   baseCRD:
 //     name: couchdbs.eu-west-1.loodse
 //   derive:
-//     kindOverride: CouchDBPublic
 //     expose:
 //     - versions:
 //       - v1alpha1

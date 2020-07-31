@@ -110,7 +110,6 @@ func Test_DerivedCustomResourceReconciler(t *testing.T) {
 			BaseCRD: catalogv1alpha1.ObjectReference{
 				Name: baseCRD.Name,
 			},
-			KindOverride: "TestResource",
 			Expose: []catalogv1alpha1.VersionExposeConfig{
 				{
 					Versions: []string{
@@ -149,7 +148,7 @@ func Test_DerivedCustomResourceReconciler(t *testing.T) {
 		// Check CRD
 		checkDerivedCR := &apiextensionsv1.CustomResourceDefinition{}
 		require.NoError(t, client.Get(ctx, types.NamespacedName{
-			Name: "testresources.eu-west-1.dcr",
+			Name: "catapults.eu-west-1.dcr",
 		}, checkDerivedCR))
 
 		schemaYaml, _ := yaml.Marshal(checkDerivedCR.Spec.Versions[0].Schema.OpenAPIV3Schema)
@@ -169,9 +168,9 @@ type: object
 `, string(schemaYaml))
 
 		assert.Equal(t, "eu-west-1.dcr", checkDerivedCR.Spec.Group)
-		assert.Equal(t, "TestResource", checkDerivedCR.Spec.Names.Kind)
-		assert.Equal(t, "testresources", checkDerivedCR.Spec.Names.Plural)
-		assert.Equal(t, "testresource", checkDerivedCR.Spec.Names.Singular)
+		assert.Equal(t, "Catapult", checkDerivedCR.Spec.Names.Kind)
+		assert.Equal(t, "catapults", checkDerivedCR.Spec.Names.Plural)
+		assert.Equal(t, "catapult", checkDerivedCR.Spec.Names.Singular)
 
 		// check ready condition
 		require.NoError(t, client.Get(ctx, types.NamespacedName{
@@ -235,10 +234,10 @@ type: object
 				Plural:  "catapults",
 			},
 			TenantCRD: operatorv1alpha1.CRDReference{
-				Kind:    "TestResource",
+				Kind:    "Catapult",
 				Version: "v1alpha1",
 				Group:   "eu-west-1.dcr",
-				Plural:  "testresources",
+				Plural:  "catapults",
 			},
 			DerivedCR: operatorv1alpha1.ObjectReference{
 				Name: derivedCR.Name,

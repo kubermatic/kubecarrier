@@ -114,7 +114,6 @@ func newSimpleScenario(f *testutil.Framework) func(t *testing.T) {
 					},
 				},
 				Derive: &catalogv1alpha1.DerivedConfig{
-					KindOverride: "DB",
 					Expose: []catalogv1alpha1.VersionExposeConfig{
 						{
 							Versions: []string{
@@ -134,7 +133,6 @@ func newSimpleScenario(f *testutil.Framework) func(t *testing.T) {
 						Name: baseCRD.Name,
 					},
 					ServiceClusterSelector: metav1.LabelSelector{},
-					KindOverride:           "DBInternal",
 					WebhookStrategy:        corev1alpha1.WebhookStrategyTypeServiceCluster,
 				},
 			},
@@ -144,7 +142,7 @@ func newSimpleScenario(f *testutil.Framework) func(t *testing.T) {
 
 		internalCRD := &apiextensionsv1.CustomResourceDefinition{}
 		require.NoError(t, managementClient.Get(ctx, types.NamespacedName{
-			Name: strings.Join([]string{"dbinternals", serviceCluster.Name, provider.Name}, "."),
+			Name: strings.Join([]string{"dbs", "internal", serviceCluster.Name, provider.Name}, "."),
 		}, internalCRD))
 		externalCRD := &apiextensionsv1.CustomResourceDefinition{}
 		require.NoError(t, managementClient.Get(ctx, types.NamespacedName{

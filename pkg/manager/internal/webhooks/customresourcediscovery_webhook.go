@@ -90,9 +90,8 @@ func (r *CustomResourceDiscoveryWebhookHandler) InjectDecoder(d *admission.Decod
 func (r *CustomResourceDiscoveryWebhookHandler) validateUpdate(oldObj, newObj *corev1alpha1.CustomResourceDiscovery) error {
 	r.Log.Info("validate update", "name", newObj.Name)
 	if newObj.Spec.ServiceCluster.Name != oldObj.Spec.ServiceCluster.Name ||
-		newObj.Spec.CRD.Name != oldObj.Spec.CRD.Name ||
-		newObj.Spec.KindOverride != oldObj.Spec.KindOverride {
-		return fmt.Errorf("the Spec (ServiceCluster, CRD, and KindOverride) of CustomResourceDiscovery is immutable")
+		newObj.Spec.CRD.Name != oldObj.Spec.CRD.Name {
+		return fmt.Errorf("the Spec (ServiceCluster, CRD) of CustomResourceDiscovery is immutable")
 	}
 	return nil
 }

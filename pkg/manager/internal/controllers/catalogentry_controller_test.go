@@ -109,7 +109,6 @@ func TestCatalogEntryReconciler(t *testing.T) {
 				Name: baseCRD.Name,
 			},
 			Derive: &catalogv1alpha1.DerivedConfig{
-				KindOverride: "TestResource",
 				Expose: []catalogv1alpha1.VersionExposeConfig{
 					{
 						Versions: []string{

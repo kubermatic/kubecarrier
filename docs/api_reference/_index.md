@@ -102,7 +102,6 @@ CustomResourceDiscoverySpec describes the desired state of a CustomResourceDisco
 | ----- | ----------- | ------ | -------- |
 | crd | CRD references a CustomResourceDefinition within the ServiceCluster. | [ObjectReference.kubecarrier.io/v1alpha1](#objectreferencekubecarrieriov1alpha1) | true |
 | serviceCluster | ServiceCluster references a ServiceCluster to search the CustomResourceDefinition on. | [ObjectReference.kubecarrier.io/v1alpha1](#objectreferencekubecarrieriov1alpha1) | true |
-| kindOverride | KindOverride overrides the kind of the discovered CRD. | string | false |
 | webhookStrategy | WebhookStrategy configs the webhook of the CRD which is registered in the management cluster by this CustomResourceDiscovery. There are two possible values for this configuration {None (by default), ServiceCluster} None (by default): Webhook will only check if there is an available ServiceClusterAssignment in the current Namespace. ServiceCluster: Webhook will call webhooks of the CRD in the ServiceCluster with dry-run flag. | WebhookStrategyType.kubecarrier.io/v1alpha1 | false |
 
 [Back to Group](#core)
@@ -189,7 +188,6 @@ CustomResourceDiscoverySetSpec describes the desired state of a CustomResourceDi
 | ----- | ----------- | ------ | -------- |
 | crd | CRD references a CustomResourceDefinition within the ServiceCluster. | [ObjectReference.kubecarrier.io/v1alpha1](#objectreferencekubecarrieriov1alpha1) | true |
 | serviceClusterSelector | ServiceClusterSelector references a set of ServiceClusters to search the CustomResourceDefinition on. | [metav1.LabelSelector](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.14/#labelselector-v1-meta) | true |
-| kindOverride | KindOverride overrides the kind of the discovered CRD. | string | false |
 | webhookStrategy | WebhookStrategy configs the webhooks of the CRDs which are registered in the management cluster by this CustomResourceDiscoverySet. There are two possible values for this configuration {None (by default), ServiceCluster} None (by default): Webhook will only check if there is an available ServiceClusterAssignment in the current Namespace. ServiceCluster: Webhook will call webhooks of the CRD in the ServiceCluster with dry-run flag. | WebhookStrategyType.kubecarrier.io/v1alpha1 | false |
 
 [Back to Group](#core)
@@ -629,7 +627,6 @@ spec:
   baseCRD:
     name: couchdbs.eu-west-1.loodse
   derive:
-    kindOverride: CouchDBPublic
     expose:
     - versions:
       - v1alpha1
@@ -716,7 +713,6 @@ DerivedConfig can be used to limit fields that should be exposed to a Tenant.
 
 | Field | Description | Scheme | Required |
 | ----- | ----------- | ------ | -------- |
-| kindOverride | overrides the kind of the derived CRD. | string | false |
 | expose | controls which fields will be present in the derived CRD. | [][VersionExposeConfig.catalog.kubecarrier.io/v1alpha1](#versionexposeconfigcatalogkubecarrieriov1alpha1) | true |
 
 [Back to Group](#catalog)
@@ -816,7 +812,6 @@ CatalogEntrySetStatus defines the observed state of CatalogEntrySet.
 | ----- | ----------- | ------ | -------- |
 | crd | CRD references a CustomResourceDefinition within the ServiceCluster. | [ObjectReference.catalog.kubecarrier.io/v1alpha1](#objectreferencecatalogkubecarrieriov1alpha1) | true |
 | serviceClusterSelector | ServiceClusterSelector references a set of ServiceClusters to search the CustomResourceDefinition on. | [metav1.LabelSelector](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.14/#labelselector-v1-meta) | true |
-| kindOverride | KindOverride overrides resulting internal CRDs kind | string | false |
 | webhookStrategy | WebhookStrategy configs the webhook of the CRD which is registered in the management cluster by CustomResourceDiscovery object. There are two possible values for this configuration {None (by default), ServiceCluster} None (by default): Webhook will only check if there is an available ServiceClusterAssignment in the current Namespace. ServiceCluster: Webhook will call webhooks of the CRD in the ServiceCluster with dry-run flag. | corev1alpha1.WebhookStrategyType | false |
 
 [Back to Group](#catalog)
@@ -892,7 +887,6 @@ DerivedCustomResourceSpec defines the desired state of DerivedCustomResource.
 | Field | Description | Scheme | Required |
 | ----- | ----------- | ------ | -------- |
 | baseCRD | CRD that should be used as a base to derive a new CRD from. | [ObjectReference.catalog.kubecarrier.io/v1alpha1](#objectreferencecatalogkubecarrieriov1alpha1) | true |
-| kindOverride | overrides the kind of the derived CRD. | string | false |
 | expose | controls which fields will be present in the derived CRD. | [][VersionExposeConfig.catalog.kubecarrier.io/v1alpha1](#versionexposeconfigcatalogkubecarrieriov1alpha1) | true |
 
 [Back to Group](#catalog)

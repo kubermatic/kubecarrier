@@ -97,9 +97,6 @@ spec:
                   type: object
                 minItems: 1
                 type: array
-              kindOverride:
-                description: overrides the kind of the derived CRD.
-                type: string
             required:
             - baseCRD
             - expose

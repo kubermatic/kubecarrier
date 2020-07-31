@@ -27,8 +27,6 @@ type CustomResourceDiscoverySpec struct {
 	CRD ObjectReference `json:"crd"`
 	// ServiceCluster references a ServiceCluster to search the CustomResourceDefinition on.
 	ServiceCluster ObjectReference `json:"serviceCluster"`
-	// KindOverride overrides the kind of the discovered CRD.
-	KindOverride string `json:"kindOverride,omitempty"`
 	// WebhookStrategy configs the webhook of the CRD which is registered in the management cluster by this CustomResourceDiscovery.
 	// There are two possible values for this configuration {None (by default), ServiceCluster}
 	// None (by default): Webhook will only check if there is an available ServiceClusterAssignment in the current Namespace.

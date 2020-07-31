@@ -341,7 +341,6 @@ func instanceService(ctx context.Context, conn *grpc.ClientConn, tenantAccount *
 					},
 				},
 				Derive: &catalogv1alpha1.DerivedConfig{
-					KindOverride: "DB",
 					Expose: []catalogv1alpha1.VersionExposeConfig{
 						{
 							Versions: []string{
@@ -361,7 +360,6 @@ func instanceService(ctx context.Context, conn *grpc.ClientConn, tenantAccount *
 						Name: "dbs.fake.kubecarrier.io",
 					},
 					ServiceClusterSelector: metav1.LabelSelector{},
-					KindOverride:           "DBInternal",
 					WebhookStrategy:        corev1alpha1.WebhookStrategyTypeServiceCluster,
 				},
 			},
