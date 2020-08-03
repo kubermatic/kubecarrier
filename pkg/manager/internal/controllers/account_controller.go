@@ -19,9 +19,9 @@ package controllers
 import (
 	"context"
 	"fmt"
-	"reflect"
 
 	"github.com/go-logr/logr"
+	"k8c.io/utils/pkg/util"
 	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -29,17 +29,11 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/source"
 
-	"k8c.io/utils/pkg/owner"
-	"k8c.io/utils/pkg/util"
-
 	catalogv1alpha1 "k8c.io/kubecarrier/pkg/apis/catalog/v1alpha1"
-)
-
-const (
-	accountControllerFinalizer string = "account.kubecarrier.io/controller"
 )
 
 // AccountReconciler reconciles a Account object
@@ -58,9 +52,8 @@ type AccountReconciler struct {
 
 // Reconcile function reconciles the Account object which specified by the request. Currently, it does the following:
 // 1. Fetch the Account object.
-// 2. Handle the deletion of the Account object (Remove the namespace that the account owns, and remove the finalizer).
-// 3. Handle the creation/update of the Account object (Create/reconcile the namespace and insert the finalizer).
-// 4. Update the status of the Account object.
+// 2. Handle the creation/update of the Account object (Create/reconcile the namespace, tenants, roles, and rolebindings).
+// 3. Update the status of the Account object.
 func (r *AccountReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	ctx := context.Background()
 	log := r.Log.WithValues("account", req.NamespacedName)
@@ -77,11 +70,12 @@ func (r *AccountReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 		return ctrl.Result{}, nil
 	}
 
-	if util.AddFinalizer(account, accountControllerFinalizer) {
-		if err := r.Update(ctx, account); err != nil {
-			return ctrl.Result{}, fmt.Errorf("updating finalizers: %w", err)
+	if util.AddFinalizer(account, metav1.FinalizerDeleteDependents) {
+		if err := r.Client.Update(ctx, account); err != nil {
+			return ctrl.Result{}, fmt.Errorf("updating Account finalizers: %w", err)
 		}
 	}
+
 	if err := r.reconcileNamespace(ctx, log, account); err != nil {
 		return ctrl.Result{}, fmt.Errorf("reconciling namespace: %w", err)
 	}
@@ -112,14 +106,12 @@ func (r *AccountReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 }
 
 func (r *AccountReconciler) SetupWithManager(mgr ctrl.Manager) error {
-	enqueuer := owner.EnqueueRequestForOwner(&catalogv1alpha1.Account{}, mgr.GetScheme())
-
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&catalogv1alpha1.Account{}).
-		Watches(&source.Kind{Type: &corev1.Namespace{}}, enqueuer).
-		Watches(&source.Kind{Type: &catalogv1alpha1.Tenant{}}, enqueuer).
-		Watches(&source.Kind{Type: &rbacv1.Role{}}, enqueuer).
-		Watches(&source.Kind{Type: &rbacv1.RoleBinding{}}, enqueuer).
+		Owns(&corev1.Namespace{}).
+		Owns(&catalogv1alpha1.Tenant{}).
+		Owns(&rbacv1.Role{}).
+		Owns(&rbacv1.RoleBinding{}).
 		Watches(&source.Kind{Type: &catalogv1alpha1.Account{}}, &handler.EnqueueRequestsFromMapFunc{
 			ToRequests: handler.ToRequestsFunc(func(mapObject handler.MapObject) (out []ctrl.Request) {
 				provider := mapObject.Object.(*catalogv1alpha1.Account)
@@ -165,30 +157,19 @@ func (r *AccountReconciler) handleDeletion(ctx context.Context, log logr.Logger,
 			return fmt.Errorf("updating Account status: %w", err)
 		}
 	}
-
-	cleanedUp, err := util.DeleteObjects(ctx, r.Client, r.Scheme, []runtime.Object{
-		&corev1.Namespace{},
-		&catalogv1alpha1.Tenant{},
-		&rbacv1.Role{},
-		&rbacv1.RoleBinding{},
-	}, owner.OwnedBy(account, r.Scheme))
-	if err != nil {
-		return fmt.Errorf("DeleteObjects: %w", err)
-	}
-	if cleanedUp && util.RemoveFinalizer(account, accountControllerFinalizer) {
-		if err := r.Update(ctx, account); err != nil {
-			return fmt.Errorf("updating Account Status: %w", err)
-		}
-	}
 	return nil
 }
 
 func (r *AccountReconciler) reconcileNamespace(ctx context.Context, log logr.Logger, account *catalogv1alpha1.Account) error {
 	ns := &corev1.Namespace{}
 	ns.Name = account.Name
-
-	if _, err := owner.ReconcileOwnedObjects(ctx, r.Client, log, r.Scheme, account, []runtime.Object{ns}, &corev1.Namespace{}, nil); err != nil {
-		return fmt.Errorf("cannot reconcile namespace: %w", err)
+	if _, err := controllerutil.CreateOrUpdate(ctx, r.Client, ns, func() error {
+		if err := controllerutil.SetControllerReference(account, ns, r.Scheme); err != nil {
+			return fmt.Errorf("set controller reference for namespace: %w", err)
+		}
+		return nil
+	}); err != nil {
+		return fmt.Errorf("creating or updating namespace: %w", err)
 	}
 
 	if account.Status.Namespace == nil {
@@ -208,7 +189,7 @@ func (r *AccountReconciler) reconcileTenants(ctx context.Context, log logr.Logge
 		return fmt.Errorf("listing Accounts: %w", err)
 	}
 
-	wantedRefs := make([]runtime.Object, 0)
+	wantedRefs := make([]*catalogv1alpha1.Tenant, 0)
 	if account.HasRole(catalogv1alpha1.TenantRole) {
 		for _, providerAccount := range accountList.Items {
 			if !providerAccount.HasRole(catalogv1alpha1.ProviderRole) {
@@ -223,23 +204,25 @@ func (r *AccountReconciler) reconcileTenants(ctx context.Context, log logr.Logge
 					Namespace: providerAccount.Status.Namespace.Name,
 				},
 			}
-			if _, err := owner.SetOwnerReference(account, tenant, r.Scheme); err != nil {
-				return fmt.Errorf("setting owner reference on %v: %w", providerAccount, err)
-			}
 			wantedRefs = append(wantedRefs, tenant)
 		}
 	}
-
-	_, err := owner.ReconcileOwnedObjects(ctx, r.Client, log, r.Scheme, account, wantedRefs, &catalogv1alpha1.Tenant{}, nil)
-	if err != nil {
-		return fmt.Errorf("cannot reconcile objects: %w", err)
+	for _, tenant := range wantedRefs {
+		if _, err := controllerutil.CreateOrUpdate(ctx, r.Client, tenant, func() error {
+			if err := controllerutil.SetControllerReference(account, tenant, r.Scheme); err != nil {
+				return fmt.Errorf("set controller reference for Tenant: %w", err)
+			}
+			return nil
+		}); err != nil {
+			return fmt.Errorf("creating or updating Tenant: %w", err)
+		}
 	}
-	return err
+	return nil
 }
 
 func (r *AccountReconciler) reconcileRolesAndRoleBindings(ctx context.Context, log logr.Logger, account *catalogv1alpha1.Account) error {
-	var desiredRoles []runtime.Object
-	var desiredRoleBindings []runtime.Object
+	var roles []*rbacv1.Role
+	var roleBindings []*rbacv1.RoleBinding
 	if account.HasRole(catalogv1alpha1.ProviderRole) {
 		desiredProviderRole := &rbacv1.Role{
 			ObjectMeta: metav1.ObjectMeta{
@@ -276,7 +259,7 @@ func (r *AccountReconciler) reconcileRolesAndRoleBindings(ctx context.Context, l
 				},
 			},
 		}
-		desiredRoles = append(desiredRoles, desiredProviderRole)
+		roles = append(roles, desiredProviderRole)
 
 		desiredProviderRoleBinding := &rbacv1.RoleBinding{
 			ObjectMeta: metav1.ObjectMeta{
@@ -290,7 +273,7 @@ func (r *AccountReconciler) reconcileRolesAndRoleBindings(ctx context.Context, l
 				Name:     desiredProviderRole.Name,
 			},
 		}
-		desiredRoleBindings = append(desiredRoleBindings, desiredProviderRoleBinding)
+		roleBindings = append(roleBindings, desiredProviderRoleBinding)
 	}
 	if account.HasRole(catalogv1alpha1.TenantRole) {
 		desiredTenantRole := &rbacv1.Role{
@@ -310,7 +293,7 @@ func (r *AccountReconciler) reconcileRolesAndRoleBindings(ctx context.Context, l
 				},
 			},
 		}
-		desiredRoles = append(desiredRoles, desiredTenantRole)
+		roles = append(roles, desiredTenantRole)
 
 		desiredTenantRoleBinding := &rbacv1.RoleBinding{
 			ObjectMeta: metav1.ObjectMeta{
@@ -324,37 +307,34 @@ func (r *AccountReconciler) reconcileRolesAndRoleBindings(ctx context.Context, l
 				Name:     desiredTenantRole.Name,
 			},
 		}
-		desiredRoleBindings = append(desiredRoleBindings, desiredTenantRoleBinding)
+		roleBindings = append(roleBindings, desiredTenantRoleBinding)
 	}
 
-	if _, err := owner.ReconcileOwnedObjects(ctx, r.Client, log, r.Scheme,
-		account,
-		desiredRoles, &rbacv1.Role{},
-		func(actual, desired runtime.Object) error {
-			actualRule := actual.(*rbacv1.Role)
-			desiredRole := desired.(*rbacv1.Role)
-			if !reflect.DeepEqual(actualRule.Rules, desiredRole.Rules) {
-				actualRule.Rules = desiredRole.Rules
+	for _, role := range roles {
+		desiredRole := role.DeepCopy()
+		if _, err := controllerutil.CreateOrUpdate(ctx, r.Client, role, func() error {
+			if err := controllerutil.SetControllerReference(account, role, r.Scheme); err != nil {
+				return fmt.Errorf("set controller reference for Role: %w", err)
 			}
+			role.Rules = desiredRole.Rules
 			return nil
 		}); err != nil {
-		return fmt.Errorf("cannot reconcile Role: %w", err)
+			return fmt.Errorf("creating or updating Role: %w", err)
+		}
 	}
 
-	if _, err := owner.ReconcileOwnedObjects(ctx, r.Client, log, r.Scheme,
-		account,
-		desiredRoleBindings, &rbacv1.RoleBinding{},
-		func(actual, desired runtime.Object) error {
-			actualRuleBinding := actual.(*rbacv1.RoleBinding)
-			desiredRoleBinding := desired.(*rbacv1.RoleBinding)
-			if !reflect.DeepEqual(actualRuleBinding.RoleRef, desiredRoleBinding.RoleRef) {
-				actualRuleBinding.RoleRef = desiredRoleBinding.RoleRef
-			} else if !reflect.DeepEqual(actualRuleBinding.Subjects, desiredRoleBinding.Subjects) {
-				actualRuleBinding.Subjects = desiredRoleBinding.Subjects
+	for _, roleBinding := range roleBindings {
+		desiredRoleBinding := roleBinding.DeepCopy()
+		if _, err := controllerutil.CreateOrUpdate(ctx, r.Client, roleBinding, func() error {
+			if err := controllerutil.SetControllerReference(account, roleBinding, r.Scheme); err != nil {
+				return fmt.Errorf("set controller reference for RoleBinding: %w", err)
 			}
+			roleBinding.Subjects = desiredRoleBinding.Subjects
 			return nil
 		}); err != nil {
-		return fmt.Errorf("cannot reconcile RoleBinding: %w", err)
+			return fmt.Errorf("creating or updating RoleBindings: %w", err)
+		}
 	}
+
 	return nil
 }
