@@ -29,6 +29,7 @@ KubeCarrier is an open source system for managing applications and services acro
   - [Pull Requests](#pull-requests)
 - [FAQ](#faq)
 - [Changelog](#changelog)
+- [Roadmap](#roadmap)
 
 ---
 
@@ -96,3 +97,33 @@ See [the list of releases][3] to find out about feature changes.
 [11]: https://groups.google.com/forum/#!forum/loodse-dev
 [12]: https://kubermatic.slack.com/messages/kubecarrier
 [15]: http://slack.kubermatic.io/
+
+## Roadmap
+
+### v0.4 - Enhance Core Features
+
+**Region API Aggregation**
+Provide a single API to access and work with the object across multiple regions
+
+**Project Bulward Integration**
+Advanced multi-tenancy on Kubernetes.
+Enable the management of custom sub-roles for KubeCarrier Account.
+
+### v0.5 - Integrations
+
+**Client Operator**
+Kubernetes Operator to enable the provisioning of new services, provided with KubeCarrier from within your own client Kubernetes cluster.
+
+**Secret Management**
+Credential propagation mechanism to utilize Kubernetes Secrets.
+
+**Service Groups**
+Combine multiple related APIs e.g.(EtcdClusters, EtcdBackups, EtcdRestores) into a group for easier discovery.
+
+### v0.x - Ease of Use
+
+**Audit Logging**
+Multi-Tenancy audit logging within KubeCarrier.
+
+**UI**
+TBD
