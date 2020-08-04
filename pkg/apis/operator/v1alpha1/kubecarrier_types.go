@@ -76,7 +76,7 @@ func (s *KubeCarrierStatus) updatePhase() {
 			return
 		}
 
-		if condition.Type != KubeCarrierReady {
+		if condition.Type == KubeCarrierReady {
 			switch condition.Status {
 			case ConditionTrue:
 				s.Phase = KubeCarrierPhaseReady

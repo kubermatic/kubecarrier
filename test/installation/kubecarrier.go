@@ -74,6 +74,7 @@ func newKubeCarrier(f *testutil.Framework) func(t *testing.T) {
 		kubeCarrier = kubeCarrier.DeepCopy()
 		kubeCarrier.Name = "kubecarrier"
 		require.NoError(t, kubermatictestutil.WaitUntilReady(ctx, managementClient, kubeCarrier))
+		assert.Equal(t, operatorv1alpha1.KubeCarrierPhaseReady, kubeCarrier.Status.Phase)
 		testutil.KubeCarrierCheck(ctx, t, managementClient, f.ManagementScheme)
 	}
 }
