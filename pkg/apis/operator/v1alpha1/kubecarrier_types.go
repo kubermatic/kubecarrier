@@ -89,6 +89,7 @@ func (s *KubeCarrierStatus) updatePhase() {
 			case ConditionUnknown:
 				s.Phase = KubeCarrierPhaseUnknown
 			}
+			return
 		}
 	}
 
