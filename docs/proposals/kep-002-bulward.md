@@ -6,7 +6,7 @@ Currently, we have `Account` concept in kubecarrier, which encompasses single us
 
 ## Migration plan
 
-Current `Account` concept is closely matched to bulward's `Project`. Thus all references to the account through the kubecarrier solution should be renamed to account. In the following code excerpt you can see similarities and differences. 
+Current `Account` concept is closely matched to bulward's `Project`. Thus all references to the account through the kubecarrier solution should be renamed to account. In the following code excerpt you can see similarities and differences.
 
 ```yaml
 apiVersion: catalog.kubecarrier.io/v1alpha1
@@ -46,7 +46,7 @@ spec:
 
 ### Similarities
 
-* both have ownership concept 
+* both have ownership concept
 * both define a namespace where the owners & memeber operation take place
 
 ### Differences
@@ -76,7 +76,7 @@ with the same semantics as the accounts `.spec.roles` field. For complete implem
 
 Currently, API server performs all operations with account's information. Since there's a difference between cluster scoped `Account` and namespace scope `Project` there are two ways how can we migrate the API server:
 
-* in the object meta proto rename account to the `projectNamespace`, as how was it used internally. 
+* in the object meta proto rename account to the `projectNamespace`, as how was it used internally.
 ```protobuf
 message ObjectMeta {
   string projectNamespace = 3;
@@ -87,7 +87,7 @@ message ObjectMeta {
 ```protobuf
 message ObjectMeta {
   string project = 3;
-  string organization = 15;  
+  string organization = 15;
 }
 ```
 
@@ -95,9 +95,8 @@ Additional API endpoints need to be added for Project listing (within an organiz
 
 ### Controllers
 
-Most controllers operate on Account by fetching its namespace. That is, things are namespace bound. This is equivalent how the project shall be utilized. The `ProjectRoleTemplate` shall be used instead of creating roles for each user. 
+Most controllers operate on Account by fetching its namespace. That is, things are namespace bound. This is equivalent how the project shall be utilized. The `ProjectRoleTemplate` shall be used instead of creating roles for each user.
 
-For now all provider projects shall see all tenant project, that is have tenant reference within their namespace. The catalog subsystem shall work similarly as before. 
+For now all provider projects shall see all tenant project, that is have tenant reference within their namespace. The catalog subsystem shall work similarly as before.
 
 Controllers shall operate on the `storage.bulward.io` API groups for projects, thus bypassing the view restriction put in place by the bulward extension API server
-
