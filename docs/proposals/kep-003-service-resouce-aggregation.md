@@ -2,9 +2,9 @@
 
 ## Background
 
-Currently, we're creating ferry deployment per each `CustromResourceDiscovery` object. The ferry component transports custom resources from the service cluster to the management cluster, and vice versa, asynchronously. For example the `db.example.io` apiGroup in the service cluster `svc-1` becomes `db.internal.svc-1.provider-1` apiGroup in the management cluster.
+Currently, we're creating catapult deployment per each `CustromResourceDiscovery` object. The catapult component transports custom resources from the service cluster to the management cluster, and vice versa, asynchronously. For example the `db.example.io` apiGroup in the service cluster `svc-1` becomes `db.internal.svc-1.provider-1` apiGroup in the management cluster.
 
-Furthermore, ferry component handles the webhooks for internal apiGroup. If there is `CustromResourceDiscoverySet` there's a new ferry deployment per each service cluster offering the same service.
+Furthermore, catapult component handles the webhooks for internal apiGroup. If there is `CustromResourceDiscoverySet` there's a new catapult deployment per each service cluster offering the same service.
 
 * See also:
 
@@ -37,7 +37,7 @@ The issues with this approach are multi-fold:
 
 ## Proposed solution
 
-Instead of creating CRDs for each `CustomResourceDiscovery`, and deploying ferry per `CustomResourceDiscovery`, we deploy a single `neoferry` per provider. This `neoferry` is API Exstension server smartly proxying each API group to the service cluster, as well aggregating multiple service cluster under same apiGroup. The benefits are as follows:
+Instead of creating CRDs for each `CustomResourceDiscovery`, and deploying catapult per `CustomResourceDiscovery`, we deploy a single `neocatapult` per provider. This `neocatapult` is API Exstension server smartly proxying each API group to the service cluster, as well aggregating multiple service cluster under same apiGroup. The benefits are as follows:
 
 * sync propagation --> there's no version divergence, we only provide a view in the management cluster with custom RBAC sprinkled on top.
 * webhook complexity --> Under the hood original webhooks are ran on the service cluster, thus we're staying as close to the true north as possible.
