@@ -51,7 +51,7 @@ spec:
 
 ### Differences
 
-* `Account` is namespace scoped, while the `Project` is namespaces scopes, within the `Organization` namespace. `Organization` itself is a cluster scoped object.
+* `Account` is cluster scoped, while the `Project` is namespaces scopes, within the `Organization` namespace. `Organization` itself is a cluster scoped object.
 * `Project` object currently has no metadata concept, though it should be added in further bulward version
 
 
