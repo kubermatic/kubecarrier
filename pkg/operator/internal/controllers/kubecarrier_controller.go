@@ -198,6 +198,8 @@ func (r *KubeCarrierReconciler) reconcileAPIServer(ctx context.Context, kubeCarr
 		return nil
 	}
 	// Update APIServer
+	// leave `Paused` flag and `LogLevel` as is
+	desiredAPIServer.Spec.Paused = currentAPIServer.Spec.Paused
 	desiredAPIServer.Spec.LogLevel = currentAPIServer.Spec.LogLevel
 	currentAPIServer.Spec = desiredAPIServer.Spec
 	if err := r.Update(ctx, currentAPIServer); err != nil {

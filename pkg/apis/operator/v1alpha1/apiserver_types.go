@@ -62,6 +62,9 @@ type APIServerSpec struct {
 	// +optional
 	// Authentication configuration
 	Authentication Authentication `json:"authentication,omitempty"`
+	// Paused tell controller to pause reconciliation process and assume that APIServer is ready
+	// +optional
+	Paused PausedFlagType `json:"paused,omitempty"`
 	// LogLevel
 	// +optional
 	LogLevel *int `json:"logLevel,omitempty"`
@@ -220,6 +223,7 @@ type APIServerPhaseType string
 // Values of APIServerPhaseType.
 const (
 	APIServerPhaseReady       APIServerPhaseType = "Ready"
+	APIServerPhasePaused      APIServerPhaseType = "Paused"
 	APIServerPhaseNotReady    APIServerPhaseType = "NotReady"
 	APIServerPhaseUnknown     APIServerPhaseType = "Unknown"
 	APIServerPhaseTerminating APIServerPhaseType = "Terminating"
@@ -234,23 +238,28 @@ const (
 func (s *APIServerStatus) updatePhase() {
 
 	for _, condition := range s.Conditions {
-		if condition.Type != APIServerReady {
-			continue
+		if condition.Type == APIServerPaused && condition.Status == ConditionTrue {
+			s.Phase = APIServerPhasePaused
+			return
 		}
+	}
 
-		switch condition.Status {
-		case ConditionTrue:
-			s.Phase = APIServerPhaseReady
-		case ConditionFalse:
-			if condition.Reason == APIServerTerminatingReason {
-				s.Phase = APIServerPhaseTerminating
-			} else {
-				s.Phase = APIServerPhaseNotReady
+	for _, condition := range s.Conditions {
+		if condition.Type == APIServerReady {
+			switch condition.Status {
+			case ConditionTrue:
+				s.Phase = APIServerPhaseReady
+			case ConditionFalse:
+				if condition.Reason == APIServerTerminatingReason {
+					s.Phase = APIServerPhaseTerminating
+				} else {
+					s.Phase = APIServerPhaseNotReady
+				}
+			case ConditionUnknown:
+				s.Phase = APIServerPhaseUnknown
 			}
-		case ConditionUnknown:
-			s.Phase = APIServerPhaseUnknown
+			return
 		}
-		return
 	}
 
 	s.Phase = APIServerPhaseUnknown
@@ -260,8 +269,10 @@ func (s *APIServerStatus) updatePhase() {
 type APIServerConditionType string
 
 const (
-	// APIServerReady represents a APIServer condition is in ready state.
+	// APIServerReady represents an APIServer condition is in ready state.
 	APIServerReady APIServerConditionType = "Ready"
+	// APIServerPaused represents an APIServer condition is in paused state.
+	APIServerPaused APIServerConditionType = "Paused"
 )
 
 // APIServerCondition contains details for the current condition of this APIServer.
@@ -389,6 +400,60 @@ func (s *APIServer) SetTerminatingCondition() bool {
 			Status:  ConditionFalse,
 			Reason:  APIServerTerminatingReason,
 			Message: "APIServer is being deleted",
+		})
+		return true
+	}
+	return false
+}
+
+// IsPaused returns if the APIServer is paused.
+func (s *APIServer) IsPaused() bool {
+	if s.Generation != s.Status.ObservedGeneration {
+		return false
+	}
+
+	for _, condition := range s.Status.Conditions {
+		if condition.Type == APIServerPaused &&
+			condition.Status == ConditionTrue {
+			return true
+		}
+	}
+	return false
+}
+
+func (s *APIServer) SetPausedCondition() bool {
+	var changed bool
+	if !s.IsReady() {
+		changed = true
+		s.Status.ObservedGeneration = s.Generation
+		s.Status.SetCondition(APIServerCondition{
+			Type:    APIServerReady,
+			Status:  ConditionTrue,
+			Reason:  "Paused",
+			Message: "Reconcilation is paused, assuming component is ready.",
+		})
+	}
+	if !s.IsPaused() {
+		changed = true
+		s.Status.ObservedGeneration = s.Generation
+		s.Status.SetCondition(APIServerCondition{
+			Type:    APIServerPaused,
+			Status:  ConditionTrue,
+			Reason:  "Paused",
+			Message: "Reconcilation is paused",
+		})
+	}
+	return changed
+}
+
+func (s *APIServer) SetUnPausedCondition() bool {
+	if s.IsPaused() {
+		s.Status.ObservedGeneration = s.Generation
+		s.Status.SetCondition(APIServerCondition{
+			Type:    APIServerPaused,
+			Status:  ConditionFalse,
+			Reason:  "UnPaused",
+			Message: "Reconcilation is resumed",
 		})
 		return true
 	}

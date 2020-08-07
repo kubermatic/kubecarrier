@@ -68,6 +68,16 @@ func (r *APIServerReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
 
+	if apiServer.Spec.Paused.IsPaused() {
+		if apiServer.SetPausedCondition() {
+			if err := r.Client.Status().Update(ctx, apiServer); err != nil {
+				return ctrl.Result{}, fmt.Errorf("updating %s status: %w", apiServer.Name, err)
+			}
+		}
+		// reconciliation paused, skip all other handlers
+		return ctrl.Result{}, nil
+	}
+
 	if !apiServer.DeletionTimestamp.IsZero() {
 		if err := r.handleDeletion(ctx, apiServer); err != nil {
 			return ctrl.Result{}, fmt.Errorf("handle deletion: %w", err)
@@ -106,15 +116,18 @@ func (r *APIServerReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 }
 
 func (r *APIServerReconciler) updateStatus(ctx context.Context, apiServer *operatorv1alpha1.APIServer, deploymentIsReady bool) error {
-	var statusChanged bool
+	var pausedChanged, statusChanged bool
 
+	if !apiServer.Spec.Paused.IsPaused() {
+		pausedChanged = apiServer.SetUnPausedCondition()
+	}
 	if deploymentIsReady {
 		statusChanged = apiServer.SetReadyCondition()
 	} else {
 		statusChanged = apiServer.SetUnReadyCondition()
 	}
 
-	if statusChanged {
+	if statusChanged || pausedChanged {
 		if err := r.Client.Status().Update(ctx, apiServer); err != nil {
 			return fmt.Errorf("updating %s status: %w", apiServer.Name, err)
 		}
