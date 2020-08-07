@@ -78,6 +78,7 @@ func newServiceClusterSuite(
 		require.NoError(t, managementClient.Update(ctx, kubeCarrier), "set kubeCarrier paused flag to false")
 		require.NoError(t, kubermatictestutil.WaitUntilCondition(ctx, managementClient, kubeCarrier, operatorv1alpha1.KubeCarrierPaused, operatorv1alpha1.ConditionFalse))
 		require.NoError(t, kubermatictestutil.WaitUntilReady(ctx, managementClient, kubeCarrier))
+		require.Equal(t, operatorv1alpha1.KubeCarrierPhaseReady, kubeCarrier.Status.Phase)
 
 		testName := strings.Replace(strings.ToLower(t.Name()), "/", "-", -1)
 
@@ -111,6 +112,7 @@ func newServiceClusterSuite(
 		require.NoError(t, managementClient.Update(ctx, ferry), "set ferry paused flag to false")
 		require.NoError(t, kubermatictestutil.WaitUntilCondition(ctx, managementClient, ferry, operatorv1alpha1.FerryPaused, operatorv1alpha1.ConditionFalse))
 		require.NoError(t, kubermatictestutil.WaitUntilReady(ctx, managementClient, ferry))
+		require.Equal(t, operatorv1alpha1.FerryPhaseReady, ferry.Status.Phase)
 
 		crd := &apiextensionsv1.CustomResourceDefinition{
 			ObjectMeta: metav1.ObjectMeta{
@@ -215,6 +217,7 @@ func newServiceClusterSuite(
 		require.NoError(t, managementClient.Update(ctx, catapult), "set catapult paused flag to false")
 		require.NoError(t, kubermatictestutil.WaitUntilCondition(ctx, managementClient, catapult, operatorv1alpha1.CatapultPaused, operatorv1alpha1.ConditionFalse))
 		require.NoError(t, kubermatictestutil.WaitUntilReady(ctx, managementClient, catapult))
+		require.Equal(t, operatorv1alpha1.CatapultPhaseReady, catapult.Status.Phase)
 
 		// Check the Catapult dynamic webhook service is deployed.
 		webhookService := &corev1.Service{}

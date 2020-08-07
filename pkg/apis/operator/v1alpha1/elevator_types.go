@@ -79,8 +79,9 @@ func (s *ElevatorStatus) updatePhase() {
 			s.Phase = ElevatorPhasePaused
 			return
 		}
+	}
+	for _, condition := range s.Conditions {
 		if condition.Type == ElevatorReady {
-
 			switch condition.Status {
 			case ConditionTrue:
 				s.Phase = ElevatorPhaseReady
@@ -93,9 +94,9 @@ func (s *ElevatorStatus) updatePhase() {
 			case ConditionUnknown:
 				s.Phase = ElevatorPhaseUnknown
 			}
+			return
 		}
 	}
-
 	s.Phase = ElevatorPhaseUnknown
 }
 
@@ -252,7 +253,6 @@ func (s *Elevator) SetPausedCondition() bool {
 			Reason:  "Paused",
 			Message: "Reconcilation is paused, assuming component is ready.",
 		})
-		return changed
 	}
 	if !s.IsPaused() {
 		changed = true

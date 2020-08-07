@@ -102,7 +102,9 @@ func (s *FerryStatus) updatePhase() {
 			s.Phase = FerryPhasePaused
 			return
 		}
+	}
 
+	for _, condition := range s.Conditions {
 		if condition.Type == FerryReady {
 
 			switch condition.Status {
@@ -117,6 +119,7 @@ func (s *FerryStatus) updatePhase() {
 			case ConditionUnknown:
 				s.Phase = FerryPhaseUnknown
 			}
+			return
 		}
 	}
 	s.Phase = FerryPhaseUnknown
@@ -250,7 +253,6 @@ func (s *Ferry) SetPausedCondition() bool {
 			Reason:  "Paused",
 			Message: "Reconcilation is paused, assuming component is ready.",
 		})
-		return changed
 	}
 	if !s.IsPaused() {
 		changed = true
