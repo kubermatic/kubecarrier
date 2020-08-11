@@ -237,11 +237,9 @@ const (
 // this method should be called every time the conditions are updated.
 func (s *APIServerStatus) updatePhase() {
 
-	for _, condition := range s.Conditions {
-		if condition.Type == APIServerPaused && condition.Status == ConditionTrue {
-			s.Phase = APIServerPhasePaused
-			return
-		}
+	if paused, ok := s.GetCondition(APIServerPaused); ok && paused.True() {
+		s.Phase = APIServerPhasePaused
+		return
 	}
 
 	for _, condition := range s.Conditions {
