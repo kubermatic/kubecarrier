@@ -70,12 +70,11 @@ const (
 // this method should be called every time the conditions are updated.
 func (s *KubeCarrierStatus) updatePhase() {
 
-	for _, condition := range s.Conditions {
-		if condition.Type == KubeCarrierPaused && condition.Status == ConditionTrue {
-			s.Phase = KubeCarrierPhasePaused
-			return
-		}
+	if paused, ok := s.GetCondition(KubeCarrierPaused); ok && paused.True() {
+		s.Phase = KubeCarrierPhasePaused
+		return
 	}
+
 	for _, condition := range s.Conditions {
 		if condition.Type == KubeCarrierReady {
 			switch condition.Status {

@@ -73,13 +73,11 @@ const (
 // this method should be called every time the conditions are updated.
 func (s *ElevatorStatus) updatePhase() {
 
-	for _, condition := range s.Conditions {
-
-		if condition.Type == ElevatorPaused && condition.Status == ConditionTrue {
-			s.Phase = ElevatorPhasePaused
-			return
-		}
+	if paused, ok := s.GetCondition(ElevatorPaused); ok && paused.True() {
+		s.Phase = ElevatorPhasePaused
+		return
 	}
+
 	for _, condition := range s.Conditions {
 		if condition.Type == ElevatorReady {
 			switch condition.Status {

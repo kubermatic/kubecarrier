@@ -81,13 +81,11 @@ const (
 // this method should be called every time the conditions are updated.
 func (s *CatapultStatus) updatePhase() {
 
-	for _, condition := range s.Conditions {
-
-		if condition.Type == CatapultPaused && condition.Status == ConditionTrue {
-			s.Phase = CatapultPhasePaused
-			return
-		}
+	if paused, ok := s.GetCondition(CatapultPaused); ok && paused.True() {
+		s.Phase = CatapultPhasePaused
+		return
 	}
+
 	for _, condition := range s.Conditions {
 		if condition.Type == CatapultReady {
 			switch condition.Status {
