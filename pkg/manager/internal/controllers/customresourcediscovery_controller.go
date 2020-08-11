@@ -26,6 +26,7 @@ import (
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -150,6 +151,7 @@ func (r *CustomResourceDiscoveryReconciler) reconcileCRD(
 	kind := crDiscovery.Status.CRD.Spec.Names.Kind
 	plural := flect.Pluralize(strings.ToLower(kind))
 	group := constants.InternalAPIGroupPrefix + "." + crDiscovery.Spec.ServiceCluster.Name + "." + crDiscovery.Namespace
+
 	desiredCRD := &apiextensionsv1.CustomResourceDefinition{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: plural + "." + group,
@@ -174,6 +176,18 @@ func (r *CustomResourceDiscoveryReconciler) reconcileCRD(
 	}
 	if _, err := owner.SetOwnerReference(crDiscovery, desiredCRD, r.Scheme); err != nil {
 		return nil, fmt.Errorf("setting owner reference: %w", err)
+	}
+
+	// may contain a v1 or v1beta1 CRD
+	var crdToCreateOrUpdate runtime.Object
+	crdToCreateOrUpdate = desiredCRD
+	if hasNonStructuralSchema(crDiscovery.Status.CRD) {
+		v1beta1CRD, err := convertV1CRDToV1Beta1CRD(desiredCRD)
+		if err != nil {
+			return nil, fmt.Errorf("cannot convert v1 CRD to v1beta1 CRD")
+		}
+
+		crdToCreateOrUpdate = v1beta1CRD
 	}
 
 	// `ManagementClusterCRD name is written to the CustomResourceDiscovery.Status before the CRD is created.
@@ -205,8 +219,9 @@ func (r *CustomResourceDiscoveryReconciler) reconcileCRD(
 		return nil, fmt.Errorf("getting CustomResourceDefinition: %w", err)
 	}
 	if errors.IsNotFound(err) {
+
 		// Create CRD
-		if err = r.Create(ctx, desiredCRD); err != nil {
+		if err = r.Create(ctx, crdToCreateOrUpdate); err != nil {
 			return nil, fmt.Errorf("creating CustomResourceDefinition: %w", err)
 		}
 		return desiredCRD, nil
@@ -215,7 +230,7 @@ func (r *CustomResourceDiscoveryReconciler) reconcileCRD(
 	// Update CRD
 	currentCRD.Spec.PreserveUnknownFields = desiredCRD.Spec.PreserveUnknownFields
 	currentCRD.Spec.Versions = desiredCRD.Spec.Versions
-	if err = r.Update(ctx, currentCRD); err != nil {
+	if err = r.Update(ctx, crdToCreateOrUpdate); err != nil {
 		return nil, fmt.Errorf("updating CustomResourceDefinition: %w", err)
 	}
 
@@ -384,4 +399,30 @@ func (r *CustomResourceDiscoveryReconciler) SetupWithManager(mgr ctrl.Manager) e
 			return discoveredCondition.Status == corev1alpha1.ConditionTrue
 		})).
 		Complete(r)
+}
+
+// hasNonStructuralSchema returns true when the NonStructuralSchema condition is true.
+// This condition indicates that the CRD was converted from v1beta1 to v1 and would not pass v1 validation.
+func hasNonStructuralSchema(v1crd *apiextensionsv1.CustomResourceDefinition) bool {
+	for _, c := range v1crd.Status.Conditions {
+		if c.Type == apiextensionsv1.NonStructuralSchema &&
+			c.Status == apiextensionsv1.ConditionTrue {
+			return true
+		}
+	}
+	return false
+}
+
+func convertV1CRDToV1Beta1CRD(v1crd *apiextensionsv1.CustomResourceDefinition) (*unstructured.Unstructured, error) {
+	dyn, err := runtime.DefaultUnstructuredConverter.ToUnstructured(v1crd)
+	if err != nil {
+		return nil, err
+	}
+
+	obj := &unstructured.Unstructured{
+		Object: dyn,
+	}
+	obj.SetAPIVersion("apiextensions.k8s.io/v1beta1")
+
+	return obj, nil
 }
