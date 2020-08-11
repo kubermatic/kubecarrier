@@ -178,18 +178,6 @@ func (r *CustomResourceDiscoveryReconciler) reconcileCRD(
 		return nil, fmt.Errorf("setting owner reference: %w", err)
 	}
 
-	// may contain a v1 or v1beta1 CRD
-	var crdToCreateOrUpdate runtime.Object
-	crdToCreateOrUpdate = desiredCRD
-	if hasNonStructuralSchema(crDiscovery.Status.CRD) {
-		v1beta1CRD, err := convertV1CRDToV1Beta1CRD(desiredCRD)
-		if err != nil {
-			return nil, fmt.Errorf("cannot convert v1 CRD to v1beta1 CRD")
-		}
-
-		crdToCreateOrUpdate = v1beta1CRD
-	}
-
 	// `ManagementClusterCRD name is written to the CustomResourceDiscovery.Status before the CRD is created.
 	// The reason is that in the CustomResourceDiscovery deletion webhook, the deletion will be allowed if the
 	// CustomResourceDiscovery.Status.ManagementClusterCRD is nil. This can lead the following case of not fully cleaned-up
@@ -219,9 +207,18 @@ func (r *CustomResourceDiscoveryReconciler) reconcileCRD(
 		return nil, fmt.Errorf("getting CustomResourceDefinition: %w", err)
 	}
 	if errors.IsNotFound(err) {
+		var crdToCreate runtime.Object
+		crdToCreate = desiredCRD
+		if hasNonStructuralSchema(crDiscovery.Status.CRD) {
+			v1beta1CRD, err := convertV1CRDToV1Beta1CRD(desiredCRD)
+			if err != nil {
+				return nil, fmt.Errorf("cannot convert v1 CRD to v1beta1 CRD")
+			}
+			crdToCreate = v1beta1CRD
+		}
 
 		// Create CRD
-		if err = r.Create(ctx, crdToCreateOrUpdate); err != nil {
+		if err = r.Create(ctx, crdToCreate); err != nil {
 			return nil, fmt.Errorf("creating CustomResourceDefinition: %w", err)
 		}
 		return desiredCRD, nil
@@ -230,7 +227,18 @@ func (r *CustomResourceDiscoveryReconciler) reconcileCRD(
 	// Update CRD
 	currentCRD.Spec.PreserveUnknownFields = desiredCRD.Spec.PreserveUnknownFields
 	currentCRD.Spec.Versions = desiredCRD.Spec.Versions
-	if err = r.Update(ctx, crdToCreateOrUpdate); err != nil {
+
+	var crdToUpdate runtime.Object
+	crdToUpdate = currentCRD
+	if hasNonStructuralSchema(crDiscovery.Status.CRD) {
+		v1beta1CRD, err := convertV1CRDToV1Beta1CRD(currentCRD)
+		if err != nil {
+			return nil, fmt.Errorf("cannot convert v1 CRD to v1beta1 CRD")
+		}
+		crdToUpdate = v1beta1CRD
+	}
+
+	if err = r.Update(ctx, crdToUpdate); err != nil {
 		return nil, fmt.Errorf("updating CustomResourceDefinition: %w", err)
 	}
 
