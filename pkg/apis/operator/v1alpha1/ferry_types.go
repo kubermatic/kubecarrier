@@ -97,12 +97,13 @@ func (c FerryCondition) True() bool {
 // UpdatePhase updates the phase property based on the current conditions.
 // this method should be called everytime the conditions are updated.
 func (s *FerryStatus) updatePhase() {
-	for _, condition := range s.Conditions {
-		if condition.Type == FerryPaused && condition.Status == ConditionTrue {
-			s.Phase = FerryPhasePaused
-			return
-		}
 
+	if paused, ok := s.GetCondition(FerryPaused); ok && paused.True() {
+		s.Phase = FerryPhasePaused
+		return
+	}
+
+	for _, condition := range s.Conditions {
 		if condition.Type == FerryReady {
 
 			switch condition.Status {
@@ -117,6 +118,7 @@ func (s *FerryStatus) updatePhase() {
 			case ConditionUnknown:
 				s.Phase = FerryPhaseUnknown
 			}
+			return
 		}
 	}
 	s.Phase = FerryPhaseUnknown
@@ -250,7 +252,6 @@ func (s *Ferry) SetPausedCondition() bool {
 			Reason:  "Paused",
 			Message: "Reconcilation is paused, assuming component is ready.",
 		})
-		return changed
 	}
 	if !s.IsPaused() {
 		changed = true

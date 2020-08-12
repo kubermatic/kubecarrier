@@ -70,13 +70,13 @@ const (
 // this method should be called every time the conditions are updated.
 func (s *KubeCarrierStatus) updatePhase() {
 
-	for _, condition := range s.Conditions {
-		if condition.Type == KubeCarrierPaused && condition.Status == ConditionTrue {
-			s.Phase = KubeCarrierPhasePaused
-			return
-		}
+	if paused, ok := s.GetCondition(KubeCarrierPaused); ok && paused.True() {
+		s.Phase = KubeCarrierPhasePaused
+		return
+	}
 
-		if condition.Type != KubeCarrierReady {
+	for _, condition := range s.Conditions {
+		if condition.Type == KubeCarrierReady {
 			switch condition.Status {
 			case ConditionTrue:
 				s.Phase = KubeCarrierPhaseReady
@@ -89,6 +89,7 @@ func (s *KubeCarrierStatus) updatePhase() {
 			case ConditionUnknown:
 				s.Phase = KubeCarrierPhaseUnknown
 			}
+			return
 		}
 	}
 
@@ -164,7 +165,6 @@ func (s *KubeCarrier) SetPausedCondition() bool {
 			Reason:  "Paused",
 			Message: "Reconcilation is paused, assuming component is ready.",
 		})
-		return changed
 	}
 	if !s.IsPaused() {
 		changed = true

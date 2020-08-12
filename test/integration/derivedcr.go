@@ -115,6 +115,7 @@ func newDerivedCR(
 		require.NoError(t, managementClient.Update(ctx, elevator), "set elevator paused flag to false")
 		require.NoError(t, kubermatictestutil.WaitUntilCondition(ctx, managementClient, elevator, operatorv1alpha1.ElevatorPaused, operatorv1alpha1.ConditionFalse))
 		require.NoError(t, kubermatictestutil.WaitUntilReady(ctx, managementClient, elevator))
+		require.Equal(t, operatorv1alpha1.ElevatorPhaseReady, elevator.Status.Phase)
 
 		// Check the Elevator dynamic webhook service is deployed.
 		webhookService := &corev1.Service{}

@@ -81,15 +81,13 @@ const (
 // this method should be called every time the conditions are updated.
 func (s *CatapultStatus) updatePhase() {
 
+	if paused, ok := s.GetCondition(CatapultPaused); ok && paused.True() {
+		s.Phase = CatapultPhasePaused
+		return
+	}
+
 	for _, condition := range s.Conditions {
-
-		if condition.Type == CatapultPaused && condition.Status == ConditionTrue {
-			s.Phase = CatapultPhasePaused
-			return
-		}
-
 		if condition.Type == CatapultReady {
-
 			switch condition.Status {
 			case ConditionTrue:
 				s.Phase = CatapultPhaseReady
@@ -102,8 +100,10 @@ func (s *CatapultStatus) updatePhase() {
 			case ConditionUnknown:
 				s.Phase = CatapultPhaseUnknown
 			}
+			return
 		}
 	}
+	s.Phase = CatapultPhaseUnknown
 }
 
 // CatapultConditionType represents a CatapultCondition value.
@@ -245,7 +245,6 @@ func (s *Catapult) SetPausedCondition() bool {
 			Reason:  "Paused",
 			Message: "Reconcilation is paused, assuming component is ready.",
 		})
-		return changed
 	}
 	if !s.IsPaused() {
 		changed = true
