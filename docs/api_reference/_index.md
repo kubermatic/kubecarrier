@@ -1206,6 +1206,7 @@ APIServerSpec defines the desired state of APIServer
 | ----- | ----------- | ------ | -------- |
 | tlsSecretRef | TLSSecretRef references the TLS certificate and private key for serving the KubeCarrier API. | *[ObjectReference.operator.kubecarrier.io/v1alpha1](#objectreferenceoperatorkubecarrieriov1alpha1) | false |
 | authentication | Authentication configuration | Authentication.operator.kubecarrier.io/v1alpha1 | false |
+| paused | Paused tell controller to pause reconciliation process and assume that APIServer is ready | PausedFlagType.operator.kubecarrier.io/v1alpha1 | false |
 | logLevel | LogLevel | *int.operator.kubecarrier.io/v1alpha1 | false |
 
 [Back to Group](#operator)

@@ -43,9 +43,11 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/apimachinery/pkg/watch"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	catalogv1alpha1 "k8c.io/kubecarrier/pkg/apis/catalog/v1alpha1"
 	corev1alpha1 "k8c.io/kubecarrier/pkg/apis/core/v1alpha1"
+	operatorv1alpha1 "k8c.io/kubecarrier/pkg/apis/operator/v1alpha1"
 	apiserverv1 "k8c.io/kubecarrier/pkg/apiserver/api/v1"
 	"k8c.io/kubecarrier/pkg/testutil"
 
@@ -71,6 +73,26 @@ func newAPIServer(f *testutil.Framework) func(t *testing.T) {
 
 		ns := &corev1.Namespace{}
 		ns.Name = "kubecarrier-system"
+
+		// Check APIServer
+		apiServer := &operatorv1alpha1.APIServer{ObjectMeta: metav1.ObjectMeta{
+			Name:      "kubecarrier",
+			Namespace: ns.Name,
+		}}
+		key, err := client.ObjectKeyFromObject(apiServer)
+		require.NoError(t, err)
+		require.NoError(t, managementClient.Get(ctx, key, apiServer), "getting kubecarrier apiserver")
+		apiServer.Spec.Paused = operatorv1alpha1.PausedFlagTrue
+		require.NoError(t, managementClient.Update(ctx, apiServer), "set apiServer paused flag to true")
+		require.NoError(t, kubermatictestutil.WaitUntilCondition(ctx, managementClient, apiServer, operatorv1alpha1.APIServerPaused, operatorv1alpha1.ConditionTrue))
+		require.NoError(t, kubermatictestutil.WaitUntilReady(ctx, managementClient, apiServer))
+		require.Equal(t, operatorv1alpha1.APIServerPhasePaused, apiServer.Status.Phase)
+
+		apiServer.Spec.Paused = operatorv1alpha1.PausedFlagFalse
+		require.NoError(t, managementClient.Update(ctx, apiServer), "set apiServer paused flag to false")
+		require.NoError(t, kubermatictestutil.WaitUntilCondition(ctx, managementClient, apiServer, operatorv1alpha1.APIServerPaused, operatorv1alpha1.ConditionFalse))
+		require.NoError(t, kubermatictestutil.WaitUntilReady(ctx, managementClient, apiServer))
+		require.Equal(t, operatorv1alpha1.APIServerPhaseReady, apiServer.Status.Phase)
 
 		pfCmd := exec.CommandContext(ctx,
 			"kubectl",

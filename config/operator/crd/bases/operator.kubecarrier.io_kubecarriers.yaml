@@ -160,6 +160,10 @@ spec:
                   logLevel:
                     description: LogLevel
                     type: integer
+                  paused:
+                    description: Paused tell controller to pause reconciliation process
+                      and assume that APIServer is ready
+                    type: string
                   tlsSecretRef:
                     description: TLSSecretRef references the TLS certificate and private
                       key for serving the KubeCarrier API.
