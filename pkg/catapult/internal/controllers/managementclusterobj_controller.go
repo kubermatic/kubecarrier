@@ -161,11 +161,13 @@ func (r *ManagementClusterObjReconciler) Reconcile(req ctrl.Request) (ctrl.Resul
 	}
 
 	// Sync Status from service cluster to management cluster
-	if err := unstructured.SetNestedField(
-		managementClusterObj.Object,
-		currentServiceClusterObj.Object["status"], "status"); err != nil {
-		return result, fmt.Errorf(
-			"updating %s .status: %w", r.ManagementClusterGVK.Kind, err)
+	if status, ok := currentServiceClusterObj.Object["status"]; ok {
+		if err := unstructured.SetNestedField(
+			managementClusterObj.Object,
+			status, "status"); err != nil {
+			return result, fmt.Errorf(
+				"updating %s .status: %w", r.ManagementClusterGVK.Kind, err)
+		}
 	}
 	if err = util.UpdateObservedGeneration(
 		currentServiceClusterObj, managementClusterObj); err != nil {
