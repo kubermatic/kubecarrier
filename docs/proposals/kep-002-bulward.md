@@ -6,7 +6,7 @@ Currently, we have `Account` concept in kubecarrier, which encompasses single us
 
 ## Migration plan
 
-Current `Account` concept closely matches bulward's `Project`. It's a sandbox where single focused responsibility hosts its resources. Thus, all references to the account through the kubecarrier solution should be renamed to account. In the following code excerpt you can see similarities and differences.
+Current `Account` concept closely matches bulward's `Project`. It's a sandbox where single focused responsibility hosts its resources. Thus, all references to the account through the kubecarrier solution should be renamed to project. In the following code excerpt you can see similarities and differences.
 
 ```yaml
 apiVersion: catalog.kubecarrier.io/v1alpha1
