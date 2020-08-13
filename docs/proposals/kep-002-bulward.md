@@ -6,7 +6,7 @@ Currently, we have `Account` concept in kubecarrier, which encompasses single us
 
 ## Migration plan
 
-Current `Account` concept is closely matched to bulward's `Project`. Thus all references to the account through the kubecarrier solution should be renamed to account. In the following code excerpt you can see similarities and differences.
+Current `Account` concept closely matches bulward's `Project`. It's a sandbox where single focused responsibility hosts its resources. Thus, all references to the account through the kubecarrier solution should be renamed to account. In the following code excerpt you can see similarities and differences.
 
 ```yaml
 apiVersion: catalog.kubecarrier.io/v1alpha1
@@ -53,6 +53,7 @@ spec:
 
 * `Account` is cluster scoped, while the `Project` is namespaces scopes, within the `Organization` namespace. `Organization` itself is a cluster scoped object.
 * `Project` object currently has no metadata concept, though it should be added in further bulward version
+* `Organization` is `Project` management simplification, whereas the organization owners can replicate permissions across multiple `Projects`.
 
 
 ## Implementation details
@@ -71,6 +72,10 @@ Since the account comes in two role flavours, the provider and the tenant, a con
 * `"kubecarrier.io/tenant": "true"`
 
 with the same semantics as the accounts `.spec.roles` field. For complete implementation the additional `Project` webhooks needs to be installed, verifying at least one role has been successfully set.
+
+Alternatively, we can do the following. Each project with permission for creating catalog is a provider. Each project with permission for reading offerings is a tenant. The permissions handing is performed via the bulward itself. Projects & Organization could define their maximum permission scope as per [permission level degradation](https://github.com/kubermatic/bulward/pull/66) proposal in the bulward repo. The catalog/offering permission check could be replaced with dedicated `"use"` permission on some kubecarrier resource. (e.g. `use` Offering defines a tenant, `use` Catalog defines a provider). The check is against the bulward Organization/Project role, thus plugging into bulwards Organization management helpers. The organization owners are empowered giving tenant/provider permissions in broad strokes across their project.
+
+The biggest usecase for knowing these roles is determine which `Tenant` objects should be constructed in a provider's project namespace, and where offerings object should be created.
 
 ### API Server
 
