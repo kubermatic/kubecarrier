@@ -128,7 +128,9 @@ There are two possible solutions:
 - We can have dedicated `Project` for both `couchdb` and `redisdb` (extra propagation tooling needed).
 - These objects can just stay in the `Organization` namespace, and owner set different permissions for different teams by
 creating `OrganizationRole`.
+
 This pretty much depends on Organization Owners.
+
 Here is an example if owners wants to create dedicated `Project`:
 ```yaml
 apiVersion: apiserver.bulward.io/v1alpha1
