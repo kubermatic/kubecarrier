@@ -67,6 +67,12 @@ spec:
 There are few reasons that we don't replace the `Account` with `Project`:
 - KubeCarrier cannot take fully advantage of Organization features in Bulward. For big enterprises, `Organzation` concept
 is needed for them to manage permissions of different team, different user has different permission for different project.
+- `Organization` is the top level in Bulward, and organization owners have freedom to manage Projects as they like, for example,
+moving objects around to `Project` namespaces to ease the management and resource isolation. While `Project` is not splittable,
+which means there is no sub-project in `Project`.
+- Services that available for the whole `Organization` can be shared by different `Project`s. Catalog related objects can
+be put in a central place (`Organization` namespace), can be shared by `Project`s.
+so if we map `Account` to `Project`,
 - `Account` is cluster-scoped object, while `Project` is namespace-scoped object, integration will introduce lot of changes.
 
 So this proposal proposes the following changes:
@@ -118,7 +124,12 @@ spec:
     name: redisdb-operator
     apiGroup: rbac.authorization.k8s.io
 ```
-And then we can have dedicated `Project` for both `couchdb` and `redisdb`:
+There are two possible solutions:
+- We can have dedicated `Project` for both `couchdb` and `redisdb` (extra propagation tooling needed).
+- These objects can just stay in the `Organization` namespace, and owner set different permissions for different teams by
+creating `OrganizationRole`.
+This pretty much depends on Organization Owners.
+Here is an example if owners wants to create dedicated `Project`:
 ```yaml
 apiVersion: apiserver.bulward.io/v1alpha1
 kind: Project
@@ -153,8 +164,7 @@ we can use `ProjectRoleTemplate` and `ProjectRole` to set up permission for a (g
 
 Overall:
 - `Account` should be mapped to `Organzation` in a way, not `Project`.
-- `Organization` can be `Provider` and `Tenant` at the same time, but `Project` under
-`Organization` should be defined as Provider project or Tenant project.
+- `Organization` can be `Provider` and `Tenant` at the same time.
 
 ## Implementation
 ### Deployment
@@ -185,11 +195,11 @@ by `OrganizationRoleTemplate`, KubeCarrier should have permission to update/crea
 permission degradation will be handled by Bulward. Also, organization owner or rbac-admin can set different perssmions
 for different project by using `ProjectRole`.
 #### Account Replacement
-Let's go back to `company-a` example above, `couchdb` and `redisdb` are two projects under the same
+Let's go back to `company-a` example above, `couchdb` and `redisdb` are two services under the same
 `Organization`, and `couchdb` is project to consume couchdb services from other KubeCarrier user, and `redisdb` is a project
 to provide `redisdb` services from `company-a` to other users.
-In our controllers, we replace the namespace of `Account` with the namespace of `Project`, which means:
-For `couchdb`, is a tenant project, so member of this project should be able to work with:
+In our controllers, we replace the namespace of `Account` with the namespace of `Organization`, which means:
+For `couchdb`, is a tenant project, so member of this team should be able to work with:
 - offerings
 - providers
 - regions
@@ -202,7 +212,7 @@ For `redisdb`
 - derivedcustomresources,
 - redisdb internal resources
 
-For differentiating the Project is a Provider one or Tenant one, we can add labels to `Project`:
-```yaml
-"kubecarrier.io/project-role": "provider" or "tenant"
-```
+Organization owners can configure different permissions for different team by creating `OrganizationRole`, or for better
+management and resource isolation, owners can create `Project`s for these two services. For supporting that, we need to
+implement some toolings to do propagation from `Organization` namespace to `Project` namespace, or Organization owners
+can have some `Catapult` microservice implemented to do that.
