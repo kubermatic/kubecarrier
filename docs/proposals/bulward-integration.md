@@ -168,9 +168,11 @@ kubectl wait --for=condition=available deployment/bulward-apiserver -n bulward-s
 #### Organization Endpoint
 We have an endpoint for `Account`, we can reuse it for `Organization`, also, in Bulward, only `Organization` object is visible
 for organization member (this is implemented in Bulward api extension server), we can also drop the filtering implementation in currently account endpoint.
+In addition, we need to inject user impersionation client for this endpoint.
 #### Project Endpoint
 Project Endpoint (Get/List/Watch/Update/Delete) should be implemented, all permission filtering are offloaded to Bulward api
 extension server, so this will also be a thin layer.
+In addition, we need to inject user impersionation client for this endpoint.
 For filtering Provider/Tenant projects, extra labels can be added to `Project`, so project-admin can have a view of provider projects
 and tenant projects in the Organization.
 
