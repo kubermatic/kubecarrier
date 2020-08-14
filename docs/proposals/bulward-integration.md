@@ -217,4 +217,4 @@ For `redisdb`
 Organization owners can configure different permissions for different team by creating `OrganizationRole`, or for better
 management and resource isolation, owners can create `Project`s for these two services. For supporting that, we need to
 implement some toolings to do propagation from `Organization` namespace to `Project` namespace, or Organization owners
-can have some `Catapult` microservice implemented to do that.
+can have something like `Catapult/Elevator` microservices implemented to do that.
