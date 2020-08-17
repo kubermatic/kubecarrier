@@ -39,34 +39,11 @@ kind: ServiceAccount
 metadata:
   name: kubecarrier-sa
   namespace: kubecarrier-system
----
-apiVersion: rbac.authorization.k8s.io/v1
-kind: ClusterRole
-metadata:
-  name: kubecarrier-role
-rules:
-- apiGroups:
-  - ""
-  resources:
-  - namespaces
-  verbs:
-  - create
-  - delete
-  - get
-  - list
-  - patch
-  - update
-  - watch
-- apiGroups:
-  - apiextensions.k8s.io
-  resources:
-  - customresourcedefinitions
-  verbs:
-  - get
-  - list
-  - update
-  - watch
----
+EOF
+
+kubectl apply -f config/serviceCluster/role.yaml  >> /dev/null
+
+kubectl apply -f - <<EOF >> /dev/null
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
@@ -74,12 +51,13 @@ metadata:
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
-  name: kubecarrier-role
+  name: kubecarrier:service-cluster-admin
 subjects:
 - kind: ServiceAccount
   name: kubecarrier-sa
   namespace: kubecarrier-system
 EOF
+
 # Get the service account token and CA cert.
 SA_SECRET_NAME=$(kubectl get -n kubecarrier-system sa/kubecarrier-sa -o "jsonpath={.secrets[0]..name}")
 # Note: service account token is stored base64-encoded in the secret but must
