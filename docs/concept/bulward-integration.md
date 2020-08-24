@@ -14,7 +14,18 @@ In `Bulward` we have only `Organization` and `Project`, which also represented a
 
 ## Bulward + KubeCarrier
 
+Initial `KubeCarrier` schema:
+
 ![kubecarrier](/docs/concept/kubecarrier.svg "KubeCarrier")
+
+Bulward with `Tenant` organization
+
 ![tenant](/docs/concept/integration_tenant.svg "Tenant")
+
+Bulward with `Provider` organization
+
 ![provider](/docs/concept/integration_provider.svg "Provider")
+
+Bulward with `Provider` + `Provider` organization
+
 ![tenant+provider](/docs/concept/integration_tenant_provider.svg "Tenant + Provider")
