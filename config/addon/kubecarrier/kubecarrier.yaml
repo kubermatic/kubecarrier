@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: kubecarrier-system
+---
+apiVersion: operator.kubecarrier.io/v1alpha1
+kind: KubeCarrier
+metadata:
+  name: kubecarrier
+spec:
+  api:
+    authentication:
+    - serviceAccount: {}
+    - anonymous: {}

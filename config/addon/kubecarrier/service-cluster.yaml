@@ -1,0 +1,39 @@
+{{ if .Variables.SingleCluster }}
+
+apiVersion: catalog.kubecarrier.io/v1alpha1
+kind: Account
+metadata:
+  name: kubecarrier-provider
+spec:
+  metadata:
+    displayName: Kubecarrier Provider
+    shortDescription: The Kubecarrier provider account
+    description: Auto-genarated Kubecarrier provider account for single-cluster mode
+  roles:
+    - Provider
+  subjects:
+    - kind: User
+      name: kubecarrier-provider
+      apiGroup: rbac.authorization.k8s.io
+---
+apiVersion: kubecarrier.io/v1alpha1
+kind: ServiceCluster
+metadata:
+  name: service-cluster
+  namespace: kubecarrier-provider
+spec:
+  metadata:
+    displayName: Kubecarrier Service Cluster
+  kubeconfigSecret:
+    name: service-cluster-kubeconfig
+---
+apiVersion: v1
+kind: Secret
+type: Opaque
+metadata:
+  name: service-cluster-kubeconfig
+  namespace: kubecarrier-provider
+data:
+  kubeconfig: {{ b64enc .Cluster.Kubeconfig }}
+
+{{ end }}

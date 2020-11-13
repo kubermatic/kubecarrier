@@ -1,0 +1,1313 @@
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.2.9
+  creationTimestamp: null
+  labels:
+    kubecarrier.io/role: operator
+  name: apiservers.operator.kubecarrier.io
+spec:
+  group: operator.kubecarrier.io
+  names:
+    categories:
+    - all
+    kind: APIServer
+    listKind: APIServerList
+    plural: apiservers
+    singular: apiserver
+  scope: Namespaced
+  versions:
+  - additionalPrinterColumns:
+    - jsonPath: .status.phase
+      name: Status
+      type: string
+    - jsonPath: .metadata.creationTimestamp
+      name: Age
+      type: date
+    name: v1alpha1
+    schema:
+      openAPIV3Schema:
+        description: APIServer manages the deployment of the KubeCarrier central API server.
+        properties:
+          apiVersion:
+            description: 'APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+            type: string
+          kind:
+            description: 'Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+            type: string
+          metadata:
+            type: object
+          spec:
+            description: APIServerSpec defines the desired state of APIServer
+            properties:
+              authentication:
+                description: Authentication configuration
+                items:
+                  properties:
+                    anonymous:
+                      description: Anonymous specifies whether anonymous auth provider enabled
+                      type: object
+                    oidc:
+                      description: OIDC specifies OpenID Connect configuration for API Server authentication
+                      properties:
+                        certificateAuthority:
+                          description: CertificateAuthority references the secret containing issuer's CA in a PEM encoded root certificate of the provider.
+                          properties:
+                            name:
+                              type: string
+                          required:
+                          - name
+                          type: object
+                        clientID:
+                          description: "ClientID the JWT must be issued for, the \"sub\" field. This plugin only trusts a single client to ensure the plugin can be used with public providers. \n The plugin supports the \"authorized party\" OpenID Connect claim, which allows specialized providers to issue tokens to a client for a different client. See: https://openid.net/specs/openid-connect-core-1_0.html#IDToken"
+                          type: string
+                        groupsClaim:
+                          description: GroupsClaim, if specified, causes the OIDCAuthenticator to try to populate the user's groups with an ID Token field. If the GroupsClaim field is present in an ID Token the value must be a string or list of strings.
+                          type: string
+                        groupsPrefix:
+                          description: GroupsPrefix, if specified, causes claims mapping to group names to be prefixed with the value. A value "oidc:" would result in groups like "oidc:engineering" and "oidc:marketing".
+                          type: string
+                        issuerURL:
+                          description: "IssuerURL is the URL the provider signs ID Tokens as. This will be the \"iss\" field of all tokens produced by the provider and is used for configuration discovery. \n The URL is usually the provider's URL without a path, for example \"https://accounts.google.com\" or \"https://login.salesforce.com\". \n The provider must implement configuration discovery. See: https://openid.net/specs/openid-connect-discovery-1_0.html#ProviderConfig"
+                          type: string
+                        requiredClaims:
+                          additionalProperties:
+                            type: string
+                          description: RequiredClaims, if specified, causes the OIDCAuthenticator to verify that all the required claims key value pairs are present in the ID Token.
+                          type: object
+                        supportedSigningAlgs:
+                          default:
+                          - RS256
+                          description: "SupportedSigningAlgs sets the accepted set of JOSE signing algorithms that can be used by the provider to sign tokens. \n https://tools.ietf.org/html/rfc7518#section-3.1 \n This value defaults to RS256, the value recommended by the OpenID Connect spec: \n https://openid.net/specs/openid-connect-core-1_0.html#IDTokenValidation"
+                          items:
+                            type: string
+                          type: array
+                        usernameClaim:
+                          default: sub
+                          description: UsernameClaim is the JWT field to use as the user's username.
+                          type: string
+                        usernamePrefix:
+                          description: UsernamePrefix, if specified, causes claims mapping to username to be prefix with the provided value. A value "oidc:" would result in usernames like "oidc:john".
+                          type: string
+                      required:
+                      - certificateAuthority
+                      - clientID
+                      - issuerURL
+                      type: object
+                    serviceAccount:
+                      description: ServiceAccount specifies whether service account auth provider enabled
+                      type: object
+                    staticUsers:
+                      description: StaticUsers specifies static users configuration for API Server authentication
+                      properties:
+                        htpasswdSecret:
+                          description: HtpassswdSecret specifies the htpasswd secret to use for static user authentication.
+                          properties:
+                            name:
+                              type: string
+                          required:
+                          - name
+                          type: object
+                      required:
+                      - htpasswdSecret
+                      type: object
+                  type: object
+                type: array
+              logLevel:
+                description: LogLevel
+                type: integer
+              paused:
+                description: Paused tell controller to pause reconciliation process and assume that APIServer is ready
+                type: string
+              tlsSecretRef:
+                description: TLSSecretRef references the TLS certificate and private key for serving the KubeCarrier API.
+                properties:
+                  name:
+                    type: string
+                required:
+                - name
+                type: object
+            type: object
+          status:
+            description: APIServerStatus defines the observed state of APIServer
+            properties:
+              conditions:
+                description: Conditions represents the latest available observations of a APIServer's current state.
+                items:
+                  description: APIServerCondition contains details for the current condition of this APIServer.
+                  properties:
+                    lastTransitionTime:
+                      description: LastTransitionTime is the last time the condition transits from one status to another.
+                      format: date-time
+                      type: string
+                    message:
+                      description: Message is the human readable message indicating details about last transition.
+                      type: string
+                    reason:
+                      description: Reason is the (brief) reason for the condition's last transition.
+                      type: string
+                    status:
+                      description: Status is the status of the condition, one of ('True', 'False', 'Unknown').
+                      type: string
+                    type:
+                      description: Type is the type of the APIServer condition, currently ('Ready').
+                      type: string
+                  required:
+                  - lastTransitionTime
+                  - message
+                  - reason
+                  - status
+                  - type
+                  type: object
+                type: array
+              observedGeneration:
+                description: ObservedGeneration is the most recent generation observed for this APIServer by the controller.
+                format: int64
+                type: integer
+              phase:
+                description: DEPRECATED. Phase represents the current lifecycle state of this object. Consider this field DEPRECATED, it will be removed as soon as there is a mechanism to map conditions to strings when printing the property. This is only for display purpose, for everything else use conditions.
+                type: string
+            type: object
+        type: object
+    served: true
+    storage: true
+    subresources:
+      status: {}
+status:
+  acceptedNames:
+    kind: ""
+    plural: ""
+  conditions: []
+  storedVersions: []
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.2.9
+  creationTimestamp: null
+  labels:
+    kubecarrier.io/role: operator
+  name: catapults.operator.kubecarrier.io
+spec:
+  group: operator.kubecarrier.io
+  names:
+    categories:
+    - all
+    kind: Catapult
+    listKind: CatapultList
+    plural: catapults
+    singular: catapult
+  scope: Namespaced
+  versions:
+  - additionalPrinterColumns:
+    - jsonPath: .status.phase
+      name: Status
+      type: string
+    - jsonPath: .metadata.creationTimestamp
+      name: Age
+      type: date
+    name: v1alpha1
+    schema:
+      openAPIV3Schema:
+        description: "Catapult manages the deployment of the Catapult controller manager. \n A Catapult instance is started for each CustomResourceDiscovery instance and responsible for reconciling CRD instances across Kubernetes Clusters."
+        properties:
+          apiVersion:
+            description: 'APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+            type: string
+          kind:
+            description: 'Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+            type: string
+          metadata:
+            type: object
+          spec:
+            description: CatapultSpec defines the desired state of Catapult.
+            properties:
+              logLevel:
+                description: LogLevel
+                type: integer
+              managementClusterCRD:
+                description: References the CRD in the Management Cluster.
+                properties:
+                  group:
+                    type: string
+                  kind:
+                    type: string
+                  plural:
+                    type: string
+                  version:
+                    type: string
+                required:
+                - group
+                - kind
+                - plural
+                - version
+                type: object
+              paused:
+                description: Paused tell controller to pause reconciliation process and assume that Catapult is ready
+                type: string
+              serviceCluster:
+                description: References the ServiceCluster object that this object belongs to.
+                properties:
+                  name:
+                    type: string
+                required:
+                - name
+                type: object
+              serviceClusterCRD:
+                description: References the CRD in the ServiceCluster.
+                properties:
+                  group:
+                    type: string
+                  kind:
+                    type: string
+                  plural:
+                    type: string
+                  version:
+                    type: string
+                required:
+                - group
+                - kind
+                - plural
+                - version
+                type: object
+              webhookStrategy:
+                default: None
+                description: 'WebhookStrategy configs the webhook of the CRD which is registered in the management cluster by this Catapult. There are two possible values for this configuration {None (by default), ServiceCluster} None (by default): Webhook will only check if there is an available ServiceClusterAssignment in the current Namespace. ServiceCluster: Webhook will call webhooks of the CRD in the ServiceCluster with dry-run flag.'
+                enum:
+                - None
+                - ServiceCluster
+                type: string
+            required:
+            - managementClusterCRD
+            - serviceCluster
+            - serviceClusterCRD
+            type: object
+          status:
+            description: CatapultStatus defines the observed state of Catapult.
+            properties:
+              conditions:
+                description: Conditions represents the latest available observations of a Catapult's current state.
+                items:
+                  description: CatapultCondition contains details for the current condition of this Catapult.
+                  properties:
+                    lastTransitionTime:
+                      description: LastTransitionTime is the last time the condition transits from one status to another.
+                      format: date-time
+                      type: string
+                    message:
+                      description: Message is the human readable message indicating details about last transition.
+                      type: string
+                    reason:
+                      description: Reason is the (brief) reason for the condition's last transition.
+                      type: string
+                    status:
+                      description: Status is the status of the condition, one of ('True', 'False', 'Unknown').
+                      type: string
+                    type:
+                      description: Type is the type of the Catapult condition, currently ('Ready').
+                      type: string
+                  required:
+                  - lastTransitionTime
+                  - message
+                  - reason
+                  - status
+                  - type
+                  type: object
+                type: array
+              observedGeneration:
+                description: ObservedGeneration is the most recent generation observed for this Catapult by the controller.
+                format: int64
+                type: integer
+              phase:
+                description: DEPRECATED. Phase represents the current lifecycle state of this object. Consider this field DEPRECATED, it will be removed as soon as there is a mechanism to map conditions to strings when printing the property. This is only for display purpose, for everything else use conditions.
+                type: string
+            type: object
+        type: object
+    served: true
+    storage: true
+    subresources:
+      status: {}
+status:
+  acceptedNames:
+    kind: ""
+    plural: ""
+  conditions: []
+  storedVersions: []
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.2.9
+  creationTimestamp: null
+  labels:
+    kubecarrier.io/role: operator
+  name: elevators.operator.kubecarrier.io
+spec:
+  group: operator.kubecarrier.io
+  names:
+    categories:
+    - all
+    kind: Elevator
+    listKind: ElevatorList
+    plural: elevators
+    singular: elevator
+  scope: Namespaced
+  versions:
+  - additionalPrinterColumns:
+    - jsonPath: .status.phase
+      name: Status
+      type: string
+    - jsonPath: .metadata.creationTimestamp
+      name: Age
+      type: date
+    name: v1alpha1
+    schema:
+      openAPIV3Schema:
+        description: "Elevator manages the deployment of the Elevator controller manager. \n For each `DerivedCustomResource` a Elevator instance is launched to propagate the derived CRD instance into the Namespace of it's provider."
+        properties:
+          apiVersion:
+            description: 'APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+            type: string
+          kind:
+            description: 'Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+            type: string
+          metadata:
+            type: object
+          spec:
+            description: ElevatorSpec defines the desired state of Elevator.
+            properties:
+              derivedCR:
+                description: References the DerivedCustomResource controlling the Tenant-side CRD.
+                properties:
+                  name:
+                    type: string
+                required:
+                - name
+                type: object
+              logLevel:
+                description: LogLevel
+                type: integer
+              paused:
+                description: Paused tell controller to pause reconciliation process and assume that Catapult is ready
+                type: string
+              providerCRD:
+                description: References the provider or internal CRD, that should be created in the provider namespace.
+                properties:
+                  group:
+                    type: string
+                  kind:
+                    type: string
+                  plural:
+                    type: string
+                  version:
+                    type: string
+                required:
+                - group
+                - kind
+                - plural
+                - version
+                type: object
+              tenantCRD:
+                description: References the public CRD that will be synced into the provider namespace.
+                properties:
+                  group:
+                    type: string
+                  kind:
+                    type: string
+                  plural:
+                    type: string
+                  version:
+                    type: string
+                required:
+                - group
+                - kind
+                - plural
+                - version
+                type: object
+            required:
+            - derivedCR
+            - providerCRD
+            - tenantCRD
+            type: object
+          status:
+            description: ElevatorStatus defines the observed state of Elevator.
+            properties:
+              conditions:
+                description: Conditions represents the latest available observations of a Elevator's current state.
+                items:
+                  description: ElevatorCondition contains details for the current condition of this Elevator.
+                  properties:
+                    lastTransitionTime:
+                      description: LastTransitionTime is the last time the condition transits from one status to another.
+                      format: date-time
+                      type: string
+                    message:
+                      description: Message is the human readable message indicating details about last transition.
+                      type: string
+                    reason:
+                      description: Reason is the (brief) reason for the condition's last transition.
+                      type: string
+                    status:
+                      description: Status is the status of the condition, one of ('True', 'False', 'Unknown').
+                      type: string
+                    type:
+                      description: Type is the type of the Elevator condition, currently ('Ready').
+                      type: string
+                  required:
+                  - lastTransitionTime
+                  - message
+                  - reason
+                  - status
+                  - type
+                  type: object
+                type: array
+              observedGeneration:
+                description: ObservedGeneration is the most recent generation observed for this Elevator by the controller.
+                format: int64
+                type: integer
+              phase:
+                description: DEPRECATED. Phase represents the current lifecycle state of this object. Consider this field DEPRECATED, it will be removed as soon as there is a mechanism to map conditions to strings when printing the property. This is only for display purpose, for everything else use conditions.
+                type: string
+            type: object
+        type: object
+    served: true
+    storage: true
+    subresources:
+      status: {}
+status:
+  acceptedNames:
+    kind: ""
+    plural: ""
+  conditions: []
+  storedVersions: []
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.2.9
+  creationTimestamp: null
+  labels:
+    kubecarrier.io/role: operator
+  name: ferries.operator.kubecarrier.io
+spec:
+  group: operator.kubecarrier.io
+  names:
+    categories:
+    - all
+    kind: Ferry
+    listKind: FerryList
+    plural: ferries
+    singular: ferry
+  scope: Namespaced
+  versions:
+  - additionalPrinterColumns:
+    - jsonPath: .status.phase
+      name: Status
+      type: string
+    - jsonPath: .metadata.creationTimestamp
+      name: Age
+      type: date
+    name: v1alpha1
+    schema:
+      openAPIV3Schema:
+        description: "Ferry manages the deployment of the Ferry controller manager. \n Ferry lives in the Provider Namespace. For each ferry the KubeCarrier operator spins up the ferry controller deployment, necessary roles, service accounts, and role bindings. \n The reason for ferry controller deployment are multiples: * security --> KubeCarrier operator has greater privileges then ferry controller * resource isolation --> each ferry controller pod operates only on a single service cluster, \t\tthus resource allocation and monitoring is separate per ferry. This allows finer grade \t\tresource tuning and monitoring * flexibility --> If needed different ferries could have different deployments depending on \t\ttheir specific need (e.g. KubeCarrier image version for gradual rolling upgrade, different resource allocation, etc),"
+        properties:
+          apiVersion:
+            description: 'APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+            type: string
+          kind:
+            description: 'Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+            type: string
+          metadata:
+            type: object
+          spec:
+            description: FerrySpec defines the desired state of Ferry.
+            properties:
+              kubeconfigSecret:
+                description: KubeconfigSecret specifies the Kubeconfig to use when connecting to the ServiceCluster.
+                properties:
+                  name:
+                    type: string
+                required:
+                - name
+                type: object
+              logLevel:
+                description: LogLevel
+                type: integer
+              paused:
+                description: Paused tell controller to pause reconciliation process and assume that Ferry is ready
+                type: string
+            required:
+            - kubeconfigSecret
+            type: object
+          status:
+            description: FerryStatus defines the observed state of Ferry.
+            properties:
+              conditions:
+                description: Conditions is a list of all conditions this Ferry is in.
+                items:
+                  description: FerryCondition contains details for the current condition of this Ferry.
+                  properties:
+                    lastTransitionTime:
+                      description: LastTransitionTime is the last time the condition transit from one status to another.
+                      format: date-time
+                      type: string
+                    message:
+                      description: Message is the human readable message indicating details about last transition.
+                      type: string
+                    reason:
+                      description: Reason is the (brief) reason for the condition's last transition.
+                      type: string
+                    status:
+                      description: Status of the condition, one of ('True', 'False', 'Unknown').
+                      type: string
+                    type:
+                      description: Type of the condition, currently ('Ready').
+                      type: string
+                  required:
+                  - lastTransitionTime
+                  - message
+                  - reason
+                  - status
+                  - type
+                  type: object
+                type: array
+              observedGeneration:
+                description: The most recent generation observed by the controller.
+                format: int64
+                type: integer
+              phase:
+                description: DEPRECATED. Phase represents the current lifecycle state of this object. Consider this field DEPRECATED, it will be removed as soon as there is a mechanism to map conditions to strings when printing the property. This is only for display purpose, for everything else use conditions.
+                type: string
+            type: object
+        type: object
+    served: true
+    storage: true
+    subresources:
+      status: {}
+status:
+  acceptedNames:
+    kind: ""
+    plural: ""
+  conditions: []
+  storedVersions: []
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    cert-manager.io/inject-ca-from: kubecarrier-system/kubecarrier-operator-serving-cert
+    controller-gen.kubebuilder.io/version: v0.2.9
+  labels:
+    kubecarrier.io/role: operator
+  name: kubecarriers.operator.kubecarrier.io
+spec:
+  group: operator.kubecarrier.io
+  names:
+    categories:
+    - all
+    kind: KubeCarrier
+    listKind: KubeCarrierList
+    plural: kubecarriers
+    singular: kubecarrier
+  scope: Cluster
+  versions:
+  - additionalPrinterColumns:
+    - jsonPath: .status.phase
+      name: Status
+      type: string
+    - jsonPath: .metadata.creationTimestamp
+      name: Age
+      type: date
+    name: v1alpha1
+    schema:
+      openAPIV3Schema:
+        description: KubeCarrier manages the deployment of the KubeCarrier controller manager.
+        properties:
+          apiVersion:
+            description: 'APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+            type: string
+          kind:
+            description: 'Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+            type: string
+          metadata:
+            type: object
+          spec:
+            description: KubeCarrierSpec defines the desired state of KubeCarrier
+            properties:
+              api:
+                description: APIServerSpec defines the desired state of APIServer
+                properties:
+                  authentication:
+                    description: Authentication configuration
+                    items:
+                      properties:
+                        anonymous:
+                          description: Anonymous specifies whether anonymous auth provider enabled
+                          type: object
+                        oidc:
+                          description: OIDC specifies OpenID Connect configuration for API Server authentication
+                          properties:
+                            certificateAuthority:
+                              description: CertificateAuthority references the secret containing issuer's CA in a PEM encoded root certificate of the provider.
+                              properties:
+                                name:
+                                  type: string
+                              required:
+                              - name
+                              type: object
+                            clientID:
+                              description: "ClientID the JWT must be issued for, the \"sub\" field. This plugin only trusts a single client to ensure the plugin can be used with public providers. \n The plugin supports the \"authorized party\" OpenID Connect claim, which allows specialized providers to issue tokens to a client for a different client. See: https://openid.net/specs/openid-connect-core-1_0.html#IDToken"
+                              type: string
+                            groupsClaim:
+                              description: GroupsClaim, if specified, causes the OIDCAuthenticator to try to populate the user's groups with an ID Token field. If the GroupsClaim field is present in an ID Token the value must be a string or list of strings.
+                              type: string
+                            groupsPrefix:
+                              description: GroupsPrefix, if specified, causes claims mapping to group names to be prefixed with the value. A value "oidc:" would result in groups like "oidc:engineering" and "oidc:marketing".
+                              type: string
+                            issuerURL:
+                              description: "IssuerURL is the URL the provider signs ID Tokens as. This will be the \"iss\" field of all tokens produced by the provider and is used for configuration discovery. \n The URL is usually the provider's URL without a path, for example \"https://accounts.google.com\" or \"https://login.salesforce.com\". \n The provider must implement configuration discovery. See: https://openid.net/specs/openid-connect-discovery-1_0.html#ProviderConfig"
+                              type: string
+                            requiredClaims:
+                              additionalProperties:
+                                type: string
+                              description: RequiredClaims, if specified, causes the OIDCAuthenticator to verify that all the required claims key value pairs are present in the ID Token.
+                              type: object
+                            supportedSigningAlgs:
+                              default:
+                              - RS256
+                              description: "SupportedSigningAlgs sets the accepted set of JOSE signing algorithms that can be used by the provider to sign tokens. \n https://tools.ietf.org/html/rfc7518#section-3.1 \n This value defaults to RS256, the value recommended by the OpenID Connect spec: \n https://openid.net/specs/openid-connect-core-1_0.html#IDTokenValidation"
+                              items:
+                                type: string
+                              type: array
+                            usernameClaim:
+                              default: sub
+                              description: UsernameClaim is the JWT field to use as the user's username.
+                              type: string
+                            usernamePrefix:
+                              description: UsernamePrefix, if specified, causes claims mapping to username to be prefix with the provided value. A value "oidc:" would result in usernames like "oidc:john".
+                              type: string
+                          required:
+                          - certificateAuthority
+                          - clientID
+                          - issuerURL
+                          type: object
+                        serviceAccount:
+                          description: ServiceAccount specifies whether service account auth provider enabled
+                          type: object
+                        staticUsers:
+                          description: StaticUsers specifies static users configuration for API Server authentication
+                          properties:
+                            htpasswdSecret:
+                              description: HtpassswdSecret specifies the htpasswd secret to use for static user authentication.
+                              properties:
+                                name:
+                                  type: string
+                              required:
+                              - name
+                              type: object
+                          required:
+                          - htpasswdSecret
+                          type: object
+                      type: object
+                    type: array
+                  logLevel:
+                    description: LogLevel
+                    type: integer
+                  paused:
+                    description: Paused tell controller to pause reconciliation process and assume that APIServer is ready
+                    type: string
+                  tlsSecretRef:
+                    description: TLSSecretRef references the TLS certificate and private key for serving the KubeCarrier API.
+                    properties:
+                      name:
+                        type: string
+                    required:
+                    - name
+                    type: object
+                type: object
+              logLevel:
+                description: LogLevel
+                type: integer
+              paused:
+                description: Paused tell controller to pause reconciliation process and assume that KubaCarrier is ready
+                type: string
+            type: object
+          status:
+            description: KubeCarrierStatus defines the observed state of KubeCarrier
+            properties:
+              conditions:
+                description: Conditions represents the latest available observations of a KubeCarrier's current state.
+                items:
+                  description: KubeCarrierCondition contains details for the current condition of this KubeCarrier.
+                  properties:
+                    lastTransitionTime:
+                      description: LastTransitionTime is the last time the condition transits from one status to another.
+                      format: date-time
+                      type: string
+                    message:
+                      description: Message is the human readable message indicating details about last transition.
+                      type: string
+                    reason:
+                      description: Reason is the (brief) reason for the condition's last transition.
+                      type: string
+                    status:
+                      description: Status is the status of the condition, one of ('True', 'False', 'Unknown').
+                      type: string
+                    type:
+                      description: Type is the type of the KubeCarrier condition, currently ('Ready').
+                      type: string
+                  required:
+                  - lastTransitionTime
+                  - message
+                  - reason
+                  - status
+                  - type
+                  type: object
+                type: array
+              observedGeneration:
+                description: ObservedGeneration is the most recent generation observed for this KubeCarrier by the controller.
+                format: int64
+                type: integer
+              phase:
+                description: DEPRECATED. Phase represents the current lifecycle state of this object. Consider this field DEPRECATED, it will be removed as soon as there is a mechanism to map conditions to strings when printing the property. This is only for display purpose, for everything else use conditions.
+                type: string
+            type: object
+        type: object
+    served: true
+    storage: true
+    subresources:
+      status: {}
+status:
+  acceptedNames:
+    kind: ""
+    plural: ""
+  conditions: []
+  storedVersions: []
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  labels:
+    kubecarrier.io/role: operator
+  name: kubecarrier-operator-sa
+  namespace: kubecarrier-system
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  labels:
+    kubecarrier.io/role: operator
+  name: kubecarrier-operator-leader-election-role
+  namespace: kubecarrier-system
+rules:
+- apiGroups:
+  - ""
+  resources:
+  - configmaps
+  verbs:
+  - get
+  - list
+  - watch
+  - create
+  - update
+  - patch
+  - delete
+- apiGroups:
+  - ""
+  resources:
+  - configmaps/status
+  verbs:
+  - get
+  - update
+  - patch
+- apiGroups:
+  - ""
+  resources:
+  - events
+  verbs:
+  - create
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  creationTimestamp: null
+  labels:
+    kubecarrier.io/role: operator
+  name: kubecarrier-operator-manager-role
+rules:
+- apiGroups:
+  - ""
+  resources:
+  - serviceaccounts
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - ""
+  resources:
+  - services
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - admissionregistration.k8s.io
+  resources:
+  - mutatingwebhookconfigurations
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - admissionregistration.k8s.io
+  resources:
+  - validatingwebhookconfigurations
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - apiextensions.k8s.io
+  resources:
+  - customresourcedefinitions
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - apps
+  resources:
+  - deployments
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - cert-manager.io
+  resources:
+  - certificates
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - cert-manager.io
+  resources:
+  - issuers
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - operator.kubecarrier.io
+  resources:
+  - apiservers
+  verbs:
+  - create
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - operator.kubecarrier.io
+  resources:
+  - apiservers/status
+  verbs:
+  - get
+  - patch
+  - update
+- apiGroups:
+  - operator.kubecarrier.io
+  resources:
+  - catapults
+  verbs:
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - operator.kubecarrier.io
+  resources:
+  - catapults/status
+  verbs:
+  - get
+  - patch
+  - update
+- apiGroups:
+  - operator.kubecarrier.io
+  resources:
+  - elevators
+  verbs:
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - operator.kubecarrier.io
+  resources:
+  - elevators/status
+  verbs:
+  - get
+  - patch
+  - update
+- apiGroups:
+  - operator.kubecarrier.io
+  resources:
+  - ferries
+  verbs:
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - operator.kubecarrier.io
+  resources:
+  - ferries/status
+  verbs:
+  - get
+  - patch
+  - update
+- apiGroups:
+  - operator.kubecarrier.io
+  resources:
+  - kubecarriers
+  verbs:
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - operator.kubecarrier.io
+  resources:
+  - kubecarriers/status
+  verbs:
+  - get
+  - patch
+  - update
+- apiGroups:
+  - rbac.authorization.k8s.io
+  resources:
+  - clusterrolebindings
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - rbac.authorization.k8s.io
+  resources:
+  - clusterroles
+  verbs:
+  - bind
+  - create
+  - delete
+  - escalate
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - rbac.authorization.k8s.io
+  resources:
+  - rolebindings
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - rbac.authorization.k8s.io
+  resources:
+  - roles
+  verbs:
+  - bind
+  - create
+  - delete
+  - escalate
+  - get
+  - list
+  - patch
+  - update
+  - watch
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  labels:
+    kubecarrier.io/role: operator
+  name: kubecarrier-operator-leader-election-rolebinding
+  namespace: kubecarrier-system
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: kubecarrier-operator-leader-election-role
+subjects:
+- kind: ServiceAccount
+  name: kubecarrier-operator-sa
+  namespace: kubecarrier-system
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  labels:
+    kubecarrier.io/role: operator
+  name: kubecarrier-operator-manager-rolebinding
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: kubecarrier-operator-manager-role
+subjects:
+- kind: ServiceAccount
+  name: kubecarrier-operator-sa
+  namespace: kubecarrier-system
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    kubecarrier.io/role: operator
+  name: kubecarrier-operator-webhook-service
+  namespace: kubecarrier-system
+spec:
+  ports:
+  - port: 443
+    targetPort: 9443
+  selector:
+    control-plane: operator
+    kubecarrier.io/role: operator
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    control-plane: operator
+    kubecarrier.io/role: operator
+  name: kubecarrier-operator-manager
+  namespace: kubecarrier-system
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      control-plane: operator
+      kubecarrier.io/role: operator
+  template:
+    metadata:
+      labels:
+        control-plane: operator
+        kubecarrier.io/role: operator
+    spec:
+      containers:
+      - args:
+        - --cert-dir=$(CERT_DIR)
+        - -v=$(LOG_LEVEL)
+        env:
+        - name: LOG_LEVEL
+          value: "0"
+        - name: CERT_DIR
+          value: /tmp/k8s-webhook-server/serving-certs
+        image: quay.io/kubecarrier/operator:v0.3.0
+        livenessProbe:
+          httpGet:
+            path: /healthz
+            port: readiness-port
+        name: manager
+        ports:
+        - containerPort: 9443
+          name: webhook-server
+          protocol: TCP
+        - containerPort: 9440
+          name: readiness-port
+          protocol: TCP
+        readinessProbe:
+          httpGet:
+            path: /readyz
+            port: readiness-port
+        resources:
+          limits:
+            cpu: "1"
+            memory: 100Mi
+          requests:
+            cpu: "1"
+            memory: 100Mi
+        volumeMounts:
+        - mountPath: /tmp/k8s-webhook-server/serving-certs
+          name: cert
+          readOnly: true
+      serviceAccountName: kubecarrier-operator-sa
+      terminationGracePeriodSeconds: 10
+      volumes:
+      - name: cert
+        secret:
+          defaultMode: 420
+          secretName: kubecarrier-operator-webhook-service-webhook-service-cert
+---
+apiVersion: cert-manager.io/v1alpha2
+kind: Certificate
+metadata:
+  labels:
+    kubecarrier.io/role: operator
+  name: kubecarrier-operator-serving-cert
+  namespace: kubecarrier-system
+spec:
+  dnsNames:
+  - kubecarrier-operator-webhook-service.kubecarrier-system.svc
+  - kubecarrier-operator-webhook-service.kubecarrier-system.svc.cluster.local
+  issuerRef:
+    kind: Issuer
+    name: kubecarrier-operator-selfsigned-issuer
+  secretName: kubecarrier-operator-webhook-service-webhook-service-cert
+---
+apiVersion: cert-manager.io/v1alpha2
+kind: Issuer
+metadata:
+  labels:
+    kubecarrier.io/role: operator
+  name: kubecarrier-operator-selfsigned-issuer
+  namespace: kubecarrier-system
+spec:
+  selfSigned: {}
+---
+apiVersion: admissionregistration.k8s.io/v1beta1
+kind: MutatingWebhookConfiguration
+metadata:
+  annotations:
+    cert-manager.io/inject-ca-from: kubecarrier-system/kubecarrier-operator-serving-cert
+  labels:
+    kubecarrier.io/role: operator
+  name: kubecarrier-operator-mutating-webhook-configuration
+webhooks:
+- clientConfig:
+    caBundle: Cg==
+    service:
+      name: kubecarrier-operator-webhook-service
+      namespace: kubecarrier-system
+      path: /mutate-operator-kubecarrier-io-v1alpha1-apiserver
+  failurePolicy: Fail
+  name: mapiserver.kubecarrier.io
+  rules:
+  - apiGroups:
+    - operator.kubecarrier.io
+    apiVersions:
+    - v1alpha1
+    operations:
+    - CREATE
+    resources:
+    - apiservers
+- clientConfig:
+    caBundle: Cg==
+    service:
+      name: kubecarrier-operator-webhook-service
+      namespace: kubecarrier-system
+      path: /mutate-operator-kubecarrier-io-v1alpha1-catapult
+  failurePolicy: Fail
+  name: mcatapult.kubecarrier.io
+  rules:
+  - apiGroups:
+    - operator.kubecarrier.io
+    apiVersions:
+    - v1alpha1
+    operations:
+    - CREATE
+    resources:
+    - catapults
+- clientConfig:
+    caBundle: Cg==
+    service:
+      name: kubecarrier-operator-webhook-service
+      namespace: kubecarrier-system
+      path: /mutate-operator-kubecarrier-io-v1alpha1-elevator
+  failurePolicy: Fail
+  name: melevator.kubecarrier.io
+  rules:
+  - apiGroups:
+    - operator.kubecarrier.io
+    apiVersions:
+    - v1alpha1
+    operations:
+    - CREATE
+    resources:
+    - elevators
+- clientConfig:
+    caBundle: Cg==
+    service:
+      name: kubecarrier-operator-webhook-service
+      namespace: kubecarrier-system
+      path: /mutate-operator-kubecarrier-io-v1alpha1-ferry
+  failurePolicy: Fail
+  name: mferry.kubecarrier.io
+  rules:
+  - apiGroups:
+    - operator.kubecarrier.io
+    apiVersions:
+    - v1alpha1
+    operations:
+    - CREATE
+    resources:
+    - ferries
+- clientConfig:
+    caBundle: Cg==
+    service:
+      name: kubecarrier-operator-webhook-service
+      namespace: kubecarrier-system
+      path: /mutate-operator-kubecarrier-io-v1alpha1-kubecarrier
+  failurePolicy: Fail
+  name: mkubecarrier.kubecarrier.io
+  rules:
+  - apiGroups:
+    - operator.kubecarrier.io
+    apiVersions:
+    - v1alpha1
+    operations:
+    - CREATE
+    resources:
+    - kubecarriers
