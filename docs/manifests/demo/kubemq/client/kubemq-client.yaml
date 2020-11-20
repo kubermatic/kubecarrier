@@ -1,0 +1,71 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kubemq-receiver
+spec:
+  selector:
+    matchLabels:
+      kubemq-client: receiver
+  replicas:
+  template:
+    metadata:
+      labels:
+        kubemq-client: receiver
+    spec:
+      containers:
+        - image: quay.io/jiachengxu/kubemqctl
+          name: manager
+          args:
+          - "kubemqctl"
+          - "events"
+          - "receive"
+          - "channel-c"
+          - "--config=$(KUBEMQCTL_CONFIG_PATH)"
+          env:
+          - name: KUBEMQCTL_CONFIG_PATH
+            value: /secrets/kubemqctl/kubemqctl.yaml
+          volumeMounts:
+          - name: kubemqctl
+            mountPath: /secrets/kubemqctl
+            readOnly: true
+      volumes:
+        - name: kubemqctl
+          secret:
+            secretName: kubemqctl
+      terminationGracePeriodSeconds: 10
+---
+apiVersion: batch/v1beta1
+kind: CronJob
+metadata:
+  name: kubemq-sender
+spec:
+  schedule: "* * * * *"
+  jobTemplate:
+    spec:
+      template:
+        metadata:
+          labels:
+            kubemq-client: sender
+        spec:
+          containers:
+            - image: quay.io/jiachengxu/kubemqctl
+              name: manager
+              args:
+                - "kubemqctl"
+                - "events"
+                - "send"
+                - "channel-c"
+                - "hello"
+                - "--config=$(KUBEMQCTL_CONFIG_PATH)"
+              env:
+                - name: KUBEMQCTL_CONFIG_PATH
+                  value: /secrets/kubemqctl/kubemqctl.yaml
+              volumeMounts:
+                - name: kubemqctl
+                  mountPath: /secrets/kubemqctl
+                  readOnly: true
+          volumes:
+            - name: kubemqctl
+              secret:
+                secretName: kubemqctl
+          restartPolicy: OnFailure

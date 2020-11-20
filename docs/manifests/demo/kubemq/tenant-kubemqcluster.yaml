@@ -1,0 +1,9 @@
+apiVersion: service-cluster.kubecarrier-provider/v1alpha1
+kind: KubemqCluster
+metadata:
+  name: kubemq-cluster
+  labels:
+    kubemq.cluster.name: kubemq-cluster
+spec:
+  replicas: 2
+  license: <LICENSE>

@@ -1,0 +1,29 @@
+apiVersion: catalog.kubecarrier.io/v1alpha1
+kind: Account
+metadata:
+  name: tenant-b
+spec:
+  metadata:
+    displayName: The B Team
+    shortDescription: In 1972, a crack commando unit was sent to prison by a military court...
+  roles:
+  - Tenant
+  subjects:
+  - kind: User
+    name: team-b-member
+    apiGroup: rbac.authorization.k8s.io
+---
+apiVersion: catalog.kubecarrier.io/v1alpha1
+kind: Account
+metadata:
+  name: tenant-a
+spec:
+  metadata:
+    displayName: The A Team
+    shortDescription: In 1972, a crack commando unit was sent to prison by a military court...
+  roles:
+    - Tenant
+  subjects:
+    - kind: User
+      name: team-a-member
+      apiGroup: rbac.authorization.k8s.io

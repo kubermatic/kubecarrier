@@ -1,0 +1,14 @@
+apiVersion: catalog.kubecarrier.io/v1alpha1
+kind: Account
+metadata:
+  name: tenant-c
+spec:
+  metadata:
+    displayName: The C Team
+    shortDescription: In 1972, a crack commando unit was sent to prison by a military court...
+  roles:
+  - Tenant
+  subjects:
+  - kind: User
+    name: team-c-member
+    apiGroup: rbac.authorization.k8s.io

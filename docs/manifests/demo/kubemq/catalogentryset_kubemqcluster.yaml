@@ -1,0 +1,20 @@
+apiVersion: catalog.kubecarrier.io/v1alpha1
+kind: CatalogEntrySet
+metadata:
+  name: kubemq-cluster
+spec:
+  metadata:
+    displayName: KubeMQ-Cluster
+    shortDescription: Kubemq Cluster.
+  discover:
+    crd:
+      name: kubemqclusters.core.k8s.kubemq.io
+    serviceClusterSelector: {}
+  derive:
+    expose:
+    - versions:
+      - v1alpha1
+      fields:
+      - jsonPath: .spec.replicas
+      - jsonPath: .spec.license
+      - jsonPath: .status
