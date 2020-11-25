@@ -160,11 +160,6 @@ spec:
     OS4xeg0KCQkiLz4NCjwvZz4NCjwvc3ZnPg0K
 
   formSpec:
-    - displayName: "Deploy cert-manager"
-      internalName: "CertManager"
-      helpText: "KubeCarrier requires cert-manager running in the target cluster. If selected cert-manager will be installed as well."
-      required: false
-      type: boolean
     - displayName: "Single cluster mode"
       internalName: "SingleCluster"
       helpText: "If selected, this cluster will act as both KubeCarrier management and service cluster."
