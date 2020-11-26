@@ -1,6 +1,6 @@
 # KubeCarrier Addon for Kubermatic Kubernetes Platform
 
-The `kubecarrier` subfolder contains the KubeCarrier 
+The `kubecarrier` subfolder contains the KubeCarrier
 [addon for Kubermatic Kubernetes Platform](https://docs.kubermatic.com/kubermatic/master/advanced/addons/).
 
 The addon is dependent on cert-manger, which can be installed as a separate addon located in the `cert-manager` subfolder.
