@@ -1,0 +1,9 @@
+bases:
+  - ../operator/default
+
+images:
+  - name: quay.io/kubecarrier/operator
+    newTag: v0.3.0
+
+patchesStrategicMerge:
+  - loglevel_patch.yaml
