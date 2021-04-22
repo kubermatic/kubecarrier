@@ -238,7 +238,6 @@ cert-manager:
 
 dex:
 	kubectl apply -f ./test/testdata/00_prereq.yaml
-	helm repo update
 	helm upgrade --install --namespace kubecarrier-system dex stable/dex --values ./test/testdata/dex_values.yaml
 
 # ----------------
