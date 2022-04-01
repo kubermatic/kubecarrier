@@ -7,29 +7,19 @@ assignees: ''
 
 ---
 
-**Describe the bug**
-A clear and concise description of what the bug is.
+### What happened
 
-**To Reproduce**
-Steps to reproduce the behavior:
-1. Go to '...'
-2. Click on '....'
-3. Scroll down to '....'
-4. See error
+### Expected behavior
 
-**Expected behavior**
-A clear and concise description of what you expected to happen.
+### How to reproduce
 
-**Screenshots**
-If applicable, add screenshots to help explain your problem.
+### Environment
+- Kubernetes/Openshift Cluster version:
+- OS:
+- Browser type and version:
 
-**Kubernetes/Openshift Cluster**
-- Version
+### Current workaround
 
-**Desktop (please complete the following information):**
- - OS: [e.g. iOS]
- - Browser [e.g. chrome, safari]
- - Version [e.g. 22]
+### Affected user persona
 
-**Additional context**
-Add any other context about the problem here.
+### Business goal to be improved
