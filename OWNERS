@@ -1,7 +1,7 @@
 # See the OWNERS docs: https://git.k8s.io/community/contributors/guide/owners.md
 
 approvers:
-  - team-kubecarrier
+  - sig-app-management
 
 reviewers:
-  - team-kubecarrier
+  - sig-app-management
