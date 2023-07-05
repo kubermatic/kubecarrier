@@ -12,23 +12,23 @@ require (
 	github.com/ghodss/yaml v1.0.0
 	github.com/go-logr/logr v0.1.0
 	github.com/gobuffalo/flect v0.2.0
-	github.com/golang/protobuf v1.3.5
-	github.com/google/go-cmp v0.5.0
+	github.com/golang/protobuf v1.5.2
+	github.com/google/go-cmp v0.5.9
 	github.com/gorilla/handlers v1.4.2
 	github.com/grpc-ecosystem/go-grpc-middleware v1.2.0
 	github.com/grpc-ecosystem/go-grpc-prometheus v1.2.0
-	github.com/grpc-ecosystem/grpc-gateway v1.14.3
+	github.com/grpc-ecosystem/grpc-gateway v1.16.0
 	github.com/improbable-eng/grpc-web v0.12.0
 	github.com/jetstack/cert-manager v0.13.0
 	github.com/rs/cors v1.7.0 // indirect
 	github.com/spf13/cobra v1.0.0
 	github.com/spf13/pflag v1.0.5
-	github.com/stretchr/testify v1.4.0
+	github.com/stretchr/testify v1.8.1
 	github.com/tg123/go-htpasswd v1.0.0
 	github.com/thetechnick/statik v0.1.8
-	golang.org/x/sync v0.0.0-20190911185100-cd5d95a43a6e
-	google.golang.org/genproto v0.0.0-20200424135956-bca184e23272
-	google.golang.org/grpc v1.28.0
+	golang.org/x/sync v0.1.0
+	google.golang.org/genproto v0.0.0-20230110181048-76db0878b65f
+	google.golang.org/grpc v1.53.0
 	k8c.io/utils v0.0.0-20200731080835-39ab8a8d6830
 	k8s.io/api v0.18.5
 	k8s.io/apiextensions-apiserver v0.18.5
